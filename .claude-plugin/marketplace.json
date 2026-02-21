@@ -1,0 +1,14 @@
+{
+  "name": "kaizen",
+  "owner": {
+    "name": "moons"
+  },
+  "plugins": [
+    {
+      "name": "kaizen",
+      "source": ".",
+      "description": "AI-powered code & document review with staged presentation and auto-fix",
+      "version": "0.0.1"
+    }
+  ]
+}
