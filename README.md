@@ -19,20 +19,30 @@ A Claude Code plugin for AI-powered code and document review with staged present
 Inside a Claude Code session:
 
 ```
-/plugin marketplace add BlueEventHorizon/kaizen
-/plugin install kaizen@BlueEventHorizon/kaizen
+/plugin marketplace add BlueEventHorizon/bw-cc-plugins
+/plugin install kaizen@BlueEventHorizon/bw-cc-plugins
 ```
+
+<img src="./images/install_kaizen.png" width="900">
 
 `marketplace add` registers the GitHub repo as a plugin source (once per user). Once installed, the plugin is always available.
 
 ### Option B: Local directory (per session)
 
 ```bash
-git clone https://github.com/BlueEventHorizon/kaizen.git
-claude --plugin-dir ./kaizen
+git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
+claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
 ```
 
 > **Note**: `--plugin-dir` is session-only. You must specify it every time you start Claude Code. To unload, simply start without the flag.
+
+### Update
+
+From your terminal:
+
+```bash
+claude plugin update kaizen@BlueEventHorizon/bw-cc-plugins --scope local
+```
 
 ## Usage
 

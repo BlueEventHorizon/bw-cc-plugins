@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "kaizen",
   "owner": {
     "name": "moons"
@@ -6,9 +7,13 @@
   "plugins": [
     {
       "name": "kaizen",
-      "source": ".",
       "description": "AI-powered code & document review with staged presentation and auto-fix",
-      "version": "0.0.1"
+      "version": "0.0.2",
+      "author": {
+        "name": "moons"
+      },
+      "source": "./plugins/kaizen",
+      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
 }

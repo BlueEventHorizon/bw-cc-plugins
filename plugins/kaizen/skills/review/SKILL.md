@@ -25,15 +25,15 @@ description: |
 ### 使用例
 
 ```bash
-/review requirement csv_import
-/review design specs/csv_import/design/DES-025_csv_import_design.md
-/review code App/View/ --claude
-/review plan csv_import --codex
-/review code                       # ブランチ差分のコード
-/review plan specs/main/plan/main_plan.md --auto-fix  # 自動修正モード
-/review generic docs/CONTRIBUTING.md                              # 単一ファイル
-/review generic docs/CONTRIBUTING.md docs/README.md               # 複数ファイル
-/review generic rules/coding_rule.md                              # ルール文書
+/review code src/                                       # ディレクトリ内のソースコード
+/review code src/services/auth.swift                    # 特定ファイル
+/review requirement login                               # Feature 名で要件定義書
+/review design specs/login/design/login_design.md       # 設計書
+/review code src/ --claude                              # Claude エンジンを使用
+/review code                                            # ブランチ差分のコード
+/review plan specs/login/plan/login_plan.md --auto-fix  # 自動修正モード
+/review generic README.md                               # 任意の文書
+/review generic docs/CONTRIBUTING.md docs/README.md     # 複数ファイル
 ```
 
 ---

@@ -19,20 +19,30 @@ AI によるコード・文書レビューを実行する Claude Code プラグ�
 Claude Code セッション内で:
 
 ```
-/plugin marketplace add BlueEventHorizon/kaizen
-/plugin install kaizen@BlueEventHorizon/kaizen
+/plugin marketplace add BlueEventHorizon/bw-cc-plugins
+/plugin install kaizen@BlueEventHorizon/bw-cc-plugins
 ```
+
+<img src="./images/install_kaizen.png" width="900">
 
 `marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。一度インストールすれば、常に利用可能です。
 
 ### 方法 B: ローカルディレクトリ（セッション限定）
 
 ```bash
-git clone https://github.com/BlueEventHorizon/kaizen.git
-claude --plugin-dir ./kaizen
+git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
+claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
 ```
 
 > **注意**: `--plugin-dir` はセッション限定です。Claude Code を起動するたびに指定が必要です。解除するには、フラグなしで起動するだけです。
+
+### 更新
+
+ターミナルから:
+
+```bash
+claude plugin update kaizen@BlueEventHorizon/bw-cc-plugins --scope local
+```
 
 ## 使い方
 
