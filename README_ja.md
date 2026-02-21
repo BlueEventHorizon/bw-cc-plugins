@@ -1,4 +1,4 @@
-# kaizen
+# bw-cc-plugins
 
 AI によるコード・文書レビューを実行する Claude Code プラグイン。段階的な対話提示と自動修正に対応。
 

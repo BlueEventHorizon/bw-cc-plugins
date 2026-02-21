@@ -1,4 +1,4 @@
-# kaizen
+# bw-cc-plugins
 
 A Claude Code plugin for AI-powered code and document review with staged presentation and auto-fix.
 
