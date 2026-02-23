@@ -14,6 +14,16 @@
       },
       "source": "./plugins/kaizen",
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
+    },
+    {
+      "name": "doc-structure",
+      "description": "Define and query project document structure (.doc_structure.yaml)",
+      "version": "0.0.1",
+      "author": {
+        "name": "moons"
+      },
+      "source": "./plugins/doc-structure",
+      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
 }

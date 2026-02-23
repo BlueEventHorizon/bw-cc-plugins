@@ -1,16 +1,15 @@
 # bw-cc-plugins
 
-AI によるコード・文書レビューを実行する Claude Code プラグイン。段階的な対話提示と自動修正に対応。
+AI によるコード・文書レビューと、プロジェクト文書構造管理のための Claude Code プラグインマーケットプレイス。
 
 [English README (README.md)](README.md)
 
-## 特徴
+## プラグイン一覧
 
-- **多種別レビュー**: コード、要件定義書、設計書、計画書、汎用文書に対応
-- **2エンジン選択**: Codex（デフォルト）と Claude Code から選択可能
-- **段階的提示**: レビュー結果を1件ずつ丁寧に提示し、対話的に解決
-- **自動修正**: `--auto-fix` フラグで致命的問題を自動修正
-- **DocAdvisor 連携**: プロジェクトのルール・仕様書を参照したコンテキスト重視のレビュー
+| プラグイン | バージョン | 説明 |
+|-----------|-----------|------|
+| **kaizen** | 0.0.2 | AI によるコード・文書レビュー。段階的な対話提示と自動修正に対応 |
+| **doc-structure** | 0.0.1 | `.doc_structure.yaml` によるプロジェクト文書構成の定義・クエリ |
 
 ## インストール
 
@@ -21,6 +20,14 @@ Claude Code セッション内で:
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install kaizen@bw-cc-plugins
+/plugin install doc-structure@bw-cc-plugins
+```
+
+すでにinstall済みの場合は、ターミナルから:
+
+```bash
+claude plugin enable kaizen@bw-cc-plugins
+claude plugin enable doc-structure@bw-cc-plugins
 ```
 
 <img src="./images/install_kaizen.png" width="900">
@@ -32,6 +39,7 @@ Claude Code セッション内で:
 ```bash
 git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
 claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
+claude --plugin-dir ./bw-cc-plugins/plugins/doc-structure
 ```
 
 > **注意**: `--plugin-dir` はセッション限定です。Claude Code を起動するたびに指定が必要です。解除するには、フラグなしで起動するだけです。
@@ -42,9 +50,14 @@ claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
 
 ```bash
 claude plugin update kaizen@bw-cc-plugins --scope local
+claude plugin update doc-structure@bw-cc-plugins --scope local
 ```
 
-## 使い方
+## kaizen
+
+AI によるコード・文書レビュー。段階的な対話提示と自動修正に対応。
+
+### 使い方
 
 ```
 /kaizen:review <種別> [対象] [--エンジン] [--auto-fix]
@@ -85,7 +98,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 /kaizen:review code src/ --claude
 ```
 
-## スキル構成
+### スキル構成
 
 | スキル | ユーザー呼び出し | 説明 |
 |--------|-----------------|------|
@@ -93,7 +106,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | `present-staged` | AI 専用 | レビュー結果を段階的・対話的に提示 |
 | `fix-staged` | AI 専用 | レビュー指摘に基づく修正を実行。DocAdvisor で参考文書を収集して修正 |
 
-## レビュー種別
+### レビュー種別
 
 | 種別 | 対象 |
 |------|------|
@@ -103,7 +116,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | `plan` | 開発計画書 |
 | `generic` | 任意の文書（ルール、スキル定義、README 等） |
 
-## 重大度レベル
+### 重大度レベル
 
 | レベル | 意味 |
 |--------|------|
@@ -111,13 +124,61 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | 品質 | 修正推奨。コーディング規約、エラーハンドリング、パフォーマンス |
 | 改善 | あると良い。可読性向上、リファクタリング提案 |
 
-## レビュー観点
+### レビュー観点
 
 プラグインにはデフォルトのレビュー観点が `defaults/review_criteria.md` に同梱されています。プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
 
 1. **DocAdvisor**: プロジェクトに DocAdvisor がある場合、プロジェクト固有のレビュー観点を動的に取得
 2. **プロジェクト設定**: `.claude/review-config.yaml` にカスタムパスを保存
 3. **プラグインデフォルト**: 同梱の `defaults/review_criteria.md` にフォールバック
+
+## doc-structure
+
+`.doc_structure.yaml` によるプロジェクト文書構成の定義・クエリ。
+
+### 使い方
+
+```bash
+# .doc_structure.yaml を対話的に作成・更新
+/doc-structure:init-doc-structure
+
+# 確認プロンプトなしで作成
+/doc-structure:init-doc-structure --auto
+
+# 全ての文書ディレクトリを表示
+/doc-structure:where
+
+# 特定カテゴリを表示
+/doc-structure:where specs
+
+# 特定の種別のパスを取得
+/doc-structure:where specs requirement
+```
+
+### スキル構成
+
+| スキル | ユーザー呼び出し | 説明 |
+|--------|-----------------|------|
+| `init-doc-structure` | 可能 | プロジェクトのディレクトリをスキャン・分類し、`.doc_structure.yaml` を生成 |
+| `where` | 可能 | `.doc_structure.yaml` をクエリして文書ディレクトリのパスを返す |
+
+### スキーマリファレンス
+
+完全な仕様は [docs/doc_structure_format.md](docs/doc_structure_format.md) を参照してください。
+
+```yaml
+version: "1.0"
+
+specs:
+  requirement:
+    paths: [specs/requirements/]
+  design:
+    paths: [specs/design/]
+
+rules:
+  rule:
+    paths: [rules/]
+```
 
 ## 動作要件
 

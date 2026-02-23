@@ -1,16 +1,15 @@
 # bw-cc-plugins
 
-A Claude Code plugin for AI-powered code and document review with staged presentation and auto-fix.
+A Claude Code plugin marketplace for AI-powered code & document review, and project document structure management.
 
 [Japanese README (README_ja.md)](README_ja.md)
 
-## Features
+## Plugins
 
-- **Multi-type review**: Code, requirements, design docs, plans, and generic documents
-- **Dual engine**: Choose between Codex (default) and Claude Code
-- **Staged presentation**: Review findings presented one by one with interactive resolution
-- **Auto-fix**: Automatically fix critical issues with `--auto-fix` flag
-- **DocAdvisor integration**: Leverages project rules and specs for context-aware reviews
+| Plugin | Version | Description |
+|--------|---------|-------------|
+| **kaizen** | 0.0.2 | AI-powered code & document review with staged presentation and auto-fix |
+| **doc-structure** | 0.0.1 | Define and query project document structure (`.doc_structure.yaml`) |
 
 ## Installation
 
@@ -21,6 +20,14 @@ Inside a Claude Code session:
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install kaizen@bw-cc-plugins
+/plugin install doc-structure@bw-cc-plugins
+```
+
+If you already installed, from your terminal:
+
+```bash
+claude plugin enable kaizen@bw-cc-plugins
+claude plugin enable doc-structure@bw-cc-plugins
 ```
 
 <img src="./images/install_kaizen.png" width="900">
@@ -32,6 +39,7 @@ Inside a Claude Code session:
 ```bash
 git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
 claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
+claude --plugin-dir ./bw-cc-plugins/plugins/doc-structure
 ```
 
 > **Note**: `--plugin-dir` is session-only. You must specify it every time you start Claude Code. To unload, simply start without the flag.
@@ -42,9 +50,14 @@ From your terminal:
 
 ```bash
 claude plugin update kaizen@bw-cc-plugins --scope local
+claude plugin update doc-structure@bw-cc-plugins --scope local
 ```
 
-## Usage
+## kaizen
+
+AI-powered code & document review with staged presentation and auto-fix.
+
+### Usage
 
 ```
 /kaizen:review <type> [target] [--engine] [--auto-fix]
@@ -85,7 +98,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 /kaizen:review code src/ --claude
 ```
 
-## Skills
+### Skills
 
 | Skill | User-invocable | Description |
 |-------|---------------|-------------|
@@ -93,7 +106,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | `present-staged` | No (AI only) | Presents review findings interactively, one item at a time |
 | `fix-staged` | No (AI only) | Fixes issues based on review findings with DocAdvisor-informed context |
 
-## Review Types
+### Review Types
 
 | Type | Target |
 |------|--------|
@@ -103,7 +116,7 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | `plan` | Development plans |
 | `generic` | Any document (rules, skills, READMEs, etc.) |
 
-## Severity Levels
+### Severity Levels
 
 | Level | Meaning |
 |-------|---------|
@@ -111,13 +124,61 @@ claude plugin update kaizen@bw-cc-plugins --scope local
 | Major | Should fix. Coding standards, error handling, performance |
 | Minor | Nice to have. Readability, refactoring suggestions |
 
-## Review Criteria
+### Review Criteria
 
 The plugin includes default review criteria in `defaults/review_criteria.md`. Projects can override this by:
 
 1. **DocAdvisor**: If the project uses DocAdvisor, the plugin queries it for project-specific review criteria
 2. **Project config**: Save a custom path in `.claude/review-config.yaml`
 3. **Plugin default**: Falls back to the bundled `defaults/review_criteria.md`
+
+## doc-structure
+
+Define and query project document structure using `.doc_structure.yaml`.
+
+### Usage
+
+```bash
+# Create or update .doc_structure.yaml interactively
+/doc-structure:init-doc-structure
+
+# Create without confirmation prompts
+/doc-structure:init-doc-structure --auto
+
+# Query all document locations
+/doc-structure:where
+
+# Query a specific category
+/doc-structure:where specs
+
+# Query a specific doc type
+/doc-structure:where specs requirement
+```
+
+### Skills
+
+| Skill | User-invocable | Description |
+|-------|---------------|-------------|
+| `init-doc-structure` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
+| `where` | Yes | Queries `.doc_structure.yaml` to return document directory paths |
+
+### Schema Reference
+
+See [docs/doc_structure_format.md](docs/doc_structure_format.md) for the full specification.
+
+```yaml
+version: "1.0"
+
+specs:
+  requirement:
+    paths: [specs/requirements/]
+  design:
+    paths: [specs/design/]
+
+rules:
+  rule:
+    paths: [rules/]
+```
 
 ## Requirements
 
