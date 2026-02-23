@@ -36,6 +36,7 @@ from classify_dirs import (
     estimate_doc_type,
     is_readme_only,
     find_md_dirs,
+    _extract_glob_pattern,
     aggregate_to_top_dirs,
     build_doc_structure,
     output_doc_structure,
@@ -447,6 +448,56 @@ class TestFindMdDirs(_FsTestCase):
 # 5. 集約・構造生成テスト
 # =========================================================================
 
+class TestExtractGlobPattern(unittest.TestCase):
+    """_extract_glob_pattern のテスト"""
+
+    def test_basic_glob(self):
+        """1箇所だけ異なる depth=3 パスから glob パターンを抽出"""
+        result = _extract_glob_pattern([
+            'specs/login/requirements',
+            'specs/auth/requirements',
+        ])
+        self.assertEqual(result, 'specs/*/requirements/')
+
+    def test_depth_2_returns_none(self):
+        """depth=2 のパスは glob 不要（None を返す）"""
+        result = _extract_glob_pattern([
+            'rules/coding',
+            'rules/naming',
+        ])
+        self.assertIsNone(result)
+
+    def test_different_depths_returns_none(self):
+        """深さが異なるパスは None"""
+        result = _extract_glob_pattern([
+            'specs/login/requirements',
+            'specs/design',
+        ])
+        self.assertIsNone(result)
+
+    def test_two_positions_vary_returns_none(self):
+        """2箇所以上異なると None"""
+        result = _extract_glob_pattern([
+            'specs/login/v1/requirements',
+            'specs/auth/v2/requirements',
+        ])
+        self.assertIsNone(result)
+
+    def test_single_entry_returns_none(self):
+        """1件だけでは glob 不要"""
+        result = _extract_glob_pattern(['specs/login/requirements'])
+        self.assertIsNone(result)
+
+    def test_three_entries(self):
+        """3件以上でも正しく glob 抽出"""
+        result = _extract_glob_pattern([
+            'specs/login/design',
+            'specs/auth/design',
+            'specs/payment/design',
+        ])
+        self.assertEqual(result, 'specs/*/design/')
+
+
 class TestAggregateToTopDirs(unittest.TestCase):
     """aggregate_to_top_dirs のテスト"""
 
@@ -530,6 +581,40 @@ class TestAggregateToTopDirs(unittest.TestCase):
         ]
         result = aggregate_to_top_dirs(classified)
         self.assertEqual(result['specs'][0].get('doc_type'), 'requirement')
+
+    def test_deep_paths_generate_glob_pattern(self):
+        """depth≥3 で 1箇所だけ異なるパスは glob パターンを生成"""
+        classified = [
+            ('specs/login/requirements', 'specs', 'high', 'dirname'),
+            ('specs/auth/requirements', 'specs', 'high', 'dirname'),
+        ]
+        result = aggregate_to_top_dirs(classified)
+        self.assertEqual(len(result['specs']), 1)
+        self.assertEqual(result['specs'][0]['dir'], 'specs/*/requirements/')
+        self.assertEqual(result['specs'][0]['doc_type'], 'requirement')
+
+    def test_deep_paths_different_doc_types_separate_globs(self):
+        """depth≥3 で異なる doc_type はそれぞれ別の glob パターン"""
+        classified = [
+            ('specs/login/requirements', 'specs', 'high', 'dirname'),
+            ('specs/auth/requirements', 'specs', 'high', 'dirname'),
+            ('specs/login/design', 'specs', 'high', 'dirname'),
+            ('specs/auth/design', 'specs', 'high', 'dirname'),
+        ]
+        result = aggregate_to_top_dirs(classified)
+        self.assertEqual(len(result['specs']), 2)
+        dirs = sorted(e['dir'] for e in result['specs'])
+        self.assertEqual(dirs, ['specs/*/design/', 'specs/*/requirements/'])
+
+    def test_deep_paths_no_glob_when_multiple_positions_vary(self):
+        """2箇所以上異なる深いパスは個別保持"""
+        classified = [
+            ('specs/login/v1/requirements', 'specs', 'high', 'dirname'),
+            ('specs/auth/v2/requirements', 'specs', 'high', 'dirname'),
+        ]
+        result = aggregate_to_top_dirs(classified)
+        # glob 不可 → 個別パス保持
+        self.assertEqual(len(result['specs']), 2)
 
 
 class TestBuildDocStructure(unittest.TestCase):
