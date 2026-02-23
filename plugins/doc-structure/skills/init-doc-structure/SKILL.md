@@ -54,7 +54,7 @@ Show the classification result to the user.
 
 ### Step 3: Interactive refinement
 
-Present the detected structure and ask the user to confirm or adjust using AskUserQuestion:
+Present the detected structure and ask the user to confirm or adjust:
 
 1. **Category confirmation**: Are these directories correctly classified as rules/specs?
 2. **Doc type confirmation**: Are the doc_type names correct? (requirement, design, plan, rule, etc.)
