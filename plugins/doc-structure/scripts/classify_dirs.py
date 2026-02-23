@@ -367,6 +367,43 @@ def estimate_doc_type(dir_path, category):
     return 'rule' if category == 'rules' else 'spec'
 
 
+def _extract_glob_pattern(dirs):
+    """
+    同一 doc_type の複数パスから glob パターンを抽出する。
+
+    全パスが同じ深さ（3以上）で、ちょうど1箇所だけ異なる場合に
+    その位置を * に置き換えた glob パターンを返す。
+
+    Returns:
+        str or None: glob パターン（例: 'specs/*/requirements/'）、抽出不可なら None
+    """
+    parts_list = [Path(d).parts for d in dirs]
+
+    # 全パスが同じ深さか確認
+    lengths = set(len(p) for p in parts_list)
+    if len(lengths) != 1:
+        return None
+
+    depth = lengths.pop()
+    if depth < 3:
+        return None
+
+    # 各ポジションで値が一致するか確認
+    pattern_parts = []
+    for i in range(depth):
+        values = set(p[i] for p in parts_list)
+        if len(values) == 1:
+            pattern_parts.append(values.pop())
+        else:
+            pattern_parts.append('*')
+
+    # * がちょうど1つなら妥当な glob パターン
+    if pattern_parts.count('*') == 1:
+        return '/'.join(pattern_parts) + '/'
+
+    return None
+
+
 def aggregate_to_top_dirs(classified_dirs):
     """
     Aggregate subdirectory classifications to top-level directories.
@@ -416,17 +453,38 @@ def aggregate_to_top_dirs(classified_dirs):
                     'doc_type': doc_type,
                 })
         elif len(entries) > 1 or entries[0]['dir'] == top_dir:
-            # 同一 doc_type 複数サブディレクトリ → top_dir に集約
+            # 同一 doc_type 複数サブディレクトリ → glob パターン or top_dir 集約
+            dirs = [e['dir'] for e in entries]
             best_confidence = max(
                 (e['confidence'] for e in entries),
                 key=lambda c: _CONFIDENCE_ORDER.get(c, 0)
             )
-            result[category].append({
-                'dir': f"{top_dir}/",
-                'confidence': best_confidence,
-                'reason': f"aggregated from {len(entries)} subdirs: {entries[0]['reason']}",
-                'doc_type': doc_type,
-            })
+            glob_pattern = _extract_glob_pattern(dirs)
+            if glob_pattern:
+                # depth≥3 で 1箇所だけ異なる → glob パターン
+                result[category].append({
+                    'dir': glob_pattern,
+                    'confidence': best_confidence,
+                    'reason': f"glob from {len(entries)} subdirs: {entries[0]['reason']}",
+                    'doc_type': doc_type,
+                })
+            elif all(len(Path(d).parts) <= 2 for d in dirs):
+                # 浅いパス（depth≤2）→ top_dir に集約
+                result[category].append({
+                    'dir': f"{top_dir}/",
+                    'confidence': best_confidence,
+                    'reason': f"aggregated from {len(entries)} subdirs: {entries[0]['reason']}",
+                    'doc_type': doc_type,
+                })
+            else:
+                # glob 抽出不可の深いパス → 個別パス保持
+                for e in entries:
+                    result[category].append({
+                        'dir': f"{e['dir']}/",
+                        'confidence': e['confidence'],
+                        'reason': e['reason'],
+                        'doc_type': doc_type,
+                    })
         else:
             # 単一サブディレクトリ → 個別パス保持
             e = entries[0]
