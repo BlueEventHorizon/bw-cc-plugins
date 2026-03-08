@@ -16,7 +16,7 @@ BOOTED=$(xcrun simctl list devices booted 2>/dev/null | grep "iPhone" | head -1)
 
 if [ -n "$BOOTED" ]; then
     # 起動中のシミュレーターから UUID を抽出
-    DEVICE_ID=$(echo "$BOOTED" | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}')
+    DEVICE_ID=$(echo "$BOOTED" | grep -oEi '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}')
     if [ -n "$DEVICE_ID" ]; then
         echo "$DEVICE_ID"
         exit 0
@@ -28,7 +28,7 @@ fi
 AVAILABLE=$(xcrun simctl list devices available 2>/dev/null | grep "iPhone" | grep -v "Plus\|Pro Max" | tail -1)
 
 if [ -n "$AVAILABLE" ]; then
-    DEVICE_ID=$(echo "$AVAILABLE" | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}')
+    DEVICE_ID=$(echo "$AVAILABLE" | grep -oEi '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}')
     DEVICE_NAME=$(echo "$AVAILABLE" | sed 's/(.*//' | xargs)
 
     if [ -n "$DEVICE_ID" ]; then

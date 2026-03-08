@@ -27,15 +27,23 @@ Xcodeプロジェクトのテストを実行する。
 
 ## Step 1: プラットフォーム判定 [MANDATORY]
 
-`Resources/XCConfig/Common.xcconfig` を Read し、`SDKROOT` の値でプラットフォームを判定する。
+以下の順序でプラットフォームを判定する:
+
+1. プロジェクト内の `.xcconfig` ファイルから `SDKROOT` を検索:
+
+```bash
+grep -r "^SDKROOT" . --include="*.xcconfig" | head -5
+```
+
+2. 見つかった場合、`SDKROOT` の値でプラットフォームを決定:
 
 | SDKROOT | プラットフォーム |
 |---------|---------------|
 | `iphoneos` | iOS |
 | `macosx` | macOS |
 
-- ファイルが存在しない場合: AskUserQuestion で iOS / macOS を確認
-- `SDKROOT` が見つからない、または上記以外の値: AskUserQuestion で確認
+3. `.xcconfig` が見つからない場合: AskUserQuestion で iOS / macOS を確認
+4. `SDKROOT` が上記以外の値の場合: AskUserQuestion で確認
 
 ---
 

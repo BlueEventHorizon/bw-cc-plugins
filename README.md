@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| **forge** | 0.0.5 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **forge** | 0.0.6 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
 | **anvil** | 0.0.1 | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows. |
 | **xcode** | 0.0.1 | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection. |
 
@@ -119,7 +119,10 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 | `review` | Yes | Main review skill. Detects review type, collects references, and executes review |
 | `setup` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
 | `create-requirements` | Yes | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design |
+| `create-design` | Yes | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
+| `create-plan` | Yes | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
 | `finalize` | Yes | Post-creation orchestrator: runs review+fix cycles and updates ToC. Use after start-* skills |
+| `help` | Yes | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly |
 | `present-findings` | No (AI only) | Presents review findings interactively, one item at a time |
 | `fix-findings` | No (AI only) | Fixes issues based on review findings with reference doc collection (DocAdvisor or .doc_structure.yaml) |
 

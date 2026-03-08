@@ -12,26 +12,22 @@
 
 set -e
 
-# スクリプト自身の位置からプロジェクトルートを逆算
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-cd "$PROJECT_ROOT"
-
+# Bash ツールのカレントディレクトリ（ユーザーのプロジェクトルート）でそのまま実行する
 SCHEME="$1"
 DESTINATION="$2"
 shift 2 || true
 
 # オプション引数の解析
-ONLY_TESTING=""
-SDK_OPTION=""
+ONLY_TESTING_VAL=""
+SDK_VAL=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --only-testing)
-            ONLY_TESTING="-only-testing:$2"
+            ONLY_TESTING_VAL="$2"
             shift 2
             ;;
         --sdk)
-            SDK_OPTION="-sdk $2"
+            SDK_VAL="$2"
             shift 2
             ;;
         *)
@@ -55,8 +51,15 @@ echo "Xcode Test"
 echo "===================================="
 echo "Scheme: $SCHEME"
 echo "Destination: $DESTINATION"
-[ -n "$ONLY_TESTING" ] && echo "Target: $ONLY_TESTING"
-[ -n "$SDK_OPTION" ] && echo "SDK: $SDK_OPTION"
+[ -n "$ONLY_TESTING_VAL" ] && echo "Target: $ONLY_TESTING_VAL"
+[ -n "$SDK_VAL" ] && echo "SDK: $SDK_VAL"
+
+# オプション引数を配列で構築（クォートを保持しつつ安全に展開）
+SDK_ARGS=()
+[ -n "$SDK_VAL" ] && SDK_ARGS=(-sdk "$SDK_VAL")
+
+ONLY_TESTING_ARGS=()
+[ -n "$ONLY_TESTING_VAL" ] && ONLY_TESTING_ARGS=(-only-testing:"$ONLY_TESTING_VAL")
 
 # 1. テスト実行（ログ保存 + フィルタリング）
 echo ""
@@ -66,13 +69,13 @@ echo "--------------------------------"
 xcodebuild test \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
-    $SDK_OPTION \
-    $ONLY_TESTING \
+    "${SDK_ARGS[@]}" \
+    "${ONLY_TESTING_ARGS[@]}" \
     -skipPackagePluginValidation \
     2>&1 | tee "$TEST_LOG" > /dev/null || true
 
 # フィルタリング表示（ログ後処理）
-grep -E "(Test case|error:|warning:|BUILD FAILED|BUILD SUCCEEDED|passed|failed)" "$TEST_LOG" | head -100 || true
+grep -iE "(Test Case|error:|warning:|BUILD FAILED|BUILD SUCCEEDED|passed|failed)" "$TEST_LOG" | head -100 || true
 
 # 2. テスト結果の解析（ログファイルから確実に判定）
 echo ""
@@ -80,12 +83,12 @@ echo "===================================="
 echo "Test Results"
 echo "===================================="
 
-# 失敗したテストを抽出
-grep "Test case.*failed" "$TEST_LOG" > "$FAILED_TESTS_LOG" 2>/dev/null || true
+# 失敗したテストを抽出（大文字小文字を無視）
+grep -i "Test Case.*failed" "$TEST_LOG" > "$FAILED_TESTS_LOG" 2>/dev/null || true
 
-# 成功と失敗をカウント
+# 成功と失敗をカウント（大文字小文字を無視）
 FAILED_COUNT=$(wc -l < "$FAILED_TESTS_LOG" | xargs)
-PASSED_COUNT=$(grep -c "Test case.*passed" "$TEST_LOG" 2>/dev/null || echo "0")
+PASSED_COUNT=$(grep -ci "Test Case.*passed" "$TEST_LOG" 2>/dev/null || echo "0")
 
 echo "📊 テスト実行結果:"
 echo "   ✅ 成功: $PASSED_COUNT tests"
@@ -99,7 +102,7 @@ if [ "$FAILED_COUNT" -gt 0 ]; then
 
     echo ""
     echo "💡 失敗の詳細（エラーメッセージ）:"
-    grep -B 2 -A 5 "failed" "$TEST_LOG" | grep -E "(error|failed|Expected|Actual)" | head -30 | sed 's/^/   /'
+    grep -iB 2 -A 5 "failed" "$TEST_LOG" | grep -iE "(error|failed|Expected|Actual)" | head -30 | sed 's/^/   /'
 fi
 
 # 3. 結果サマリー
@@ -108,7 +111,7 @@ echo "===================================="
 echo "Test Summary"
 echo "===================================="
 
-if [ "$FAILED_COUNT" -eq 0 ] && grep -q "TEST SUCCEEDED\|passed" "$TEST_LOG"; then
+if [ "$FAILED_COUNT" -eq 0 ] && grep -qiE "TEST SUCCEEDED|passed" "$TEST_LOG"; then
     echo "✅ All tests passed successfully!"
     exit 0
 else
