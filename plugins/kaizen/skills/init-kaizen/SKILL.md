@@ -102,7 +102,7 @@ Next steps:
 
 ## Schema Reference
 
-See: https://github.com/BlueEventHorizon/bw-cc-plugins/blob/main/docs/doc_structure_format.md
+See: https://github.com/BlueEventHorizon/bw-cc-plugins/blob/main/docs/specs/design/doc_structure_format.md
 
 ### Quick reference
 

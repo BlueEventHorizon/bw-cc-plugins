@@ -23,8 +23,15 @@ rules:
 
 # === specs configuration ===
 specs:
-  # root_dirs: []    # Auto-configured by setup.sh or /setup-config
-  # doc_types_map: {}  # Path-to-doc_type mapping (auto-configured)
+  root_dirs:
+    - docs/specs/
+  doc_types_map:
+    docs/specs/design/: design
+    docs/specs/plan/: plan
+    docs/specs/requirement/: requirement
+  exclude:
+    - plugins/
+    - reference_projects/
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
   checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/

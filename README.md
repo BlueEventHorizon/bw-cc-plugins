@@ -135,7 +135,7 @@ The plugin includes default review criteria in `defaults/review_criteria.md`. Pr
 
 The `init-kaizen` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. kaizen reads this file directly to collect reference documents during review and fix operations.
 
-See [docs/doc_structure_format.md](docs/doc_structure_format.md) for the full schema specification.
+See [docs/specs/design/doc_structure_format.md](docs/specs/design/doc_structure_format.md) for the full schema specification.
 
 ```yaml
 version: "1.0"
