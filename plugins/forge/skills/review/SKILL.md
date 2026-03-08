@@ -6,14 +6,14 @@ description: |
   トリガー: "レビュー", "review", "レビューして", "確認して"
 ---
 
-# /review Skill
+# /forge:review Skill
 
 レビューを実行する。種別（requirement / design / code / plan）とエンジン（Codex / Claude）を組み合わせて使用。
 
 ## コマンド構文
 
 ```
-/review <種別> [対象] [--エンジン] [--refactor [N]]
+/forge:review <種別> [対象] [--エンジン] [--refactor [N]]
 
 種別: requirement | design | code | plan | generic
 対象: ファイルパス(複数可) | Feature名 | ディレクトリ | 省略(=対話で決定)
@@ -25,18 +25,18 @@ description: |
 ### 使用例
 
 ```bash
-/review code src/                                           # ディレクトリ内のソースコード
-/review code src/services/auth.swift                        # 特定ファイル
-/review requirement login                                   # Feature 名で要件定義書
-/review design specs/login/design/login_design.md           # 設計書
-/review code src/ --claude                                  # Claude エンジンを使用
-/review code                                                # ブランチ差分のコード
-/review plan specs/login/plan/login_plan.md --refactor      # 1サイクル（デフォルト）
-/review code src/ --refactor 3                              # 3サイクル繰り返す
-/review code src/ --refactor 0                              # レビューのみ（修正なし）
-/review plan specs/login/plan/login_plan.md --auto-fix      # 後方互換（--refactor 1 と同等）
-/review generic README.md                                   # 任意の文書
-/review generic docs/CONTRIBUTING.md docs/README.md         # 複数ファイル
+/forge:review code src/                                           # ディレクトリ内のソースコード
+/forge:review code src/services/auth.swift                        # 特定ファイル
+/forge:review requirement login                                   # Feature 名で要件定義書
+/forge:review design specs/login/design/login_design.md           # 設計書
+/forge:review code src/ --claude                                  # Claude エンジンを使用
+/forge:review code                                                # ブランチ差分のコード
+/forge:review plan specs/login/plan/login_plan.md --refactor      # 1サイクル（デフォルト）
+/forge:review code src/ --refactor 3                              # 3サイクル繰り返す
+/forge:review code src/ --refactor 0                              # レビューのみ（修正なし）
+/forge:review plan specs/login/plan/login_plan.md --auto-fix      # 後方互換（--refactor 1 と同等）
+/forge:review generic README.md                                   # 任意の文書
+/forge:review generic docs/CONTRIBUTING.md docs/README.md         # 複数ファイル
 ```
 
 ---

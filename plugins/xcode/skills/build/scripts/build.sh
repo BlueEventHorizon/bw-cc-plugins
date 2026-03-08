@@ -10,6 +10,7 @@
 #   build.sh MyApp "generic/platform=iOS"
 
 set -e
+set -o pipefail
 
 # Bash ツールのカレントディレクトリ（ユーザーのプロジェクトルート）でそのまま実行する
 SCHEME="$1"
@@ -40,11 +41,14 @@ echo ""
 echo "Step 2: Build..."
 echo "--------------------------------"
 
+set +e
 xcodebuild build \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
     -skipPackagePluginValidation \
-    2>&1 | tee "$BUILD_LOG" > /dev/null || true
+    2>&1 | tee "$BUILD_LOG" > /dev/null
+BUILD_EXIT=${PIPESTATUS[0]}
+set -e
 
 # フィルタリング表示（ログ後処理）
 grep -E "(error:|warning:|note:|BUILD FAILED|BUILD SUCCEEDED)" "$BUILD_LOG" | head -100 || true
@@ -58,7 +62,7 @@ echo "===================================="
 if grep -q "BUILD SUCCEEDED" "$BUILD_LOG"; then
     echo "✅ BUILD SUCCEEDED"
     exit 0
-elif grep -q "BUILD FAILED" "$BUILD_LOG" || grep -q "error:" "$BUILD_LOG"; then
+elif [ "$BUILD_EXIT" -ne 0 ] || grep -q "BUILD FAILED" "$BUILD_LOG" || grep -q "error:" "$BUILD_LOG"; then
     echo "❌ BUILD FAILED"
     echo ""
     echo "エラー詳細:"

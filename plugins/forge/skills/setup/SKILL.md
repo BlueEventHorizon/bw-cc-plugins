@@ -36,7 +36,7 @@ argument-hint: ""
 
 ```bash
 PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" <scripts_dir>/classify_dirs.py
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
 ```
 
 スキャン結果（JSON）を取得する。`readme_only: true` のディレクトリは分類対象外としてスキップする。
@@ -98,7 +98,6 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 
 Next steps:
 - forge が .doc_structure.yaml を直接参照してレビュー・修正時の参考文書を収集します
-- If using Doc Advisor: run /classify-docs to sync config.yaml
 - Commit .doc_structure.yaml to version control
 ```
 
