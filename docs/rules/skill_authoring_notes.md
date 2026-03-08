@@ -117,4 +117,4 @@ SKILL.md から参照: `[詳細](reference.md)` または `${CLAUDE_SKILL_DIR}/s
 - AI 専用スキルには必ず `user-invocable: false` を指定
 - スクリプトのパス参照は `${CLAUDE_PLUGIN_ROOT}` を使用
 - `[MANDATORY]` マーカーは省略・変更不可の必須仕様に付ける
-- フォーマット・テンプレート類は `plugins/kaizen/defaults/` に配置
+- フォーマット・テンプレート類は `plugins/{plugin-name}/defaults/` に配置

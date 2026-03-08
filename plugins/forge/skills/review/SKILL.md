@@ -1,10 +1,9 @@
 ---
 name: review
 description: |
-  レビュー実行。コード、要件定義書、設計書、計画書、汎用文書に対応。
-  Codex / Claude Code の2エンジンから選択可能（デフォルト: Codex）。
-  段階的・対話的にレビュー結果を提示。
-  トリガー: "レビュー", "review", "レビューして", "/review"
+  コード・文書を🔴🟡🟢重大度付きでレビューし、修正提案を提示する。
+  --refactor でレビュー+修正を N サイクル自動実行。5種別（code/requirement/design/plan/generic）に対応。
+  トリガー: "レビュー", "review", "レビューして", "確認して"
 ---
 
 # /review Skill
@@ -126,7 +125,8 @@ d. **推論不可の場合** → ユーザーに確認（現状通り）
 検出スクリプトを実行して、種別・対象ファイル・参考文書を特定する。
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/resolve_review_context.py [対象1] [対象2] ...
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/resolve_review_context.py [対象1] [対象2] ...
 ```
 
 スクリプトは以下を自動判定する:

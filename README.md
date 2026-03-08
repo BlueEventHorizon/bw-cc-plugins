@@ -9,6 +9,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | Plugin | Version | Description |
 |--------|---------|-------------|
 | **forge** | 0.0.5 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **anvil** | 0.0.1 | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows. |
 
 ## Installation
 
@@ -165,6 +166,51 @@ specs:
 rules:
   rule:
     paths: [rules/]
+```
+
+## anvil
+
+GitHub operations toolkit. Create PRs from the current branch with auto-generated titles and body from commit history.
+
+### Usage
+
+```
+/anvil:create-pr [base-branch]
+```
+
+### Examples
+
+```bash
+# Create a draft PR from the current branch
+/anvil:create-pr
+
+# Specify a base branch explicitly
+/anvil:create-pr develop
+```
+
+### Skills
+
+| Skill | User-invocable | Description |
+|-------|---------------|-------------|
+| `create-pr` | Yes | Creates a GitHub draft PR with title/body generated from commit diff. Requires `gh` CLI. |
+| `commit` | Yes | Generates a commit message from changes and commits & pushes. Auto-appends issue ref from branch name. |
+
+### Requirements
+
+- [gh CLI](https://cli.github.com/) (authenticated)
+
+### Git Information Cache (.git_information.yaml)
+
+On first run, `create-pr` detects GitHub owner/repo from `git remote` and offers to save `.git_information.yaml` to avoid repeating git commands:
+
+```yaml
+version: "1.0"
+github:
+  owner: "<org-or-user>"
+  repo: "<repo-name>"
+  remote_url: "<url>"
+  default_base_branch: main
+  pr_template: .github/PULL_REQUEST_TEMPLATE.md
 ```
 
 ## Requirements

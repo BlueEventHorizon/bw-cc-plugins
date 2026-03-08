@@ -1,6 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-08T07:27:56Z
-file_count: 1
+generated_at: 2026-03-08T13:47:26Z
+file_count: 2
 checksums:
+  docs/rules/claude_code_shell_wrapper.md: f429317318fd4383994a60d6054e88fc3a28812890b5593f27024836569c6d08
   docs/rules/skill_authoring_notes.md: aa8504f24bcf7e9c7c41ad99a8a913c452ab39fe4c6be0ca34e53865ca227451
