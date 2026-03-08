@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| **kaizen** | 0.0.4 | AI-powered code & document review with staged presentation, auto-fix, and document structure management |
+| **forge** | 0.0.5 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
 
 ## Installation
 
@@ -18,16 +18,14 @@ Inside a Claude Code session:
 
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
-/plugin install kaizen@bw-cc-plugins
+/plugin install forge@bw-cc-plugins
 ```
 
 If you already installed, from your terminal:
 
 ```bash
-claude plugin enable kaizen@bw-cc-plugins
+claude plugin enable forge@bw-cc-plugins
 ```
-
-<img src="./images/install_kaizen.png" width="900">
 
 `marketplace add` registers the GitHub repo as a plugin source (once per user). Once installed, the plugin is always available.
 
@@ -35,7 +33,7 @@ claude plugin enable kaizen@bw-cc-plugins
 
 ```bash
 git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
-claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
+claude --plugin-dir ./bw-cc-plugins/plugins/forge
 ```
 
 > **Note**: `--plugin-dir` is session-only. You must specify it every time you start Claude Code. To unload, simply start without the flag.
@@ -45,17 +43,17 @@ claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
 From your terminal:
 
 ```bash
-claude plugin update kaizen@bw-cc-plugins --scope local
+claude plugin update forge@bw-cc-plugins --scope local
 ```
 
-## kaizen
+## forge
 
-AI-powered code & document review with staged presentation and auto-fix. Also manages project document structure via `.doc_structure.yaml`.
+AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, auto-fix issues, and finalize with quality gates.
 
 ### Usage
 
 ```
-/kaizen:review <type> [target] [--engine] [--auto-fix]
+/forge:review <type> [target] [--engine] [--refactor [N]]
 ```
 
 | Argument | Values |
@@ -63,37 +61,53 @@ AI-powered code & document review with staged presentation and auto-fix. Also ma
 | type | `code` \| `requirement` \| `design` \| `plan` \| `generic` |
 | target | File path(s), directory, feature name, or omit for interactive |
 | engine | `--codex` (default) \| `--claude` |
-| mode | `--auto-fix` (auto-fix critical issues) |
+| mode | `--refactor [N]` (review+fix N cycles, default 1) \| `--auto-fix` (backward compat) |
 
 ### Examples
 
 ```bash
 # Review source files in a directory
-/kaizen:review code src/
+/forge:review code src/
 
 # Review a specific file
-/kaizen:review code src/services/auth.swift
+/forge:review code src/services/auth.swift
 
 # Review requirements by feature name
-/kaizen:review requirement login
+/forge:review requirement login
 
 # Review a design document
-/kaizen:review design specs/login/design/login_design.md
+/forge:review design specs/login/design/login_design.md
 
-# Review a plan with auto-fix
-/kaizen:review plan specs/login/plan/login_plan.md --auto-fix
+# Review a plan with 1 refactor cycle (default)
+/forge:review plan specs/login/plan/login_plan.md --refactor
+
+# Review and refactor up to 3 cycles
+/forge:review code src/ --refactor 3
+
+# Review only (no fix)
+/forge:review code src/ --refactor 0
 
 # Review any document
-/kaizen:review generic README.md
+/forge:review generic README.md
 
 # Review branch diff (no target = current branch changes)
-/kaizen:review code
+/forge:review code
 
 # Use Claude engine instead of Codex
-/kaizen:review code src/ --claude
+/forge:review code src/ --claude
 
 # Create or update .doc_structure.yaml interactively
-/kaizen:init-kaizen
+/forge:setup
+
+# Create requirements document interactively
+/forge:create-requirements
+
+# Create requirements from existing app source code
+/forge:create-requirements myfeature --mode reverse-engineering
+
+# Finalize a document: review + auto-fix + ToC update (run after start-*)
+/forge:finalize requirement specs/login/requirements/requirements.md
+/forge:finalize requirement specs/login/requirements/requirements.md --refactor 3
 ```
 
 ### Skills
@@ -101,7 +115,9 @@ AI-powered code & document review with staged presentation and auto-fix. Also ma
 | Skill | User-invocable | Description |
 |-------|---------------|-------------|
 | `review` | Yes | Main review skill. Detects review type, collects references, and executes review |
-| `init-kaizen` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
+| `setup` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
+| `create-requirements` | Yes | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design |
+| `finalize` | Yes | Post-creation orchestrator: runs review+fix cycles and updates ToC. Use after start-* skills |
 | `present-findings` | No (AI only) | Presents review findings interactively, one item at a time |
 | `fix-findings` | No (AI only) | Fixes issues based on review findings with reference doc collection (DocAdvisor or .doc_structure.yaml) |
 
@@ -133,7 +149,7 @@ The plugin includes default review criteria in `defaults/review_criteria.md`. Pr
 
 ### Document Structure (.doc_structure.yaml)
 
-The `init-kaizen` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. kaizen reads this file directly to collect reference documents during review and fix operations.
+The `setup` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. forge reads this file directly to collect reference documents during review and fix operations.
 
 See [docs/specs/design/doc_structure_format.md](docs/specs/design/doc_structure_format.md) for the full schema specification.
 
@@ -154,7 +170,7 @@ rules:
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI
-- Python 3 (for init-kaizen scan)
+- Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
 
 ## License

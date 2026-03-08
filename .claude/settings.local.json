@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Skill(create-specs-toc)"
+      "Skill(create-specs-toc)",
+      "mcp__gemini-cli__brainstorm"
     ]
   }
 }

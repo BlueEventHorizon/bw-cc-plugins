@@ -7,10 +7,8 @@
 
 # === rules configuration ===
 rules:
-  root_dirs:
-    - docs/rules/
-  doc_types_map:
-    docs/rules/: rule
+  # root_dirs: []    # Auto-configured by setup.sh or /setup-config
+  # doc_types_map: {}  # Path-to-doc_type mapping (auto-configured)
   toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
   checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/rules/.toc_work/
@@ -31,15 +29,16 @@ specs:
     docs/specs/design/: design
     docs/specs/plan/: plan
     docs/specs/requirement/: requirement
+  exclude:
+    - plugins/
+    - reference_projects/
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
   checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/
 
   patterns:
     target_glob: "**/*.md"
-    exclude:
-      - plugins/
-      - reference_projects/
+    exclude: []
 
   output:
     header_comment: "Project specification document search index for query-specs skill"

@@ -4,37 +4,36 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-08T05:55:53Z
+  generated_at: 2026-03-08T10:36:34Z
   file_count: 1
 
 docs:
   docs/specs/design/doc_structure_format.md:
     doc_type: spec
     title: .doc_structure.yaml Format Specification
-    purpose: Defines the schema and conventions for .doc_structure.yaml, the single source of truth for document organization across the project
+    purpose: Specification of .doc_structure.yaml file format that declares document types and directory locations for project-level document organization, consumed by skills, review tools, and scripts
     content_details:
-      - File location at project root level
-      - YAML schema with specs and rules categories
-      - Doc type entry structure with paths and exclude fields
-      - Path format including glob patterns and relative paths
-      - Exclude format for filtering directory results
+      - File location requirements at project root
+      - YAML schema with specs and rules sections
+      - Doc type entry configuration with paths, exclude, and description fields
+      - Path format supporting glob patterns and literal paths
+      - Exclude format with directory name matching
       - Recommended doc type names for specs and rules categories
-      - Consumer guide for kaizen, scripts, and Doc Advisor tools
-      - Versioning strategy with semantic versioning
+      - Multiple example structures including flat, feature-based, and mixed layouts
+      - Consumer guide for kaizen, scripts, and Doc Advisor integration
+      - Version field using semantic versioning with backward compatibility
     applicable_tasks:
-      - Document structure configuration
-      - Doc Advisor setup and configuration
-      - Review tool integration and type determination
-      - Tool development for document organization
-      - Project documentation planning
+      - Document structure design
+      - Doc Advisor configuration
+      - Project documentation organization
+      - Review tool integration setup
+      - Tool integration for document location resolution
     keywords:
       - .doc_structure.yaml
       - document organization
-      - spec types
-      - rule types
-      - paths configuration
-      - glob patterns
+      - YAML schema
       - doc_type
-      - single source of truth
-      - Doc Advisor
-      - schema versioning
+      - paths
+      - glob patterns
+      - specification
+      - version

@@ -1,6 +1,6 @@
-# specs_toc.yaml 用チェックサムファイル
-# 自動生成 - 手動編集禁止
-generated_at: 2026-03-08T05:55:59Z
+# Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
+# Auto-generated - do not edit
+generated_at: 2026-03-08T10:36:11Z
 file_count: 1
 checksums:
-  docs/specs/design/doc_structure_format.md: 904e2069f0101865a7cc7ea08177aec284e09dacbd4feba1886487d28519a1ec
+  docs/specs/design/doc_structure_format.md: 6a58f9e40c34563737fd58ecd19ed459c0c7ef744e963dce664ac04e91117044

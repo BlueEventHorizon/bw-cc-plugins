@@ -271,7 +271,7 @@ class TestSkillCrossReferences(unittest.TestCase):
 
     def _find_skill_references(self, content):
         """SKILL.md 内の /plugin:skill 形式の参照を抽出"""
-        # /kaizen:fix-staged, /doc-structure:where 等
+        # /forge:fix-staged, /doc-structure:where 等
         pattern = r'/(\w[\w-]*):(\w[\w-]*)'
         matches = re.findall(pattern, content)
         return [(plugin, skill) for plugin, skill in matches]
@@ -299,22 +299,22 @@ class TestReferencedFilesExist(unittest.TestCase):
     """SKILL.md や plugin.json が参照するファイルの存在確認"""
 
     def test_review_criteria_default_exists(self):
-        """kaizen のデフォルトレビュー観点ファイルが存在"""
-        path = PLUGINS_DIR / 'kaizen' / 'defaults' / 'review_criteria.md'
+        """forge のデフォルトレビュー観点ファイルが存在"""
+        path = PLUGINS_DIR / 'forge' / 'defaults' / 'review_criteria.md'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_resolve_review_context_script_exists(self):
         """review Skill が参照するスクリプトが存在"""
-        path = PLUGINS_DIR / 'kaizen' / 'skills' / 'review' / 'scripts' / 'resolve_review_context.py'
+        path = PLUGINS_DIR / 'forge' / 'skills' / 'review' / 'scripts' / 'resolve_review_context.py'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_classify_dirs_script_exists(self):
-        """init-kaizen Skill が参照するスクリプトが存在"""
-        path = PLUGINS_DIR / 'kaizen' / 'scripts' / 'classify_dirs.py'
+        """setup Skill が参照するスクリプトが存在"""
+        path = PLUGINS_DIR / 'forge' / 'scripts' / 'classify_dirs.py'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_doc_structure_format_exists(self):
-        """init-kaizen Skill が参照するスキーマ仕様が存在"""
+        """setup Skill が参照するスキーマ仕様が存在"""
         path = REPO_ROOT / 'docs' / 'specs' / 'design' / 'doc_structure_format.md'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
@@ -368,7 +368,7 @@ class TestSchemaConsistency(unittest.TestCase):
     def test_parser_supports_all_documented_fields(self):
         """パーサーが仕様書に記載された全フィールドを処理できる"""
         import sys
-        sys.path.insert(0, str(PLUGINS_DIR / 'kaizen' / 'skills' / 'review' / 'scripts'))
+        sys.path.insert(0, str(PLUGINS_DIR / 'forge' / 'skills' / 'review' / 'scripts'))
         from resolve_review_context import _parse_doc_structure_yaml
         import tempfile
 

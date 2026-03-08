@@ -7,7 +7,7 @@
 `.doc_structure.yaml` is a project-level convention that declares where different types of documents live.
 It serves as a single source of truth for document organization, consumed by multiple tools:
 
-- **Skills** (e.g., `/start-planning`, `/start-requirements`) — know where to create documents
+- **Skills** (e.g., `/forge:create-requirements`, `/forge:setup`) — know where to create documents
 - **Doc Advisor** — derives `root_dirs` and `doc_type` for ToC generation
 - **Review tools** (e.g., kaizen) — determine document type for review criteria selection
 - **Scripts** — parse YAML directly for programmatic access
