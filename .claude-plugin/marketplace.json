@@ -24,6 +24,16 @@
       },
       "source": "./plugins/anvil",
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
+    },
+    {
+      "name": "xcode",
+      "description": "Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.",
+      "version": "0.0.1",
+      "author": {
+        "name": "moons"
+      },
+      "source": "./plugins/xcode",
+      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
 }
