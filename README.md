@@ -1,6 +1,6 @@
 # bw-cc-plugins
 
-A Claude Code plugin marketplace for AI-powered code & document review, and project document structure management.
+A Claude Code plugin marketplace for AI-powered code & document review and project document structure management.
 
 [Japanese README (README_ja.md)](README_ja.md)
 
@@ -8,9 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review, and proj
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| **kaizen** | 0.0.3 | AI-powered code & document review with staged presentation and auto-fix |
-| **doc-structure** | 0.0.4 | Define and query project document structure (`.doc_structure.yaml`) |
-| **shell-utils** | 0.0.1 | Shell utility collection: Python environment detection, path formatting |
+| **kaizen** | 0.0.4 | AI-powered code & document review with staged presentation, auto-fix, and document structure management |
 
 ## Installation
 
@@ -21,16 +19,12 @@ Inside a Claude Code session:
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install kaizen@bw-cc-plugins
-/plugin install doc-structure@bw-cc-plugins
-/plugin install shell-utils@bw-cc-plugins
 ```
 
 If you already installed, from your terminal:
 
 ```bash
 claude plugin enable kaizen@bw-cc-plugins
-claude plugin enable doc-structure@bw-cc-plugins
-claude plugin enable shell-utils@bw-cc-plugins
 ```
 
 <img src="./images/install_kaizen.png" width="900">
@@ -42,8 +36,6 @@ claude plugin enable shell-utils@bw-cc-plugins
 ```bash
 git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
 claude --plugin-dir ./bw-cc-plugins/plugins/kaizen
-claude --plugin-dir ./bw-cc-plugins/plugins/doc-structure
-claude --plugin-dir ./bw-cc-plugins/plugins/shell-utils
 ```
 
 > **Note**: `--plugin-dir` is session-only. You must specify it every time you start Claude Code. To unload, simply start without the flag.
@@ -54,13 +46,11 @@ From your terminal:
 
 ```bash
 claude plugin update kaizen@bw-cc-plugins --scope local
-claude plugin update doc-structure@bw-cc-plugins --scope local
-claude plugin update shell-utils@bw-cc-plugins --scope local
 ```
 
 ## kaizen
 
-AI-powered code & document review with staged presentation and auto-fix.
+AI-powered code & document review with staged presentation and auto-fix. Also manages project document structure via `.doc_structure.yaml`.
 
 ### Usage
 
@@ -101,6 +91,9 @@ AI-powered code & document review with staged presentation and auto-fix.
 
 # Use Claude engine instead of Codex
 /kaizen:review code src/ --claude
+
+# Create or update .doc_structure.yaml interactively
+/kaizen:init-kaizen
 ```
 
 ### Skills
@@ -108,8 +101,9 @@ AI-powered code & document review with staged presentation and auto-fix.
 | Skill | User-invocable | Description |
 |-------|---------------|-------------|
 | `review` | Yes | Main review skill. Detects review type, collects references, and executes review |
-| `present-staged` | No (AI only) | Presents review findings interactively, one item at a time |
-| `fix-staged` | No (AI only) | Fixes issues based on review findings with reference doc collection (DocAdvisor or .doc_structure.yaml) |
+| `init-kaizen` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
+| `present-findings` | No (AI only) | Presents review findings interactively, one item at a time |
+| `fix-findings` | No (AI only) | Fixes issues based on review findings with reference doc collection (DocAdvisor or .doc_structure.yaml) |
 
 ### Review Types
 
@@ -137,39 +131,11 @@ The plugin includes default review criteria in `defaults/review_criteria.md`. Pr
 2. **Project config**: Save a custom path in `.claude/review-config.yaml`
 3. **Plugin default**: Falls back to the bundled `defaults/review_criteria.md`
 
-## doc-structure
+### Document Structure (.doc_structure.yaml)
 
-Define and query project document structure using `.doc_structure.yaml`.
+The `init-kaizen` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. kaizen reads this file directly to collect reference documents during review and fix operations.
 
-### Usage
-
-```bash
-# Create or update .doc_structure.yaml interactively
-/doc-structure:init-doc-structure
-
-# Create without confirmation prompts
-/doc-structure:init-doc-structure --auto
-
-# Query all document locations
-/doc-structure:where
-
-# Query a specific category
-/doc-structure:where specs
-
-# Query a specific doc type
-/doc-structure:where specs requirement
-```
-
-### Skills
-
-| Skill | User-invocable | Description |
-|-------|---------------|-------------|
-| `init-doc-structure` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
-| `where` | Yes | Queries `.doc_structure.yaml` to return document directory paths |
-
-### Schema Reference
-
-See [docs/doc_structure_format.md](docs/doc_structure_format.md) for the full specification.
+See [docs/specs/design/doc_structure_format.md](docs/specs/design/doc_structure_format.md) for the full schema specification.
 
 ```yaml
 version: "1.0"
@@ -185,59 +151,10 @@ rules:
     paths: [rules/]
 ```
 
-## shell-utils
-
-Shell utility collection for Claude Code projects. Python environment detection and path formatting.
-
-### Usage
-
-```bash
-# Detect Python environment
-/shell-utils:detect-python
-
-# Format paths for display
-/shell-utils:format-path /Users/name/long/path/to/project
-
-# Format with middle truncation
-/shell-utils:format-path --truncate 30 /Users/name/long/path/to/project
-
-# Format relative to git root
-/shell-utils:format-path --git-root /repo/deep/nested/file.py
-```
-
-### Skills
-
-| Skill | User-invocable | Description |
-|-------|---------------|-------------|
-| `detect-python` | Yes | Detect usable Python3 command, bypassing Claude Code shell-snapshots wrapper. Detects pyenv/venv/conda |
-| `format-path` | Yes | Format file paths for readable display: `$HOME` → `~`, CWD-relative, middle truncation, git-root relative |
-
-### Path Formatting Features
-
-| Feature | Example |
-|---------|---------|
-| `$HOME` → `~` | `/Users/name/dev/proj` → `~/dev/proj` |
-| CWD-relative (if shorter) | `../sibling/file` |
-| Middle truncation | `~/data/dev/…/apps/MyProject` |
-| Git root-relative | `<MyProject>/src/main.py` |
-
-### Script Usage from Other Plugins
-
-```bash
-# Detect Python (outputs eval-able variables)
-eval "$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/detect_python.sh)"
-
-# Use detected Python to run scripts
-$PYTHON_CMD ${CLAUDE_PLUGIN_ROOT}/scripts/format_path.py /some/path
-
-# Output shell function for embedding
-$PYTHON_CMD ${CLAUDE_PLUGIN_ROOT}/scripts/format_path.py --shell-func
-```
-
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI
-- Python 3 (for shell-utils)
+- Python 3 (for init-kaizen scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
 
 ## License
