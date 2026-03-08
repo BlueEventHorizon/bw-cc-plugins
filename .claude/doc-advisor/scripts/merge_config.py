@@ -111,17 +111,22 @@ def apply_version_migrations(old_major, new_major, new_content, old_config_dict)
 # ==============================================================================
 
 def _parse_value(value):
-    """Parse a YAML scalar value (string, int, bool, or empty list)."""
+    """Parse a YAML scalar value (string, int, bool, or list)."""
     value = value.strip()
 
     # Strip inline comments (not inside quotes)
     if not value.startswith('"') and '  #' in value:
         value = value[:value.index('  #')].strip()
 
+    # Inline list: [] or [a, b, c]
+    if value.startswith('[') and value.endswith(']'):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [item.strip().strip('"\'') for item in inner.split(',')]
+
     value = value.strip('"\'')
 
-    if value == '[]':
-        return []
     if value.lower() == 'true':
         return True
     if value.lower() == 'false':
@@ -336,9 +341,17 @@ def extract_user_settings(old_dict):
             section_settings['doc_types_map'] = doc_types_map
 
         # patterns.exclude: carry over if non-empty
-        exclude = section_data.get('patterns', {}).get('exclude', [])
-        if isinstance(exclude, list) and exclude:
-            section_settings.setdefault('patterns', {})['exclude'] = exclude
+        # Also collect section-level exclude (legacy: some configs placed it at indent=2)
+        # Both are merged into patterns.exclude (where toc scripts actually read it)
+        section_exclude = section_data.get('exclude', [])
+        if not isinstance(section_exclude, list):
+            section_exclude = []
+        patterns_exclude = section_data.get('patterns', {}).get('exclude', [])
+        if not isinstance(patterns_exclude, list):
+            patterns_exclude = []
+        combined_exclude = list(dict.fromkeys(section_exclude + patterns_exclude))
+        if combined_exclude:
+            section_settings.setdefault('patterns', {})['exclude'] = combined_exclude
 
         # output.header_comment: carry over if customized
         header_comment = section_data.get('output', {}).get('header_comment')
