@@ -9,6 +9,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | プラグイン | バージョン | 説明 |
 |-----------|-----------|------|
 | **forge** | 0.0.5 | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **anvil** | 0.0.1 | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応 |
 
 ## インストール
 
@@ -165,6 +166,51 @@ specs:
 rules:
   rule:
     paths: [rules/]
+```
+
+## anvil
+
+GitHub 操作ツールキット。コミット差分から自動生成されたタイトル・本文で PR をドラフト作成します。
+
+### 使い方
+
+```
+/anvil:create-pr [ベースブランチ]
+```
+
+### 使用例
+
+```bash
+# 現在のブランチからドラフト PR を作成
+/anvil:create-pr
+
+# ベースブランチを明示的に指定
+/anvil:create-pr develop
+```
+
+### スキル構成
+
+| スキル | ユーザー呼び出し | 説明 |
+|--------|-----------------|------|
+| `create-pr` | 可能 | コミット差分からタイトル・本文を生成し GitHub ドラフト PR を作成。`gh` CLI 必須 |
+| `commit` | 可能 | 変更内容からコミットメッセージを生成し commit & push。ブランチ名から issue 参照を自動付与 |
+
+### 動作要件
+
+- [gh CLI](https://cli.github.com/)（認証済み）
+
+### Git 情報キャッシュ (.git_information.yaml)
+
+初回実行時、`create-pr` は `git remote` から GitHub の owner/repo を検出し、`.git_information.yaml` への保存を提案します（git コマンドの繰り返しを省略するため）:
+
+```yaml
+version: "1.0"
+github:
+  owner: "<org-or-user>"
+  repo: "<repo-name>"
+  remote_url: "<url>"
+  default_base_branch: main
+  pr_template: .github/PULL_REQUEST_TEMPLATE.md
 ```
 
 ## 動作要件

@@ -1,9 +1,9 @@
 ---
 name: setup
 description: |
-  Create or update .doc_structure.yaml for the current project.
-  Scans directories for markdown files, then AI classifies them as rules/specs with doc_type interactively.
-  Trigger: "init doc structure", "create doc structure", "setup document structure"
+  forge スキルがプロジェクト文書を参照するための .doc_structure.yaml を対話的に生成する。
+  初回セットアップ時または文書構造変更時に実行。他の forge スキル（review/create-requirements 等）の前提条件。
+  トリガー: "forge の初期設定", "doc structure を作成", "setup document structure"
 user-invocable: true
 argument-hint: ""
 ---
@@ -35,7 +35,8 @@ argument-hint: ""
 - フォールバック: `classify_dirs.py` を一般的な場所から検索
 
 ```bash
-python3 <scripts_dir>/classify_dirs.py
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" <scripts_dir>/classify_dirs.py
 ```
 
 スキャン結果（JSON）を取得する。`readme_only: true` のディレクトリは分類対象外としてスキップする。

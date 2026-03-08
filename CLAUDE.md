@@ -27,10 +27,12 @@ claude --plugin-dir ./plugins/forge
 
 ```bash
 # レビュー対象の自動検出
-python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
 
 # ディレクトリスキャン（メタデータ JSON 出力）
-python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 ```
 
 ## Architecture
@@ -87,6 +89,7 @@ forge は `.doc_structure.yaml` を直接読み込んでパスを解決し、参
 
 ## Conventions
 
+- **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
 - SKILL.md 内のコメント・説明は日本語で記述する
 - Python スクリプトは標準ライブラリのみ使用（外部依存禁止）
 - AI専用スキルには `user-invocable: false` を frontmatter で指定

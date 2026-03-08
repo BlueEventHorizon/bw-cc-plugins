@@ -1,0 +1,9 @@
+{
+  "name": "anvil",
+  "description": "GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.",
+  "version": "0.0.1",
+  "author": {
+    "name": "moons"
+  },
+  "license": "MIT"
+}

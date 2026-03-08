@@ -1,7 +1,8 @@
 ---
 name: create-requirements
 description: |
-  対話的・既存ソース解析・Figmaデザインの3モードで要件定義書を作成する。
+  対話・既存ソース解析・Figma の3モードで構造化要件定義書（SCR/FNC/BL 形式）を作成する。
+  完了後は /forge:finalize で品質確定推奨。
 user-invocable: true
 argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
 ---

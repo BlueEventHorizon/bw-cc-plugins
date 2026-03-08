@@ -2,9 +2,8 @@
 name: fix-findings
 user-invocable: false
 description: |
-  コード・文書の修正実行。AI専用Skill。
-  レビュー指摘事項に基づいてコード・文書を修正する。
-  /forge:present-findings からの対話的修正、/forge:review --auto-fix からの自動修正で使用。
+  レビュー指摘事項に基づきコード・文書を修正する。AI専用Skill。
+  /forge:present-findings からの対話的修正と /forge:review --refactor からの自動修正で使用。
 argument-hint: "<修正モード> (--single | --batch)"
 ---
 
