@@ -546,7 +546,7 @@ def main():
             "target_files": [],
             "features": [],
             "questions": [],
-            "error": ".doc_structure.yaml が見つかりません。/doc-structure:init-doc-structure を実行して作成してください。"
+            "error": ".doc_structure.yaml が見つかりません。/kaizen:init-kaizen を実行して作成してください。"
         }, ensure_ascii=False, indent=2))
         return
 

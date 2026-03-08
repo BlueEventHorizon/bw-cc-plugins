@@ -1,9 +1,0 @@
-{
-  "name": "doc-structure",
-  "description": "Create and query .doc_structure.yaml for project document organization",
-  "version": "0.0.4",
-  "author": {
-    "name": "moons"
-  },
-  "license": "MIT"
-}

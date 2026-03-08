@@ -1,5 +1,5 @@
 ---
-name: init-doc-structure
+name: init-kaizen
 description: |
   Create or update .doc_structure.yaml for the current project.
   Scans directories for markdown files, then AI classifies them as rules/specs with doc_type interactively.
@@ -8,7 +8,7 @@ user-invocable: true
 argument-hint: ""
 ---
 
-# /doc-structure:init-doc-structure
+# /kaizen:init-kaizen
 
 ## Overview
 
@@ -93,7 +93,7 @@ python3 <scripts_dir>/classify_dirs.py
 .doc_structure.yaml created successfully.
 
 Next steps:
-- Other skills can query document locations: /doc-structure:where specs requirement
+- kaizen が .doc_structure.yaml を直接参照してレビュー・修正時の参考文書を収集します
 - If using Doc Advisor: run /classify-docs to sync config.yaml
 - Commit .doc_structure.yaml to version control
 ```

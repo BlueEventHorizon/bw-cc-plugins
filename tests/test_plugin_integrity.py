@@ -309,12 +309,12 @@ class TestReferencedFilesExist(unittest.TestCase):
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_classify_dirs_script_exists(self):
-        """init-doc-structure Skill が参照するスクリプトが存在"""
-        path = PLUGINS_DIR / 'doc-structure' / 'scripts' / 'classify_dirs.py'
+        """init-kaizen Skill が参照するスクリプトが存在"""
+        path = PLUGINS_DIR / 'kaizen' / 'scripts' / 'classify_dirs.py'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_doc_structure_format_exists(self):
-        """init-doc-structure Skill が参照するスキーマ仕様が存在"""
+        """init-kaizen Skill が参照するスキーマ仕様が存在"""
         path = REPO_ROOT / 'docs' / 'doc_structure_format.md'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
@@ -361,9 +361,9 @@ class TestSchemaConsistency(unittest.TestCase):
         """仕様書に version が記載されている"""
         self.assertIn('version', self.format_doc)
 
-    def test_format_doc_mentions_resolve(self):
-        """仕様書に --resolve が記載されている"""
-        self.assertIn('--resolve', self.format_doc)
+    def test_format_doc_mentions_exclude_format(self):
+        """仕様書に exclude の使用例が記載されている"""
+        self.assertIn('exclude', self.format_doc)
 
     def test_parser_supports_all_documented_fields(self):
         """パーサーが仕様書に記載された全フィールドを処理できる"""

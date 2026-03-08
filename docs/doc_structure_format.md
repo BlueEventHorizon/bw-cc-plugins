@@ -203,23 +203,14 @@ rules:
 
 ## Consumer Guide
 
-### For Skills (via `/doc-structure:where`)
+### For kaizen (direct `.doc_structure.yaml` reading)
 
-Skills can query document locations without parsing YAML:
+kaizen は `.doc_structure.yaml` を直接 Read してパスを解決する:
 
-```
-/doc-structure:where specs requirement
-→ specs/requirements/
-
-/doc-structure:where specs plan
-→ specs/plan/
-
-/doc-structure:where
-→ (shows all categories and paths)
-
-/doc-structure:where --resolve
-→ (all paths with globs expanded and excludes applied)
-```
+1. `.doc_structure.yaml` を Read ツールで読み込む
+2. 各 category（`specs`, `rules`）の `paths` を確認
+3. `*` を含むパスは Glob ツールで展開
+4. `exclude` がある場合、パスコンポーネントに exclude 名を含むものを除外
 
 ### For Scripts (direct YAML parsing)
 
