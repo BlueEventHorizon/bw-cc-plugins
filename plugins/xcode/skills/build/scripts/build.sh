@@ -11,11 +11,7 @@
 
 set -e
 
-# スクリプト自身の位置からプロジェクトルートを逆算
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-cd "$PROJECT_ROOT"
-
+# Bash ツールのカレントディレクトリ（ユーザーのプロジェクトルート）でそのまま実行する
 SCHEME="$1"
 DESTINATION="$2"
 
@@ -37,7 +33,7 @@ echo "Destination: $DESTINATION"
 # 1. クリーンビルド
 echo ""
 echo "Step 1: Clean..."
-xcodebuild clean -scheme "$SCHEME" -quiet || true
+xcodebuild clean -scheme "$SCHEME" -destination "$DESTINATION" -quiet || true
 
 # 2. ビルド実行（ログ保存 + フィルタリング）
 echo ""
