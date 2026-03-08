@@ -10,6 +10,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 |-----------|-----------|------|
 | **forge** | 0.0.5 | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil** | 0.0.1 | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応 |
+| **xcode** | 0.0.1 | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行 |
 
 ## インストール
 
@@ -167,6 +168,47 @@ rules:
   rule:
     paths: [rules/]
 ```
+
+## xcode
+
+Xcode ビルド・テストツールキット。スキームとプラットフォームを自動判定して iOS/macOS プロジェクトをビルド・テストします。
+
+### 使い方
+
+```
+/xcode:build [scheme-name]
+/xcode:test [scheme-name] [test-target]
+```
+
+### 使用例
+
+```bash
+# プロジェクトをビルド（スキーム・プラットフォーム自動検出）
+/xcode:build
+
+# スキームを指定してビルド
+/xcode:build MyApp
+
+# 全テストを実行
+/xcode:test
+
+# 特定のテストターゲットを実行
+/xcode:test MyApp LibraryTests/FooTests
+```
+
+### スキル構成
+
+| スキル | ユーザー呼び出し | 説明 |
+|--------|-----------------|------|
+| `build` | 可能 | クリーンビルドを実行しエラーを報告。iOS/macOS プラットフォームを自動判定 |
+| `test` | 可能 | テストを実行。iOS はシミュレーターを自動検出。失敗を詳細報告 |
+
+### 動作要件
+
+- Xcode（`xcodebuild` が PATH に存在）
+- iOS テスト: Xcode Simulator
+
+---
 
 ## anvil
 

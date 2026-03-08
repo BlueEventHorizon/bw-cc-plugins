@@ -10,6 +10,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 |--------|---------|-------------|
 | **forge** | 0.0.5 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
 | **anvil** | 0.0.1 | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows. |
+| **xcode** | 0.0.1 | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection. |
 
 ## Installation
 
@@ -167,6 +168,47 @@ rules:
   rule:
     paths: [rules/]
 ```
+
+## xcode
+
+Xcode build and test toolkit. Build and test iOS/macOS projects with automatic scheme and platform detection.
+
+### Usage
+
+```
+/xcode:build [scheme-name]
+/xcode:test [scheme-name] [test-target]
+```
+
+### Examples
+
+```bash
+# Build the project (auto-detect scheme and platform)
+/xcode:build
+
+# Build a specific scheme
+/xcode:build MyApp
+
+# Run all tests
+/xcode:test
+
+# Run a specific test target
+/xcode:test MyApp LibraryTests/FooTests
+```
+
+### Skills
+
+| Skill | User-invocable | Description |
+|-------|---------------|-------------|
+| `build` | Yes | Full clean build with error reporting. Auto-detects iOS/macOS platform. |
+| `test` | Yes | Runs tests with simulator auto-detection for iOS. Reports failures with details. |
+
+### Requirements
+
+- Xcode with `xcodebuild` in PATH
+- iOS testing: Xcode Simulator
+
+---
 
 ## anvil
 
