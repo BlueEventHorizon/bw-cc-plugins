@@ -1,5 +1,5 @@
 ---
-name: init-kaizen
+name: setup
 description: |
   Create or update .doc_structure.yaml for the current project.
   Scans directories for markdown files, then AI classifies them as rules/specs with doc_type interactively.
@@ -8,12 +8,12 @@ user-invocable: true
 argument-hint: ""
 ---
 
-# /kaizen:init-kaizen
+# /forge:setup
 
 ## Overview
 
 対話的に `.doc_structure.yaml` をプロジェクトルートに作成・更新する。
-このファイルはドキュメントの所在を宣言し、他のツール（Doc Advisor, kaizen 等）がドキュメントを参照できるようにする。
+このファイルはドキュメントの所在を宣言し、他のツール（Doc Advisor, forge 等）がドキュメントを参照できるようにする。
 
 ## EXECUTION RULES
 - Exit plan mode if active. Do NOT ask for confirmation about plan mode.
@@ -39,6 +39,9 @@ python3 <scripts_dir>/classify_dirs.py
 ```
 
 スキャン結果（JSON）を取得する。`readme_only: true` のディレクトリは分類対象外としてスキップする。
+
+**空ディレクトリの補完**: スキャン結果に含まれないディレクトリも分類候補に加える。
+ドキュメント系の親ディレクトリ（`docs/`, `rules/`, `specs/` 等）配下のサブディレクトリを Glob で探索し、スキャン結果にないものを「空ディレクトリ候補」として追加する。ユーザーに確認するため、スキップしない。
 
 ### Step 3: AI による分類判定 [MANDATORY]
 
@@ -93,7 +96,7 @@ python3 <scripts_dir>/classify_dirs.py
 .doc_structure.yaml created successfully.
 
 Next steps:
-- kaizen が .doc_structure.yaml を直接参照してレビュー・修正時の参考文書を収集します
+- forge が .doc_structure.yaml を直接参照してレビュー・修正時の参考文書を収集します
 - If using Doc Advisor: run /classify-docs to sync config.yaml
 - Commit .doc_structure.yaml to version control
 ```

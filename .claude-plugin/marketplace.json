@@ -6,13 +6,13 @@
   },
   "plugins": [
     {
-      "name": "kaizen",
-      "description": "AI-powered code & document review with staged presentation, auto-fix, and document structure management",
-      "version": "0.0.4",
+      "name": "forge",
+      "description": "AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code.",
+      "version": "0.0.5",
       "author": {
         "name": "moons"
       },
-      "source": "./plugins/kaizen",
+      "source": "./plugins/forge",
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
