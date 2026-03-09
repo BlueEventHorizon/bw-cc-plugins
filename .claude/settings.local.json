@@ -2,8 +2,13 @@
   "permissions": {
     "allow": [
       "Skill(create-specs-toc)",
-      "mcp__gemini-cli__brainstorm"
+      "mcp__gemini-cli__brainstorm",
+      "Skill(forge:help)"
     ]
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {},
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": false
+  }
 }

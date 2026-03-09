@@ -2,409 +2,441 @@
 name: review
 description: |
   コード・文書を🔴🟡🟢重大度付きでレビューし、修正提案を提示する。
-  --refactor でレビュー+修正を N サイクル自動実行。5種別（code/requirement/design/plan/generic）に対応。
+  --auto でレビュー+修正を N サイクル自動実行。5種別（code/requirement/design/plan/generic）に対応。
   トリガー: "レビュー", "review", "レビューして", "確認して"
 ---
 
 # /forge:review Skill
 
-レビューを実行する。種別（requirement / design / code / plan）とエンジン（Codex / Claude）を組み合わせて使用。
+レビューパイプラインのオーケストレーター。
+実際のレビュー・吟味・修正は専用の AI 専用スキルに委譲する。
 
 ## コマンド構文
 
 ```
-/forge:review <種別> [対象] [--エンジン] [--refactor [N]]
+/forge:review <種別> [対象] [--エンジン] [--auto [N]]
 
 種別: requirement | design | code | plan | generic
 対象: ファイルパス(複数可) | Feature名 | ディレクトリ | 省略(=対話で決定)
 エンジン: --codex(デフォルト) | --claude
-モード: --refactor [N]（レビュー+修正を N サイクル実行。省略時 N=1）
-       --auto-fix（後方互換。--refactor 1 と同等、🔴のみ修正）
+モード: --auto [N]（レビュー+修正を N サイクル実行。省略時 N=1）
+        省略時: 対話モード（人間が判定者）
 ```
 
 ### 使用例
 
 ```bash
-/forge:review code src/                                           # ディレクトリ内のソースコード
-/forge:review code src/services/auth.swift                        # 特定ファイル
-/forge:review requirement login                                   # Feature 名で要件定義書
-/forge:review design specs/login/design/login_design.md           # 設計書
-/forge:review code src/ --claude                                  # Claude エンジンを使用
-/forge:review code                                                # ブランチ差分のコード
-/forge:review plan specs/login/plan/login_plan.md --refactor      # 1サイクル（デフォルト）
-/forge:review code src/ --refactor 3                              # 3サイクル繰り返す
-/forge:review code src/ --refactor 0                              # レビューのみ（修正なし）
-/forge:review plan specs/login/plan/login_plan.md --auto-fix      # 後方互換（--refactor 1 と同等）
-/forge:review generic README.md                                   # 任意の文書
-/forge:review generic docs/CONTRIBUTING.md docs/README.md         # 複数ファイル
+/forge:review code src/                        # 対話モード
+/forge:review code src/ --auto                 # 自動修正 1サイクル
+/forge:review code src/ --auto 3               # 自動修正 3サイクル
+/forge:review requirement login                # Feature 名で要件定義書
+/forge:review design specs/login/design/login_design.md
+/forge:review code src/ --claude               # Claude エンジンを使用
+/forge:review generic README.md                # 任意の文書
 ```
 
 ---
 
 ## ワークフロー
 
-### Phase 1: 引数解析と環境確認
-
-#### Step 1: .doc_structure.yaml の存在確認 [MANDATORY]
-
-`.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
-**全種別（code / requirement / design / plan / generic）で必須。**
-
-- **存在する** → Step 2 へ
-- **存在しない** → `/forge:setup` を起動して作成を促す
-  - 作成された → Step 2 へ
-  - 作成されなかった → **エラー終了**。以降の処理は実行しない。
-    ```
-    Error: .doc_structure.yaml が見つかりません。
-    レビューを実行するには .doc_structure.yaml が必要です。
-    /forge:setup を実行して作成してください。
-    ```
-
-#### Step 2: 引数解析
+### Phase 1: 引数解析
 
 `$ARGUMENTS` を解析:
 - 最初の単語 → 種別（`requirement` | `design` | `code` | `plan` | `generic`）
 - `--codex` または `--claude` → エンジン指定
-- `--refactor` 単独 → `refactor_count = 1`
-- `--refactor N`（N は整数）→ `refactor_count = N`
-- `--refactor 0` → `refactor_count = 0`（レビューのみ、修正なし）
-- `--auto-fix` → `refactor_count = 1`（後方互換。修正対象は🔴のみ）
+- `--auto` 単独 → `auto_count = 1`
+- `--auto N`（N は整数）→ `auto_count = N`
 - 残り → 対象（ファイルパス(複数可) / Feature名 / ディレクトリ）
-  - スペース区切りで複数のファイルパスを指定可能
 
-#### Step 3: パラメータ補完（引数が不完全な場合）
+解析完了後、以下を出力する:
 
-種別または対象が未指定の場合、以下の順で補完を試みる:
+```
+### ✅ 引数解析完了
 
-a. **resolve_review_context.py の結果を利用**（Phase 1.5）
-   - スクリプトが種別を判定できた場合、その結果を推奨として使用
+| 項目 | 値 |
+|------|-----|
+| 種別 | `{種別}` |
+| エンジン | `{codex / claude}` |
+| モード | `{対話モード}` または `--auto {N}（{N}サイクル自動修正）` |
 
-b. **会話コンテキストからの推論**（スクリプトで解決できない場合）
-   - 直前に作成・編集・議論していたファイルから種別と対象を推定
-   - 例: SKILL.md を編集中 → generic + そのファイルパスを推定
-   - 例: 要件定義書を作成直後 → requirement + 作成ファイルを推定
+**対象**
+- `{対象パス or Feature名}`
+```
 
-c. **推奨の提示**（推論できた場合、ユーザー確認必須）
-   推論結果は確定ではなく**推奨**として提示し、ユーザーの承認を得る:
-   ```
-   以下の設定でレビューを実行します:
-   - 種別: generic
-   - 対象: docs/CONTRIBUTING.md, docs/README.md
-   - エンジン: Codex
-   → はい / 変更する
-   ```
+### Phase 1.5: target_files 解決 + 参考文書収集
 
-d. **推論不可の場合** → ユーザーに確認（現状通り）
+★ ここで収集した情報は以降の全 agent（reviewer / evaluator / fixer）に渡す。再収集不要。
 
-#### Step 4: エンジン確認
+#### Step 1: .doc_structure.yaml の存在確認 [MANDATORY]
 
-- `--claude` 指定 → Claude を使用
-- `--codex` 指定、または省略 → `which codex` を実行
-  - 存在する → Codex を使用
-  - 存在しない → Claude にフォールバック、「Codex が見つからないため Claude で実行します」と通知
+`.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
 
-#### Step 5: レビュー観点の探索（後述 [MANDATORY] セクション参照）
+- **存在しない** → `/forge:setup` を起動して作成を促す
+  - 作成されなかった → エラー終了
 
-#### レビュー観点の探索 [MANDATORY]
-
-以下の優先順で検索し、最初に見つかったものを `{review_criteria_path}` として以降のフェーズで使用する:
-
-1. **`/query-rules` Skill**（DocAdvisor）に「レビュー観点の文書」を問い合わせ → パスを動的に特定
-   - 利用可否: `.claude/skills/query-rules/SKILL.md` の存在で判断（利用不可ならスキップ）
-2. **`.claude/review-config.yaml`** に保存済みのパスがあれば使用
-3. **`${CLAUDE_PLUGIN_ROOT}/defaults/review_criteria.md`**（プラグイン同梱のデフォルト）
-
-初回利用時に 1 も 2 も見つからない場合、ユーザーに「プロジェクトにレビュー観点の文書はありますか？」と確認:
-- パスを指定 → `.claude/review-config.yaml` に保存し、次回以降は 2 で解決
-- なし → 3（プラグインのデフォルト）を使用
-
----
-
-### Phase 1.5: レビュー対象の特定
-
-検出スクリプトを実行して、種別・対象ファイル・参考文書を特定する。
+#### Step 2: target_files の解決
 
 ```bash
 PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 "$PYTHON" ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/resolve_review_context.py [対象1] [対象2] ...
 ```
 
-スクリプトは以下を自動判定する:
-- `.doc_structure.yaml` を読み込み、パス定義から種別・Feature を検出
-- `.doc_structure.yaml` がなければ `error` ステータスを返す
-- コードファイルは拡張子で判定
+- `status: "resolved"` → `target_files` を確定し Step 3 へ
+- `status: "needs_input"` → `questions` をユーザーに提示し、回答を得てから再実行
+- `status: "error"` → `/forge:setup` を起動し `.doc_structure.yaml` の作成を促す
 
-#### スクリプト出力の処理
-
-```json
-{
-  "status": "resolved | needs_input | error",
-  "has_doc_structure": true,
-  "type": "requirement | design | code | plan | generic | null",
-  "target_files": ["path1", ...],
-  "features": ["feature1", ...],
-  "questions": [{"key": "type|feature|target", "message": "...", "options": [...]}],
-  "error": "エラーメッセージ（status=error 時のみ）"
-}
-```
-
-- `status: "resolved"` → Phase 2 へ進む
-- `status: "needs_input"` → `questions` の内容をユーザーに提示し、回答を得てから再実行
-- `status: "error"` → 通常は Phase 1 step 2 で解決済み。タイミング問題等で発生した場合は `/forge:setup` を起動し `.doc_structure.yaml` の作成を促す。作成後にスクリプトを再実行
-
-#### code で対象未指定の場合
-
-スクリプトで解決できない場合、以下をユーザーに確認:
-- ブランチ差分を使用するか
-- ディレクトリを指定するか
-
----
-
-### Phase 2: 参考文書収集
-
-レビュー実行に必要な参考文書（ルール、関連仕様）を収集する。
-
-#### generic 種別の場合
-
-`/query-rules` / `/query-specs` は**使用しない**。
-
-参考文書は最小限:
-- `{review_criteria_path}` の「5. 汎用文書レビュー観点」
-
-レビュアー（Codex / Claude subagent）が自発的に関連文書を探索することを期待する。
-対象ファイルと review_criteria のみをプロンプトに含める。
-
-#### DocAdvisor Skill を試行
-
-`.claude/skills/query-rules/SKILL.md` が存在するか確認する。存在すれば DocAdvisor が利用可能と判断し、以下の Skill を呼び出す:
-
-- `/query-rules` Skill → レビュー種別に関連するルール文書を特定
-- `/query-specs` Skill → 関連する要件定義書・設計書を特定（存在する場合）
-- `{review_criteria_path}` の該当セクション参照
-
-DocAdvisor が利用不可（`.claude/skills/query-rules/SKILL.md` が存在しない等）の場合、以下のフォールバックに移行する。
-
-#### DocAdvisor 利用不可時のフォールバック
-
-`.doc_structure.yaml` を直接読み込んで参考文書を収集する（「.doc_structure.yaml からの参考文書収集手順」参照）。
-
-- `{review_criteria_path}` を参照
-- `rules` カテゴリの解決済みパスから rules 文書を Glob 探索
-  - 例: `rules/` → `rules/**/*.md` を探索
-- `specs` カテゴリから、レビュー種別に関連する仕様書を Glob 探索
-  - 例: requirement レビュー時に design のパスから関連設計書を探索
-- 見つからないファイルはスキップ（エラーにしない）
-
----
-
-### Phase 3: レビュー実行（エンジン別）
-
-#### 種別と review_criteria.md の観点セクション対応
-
-| 種別 | review_criteria.md のセクション |
-|------|-------------------------------|
-| `requirement` | 「1. 要件定義書レビュー観点」 |
-| `design` | 「2. 設計書レビュー観点」 |
-| `plan` | 「3. 計画書レビュー観点」 |
-| `code` | 「4. コードレビュー観点」 |
-| `generic` | 「5. 汎用文書レビュー観点」（なければフォールバック観点を使用） |
-
-#### 3.1 レビュー実行
-
-##### Codex の場合
-
-```bash
-codex exec --full-auto --sandbox read-only --cd <project_dir> "<prompt>"
-```
-
-プロンプト構成:
+解決完了後、以下を出力する（6件以上は先頭3件 + `... 他N件`）:
 
 ```
-以下をレビューしてください。
-
-## レビュー対象
-<対象ファイルパス>
-
-## レビュー種別
-<要件定義書 / 設計書 / 計画書 / コード / 汎用文書レビュー（generic）>
-
-## 参考文書（必ず読んでからレビュー）
-- {review_criteria_path} の「{観点セクション名}」
-- <Phase 2で収集したファイルパス>
-
-## 追加指示（generic 種別の場合のみ付加）
-- 対象ファイルが参照するファイルパス・コマンド構文が実際に有効か検証すること
-- 必要に応じて関連ファイルを自発的に探索し、整合性を確認すること
-
-## 出力形式
-### 🔴致命的問題
-1. **[問題名]**: [説明]
-   - 箇所: [ファイル:行]
-   - 修正案: [具体的な修正]
-
-### 🟡品質問題
-1. **[問題名]**: [説明]
-   - 箇所: [ファイル:行]
-
-### 🟢改善提案
-1. **[提案名]**: [説明]
-
-### サマリー
-- 🔴致命的: X件
-- 🟡品質: X件
-- 🟢改善: X件
-
-確認や質問は不要です。具体的な指摘と修正案を出力してください。
+**target_files (N件)**
+- `path/to/file1`
+- `path/to/file2`
 ```
 
-**フォールバック観点**（review_criteria にセクション5がない場合、プロンプトに埋め込む）:
+#### Step 3: 関連コード探索 [MANDATORY]
 
-```
-🔴致命的: 事実の誤り、論理矛盾、参照切れ、必須情報の欠落
-🟡品質: 構成の一貫性、用語の不統一、責務の曖昧さ、記述の重複
-🟢改善: 表現の明確化、構成改善、不足情報の補完
-```
+レビュー・修正の参考にするため、target_files に関連する既存実装を探索する。
+general-purpose subagent を起動して探索を委譲する。
 
-##### Claude の場合
+> **Note**: 将来的には `/code-advisor` Skill に置き換え予定。現状は subagent が探索を担う。
 
 ```
 subagent_type: general-purpose
 prompt: |
-  以下をレビューしてください。
+  以下のファイルに関連する既存コード・実装例を探してください。
 
-  ## レビュー対象
-  [対象ファイルパス]
+  ## 対象ファイル
+  {target_files のパス一覧}
 
-  ## レビュー種別
-  [要件定義書 / 設計書 / 計画書 / コード / 汎用文書レビュー（generic）]
+  ## 探索内容
+  - 対象ファイルと同一ディレクトリのファイル
+  - 対象ファイルを import / 参照しているファイル
+  - 対象ファイルと類似した命名・構造を持つファイル（同種機能の別実装例）
+  - 対象ファイルのテストファイル
 
-  ## 参考文書（必ず読んでからレビュー）
-  - {review_criteria_path} の「{観点セクション名}」
-  - [Phase 2で収集したファイルパス]
-
-  ## 追加指示（generic 種別の場合のみ付加）
-  - 対象ファイルが参照するファイルパス・コマンド構文が実際に有効か検証すること
-  - 必要に応じて関連ファイルを自発的に探索し、整合性を確認すること
+  ## 指示
+  - ファイルを Read して内容を確認し、実際に関連する実装であることを確認すること
+  - 見つかったファイルのパスを一覧で返すこと
+  - 関連性の理由を各ファイルについて 1 行で説明すること
+  - 上限 10 ファイル程度
 
   ## 出力形式
-  ### 🔴致命的問題
-  1. **[問題名]**: [説明]
-     - 箇所: [ファイル:行]
-     - 修正案: [具体的な修正]
-
-  ### 🟡品質問題
-  1. **[問題名]**: [説明]
-     - 箇所: [ファイル:行]
-
-  ### 🟢改善提案
-  1. **[提案名]**: [説明]
-
-  ### サマリー
-  - 🔴致命的: X件
-  - 🟡品質: X件
-  - 🟢改善: X件
+  ### 関連コード一覧
+  - {path}: {関連性の理由}
 ```
 
-#### 3.2 自動修正（--refactor N≥1 または --auto-fix 時）
+subagent が返した `related_code`（パスと関連性の説明）を以降の全 agent に渡す。
 
-`refactor_count` が 1 以上の場合に実行する。
+探索完了後、以下を出力する（6件以上は先頭3件 + `... 他N件`）:
 
-**修正対象の決定**:
-- `--auto-fix` フラグ: 🔴致命的問題のみ（後方互換）
-- `--refactor` フラグ（N≥1）: 🔴致命的問題 + 🟡品質問題
+```
+**related_code (N件)**
+- `path/to/related.swift` — 関連性の説明
+```
 
-**サイクル実行**:
+#### Step 4: レビュー観点の探索 [MANDATORY]
 
-`cycle_count = 0` から開始し、`cycle_count < refactor_count` の間繰り返す:
+以下の優先順で検索し、最初に見つかったものを `{review_criteria_path}` として確定する:
 
-##### Step 1: 修正対象の確認
+1. **`/query-rules` Skill**（DocAdvisor）に「レビュー観点の文書」を問い合わせ
+   - 利用可否: `.claude/skills/query-rules/SKILL.md` の存在で判断
+2. **`.claude/review-config.yaml`** に保存済みのパスがあれば使用
+3. **`${CLAUDE_PLUGIN_ROOT}/defaults/review_criteria.md`**（プラグインデフォルト）
 
-修正対象の問題（🔴のみ、または🔴+🟡）が0件なら `break`（修正完了）。
+#### Step 5: 参考文書収集 [MANDATORY]
 
-##### Step 2: 指摘事項の吟味 [MANDATORY]
+##### generic 種別の場合
 
-**fix-findings を呼び出す前に、各指摘を必ず吟味すること。エンジン出力をそのまま渡すことは禁止。**
+`/query-rules` / `/query-specs` は**使用しない**。参考文書は最小限:
+- `{review_criteria_path}` の「5. 汎用文書レビュー観点」
 
-各指摘について以下の観点で評価し、`修正する / スキップ / 要確認` を判定する:
+##### generic 以外の種別
 
-| 観点 | 確認内容 |
-|------|---------|
-| **ルール照合** | Phase 2 で収集した参考文書（ルール・規約）に照らして本当に違反しているか |
-| **設計意図** | 現状の実装に意図がある可能性はないか（例: `\|\| true` は意図的な設計かもしれない） |
-| **副作用リスク** | この修正が他の箇所に影響しないか（例: `set -e` + `pipefail` の組み合わせによるデグレ） |
-| **false positive** | エンジンの誤認識・過剰指摘ではないか（例: optional なフィールドを必須と誤判定） |
-| **対象ファイルの確認** | 判断に迷う場合は対象ファイルを Read して設計意図を確認する |
+DocAdvisor（`.claude/skills/query-rules/SKILL.md`）が利用可能な場合:
+- `/query-rules` Skill → レビュー種別に関連するルール文書を特定
+- `/query-specs` Skill → 関連する要件定義書・設計書を特定
+- `{review_criteria_path}` の該当セクション参照
 
-**判定結果:**
+DocAdvisor が利用不可の場合 → 「.doc_structure.yaml からの参考文書収集手順」参照
 
-- **修正する**: 問題が明確で副作用リスクが低い → 次の Step 3 に含める
-- **スキップ**: false positive・設計意図がある・リスクが高い → 除外し理由を記録
-- **要確認**: 判断が難しい → 次の `### 残存する問題` セクションに記載してユーザーに報告
+収集完了後、以下を出力する（6件以上は先頭3件 + `... 他N件`）:
 
-スキップ・要確認とした指摘は、次サイクルの再レビュープロンプトに「既知の問題として除外」として明示し、同じ指摘が繰り返されないようにする。
+```
+**reference_docs (N件)**
+- `rules/coding.md`
+- `specs/design.md`
+```
 
-##### Step 3: 修正実行
+#### Step 6: エンジン確認
 
-吟味で「**修正する**」と判定した指摘のみを `/forge:fix-findings --batch` に渡す:
+- `--claude` 指定 → Claude を使用
+- `--codex` 指定または省略 → `which codex` を実行
+  - 存在する → Codex を使用
+  - 存在しない → Claude にフォールバック、「Codex が見つからないため Claude で実行します」と通知
 
-- 指摘事項: 吟味済みの修正対象の問題
-- 対象ファイル: target_files
-- レビュー種別: review_type
+### Phase 2: reviewer を呼び出す
 
-fix-findings が参考文書を収集し（DocAdvisor Skill または `.doc_structure.yaml` パスで Glob）、general-purpose subagent に修正を委譲する。
+呼び出し前に以下を出力する:
 
-##### Step 4: 再レビュー
+```
+## 🔄 Phase 2: レビュー実行
 
-3.1 と同じエンジン・プロンプトで再レビューを実施し、次サイクルの修正対象を更新する。
+| 項目 | 値 |
+|------|-----|
+| 種別 | `{種別}` |
+| エンジン | `{エンジン}` |
+| review_criteria | `{review_criteria_path}` |
 
-`cycle_count += 1` して次サイクルへ。
+{target_files / reference_docs / related_code を上記フォーマットで列挙}
 
-**サイクル数の上限はユーザー指定の N のみ**（固定上限なし）。
+→ reviewer を起動してレビューを実行します
+```
 
-#### 3.3 レビュー結果の保存（対話的モード時）
+`/forge:reviewer` を呼び出し、以下を渡す:
+- 種別・target_files・エンジン・reference_docs・review_criteria_path・related_code
 
-`--refactor 0` または `--refactor` / `--auto-fix` を指定していない場合、エンジン出力を temp ファイルに保存する:
+`/forge:reviewer` が返すもの:
+- レビュー結果（🔴🟡🟢 指摘事項リスト）
 
-1. YAML frontmatter を付加（review_type, engine, target_files, reference_docs, timestamp）
-2. エンジン出力の Markdown を本体として結合
-3. `.claude/.temp/review-result-{YYYYMMDD-HHmmss}.md` に保存（ディレクトリがなければ作成）
+レビュー結果を受け取ったら、以下の frontmatter + Markdown 形式で temp ファイルに保存する:
 
+```markdown
+---
+review_type: {種別}
+engine: {エンジン}
+target_files:
+  - {ファイルパス1}
+reference_docs:
+  - {参考文書パス1}
+related_code:
+  - path: {関連コードパス1}
+    reason: {関連性の説明}
+timestamp: "{ISO8601形式}"
 ---
 
-### Phase 4: 結果の提示
+{reviewer が返したレビュー結果テキスト}
+```
 
-#### 対話的モード（デフォルト）
+保存先: `.claude/.temp/review-result-{YYYYMMDD-HHmmss}.md`（ディレクトリがなければ作成）
 
-`/forge:present-findings` Skill にレビュー結果ファイルを渡して呼び出す:
+保存完了後、以下を出力する:
+
+```
+### ✅ Phase 2 完了（レビュー結果）
+
+| 重大度 | 件数 |
+|--------|------|
+| 🔴 致命的 | X件 |
+| 🟡 品質問題 | X件 |
+| 🟢 改善提案 | X件 |
+
+→ `.claude/.temp/review-result-{timestamp}.md` に保存しました
+```
+
+### Phase 3: モードによる分岐
+
+#### 対話モード（--auto なし）
+
+`/forge:present-findings` を呼び出す:
 
 ```
 /forge:present-findings .claude/.temp/review-result-{timestamp}.md
 ```
 
-`/forge:present-findings` が段階的・対話的に結果を提示し、修正アクションを処理する。
+`present-findings` が人間の判定を仲介し、承認された指摘を `/forge:fixer` に渡す。
+reference_docs・related_code はファイルの frontmatter から取得するため、再収集不要。
 
-#### --refactor / --auto-fix モード（refactor_count≥1）
+全件完了後 → Phase 4 へ。
 
-`/forge:present-findings` は呼び出さない。サイクル数とサマリーを報告する:
+#### 自動修正モード（--auto N）
 
-```
-## AIレビュー結果（refactor: N サイクル実施 / M サイクル完了）
-- 🔴致命的: X件（修正済み: Y件）
-- 🟡品質: X件（修正済み: Y件）
-- 🟢改善: X件
-```
-
-修正対象の問題が残存する場合は、サマリーに加えて残存問題の具体的内容を表示し、ユーザーに対応を確認する:
+`cycle = 0` から開始し、`cycle < auto_count` の間繰り返す。各サイクルの開始時に以下を出力する:
 
 ```
-### 残存する問題
-1. **[問題名]**: [説明]
-   - 自動修正できなかった理由: ...
-
-→ 対話的モードで解決する / このまま進める
+## 🔄 Phase 3: 自動修正 Cycle {N+1}/{auto_count}
 ```
 
-呼び出し元ワークフローに制御を返す。
+##### Step 1: evaluator を呼び出す
+
+`/forge:evaluator` を呼び出し、以下を渡す:
+- レビュー結果
+- reference_docs
+- target_files
+- related_code
+- レビュー種別
+- 修正対象フラグ（`--auto`: 🔴+🟡）
+
+evaluator が返すもの:
+- 吟味結果（修正する / スキップ / 要確認 リスト）
+- `should_continue`: 継続判定
+
+evaluator 完了後、以下を出力する:
+
+```
+### Cycle {N} — 吟味結果
+
+| 判定 | 件数 |
+|------|------|
+| 修正する | X件 |
+| スキップ | X件 |
+| 要確認 | X件 |
+```
+
+`should_continue: false`（修正対象0件）→ `break`
+
+##### Step 2: fixer を呼び出す
+
+`/forge:fixer --batch` を呼び出し、以下を渡す:
+- 吟味結果の「修正する」リスト
+- target_files
+- レビュー種別
+- reference_docs
+- related_code
+
+fixer 完了後、以下を出力する（ファイル6件以上は先頭3件 + `... 他N件`）:
+
+```
+### Cycle {N} — 修正完了
+
+| ファイル | 修正内容 |
+|----------|---------|
+| `src/foo.swift` | {修正内容 1行} |
+```
+
+##### Step 3: 再レビュー
+
+`/forge:reviewer` を再度呼び出す:
+- 前回と同じ 種別・target_files・エンジン・reference_docs・review_criteria_path・related_code
+
+再レビュー完了後、以下を出力する:
+
+```
+### Cycle {N} — 再レビュー結果
+
+| 重大度 | 件数 |
+|--------|------|
+| 🔴 致命的 | X件 |
+| 🟡 品質問題 | X件 |
+| 🟢 改善提案 | X件 |
+```
+
+`cycle += 1` して次サイクルへ。
+
+ループ終了後 → Phase 4 へ。
+
+---
+
+### Phase 4: 完了処理
+
+#### テスト実行
+
+修正が1件以上実行された場合、テストが存在するか確認して実行する:
+
+1. プロジェクトルートに `tests/` ディレクトリまたはテストファイルが存在するか確認
+2. 存在する場合 → テストを実行し、結果を報告する
+3. テストが失敗した場合 → 失敗内容をユーザーに報告し、対応を確認する
+
+#### 設計書の更新
+
+修正によって設計・アーキテクチャに変更が生じた場合、該当する設計書を更新する:
+
+1. 修正内容が設計書に記載された仕様・フローと乖離していないか確認する
+2. 乖離がある場合 → 設計書（`docs/specs/design/` 配下等）を更新する
+3. 設計書を更新した場合 → `/create-specs-toc` が利用可能であれば ToC も更新する
+
+#### サマリー報告
+
+```
+## 🎉 レビュー完了（{N}サイクル実施）
+
+### 結果サマリー
+
+| 指標 | 値 |
+|------|----|
+| 🔴 致命的（修正済み） | X/Y件 |
+| 🟡 品質問題（修正済み）| X/Y件 |
+| 🟢 改善提案 | X件 |
+| スキップ | X件（false positive / 設計意図等）|
+| 要確認 | X件（手動対応が必要）|
+```
+
+#### ToC 更新
+
+`/create-specs-toc` Skill が利用可能か確認する（`.claude/skills/create-specs-toc/SKILL.md` の存在）。
+利用可能な場合は呼び出す。利用不可の場合はスキップ。
+
+#### commit 確認
+
+修正が1件以上実行された場合、ユーザーに commit を確認する:
+
+```
+変更をコミットしますか？
+→ はい / いいえ
+```
+
+「はい」の場合 → `/anvil:commit` を呼び出す。
+
+#### push 確認
+
+commit が完了した場合、ユーザーに push を確認する:
+
+```
+リモートにプッシュしますか？
+→ はい / いいえ
+```
+
+「はい」の場合 → `git push` を実行する。
+
+---
+
+## Progress Reporting 規約
+
+各 Phase / Step の開始・終了時に進捗をユーザーに報告する。
+
+### ファイルリストの省略ルール [MANDATORY]
+
+- 5件以下 → 全件表示
+- 6件以上 → 先頭3件を表示し、残りは `... 他 N件` で省略
+
+### フォーマット: スカラー値はテーブル、ファイルリストは箇条書き [MANDATORY]
+
+スカラー値（種別・エンジン等）はテーブルで、ファイルパスは箇条書きで表示する（長いパスがテーブルを崩壊させるため）。
+
+```
+| 項目 | 値 |
+|------|-----|
+| 種別 | `code` |
+| エンジン | `claude` |
+
+**target_files (N件)**
+- `path/to/file1.swift`
+- `path/to/file2.swift`
+- ... 他 N件
+```
+
+---
+
+## .doc_structure.yaml からの参考文書収集手順
+
+DocAdvisor 利用不可時、`.doc_structure.yaml` を直接読み込んで参考文書を収集する。
+
+### Step A: .doc_structure.yaml を Read
+
+プロジェクトルートの `.doc_structure.yaml` を Read ツールで読み込む。
+
+### Step B: パスの解決（glob 展開 + exclude 適用）
+
+各 category（`specs`, `rules`）の各 doc_type について:
+
+1. `paths` 配列の各エントリを確認
+2. `*` を含むパスは Glob ツールで展開
+3. `exclude` がある場合、パスコンポーネントに exclude 名を含むものを除外
+
+### Step C: 参考文書の Glob 探索
+
+- `rules` カテゴリの解決済みパスから `**/*.md` で探索
+- `specs` カテゴリからレビュー種別に関連する仕様書を探索
+- 見つからないファイルはスキップ（エラーにしない）
 
 ---
 
@@ -431,39 +463,3 @@ fix-findings が参考文書を収集し（DocAdvisor Skill または `.doc_stru
 - 🟡品質: X件（修正済み: Y件）
 - 🟢改善: X件
 ```
-
----
-
-## レビュー種別ごとの参考文書
-
-| レビュー種別 | DocAdvisor Skill（利用可能時） | .doc_structure.yaml フォールバック |
-|-------------|-------------------------------|----------------------------------|
-| 要件定義書 | /query-rules: 関連ルール文書 / /query-specs: 関連要件定義書 | rules パスから Glob + specs パスから Glob |
-| 設計書 | /query-rules: 関連ルール文書 / /query-specs: 関連要件定義書・設計書 | rules パスから Glob + specs パスから Glob |
-| 計画書 | /query-rules: 関連ルール文書 / /query-specs: 関連要件定義書・設計書 | rules パスから Glob + specs パスから Glob |
-| コード | /query-rules: 関連ルール文書 / /query-specs: 関連要件定義書・設計書 | rules パスから Glob + specs パスから Glob |
-| 汎用文書 | **不使用**（レビュアーが自発探索） | **不使用** |
-
----
-
-## .doc_structure.yaml からの参考文書収集手順
-
-DocAdvisor 利用不可時、`.doc_structure.yaml` を直接読み込んで参考文書を収集する。
-
-### Step A: .doc_structure.yaml を Read
-
-プロジェクトルートの `.doc_structure.yaml` を Read ツールで読み込む。
-
-### Step B: パスの解決（glob 展開 + exclude 適用）
-
-各 category（`specs`, `rules`）の各 doc_type について:
-
-1. `paths` 配列の各エントリを確認
-2. `*` を含むパスは Glob ツールで展開
-3. `exclude` がある場合、パスコンポーネントに exclude 名を含むものを除外
-
-### Step C: 参考文書の Glob 探索
-
-- `rules` カテゴリの解決済みパスから `**/*.md` で探索
-- `specs` カテゴリからレビュー種別に関連する仕様書を探索
-- 見つからないファイルはスキップ（エラーにしない）

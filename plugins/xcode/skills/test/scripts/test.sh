@@ -112,7 +112,7 @@ echo "   ❌ 失敗: $FAILED_COUNT tests"
 if [ "$FAILED_COUNT" -gt 0 ]; then
     echo ""
     echo "❌ 失敗したテスト:"
-    cat "$FAILED_TESTS_LOG" | sed 's/^/   /'
+    sed 's/^/   /' "$FAILED_TESTS_LOG"
 
     echo ""
     echo "💡 失敗の詳細（エラーメッセージ）:"

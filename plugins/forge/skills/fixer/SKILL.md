@@ -1,13 +1,13 @@
 ---
-name: fix-findings
+name: fixer
 user-invocable: false
 description: |
   レビュー指摘事項に基づきコード・文書を修正する。AI専用Skill。
-  /forge:present-findings からの対話的修正と /forge:review --refactor からの自動修正で使用。
+  /forge:present-findings からの対話的修正と /forge:review --auto からの自動修正で使用。
 argument-hint: "<修正モード> (--single | --batch)"
 ---
 
-# /fix-findings Skill
+# /fixer Skill
 
 レビュー指摘事項に基づいてコード・文書を修正する AI 専用 Skill。
 参考文書を収集し（DocAdvisor Skill または `.doc_structure.yaml` パスで Glob）、general-purpose subagent に修正を委譲する。
@@ -24,8 +24,8 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 | 観点 | 内容 |
 |------|------|
-| **入力** | ① 修正対象の指摘事項（テキスト） ② 対象ファイルパス ③ レビュー種別 ④ 修正方針（任意） |
-| **やりかた** | 参考文書取得（DocAdvisor Skill or `.doc_structure.yaml` パスで Glob）→ general-purpose subagent に修正を委譲 |
+| **入力** | ① 修正対象の指摘事項（テキスト） ② 対象ファイルパス ③ レビュー種別 ④ 参考文書パス一覧（任意） ⑤ 修正方針（任意） |
+| **やりかた** | 参考文書取得（渡されたパスを使用。未提供なら DocAdvisor Skill or `.doc_structure.yaml` パスで Glob）+ 関連コード参照 → general-purpose subagent に修正を委譲 |
 | **Agent** | DocAdvisor Skill 呼び出し: メインコンテキスト / 修正実行: general-purpose subagent |
 | **出力** | 修正サマリー（修正ファイル・修正内容・影響範囲） |
 
@@ -38,7 +38,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 | `$ARGUMENTS` | モード | 用途 |
 |--------------|--------|------|
 | `--single` | 1件修正 | /forge:present-findings の「段階的に解決」で 1 件ずつ修正 |
-| `--batch` | 一括修正 | /forge:present-findings の「✅を一括修正」、/forge:review の「--auto-fix」 |
+| `--batch` | 一括修正 | /forge:present-findings の「✅を一括修正」、/forge:review の「--auto」 |
 
 ### 呼び出し元から受け取る情報 [MANDATORY]
 
@@ -49,6 +49,8 @@ argument-hint: "<修正モード> (--single | --batch)"
 | 指摘事項の詳細 | 必須 | 問題の説明・箇所（ファイル:行）・修正案を含むテキスト |
 | 対象ファイルパス | 必須 | 修正対象のファイルパス一覧 |
 | レビュー種別 | 必須 | `code` / `requirement` / `design` / `plan` / `generic` |
+| 参考文書パス一覧 | 推奨 | /forge:reviewer が収集した参考文書パス。未提供の場合は自前で収集する |
+| related_code | 推奨 | 関連コードのパスと関連性の説明。修正時の実装パターン参照に使用 |
 | ユーザーが選択した修正方針 | 任意 | AskUserQuestion の回答（A案/B案等）がある場合 |
 
 ---
@@ -60,37 +62,41 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 ### Step 1: 入力の受け取り
 
-呼び出し元から指摘事項・対象ファイル・レビュー種別・修正方針を受け取る。
+呼び出し元から指摘事項・対象ファイル・レビュー種別・参考文書パス・修正方針を受け取る。
 
 入力が不足している場合は呼び出し元にエラーを返す（ユーザーに直接質問しない）。
 
-### Step 2: 参考文書収集 [MANDATORY]
+### Step 2: 参考文書の準備 [MANDATORY]
+
+#### 参考文書パスが渡された場合（/forge:reviewer 経由）
+
+渡されたパスをそのまま使用する。再収集は不要。
+
+#### 参考文書パスが渡されなかった場合（単独呼び出し）
 
 指摘事項の内容と対象ファイルに基づき、参考文書を収集する。
 
-#### 2.0 generic 種別の場合
+**2.0 generic 種別の場合**
 
-review Phase 2 と同様、`/query-rules` / `/query-specs` は**使用しない**。
+`/query-rules` / `/query-specs` は**使用しない**。
 参考文書は最小限:
 - `{review_criteria_path}` の「5. 汎用文書レビュー観点」（存在すれば）
 
-> `{review_criteria_path}` は `/forge:review` の「レビュー観点の探索」と同じフォールバックで決定する:
+> `{review_criteria_path}` のフォールバック:
 > 1. `/query-rules` Skill（利用不可ならスキップ）→ 2. `.claude/review-config.yaml` → 3. `${CLAUDE_PLUGIN_ROOT}/defaults/review_criteria.md`
 
 generic 以外の種別 → 2.1 へ進む。
 
-#### 2.1 DocAdvisor Skill を試行
+**2.1 DocAdvisor Skill を試行**
 
 `.claude/skills/query-rules/SKILL.md` が存在するか確認する。存在すれば DocAdvisor が利用可能と判断し、以下の Skill を呼び出す:
 
 - `/query-rules` に「修正作業に必要なルール文書」を問い合わせ
-  - 問い合わせ内容: 修正内容の要約、対象ファイル、レビュー種別
 - `/query-specs` に「修正作業に必要な要件定義書・設計書」を問い合わせ
-  - 問い合わせ内容: 修正内容の要約、対象ファイル
 
-DocAdvisor が利用不可（`.claude/skills/query-rules/SKILL.md` が存在しない等）の場合、2.2 のフォールバックに移行する。
+DocAdvisor が利用不可の場合、2.2 のフォールバックに移行する。
 
-#### 2.2 DocAdvisor 利用不可時のフォールバック
+**2.2 DocAdvisor 利用不可時のフォールバック**
 
 `.doc_structure.yaml` を直接読み込んで参考文書を収集する（「.doc_structure.yaml からの参考文書収集手順」参照）。
 
@@ -140,11 +146,15 @@ subagent の修正サマリーを呼び出し元に返す。呼び出し元（/f
 ### 要件定義書・設計書
 [収集した仕様書パスリスト]
 
+## 関連コード（実装パターン・規約の参考として Read すること）
+[related_code のパスリストと関連性の説明]
+
 ## 指示
 - 指摘事項に記載された問題のみを修正する
 - 指摘事項に関係のない変更は一切行わない
 - ユーザーが修正方針を選択している場合、その方針に従う
 - 参考文書のルール・設計意図に従って修正する
+- 関連コードの実装パターン・命名規則・スタイルに合わせて修正する
 - 修正内容をサマリーで報告する
 
 ## 出力形式
@@ -155,7 +165,7 @@ subagent の修正サマリーを呼び出し元に返す。呼び出し元（/f
    - 影響: [他に確認が必要な箇所があれば記載、なければ「なし」]
 ```
 
-> --batch では「修正方針」セクションを省略する。✅一括修正は修正が一意に決まる自明な項目のみ、--auto-fix はユーザー介入なしのため。
+> --batch では「修正方針」セクションを省略する。✅一括修正は修正が一意に決まる自明な項目のみ、--auto はユーザー介入なしのため。
 
 ### --batch モード（一括修正）
 
@@ -179,10 +189,14 @@ subagent の修正サマリーを呼び出し元に返す。呼び出し元（/f
 ### 要件定義書・設計書
 [収集した仕様書パスリスト]
 
+## 関連コード（実装パターン・規約の参考として Read すること）
+[related_code のパスリストと関連性の説明]
+
 ## 指示
 - 指摘事項に記載された問題のみを修正する
 - 指摘事項に関係のない変更は一切行わない
 - 参考文書のルール・設計意図に従って修正する
+- 関連コードの実装パターン・命名規則・スタイルに合わせて修正する
 - 各指摘事項ごとに修正内容をサマリーで報告する
 
 ## 出力形式

@@ -2,7 +2,7 @@
 name: create-requirements
 description: |
   対話・既存ソース解析・Figma の3モードで構造化要件定義書（SCR/FNC/BL 形式）を作成する。
-  完了後は /forge:finalize で品質確定推奨。
+  完了後は /forge:review でレビュー+修正推奨。
 user-invocable: true
 argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
 ---
@@ -226,9 +226,9 @@ interactive または reverse-engineering を使用してください。
   → {作成ファイルパス}
 
 次のステップ:
-  /forge:finalize requirement {作成ファイルパス}           # レビュー+修正+ToC更新（推奨）
-  /forge:finalize requirement {作成ファイルパス} --refactor 3  # 3サイクル徹底修正
-  /forge:finalize requirement {作成ファイルパス} --refactor 0  # レビューのみ
+  /forge:review requirement {作成ファイルパス} --auto     # レビュー+修正（推奨）
+  /forge:review requirement {作成ファイルパス} --auto 3   # 3サイクル徹底修正
+  /forge:review requirement {作成ファイルパス}            # 対話モードでレビュー
 ```
 
 ---
