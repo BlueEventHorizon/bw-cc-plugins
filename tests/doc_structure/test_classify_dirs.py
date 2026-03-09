@@ -21,7 +21,7 @@ from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]
-                       / 'plugins' / 'kaizen' / 'scripts'))
+                       / 'plugins' / 'forge' / 'scripts'))
 
 from classify_dirs import (
     SKIP_DIRS,

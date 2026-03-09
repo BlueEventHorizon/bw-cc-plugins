@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-08T10:36:34Z
-  file_count: 1
+  generated_at: 2026-03-09T07:50:11Z
+  file_count: 2
 
 docs:
   docs/specs/design/doc_structure_format.md:
@@ -37,3 +37,38 @@ docs:
       - glob patterns
       - specification
       - version
+  docs/specs/design/forge_review_pipeline.md:
+    doc_type: spec
+    title: forge Review Pipeline Design
+    purpose: Defines the architecture and interfaces of the forge plugin review pipeline, including skill responsibilities, data flow between orchestrator and specialized agents, and design principles for parameter passing and document collection strategy.
+    content_details:
+      - Pipeline architecture with review orchestrator and specialized AI-only skills (reviewer, evaluator, presenter, fixer)
+      - "Skill responsibilities: orchestration, review execution, evaluation and judgment, findings presentation, and fix implementation"
+      - Dataflow between review and reviewer, evaluator, present-findings, fixer interfaces
+      - "Document collection strategy: collected once by reviewer, passed to all downstream agents"
+      - Evaluator judgment framework with 5 evaluation criteria (rule compliance, design intent, side effects, false positives, target file verification)
+      - Interactive vs automatic modes with identical pipeline structure
+      - Commit and push confirmation flow handled by review orchestrator
+      - Review type classification with DocAdvisor integration and fallback strategies
+      - "Design principles: single-responsibility, reusable reference documents, unified data flow patterns"
+      - Related skill specifications and configuration files for pipeline implementation
+    applicable_tasks:
+      - Review pipeline architecture design and implementation
+      - Review skill specification and orchestration logic development
+      - Reviewer agent skill development for document collection
+      - Evaluator agent implementation with judgment criteria
+      - Finding presentation interface design for interactive mode
+      - Fix implementation agent development
+      - Pipeline testing and validation with reference documents
+      - Document collection strategy and parameter passing design review
+    keywords:
+      - forge
+      - review
+      - pipeline
+      - orchestrator
+      - AI-only
+      - skill
+      - evaluator
+      - fixer
+      - reference-documents
+      - data-flow

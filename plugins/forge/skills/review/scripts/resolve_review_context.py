@@ -141,7 +141,8 @@ def parse_doc_structure(project_root):
         return None
     try:
         return _parse_doc_structure_yaml(filepath)
-    except Exception:
+    except Exception as e:
+        print(f"警告: .doc_structure.yaml のパースに失敗しました: {e}", file=sys.stderr)
         return None
 
 
@@ -297,14 +298,11 @@ def parse_args():
 
 def find_project_root():
     """プロジェクトルートを検出"""
-    current = Path.cwd()
-    for _ in range(10):
+    current = Path.cwd().resolve()
+    while current != current.parent:
         if (current / ".git").exists() or (current / ".claude").exists():
             return current
-        parent = current.parent
-        if parent == current:
-            break
-        current = parent
+        current = current.parent
     return Path.cwd()
 
 
@@ -507,7 +505,7 @@ def _resolve_multiple_targets(targets, doc_structure, project_root, result):
             "message": f"以下のファイルが見つかりません: {', '.join(missing)}",
             "options": []
         })
-        result["target_files"] = valid_files
+        result["target_files"] = []
         return
 
     result["target_files"] = valid_files
@@ -531,7 +529,6 @@ def main():
     targets = parse_args()
 
     project_root = find_project_root()
-    os.chdir(project_root)
 
     # .doc_structure.yaml を読み込む（必須）
     doc_structure = parse_doc_structure(project_root)

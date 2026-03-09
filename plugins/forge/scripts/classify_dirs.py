@@ -101,8 +101,9 @@ def find_md_dirs(project_root):
             dirnames[:] = []
             continue
 
-        # ソースコードディレクトリはスキップ
+        # ソースコードディレクトリはスキップ（配下の探索も停止）
         if any((current / ind).exists() for ind in SKIP_INDICATORS):
+            dirnames[:] = []
             continue
 
         # .md ファイルをカウント
@@ -138,14 +139,19 @@ def extract_front_matter(filepath):
     except (IOError, OSError):
         return None
 
-    if not content.startswith('---'):
+    lines = content.split('\n')
+    if not lines or lines[0].strip() != '---':
         return None
 
-    end = content.find('---', 3)
-    if end == -1:
+    end_line = None
+    for i, line in enumerate(lines[1:], start=1):
+        if line.strip() == '---':
+            end_line = i
+            break
+    if end_line is None:
         return None
 
-    fm_content = content[3:end]
+    fm_content = '\n'.join(lines[1:end_line])
     result = {}
     for line in fm_content.split('\n'):
         line = line.strip()

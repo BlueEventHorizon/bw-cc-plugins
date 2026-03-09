@@ -20,7 +20,7 @@ from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]
-                       / 'plugins' / 'kaizen' / 'skills' / 'review' / 'scripts'))
+                       / 'plugins' / 'forge' / 'skills' / 'review' / 'scripts'))
 
 from resolve_review_context import (
     _parse_doc_structure_yaml,

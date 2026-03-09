@@ -22,12 +22,11 @@ AskUserQuestion でスキルを選択する:
 どの forge スキルのヘルプを表示しますか？
 
 選択肢:
-- review             : コード・文書のレビュー
+- review             : コード・文書のレビュー（オーケストレーター）
 - create-requirements: 要件定義書の作成
 - create-design      : 設計書の作成
 - create-plan        : 計画書の作成
 - setup              : .doc_structure.yaml の作成・更新
-- finalize           : 文書作成後の品質確定（レビュー+修正+ToC更新）
 ```
 
 ---
@@ -125,31 +124,6 @@ AskUserQuestion でスキルを選択する:
 
 ---
 
-### finalize
-
-#### 2-1. 種別
-```
-文書の種別を選択してください:
-- requirement : 要件定義書
-- design      : 設計書
-- plan        : 計画書
-- generic     : 任意の文書
-```
-
-#### 2-2. ファイルパス
-```
-対象ファイルのパスを入力してください:
-例: specs/login/requirements/requirements.md
-```
-
-#### 2-3. 修正サイクル数
-```
-修正サイクル数を選択してください:
-- 1サイクル（デフォルト）
-- Nサイクル（サイクル数を指定）
-- 修正なし（レビューのみ）
-```
-
 ---
 
 ## Step 3: コマンド確認と実行
@@ -159,7 +133,7 @@ AskUserQuestion でスキルを選択する:
 ```
 以下のコマンドを実行します:
 
-  /forge:review code src/ --claude --refactor 3
+  /forge:review code src/ --claude --auto 3
 
 実行しますか？
 - 実行する

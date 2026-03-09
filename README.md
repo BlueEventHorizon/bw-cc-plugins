@@ -107,24 +107,25 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 # Create requirements from existing app source code
 /forge:create-requirements myfeature --mode reverse-engineering
 
-# Finalize a document: review + auto-fix + ToC update (run after start-*)
-/forge:finalize requirement specs/login/requirements/requirements.md
-/forge:finalize requirement specs/login/requirements/requirements.md --refactor 3
+# Review + auto-fix after creating a document
+/forge:review requirement specs/login/requirements/requirements.md --auto
+/forge:review requirement specs/login/requirements/requirements.md --auto 3
 ```
 
 ### Skills
 
 | Skill | User-invocable | Description |
 |-------|---------------|-------------|
-| `review` | Yes | Main review skill. Detects review type, collects references, and executes review |
+| `review` | Yes | Orchestrator: collects references, delegates to reviewer/evaluator/fixer, then commits |
 | `setup` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
 | `create-requirements` | Yes | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design |
 | `create-design` | Yes | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
 | `create-plan` | Yes | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
-| `finalize` | Yes | Post-creation orchestrator: runs review+fix cycles and updates ToC. Use after start-* skills |
 | `help` | Yes | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly |
-| `present-findings` | No (AI only) | Presents review findings interactively, one item at a time |
-| `fix-findings` | No (AI only) | Fixes issues based on review findings with reference doc collection (DocAdvisor or .doc_structure.yaml) |
+| `present-findings` | No (AI only) | Presents review findings interactively, one item at a time (human acts as evaluator) |
+| `reviewer` | No (AI only) | Executes review and collects reference documents. Returns findings + reference doc paths |
+| `evaluator` | No (AI only) | Scrutinizes review findings with 5 criteria and determines what to fix/skip/confirm |
+| `fixer` | No (AI only) | Fixes issues based on review findings. Accepts reference doc paths to avoid re-collection |
 
 ### Review Types
 

@@ -48,7 +48,13 @@ xcodebuild build \
     -skipPackagePluginValidation \
     2>&1 | tee "$BUILD_LOG" > /dev/null
 BUILD_EXIT=${PIPESTATUS[0]}
+TEE_EXIT=${PIPESTATUS[1]}
 set -e
+
+if [ "$TEE_EXIT" -ne 0 ]; then
+    echo "❌ Error: ログファイルへの書き込みに失敗しました（ディスク容量等を確認してください）"
+    exit 1
+fi
 
 # フィルタリング表示（ログ後処理）
 grep -E "(error:|warning:|note:|BUILD FAILED|BUILD SUCCEEDED)" "$BUILD_LOG" | head -100 || true
