@@ -135,11 +135,22 @@ git status
 
 ---
 
-## Phase 6: コミット
+## Phase 6: コミット確認 [MANDATORY]
 
-```bash
-git commit -m "<生成されたメッセージ>"
+以下の内容をユーザーに提示し、コミットの承認を得る:
+
 ```
+以下のコミットを実行します:
+
+  ブランチ: <current-branch>
+  メッセージ: <生成したコミットメッセージ>
+  対象ファイル: <ステージング済みファイル一覧>
+
+コミットしますか？
+```
+
+- **はい** → `git commit -m "<生成されたメッセージ>"` を実行
+- **いいえ** → 終了（push は行わない）
 
 フックがある場合、`prepare-commit-msg` が `[ISSUE_REF]` を自動付与する。
 
@@ -147,16 +158,22 @@ git commit -m "<生成されたメッセージ>"
 
 ---
 
-## Phase 7: プッシュ
+## Phase 7: プッシュ確認 [MANDATORY]
 
-リモートへの追跡設定を確認:
+コミット成功後、プッシュの承認を別途得る:
 
-```bash
-git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
+```
+コミット完了。リモートへ push しますか？
+
+  origin/<current-branch> へ push します
+
+push しますか？ [y/N]
 ```
 
-- **追跡設定あり** → `git push`
-- **追跡設定なし** → `git push -u origin <current-branch>`
+- **はい（y）** → リモートへの追跡設定を確認してから push:
+  - 追跡設定あり → `git push`
+  - 追跡設定なし → `git push -u origin <current-branch>`
+- **いいえ（デフォルト・Enter のみ）** → push せずに終了
 
 push 失敗の場合はエラー内容を表示してユーザーに確認する。
 
