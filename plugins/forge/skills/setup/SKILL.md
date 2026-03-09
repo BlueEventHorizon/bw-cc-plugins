@@ -25,7 +25,7 @@ argument-hint: ""
 
 `.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
 
-- **存在する** → 現在の内容を表示し、更新するか再生成するかユーザーに確認。
+- **存在する** → 現在の内容を表示し、更新するか再生成するか AskUserQuestion を使用して確認する。
 - **存在しない** → Step 2 へ。
 
 ### Step 2: ディレクトリスキャン
@@ -80,6 +80,8 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 
 修正・除外したいものはありますか？（例: "archived除外", "5をspecに変更"）
 ```
+
+AskUserQuestion を使用して確認する（修正・除外の指示がなければそのまま次へ進む）。
 
 - ディレクトリ名（例: "archived除外"）→ 該当する glob パスの `exclude` に追加
 - 分類番号（例: "5をspecに変更"）→ category や doc_type を修正

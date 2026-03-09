@@ -61,7 +61,7 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 ## モード選択
 
-`--mode` 未指定時、ユーザーに3択を提示:
+`--mode` 未指定時、AskUserQuestion を使用して3択を提示する:
 
 ```
 どの方法で要件定義を開始しますか？
@@ -84,11 +84,11 @@ interactive または reverse-engineering を使用してください。
 1. **新規/追加の確認**:
    - `--new` 指定 → 新規アプリとして処理
    - `--add` 指定 → 既存アプリへの機能追加として処理
-   - 未指定 → ユーザーに確認
+   - 未指定 → AskUserQuestion を使用して確認する
 
 2. **Feature 名の確定**:
    - 引数で指定済み → そのまま使用
-   - 未指定 → ユーザーに入力を求める
+   - 未指定 → AskUserQuestion を使用して入力を求める
 
 3. **既存資産の収集**（`--add` 時のみ）:
    - DocAdvisor（`/query-specs`）が利用可能 → 既存要件・設計書を取得

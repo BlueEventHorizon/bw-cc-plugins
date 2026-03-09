@@ -18,7 +18,7 @@ allowed-tools: Bash, Read, AskUserQuestion
 
 引数が指定されていない場合:
 1. `specs/` ディレクトリ内の Feature 一覧を確認: `ls -d specs/*/`
-2. ユーザーに対象 Feature を質問
+2. AskUserQuestion を使用して対象 Feature を確認する
 
 ## Step 2: モード判定 [MANDATORY]
 
