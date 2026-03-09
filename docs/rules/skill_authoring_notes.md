@@ -111,6 +111,37 @@ SKILL.md から参照: `[詳細](reference.md)` または `${CLAUDE_SKILL_DIR}/s
 
 ---
 
+## ユーザーへの質問・確認 [MANDATORY]
+
+**ユーザーへの質問・選択・確認はすべて `AskUserQuestion` ツールを使用すること。**
+
+プレーンテキストで「どちらにしますか？」「確認してください。」のように書いてはならない。
+
+```markdown
+# ❌ NG — プレーンテキストで質問
+どのエンジンを使用しますか？
+- codex
+- claude
+
+# ✅ OK — AskUserQuestion を明示
+AskUserQuestion を使用してエンジンを確認する:
+- codex（デフォルト）
+- claude
+```
+
+適用場面（例）:
+- 引数が不足・曖昧な場合の clarification
+- `needs_input` ステータスへの対応
+- エンジン・モード・対象の選択
+- commit / push の確認
+- エラー発生時の対応確認
+- 段階的処理での「次へ進む / 中断」確認
+
+> SKILL.md に「ユーザーに確認する」「ユーザーに提示する」「ユーザーに問い合わせる」と書く箇所は、
+> すべて「AskUserQuestion を使用して確認する」と明記すること。
+
+---
+
 ## このプロジェクトでの規約
 
 - SKILL.md 内のコメント・説明は**日本語**で記述
@@ -118,3 +149,4 @@ SKILL.md から参照: `[詳細](reference.md)` または `${CLAUDE_SKILL_DIR}/s
 - スクリプトのパス参照は `${CLAUDE_PLUGIN_ROOT}` を使用
 - `[MANDATORY]` マーカーは省略・変更不可の必須仕様に付ける
 - フォーマット・テンプレート類は `plugins/{plugin-name}/defaults/` に配置
+- ユーザーへの質問・確認は必ず `AskUserQuestion` を使用する（上記参照）

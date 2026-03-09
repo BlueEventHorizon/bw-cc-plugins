@@ -83,7 +83,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 ```
 
 - `status: "resolved"` → `target_files` を確定し Step 3 へ
-- `status: "needs_input"` → `questions` をユーザーに提示し、回答を得てから再実行
+- `status: "needs_input"` → `questions` を AskUserQuestion を使用して確認し、回答を得てから再実行
 - `status: "error"` → `/forge:setup` を起動し `.doc_structure.yaml` の作成を促す
 
 解決完了後、以下を出力する（6件以上は先頭3件 + `... 他N件`）:
@@ -395,7 +395,7 @@ fixer 完了後、以下を出力する（ファイル6件以上は先頭3件 + 
 
 #### commit 確認
 
-修正が1件以上実行された場合、ユーザーに commit を確認する:
+修正が1件以上実行された場合、AskUserQuestion を使用して commit を確認する:
 
 ```
 変更をコミットしますか？
@@ -406,7 +406,7 @@ fixer 完了後、以下を出力する（ファイル6件以上は先頭3件 + 
 
 #### push 確認
 
-commit が完了した場合、ユーザーに push を確認する:
+commit が完了した場合、AskUserQuestion を使用して push を確認する:
 
 ```
 リモートにプッシュしますか？
