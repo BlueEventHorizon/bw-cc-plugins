@@ -11,6 +11,7 @@
 #   test.sh MyApp "id=DEVICE-UUID" --sdk iphonesimulator
 
 set -e
+set -o pipefail
 
 # Bash ツールのカレントディレクトリ（ユーザーのプロジェクトルート）でそのまま実行する
 SCHEME="$1"
@@ -23,10 +24,20 @@ SDK_VAL=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --only-testing)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "❌ Error: --only-testing にはテストターゲットを指定してください"
+                echo "Usage: test.sh <scheme> <destination> [--only-testing <target>] [--sdk <sdk>]"
+                exit 1
+            fi
             ONLY_TESTING_VAL="$2"
             shift 2
             ;;
         --sdk)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "❌ Error: --sdk には SDK 名を指定してください"
+                echo "Usage: test.sh <scheme> <destination> [--only-testing <target>] [--sdk <sdk>]"
+                exit 1
+            fi
             SDK_VAL="$2"
             shift 2
             ;;
@@ -66,13 +77,16 @@ echo ""
 echo "Step 1: Running tests..."
 echo "--------------------------------"
 
+set +e
 xcodebuild test \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
     "${SDK_ARGS[@]}" \
     "${ONLY_TESTING_ARGS[@]}" \
     -skipPackagePluginValidation \
-    2>&1 | tee "$TEST_LOG" > /dev/null || true
+    2>&1 | tee "$TEST_LOG" > /dev/null
+TEST_EXIT=${PIPESTATUS[0]}
+set -e
 
 # フィルタリング表示（ログ後処理）
 grep -iE "(Test Case|error:|warning:|BUILD FAILED|BUILD SUCCEEDED|passed|failed)" "$TEST_LOG" | head -100 || true
@@ -111,7 +125,7 @@ echo "===================================="
 echo "Test Summary"
 echo "===================================="
 
-if [ "$FAILED_COUNT" -eq 0 ] && grep -qiE "TEST SUCCEEDED|passed" "$TEST_LOG"; then
+if [ "$FAILED_COUNT" -eq 0 ] && [ "$TEST_EXIT" -eq 0 ] && grep -qiE "TEST SUCCEEDED|passed" "$TEST_LOG"; then
     echo "✅ All tests passed successfully!"
     exit 0
 else

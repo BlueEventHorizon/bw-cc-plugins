@@ -33,10 +33,16 @@ if [ -n "$AVAILABLE" ]; then
 
     if [ -n "$DEVICE_ID" ]; then
         echo "起動中: $DEVICE_NAME ($DEVICE_ID)" >&2
-        xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-        sleep 3
-        echo "$DEVICE_ID"
-        exit 0
+        xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true  # Already booted は無視
+        if xcrun simctl bootstatus "$DEVICE_ID" -b 2>/dev/null; then
+            echo "$DEVICE_ID"
+            exit 0
+        else
+            echo "⚠️ bootstatus 未対応環境、3秒待機..." >&2
+            sleep 3
+            echo "$DEVICE_ID"
+            exit 0
+        fi
     fi
 fi
 

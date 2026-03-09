@@ -6,14 +6,14 @@ description: |
   トリガー: "レビュー", "review", "レビューして", "確認して"
 ---
 
-# /review Skill
+# /forge:review Skill
 
 レビューを実行する。種別（requirement / design / code / plan）とエンジン（Codex / Claude）を組み合わせて使用。
 
 ## コマンド構文
 
 ```
-/review <種別> [対象] [--エンジン] [--refactor [N]]
+/forge:review <種別> [対象] [--エンジン] [--refactor [N]]
 
 種別: requirement | design | code | plan | generic
 対象: ファイルパス(複数可) | Feature名 | ディレクトリ | 省略(=対話で決定)
@@ -25,18 +25,18 @@ description: |
 ### 使用例
 
 ```bash
-/review code src/                                           # ディレクトリ内のソースコード
-/review code src/services/auth.swift                        # 特定ファイル
-/review requirement login                                   # Feature 名で要件定義書
-/review design specs/login/design/login_design.md           # 設計書
-/review code src/ --claude                                  # Claude エンジンを使用
-/review code                                                # ブランチ差分のコード
-/review plan specs/login/plan/login_plan.md --refactor      # 1サイクル（デフォルト）
-/review code src/ --refactor 3                              # 3サイクル繰り返す
-/review code src/ --refactor 0                              # レビューのみ（修正なし）
-/review plan specs/login/plan/login_plan.md --auto-fix      # 後方互換（--refactor 1 と同等）
-/review generic README.md                                   # 任意の文書
-/review generic docs/CONTRIBUTING.md docs/README.md         # 複数ファイル
+/forge:review code src/                                           # ディレクトリ内のソースコード
+/forge:review code src/services/auth.swift                        # 特定ファイル
+/forge:review requirement login                                   # Feature 名で要件定義書
+/forge:review design specs/login/design/login_design.md           # 設計書
+/forge:review code src/ --claude                                  # Claude エンジンを使用
+/forge:review code                                                # ブランチ差分のコード
+/forge:review plan specs/login/plan/login_plan.md --refactor      # 1サイクル（デフォルト）
+/forge:review code src/ --refactor 3                              # 3サイクル繰り返す
+/forge:review code src/ --refactor 0                              # レビューのみ（修正なし）
+/forge:review plan specs/login/plan/login_plan.md --auto-fix      # 後方互換（--refactor 1 と同等）
+/forge:review generic README.md                                   # 任意の文書
+/forge:review generic docs/CONTRIBUTING.md docs/README.md         # 複数ファイル
 ```
 
 ---
@@ -321,17 +321,39 @@ prompt: |
 
 修正対象の問題（🔴のみ、または🔴+🟡）が0件なら `break`（修正完了）。
 
-##### Step 2: 修正実行
+##### Step 2: 指摘事項の吟味 [MANDATORY]
 
-`/forge:fix-findings --batch` を呼び出す:
+**fix-findings を呼び出す前に、各指摘を必ず吟味すること。エンジン出力をそのまま渡すことは禁止。**
 
-- 指摘事項: 修正対象の問題を渡す
+各指摘について以下の観点で評価し、`修正する / スキップ / 要確認` を判定する:
+
+| 観点 | 確認内容 |
+|------|---------|
+| **ルール照合** | Phase 2 で収集した参考文書（ルール・規約）に照らして本当に違反しているか |
+| **設計意図** | 現状の実装に意図がある可能性はないか（例: `\|\| true` は意図的な設計かもしれない） |
+| **副作用リスク** | この修正が他の箇所に影響しないか（例: `set -e` + `pipefail` の組み合わせによるデグレ） |
+| **false positive** | エンジンの誤認識・過剰指摘ではないか（例: optional なフィールドを必須と誤判定） |
+| **対象ファイルの確認** | 判断に迷う場合は対象ファイルを Read して設計意図を確認する |
+
+**判定結果:**
+
+- **修正する**: 問題が明確で副作用リスクが低い → 次の Step 3 に含める
+- **スキップ**: false positive・設計意図がある・リスクが高い → 除外し理由を記録
+- **要確認**: 判断が難しい → 次の `### 残存する問題` セクションに記載してユーザーに報告
+
+スキップ・要確認とした指摘は、次サイクルの再レビュープロンプトに「既知の問題として除外」として明示し、同じ指摘が繰り返されないようにする。
+
+##### Step 3: 修正実行
+
+吟味で「**修正する**」と判定した指摘のみを `/forge:fix-findings --batch` に渡す:
+
+- 指摘事項: 吟味済みの修正対象の問題
 - 対象ファイル: target_files
 - レビュー種別: review_type
 
 fix-findings が参考文書を収集し（DocAdvisor Skill または `.doc_structure.yaml` パスで Glob）、general-purpose subagent に修正を委譲する。
 
-##### Step 3: 再レビュー
+##### Step 4: 再レビュー
 
 3.1 と同じエンジン・プロンプトで再レビューを実施し、次サイクルの修正対象を更新する。
 
