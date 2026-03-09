@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| **forge** | 0.0.6 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **forge** | 0.0.11 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
 | **anvil** | 0.0.1 | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows. |
 | **xcode** | 0.0.1 | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection. |
 
@@ -123,6 +123,7 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 | `create-plan` | Yes | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
 | `help` | Yes | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly |
 | `present-findings` | No (AI only) | Presents review findings interactively, one item at a time (human acts as evaluator) |
+| `show-report` | Yes | Generates an HTML progress report from a review session directory and opens it in the browser |
 | `reviewer` | No (AI only) | Executes review and collects reference documents. Returns findings + reference doc paths |
 | `evaluator` | No (AI only) | Scrutinizes review findings with 5 criteria and determines what to fix/skip/confirm |
 | `fixer` | No (AI only) | Fixes issues based on review findings. Accepts reference doc paths to avoid re-collection |

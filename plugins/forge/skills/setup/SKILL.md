@@ -10,14 +10,14 @@ argument-hint: ""
 
 # /forge:setup
 
-## Overview
+## 概要
 
 対話的に `.doc_structure.yaml` をプロジェクトルートに作成・更新する。
 このファイルはドキュメントの所在を宣言し、他のツール（Doc Advisor, forge 等）がドキュメントを参照できるようにする。
 
-## EXECUTION RULES
-- Exit plan mode if active. Do NOT ask for confirmation about plan mode.
-- If `.doc_structure.yaml` already exists, switch to **review mode** (show current, suggest changes).
+## 実行規則
+- プランモードが有効な場合は解除すること。プランモードの解除についてユーザーへの確認は不要。
+- `.doc_structure.yaml` がすでに存在する場合は**レビューモード**に切り替えること（現在の内容を表示し、変更を提案する）。
 
 ## Procedure
 

@@ -5,15 +5,15 @@ description: |
   項目の段階的・対話的提示。AI専用Skill。
   項目（レビュー指摘、検証結果、調査結果、質問への回答等）を対話3原則に従って丁寧に提示する。
   1件でも有効（提示品質の向上）。2件以上では段階的に1件ずつ提示。
-  用途1: /forge:review Skill からのレビュー結果ファイル提示
+  用途1: /forge:review Skill からのレビュー結果ファイル提示（session_dir ベース）
   用途2: AI が分析・調査・回答で項目を提示する場合（--inline）
-argument-hint: "<review-result-file-path> | --inline"
+argument-hint: "<session_dir> | --inline"
 ---
 
 # /present-findings Skill
 
 複数項目を段階的・対話的にユーザーに提示する AI 専用 Skill。
-ファイル入力（レビュー結果等）とコンテキスト入力（--inline）の両方に対応し、内容に応じて適切に提示する。
+セッションディレクトリ入力（レビュー結果等）とコンテキスト入力（--inline）の両方に対応し、内容に応じて適切に提示する。
 
 ## 設計原則
 
@@ -28,45 +28,62 @@ argument-hint: "<review-result-file-path> | --inline"
 
 | `$ARGUMENTS` | 入力方法 |
 |--------------|---------|
-| ファイルパス | ファイルから Read で読み込み |
-| `--inline` | 直前の会話コンテキストから取得 |
+| session_dir | セッションディレクトリのパスから各ファイルを Read |
+| `--inline` | 直前の会話コンテキストから取得（後方互換） |
 
-### ファイル入力
+### session_dir 入力
 
-`$ARGUMENTS` = ファイルパス
+`$ARGUMENTS` = セッションディレクトリのパス
 
-ファイル形式: YAML frontmatter + Markdown body
+セッションディレクトリには以下のファイルが含まれる:
 
-```markdown
----
+**session.yaml** (review が書く):
+```yaml
 review_type: code
 engine: codex
+auto_count: 0
+current_cycle: 0
+started_at: "2026-03-09T18:30:00Z"
+last_updated: "2026-03-09T18:30:00Z"
+status: in_progress
+```
+
+**refs.yaml** (review が書く):
+```yaml
 target_files:
-  - App/View/FooView.swift
+  - path/to/file.md
 reference_docs:
-  - review_criteria.md
+  - path: docs/rules/foo.md
+review_criteria_path: plugins/forge/defaults/review_criteria.md
 related_code:
-  - path: App/View/BarView.swift
-    reason: 同種機能の既存実装例
-timestamp: "2026-02-11T14:30:22Z"
----
+  - path: plugins/forge/skills/reviewer/SKILL.md
+    reason: 同種AIスキルのfrontmatter参考
+    lines: "1-30"
+```
 
-### 🔴致命的問題
-1. **問題名**: 説明
-   - 箇所: ファイル:行
-   - 参照: 関連ルール
-   - 修正案: 具体的な修正
+**review.md** (reviewer が書く): 🔴🟡🟢 指摘事項リストの Markdown
 
-### 🟡品質問題
-...
+**evaluation.yaml** (evaluator が書く):
+```yaml
+cycle: 1
+items:
+  - id: 1
+    severity: critical
+    title: "問題タイトル"
+    decision: fix       # fix / skip / needs_review
+    reason: "判定理由（AI の判断根拠）"
+```
 
-### 🟢改善提案
-...
-
-### サマリー
-- 🔴致命的: X件
-- 🟡品質: X件
-- 🟢改善: X件
+**plan.yaml** (reviewer が初期作成、present-findings が更新):
+```yaml
+items:
+  - id: 1
+    severity: critical
+    title: "問題タイトル"
+    status: pending     # pending / in_progress / fixed / skipped / needs_review
+    fixed_at: ""
+    files_modified: []
+    skip_reason: ""
 ```
 
 ### コンテキスト入力
@@ -93,13 +110,20 @@ timestamp: "2026-02-11T14:30:22Z"
 
 入力方法に応じてデータを取得し、コンテンツ属性を判定する。
 
-#### ファイル入力の場合
+#### session_dir の場合
 
-1. `$ARGUMENTS` で指定されたファイルを Read で読み込む
-2. YAML frontmatter からメタデータを取得（review_type, engine, target_files, reference_docs, related_code, timestamp）
-3. Markdown body から項目を抽出する
+1. `{session_dir}/session.yaml` を Read してメタデータを取得（review_type, engine, auto_count, current_cycle, status 等）
+2. `{session_dir}/refs.yaml` を Read して target_files / reference_docs / related_code を取得
+3. `{session_dir}/plan.yaml` を Read して項目リストを取得（status で処理済みをフィルタ可能）
+4. `{session_dir}/review.md` を Read して各項目の詳細説明を取得
+5. `{session_dir}/evaluation.yaml` を Read して AI 推奨判定を取得（存在する場合のみ）
 
-#### コンテキスト入力の場合
+**既存セッションの再開:**
+plan.yaml に `status: pending` でない項目が存在する場合、「前回の続きから再開しますか？」を AskUserQuestion で確認する。
+- **再開する** → `status: pending` の項目のみを処理対象とする
+- **最初からやり直す** → 全件を `status: pending` にリセットして plan.yaml を Write
+
+#### --inline の場合
 
 1. 直前の会話コンテキストから項目リストを取得する
 
@@ -109,9 +133,9 @@ timestamp: "2026-02-11T14:30:22Z"
 
 | 属性 | 判定方法 | 影響 |
 |------|---------|------|
-| `has_severity` | 各項目の内容を理解し、項目間に重大度の差異があるかをAIが判断する | サマリー表の重大度列表示、並び順 |
-| `has_metadata` | review_type, engine, reference_docs 等が利用可能か | サマリーヘッダ表示 |
-| `is_code_review` | コードファイル参照（ファイル:行）や修正案が含まれるか | Step 4（Gemini補助）の提案 |
+| `has_severity` | plan.yaml の severity フィールドから判定（--inline の場合は各項目の内容から AI が判断） | サマリー表の重大度列表示、並び順 |
+| `has_metadata` | session.yaml の存在で判定（--inline の場合は利用可能なメタデータの有無） | サマリーヘッダ表示 |
+| `is_code_review` | session.yaml の review_type = "code" で判定（--inline の場合はコードファイル参照等から判断） | Step 4（Gemini補助）の提案 |
 
 `has_severity = true` の場合、AIは各項目の内容から以下の重大度を付与する:
 
@@ -123,7 +147,7 @@ timestamp: "2026-02-11T14:30:22Z"
 
 > 入力に明示的なマーカーやラベル（🔴、[高]、致命的 等）が含まれていれば判断材料の一つとして活用するが、マーカーの有無自体は `has_severity` の判定条件ではない。🔴🟡🟢 はAIの判断結果を人間に伝える表示用マーカーである。
 
-- ファイル入力: `has_metadata` は frontmatter から判定。他の属性は内容から判断
+- session_dir 入力: `has_metadata` は session.yaml の存在から判定。他の属性は plan.yaml / session.yaml から判断
 - コンテキスト入力: 全属性を内容から判断
 
 > エラー時: ファイル不在・パースエラー・項目なし → ユーザーに報告して終了
@@ -133,9 +157,11 @@ timestamp: "2026-02-11T14:30:22Z"
 1. 各項目を**深く理解する**
 2. 各項目の✅判定を行う（後述「✅自明マークの判定基準」参照）
 3. `has_severity` の場合: 各項目に重大度（Critical🔴 / Major🟡 / Minor🟢）を付与し、重大度順に並べ替え。ない場合: 番号順を維持
-4. `has_metadata` で reference_docs がある場合: Read で読み込み、レビュー観点やルールを把握
-5. target_files がある場合: 一覧を把握するのみ（各問題の提示時に該当箇所を Read）
-6. 項目数をカウントし、提示準備
+4. evaluation.yaml が存在する場合: 各項目の AI 推奨判定（decision / reason）を把握する
+   これを提示時の「AI推奨」として活用する（最終判断は人間）
+5. `has_metadata` で reference_docs がある場合: Read で読み込み、レビュー観点やルールを把握
+6. target_files がある場合: 一覧を把握するのみ（各問題の提示時に該当箇所を Read）
+7. 項目数をカウントし、提示準備
 
 ### Step 2: サマリー提示と進め方の選択
 
@@ -154,15 +180,17 @@ Step 2 をスキップし、直接 Step 3 へ進む。
 - エンジン: {engine}
 ```
 
-`has_severity = true` の場合:
+`has_severity = true` の場合（evaluation.yaml ありの場合は AI推奨列を含む）:
 ```
-| # | 重大度 | 項目 | |
-|---|--------|------|----|
-| 1 | 🔴 | {問題1のタイトル} | |
-| 2 | 🔴 | {問題2のタイトル} | ✅ |
-| 3 | 🟡 | {問題3のタイトル} | ✅ |
-| 4 | 🟢 | {問題4のタイトル} | |
+| # | 重大度 | 項目 | AI推奨 | |
+|---|--------|------|--------|---|
+| 1 | 🔴 | {問題1のタイトル} | 修正 | |
+| 2 | 🔴 | {問題2のタイトル} | 修正 | ✅ |
+| 3 | 🟡 | {問題3のタイトル} | 却下 | ✅ |
+| 4 | 🟢 | {問題4のタイトル} | 要確認 | |
 ```
+
+AI推奨の表示: `修正` / `却下` / `要確認` / （空欄: evaluation.yaml なし）
 
 `has_severity = false` の場合:
 ```
@@ -203,6 +231,12 @@ AskUserQuestion で進め方を確認する:
    - **このまま（対応しない）** → Step 5 へ
    - **一覧に戻る** → Step 2 へ
 4. fixer の修正サマリーをユーザーに報告
+3.5. plan.yaml を更新する:
+   - 修正した場合: status を `in_progress` に変更（fixer が `fixed` にする）
+   - スキップした場合: status を `skipped` に変更 / skip_reason を記録
+   - 対応しない場合: status を `needs_review` に変更
+   plan.yaml を Write で上書き保存
+3.6. `/forge:show-report --silent` を呼び出して report.html を再生成する
 5. 次の項目へ進む
 
 全項目の提示・解決が完了したら、修正サマリーを報告して終了。
@@ -232,35 +266,36 @@ fixer に修正を委譲する際、以下を**漏れなく**渡すこと：
 
 | 項目 | 必須 | 取得元 |
 |------|------|--------|
-| 指摘事項の詳細 | 必須 | review-result ファイル or コンテキスト |
-| 対象ファイルパス | 必須 | review-result の target_files or 指摘事項の「箇所」 |
-| レビュー種別 | 必須 | review-result の review_type or コンテキストから判定 |
-| 参考文書パス一覧 | 推奨 | review-result の reference_docs（再収集を避けるため） |
-| 関連コード | 推奨 | review-result の related_code（実装パターン参照のため） |
+| session_dir | 必須 | $ARGUMENTS で受け取ったパス |
+| 指摘事項の詳細 | 必須 | review.md から該当箇所を抜粋 |
+| モード | 必須 | `--single` または `--batch` |
+| 対象項目の id | 必須 | plan.yaml 更新に使う |
 | ユーザーが選択した修正方針 | あれば | AskUserQuestion の回答（A案/B案等） |
+
+> fixer は session_dir を受け取り、refs.yaml から target_files / reference_docs / related_code を自前で読み込む。個別に渡す必要はない。
 
 > fixer の入力仕様の詳細は `${CLAUDE_PLUGIN_ROOT}/skills/fixer/SKILL.md` を参照。
 
-> **--inline モードの場合**: frontmatter が存在しないため review_type / reference_docs / related_code はコンテキストから判断する。review_type が不明の場合は `generic` をフォールバックとして使用する。reference_docs / related_code が不明の場合は fixer が自前で収集する（fixer の Step 2 参照）。
+> **--inline モードの場合**: session_dir が存在しないため、review_type / reference_docs / related_code はコンテキストから判断する。review_type が不明の場合は `generic` をフォールバックとして使用する。reference_docs / related_code が不明の場合は fixer が自前で収集する（fixer の Step 2 参照）。
 
 ---
 
-## ファイル永続化
+## セッション状態管理
 
-入力方法に関わらず、修正を伴う項目がある場合は `.claude/.temp/` にファイルを保存できる。
+present-findings は plan.yaml を唯一の状態ストアとして使用する。
 
-| 入力方法 | ファイル |
-|----------|---------|
-| ファイル入力 | 元のファイルは Read のみで変更されないため、初期状態として参照可能 |
-| コンテキスト入力 | 修正開始時に `.claude/.temp/present-findings-{YYYYMMDD-HHmmss}.md` に保存 |
+| ファイル | 役割 |
+|----------|------|
+| plan.yaml | 各項目の処理状態（pending/in_progress/fixed/skipped/needs_review）を記録 |
+| evaluation.yaml | AI推奨判定（参照のみ、更新しない） |
+| report.html | /forge:show-report --silent で随時再生成 |
 
-ファイル永続化の目的:
-- 修正後の再レビューが可能
-- コンテキスト圧縮後の項目リスト復元が可能
-- 長時間の対話でも初期状態を参照可能
+### 再開の仕組み
 
-保存形式は入力仕様のファイル入力形式に準拠（YAML frontmatter + Markdown body）。
-コンテキスト入力の場合、利用可能なメタデータを frontmatter に含める。
+セッション再開時は plan.yaml の status から前回の進捗を復元する:
+- status: pending → 未処理（処理対象）
+- status: fixed / skipped / needs_review → 処理済み（スキップ）
+- status: in_progress → 前回中断（処理対象に含める）
 
 ---
 

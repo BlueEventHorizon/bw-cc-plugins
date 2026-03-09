@@ -10,7 +10,7 @@ argument-hint: "<種別> [--エンジン]"
 
 # /reviewer Skill
 
-参考文書を読み、対象ファイルをレビューして結果を返す AI 専用 Skill。
+参考文書を読み、対象ファイルをレビューして結果をファイルに書き出す AI 専用 Skill。
 参考文書収集・対象ファイル解決は `/forge:review` オーケストレーターが事前に実施する。
 
 ## 設計原則
@@ -19,7 +19,7 @@ argument-hint: "<種別> [--エンジン]"
 |------|------|
 | **subagent として動作** | `/forge:review` から general-purpose subagent として起動される。メインコンテキストを消費しない |
 | レビュー実行も subagent | Codex または Claude subagent にレビューを委譲する |
-| 渡された情報のみ使用 | 参考文書・関連コードの収集・探索は行わない |
+| ファイル経由のデータ受け渡し | 入力は `session_dir` の refs.yaml から読み取り、出力は review.md / plan.yaml に書き出す |
 
 ---
 
@@ -29,22 +29,27 @@ argument-hint: "<種別> [--エンジン]"
 
 | 項目 | 必須 | 説明 |
 |------|------|------|
+| session_dir | 必須 | セッションワーキングディレクトリのパス |
 | 種別 | 必須 | `code` / `requirement` / `design` / `plan` / `generic` |
-| target_files | 必須 | レビュー対象ファイルパス一覧（解決済み） |
 | エンジン | 必須 | `codex` / `claude` |
-| reference_docs | 必須 | 参考文書パス一覧（収集済み） |
-| review_criteria_path | 必須 | レビュー観点ファイルのパス |
-| related_code | 推奨 | 関連コードのパスと関連性の説明（/forge:review が subagent で収集） |
+
+target_files / reference_docs / related_code / review_criteria_path は `{session_dir}/refs.yaml` から読み取る。
 
 ---
 
 ## ワークフロー
 
-### Phase 1: 参考文書・関連コードを読む
+### Phase 1: refs.yaml を読んで参考文書・関連コードを取得する
 
-渡された `reference_docs` のパスを全て Read して、ルール・設計意図を把握する。
-渡された `related_code` のパスも Read して、既存実装のパターン・規約を把握する。
-（参考文書・関連コードの収集・探索は行わない。渡されたパスのみ使用する）
+1. `{session_dir}/refs.yaml` を Read する
+2. `refs.yaml` から以下を取得する:
+   - `target_files`: レビュー対象ファイルパス一覧
+   - `reference_docs`: 参考文書パス一覧
+   - `review_criteria_path`: レビュー観点ファイルのパス
+   - `related_code`: 関連コードのパスと関連性の説明（任意）
+3. 取得した `reference_docs` のパスを全て Read して、ルール・設計意図を把握する
+4. 取得した `related_code` のパスも Read して、既存実装のパターン・規約を把握する
+（参考文書・関連コードの収集・探索は行わない。refs.yaml に記載されたパスのみ使用する）
 
 ### Phase 2: レビュー実行
 
@@ -61,12 +66,14 @@ argument-hint: "<種別> [--エンジン]"
 #### Codex の場合
 
 ```bash
-codex exec --full-auto --sandbox read-only --cd <project_dir> "<prompt>"
+codex exec --full-auto --sandbox read-only --cd <project_dir> "<prompt>" > {session_dir}/review.md
 ```
+
+シェルリダイレクトにより、レビュー結果をコンテキストに乗せずに直接ファイルへ保存する。
 
 #### Claude の場合
 
-general-purpose subagent を起動する。
+general-purpose subagent を起動し、レビュー結果を `{session_dir}/review.md` に Write するよう指示する。
 
 #### プロンプト構成
 
@@ -120,8 +127,23 @@ general-purpose subagent を起動する。
 
 ## 出力
 
-以下を呼び出し元（/forge:review）に返す:
+### review.md の書き出し
 
-| 項目 | 内容 |
-|------|------|
-| レビュー結果 | 🔴🟡🟢 マーカー付き指摘事項リスト |
+レビュー完了後、結果は `{session_dir}/review.md` に保存済みの状態となる（Codex はリダイレクト、Claude は subagent が Write）。
+
+### plan.yaml の初期作成
+
+`{session_dir}/review.md` から指摘事項を解析し、`{session_dir}/plan.yaml` を初期作成する:
+
+1. review.md 内の 🔴🟡🟢 マーカー付き指摘事項を全て抽出してリスト化する
+2. 各指摘事項に対して以下のフィールドを設定する:
+   - `id`: 1 からの連番
+   - `severity`: 🔴 → `critical` / 🟡 → `major` / 🟢 → `minor`
+   - `title`: 指摘事項の問題名（`**[問題名]**` から抽出）
+   - `status`: `pending`（全件）
+   - `fixed_at`: `""`
+   - `files_modified`: `[]`
+   - `skip_reason`: `""`
+3. plan.yaml を Write で書き出す
+
+（フォーマット: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` の「plan.yaml」参照）
