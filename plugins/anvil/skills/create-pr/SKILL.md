@@ -80,7 +80,7 @@ github:
 git branch --show-current
 ```
 
-- main / master / develop ブランチの場合 → 警告してユーザーに確認（続行 or 中止）
+- main / master / develop ブランチの場合 → AskUserQuestion を使用して警告し確認する（続行 or 中止）
 
 ### 1.5 ベースブランチの決定
 
@@ -171,7 +171,7 @@ git ls-remote --heads origin <current-branch>
   ```bash
   git push -u origin <current-branch>
   ```
-  - 失敗した場合はエラー内容を表示してユーザーに確認（中止 or 別対応）
+  - 失敗した場合は AskUserQuestion を使用してエラー内容を提示し対応を確認する（中止 or 別対応）
 
 ### 4.2 PR 作成
 
@@ -213,7 +213,7 @@ PR を作成しました:
 |--------|------|
 | gh CLI 未インストール | `https://cli.github.com/` のインストール手順を案内して終了 |
 | gh CLI 未認証 | `gh auth login` を案内して終了 |
-| main/master/develop ブランチから実行 | 警告してユーザーに確認（続行 or 中止） |
+| main/master/develop ブランチから実行 | AskUserQuestion で警告し確認（続行 or 中止） |
 | コミット差分なし | エラー終了・コミットを促す |
-| push 失敗 | エラー内容を表示してユーザーに確認 |
+| push 失敗 | AskUserQuestion でエラー内容を提示し対応を確認 |
 | PR 作成失敗 | エラー内容を表示して終了 |
