@@ -173,10 +173,10 @@ git status
 
 コミット成功後、AskUserQuestion を使用してプッシュの承認を得る:
 
+- **push しない（デフォルト）** → push せずに終了
 - **push する** → リモートへの追跡設定を確認してから push:
   - 追跡設定あり → `git push`
   - 追跡設定なし → `git push -u origin <current-branch>`
-- **push しない（デフォルト）** → push せずに終了
 
 push 失敗の場合は AskUserQuestion を使用してエラー内容を提示し対応を確認する。
 
