@@ -15,11 +15,11 @@ argument-hint: "<種別> [--エンジン]"
 
 ## 設計原則
 
-| 原則 | 説明 |
-|------|------|
-| **subagent として動作** | `/forge:review` から general-purpose subagent として起動される。メインコンテキストを消費しない |
-| レビュー実行も subagent | Codex または Claude subagent にレビューを委譲する |
-| ファイル経由のデータ受け渡し | 入力は `session_dir` の refs.yaml から読み取り、出力は review.md / plan.yaml に書き出す |
+| 原則                         | 説明                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| **subagent として動作**      | `/forge:review` から general-purpose subagent として起動される。メインコンテキストを消費しない |
+| レビュー実行も subagent      | Codex または Claude subagent にレビューを委譲する                                              |
+| ファイル経由のデータ受け渡し | 入力は `session_dir` の refs.yaml から読み取り、出力は review.md / plan.yaml に書き出す        |
 
 ---
 
@@ -27,11 +27,11 @@ argument-hint: "<種別> [--エンジン]"
 
 呼び出し元（/forge:review）から以下を受け取る:
 
-| 項目 | 必須 | 説明 |
-|------|------|------|
-| session_dir | 必須 | セッションワーキングディレクトリのパス |
-| 種別 | 必須 | `code` / `requirement` / `design` / `plan` / `generic` |
-| エンジン | 必須 | `codex` / `claude` |
+| 項目        | 必須 | 説明                                                   |
+| ----------- | ---- | ------------------------------------------------------ |
+| session_dir | 必須 | セッションワーキングディレクトリのパス                 |
+| 種別        | 必須 | `code` / `requirement` / `design` / `plan` / `generic` |
+| エンジン    | 必須 | `codex` / `claude`                                     |
 
 target_files / reference_docs / related_code / review_criteria_path は `{session_dir}/refs.yaml` から読み取る。
 
@@ -49,19 +49,19 @@ target_files / reference_docs / related_code / review_criteria_path は `{sessio
    - `related_code`: 関連コードのパスと関連性の説明（任意）
 3. 取得した `reference_docs` のパスを全て Read して、ルール・設計意図を把握する
 4. 取得した `related_code` のパスも Read して、既存実装のパターン・規約を把握する
-（参考文書・関連コードの収集・探索は行わない。refs.yaml に記載されたパスのみ使用する）
+   （参考文書・関連コードの収集・探索は行わない。refs.yaml に記載されたパスのみ使用する）
 
 ### Phase 2: レビュー実行
 
 #### 種別と review_criteria の観点セクション対応
 
-| 種別 | review_criteria のセクション |
-|------|------------------------------|
-| `requirement` | 「1. 要件定義書レビュー観点」 |
-| `design` | 「2. 設計書レビュー観点」 |
-| `plan` | 「3. 計画書レビュー観点」 |
-| `code` | 「4. コードレビュー観点」 |
-| `generic` | 「5. 汎用文書レビュー観点」（なければフォールバック観点を使用） |
+| 種別          | review_criteria のセクション                                    |
+| ------------- | --------------------------------------------------------------- |
+| `requirement` | 「1. 要件定義書レビュー観点」                                   |
+| `design`      | 「2. 設計書レビュー観点」                                       |
+| `plan`        | 「3. 計画書レビュー観点」                                       |
+| `code`        | 「4. コードレビュー観点」                                       |
+| `generic`     | 「5. 汎用文書レビュー観点」（なければフォールバック観点を使用） |
 
 #### Codex の場合
 

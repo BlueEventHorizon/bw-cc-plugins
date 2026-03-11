@@ -5,7 +5,8 @@
       "mcp__gemini-cli__brainstorm",
       "Skill(forge:help)",
       "Bash(python3:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(chmod +x:*)"
     ]
   },
   "enabledPlugins": {},

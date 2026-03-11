@@ -6,11 +6,11 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 ## Plugins
 
-| Plugin | Version | Description |
-|--------|---------|-------------|
-| **forge** | 0.0.14 | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
-| **anvil** | 0.0.3 | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows. |
-| **xcode** | 0.0.1 | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection. |
+| Plugin    | Version | Description                                                                                                   |
+| --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
+| **forge** | 0.0.14  | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **anvil** | 0.0.3   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
+| **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 
 ## Installation
 
@@ -58,12 +58,12 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 /forge:review <type> [target] [--engine] [--refactor [N]]
 ```
 
-| Argument | Values |
-|----------|--------|
-| type | `code` \| `requirement` \| `design` \| `plan` \| `generic` |
-| target | File path(s), directory, feature name, or omit for interactive |
-| engine | `--codex` (default) \| `--claude` |
-| mode | `--refactor [N]` (review+fix N cycles, default 1) \| `--auto-fix` (backward compat) |
+| Argument | Values                                                                              |
+| -------- | ----------------------------------------------------------------------------------- |
+| type     | `code` \| `requirement` \| `design` \| `plan` \| `generic`                          |
+| target   | File path(s), directory, feature name, or omit for interactive                      |
+| engine   | `--codex` (default) \| `--claude`                                                   |
+| mode     | `--refactor [N]` (review+fix N cycles, default 1) \| `--auto-fix` (backward compat) |
 
 ### Examples
 
@@ -114,37 +114,37 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 
 ### Skills
 
-| Skill | User-invocable | Description |
-|-------|---------------|-------------|
-| `review` | Yes | Orchestrator: collects references, delegates to reviewer/evaluator/fixer, then commits |
-| `setup` | Yes | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml` |
-| `create-requirements` | Yes | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design |
-| `create-design` | Yes | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
-| `create-plan` | Yes | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
-| `help` | Yes | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly |
-| `present-findings` | No (AI only) | Presents review findings interactively, one item at a time (human acts as evaluator) |
-| `show-report` | Yes | Generates an HTML progress report from a review session directory and opens it in the browser |
-| `reviewer` | No (AI only) | Executes review and collects reference documents. Returns findings + reference doc paths |
-| `evaluator` | No (AI only) | Scrutinizes review findings with 5 criteria and determines what to fix/skip/confirm |
-| `fixer` | No (AI only) | Fixes issues based on review findings. Accepts reference doc paths to avoid re-collection |
+| Skill                 | User-invocable | Description                                                                                                                                   |
+| --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `review`              | Yes            | Orchestrator: collects references, delegates to reviewer/evaluator/fixer, then commits                                                        |
+| `setup`               | Yes            | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml`                                                |
+| `create-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
+| `create-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
+| `create-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
+| `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
+| `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
+| `show-report`         | Yes            | Generates an HTML progress report from a review session directory and opens it in the browser                                                 |
+| `reviewer`            | No (AI only)   | Executes review and collects reference documents. Returns findings + reference doc paths                                                      |
+| `evaluator`           | No (AI only)   | Scrutinizes review findings with 5 criteria and determines what to fix/skip/confirm                                                           |
+| `fixer`               | No (AI only)   | Fixes issues based on review findings. Accepts reference doc paths to avoid re-collection                                                     |
 
 ### Review Types
 
-| Type | Target |
-|------|--------|
-| `code` | Source code files and directories |
-| `requirement` | Requirements documents |
-| `design` | Design documents |
-| `plan` | Development plans |
-| `generic` | Any document (rules, skills, READMEs, etc.) |
+| Type          | Target                                      |
+| ------------- | ------------------------------------------- |
+| `code`        | Source code files and directories           |
+| `requirement` | Requirements documents                      |
+| `design`      | Design documents                            |
+| `plan`        | Development plans                           |
+| `generic`     | Any document (rules, skills, READMEs, etc.) |
 
 ### Severity Levels
 
-| Level | Meaning |
-|-------|---------|
+| Level    | Meaning                                                           |
+| -------- | ----------------------------------------------------------------- |
 | Critical | Must fix. Bugs, security issues, data loss risks, spec violations |
-| Major | Should fix. Coding standards, error handling, performance |
-| Minor | Nice to have. Readability, refactoring suggestions |
+| Major    | Should fix. Coding standards, error handling, performance         |
+| Minor    | Nice to have. Readability, refactoring suggestions                |
 
 ### Review Criteria
 
@@ -203,10 +203,10 @@ Xcode build and test toolkit. Build and test iOS/macOS projects with automatic s
 
 ### Skills
 
-| Skill | User-invocable | Description |
-|-------|---------------|-------------|
-| `build` | Yes | Full clean build with error reporting. Auto-detects iOS/macOS platform. |
-| `test` | Yes | Runs tests with simulator auto-detection for iOS. Reports failures with details. |
+| Skill   | User-invocable | Description                                                                      |
+| ------- | -------------- | -------------------------------------------------------------------------------- |
+| `build` | Yes            | Full clean build with error reporting. Auto-detects iOS/macOS platform.          |
+| `test`  | Yes            | Runs tests with simulator auto-detection for iOS. Reports failures with details. |
 
 ### Requirements
 
@@ -237,10 +237,10 @@ GitHub operations toolkit. Create PRs from the current branch with auto-generate
 
 ### Skills
 
-| Skill | User-invocable | Description |
-|-------|---------------|-------------|
-| `create-pr` | Yes | Creates a GitHub draft PR with title/body generated from commit diff. Requires `gh` CLI. |
-| `commit` | Yes | Generates a commit message from changes and commits & pushes. Auto-appends issue ref from branch name. |
+| Skill       | User-invocable | Description                                                                                            |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `create-pr` | Yes            | Creates a GitHub draft PR with title/body generated from commit diff. Requires `gh` CLI.               |
+| `commit`    | Yes            | Generates a commit message from changes and commits & pushes. Auto-appends issue ref from branch name. |
 
 ### Requirements
 

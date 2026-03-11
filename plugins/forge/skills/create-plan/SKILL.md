@@ -18,8 +18,8 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 /forge:create-plan [feature]
 ```
 
-| 引数 | 内容 |
-|-----|------|
+| 引数    | 内容                             |
+| ------- | -------------------------------- |
 | feature | Feature 名（省略時は対話で確定） |
 
 ---
@@ -42,6 +42,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 対象 Feature: **$ARGUMENTS**
 
 引数が指定されていない場合:
+
 1. `specs/` ディレクトリ内の Feature 一覧を確認: `ls -d specs/*/`
 2. AskUserQuestion を使用して対象 Feature を確認する
 
@@ -49,10 +50,10 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 
 `specs/{feature}/plan/{feature}_plan.md` の存在を確認し、モードを決定する:
 
-| 状況 | モード |
-|------|--------|
-| 計画書が存在しない | **新規作成モード** → Phase 1 へ |
-| 計画書が存在する | **更新モード**: 既存計画書を Read して現状を把握 → Phase 1 へ |
+| 状況               | モード                                                        |
+| ------------------ | ------------------------------------------------------------- |
+| 計画書が存在しない | **新規作成モード** → Phase 1 へ                               |
+| 計画書が存在する   | **更新モード**: 既存計画書を Read して現状を把握 → Phase 1 へ |
 
 ### Step 4: プロジェクト固有情報の取得 [MANDATORY]
 
@@ -62,6 +63,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 2. 「計画書フォーマット」「plan_format」→ フォーマット定義
 
 `/query-rules` が利用不可、またはフォーマットが見つからない場合:
+
 - `.doc_structure.yaml` の `rules` パスから `**/plan_format*` を Glob 探索
 - それも見つからなければ以下の defaults を使用:
   - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
@@ -82,6 +84,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 2. 利用不可 → `.doc_structure.yaml` の `specs.requirement.paths` および `specs.design.paths` から Feature に関連するドキュメントを Glob 探索
 
 **設計書が見つからない場合**: AskUserQuestion を使用してユーザーに確認する:
+
 - 設計書のパスを手動で指定する
 - 設計書なしで計画書作成を進める（リスクを理解した上で）
 
@@ -109,10 +112,10 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 
 **タスクの粒度**:
 
-| 基準 | 内容 |
-|------|------|
-| 単位 | 1つのファイル、または密接に関連する2〜3つのファイル |
-| 量 | やるべき内容は5〜10項目程度 |
+| 基準   | 内容                                                   |
+| ------ | ------------------------------------------------------ |
+| 単位   | 1つのファイル、または密接に関連する2〜3つのファイル    |
+| 量     | やるべき内容は5〜10項目程度                            |
 | 完結性 | タスク完了時にビルド・テストが成功する規模 [MANDATORY] |
 
 **タスクグループ化**: タスクを細かく分割すると途中でビルドが壊れることは普通に起きる。その場合は複数タスクをグループ化し、グループ完了時にビルドを確認する。

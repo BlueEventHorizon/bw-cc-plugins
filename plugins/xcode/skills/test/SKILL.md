@@ -18,9 +18,9 @@ Xcodeプロジェクトのテストを実行する。
 /xcode:test [scheme-name] [test-target]
 ```
 
-| 引数 | 内容 |
-|-----|------|
-| scheme-name | スキーム名（省略時は `.xcodeproj` から自動検出） |
+| 引数        | 内容                                                              |
+| ----------- | ----------------------------------------------------------------- |
+| scheme-name | スキーム名（省略時は `.xcodeproj` から自動検出）                  |
 | test-target | テストターゲット（例: `LibraryTests/FooTests`。省略時は全テスト） |
 
 ---
@@ -37,10 +37,10 @@ grep -r "^SDKROOT" . --include="*.xcconfig" | head -5
 
 2. 見つかった場合、`SDKROOT` の値でプラットフォームを決定:
 
-| SDKROOT | プラットフォーム |
-|---------|---------------|
-| `iphoneos` | iOS |
-| `macosx` | macOS |
+| SDKROOT    | プラットフォーム |
+| ---------- | ---------------- |
+| `iphoneos` | iOS              |
+| `macosx`   | macOS            |
 
 3. `.xcconfig` が見つからない場合: AskUserQuestion で iOS / macOS を確認
 4. `SDKROOT` が上記以外の値の場合: AskUserQuestion で確認
@@ -51,13 +51,14 @@ grep -r "^SDKROOT" . --include="*.xcconfig" | head -5
 
 `$ARGUMENTS` を解析する:
 
-| パターン | スキーム | テストターゲット |
-|---------|---------|---------------|
-| 引数なし | `.xcodeproj` から自動検出 | 全テスト |
-| `MyApp` | `MyApp` | 全テスト |
-| `MyApp LibraryTests/FooTests` | `MyApp` | `LibraryTests/FooTests` |
+| パターン                      | スキーム                  | テストターゲット        |
+| ----------------------------- | ------------------------- | ----------------------- |
+| 引数なし                      | `.xcodeproj` から自動検出 | 全テスト                |
+| `MyApp`                       | `MyApp`                   | 全テスト                |
+| `MyApp LibraryTests/FooTests` | `MyApp`                   | `LibraryTests/FooTests` |
 
 スキーム自動検出:
+
 ```bash
 find . -maxdepth 1 -name "*.xcodeproj" -type d | head -1 | xargs -I{} basename {} .xcodeproj
 ```

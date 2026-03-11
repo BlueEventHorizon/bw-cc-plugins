@@ -10,6 +10,7 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 # /forge:create-requirements
 
 要件定義書を作成する。3つのモードに対応:
+
 - **interactive**: ゼロから対話しながら要件を固める
 - **reverse-engineering**: 既存アプリのソースコードから要件を抽出
 - **from-figma**: Figmaデザインファイルから要件とデザイントークンを作成
@@ -20,12 +21,12 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 /forge:create-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
 ```
 
-| 引数 | 内容 |
-|-----|------|
+| 引数    | 内容                             |
+| ------- | -------------------------------- |
 | feature | Feature 名（省略時は対話で確定） |
-| --mode | モード指定（省略時は選択肢提示） |
-| --new | 新規アプリ |
-| --add | 既存アプリへの機能追加 |
+| --mode  | モード指定（省略時は選択肢提示） |
+| --new   | 新規アプリ                       |
+| --add   | 既存アプリへの機能追加           |
 
 ---
 
@@ -75,6 +76,7 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 `from-figma` 選択時: Figma MCP の利用可否を確認する（利用可能なツール一覧に `mcp__figma` 等が存在するか）。
 未インストール時はエラーで終了:
+
 ```
 Error: Figma MCP が必要です。
 interactive または reverse-engineering を使用してください。
@@ -115,15 +117,15 @@ interactive または reverse-engineering を使用してください。
 
 ### アンチパターン [MANDATORY]
 
-| パターン | 問題 | 対策 |
-|---------|------|------|
-| 質問攻め | ユーザー疲弊 | 選択肢提示、1回3〜5問以内 |
-| 曖昧な合意 | 後で認識ズレ | 図表で視覚的確認 |
-| How 混入 | 設計領域侵食 | 「ユーザーマニュアルに書くか？」で判断 |
-| 完璧主義 | 進まない | TBD を許容 |
-| 一気に全部 | 漏れ・矛盾 | フェーズごとに確定 |
-| 既存無視（追加時） | 整合性崩壊 | 既存資産を必ず確認 |
-| スコープ膨張 | 終わらない | 3段階分類 |
+| パターン           | 問題         | 対策                                   |
+| ------------------ | ------------ | -------------------------------------- |
+| 質問攻め           | ユーザー疲弊 | 選択肢提示、1回3〜5問以内              |
+| 曖昧な合意         | 後で認識ズレ | 図表で視覚的確認                       |
+| How 混入           | 設計領域侵食 | 「ユーザーマニュアルに書くか？」で判断 |
+| 完璧主義           | 進まない     | TBD を許容                             |
+| 一気に全部         | 漏れ・矛盾   | フェーズごとに確定                     |
+| 既存無視（追加時） | 整合性崩壊   | 既存資産を必ず確認                     |
+| スコープ膨張       | 終わらない   | 3段階分類                              |
 
 ### Phase 1: ビジョン・価値の明確化
 
@@ -235,4 +237,3 @@ interactive または reverse-engineering を使用してください。
 ```
 
 ---
-

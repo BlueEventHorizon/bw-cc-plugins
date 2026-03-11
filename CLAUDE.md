@@ -56,6 +56,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 ### create-requirements スキル
 
 `/forge:create-requirements` (user-invocable) — 要件定義書を作成する。3つのモードに対応:
+
 - **interactive**: 対話形式でゼロから要件を固める
 - **reverse-engineering**: 既存アプリのソースコードを解析して要件を抽出
 - **from-figma**: Figma MCP を使いデザインファイルから要件とデザイントークンを作成（Figma MCP 必須）
@@ -75,6 +76,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 ### レビュー観点の3階層フォールバック
 
 review スキルがレビュー観点を探索する優先順位：
+
 1. **DocAdvisor** — `/query-rules` Skill が動的にプロジェクト固有の観点を特定（`.claude/skills/query-rules/SKILL.md` で利用可否判断）
 2. **プロジェクト設定** — `.claude/review-config.yaml`
 3. **プラグインデフォルト** — `plugins/forge/defaults/review_criteria.md`

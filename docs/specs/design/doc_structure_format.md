@@ -25,33 +25,33 @@ version: "1.0"
 specs:
   <doc_type>:
     paths: [<directory_path>, ...]
-    exclude: ["<dir_name>", ...]        # optional
+    exclude: ["<dir_name>", ...] # optional
     description: "<optional description>"
 
 rules:
   <doc_type>:
     paths: [<directory_path>, ...]
-    exclude: ["<dir_name>", ...]        # optional
+    exclude: ["<dir_name>", ...] # optional
     description: "<optional description>"
 ```
 
 ### Fields
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `version` | Yes | string | Schema version. Currently `"1.0"` |
-| `specs` | No | object | Specification document types (requirements, designs, plans, etc.) |
-| `rules` | No | object | Rule document types (development rules, workflows, guidelines, etc.) |
+| Field     | Required | Type   | Description                                                          |
+| --------- | -------- | ------ | -------------------------------------------------------------------- |
+| `version` | Yes      | string | Schema version. Currently `"1.0"`                                    |
+| `specs`   | No       | object | Specification document types (requirements, designs, plans, etc.)    |
+| `rules`   | No       | object | Rule document types (development rules, workflows, guidelines, etc.) |
 
 ### Doc Type Entry
 
 Each key under `specs` or `rules` is a **doc_type name** (e.g., `requirement`, `design`, `plan`).
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `paths` | Yes | array[string] | Directory paths (relative to project root). Glob patterns (`*`) supported |
-| `exclude` | No | array[string] | Directory names to exclude. Matches any path component with that name |
-| `description` | No | string | Human-readable description of this document type |
+| Field         | Required | Type          | Description                                                               |
+| ------------- | -------- | ------------- | ------------------------------------------------------------------------- |
+| `paths`       | Yes      | array[string] | Directory paths (relative to project root). Glob patterns (`*`) supported |
+| `exclude`     | No       | array[string] | Directory names to exclude. Matches any path component with that name     |
+| `description` | No       | string        | Human-readable description of this document type                          |
 
 ### Path Format
 
@@ -93,21 +93,21 @@ These names are recommended for interoperability. Custom names are also valid.
 
 ### For `specs` category
 
-| Name | Description |
-|------|-------------|
-| `requirement` | Functional and non-functional requirements |
-| `design` | Technical design documents, architecture specs |
-| `plan` | Implementation plans, roadmaps, task breakdowns |
-| `api` | API specifications, endpoint documentation |
-| `reference` | Reference materials, data dictionaries |
+| Name          | Description                                     |
+| ------------- | ----------------------------------------------- |
+| `requirement` | Functional and non-functional requirements      |
+| `design`      | Technical design documents, architecture specs  |
+| `plan`        | Implementation plans, roadmaps, task breakdowns |
+| `api`         | API specifications, endpoint documentation      |
+| `reference`   | Reference materials, data dictionaries          |
 
 ### For `rules` category
 
-| Name | Description |
-|------|-------------|
-| `rule` | Development rules, coding standards, conventions |
-| `workflow` | Workflow procedures, process guides |
-| `guide` | Best practices, how-to guides |
+| Name       | Description                                      |
+| ---------- | ------------------------------------------------ |
+| `rule`     | Development rules, coding standards, conventions |
+| `workflow` | Workflow procedures, process guides              |
+| `guide`    | Best practices, how-to guides                    |
 
 ## Examples
 
