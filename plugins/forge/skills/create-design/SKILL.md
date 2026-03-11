@@ -70,19 +70,22 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 
 ### Step 5: プロジェクト固有情報の取得 [MANDATORY]
 
-`/query-rules` Skill が利用可能な場合、以下を取得して以降の Phase 全体で参照する:
+以下の defaults を**常に**読み込む（ベースライン）:
 
-1. 「設計書作成ワークフロー」「design workflow」→ プロジェクト固有のワークフロー指示
-2. 「設計書フォーマット」「design_format」→ フォーマット定義
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（設計IDの体系を確認）
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/design_format.md`** — 設計書テンプレート
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/design_principles.md`** — 設計原則・作成ガイドライン
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド
 
-`/query-rules` が利用不可、またはフォーマットが見つからない場合:
+次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
 
-- `.doc_structure.yaml` の `rules` パスから `**/design_format*` を Glob 探索
-- それも見つからなければ以下の defaults を使用:
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（設計IDの体系を確認）
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/design_format.md`** — 設計書テンプレート
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/design_principles.md`** — 設計原則・作成ガイドライン
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド
+```
+/query-rules 設計書を作成する
+```
+
+セマンティック検索により、ワークフロー指示・フォーマット定義・設計原則・アーキテクチャルール等、設計書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
+
+`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/design_format*` `**/design*` を Glob 探索して補完する。
 
 **コンフリクト時の優先順位**: プロジェクト固有の指示が SKILL.md と異なる場合、**プロジェクト側を優先**する。ただし `[MANDATORY]` 付き項目は常に実行する。
 

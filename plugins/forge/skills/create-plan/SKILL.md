@@ -57,18 +57,21 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 
 ### Step 4: プロジェクト固有情報の取得 [MANDATORY]
 
-`/query-rules` Skill が利用可能な場合、以下を取得して以降の Phase 全体で参照する:
+以下の defaults を**常に**読み込む（ベースライン）:
 
-1. 「計画書作成ワークフロー」「planning workflow」→ プロジェクト固有のワークフロー指示（タスク抽出順序・タスクID体系等）
-2. 「計画書フォーマット」「plan_format」→ フォーマット定義
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_format.md`** — 計画書テンプレート
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_principles.md`** — 計画書作成原則・タスク設計ガイドライン
 
-`/query-rules` が利用不可、またはフォーマットが見つからない場合:
+次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
 
-- `.doc_structure.yaml` の `rules` パスから `**/plan_format*` を Glob 探索
-- それも見つからなければ以下の defaults を使用:
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_format.md`** — 計画書テンプレート
-  - **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_principles.md`** — 計画書作成原則・タスク設計ガイドライン
+```
+/query-rules 計画書・実装タスクを作成する
+```
+
+セマンティック検索により、ワークフロー指示・フォーマット定義・タスク設計ルール・タスクID体系等、計画書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
+
+`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/plan_format*` `**/plan*` を Glob 探索して補完する。
 
 **コンフリクト時の優先順位**: プロジェクト固有の指示が SKILL.md と異なる場合、**プロジェクト側を優先**する。ただし `[MANDATORY]` 付き項目は常に実行する。
 
