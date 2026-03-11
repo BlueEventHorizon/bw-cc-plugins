@@ -18,8 +18,8 @@ Xcodeプロジェクトのフルビルドを実行する。
 /xcode:build [scheme-name]
 ```
 
-| 引数 | 内容 |
-|-----|------|
+| 引数        | 内容                                             |
+| ----------- | ------------------------------------------------ |
 | scheme-name | スキーム名（省略時は `.xcodeproj` から自動検出） |
 
 ---
@@ -36,10 +36,10 @@ grep -r "^SDKROOT" . --include="*.xcconfig" | head -5
 
 2. 見つかった場合、`SDKROOT` の値でプラットフォームを決定:
 
-| SDKROOT | プラットフォーム | destination |
-|---------|---------------|-------------|
-| `iphoneos` | iOS | `generic/platform=iOS` |
-| `macosx` | macOS | `platform=macOS` |
+| SDKROOT    | プラットフォーム | destination            |
+| ---------- | ---------------- | ---------------------- |
+| `iphoneos` | iOS              | `generic/platform=iOS` |
+| `macosx`   | macOS            | `platform=macOS`       |
 
 3. `.xcconfig` が見つからない場合: AskUserQuestion で iOS / macOS を確認
 4. `SDKROOT` が上記以外の値の場合: AskUserQuestion で確認
