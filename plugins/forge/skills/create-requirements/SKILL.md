@@ -50,16 +50,25 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 - 設定あり → そのパスを使用（例: `specs/requirements/`）
 - 設定なし → `specs/{feature}/requirements/` をデフォルトとして使用
 
-### Step 3: フォーマットファイルの取得
+### Step 3: プロジェクト固有情報の取得 [MANDATORY]
 
-以下の優先順でフォーマットファイルを探索する:
+以下の defaults を**常に**読み込む（ベースライン）:
 
-1. **DocAdvisor**（`/query-rules` Skill）が利用可能なら「spec_format」「要件定義書フォーマット」で問い合わせ
-2. `.doc_structure.yaml` の `rules` パスから `**/spec_format*` を Glob 探索
-3. 見つからなければ以下の defaults を使用:
-   - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
-   - **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
-   - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
+- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
+
+次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
+
+```
+/query-rules 要件定義書を作成する
+```
+
+セマンティック検索により、ワークフロー指示・フォーマット定義・要件記述ルール等、要件定義書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
+
+`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/spec_format*` `**/requirement*` を Glob 探索して補完する。
+
+**コンフリクト時の優先順位**: プロジェクト固有の指示が SKILL.md と異なる場合、**プロジェクト側を優先**する。ただし `[MANDATORY]` 付き項目は常に実行する。
 
 ---
 
