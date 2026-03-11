@@ -2,3 +2,4 @@ reference_projects
 __pycache__
 *.bak
 .claude/.temp/
+**/meta/

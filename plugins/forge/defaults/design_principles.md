@@ -109,6 +109,25 @@
 
 ---
 
+## 図表使用ガイドライン
+
+設計書での図表は Mermaid 形式を推奨する。
+
+| 図種別 | 用途 | Mermaid 構文 |
+|-------|------|-------------|
+| フローチャート | アーキテクチャ図・処理フロー | `flowchart TB` |
+| クラス図 | モジュール構造・型関係 | `classDiagram` |
+| シーケンス図 | ユースケース・データフロー | `sequenceDiagram` |
+
+**注意**: flowchart で小文字の `end` は使用禁止（`End` または `END` を使用）
+
+Mermaid 構文リファレンス:
+- [Flowchart](https://mermaid.js.org/syntax/flowchart.html)
+- [Class Diagram](https://mermaid.js.org/syntax/classDiagram.html)
+- [Sequence Diagram](https://mermaid.js.org/syntax/sequenceDiagram.html)
+
+---
+
 ## 改定履歴セクション [MANDATORY]
 
 - セクション名は **`## 改定履歴`** を使用（「変更履歴」「承認と改訂履歴」等は使用しない）
