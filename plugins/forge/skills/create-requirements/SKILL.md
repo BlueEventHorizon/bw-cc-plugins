@@ -55,7 +55,10 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 1. **DocAdvisor**（`/query-rules` Skill）が利用可能なら「spec_format」「要件定義書フォーマット」で問い合わせ
 2. `.doc_structure.yaml` の `rules` パスから `**/spec_format*` を Glob 探索
-3. 見つからなければ **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** を Read して使用
+3. 見つからなければ以下の defaults を使用:
+   - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
+   - **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
+   - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 
 ---
 
