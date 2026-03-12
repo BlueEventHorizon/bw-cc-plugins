@@ -26,13 +26,13 @@ rules:
 # === specs configuration ===
 specs:
   root_dirs:
-    - docs/specs/design/
-    - docs/specs/plan/
-    - docs/specs/requirement/
+    - docs/specs/forge/design/
+    - docs/specs/forge/plan/
+    - docs/specs/forge/requirement/
   doc_types_map:
-    docs/specs/design/: design
-    docs/specs/plan/: plan
-    docs/specs/requirement/: requirement
+    docs/specs/forge/design/: design
+    docs/specs/forge/plan/: plan
+    docs/specs/forge/requirement/: requirement
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
   checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/

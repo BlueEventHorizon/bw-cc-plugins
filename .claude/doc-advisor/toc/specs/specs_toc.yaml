@@ -4,101 +4,243 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-12T02:09:36Z
-  file_count: 3
+  generated_at: 2026-03-12T13:11:25Z
+  file_count: 8
 
 docs:
-  docs/specs/design/doc_structure_format.md:
+  docs/specs/forge/design/create_design_pipeline.md:
+    doc_type: design
+    title: forge Design Pipeline Specification
+    purpose: Defines the orchestration workflow and implementation details for creating design specifications from requirements through context gathering, design creation, review, and quality assurance phases
+    content_details:
+      - Overview and current challenges
+      - Flowchart with orchestrator phases
+      - Prerequisites confirmation phase
+      - Context collection phase with specifications, rules, and code gathering
+      - Design creation phase with file-by-file human review
+      - AI review phase using forge:review
+      - Quality assurance phase with completeness checks
+      - Design principles including requirement coverage and existing code asset reuse
+      - What/How boundary guidelines
+      - Related files and next steps
+    applicable_tasks:
+      - Design specification creation
+      - Design pipeline orchestration
+      - Context collection coordination
+      - AI review execution
+      - Quality assurance planning
+      - Feature design planning
+    keywords:
+      - forge
+      - design
+      - orchestrator
+      - pipeline
+      - context gathering
+      - code reuse
+      - phase workflow
+      - subagent delegation
+  docs/specs/forge/design/create_plan_pipeline.md:
+    doc_type: design
+    title: forge Plan Creation Pipeline Design
+    purpose: Defines the orchestrator workflow for create-plan skill, including context collection, task extraction, formatting, quality assurance, and review phases for plan document creation
+    content_details:
+      - Orchestrator pattern workflow
+      - Phase 1 context collection from specs and rules agents
+      - Phase 2 plan creation with task extraction and division
+      - Phase 3 AI review and human approval
+      - Task granularity guidelines (Agent execution unit, 5-10 items)
+      - Completeness check with traceability matrix
+      - Update mode handling for existing plan documents
+      - Spec format and plan format templates
+      - Traceability matrix (Requirement ID to Design ID to Task ID)
+    applicable_tasks:
+      - Create plan workflow orchestration
+      - Design and architect plan creation process
+      - Define task extraction and division logic
+      - Implement context collection agents
+      - Plan review and quality assurance
+      - Update existing plan documents
+    keywords:
+      - orchestrator pattern
+      - plan creation
+      - task extraction
+      - traceability matrix
+      - create-plan
+      - context collection
+      - Agent execution
+      - completeness check
+  docs/specs/forge/design/create_requirements_pipeline.md:
+    doc_type: design
+    title: forge Requirements Definition Pipeline Design
+    purpose: Design specification for the create-requirements orchestrator skill, covering interactive, reverse-engineering, and from-figma modes for requirement document creation
+    content_details:
+      - 3-mode orchestrator pattern (interactive, reverse-engineering, from-figma)
+      - Phase 0 prerequisite checks (.doc_structure.yaml, output directory, defaults loading)
+      - Interactive mode vision and user interaction flow (APP-001 draft, screen composition, navigation)
+      - Reverse-engineering mode source code analysis and requirement extraction
+      - From-figma mode design system and 2-layer token structure creation
+      - Common post-processing phases with AI review and human confirmation
+      - Design principles focused on What vs How distinction (spec/design boundary)
+      - ID system consistency catalog (APP, SCR, FNC, BL, DM, CMP, THEME, NAV, API, EXT, NFR, SEC, ERR)
+      - Glossary requirements as mandatory output
+      - Quality assurance and specs ToC generation
+    applicable_tasks:
+      - create-requirements skill implementation
+      - Requirements definition document generation workflows
+      - Figma MCP integration planning
+      - Reverse-engineering analysis pipeline design
+      - Interactive user dialogue flow design
+      - Quality assurance and review process definition
+      - Design token management and specification
+      - spec/design boundary clarification
+    keywords:
+      - create-requirements
+      - orchestrator
+      - reverse-engineering
+      - from-figma
+      - interactive
+      - specification
+      - design tokens
+      - requirement extraction
+      - subagent delegation
+      - context management
+  docs/specs/forge/design/doc_structure_format.md:
     doc_type: design
     title: .doc_structure.yaml Format Specification
-    purpose: Defines the format specification for .doc_structure.yaml, a project-level convention that declares document organization for multiple tool consumers including Skills, Doc Advisor, and review tools
+    purpose: Specifies the schema and format for .doc_structure.yaml, a project-level convention that declares where different types of documents are located and consumed by multiple tools for skills and review operations
     content_details:
-      - .doc_structure.yaml purpose and consumers (Skills, Doc Advisor, Review tools, Scripts)
-      - File location and schema structure
-      - Specs and rules category definitions with doc_type entries
-      - Path format with glob pattern support and exclude patterns
-      - Recommended doc_type names (requirement, design, plan, api, reference, rule, workflow, guide)
-      - Consumer guide for Skills, Scripts, and Doc Advisor integration
-      - Schema versioning and semantic versioning strategy
+      - File location and schema structure definition
+      - Doc type entry fields (paths, exclude, description)
+      - Path format including glob patterns and trailing slashes
+      - Exclude format with directory name matching
+      - Recommended doc type names for specs and rules categories
+      - Multiple configuration examples (flat, feature-based, mixed structures)
+      - Consumer guide for kaizen, scripts, and Doc Advisor with implementation examples
+      - Versioning and semantic versioning rules
     applicable_tasks:
-      - Doc Advisor ToC configuration and setup
-      - Document organization design for projects
-      - Review tool configuration and doc_type mapping
-      - Project structure validation and documentation standards
+      - Document organization planning
+      - Tool integration configuration
+      - Directory structure setup for new projects
+      - ToC generation and validation
+      - Review tool configuration
+      - Skills workflow setup
     keywords:
-      - doc_structure.yaml
+      - .doc_structure.yaml
       - doc_type
+      - schema
+      - specification
+      - forge
+      - Doc Advisor
+      - configuration
       - paths
       - exclude
-      - specs
-      - rules
-      - glob pattern
-      - semantic versioning
-  docs/specs/design/forge_review_pipeline.md:
+      - versioning
+  docs/specs/forge/design/forge_review_pipeline.md:
     doc_type: design
     title: forge Review Pipeline Design
-    purpose: Specifies the review pipeline architecture for the forge plugin, defining orchestrator-based flow with specialized skills for review execution, evaluation, finding presentation, and fix application
+    purpose: Defines the orchestration structure of the forge plugin review pipeline, skill responsibilities, interfaces, and execution flow for automated code and documentation review
     content_details:
-      - Review orchestrator that manages overall pipeline flow and performs ToC updates/commit/push
-      - reviewer skill that collects reference documents once and executes reviews
-      - evaluator skill that assesses findings across 5 viewpoints (rule compliance, design intent, side effects, false positives, target file verification)
-      - present-findings skill for interactive finding presentation to human judges
-      - fixer skill that applies fixes to identified issues
-      - single-pass reference document collection strategy shared across all agents
-      - unified pipeline structure for both interactive mode (human judge) and auto mode (AI judge)
-      - related code exploration pattern to improve review quality and fix consistency
-      - review type strategies (requirement/design/plan/code types use DocAdvisor, generic uses self-discovery)
-      - test execution after modifications with failure reporting to user
+      - "Skill orchestration: review, reviewer, evaluator, fixer, present-findings"
+      - Pipeline structure with orchestrator pattern for phase management
+      - "Judgement flow: auto mode with evaluator, interactive mode with present-findings"
+      - Skill interfaces and data flow between components
+      - Reference document collection strategy with DocAdvisor integration and fallback
+      - "5-point evaluation criteria: rule compliance, design intent, side effects, false positives, target file verification"
+      - Retry loop with test execution and design document synchronization
+      - commit and push orchestration
+      - God-Skill problem elimination through single responsibility principle
     applicable_tasks:
-      - Review pipeline implementation and maintenance
-      - Skill integration and orchestration
-      - AI-powered code review feature development
-      - Review cycle automation with auto/interactive mode support
-      - Reference document collection strategy implementation
-      - ToC update automation for design document changes
+      - Code review implementation
+      - Design document review
+      - Review pipeline orchestration
+      - Skill interface specification
+      - Reference document collection strategy definition
+      - Review result presentation in interactive mode
     keywords:
-      - review
-      - pipeline
+      - review pipeline
       - orchestrator
+      - reviewer
       - evaluator
       - fixer
-      - present-findings
-      - reference documentation
-      - related code
+      - skill interface
+      - reference documents
+      - DocAdvisor
       - auto mode
       - interactive mode
-  docs/specs/design/twinkling-popping-kahan.md:
+  docs/specs/forge/design/orchestrator_session_protocol.md:
     doc_type: design
-    title: forge Review Pipeline Session Directory Architecture
-    purpose: Specifies session directory design and file schema for forge review pipeline to maintain state across skill transitions and prevent context loss
+    title: Orchestrator Session Protocol Design
+    purpose: Defines common session directory protocol for forge orchestrator skills to communicate with subagents via file-based data exchange
     content_details:
-      - Session directory path structure with timestamp and random identifier
-      - session.yaml metadata for review state
-      - refs.yaml containing target files and reference documentation paths
-      - review.md output from reviewer subagent
-      - evaluation.yaml with evaluator judgment results
-      - plan.yaml tracking fix status across cycles
-      - report.html visual report with auto-refresh
-      - show-report skill for HTML generation and browser display
-      - lifecycle management from Phase 2 creation through Phase 5 cleanup
-      - session resumption after interruption
+      - Session directory structure and naming convention
+      - session.yaml common metadata fields
+      - refs/ reference file directory and schema
+      - Communication flow and agent instruction template
+      - Lifecycle management (creation, suspension, deletion)
+      - Integration pattern with review-specific protocol design
     applicable_tasks:
-      - forge review pipeline implementation
-      - session state management design
-      - review skill architecture refactoring
-      - reviewer subagent implementation
-      - evaluator integration
-      - fixer workflow design
-      - HTML report generation
-      - session recovery and resumption
+      - Orchestrator skill development
+      - Session management implementation
+      - Inter-agent communication setup
+      - Context gathering workflow design
+      - File-based data exchange implementation
+    keywords:
+      - orchestrator
+      - session directory
+      - session.yaml
+      - refs/
+      - subagent
+      - protocol
+      - communication
+      - data exchange
+      - workflow
+  docs/specs/forge/design/review_session_design.md:
+    doc_type: design
+    title: forge Review Pipeline Session Directory Design
+    purpose: Defines session directory architecture for forge review pipeline, including file structure, lifecycle, and inter-skill interfaces for persistent state management
+    content_details:
+      - Session directory path format (YYYYMMDD-HHmmss-random6)
+      - session.yaml metadata structure
+      - refs.yaml reference file list (target_files, reference_docs, review_criteria_path, related_code)
+      - review.md output format (Markdown only)
+      - evaluation.yaml evaluator decision results
+      - plan.yaml modification plan and progress tracking
+      - report.html visual report generation
+      - Lifecycle timing (creation, completion, interruption handling)
+    applicable_tasks:
+      - Review session state persistence implementation
+      - Inter-skill interface refactoring
+      - Session directory architecture design
+      - Report generation system development
+      - Session resumption after interruption
     keywords:
       - session directory
+      - review pipeline
       - refs.yaml
-      - review.md
-      - evaluation.yaml
       - plan.yaml
       - report.html
-      - show-report
-      - phase lifecycle
       - state persistence
-      - context preservation
+      - session resumption
+  docs/specs/forge/requirement/orchestrator_pattern.md:
+    doc_type: requirement
+    title: Orchestrator Pattern Requirement
+    purpose: Defines orchestrator design pattern requirements for forge plugin skills to enable parallel execution, context efficiency, and clear responsibility delegation through inter-skill communication
+    content_details:
+      - Context efficiency and God-Skill problem mitigation
+      - Orchestrator and subagent responsibility delegation
+      - Session directory based communication protocol
+      - Self-contained reference document design
+      - Parallel execution architecture for independent research tasks
+    applicable_tasks:
+      - Review skill refactoring with refs separation
+      - Create-design orchestrator implementation
+      - Create-plan orchestrator implementation
+      - Create-requirements orchestrator implementation
+    keywords:
+      - orchestrator
+      - session directory
+      - subagent delegation
+      - parallel execution
+      - forge plugin
+      - God-Skill problem
+      - context efficiency

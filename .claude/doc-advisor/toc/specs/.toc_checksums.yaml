@@ -1,8 +1,13 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-12T02:08:53Z
-file_count: 3
+generated_at: 2026-03-12T13:10:44Z
+file_count: 8
 checksums:
-  docs/specs/design/doc_structure_format.md: 6f34414978be8b0823911c46bccd94b857477b548fb770e3c716411a4a805fac
-  docs/specs/design/forge_review_pipeline.md: 683be195d77e60ab3b635df9da4b3f3beefba8fcd90caea7c735d5517921eb3b
-  docs/specs/design/twinkling-popping-kahan.md: e2b30a4199fae8f691d2962593cea1196c0680ccbe26b3cec0f4e26aa60b0a8f
+  docs/specs/forge/design/create_design_pipeline.md: 13c58db228600e4b278e16d3fbf482fcd82731edca393eae73ba77b25bee628f
+  docs/specs/forge/design/create_plan_pipeline.md: 0ad0afbe1f5562ec85aae10516b2dc9721b0f9807601dc1d52418eb071b3ed85
+  docs/specs/forge/design/create_requirements_pipeline.md: 3d2a42b206d64835e51586b94d8e81e9d30052408881cb1491efb1f86eb3f3d8
+  docs/specs/forge/design/doc_structure_format.md: 6f34414978be8b0823911c46bccd94b857477b548fb770e3c716411a4a805fac
+  docs/specs/forge/design/forge_review_pipeline.md: 683be195d77e60ab3b635df9da4b3f3beefba8fcd90caea7c735d5517921eb3b
+  docs/specs/forge/design/orchestrator_session_protocol.md: f746d5d0ac6a52940fe6ccbbe45e37326d1df9220f7643131b7033c73ec3a709
+  docs/specs/forge/design/review_session_design.md: e2b30a4199fae8f691d2962593cea1196c0680ccbe26b3cec0f4e26aa60b0a8f
+  docs/specs/forge/requirement/orchestrator_pattern.md: d2a4c2d4f4d19b3e08ece94b51163e9370d23ee646231a5822095d22e4dd8101
