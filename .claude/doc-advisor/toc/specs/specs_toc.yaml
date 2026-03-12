@@ -4,71 +4,101 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-09T07:50:11Z
-  file_count: 2
+  generated_at: 2026-03-12T02:09:36Z
+  file_count: 3
 
 docs:
   docs/specs/design/doc_structure_format.md:
-    doc_type: spec
+    doc_type: design
     title: .doc_structure.yaml Format Specification
-    purpose: Specification of .doc_structure.yaml file format that declares document types and directory locations for project-level document organization, consumed by skills, review tools, and scripts
+    purpose: Defines the format specification for .doc_structure.yaml, a project-level convention that declares document organization for multiple tool consumers including Skills, Doc Advisor, and review tools
     content_details:
-      - File location requirements at project root
-      - YAML schema with specs and rules sections
-      - Doc type entry configuration with paths, exclude, and description fields
-      - Path format supporting glob patterns and literal paths
-      - Exclude format with directory name matching
-      - Recommended doc type names for specs and rules categories
-      - Multiple example structures including flat, feature-based, and mixed layouts
-      - Consumer guide for kaizen, scripts, and Doc Advisor integration
-      - Version field using semantic versioning with backward compatibility
+      - .doc_structure.yaml purpose and consumers (Skills, Doc Advisor, Review tools, Scripts)
+      - File location and schema structure
+      - Specs and rules category definitions with doc_type entries
+      - Path format with glob pattern support and exclude patterns
+      - Recommended doc_type names (requirement, design, plan, api, reference, rule, workflow, guide)
+      - Consumer guide for Skills, Scripts, and Doc Advisor integration
+      - Schema versioning and semantic versioning strategy
     applicable_tasks:
-      - Document structure design
-      - Doc Advisor configuration
-      - Project documentation organization
-      - Review tool integration setup
-      - Tool integration for document location resolution
+      - Doc Advisor ToC configuration and setup
+      - Document organization design for projects
+      - Review tool configuration and doc_type mapping
+      - Project structure validation and documentation standards
     keywords:
-      - .doc_structure.yaml
-      - document organization
-      - YAML schema
+      - doc_structure.yaml
       - doc_type
       - paths
-      - glob patterns
-      - specification
-      - version
+      - exclude
+      - specs
+      - rules
+      - glob pattern
+      - semantic versioning
   docs/specs/design/forge_review_pipeline.md:
-    doc_type: spec
+    doc_type: design
     title: forge Review Pipeline Design
-    purpose: Defines the architecture and interfaces of the forge plugin review pipeline, including skill responsibilities, data flow between orchestrator and specialized agents, and design principles for parameter passing and document collection strategy.
+    purpose: Specifies the review pipeline architecture for the forge plugin, defining orchestrator-based flow with specialized skills for review execution, evaluation, finding presentation, and fix application
     content_details:
-      - Pipeline architecture with review orchestrator and specialized AI-only skills (reviewer, evaluator, presenter, fixer)
-      - "Skill responsibilities: orchestration, review execution, evaluation and judgment, findings presentation, and fix implementation"
-      - Dataflow between review and reviewer, evaluator, present-findings, fixer interfaces
-      - "Document collection strategy: collected once by reviewer, passed to all downstream agents"
-      - Evaluator judgment framework with 5 evaluation criteria (rule compliance, design intent, side effects, false positives, target file verification)
-      - Interactive vs automatic modes with identical pipeline structure
-      - Commit and push confirmation flow handled by review orchestrator
-      - Review type classification with DocAdvisor integration and fallback strategies
-      - "Design principles: single-responsibility, reusable reference documents, unified data flow patterns"
-      - Related skill specifications and configuration files for pipeline implementation
+      - Review orchestrator that manages overall pipeline flow and performs ToC updates/commit/push
+      - reviewer skill that collects reference documents once and executes reviews
+      - evaluator skill that assesses findings across 5 viewpoints (rule compliance, design intent, side effects, false positives, target file verification)
+      - present-findings skill for interactive finding presentation to human judges
+      - fixer skill that applies fixes to identified issues
+      - single-pass reference document collection strategy shared across all agents
+      - unified pipeline structure for both interactive mode (human judge) and auto mode (AI judge)
+      - related code exploration pattern to improve review quality and fix consistency
+      - review type strategies (requirement/design/plan/code types use DocAdvisor, generic uses self-discovery)
+      - test execution after modifications with failure reporting to user
     applicable_tasks:
-      - Review pipeline architecture design and implementation
-      - Review skill specification and orchestration logic development
-      - Reviewer agent skill development for document collection
-      - Evaluator agent implementation with judgment criteria
-      - Finding presentation interface design for interactive mode
-      - Fix implementation agent development
-      - Pipeline testing and validation with reference documents
-      - Document collection strategy and parameter passing design review
+      - Review pipeline implementation and maintenance
+      - Skill integration and orchestration
+      - AI-powered code review feature development
+      - Review cycle automation with auto/interactive mode support
+      - Reference document collection strategy implementation
+      - ToC update automation for design document changes
     keywords:
-      - forge
       - review
       - pipeline
       - orchestrator
-      - AI-only
-      - skill
       - evaluator
       - fixer
-      - reference-documents
-      - data-flow
+      - present-findings
+      - reference documentation
+      - related code
+      - auto mode
+      - interactive mode
+  docs/specs/design/twinkling-popping-kahan.md:
+    doc_type: design
+    title: forge Review Pipeline Session Directory Architecture
+    purpose: Specifies session directory design and file schema for forge review pipeline to maintain state across skill transitions and prevent context loss
+    content_details:
+      - Session directory path structure with timestamp and random identifier
+      - session.yaml metadata for review state
+      - refs.yaml containing target files and reference documentation paths
+      - review.md output from reviewer subagent
+      - evaluation.yaml with evaluator judgment results
+      - plan.yaml tracking fix status across cycles
+      - report.html visual report with auto-refresh
+      - show-report skill for HTML generation and browser display
+      - lifecycle management from Phase 2 creation through Phase 5 cleanup
+      - session resumption after interruption
+    applicable_tasks:
+      - forge review pipeline implementation
+      - session state management design
+      - review skill architecture refactoring
+      - reviewer subagent implementation
+      - evaluator integration
+      - fixer workflow design
+      - HTML report generation
+      - session recovery and resumption
+    keywords:
+      - session directory
+      - refs.yaml
+      - review.md
+      - evaluation.yaml
+      - plan.yaml
+      - report.html
+      - show-report
+      - phase lifecycle
+      - state persistence
+      - context preservation

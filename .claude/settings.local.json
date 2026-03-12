@@ -6,7 +6,12 @@
       "Skill(forge:help)",
       "Bash(python3:*)",
       "Bash(git commit:*)",
-      "Bash(chmod +x:*)"
+      "Bash(chmod +x:*)",
+      "WebSearch",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh rules)"
     ]
   },
   "enabledPlugins": {},

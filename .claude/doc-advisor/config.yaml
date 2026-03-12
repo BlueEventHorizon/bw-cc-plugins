@@ -26,7 +26,9 @@ rules:
 # === specs configuration ===
 specs:
   root_dirs:
-    - docs/specs/
+    - docs/specs/design/
+    - docs/specs/plan/
+    - docs/specs/requirement/
   doc_types_map:
     docs/specs/design/: design
     docs/specs/plan/: plan
@@ -37,9 +39,7 @@ specs:
 
   patterns:
     target_glob: "**/*.md"
-    exclude:
-      - plugins/
-      - reference_projects/
+    exclude: []
 
   output:
     header_comment: "Project specification document search index for query-specs skill"

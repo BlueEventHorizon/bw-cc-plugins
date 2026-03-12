@@ -4,64 +4,65 @@
 
 metadata:
   name: Development Documentation Search Index
-  generated_at: 2026-03-08T13:47:51Z
+  generated_at: 2026-03-12T02:08:08Z
   file_count: 2
 
 docs:
   docs/rules/claude_code_shell_wrapper.md:
     doc_type: rule
-    title: Claude Code Shell Wrapper and Python Path Detection
-    purpose: Describes shell wrapper behavior in Claude Code environment and provides universal patterns for safely detecting and using Python paths with proper binary path resolution
+    title: Claude Code Shell Wrapper and Python Path Retrieval
+    purpose: Describes shell wrapper behavior in Claude Code and generic Python path detection patterns for Bash scripts calling Python
     content_details:
-      - Claude Code shell wrapper detection
-      - Shell function wrapper behavior and execution differences
-      - Absolute path execution bypassing wrappers
-      - /usr/bin/which vs built-in which command
-      - "Pattern A: Runtime Python detection"
-      - "Pattern B: Installation-time detection with config file storage"
-      - Design principles for wrapper handling
-      - Doc Advisor implementation reference
+      - Shell wrapper validity check using shell-snapshots directory
+      - Shell function wrapper bypass using /usr/bin/which
+      - Runtime Python path detection pattern with environment check
+      - Installation-time Python path caching pattern with placeholder substitution
+      - Design principles for safe Python path retrieval
+      - Doc Advisor implementation using Pattern B
     applicable_tasks:
-      - Python script execution in Claude Code
-      - Shell wrapper environment detection
-      - Python path configuration
-      - Tool installation setup
+      - Shell wrapper behavior diagnosis in Claude Code
+      - Python path detection setup in Bash scripts
+      - Shell function wrapper bypass implementation
+      - Installation script setup with Python path caching
+      - Cross-environment Python path portability
     keywords:
       - Claude Code
       - shell wrapper
       - Python path
-      - binary detection
-      - /usr/bin/which
       - wrapSafeChainCommand
-      - shell function
-      - environment setup
+      - /usr/bin/which
+      - /Users/moons substitution
+      - Doc Advisor
+      - installation script
+      - Bash environment
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
     title: SKILL.md Authoring Notes
-    purpose: Guidelines for creating and editing SKILL.md files for Claude Code plugins, covering frontmatter fields, argument references, skill invocation patterns, and project conventions
+    purpose: Provides guidance for creating and editing Claude Code plugin SKILL.md files, covering frontmatter fields, function references, best practices, and project conventions
     content_details:
-      - frontmatter field configurations (name, description, user-invocable, argument-hint, disable-model-invocation, allowed-tools, context, agent)
-      - user-invocable vs disable-model-invocation usage patterns and differences
-      - description writing guidelines for model auto-invocation
-      - argument references and syntax (, /bin/zsh, , )
-      - environment variables (CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
-      - skill-to-skill invocation patterns
-      - directory structure conventions and file organization
-      - SKILL.md splitting criteria for content placement
-      - project-specific conventions for Japanese documentation and mandatory markers
+      - frontmatter field definitions and conventions (name, description, user-invocable, disable-model-invocation)
+      - user-invocable vs disable-model-invocation distinctions for different use cases
+      - description writing guidelines for automatic invocation detection
+      - Argument references ($ARGUMENTS, $0, $1 etc)
+      - Available variables (CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
+      - Skill-to-skill invocation methods via Claude instructions
+      - Directory structure conventions for skills
+      - SKILL.md modularization guidelines (when to separate into reference.md)
+      - AskUserQuestion mandatory requirement for all user interactions
+      - Project-specific conventions (Japanese comments, MANDATORY marker usage, defaults/ directory placement)
     applicable_tasks:
       - SKILL.md creation and editing
-      - Plugin and skill development
-      - Frontmatter configuration setup
-      - Skill workflow design
-      - Project convention enforcement
+      - Plugin skill development
+      - Frontmatter configuration
+      - Script and tool integration
+      - User interaction pattern implementation
+      - Documentation structure design
+      - Convention enforcement and validation
     keywords:
       - SKILL.md
       - frontmatter
       - user-invocable
-      - disable-model-invocation
-      - Claude plugin
+      - AskUserQuestion
+      - Claude Code plugin
       - skill authoring
-      - argument references
-      - directory structure
-      - conventions
+      - invocation detection

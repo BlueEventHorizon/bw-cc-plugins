@@ -1,7 +1,8 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-09T07:49:40Z
-file_count: 2
+generated_at: 2026-03-12T02:08:53Z
+file_count: 3
 checksums:
-  docs/specs/design/doc_structure_format.md: 6a58f9e40c34563737fd58ecd19ed459c0c7ef744e963dce664ac04e91117044
-  docs/specs/design/forge_review_pipeline.md: 90d3a5fef51eaad3c24f4e7a8deba45208d68ebd4c3e7cd676c682c96940cc0d
+  docs/specs/design/doc_structure_format.md: 6f34414978be8b0823911c46bccd94b857477b548fb770e3c716411a4a805fac
+  docs/specs/design/forge_review_pipeline.md: 683be195d77e60ab3b635df9da4b3f3beefba8fcd90caea7c735d5517921eb3b
+  docs/specs/design/twinkling-popping-kahan.md: e2b30a4199fae8f691d2962593cea1196c0680ccbe26b3cec0f4e26aa60b0a8f
