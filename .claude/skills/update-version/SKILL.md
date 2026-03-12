@@ -2,7 +2,7 @@
 name: update-version
 description: |
   プラグインのバージョンを一括更新する。
-  plugin.json / marketplace.json / README.md の3ファイルを同期し、テストで整合性を確認する。
+  plugin.json / marketplace.json / README.md / README_ja.md / CHANGELOG.md の5ファイルを同期し、テストで整合性を確認する。
   トリガー: "バージョン更新", "version bump", "update-version"
 user-invocable: true
 argument-hint: "[plugin-name] <new-version | patch | minor | major>"
@@ -73,7 +73,7 @@ argument-hint: "[plugin-name] <new-version | patch | minor | major>"
 
 ### Step 4: ファイルの更新 [MANDATORY]
 
-以下の3ファイルを順に更新する:
+以下の5ファイルを順に更新する:
 
 #### 4-1. `plugins/{plugin_name}/.claude-plugin/plugin.json`
 
@@ -87,6 +87,28 @@ Read して `plugins` 配列の中の `name == plugin_name` のエントリの `
 
 Read して plugins テーブルの `| **{plugin_name}** | {current_version} |` を `{new_version}` に Edit する。
 
+#### 4-4. `README_ja.md`
+
+Read して plugins テーブルの `| **{plugin_name}** | {current_version} |` を `{new_version}` に Edit する。
+（ファイルが存在しない場合はスキップ）
+
+#### 4-5. `CHANGELOG.md`
+
+Read して先頭の `## [Unreleased]` または最新バージョンセクションの**前**に新バージョンのセクションを追加する。
+
+1. `CHANGELOG.md` を Read する（存在しない場合はスキップ）
+2. `## [{new_version}] - {YYYY-MM-DD}` セクションを、最初の `## [` 行の直前に挿入する
+3. セクション内容は空のテンプレートとする（変更内容はコミット前にユーザーまたは別タスクで記入）:
+
+```markdown
+## [{new_version}] - {YYYY-MM-DD}
+
+### {plugin_name}
+
+-
+
+```
+
 更新完了後、以下を出力する:
 
 ```
@@ -97,6 +119,8 @@ Read して plugins テーブルの `| **{plugin_name}** | {current_version} |` 
 | plugins/{plugin_name}/.claude-plugin/plugin.json | {current_version} → {new_version} |
 | .claude-plugin/marketplace.json | {current_version} → {new_version} |
 | README.md | {current_version} → {new_version} |
+| README_ja.md | {current_version} → {new_version} |
+| CHANGELOG.md | [{new_version}] セクション追加 |
 ```
 
 ### Step 5: テスト実行
