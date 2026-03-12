@@ -4,15 +4,15 @@ user-invocable: false
 description: |
   レビュー指摘を5つの観点で吟味し、修正対象を確定する。AI専用Skill。
   /forge:review オーケストレーターから呼び出される。
-  --auto / --auto-critical モードで AI が判定者として機能する。
-  --interactive モードでは全件の AI 推奨判定を evaluation.yaml に記録し、人間が最終判断する。
+  全モード（auto / auto-critical / interactive）で AI 推奨判定と plan.yaml 更新を実行する。
+  interactive モードでは present-findings がユーザー判断で plan.yaml を上書き更新する。
 argument-hint: "(内部使用)"
 ---
 
 # /evaluator Skill
 
 レビュー指摘事項を吟味し、「修正する / スキップ / 要確認」を判定する AI 専用 Skill。
-`--auto` / `--auto-critical` モードでは AI が一括判定し、`--interactive` モードでは AI 推奨を `evaluation.yaml` に記録したうえで `/forge:present-findings` が人間の最終判断を仲介する。
+全モードで AI 推奨（`recommendation`）を `evaluation.yaml` に記録し、`plan.yaml` を更新する。`--interactive` モードでは `/forge:present-findings` が人間の最終判断に基づき `plan.yaml` を上書き更新する。
 
 ---
 
@@ -25,7 +25,7 @@ argument-hint: "(内部使用)"
 | 参考文書に基づく判定    | ルール・設計意図を参照して false positive を排除する                                           |
 | 副作用リスクの考慮      | 修正が他箇所に影響しないか確認してから判定する                                                 |
 | 渡された情報のみ使用    | 参考文書・関連コードの収集・探索は行わない                                                     |
-| 対話モードでも常時実行  | `--interactive` フラグで対話モード時も AI 推奨を `evaluation.yaml` に記録する                  |
+| 全モード共通ロジック    | auto / interactive を問わず、evaluation.yaml 記録・plan.yaml 更新・should_continue 判定を実行 |
 
 ---
 
@@ -73,41 +73,61 @@ argument-hint: "(内部使用)"
 
 **判定結果:**
 
-- **修正する**: 問題が明確で副作用リスクが低い → `decision: fix`
-- **スキップ**: false positive・設計意図がある・リスクが高い → `decision: skip`（理由を記録）
-- **要確認**: 判断が難しい → `decision: needs_review`
+- **修正する**: 問題が明確で副作用リスクが低い → `recommendation: fix`
+- **スキップ**: false positive・設計意図がある・リスクが高い → `recommendation: skip`（理由を記録）
+- **要確認**: 判断が難しい → `recommendation: needs_review`
+
+**auto_fixable フラグ:**
+
+`recommendation: fix` の指摘に対して、さらに `auto_fixable: true/false` を判定する:
+
+| 条件             | 説明                                  |
+| ---------------- | ------------------------------------- |
+| 修正が一意       | 選択肢がなく、修正内容が1通りに決まる |
+| 影響が局所的     | 他の項目や設計判断に波及しない        |
+| 機械的に修正可能 | 判断・設計決定を伴わない              |
+
+**auto_fixable の例**: 末尾スペース削除、タイポ修正、未使用importの削除、単純な置換
+**auto_fixable にしない例**: アーキテクチャ変更、複数の対応案がある問題、影響範囲が広い修正
+
+判断に迷ったら `auto_fixable: false` とする。
 
 ### Step 3: evaluation.yaml に書き込む
 
 全件の吟味結果を `{session_dir}/evaluation.yaml` に Write する。
 
+各項目には `recommendation`（fix / skip / needs_review）と、fix の場合は `auto_fixable`（true / false）を含める。
+
 （フォーマット: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` の「evaluation.yaml」参照）
 
-### Step 4: plan.yaml を更新する
+### Step 4: plan.yaml を更新する [MANDATORY]
 
-`{session_dir}/plan.yaml` を Read し、以下のルールで各項目の `status` を更新して Write する:
+`{session_dir}/plan.yaml` を Read し、以下のルールで各項目の `status` を更新して Write する。
+**全モード共通**で実行する（interactive モードでも更新する）:
 
-- `--auto` / `--auto-critical` モードの場合:
-  - `decision: fix` → `status: pending` のまま（fixer が後で `fixed` にする）
-  - `decision: skip` → `status: skipped` / `skip_reason` を記録
-  - `decision: needs_review` → `status: needs_review`
+- `recommendation: fix` → `status: pending` のまま（fixer が後で `fixed` にする）
+- `recommendation: skip` → `status: skipped` / `skip_reason` を記録
+- `recommendation: needs_review` → `status: needs_review`
 
-- `--interactive` モードの場合:
-  - `plan.yaml` は更新しない（`evaluation.yaml` に推奨を書くだけ）
-  - `present-findings` がユーザー判断後に `plan.yaml` を更新する
+> **interactive モードの場合**: evaluator の推奨に基づく初期状態として plan.yaml を更新する。
+> present-findings がユーザーの最終判断で plan.yaml を上書き更新する。
 
 ### Step 5: 次サイクル判定
 
-- 「修正する（`decision: fix`）」が0件 → `should_continue: false`（修正不要）
-- 「修正する（`decision: fix`）」が1件以上 → `should_continue: true`（fixer を呼び出す）
-- `--interactive` モードの場合は常に `should_continue: false`（次サイクルは present-findings が制御）
+全モード共通で判定する:
+
+- `recommendation: fix` が0件 → `should_continue: false`（修正不要）
+- `recommendation: fix` が1件以上 → `should_continue: true`（fixer を呼び出す）
+
+> **interactive モードの場合**: `should_continue: true` でも、review オーケストレーターは
+> fixer を直接呼び出さず present-findings を経由する。present-findings がユーザーの判断に基づき fixer を制御する。
 
 ---
 
 ## 出力
 
 `{session_dir}/evaluation.yaml` に書き込んだ旨を呼び出し元（/forge:review）に報告する。
-`--auto` / `--auto-critical` モード時のみ `should_continue` フラグを返す。
+全モードで `should_continue` フラグを返す。
 
 ```
 ## 吟味結果
@@ -130,7 +150,7 @@ evaluation.yaml に書き込みました: {session_dir}/evaluation.yaml
 - 修正する: X件
 - スキップ: Y件
 - 要確認: Z件
-- 次サイクル: [継続 / 終了]  ※ --interactive モードでは省略
+- 次サイクル: [継続 / 終了]
 ```
 
 ---

@@ -78,7 +78,7 @@ general-purpose subagent に以下を委譲する:
    - 重大度アイコン: `🔴`（critical）/ `🟡`（major）/ `🟢`（minor）
    - タイトル
    - ステータスバッジ（色付き）: pending=グレー / in_progress=青 / fixed=緑 / skipped=オレンジ / needs_review=赤
-   - AI推奨（`evaluation.yaml` が存在する場合、対応する `id` の `decision` を表示）
+   - AI推奨（`evaluation.yaml` が存在する場合、対応する `id` の `recommendation` を表示）
    - 修正ファイル（`status: fixed` の場合、`files_modified` を表示）
 4. **フッター**: 最終更新日時
 
