@@ -15,7 +15,8 @@
       "Bash(ls .claude/doc-advisor/toc/specs/.toc_work/*.yaml 2>&1)",
       "Bash(python3 .claude/doc-advisor/scripts/validate_toc.py --target specs 2>&1; echo \"EXIT:$?\")",
       "Bash(cp .claude/doc-advisor/toc/specs/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/specs/.toc_checksums.yaml && rm -rf .claude/doc-advisor/toc/specs/.toc_work && echo \"Done\")",
-      "Bash(python3 .claude/doc-advisor/scripts/merge_toc.py --target specs --mode incremental 2>&1 && python3 .claude/doc-advisor/scripts/validate_toc.py --target specs 2>&1; echo \"EXIT:$?\")"
+      "Bash(python3 .claude/doc-advisor/scripts/merge_toc.py --target specs --mode incremental 2>&1 && python3 .claude/doc-advisor/scripts/validate_toc.py --target specs 2>&1; echo \"EXIT:$?\")",
+      "Bash(open /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/.temp/20260313-012654-f5ff74/report.html)"
     ]
   },
   "enabledPlugins": {},
