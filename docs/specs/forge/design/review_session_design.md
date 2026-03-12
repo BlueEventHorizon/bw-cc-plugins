@@ -162,7 +162,7 @@ items:
 
 **書き込み**:
 - `reviewer`: 初期作成（全件 `pending`）
-- `evaluator`: `--auto` モードで `fix`/`skip`/`needs_review` を反映
+- `evaluator`: 全モード共通で `recommendation` に基づき `status` 初期更新
 - `present-findings`: 対話モードでユーザー判断後に更新
 - `fixer`: 修正完了後に `fixed` に更新
 
@@ -209,7 +209,7 @@ items:
 | セクション | 内容 |
 |------------|------|
 | ヘッダー | レビュー種別・エンジン・開始日時 |
-| 進捗バー | fixed/skipped/pending の件数と割合 |
+| 進捗バー | fixed/skipped/needs_review/pending の件数と割合 |
 | 項目一覧 | 🔴🟡🟢 色分け + ステータスバッジ + evaluator 推奨 |
 | 自動リロード | `<meta http-equiv="refresh" content="10">` |
 

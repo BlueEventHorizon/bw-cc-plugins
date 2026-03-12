@@ -275,8 +275,8 @@ items:
 | `pending`      | 未処理（初期値）                        | `reviewer`                                            |
 | `in_progress`  | 処理中                                  | `present-findings`（ユーザーが修正を選択した瞬間）    |
 | `fixed`        | 修正完了                                | `fixer`                                               |
-| `skipped`      | スキップ（false positive / 設計意図等） | `evaluator`（--auto時）/ `present-findings`（対話時） |
-| `needs_review` | 要確認（判断困難）                      | `evaluator`（--auto時）/ `present-findings`（対話時） |
+| `skipped`      | スキップ（false positive / 設計意図等） | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
+| `needs_review` | 要確認（判断困難）                      | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
 
 ### 例
 
@@ -318,7 +318,7 @@ items:
 | スキル             | 操作                                                            | タイミング     |
 | ------------------ | --------------------------------------------------------------- | -------------- |
 | `reviewer`         | Write（初期作成 — 全件 `pending`）                              | Phase 2 完了後 |
-| `evaluator`        | Write（`--auto` / `--auto-critical` モードで `status` 更新）    | Step 4         |
+| `evaluator`        | Write（全モード共通で `recommendation` に基づき `status` 初期更新） | Step 4         |
 | `present-findings` | Read / Write（ユーザー判断後に `status` 更新）                  | Step 3.5       |
 | `fixer`            | Write（`status: fixed` + `fixed_at` + `files_modified` を更新） | 修正完了後     |
 | `show-report`      | Read                                                            | HTML 生成時    |

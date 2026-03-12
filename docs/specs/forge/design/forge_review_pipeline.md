@@ -125,7 +125,7 @@ reviewer を呼び出す前に、orchestrator が以下を解決する:
 | 入力 | target_files    | レビュー対象ファイル                          |
 | 入力 | related_code    | 関連コードのパスと関連性の説明                |
 | 入力 | レビュー種別    | 確定した種別                                  |
-| 入力 | 修正対象フラグ  | `--auto`: 🔴+🟡                               |
+| 入力 | 修正対象フラグ  | `--auto`: 🔴+🟡 / `--auto-critical`: 🔴のみ / `--interactive`: 全件AI推奨 |
 | 出力 | 吟味結果リスト  | recommendation（fix / skip / needs_review）+ auto_fixable フラグ |
 | 出力 | plan.yaml 更新  | 推奨に基づく初期状態を plan.yaml に書き込み                      |
 | 出力 | should_continue | `true`（fix あり）/ `false`（fix なし）— 全モード共通           |

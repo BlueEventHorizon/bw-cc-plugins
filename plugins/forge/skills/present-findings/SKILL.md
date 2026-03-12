@@ -238,16 +238,13 @@ AskUserQuestion で進め方を確認する:
 1. 項目を丁寧に説明する（提示の原則に従う）
 2. 「選択肢の提示方法」に従い AskUserQuestion で判断を仰ぐ
 3. ユーザーの選択に応じて:
-   - **修正を選択**（A案/B案）→ `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-   - **このまま（対応しない）** → Step 5 へ
+   - **修正を選択**（A案/B案）→ plan.yaml の status を `in_progress` に更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
+   - **このまま（対応しない）** → plan.yaml の status を `needs_review` に更新
    - **一覧に戻る** → Step 2 へ
-4. fixer の修正サマリーをユーザーに報告
-   3.5. plan.yaml を更新する:
-   - 修正した場合: status を `in_progress` に変更（fixer が `fixed` にする）
-   - スキップした場合: status を `skipped` に変更 / skip_reason を記録
-   - 対応しない場合: status を `needs_review` に変更
-     plan.yaml を Write で上書き保存
-     3.6. `/forge:show-report --silent` を呼び出して report.html を再生成する
+4. fixer の修正サマリーをユーザーに報告（修正の場合）
+   4.1. スキップした場合: plan.yaml の status を `skipped` に変更 / skip_reason を記録
+   plan.yaml を Write で上書き保存
+   4.2. `/forge:show-report --silent` を呼び出して report.html を再生成する
 5. 次の項目へ進む
 
 全項目の提示・解決が完了したら、修正サマリーを報告して終了。
