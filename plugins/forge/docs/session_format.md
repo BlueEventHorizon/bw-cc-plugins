@@ -192,14 +192,15 @@ related_code:
 | `id`       | integer | 必須 | plan.yaml の `id` と対応する連番 |
 | `severity` | string  | 必須 | 重大度（後述の許容値参照）       |
 | `title`    | string  | 必須 | 指摘事項のタイトル               |
-| `decision` | string  | 必須 | 判定結果（後述の許容値参照）     |
-| `reason`   | string  | 必須 | 判定理由                         |
+| `recommendation` | string  | 必須 | 推奨判定（後述の許容値参照）       |
+| `auto_fixable`   | boolean | 条件 | recommendation: fix の場合のみ必須。一意・局所的・機械的な修正か |
+| `reason`         | string  | 必須 | 判定理由                           |
 
 ### 許容値
 
 **`severity`:** `critical` / `major` / `minor`
 
-**`decision`:** `fix` / `skip` / `needs_review`
+**`recommendation`:** `fix` / `skip` / `needs_review`
 
 ### 例
 
@@ -209,22 +210,24 @@ items:
   - id: 1
     severity: critical
     title: "help と review のコマンド仕様不一致"
-    decision: fix
-    reason: "明確な仕様不一致、副作用なし"
+    recommendation: fix
+    auto_fixable: false
+    reason: "明確な仕様不一致、副作用なし。ただし複数の修正案があるため auto_fixable: false"
   - id: 2
     severity: major
     title: "frontmatter 必須項目不足"
-    decision: fix
+    recommendation: fix
+    auto_fixable: true
     reason: "規約違反。修正が一意で副作用なし"
   - id: 3
     severity: major
     title: "設計意図が不明瞭な処理"
-    decision: needs_review
+    recommendation: needs_review
     reason: "意図的な設計の可能性があり、確認が必要"
   - id: 4
     severity: minor
     title: "コメントの表記揺れ"
-    decision: skip
+    recommendation: skip
     reason: "既存コードとの一貫性を保つため変更不要"
 ```
 
@@ -272,8 +275,8 @@ items:
 | `pending`      | 未処理（初期値）                        | `reviewer`                                            |
 | `in_progress`  | 処理中                                  | `present-findings`（ユーザーが修正を選択した瞬間）    |
 | `fixed`        | 修正完了                                | `fixer`                                               |
-| `skipped`      | スキップ（false positive / 設計意図等） | `evaluator`（--auto時）/ `present-findings`（対話時） |
-| `needs_review` | 要確認（判断困難）                      | `evaluator`（--auto時）/ `present-findings`（対話時） |
+| `skipped`      | スキップ（false positive / 設計意図等） | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
+| `needs_review` | 要確認（判断困難）                      | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
 
 ### 例
 
@@ -315,7 +318,7 @@ items:
 | スキル             | 操作                                                            | タイミング     |
 | ------------------ | --------------------------------------------------------------- | -------------- |
 | `reviewer`         | Write（初期作成 — 全件 `pending`）                              | Phase 2 完了後 |
-| `evaluator`        | Write（`--auto` / `--auto-critical` モードで `status` 更新）    | Step 4         |
+| `evaluator`        | Write（全モード共通で `recommendation` に基づき `status` 初期更新） | Step 4         |
 | `present-findings` | Read / Write（ユーザー判断後に `status` 更新）                  | Step 3.5       |
 | `fixer`            | Write（`status: fixed` + `fixed_at` + `files_modified` を更新） | 修正完了後     |
 | `show-report`      | Read                                                            | HTML 生成時    |

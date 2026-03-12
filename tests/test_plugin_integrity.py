@@ -315,7 +315,7 @@ class TestReferencedFilesExist(unittest.TestCase):
 
     def test_doc_structure_format_exists(self):
         """setup Skill が参照するスキーマ仕様が存在"""
-        path = REPO_ROOT / 'docs' / 'specs' / 'design' / 'doc_structure_format.md'
+        path = REPO_ROOT / 'docs' / 'specs' / 'forge' / 'design' / 'doc_structure_format.md'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_skill_directories_have_skill_md(self):
@@ -343,7 +343,7 @@ class TestSchemaConsistency(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.format_doc = (REPO_ROOT / 'docs' / 'specs' / 'design' / 'doc_structure_format.md').read_text(encoding='utf-8')
+        cls.format_doc = (REPO_ROOT / 'docs' / 'specs' / 'forge' / 'design' / 'doc_structure_format.md').read_text(encoding='utf-8')
 
     def test_format_doc_mentions_exclude(self):
         """仕様書に exclude が記載されている"""

@@ -26,20 +26,20 @@ rules:
 # === specs configuration ===
 specs:
   root_dirs:
-    - docs/specs/
+    - docs/specs/forge/design/
+    - docs/specs/forge/plan/
+    - docs/specs/forge/requirement/
   doc_types_map:
-    docs/specs/design/: design
-    docs/specs/plan/: plan
-    docs/specs/requirement/: requirement
+    docs/specs/forge/design/: design
+    docs/specs/forge/plan/: plan
+    docs/specs/forge/requirement/: requirement
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
   checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/
 
   patterns:
     target_glob: "**/*.md"
-    exclude:
-      - plugins/
-      - reference_projects/
+    exclude: []
 
   output:
     header_comment: "Project specification document search index for query-specs skill"

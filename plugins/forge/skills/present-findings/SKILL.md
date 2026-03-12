@@ -73,11 +73,12 @@ items:
   - id: 1
     severity: critical
     title: "問題タイトル"
-    decision: fix # fix / skip / needs_review
+    recommendation: fix # fix / skip / needs_review
+    auto_fixable: true  # recommendation: fix の場合のみ（一意・局所的・機械的な修正か）
     reason: "判定理由（AI の判断根拠）"
 ```
 
-**plan.yaml** (reviewer が初期作成、present-findings が更新):
+**plan.yaml** (reviewer が初期作成 → evaluator が推奨で更新 → present-findings がユーザー判断で上書き):
 
 ```yaml
 items:
@@ -161,9 +162,9 @@ plan.yaml に `status: pending` でない項目が存在する場合、「前回
 ### Step 1: 理解と評価 [MANDATORY]
 
 1. 各項目を**深く理解する**
-2. 各項目の✅判定を行う（後述「✅自明マークの判定基準」参照）
+2. evaluation.yaml から各項目の `auto_fixable` フラグを取得し、✅ マークに使用する
 3. `has_severity` の場合: 各項目に重大度（Critical🔴 / Major🟡 / Minor🟢）を付与し、重大度順に並べ替え。ない場合: 番号順を維持
-4. evaluation.yaml が存在する場合: 各項目の AI 推奨判定（decision / reason）を把握する
+4. evaluation.yaml が存在する場合: 各項目の AI 推奨判定（recommendation / reason）を把握する
    これを提示時の「AI推奨」として活用する（最終判断は人間）
 5. `has_metadata` で reference_docs がある場合: Read で読み込み、レビュー観点やルールを把握
 6. target_files がある場合: 一覧を把握するのみ（各問題の提示時に該当箇所を Read）
@@ -198,7 +199,7 @@ Step 2 をスキップし、直接 Step 3 へ進む。
 | 4 | 🟢 | {問題4のタイトル} | 要確認 | |
 ```
 
-AI推奨の表示: `修正` / `却下` / `要確認` / （空欄: evaluation.yaml なし）
+AI推奨の表示: `修正` / `却下` / `要確認`（evaluation.yaml の recommendation から変換）/ （空欄: evaluation.yaml なし）
 
 `has_severity = false` の場合:
 
@@ -213,7 +214,7 @@ AI推奨の表示: `修正` / `却下` / `要確認` / （空欄: evaluation.yam
 共通:
 
 ```
-✅ = AIが自明と判断した修正（判定基準は「✅自明マークの判定基準」参照）
+✅ = evaluator が auto_fixable: true と判定した修正（一意・局所的・機械的）
 ```
 
 全 {N} 件の項目があります。進め方を選択してください。
@@ -237,16 +238,13 @@ AskUserQuestion で進め方を確認する:
 1. 項目を丁寧に説明する（提示の原則に従う）
 2. 「選択肢の提示方法」に従い AskUserQuestion で判断を仰ぐ
 3. ユーザーの選択に応じて:
-   - **修正を選択**（A案/B案）→ `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-   - **このまま（対応しない）** → Step 5 へ
+   - **修正を選択**（A案/B案）→ plan.yaml の status を `in_progress` に更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
+   - **このまま（対応しない）** → plan.yaml の status を `needs_review` に更新
    - **一覧に戻る** → Step 2 へ
-4. fixer の修正サマリーをユーザーに報告
-   3.5. plan.yaml を更新する:
-   - 修正した場合: status を `in_progress` に変更（fixer が `fixed` にする）
-   - スキップした場合: status を `skipped` に変更 / skip_reason を記録
-   - 対応しない場合: status を `needs_review` に変更
-     plan.yaml を Write で上書き保存
-     3.6. `/forge:show-report --silent` を呼び出して report.html を再生成する
+4. fixer の修正サマリーをユーザーに報告（修正の場合）
+   4.1. スキップした場合: plan.yaml の status を `skipped` に変更 / skip_reason を記録
+   plan.yaml を Write で上書き保存
+   4.2. `/forge:show-report --silent` を呼び出して report.html を再生成する
 5. 次の項目へ進む
 
 全項目の提示・解決が完了したら、修正サマリーを報告して終了。
@@ -292,13 +290,14 @@ fixer に修正を委譲する際、以下を**漏れなく**渡すこと：
 
 ## セッション状態管理
 
-present-findings は plan.yaml を唯一の状態ストアとして使用する。
+present-findings は plan.yaml を状態ストアとして使用する。
+evaluator が推奨に基づく初期状態を書き込み済みなので、present-findings はユーザーの最終判断で上書き更新する。
 
-| ファイル        | 役割                                                                     |
-| --------------- | ------------------------------------------------------------------------ |
-| plan.yaml       | 各項目の処理状態（pending/in_progress/fixed/skipped/needs_review）を記録 |
-| evaluation.yaml | AI推奨判定（参照のみ、更新しない）                                       |
-| report.html     | /forge:show-report --silent で随時再生成                                 |
+| ファイル        | 役割                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| plan.yaml       | 各項目の処理状態（evaluator の推奨で初期化済み → ユーザー判断で上書き更新）              |
+| evaluation.yaml | AI推奨判定（recommendation / auto_fixable を参照のみ、更新しない）                       |
+| report.html     | /forge:show-report --silent で随時再生成                                                 |
 
 ### 再開の仕組み
 
@@ -374,20 +373,12 @@ AskUserQuestion 呼び出し
 | 2 | 一覧に戻る | サマリー一覧を再表示           |
 | 3 | 終了       | 残り項目数を案内して提示を終了 |
 
-### ✅自明マークの判定基準
+### ✅自明マークについて
 
-Step 1 で各項目を評価し、以下を**全て**満たす場合に ✅ を付ける:
+✅ マークは **evaluator が判定した `auto_fixable: true`** の項目に付与する。
+present-findings は独自に ✅ を判定しない（evaluator の判定を信頼する）。
 
-| 条件             | 説明                                  |
-| ---------------- | ------------------------------------- |
-| 修正が一意       | 選択肢がなく、修正内容が1通りに決まる |
-| 影響が局所的     | 他の項目や設計判断に波及しない        |
-| 機械的に修正可能 | 判断・設計決定を伴わない              |
-
-**✅の例**: 末尾スペース削除、タイポ修正、未使用importの削除、単純な置換
-**✅にしない例**: アーキテクチャ変更、複数の対応案がある問題、影響範囲が広い修正
-
-**判断に迷ったら ✅ を付けない**（対話3原則: 不明確なことは勝手に決めない）
+evaluation.yaml の各項目で `recommendation: fix` かつ `auto_fixable: true` の場合に ✅ を表示する。
 
 ### 段階的解決の提示例
 

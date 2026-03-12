@@ -68,7 +68,6 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 `/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/spec_format*` `**/requirement*` を Glob 探索して補完する。
 
-**コンフリクト時の優先順位**: プロジェクト固有の指示が SKILL.md と異なる場合、**プロジェクト側を優先**する。ただし `[MANDATORY]` 付き項目は常に実行する。
 
 ---
 
