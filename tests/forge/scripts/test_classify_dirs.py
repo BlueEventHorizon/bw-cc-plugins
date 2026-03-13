@@ -6,7 +6,7 @@ classify_dirs.py のテスト
 標準ライブラリのみ使用。
 
 実行:
-  python3 -m unittest tests.doc_structure.test_classify_dirs -v
+  python3 -m unittest tests.forge.scripts.test_classify_dirs -v
 """
 
 import io
@@ -20,7 +20,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'scripts'))
 
 from classify_dirs import (

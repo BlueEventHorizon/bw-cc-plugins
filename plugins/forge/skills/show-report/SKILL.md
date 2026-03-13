@@ -17,7 +17,7 @@ argument-hint: "[session_dir] [--silent]"
 
 | 原則                   | 説明                                                              |
 | ---------------------- | ----------------------------------------------------------------- |
-| HTML生成はsubagent     | general-purpose subagent がファイルを読んで HTML を生成・書き込む |
+| HTML生成はスクリプト   | Python スクリプト + HTML テンプレートで安定的にレポートを生成する |
 | ユーザー呼び出し可能   | `/forge:show-report` でオンデマンドに最新レポートを確認できる     |
 | サイレント再生成モード | `--silent` フラグで `open` をスキップ（他スキルから呼ばれる場合） |
 
@@ -52,37 +52,52 @@ argument-hint: "[session_dir] [--silent]"
 
 - `{session_dir}/plan.yaml` が存在しない場合: 「plan.yaml が見つかりません」と表示して終了
 
-### Step 2: subagent を起動して HTML を生成
+### Step 2: generate_report.py を実行して HTML を生成
 
-general-purpose subagent に以下を委譲する:
+Python スクリプトがセッションファイルを読み込み、HTML テンプレートにデータを注入して `report.html` を生成する。
 
-**読み込むファイル:**
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_SKILL_DIR}/generate_report.py" {session_dir}
+```
+
+- exit 0: `{session_dir}/report.html` が生成された
+- exit 1: stderr のエラーメッセージをユーザーに表示して終了
+
+**読み込むファイル（スクリプトが自動で読み込む）:**
 
 - `{session_dir}/session.yaml`（必須）
 - `{session_dir}/plan.yaml`（必須）
 - `{session_dir}/review.md`（存在する場合のみ）
 - `{session_dir}/evaluation.yaml`（存在する場合のみ）
+- `{session_dir}/refs.yaml`（存在する場合のみ）
 
-**HTML の要件:**
+**HTML の特徴:**
 
 - 自己完結した単一 HTML ファイル（外部 CSS / JS 不要）
-- `<meta http-equiv="refresh" content="10">` を `<head>` 内に配置（自動リロード）
-- 文字コード UTF-8
-- ダークモード対応（`prefers-color-scheme: dark` メディアクエリを使用）
+- 10秒間隔の自動リロード（スクロール位置を保持）
+- ダークモード対応（`prefers-color-scheme: dark`）
+- `vscode://file/` リンクでエディタ直接オープン
 
 **HTML の構成:**
 
-1. **ヘッダー**: レビュー種別・エンジン・開始日時（`session.yaml` の値を使用）
-2. **進捗バー**: fixed / skipped / needs_review / pending の件数と割合をビジュアル表示（`plan.yaml` の `items` を集計）
-3. **項目一覧テーブル**: 以下の列を含む
-   - 重大度アイコン: `🔴`（critical）/ `🟡`（major）/ `🟢`（minor）
-   - タイトル
-   - ステータスバッジ（色付き）: pending=グレー / in_progress=青 / fixed=緑 / skipped=オレンジ / needs_review=赤
-   - AI推奨（`evaluation.yaml` が存在する場合、対応する `id` の `recommendation` を表示）
-   - 修正ファイル（`status: fixed` の場合、`files_modified` を表示）
-4. **フッター**: 最終更新日時
+1. **ヘッダー**: レビュー種別・エンジン・開始日時
+2. **参照ファイル一覧**: refs.yaml の target_files / reference_docs / related_code を `vscode://file/` リンクで表示
+3. **進捗バー**: fixed / skipped / needs_review / in_progress / pending の件数と割合
+4. **項目一覧テーブル**: 重大度アイコン・タイトル・ステータスバッジ・AI推奨・対象箇所リンク・修正ファイルリンク
+5. **フッター**: 最終更新日時
 
-**書き込み先:** `{session_dir}/report.html` に Write
+### ファイルリンクの生成 [MANDATORY]
+
+`generate_report.py` と `report_template.html` に実装済み。ルール:
+
+- プロジェクトルート（`git rev-parse --show-toplevel`）を基準に絶対パスを構築
+- リンク形式: `vscode://file/{absolute_path}:{line}`（行番号がある場合）
+- リンク形式: `vscode://file/{absolute_path}`（行番号がない場合）
+- リンクテキスト: 相対パス（例: `docs/specs/forge/plan/forge_plan.md:20`）
+- ファイルパスの表示はモノスペースフォント
+
+**書き込み先:** `{session_dir}/report.html`
 
 ### Step 3: ブラウザ表示（`--silent` でない場合のみ）
 

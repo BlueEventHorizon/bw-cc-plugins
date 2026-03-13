@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-12T16:46:49Z
-file_count: 8
+generated_at: 2026-03-13T05:21:43Z
+file_count: 10
 checksums:
   docs/specs/forge/design/create_design_pipeline.md: 13c58db228600e4b278e16d3fbf482fcd82731edca393eae73ba77b25bee628f
   docs/specs/forge/design/create_plan_pipeline.md: 0ad0afbe1f5562ec85aae10516b2dc9721b0f9807601dc1d52418eb071b3ed85
@@ -11,3 +11,5 @@ checksums:
   docs/specs/forge/design/orchestrator_session_protocol.md: f746d5d0ac6a52940fe6ccbbe45e37326d1df9220f7643131b7033c73ec3a709
   docs/specs/forge/design/review_session_design.md: 862b3c1daf0e23451619d5a7e5b2bf6977ddd885cf8a4ab7a86a17030be3c317
   docs/specs/forge/requirement/orchestrator_pattern.md: d2a4c2d4f4d19b3e08ece94b51163e9370d23ee646231a5822095d22e4dd8101
+  docs/specs/next_forge/design/create_skills_orchestrator_design.md: b07ffe661686c34ff2e009924b3a430a1d20330c10aab4c488fd136c8e438a53
+  docs/specs/next_forge/plan/forge_plan.md: 41f5f31312aba89d6e0d0b298200781d58012d7a3788044dac72c7c79aabb8a2
