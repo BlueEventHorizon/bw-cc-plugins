@@ -2,13 +2,13 @@ version: "1.0"
 
 specs:
   design:
-    paths: [docs/specs/design/]
+    paths: [docs/specs/*/design/]
     description: "Design specifications including format definitions and schema documentation"
   plan:
-    paths: [docs/specs/plan/]
+    paths: [docs/specs/*/plan/]
     description: "Development plans, task breakdowns, and implementation roadmaps"
   requirement:
-    paths: [docs/specs/requirement/]
+    paths: [docs/specs/*/requirement/]
     description: "Functional and non-functional requirements"
 
 rules:

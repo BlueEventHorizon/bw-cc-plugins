@@ -6,9 +6,7 @@ resolve_review_context.py のテスト
 標準ライブラリのみ使用。
 
 実行:
-  python3 tests/doc-structure/test_resolve_review_context.py
-  # または
-  python3 -m pytest tests/doc-structure/test_resolve_review_context.py -v
+  python3 -m unittest tests.forge.review.test_resolve_review_context -v
 """
 
 import os
@@ -19,7 +17,7 @@ import unittest
 from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'skills' / 'review' / 'scripts'))
 
 from resolve_review_context import (

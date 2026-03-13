@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-12T13:11:25Z
-  file_count: 8
+  generated_at: 2026-03-13T05:22:13Z
+  file_count: 10
 
 docs:
   docs/specs/forge/design/create_design_pipeline.md:
@@ -138,35 +138,32 @@ docs:
   docs/specs/forge/design/forge_review_pipeline.md:
     doc_type: design
     title: forge Review Pipeline Design
-    purpose: Defines the orchestration structure of the forge plugin review pipeline, skill responsibilities, interfaces, and execution flow for automated code and documentation review
+    purpose: Defines the orchestrator-based pipeline architecture for the forge review feature, including skill responsibilities, inter-skill interfaces, and core principles
     content_details:
-      - "Skill orchestration: review, reviewer, evaluator, fixer, present-findings"
-      - Pipeline structure with orchestrator pattern for phase management
-      - "Judgement flow: auto mode with evaluator, interactive mode with present-findings"
-      - Skill interfaces and data flow between components
-      - Reference document collection strategy with DocAdvisor integration and fallback
-      - "5-point evaluation criteria: rule compliance, design intent, side effects, false positives, target file verification"
-      - Retry loop with test execution and design document synchronization
-      - commit and push orchestration
-      - God-Skill problem elimination through single responsibility principle
+      - Skill list and responsibilities (review orchestrator, reviewer, evaluator, present-findings, fixer)
+      - Pipeline flowchart showing auto and interactive mode workflows
+      - Inter-skill interfaces (input/output between review, reviewer, evaluator, presenter, fixer)
+      - "Evaluator's five assessment criteria (rule matching, design intent, side effects, false positives, target file verification)"
+      - Review types and reference document collection strategy
+      - Core design principles (single-pass doc collection, identical core loop, related code exploration)
+      - Testing execution after fixes and design document consistency maintenance
+      - Auto mode flag behavior (--auto, --auto N, --auto 0)
     applicable_tasks:
-      - Code review implementation
-      - Design document review
-      - Review pipeline orchestration
-      - Skill interface specification
-      - Reference document collection strategy definition
-      - Review result presentation in interactive mode
+      - Review pipeline orchestration implementation
+      - Inter-skill interface design verification
+      - Auto mode vs interactive mode workflow testing
+      - Related code exploration in subagents
     keywords:
-      - review pipeline
+      - forge
+      - review
+      - pipeline
       - orchestrator
-      - reviewer
       - evaluator
-      - fixer
-      - skill interface
-      - reference documents
-      - DocAdvisor
-      - auto mode
-      - interactive mode
+      - auto-mode
+      - interactive-mode
+      - core-loop
+      - reference-docs
+      - side-effects
   docs/specs/forge/design/orchestrator_session_protocol.md:
     doc_type: design
     title: Orchestrator Session Protocol Design
@@ -196,31 +193,32 @@ docs:
       - workflow
   docs/specs/forge/design/review_session_design.md:
     doc_type: design
-    title: forge Review Pipeline Session Directory Design
-    purpose: Defines session directory architecture for forge review pipeline, including file structure, lifecycle, and inter-skill interfaces for persistent state management
+    title: forge review pipeline session directory design
+    purpose: Specifies session directory architecture for review pipeline workflow, implementing persistent file-based state management and context preservation across multiple cycles
     content_details:
-      - Session directory path format (YYYYMMDD-HHmmss-random6)
-      - session.yaml metadata structure
-      - refs.yaml reference file list (target_files, reference_docs, review_criteria_path, related_code)
-      - review.md output format (Markdown only)
-      - evaluation.yaml evaluator decision results
-      - plan.yaml modification plan and progress tracking
-      - report.html visual report generation
-      - Lifecycle timing (creation, completion, interruption handling)
-    applicable_tasks:
-      - Review session state persistence implementation
-      - Inter-skill interface refactoring
-      - Session directory architecture design
-      - Report generation system development
+      - Session directory structure and lifecycle
+      - Session metadata files (session.yaml, refs.yaml)
+      - Review result files (review.md, evaluation.yaml, plan.yaml)
+      - HTML report generation and auto-refresh
       - Session resumption after interruption
+      - Scope of changes across forge skills
+      - Skill interface changes from prompt-based to file-based communication
+      - Integration with show-report skill
+    applicable_tasks:
+      - Design review of review pipeline architecture
+      - Implementation of session directory lifecycle management
+      - HTML report generation implementation
+      - Session resumption handling
+      - Review skill refactoring
     keywords:
       - session directory
+      - context compression
+      - persistent state
+      - file-based communication
       - review pipeline
-      - refs.yaml
-      - plan.yaml
-      - report.html
-      - state persistence
+      - report generation
       - session resumption
+      - YAML schema
   docs/specs/forge/requirement/orchestrator_pattern.md:
     doc_type: requirement
     title: Orchestrator Pattern Requirement
@@ -244,3 +242,62 @@ docs:
       - forge plugin
       - God-Skill problem
       - context efficiency
+  docs/specs/next_forge/design/create_skills_orchestrator_design.md:
+    doc_type: design
+    title: DES-010 create-* Skills Orchestrator Design
+    purpose: Defines the refactoring of create-design, create-plan, and create-requirements skills to use the orchestrator pattern with parallel context collection via subagents, replacing the God-Skill structure.
+    content_details:
+      - Current God-Skill architecture vs. target orchestrator architecture
+      - Common context gathering framework with parallel subagent execution
+      - Session directory structure with refs/ subdirectory
+      - Context collection matrix for specs, rules, and code agents
+      - Phase-by-phase refactoring for create-design skill
+      - Phase-by-phase refactoring for create-plan skill
+      - Phase-by-phase refactoring for create-requirements skill with mode-specific collection
+      - Session lifecycle management and cleanup
+      - Integration with orchestrator_session_protocol.md and context_gathering_guide.md
+    applicable_tasks:
+      - Implementing orchestrator pattern for create-* skills
+      - Creating create-design skill refactoring
+      - Creating create-plan skill refactoring
+      - Creating create-requirements skill refactoring
+      - Designing session directory and refs/ schema
+      - Implementing parallel context collection framework
+      - Creating context_gathering_guide.md
+      - Refactoring create-requirements with mode-specific collection
+    keywords:
+      - orchestrator pattern
+      - session directory
+      - parallel context collection
+      - subagent
+      - refs/ schema
+      - God-Skill
+      - create-design
+      - create-plan
+      - create-requirements
+      - session lifecycle
+  docs/specs/next_forge/plan/forge_plan.md:
+    doc_type: plan
+    title: forge Implementation Plan
+    purpose: Defines seven implementation tasks for realizing session directory communication and concurrent execution architecture in forge plugin
+    content_details:
+      - Traceability matrix linking requirements to designs
+      - Task list with seven implementation tasks (TASK-001 through TASK-007)
+      - Priority-based task grouping and sequencing
+      - Task dependencies and acceptance criteria
+      - Revision history tracking
+    applicable_tasks:
+      - create-requirements orchestration implementation
+      - create-design orchestration implementation
+      - create-plan orchestration implementation
+      - orchestrator session protocol design
+      - context gathering guide creation
+      - design document relocation and version management
+    keywords:
+      - forge
+      - orchestration
+      - session directory
+      - traceability matrix
+      - task planning
+      - concurrent execution
+      - implementation schedule

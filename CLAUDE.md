@@ -89,6 +89,31 @@ review スキルがレビュー観点を探索する優先順位：
 
 forge は `.doc_structure.yaml` を直接読み込んでパスを解決し、参考文書を収集する。DocAdvisor（`/query-rules`, `/query-specs`）が利用可能な場合はそちらを優先する。
 
+## Testing [MANDATORY]
+
+`plugins/` 配下の Python スクリプトにはテストが必須。SKILL.md はテスト困難なため例外とする。
+`.claude/` 配下のローカルスキル・スクリプトはテスト対象外。
+
+### テストの配置
+
+`tests/` にプラグイン名・スキル名で分類して配置する:
+
+```
+tests/
+├── common/                 # プラグイン横断（マニフェスト整合性等）
+├── forge/
+│   ├── review/
+│   ├── scripts/
+│   └── show_report/
+└── {plugin}/               # 新プラグイン追加時も同構造
+```
+
+### テスト実行
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
 ## Conventions
 
 - **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
@@ -97,3 +122,4 @@ forge は `.doc_structure.yaml` を直接読み込んでパスを解決し、参
 - AI専用スキルには `user-invocable: false` を frontmatter で指定
 - スクリプトのパス参照には `${CLAUDE_PLUGIN_ROOT}` を使用
 - `[MANDATORY]` マーカーが付いたセクションは省略・変更不可の必須仕様
+- **SKILL.md にインラインスクリプトを書かない** [MANDATORY]: AI がスクリプトを勝手に解釈して失敗するリスクがある。処理ロジックは独立した Python スクリプトファイルとして実装し、SKILL.md からはそのスクリプトを呼び出す形式にすること

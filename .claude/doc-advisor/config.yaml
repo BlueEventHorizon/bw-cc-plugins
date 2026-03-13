@@ -29,10 +29,14 @@ specs:
     - docs/specs/forge/design/
     - docs/specs/forge/plan/
     - docs/specs/forge/requirement/
+    - docs/specs/next_forge/design/
+    - docs/specs/next_forge/plan/
   doc_types_map:
     docs/specs/forge/design/: design
     docs/specs/forge/plan/: plan
     docs/specs/forge/requirement/: requirement
+    docs/specs/next_forge/design/: design
+    docs/specs/next_forge/plan/: plan
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
   checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/
