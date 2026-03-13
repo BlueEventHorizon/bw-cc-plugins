@@ -69,6 +69,7 @@ skill: review                      # 起動スキル名
 started_at: "2026-03-12T18:30:00Z"
 last_updated: "2026-03-12T18:35:00Z"
 status: in_progress                # in_progress | completed
+resume_policy: resume              # resume（デフォルト）| none
 
 # === スキル固有フィールド（各スキルが自由に追加）===
 # 例: review の場合
@@ -86,14 +87,37 @@ current_cycle: 0
 | started_at | datetime | ○ | セッション開始時刻（ISO 8601）|
 | last_updated | datetime | ○ | 最終更新時刻（ISO 8601）|
 | status | enum | ○ | `in_progress` / `completed` |
+| resume_policy | enum | - | `resume`（デフォルト）/ `none`。未指定時は `resume` として扱う |
 
 ### ライフサイクル
 
 | タイミング | 操作 |
 |------------|------|
-| スキル開始時 | オーケストレータがディレクトリ作成 + `session.yaml` 初期化 |
+| スキル開始時 | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
 | 正常完了時 | オーケストレータがディレクトリを削除 |
-| セッション中断 | ディレクトリが残存（次回起動時に検出・再開提案）|
+| セッション中断 | ディレクトリが残存（次回起動時に検出）|
+
+### 残存セッション検出フロー
+
+スキル起動時、`.claude/.temp/` 内に同一 `skill` 名の `session.yaml` を持つディレクトリを検索する。
+見つかった場合の処理は `resume_policy` によって分岐する:
+
+#### `resume_policy: resume`（デフォルト）
+
+1. 残存セッションの `status` と `last_updated` を確認
+2. AskUserQuestion: 「前回のセッションが見つかりました。再開しますか？」
+   - **再開** → 既存 session_dir を使用して処理を続行
+   - **破棄して新規作成** → `rm -rf {session_dir}` して新規セッションを開始
+
+#### `resume_policy: none`
+
+1. 残存セッションを検出
+2. AskUserQuestion: 「前回の未完了セッションがあります。削除しますか？」
+   - **削除** → `rm -rf {session_dir}` して新規セッションを開始
+   - **残す** → 残存ディレクトリを無視して新規セッションを開始
+
+> **設計判断**: review はサイクル実行（reviewer → evaluator → fixer）があり中間状態の価値が高いため `resume`。
+> create-* は直線的なワークフローであり、中断時は最初からやり直す方が効率的なため `none`。
 
 ---
 

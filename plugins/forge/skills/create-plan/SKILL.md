@@ -63,16 +63,98 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_format.md`** — 計画書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_principles.md`** — 計画書作成原則・タスク設計ガイドライン
 
-次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
+---
+
+## 残存セッション検出 [MANDATORY]
+
+`.claude/.temp/` 内に `skill: create-plan` の `session.yaml` を持つディレクトリを検索する。
+
+```bash
+grep -rl "^skill: create-plan" .claude/.temp/*/session.yaml 2>/dev/null
+```
+
+- **見つからない** → セッション作成フェーズへ
+- **見つかった** → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
+  - **削除** → `rm -rf {session_dir}` して新規セッション作成へ
+  - **残す** → 残存ディレクトリを無視して新規セッション作成へ
+
+---
+
+## セッション作成フェーズ [MANDATORY]
+
+```bash
+SESSION_NAME=$(date +%Y%m%d-%H%M%S)-$(openssl rand -hex 3)
+SESSION_DIR=".claude/.temp/${SESSION_NAME}"
+mkdir -p "${SESSION_DIR}/refs"
+```
+
+`session.yaml` を初期化:
+
+```yaml
+skill: create-plan
+feature: "{feature}"
+mode: "{new|update}"
+started_at: "{ISO 8601}"
+last_updated: "{ISO 8601}"
+status: in_progress
+resume_policy: none
+output_dir: "specs/{feature}/plan/"
+```
+
+---
+
+## コンテキスト収集フェーズ [MANDATORY]
+
+2つの agent を **Agent ツールで並列起動** し、コンテキストを収集する。
+各 agent には `${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md` のパスと `session_dir` を渡す。
+
+### 起動する agent
+
+| agent | steps | 収集内容 | 条件 |
+|-------|-------|---------|------|
+| specs agent | `[1, 2]` | 要件定義書 + 設計書（対象 Feature） | 常に実行 |
+| rules agent | `[3]` | 計画書フォーマット（あれば） | `/query-rules` 利用可能時のみ |
+
+> **code agent は不要**: 計画書は実装を参照しない（DES-010 Section 4.2 適用マトリクス）
+
+各 agent への指示:
 
 ```
-/query-rules 計画書・実装タスクを作成する
+session_dir: {session_dir}
+guide: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md
+steps: {上記の steps}
+feature: "{feature}"
+skill_type: "計画書作成"
 ```
 
-セマンティック検索により、ワークフロー指示・フォーマット定義・タスク設計ルール・タスクID体系等、計画書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
+### rules agent の起動判定
 
-`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/plan_format*` `**/plan*` を Glob 探索して補完する。
+`/query-rules` Skill の利用可否を確認（`.claude/skills/query-rules/SKILL.md` の存在で判断）。利用不可の場合は rules agent をスキップする。
 
+### 失敗時の扱い
+
+- agent がエラー終了 → 該当カテゴリの refs/ ファイルなしで後続工程に進む
+- agent が空結果 → 正常扱い
+- 失敗した agent がある場合、refs/ 統合表示でその旨を報告する
+
+---
+
+## refs/ 統合・表示 [MANDATORY]
+
+全 agent 完了後、`{session_dir}/refs/` 内のファイルを Read し表示する:
+
+```
+### ✅ コンテキスト収集完了
+
+**specs (N件)**
+- `specs/{feature}/requirements/xxx.md` — 要件定義書
+- `specs/{feature}/design/xxx.md` — 設計書
+
+**rules (N件)**（収集した場合のみ）
+- `rules/plan_format.md` — 計画書フォーマット
+```
+
+5件以下は全件表示、6件以上は先頭3件+省略。
 
 ---
 
@@ -80,15 +162,12 @@ allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 
 ### 1.1 要件定義書・設計書の取得
 
-以下の優先順で対象 Feature の文書を取得する:
+`{session_dir}/refs/specs.yaml` を Read し、収集済みの文書を取得する。
 
-1. **DocAdvisor**（`/query-specs` Skill が利用可能）→ 要件定義書・設計書を取得
-2. 利用不可 → `.doc_structure.yaml` の `specs.requirement.paths` および `specs.design.paths` から Feature に関連するドキュメントを Glob 探索
-
-**設計書が見つからない場合**: AskUserQuestion を使用してユーザーに確認する:
-
-- 設計書のパスを手動で指定する
-- 設計書なしで計画書作成を進める（リスクを理解した上で）
+- **refs/specs.yaml が存在する** → 記載された文書を Read
+- **存在しない（収集失敗）** → AskUserQuestion を使用してユーザーに確認:
+  - 設計書のパスを手動で指定する
+  - 設計書なしで計画書作成を進める（リスクを理解した上で）
 
 ---
 
@@ -169,9 +248,19 @@ AskUserQuestion を使用して計画書の承認を確認する。
 
 ---
 
-## 完了後の案内
+## 完了処理
 
-文書作成が完了したら、作成したファイルパスとともに次のステップを案内する:
+### セッション削除
+
+全フェーズ正常完了後、セッションディレクトリを削除する:
+
+```bash
+rm -rf {session_dir}
+```
+
+### 完了案内
+
+作成したファイルパスとともに次のステップを案内する:
 
 ```
 計画書を作成しました:

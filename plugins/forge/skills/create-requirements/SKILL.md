@@ -58,17 +58,6 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 
-次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
-
-```
-/query-rules 要件定義書を作成する
-```
-
-セマンティック検索により、ワークフロー指示・フォーマット定義・要件記述ルール等、要件定義書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
-
-`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/spec_format*` `**/requirement*` を Glob 探索して補完する。
-
-
 ---
 
 ## モード選択
@@ -103,9 +92,101 @@ interactive または reverse-engineering を使用してください。
    - 引数で指定済み → そのまま使用
    - 未指定 → AskUserQuestion を使用して入力を求める
 
-3. **既存資産の収集**（`--add` 時のみ）:
-   - DocAdvisor（`/query-specs`）が利用可能 → 既存要件・設計書を取得
-   - 利用不可 → `.doc_structure.yaml` の `specs` パスから Feature に関連するドキュメントを Glob 探索
+---
+
+## 残存セッション検出 [MANDATORY]
+
+`.claude/.temp/` 内に `skill: create-requirements` の `session.yaml` を持つディレクトリを検索する。
+
+```bash
+grep -rl "^skill: create-requirements" .claude/.temp/*/session.yaml 2>/dev/null
+```
+
+- **見つからない** → セッション作成フェーズへ
+- **見つかった** → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
+  - **削除** → `rm -rf {session_dir}` して新規セッション作成へ
+  - **残す** → 残存ディレクトリを無視して新規セッション作成へ
+
+---
+
+## セッション作成フェーズ [MANDATORY]
+
+```bash
+SESSION_NAME=$(date +%Y%m%d-%H%M%S)-$(openssl rand -hex 3)
+SESSION_DIR=".claude/.temp/${SESSION_NAME}"
+mkdir -p "${SESSION_DIR}/refs"
+```
+
+`session.yaml` を初期化:
+
+```yaml
+skill: create-requirements
+feature: "{feature}"
+mode: "{interactive|reverse-engineering|from-figma}"
+started_at: "{ISO 8601}"
+last_updated: "{ISO 8601}"
+status: in_progress
+resume_policy: none
+output_dir: "{出力先ディレクトリ}"
+```
+
+---
+
+## コンテキスト収集フェーズ [MANDATORY]
+
+モードに応じた agent を **Agent ツールで並列起動** し、コンテキストを収集する。
+各 agent には `${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md` のパスと `session_dir` を渡す。
+
+### モード別起動マトリクス
+
+| agent | interactive (新規) | interactive (--add) | reverse-engineering | from-figma |
+|-------|--------------------|---------------------|---------------------|------------|
+| rules agent | ○ | ○ | ○ | ○ |
+| specs agent | - | ○ | - | - |
+| code agent | - | - | ○ | - |
+
+### 各 agent への指示
+
+```
+session_dir: {session_dir}
+guide: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md
+steps: {モードに応じた steps}
+feature: "{feature}"
+skill_type: "要件定義書作成"
+```
+
+| agent | steps |
+|-------|-------|
+| rules agent | `[3]` |
+| specs agent | `[1, 2]` |
+| code agent | `[1, 5]` |
+
+### 失敗時の扱い
+
+- agent がエラー終了 → 該当カテゴリの refs/ ファイルなしで後続工程に進む
+- agent が空結果 → 正常扱い
+- 失敗した agent がある場合、refs/ 統合表示でその旨を報告する
+
+---
+
+## refs/ 統合・表示 [MANDATORY]
+
+全 agent 完了後、`{session_dir}/refs/` 内のファイルを Read し表示する:
+
+```
+### ✅ コンテキスト収集完了
+
+**rules (N件)**
+- `rules/requirement_format.md` — 要件書フォーマット
+
+**specs (N件)**（--add 時のみ）
+- `specs/{feature}/requirements/xxx.md` — 既存要件定義書
+
+**code (N件)**（reverse-engineering 時のみ）
+- `src/xxx/YYY.swift` — ソースコード
+```
+
+5件以下は全件表示、6件以上は先頭3件+省略。
 
 ---
 
@@ -172,10 +253,13 @@ interactive または reverse-engineering を使用してください。
 
 ### Phase 1: ソースコード解析 [MANDATORY]
 
+`{session_dir}/refs/code.yaml` を Read し、収集済みのソースコード一覧を起点に解析する:
+
+- refs/code.yaml に記載されたファイルを Read して全体構造を把握
 - プロジェクト構造の把握（ディレクトリ構成）
 - 画面・コンポーネントの列挙（View/画面クラスを特定）
 - ナビゲーション構造の特定
-- 利用可能なツールを最大限活用（MCPツール、Glob、Grep 等）
+- 必要に応じて追加の Grep/Glob 探索で補完
 
 ### Phase 2: 要件抽出 [MANDATORY]
 
@@ -230,9 +314,19 @@ interactive または reverse-engineering を使用してください。
 
 ---
 
-## 完了後の案内
+## 完了処理
 
-文書作成が完了したら、作成したファイルパスとともに次のステップを案内する:
+### セッション削除
+
+全フェーズ正常完了後、セッションディレクトリを削除する:
+
+```bash
+rm -rf {session_dir}
+```
+
+### 完了案内
+
+作成したファイルパスとともに次のステップを案内する:
 
 ```
 要件定義書を作成しました:
@@ -243,5 +337,3 @@ interactive または reverse-engineering を使用してください。
   /forge:review requirement {作成ファイルパス} --auto 3   # 3サイクル徹底修正
   /forge:review requirement {作成ファイルパス}            # 対話モードでレビュー
 ```
-
----
