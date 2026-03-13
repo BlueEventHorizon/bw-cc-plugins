@@ -91,6 +91,8 @@ AskUserQuestion: 「以下のタスクを並列実行します。よろしいで
 
 ## セッション管理 [MANDATORY]
 
+<!-- DES-011 §3.2 準拠: start-implement は事前準備 Phase が多いため、セッション管理を Phase 間の独立セクションとして配置 -->
+
 残存セッション検出:
 
 ```bash
@@ -134,20 +136,26 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 
 プロジェクト固有の実装ルール（レイヤー固有ルール等）を検索する agent を起動する。結果は `{session_dir}/refs/rules.yaml` に書き込まれる。
 
-```
-Feature "{feature}" の「{タスクのタイトル}」実装に関連するプロジェクト固有の実装ルールを検索してください。
-ガイド: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md を Read して手順に従うこと。
+```yaml
 session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 実装ルール調査
+feature: "{feature}"
+skill_type: "{タスクのタイトル}"
 ```
 
 #### 3.1.4 既存コードの収集
 
 既存コード（類似実装、参照コード）を検索する agent を起動する。結果は `{session_dir}/refs/code.yaml` に書き込まれる。
 
-```
-Feature "{feature}" の「{タスクのタイトル}」実装に関連する既存コード（類似実装、参照コード）を検索してください。
-ガイド: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md を Read して手順に従うこと。
+```yaml
 session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 既存コード調査
+feature: "{feature}"
+skill_type: "{タスクのタイトル}"
 ```
 
 > 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。

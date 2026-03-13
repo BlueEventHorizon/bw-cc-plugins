@@ -41,7 +41,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 "$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
 ```
 
-スキャン結果（JSON）を取得する。`readme_only: true` のディレクトリは分類対象外としてスキップする。
+スキャン結果（JSON）を取得する。`readme_only: true`（`classify_dirs.py` が出力するメタデータフラグ）のディレクトリは分類対象外としてスキップする。
 
 **空ディレクトリの補完**: スキャン結果に含まれないディレクトリも分類候補に加える。
 ドキュメント系の親ディレクトリ（`docs/`, `rules/`, `specs/` 等）配下のサブディレクトリを Glob で探索し、スキャン結果にないものを「空ディレクトリ候補」として追加する。ユーザーに確認するため、スキップしない。

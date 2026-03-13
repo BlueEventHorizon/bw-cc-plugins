@@ -241,22 +241,13 @@ session_dir が提供されており、修正が成功した場合:
 
 ## .doc_structure.yaml からの参考文書収集手順
 
-DocAdvisor 利用不可時、`.doc_structure.yaml` を直接読み込んで参考文書を収集する。
+DocAdvisor 利用不可時、スクリプトを呼び出して参考文書を収集する。
 
-### Step A: .doc_structure.yaml を Read
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/scripts/resolve_doc_references.py" --type rules
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/scripts/resolve_doc_references.py" --type specs
+```
 
-プロジェクトルートの `.doc_structure.yaml` を Read ツールで読み込む。
-
-### Step B: パスの解決（glob 展開 + exclude 適用）
-
-各 category（`specs`, `rules`）の各 doc_type について:
-
-1. `paths` 配列の各エントリを確認
-2. `*` を含むパスは Glob ツールで展開
-3. `exclude` がある場合、パスコンポーネントに exclude 名を含むものを除外
-
-### Step C: 参考文書の Glob 探索
-
-- `rules` カテゴリの解決済みパスから `**/*.md` で探索
-- `specs` カテゴリから関連する仕様書を探索
-- 見つからないファイルはスキップ（エラーにしない）
+JSON 出力の `rules` キーからルール文書パス一覧を、`specs` キーから仕様書パス一覧を取得して使用する。
+`status: "error"` の場合は参考文書なしで修正を続行する（エラーにしない）。

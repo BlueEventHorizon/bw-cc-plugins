@@ -87,7 +87,8 @@ argument-hint: "(内部使用)"
 | 影響が局所的     | 他の項目や設計判断に波及しない        |
 | 機械的に修正可能 | 判断・設計決定を伴わない              |
 
-**auto_fixable の例**: 末尾スペース削除、タイポ修正、未使用importの削除、単純な置換
+**auto_fixable の例（コード）**: 末尾スペース削除、タイポ修正、未使用importの削除、単純な置換
+**auto_fixable の例（文書）**: フラグ名・項目名の単純置換、条件チェック一行の追加、メニューへの項目追加、注記の追加
 **auto_fixable にしない例**: アーキテクチャ変更、複数の対応案がある問題、影響範囲が広い修正
 
 判断に迷ったら `auto_fixable: false` とする。
@@ -109,8 +110,8 @@ argument-hint: "(内部使用)"
 - `recommendation: skip` → `status: skipped` / `skip_reason` を記録
 - `recommendation: needs_review` → `status: needs_review`
 
-> **interactive モードの場合**: evaluator の推奨に基づく初期状態として plan.yaml を更新する。
-> present-findings がユーザーの最終判断で plan.yaml を上書き更新する。
+> **interactive モードの場合**: evaluator の更新はあくまで初期推奨状態。present-findings がユーザーの最終判断で上書き更新する（`forge_review_pipeline.md` §4 参照）。
+> そのため evaluator の plan.yaml 更新と present-findings による上書きは意図的な二段階更新であり、競合ではない。
 
 ### Step 5: 次サイクル判定
 

@@ -1,9 +1,9 @@
-# コンテキスト収集ガイド
+# コンテキスト収集仕様書
 
-このガイドは、forge オーケストレータスキルが **コンテキスト収集 agent** に渡す
+このファイルは、forge オーケストレータスキルが **コンテキスト収集 agent** に渡す
 自己完結型の作業指示書である。
 
-agent はこのファイルを読み、指定された Step を実行し、
+agent はこのファイルを読み、指定されたタスクを実行し、
 結果を `{session_dir}/refs/` に書き込む。
 
 ---
@@ -15,16 +15,18 @@ agent はこのファイルを読み、指定された Step を実行し、
 | パラメータ | 必須 | 説明 |
 |-----------|------|------|
 | `session_dir` | ○ | セッションディレクトリのパス |
-| `guide` | ○ | このガイドのパス |
-| `steps` | ○ | 実行する Step 番号のリスト |
+| `spec` | ○ | この仕様書のパス |
+| `tasks` | ○ | 実行するタスク名のリスト（YAML list 形式） |
 | `feature` | - | 対象 Feature 名（検索キーワードとして活用） |
-| `skill_type` | - | 作業種別（Step 3 の検索キーワード） |
+| `skill_type` | - | 作業種別（実装ルール調査の検索キーワード） |
 | `target_description` | - | feature がない場合の検索コンテキスト（タスク説明、対象ファイル等） |
 
-```
-session_dir: {session_dir}
-guide: plugins/forge/docs/context_gathering_guide.md
-steps: [1, 2, 3]
+```yaml
+session_dir: .claude/.temp/create-design-a3f7b2
+spec: plugins/forge/docs/context_gathering_spec.md
+tasks:
+  - 仕様書調査
+  - 実装ルール調査
 feature: "login"                     # 省略可能
 skill_type: "設計書作成"              # 省略可能
 target_description: "..."            # feature がない場合に使用
@@ -34,41 +36,13 @@ target_description: "..."            # feature がない場合に使用
 
 - `session_dir` のパスが agent に渡されていること
 - `{session_dir}/refs/` ディレクトリが存在すること（なければ作成）
-- 実行する Step のリストが指定されていること（例: `steps: [1, 2, 3, 5]`）
+- 実行するタスクのリストが指定されていること
 - `feature`、`skill_type`、`target_description` は検索精度を上げるためのヒントとして活用する
-- `feature` が省略された場合、`target_description` や Step 1 で得た情報を検索キーワードとして使用する
+- `feature` が省略された場合、`target_description` や「Issue/Task確認」タスクで得た情報を検索キーワードとして使用する
 
 ---
 
-## 適用マトリクス
-
-オーケストレータが agent に渡す `steps` の推奨値:
-
-| Step | create-req | create-design | create-plan | start-implement | review (*) |
-|------|-----------|---------------|-------------|-----------------|------------|
-| 1. Issue/Task 確認 | ○ | ○ | ○ | ○ | ○ |
-| 2. 仕様書調査 | △（`--add`時） | ○ | ○ | ○ | ○ |
-| 3. 実装ルール調査 | ○ | ○ | △（利用可能時） | ○ | ○ |
-| 4. 類似PR調査 | - | - | - | - | △ |
-| 5. 既存コード調査 | △（`reverse-eng`時） | ○ | - | ○ | ○ |
-
-○ = 推奨、△ = 条件付き（括弧内の条件を満たす場合のみ）、- = 不要
-
-(*) review は現在このガイドを直接使用していない（独自のコンテキスト収集を実行）。将来統合する場合の参考値。review は feature を持たないため、`target_description`（対象ファイルやレビュー種別）を検索キーワードとして使用する。
-
-### feature の有無
-
-| スキル | feature | 検索キーワードの元 |
-|--------|---------|-------------------|
-| create-requirements | ○ | feature 名 |
-| create-design | ○ | feature 名 |
-| create-plan | ○ | feature 名 |
-| start-implement | ○ | feature 名 + タスクタイトル |
-| review | **なし** | target_description（対象ファイル、レビュー種別等） |
-
----
-
-## Step 1: Issue / Plan Task 確認
+## Issue/Task確認
 
 **目的**: タスクの起点となる Issue や計画書のタスクから、背景・受入条件・関連情報を把握する。
 
@@ -95,15 +69,15 @@ target_description: "..."            # feature がない場合に使用
    - 受入条件（あれば）
    - 関連する機能名・コンポーネント名
 
-**出力**: なし（後続 Step の検索精度を上げるためのインプット）
+**出力**: なし（後続タスクの検索精度を上げるためのインプット）
 
 ---
 
-## Step 2: 仕様書調査
+## 仕様書調査
 
 **目的**: タスクに関連する仕様書（要件定義・設計書・計画書）を特定する。
 
-**検索キーワード**: `feature` があればそれを使用。なければ `target_description` または Step 1 で得た情報（機能名・コンポーネント名等）を使用する。
+**検索キーワード**: `feature` があればそれを使用。なければ `target_description` または「Issue/Task確認」で得た情報（機能名・コンポーネント名等）を使用する。
 
 **手順（優先順）**:
 
@@ -151,7 +125,7 @@ documents:
 
 ---
 
-## Step 3: 実装ルール調査
+## 実装ルール調査
 
 **目的**: タスクに適用されるプロジェクト固有の開発ルール・規約を特定する。
 
@@ -191,7 +165,7 @@ documents:
 
 ---
 
-## Step 4: 類似PR調査（任意）
+## 類似PR調査
 
 **目的**: 過去の類似変更から実装パターンやレビュー観点を学ぶ。
 
@@ -203,7 +177,7 @@ documents:
    ```bash
    which gh && gh auth status
    ```
-   失敗した場合 → このStep全体をスキップ
+   失敗した場合 → このタスク全体をスキップ
 
 2. タスクに関連するキーワードで PR を検索:
    ```bash
@@ -234,15 +208,15 @@ documents:
 
 ---
 
-## Step 5: 既存コード調査
+## 既存コード調査
 
 **目的**: タスクに関連する既存のソースコード・テスト・類似実装を特定する。
 
-**検索キーワード**: `feature` があればそれを使用。なければ `target_description` または Step 1 で得た情報を使用する。
+**検索キーワード**: `feature` があればそれを使用。なければ `target_description` または「Issue/Task確認」で得た情報を使用する。
 
 **手順**:
 
-1. Step 1 で得た情報（機能名・コンポーネント名）を元に探索:
+1. 「Issue/Task確認」で得た情報（機能名・コンポーネント名）を元に探索:
    ```
    Grep: {キーワード}（ソースコード内を検索）
    Glob: **/*{コンポーネント名}*（ファイル名で検索）
@@ -275,7 +249,7 @@ documents:
 
 ## エラー時の振る舞い
 
-- 各 Step で検索結果が 0 件の場合: 空の documents で yaml を書き込む
+- 各タスクで検索結果が 0 件の場合: 空の documents で yaml を書き込む
 - `/query-specs` や `/query-rules` が利用不可の場合: フォールバック手段に切り替える
-- `gh` CLI が利用不可の場合: Step 4 をスキップ（refs/prs.yaml を作成しない）
-- 予期しないエラーの場合: エラー内容をオーケストレータに報告し、該当 Step をスキップ
+- `gh` CLI が利用不可の場合: 「類似PR調査」をスキップ（refs/prs.yaml を作成しない）
+- 予期しないエラーの場合: エラー内容をオーケストレータに報告し、該当タスクをスキップ

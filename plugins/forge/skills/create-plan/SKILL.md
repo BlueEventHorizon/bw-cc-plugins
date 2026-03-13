@@ -33,6 +33,19 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 - **引数あり** → その Feature を使用
 - **引数なし** → AskUserQuestion で対象 Feature を確認
 
+### .doc_structure.yaml の確認
+
+`.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
+
+- **存在しない** → AskUserQuestion を使用して確認する:
+  ```
+  .doc_structure.yaml が見つかりません。
+  /forge:setup を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup を実行しますか？
+  ```
+  - **はい** → `/forge:setup` を呼び出し、完了後に次のステップへ進む
+  - **いいえ** → 終了
+- **存在する** → 次のステップへ
+
 ### 出力先の解決
 
 計画書の出力先を特定する。入力文書（設計書）は Phase 1 で agent が特定する。
@@ -101,20 +114,26 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 
 Feature の要件定義書と設計書を検索・特定する agent を起動する。結果は `{session_dir}/refs/specs.yaml` に書き込まれる。
 
-```
-Feature "{feature}" の要件定義書と設計書を検索・特定してください。
-ガイド: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md を Read して手順に従うこと。
+```yaml
 session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 仕様書調査
+feature: "{feature}"
+skill_type: "計画書作成"
 ```
 
 ### 1.2 計画書ルールの収集
 
 プロジェクト固有の計画書フォーマット・タスク設計ルールを検索する agent を起動する。結果は `{session_dir}/refs/rules.yaml` に書き込まれる。
 
-```
-Feature "{feature}" の計画書作成に関連するプロジェクト固有のフォーマット・タスク設計ルールを検索してください。
-ガイド: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_guide.md を Read して手順に従うこと。
+```yaml
 session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 実装ルール調査
+feature: "{feature}"
+skill_type: "計画書作成"
 ```
 
 ### 1.3 収集結果の確認
@@ -206,6 +225,7 @@ session_dir: {session_dir}
 
 計画書作成・更新後に `/forge:review plan` でレビューを実行する:
 
+<!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、create-plan のセッションとは干渉しない -->
 ```
 /forge:review plan {作成した計画書のファイルパス}
 ```

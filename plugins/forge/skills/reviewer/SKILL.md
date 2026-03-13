@@ -133,6 +133,8 @@ general-purpose subagent を起動し、レビュー結果を `{session_dir}/rev
 
 ### plan.yaml の初期作成
 
+**注意**: YAML フォーマットを厳密に遵守すること（`session_format.md` のスキーマ参照）。フィールド漏れ・インデントミスに注意。将来的にはスクリプト化を検討。
+
 `{session_dir}/review.md` から指摘事項を解析し、`{session_dir}/plan.yaml` を初期作成する:
 
 1. review.md 内の 🔴🟡🟢 マーカー付き指摘事項を全て抽出してリスト化する
