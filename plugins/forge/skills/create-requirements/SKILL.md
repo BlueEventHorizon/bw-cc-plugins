@@ -94,41 +94,31 @@ interactive または reverse-engineering を使用してください。
 
 ---
 
-## 残存セッション検出 [MANDATORY]
+## セッション管理 [MANDATORY]
 
-`.claude/.temp/` 内に `skill: create-requirements` の `session.yaml` を持つディレクトリを検索する。
+残存セッション検出:
 
 ```bash
-grep -rl "^skill: create-requirements" .claude/.temp/*/session.yaml 2>/dev/null
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-requirements
 ```
 
-- **見つからない** → セッション作成フェーズへ
-- **見つかった** → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-  - **削除** → `rm -rf {session_dir}` して新規セッション作成へ
+- `status: "none"` → セッション作成へ
+- `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
+  - **削除** → `"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
   - **残す** → 残存ディレクトリを無視して新規セッション作成へ
 
----
-
-## セッション作成フェーズ [MANDATORY]
+セッション作成:
 
 ```bash
-SESSION_NAME=$(date +%Y%m%d-%H%M%S)-$(openssl rand -hex 3)
-SESSION_DIR=".claude/.temp/${SESSION_NAME}"
-mkdir -p "${SESSION_DIR}/refs"
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+  --skill create-requirements \
+  --feature "{feature}" \
+  --mode "{interactive|reverse-engineering|from-figma}" \
+  --output-dir "{出力先ディレクトリ}"
 ```
 
-`session.yaml` を初期化:
-
-```yaml
-skill: create-requirements
-feature: "{feature}"
-mode: "{interactive|reverse-engineering|from-figma}"
-started_at: "{ISO 8601}"
-last_updated: "{ISO 8601}"
-status: in_progress
-resume_policy: none
-output_dir: "{出力先ディレクトリ}"
-```
+JSON 出力の `session_dir` をコンテキストに保持する。
 
 ---
 

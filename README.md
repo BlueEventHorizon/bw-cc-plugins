@@ -52,6 +52,26 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, auto-fix issues, and finalize with quality gates.
 
+### Feature
+
+forge manages documents per **Feature** — a grouped unit of related specifications for development.
+
+| Development Pattern | How Features are used |
+|--------------------|-----------------------|
+| Incremental development | Separate new capabilities from the existing main spec as individual Features |
+| Agile development | Develop and deliver per Feature in each iteration |
+| Small projects | Treat the entire project as a single Feature |
+
+Skills like `create-requirements`, `create-design`, `create-plan`, and `start-implement` operate on a Feature. Each Feature has its own requirements, design docs, and plan under a shared directory:
+
+```
+specs/
+  {feature}/
+    requirements/   # Requirements documents
+    design/         # Design documents
+    plan/           # Implementation plan
+```
+
 ### Usage
 
 ```
@@ -121,6 +141,7 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 | `create-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
 | `create-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
 | `create-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
+| `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
 | `show-report`         | Yes            | Generates an HTML progress report from a review session directory and opens it in the browser                                                 |

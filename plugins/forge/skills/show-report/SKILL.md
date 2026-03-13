@@ -41,7 +41,7 @@ argument-hint: "[session_dir] [--silent]"
 **session_dir が省略された場合:**
 
 1. `.claude/.temp/` を Glob で検索し、サブディレクトリ一覧を取得
-2. タイムスタンプ（ディレクトリ名プレフィックス `YYYYMMDD-HHmmss`）が最大のものを選択
+2. ファイルシステムの更新日時が最新のものを選択
 3. `.claude/.temp/` が空または存在しない場合: 「アクティブなセッションがありません」と表示して終了
 
 **session_dir が指定された場合:**
