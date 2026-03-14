@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.19] - 2026-03-15
+
+### forge
+
+- **refactor**: ドキュメント構造の大規模リファクタリング
+  - `defaults/` を `docs/` に統合（8ファイル移動、ディレクトリ削除）
+  - 設計書ファイル名を `_design` 接尾辞で統一（4ファイルリネーム）
+  - ランタイム docs を `_format` / `_spec` 接尾辞で統一（5ファイルリネーム）
+  - `doc_structure_format.md` を設計書 → ランタイム docs に移動
+  - パイプライン → ワークフロー用語統一
+- **refactor**: スキルリネーム `create-design/plan/requirements` → `start-design/plan/requirements`
+- **refactor**: `start-implement` の `--parallel` を廃止、`--task` を複数ID対応（カンマ区切り）に変更
+- **feat**: `review_workflow_design.md` 新規作成（3設計書を統合）
+- **fix**: review ワークフロー実装を設計書に整合
+  - fixer 後の単独修正レビュー（`--diff-only`）ループ追加
+  - 対話モードで evaluator が plan.yaml を更新するよう修正
+  - show-report を review Phase 4 から除去
+
 ## [0.0.18] - 2026-03-13
 
 ### forge
