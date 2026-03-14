@@ -215,7 +215,7 @@ skill_type: "{タスクのタイトル}"
 以下のタスクを実装してください。
 
 ## 実行ガイド
-${CLAUDE_PLUGIN_ROOT}/docs/task_execution_guide.md を Read して手順に従うこと。
+${CLAUDE_PLUGIN_ROOT}/docs/task_execution_spec.md を Read して手順に従うこと。
 
 ## タスク情報
 - タスクID: {タスクID}

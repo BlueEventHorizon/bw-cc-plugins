@@ -111,7 +111,7 @@ class TestWriteReadYaml(_FsTestCase):
         path = self.tmpdir / "test.yaml"
         data = {
             "feature": "login",
-            "skill": "create-design",
+            "skill": "start-design",
             "status": "in_progress",
             "started_at": "2026-03-13T10:00:00Z",
             "last_updated": "2026-03-13T10:00:00Z",
@@ -130,7 +130,7 @@ class TestWriteReadYaml(_FsTestCase):
     def test_quoted_values_roundtrip(self):
         """スペース・特殊文字を含む値の往復"""
         path = self.tmpdir / "test.yaml"
-        data = {"output_dir": "specs/login/design", "skill": "create-design"}
+        data = {"output_dir": "specs/login/design", "skill": "start-design"}
         write_yaml(path, data)
         result = read_yaml(path)
         self.assertEqual(result["output_dir"], "specs/login/design")
@@ -167,19 +167,19 @@ class TestHelpers(unittest.TestCase):
         self.assertRegex(ts, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
     def test_generate_session_name_format(self):
-        name = generate_session_name("create-design")
+        name = generate_session_name("start-design")
         # {skill_name}-{6 hex chars}
-        self.assertRegex(name, r"^create-design-[0-9a-f]{6}$")
+        self.assertRegex(name, r"^start-design-[0-9a-f]{6}$")
 
     def test_generate_session_name_various_skills(self):
         """各スキル名がディレクトリ名に含まれること"""
-        for skill in ["review", "create-plan", "start-implement"]:
+        for skill in ["review", "start-plan", "start-implement"]:
             name = generate_session_name(skill)
             self.assertTrue(name.startswith(f"{skill}-"))
 
     def test_generate_session_name_unique(self):
         """連続生成で重複しないこと"""
-        names = {generate_session_name("create-design") for _ in range(10)}
+        names = {generate_session_name("start-design") for _ in range(10)}
         self.assertEqual(len(names), 10)
 
     def test_parse_extra_args(self):
@@ -201,7 +201,7 @@ class TestValidateTempPath(_FsTestCase):
     """validate_temp_path のテスト"""
 
     def test_valid_path(self):
-        path = os.path.join(TEMP_BASE, "create-design-a3f7b2")
+        path = os.path.join(TEMP_BASE, "start-design-a3f7b2")
         os.makedirs(path, exist_ok=True)
         self.assertTrue(validate_temp_path(path))
 
@@ -228,21 +228,21 @@ class TestCmdInit(_FsTestCase):
         return a
 
     def test_creates_directory_and_refs(self):
-        result = cmd_init(self._make_args("create-design"), [])
+        result = cmd_init(self._make_args("start-design"), [])
         session_dir = result["session_dir"]
         self.assertTrue(os.path.isdir(session_dir))
         self.assertTrue(os.path.isdir(os.path.join(session_dir, "refs")))
 
     def test_creates_session_yaml(self):
-        result = cmd_init(self._make_args("create-design"), [])
+        result = cmd_init(self._make_args("start-design"), [])
         yaml_path = os.path.join(result["session_dir"], "session.yaml")
         self.assertTrue(os.path.isfile(yaml_path))
         data = read_yaml(yaml_path)
-        self.assertEqual(data["skill"], "create-design")
+        self.assertEqual(data["skill"], "start-design")
         self.assertEqual(data["status"], "in_progress")
 
     def test_auto_timestamps(self):
-        result = cmd_init(self._make_args("create-design"), [])
+        result = cmd_init(self._make_args("start-design"), [])
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
         self.assertRegex(str(data["started_at"]),
                          r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
@@ -256,14 +256,14 @@ class TestCmdInit(_FsTestCase):
 
     def test_resume_policy_create(self):
         """create-* は resume_policy: none"""
-        result = cmd_init(self._make_args("create-design"), [])
+        result = cmd_init(self._make_args("start-design"), [])
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
         self.assertEqual(data["resume_policy"], "none")
 
     def test_resume_policy_explicit(self):
         """--resume-policy で明示指定すると上書きされる"""
         result = cmd_init(
-            self._make_args("create-design"),
+            self._make_args("start-design"),
             ["--resume-policy", "resume"],
         )
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
@@ -272,7 +272,7 @@ class TestCmdInit(_FsTestCase):
     def test_extra_fields(self):
         """任意の --key value がsession.yaml に含まれる"""
         result = cmd_init(
-            self._make_args("create-design"),
+            self._make_args("start-design"),
             ["--feature", "login", "--mode", "new", "--output-dir", "specs/login"],
         )
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
@@ -281,7 +281,7 @@ class TestCmdInit(_FsTestCase):
         self.assertEqual(data["output_dir"], "specs/login")
 
     def test_json_output_structure(self):
-        result = cmd_init(self._make_args("create-design"), [])
+        result = cmd_init(self._make_args("start-design"), [])
         self.assertEqual(result["status"], "created")
         self.assertIn("session_dir", result)
         self.assertTrue(result["session_dir"].startswith(TEMP_BASE))
@@ -289,7 +289,7 @@ class TestCmdInit(_FsTestCase):
     def test_hyphen_to_underscore(self):
         """--output-dir → output_dir に変換"""
         result = cmd_init(
-            self._make_args("create-design"),
+            self._make_args("start-design"),
             ["--output-dir", "specs/login/design"],
         )
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
@@ -326,28 +326,28 @@ class TestCmdFind(_FsTestCase):
         return session_dir
 
     def test_find_matching(self):
-        self._create_session("create-design")
-        result = cmd_find(self._make_args("create-design"))
+        self._create_session("start-design")
+        result = cmd_find(self._make_args("start-design"))
         self.assertEqual(result["status"], "found")
         self.assertEqual(len(result["sessions"]), 1)
-        self.assertEqual(result["sessions"][0]["skill"], "create-design")
+        self.assertEqual(result["sessions"][0]["skill"], "start-design")
 
     def test_find_no_match(self):
-        self._create_session("create-design")
+        self._create_session("start-design")
         result = cmd_find(self._make_args("review"))
         self.assertEqual(result["status"], "none")
 
     def test_find_multiple(self):
-        self._create_session("create-design", "create-design-aaaaaa")
-        self._create_session("create-design", "create-design-bbbbbb")
-        result = cmd_find(self._make_args("create-design"))
+        self._create_session("start-design", "start-design-aaaaaa")
+        self._create_session("start-design", "start-design-bbbbbb")
+        result = cmd_find(self._make_args("start-design"))
         self.assertEqual(result["status"], "found")
         self.assertEqual(len(result["sessions"]), 2)
 
     def test_find_ignores_other_skills(self):
-        self._create_session("create-design", "create-design-aaaaaa")
-        self._create_session("create-plan", "create-plan-bbbbbb")
-        result = cmd_find(self._make_args("create-design"))
+        self._create_session("start-design", "start-design-aaaaaa")
+        self._create_session("start-plan", "start-plan-bbbbbb")
+        result = cmd_find(self._make_args("start-design"))
         self.assertEqual(len(result["sessions"]), 1)
 
 
@@ -366,7 +366,7 @@ class TestCmdCleanup(_FsTestCase):
         return a
 
     def test_deletes_directory(self):
-        session_dir = os.path.join(TEMP_BASE, "create-design-aaaaaa")
+        session_dir = os.path.join(TEMP_BASE, "start-design-aaaaaa")
         os.makedirs(session_dir, exist_ok=True)
         result = cmd_cleanup(self._make_args(session_dir))
         self.assertEqual(result["status"], "deleted")
@@ -405,7 +405,7 @@ class TestCLI(_FsTestCase):
         return result
 
     def test_init_cli(self):
-        r = self._run("init", "--skill", "create-design", "--feature", "login")
+        r = self._run("init", "--skill", "start-design", "--feature", "login")
         self.assertEqual(r.returncode, 0)
         data = json.loads(r.stdout)
         self.assertEqual(data["status"], "created")
@@ -414,7 +414,7 @@ class TestCLI(_FsTestCase):
             os.path.join(self.tmpdir, data["session_dir"])))
 
     def test_find_cli_none(self):
-        r = self._run("find", "--skill", "create-design")
+        r = self._run("find", "--skill", "start-design")
         self.assertEqual(r.returncode, 0)
         data = json.loads(r.stdout)
         self.assertEqual(data["status"], "none")
@@ -422,13 +422,13 @@ class TestCLI(_FsTestCase):
     def test_init_find_cleanup_cycle(self):
         """init → find → cleanup の往復テスト"""
         # init
-        r = self._run("init", "--skill", "create-plan", "--feature", "test")
+        r = self._run("init", "--skill", "start-plan", "--feature", "test")
         self.assertEqual(r.returncode, 0)
         init_data = json.loads(r.stdout)
         session_dir = init_data["session_dir"]
 
         # find
-        r = self._run("find", "--skill", "create-plan")
+        r = self._run("find", "--skill", "start-plan")
         self.assertEqual(r.returncode, 0)
         find_data = json.loads(r.stdout)
         self.assertEqual(find_data["status"], "found")
@@ -441,7 +441,7 @@ class TestCLI(_FsTestCase):
         self.assertEqual(cleanup_data["status"], "deleted")
 
         # find で消えている
-        r = self._run("find", "--skill", "create-plan")
+        r = self._run("find", "--skill", "start-plan")
         find_data = json.loads(r.stdout)
         self.assertEqual(find_data["status"], "none")
 

@@ -56,7 +56,7 @@ python3 "$SCRIPT" --type all --doc-structure /path/to/.doc_structure.yaml
   "status": "ok",
   "project_root": "/path/to/project",
   "rules": ["docs/rules/coding_standards.md", "docs/rules/git_workflow.md"],
-  "specs": ["docs/specs/forge/design/doc_structure_format.md", "..."]
+  "specs": ["docs/specs/forge/design/some_design.md", "..."]
 }
 ```
 
@@ -76,7 +76,7 @@ python3 "$SCRIPT" --type all --doc-structure /path/to/.doc_structure.yaml
   "status": "ok",
   "category": "specs",
   "doc_type": "design",
-  "files": ["docs/specs/forge/design/doc_structure_format.md", "..."]
+  "files": ["docs/specs/forge/design/some_design.md", "..."]
 }
 ```
 

@@ -56,7 +56,7 @@ target_files:
   - path/to/file.md
 reference_docs:
   - path: docs/rules/foo.md
-review_criteria_path: plugins/forge/defaults/review_criteria.md
+review_criteria_path: plugins/forge/docs/review_criteria_spec.md
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
     reason: 同種AIスキルのfrontmatter参考

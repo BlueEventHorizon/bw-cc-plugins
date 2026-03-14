@@ -2,7 +2,7 @@
 
 プロジェクト固有の `plan_format.md` が見つからない場合に使用する汎用フォーマット。
 
-作成原則: `${CLAUDE_PLUGIN_ROOT}/defaults/plan_principles.md`
+作成原則: `${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`
 
 ---
 

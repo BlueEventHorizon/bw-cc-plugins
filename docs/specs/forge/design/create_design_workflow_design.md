@@ -1,12 +1,12 @@
 # forge 設計書作成ワークフロー 設計書
 
-> 対象プラグイン: forge | スキル: `/forge:create-design`
+> 対象プラグイン: forge | スキル: `/forge:start-design`
 
 ---
 
 ## 1. 概要
 
-`/forge:create-design` は要件定義書から設計書を作成するオーケストレータスキル。
+`/forge:start-design` は要件定義書から設計書を作成するオーケストレータスキル。
 要件定義書の分析 → 既存実装資産の確認 → 設計書作成 → 品質保証の流れで動作する。
 
 ### 現状の課題
@@ -27,7 +27,7 @@
 flowchart TD
     User([ユーザー]) --> ORCHESTRATOR
 
-    ORCHESTRATOR["/forge:create-design<br>オーケストレーター"] --> PREREQ
+    ORCHESTRATOR["/forge:start-design<br>オーケストレーター"] --> PREREQ
 
     PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>出力先<br>モード判定"] --> CONTEXT
 
@@ -72,8 +72,8 @@ flowchart TD
 **読み込む defaults:**
 - `spec_format.md` — ID 分類カタログ
 - `design_format.md` — 設計書テンプレート
-- `design_principles.md` — 設計原則ガイド
-- `spec_design_boundary_guide.md` — 要件/設計の境界ガイド
+- `design_principles_spec.md` — 設計原則ガイド
+- `spec_design_boundary_spec.md` — 要件/設計の境界ガイド
 
 ### Phase 1: コンテキスト収集
 
@@ -127,7 +127,7 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 ### What/How の境界
 
-`spec_design_boundary_guide.md` に従い、設計書は「How（どう構成するか）」に集中する。
+`spec_design_boundary_spec.md` に従い、設計書は「How（どう構成するか）」に集中する。
 「What（何を実現するか）」は要件定義書の責務であり、設計書に重複して書かない。
 
 ---
@@ -136,7 +136,7 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 ```
 /forge:review design {path} --auto    # AIレビュー+自動修正
-/forge:create-plan {feature}          # 計画書作成
+/forge:start-plan {feature}           # 計画書作成
 ```
 
 ---
@@ -145,8 +145,8 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 | ファイル | 説明 |
 |---------|------|
-| `plugins/forge/skills/create-design/SKILL.md` | スキル仕様 |
-| `plugins/forge/defaults/design_format.md` | 設計書テンプレート |
-| `plugins/forge/defaults/design_principles.md` | 設計原則ガイド |
-| `plugins/forge/defaults/spec_format.md` | ID分類カタログ |
-| `plugins/forge/defaults/spec_design_boundary_guide.md` | 要件/設計の境界ガイド |
+| `plugins/forge/skills/start-design/SKILL.md` | スキル仕様 |
+| `plugins/forge/docs/design_format.md` | 設計書テンプレート |
+| `plugins/forge/docs/design_principles_spec.md` | 設計原則ガイド |
+| `plugins/forge/docs/spec_format.md` | ID分類カタログ |
+| `plugins/forge/docs/spec_design_boundary_spec.md` | 要件/設計の境界ガイド |

@@ -86,7 +86,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 > `{review_criteria_path}` のフォールバック:
 >
-> 1. `/query-rules` Skill（利用不可ならスキップ）→ 2. `.claude/review-config.yaml` → 3. `${CLAUDE_PLUGIN_ROOT}/defaults/review_criteria.md`
+> 1. `/query-rules` Skill（利用不可ならスキップ）→ 2. `.claude/review-config.yaml` → 3. `${CLAUDE_PLUGIN_ROOT}/docs/review_criteria_spec.md`
 
 generic 以外の種別 → 2.1 へ進む。
 
