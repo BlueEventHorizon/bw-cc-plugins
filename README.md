@@ -101,7 +101,7 @@ specs/
 /forge:review design specs/login/design/login_design.md
 
 # Review a plan with 1 refactor cycle (default)
-/forge:review plan specs/login/plan/login_plan.md --refactor
+/forge:review plan specs/login/plan/login_plan.yaml --refactor
 
 # Review and refactor up to 3 cycles
 /forge:review code src/ --refactor 3

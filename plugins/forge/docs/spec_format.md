@@ -99,4 +99,4 @@ specs/
 | ---------- | --------------------------- | ----------------------------- |
 | 要件定義書 | `{REQ-ID}_{name}_spec.md`   | `SCR-001_user_list_spec.md`   |
 | 設計書     | `{DES-ID}_{name}_design.md` | `DES-001_user_list_design.md` |
-| 計画書     | `{feature}_plan.md`         | `user_management_plan.md`     |
+| 計画書     | `{feature}_plan.yaml`       | `user_management_plan.yaml`   |

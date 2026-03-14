@@ -101,7 +101,7 @@ specs/
 /forge:review design specs/login/design/login_design.md
 
 # 計画書をレビュー（1サイクル修正、デフォルト）
-/forge:review plan specs/login/plan/login_plan.md --refactor
+/forge:review plan specs/login/plan/login_plan.yaml --refactor
 
 # 3サイクル繰り返してレビュー+修正
 /forge:review code src/ --refactor 3
