@@ -194,7 +194,8 @@ git tag {tag}  # 例: "forge-v0.0.19"
 
 ```
 変更をコミットするには:
-  git add .
+  /anvil:commit（推奨）または:
+  git add <更新したファイルのパス>
   git commit -m "{commit_message}"
   git tag {tag}
 ```

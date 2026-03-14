@@ -27,6 +27,7 @@ from scan_version_targets import (
     SKIP_DIRS,
     extract_version_from_json,
     extract_version_from_toml,
+    get_version_file_type,
     scan_version_files,
     scan_catalog_files,
     scan_readme_files,
@@ -306,6 +307,12 @@ class TestScanReadmeFiles(_FsTestCase):
         result = scan_readme_files(str(self.tmpdir))
         self.assertEqual(result, [])
 
+    def test_readme_without_extension_not_detected(self):
+        """拡張子なしの README ファイルは検出されない"""
+        self._write_file('README', '# Project')
+        result = scan_readme_files(str(self.tmpdir))
+        self.assertNotIn('README', result)
+
 
 # =========================================================================
 # 6. CHANGELOG 検出テスト
@@ -404,6 +411,34 @@ class TestConstants(unittest.TestCase):
     def test_git_in_skip_dirs(self):
         """.git が SKIP_DIRS に含まれている"""
         self.assertIn('.git', SKIP_DIRS)
+
+
+class TestGetVersionFileType(unittest.TestCase):
+    """get_version_file_type のテスト"""
+
+    def test_plugin_json(self):
+        """plugin.json → 'plugin.json' を返す"""
+        self.assertEqual(get_version_file_type('plugin.json'), 'plugin.json')
+
+    def test_package_json(self):
+        """package.json → 'package.json' を返す"""
+        self.assertEqual(get_version_file_type('package.json'), 'package.json')
+
+    def test_cargo_toml(self):
+        """Cargo.toml → 'Cargo.toml' を返す"""
+        self.assertEqual(get_version_file_type('Cargo.toml'), 'Cargo.toml')
+
+    def test_pyproject_toml(self):
+        """pyproject.toml → 'pyproject.toml' を返す"""
+        self.assertEqual(get_version_file_type('pyproject.toml'), 'pyproject.toml')
+
+    def test_unknown_json(self):
+        """不明なファイル名 unknown.json → None を返す"""
+        self.assertIsNone(get_version_file_type('unknown.json'))
+
+    def test_setup_cfg(self):
+        """不明なファイル名 setup.cfg → None を返す"""
+        self.assertIsNone(get_version_file_type('setup.cfg'))
 
 
 if __name__ == '__main__':

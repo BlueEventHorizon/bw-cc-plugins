@@ -189,7 +189,7 @@ def scan_version_files(project_root, max_depth=6):
             else:
                 meta = extract_version_from_json(filepath)
 
-            # version フィールドがないファイルはスキップ
+            # version と name の両方が None の場合スキップ
             if meta['version'] is None and meta['name'] is None:
                 continue
 
@@ -240,7 +240,7 @@ def scan_readme_files(project_root):
     results = []
 
     for f in sorted(root.iterdir()):
-        if f.is_file() and f.suffix.lower() in ('.md', '.rst', '.txt', ''):
+        if f.is_file() and f.suffix.lower() in ('.md', '.rst', '.txt'):
             name_lower = f.name.lower()
             if name_lower.startswith('readme'):
                 results.append(f.name)
