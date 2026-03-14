@@ -475,12 +475,12 @@ rm -rf {session_dir}
 
 ## .doc_structure.yaml からの参考文書収集手順
 
-DocAdvisor 利用不可時、スクリプトを呼び出して参考文書を収集する。
+DocAdvisor 利用不可時、`doc-structure` スキルのスクリプトを呼び出して参考文書を収集する。
 
 ```bash
 PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/scripts/resolve_doc_references.py" --type rules
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/scripts/resolve_doc_references.py" --type specs
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
 ```
 
 JSON 出力の `rules` キーからルール文書パス一覧を、`specs` キーから仕様書パス一覧を取得して使用する。

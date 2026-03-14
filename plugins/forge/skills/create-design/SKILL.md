@@ -50,7 +50,11 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 
 設計書の出力先ディレクトリを特定する。入力文書（要件定義書）は Phase 1 で agent が特定する。
 
-- `.doc_structure.yaml` の `specs.design.paths` から Feature を検索
+- `doc-structure` スキルのスクリプトで Feature を検索:
+  ```bash
+  PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+  "$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type design
+  ```
 - 解決できない場合は AskUserQuestion で出力先を確認する
 
 ### モード判定 [MANDATORY]

@@ -47,10 +47,15 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 ### Step 2: 出力先ディレクトリの解決
 
-`.doc_structure.yaml` の `specs.requirement.paths` から出力先ディレクトリを取得する。
+`doc-structure` スキルのスクリプトで出力先ディレクトリを取得する。
 
-- 設定あり → そのパスを使用（例: `specs/requirements/`）
-- 設定なし → `specs/{feature}/requirements/` をデフォルトとして使用
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type requirement
+```
+
+- 結果あり → そのパスを使用（例: `specs/requirements/`）
+- 結果なし → `specs/{feature}/requirements/` をデフォルトとして使用
 
 ### Step 3: プロジェクト固有情報の取得 [MANDATORY]
 

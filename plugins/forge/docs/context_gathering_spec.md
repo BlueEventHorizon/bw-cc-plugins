@@ -93,12 +93,14 @@ target_description: "..."            # feature がない場合に使用
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
 
-`/query-specs` が利用できない場合:
+`/query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
 
-1. プロジェクトルートの `.doc_structure.yaml` を Read
-2. `specs` カテゴリのパスを取得
-3. `*` を含むパスは Glob で展開
-4. 展開されたファイルのタイトル・frontmatter を確認し、関連性を判断
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
+```
+
+JSON 出力の `specs` キーからファイルパス一覧を取得し、関連性を判断する。
 
 ### 方法 C: 直接探索
 
@@ -141,8 +143,14 @@ documents:
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
 
-1. `.doc_structure.yaml` の `rules` カテゴリのパスを取得
-2. Glob で展開し、全ルール文書をリストアップ
+`doc-structure` スキルのスクリプトを使用:
+
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
+```
+
+JSON 出力の `rules` キーからファイルパス一覧を取得する。
 
 ### 方法 C: 直接探索
 

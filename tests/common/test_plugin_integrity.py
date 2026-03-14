@@ -349,13 +349,13 @@ class TestSchemaConsistency(unittest.TestCase):
         """仕様書に exclude が記載されている"""
         self.assertIn('exclude', self.format_doc)
 
-    def test_format_doc_mentions_paths(self):
-        """仕様書に paths が記載されている"""
-        self.assertIn('paths', self.format_doc)
+    def test_format_doc_mentions_root_dirs(self):
+        """仕様書に root_dirs が記載されている"""
+        self.assertIn('root_dirs', self.format_doc)
 
-    def test_format_doc_mentions_description(self):
-        """仕様書に description が記載されている"""
-        self.assertIn('description', self.format_doc)
+    def test_format_doc_mentions_doc_types_map(self):
+        """仕様書に doc_types_map が記載されている"""
+        self.assertIn('doc_types_map', self.format_doc)
 
     def test_format_doc_mentions_version(self):
         """仕様書に version が記載されている"""
@@ -368,42 +368,59 @@ class TestSchemaConsistency(unittest.TestCase):
     def test_parser_supports_all_documented_fields(self):
         """パーサーが仕様書に記載された全フィールドを処理できる"""
         import sys
-        sys.path.insert(0, str(PLUGINS_DIR / 'forge' / 'skills' / 'review' / 'scripts'))
-        from resolve_review_context import _parse_doc_structure_yaml
-        import tempfile
+        sys.path.insert(0, str(PLUGINS_DIR / 'forge' / 'skills' / 'doc-structure' / 'scripts'))
+        from resolve_doc_structure import parse_config
 
-        # 全フィールドを含む YAML
+        # config.yaml 互換形式の全フィールドを含む YAML
         yaml_content = '''\
-version: "1.0"
-
-specs:
-  requirement:
-    paths: ["specs/*/requirements/"]
-    exclude: ["archived"]
-    description: "要件定義書"
+# doc_structure_version: 2.0
 
 rules:
-  rule:
-    paths: [rules/]
-    description: "開発ルール"
-'''
-        tmpdir = tempfile.mkdtemp()
-        try:
-            yaml_file = os.path.join(tmpdir, '.doc_structure.yaml')
-            with open(yaml_file, 'w') as f:
-                f.write(yaml_content)
-            result = _parse_doc_structure_yaml(yaml_file)
+  root_dirs:
+    - rules/
+  doc_types_map:
+    rules/: rule
+  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
+  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
+  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+  output:
+    header_comment: "Development documentation search index"
+    metadata_name: "Development Documentation Search Index"
 
-            self.assertIsNotNone(result)
-            self.assertEqual(result['version'], '1.0')
-            self.assertIn('paths', result['specs']['requirement'])
-            self.assertIn('exclude', result['specs']['requirement'])
-            self.assertIn('description', result['specs']['requirement'])
-            self.assertIn('paths', result['rules']['rule'])
-            self.assertIn('description', result['rules']['rule'])
-        finally:
-            import shutil
-            shutil.rmtree(tmpdir, ignore_errors=True)
+specs:
+  root_dirs:
+    - "specs/*/requirements/"
+  doc_types_map:
+    "specs/*/requirements/": requirement
+  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
+  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
+  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  patterns:
+    target_glob: "**/*.md"
+    exclude:
+      - archived
+  output:
+    header_comment: "Project specification document search index"
+    metadata_name: "Project Specification Document Search Index"
+
+common:
+  parallel:
+    max_workers: 5
+    fallback_to_serial: true
+'''
+        result = parse_config(yaml_content)
+
+        self.assertIsNotNone(result)
+        self.assertIn('rules', result)
+        self.assertIn('specs', result)
+        self.assertIn('root_dirs', result['rules'])
+        self.assertIn('doc_types_map', result['rules'])
+        self.assertIn('root_dirs', result['specs'])
+        self.assertIn('doc_types_map', result['specs'])
+        self.assertEqual(result['specs']['patterns']['exclude'], ['archived'])
 
 
 # =========================================================================
@@ -446,6 +463,9 @@ class TestReadmeConsistency(unittest.TestCase):
                     continue
                 fm = _parse_skill_frontmatter(skill_md)
                 if fm and fm.get('name'):
+                    # AI 専用スキル（user-invocable: false）は README に記載不要
+                    if fm.get('user-invocable') in (False, 'false'):
+                        continue
                     self.assertIn(fm['name'], self.readme,
                                   f"Skill '{fm['name']}' が README に記載されていない")
 

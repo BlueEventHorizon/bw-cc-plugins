@@ -46,7 +46,11 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 
 計画書のパスを解決する:
 
-1. `.doc_structure.yaml` の `specs.plan.paths` から Feature を検索
+1. `doc-structure` スキルのスクリプトで Feature を検索:
+   ```bash
+   PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+   "$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
+   ```
 2. 見つからない場合 → `specs/{feature}/plan/{feature}_plan.md` をデフォルトとする
 3. それでも見つからない → AskUserQuestion で手動指定
 

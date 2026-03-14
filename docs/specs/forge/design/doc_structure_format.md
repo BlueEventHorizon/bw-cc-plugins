@@ -1,249 +1,279 @@
-# .doc_structure.yaml Format Specification
+# .doc_structure.yaml フォーマット仕様
 
-> Version: 1.0 | Created by: k_terada
+> config.yaml 互換フォーマット v4.4 | Created by: k_terada
 
-## Purpose
+## 概要
 
-`.doc_structure.yaml` is a project-level convention that declares where different types of documents live.
-It serves as a single source of truth for document organization, consumed by multiple tools:
+`.doc_structure.yaml` はプロジェクトレベルの設定ファイルで、ドキュメントの配置場所と種別を宣言する。
+doc-advisor の `config.yaml` と完全互換のフォーマットを採用し、以下のツールが共通で参照する:
 
-- **Skills** (e.g., `/forge:create-requirements`, `/forge:setup`) — know where to create documents
-- **Doc Advisor** — derives `root_dirs` and `doc_type` for ToC generation
-- **Review tools** (e.g., kaizen) — determine document type for review criteria selection
-- **Scripts** — parse YAML directly for programmatic access
+- **forge スキル** — ドキュメント作成先の特定、レビュー対象の解決、Feature 検出
+- **Doc Advisor** — ToC 生成のスキャン対象・doc_type 判定
+- **resolve_doc_structure.py** — プログラムからのパス解決（JSON 出力）
 
-## File Location
+## ファイル配置
 
-Place `.doc_structure.yaml` at the **project root** (same level as `.git/`).
+プロジェクトルート（`.git/` と同階層）に `.doc_structure.yaml` として配置する。
 
-## Schema
+## スキーマ
 
 ```yaml
 # .doc_structure.yaml
-version: "1.0"
+# doc_structure_version: 2.0
 
+# === rules configuration ===
+rules:
+  root_dirs:
+    - <directory_path>
+  doc_types_map:
+    <directory_path>: <doc_type>
+  toc_file: <path>                    # doc-advisor 用（forge では無視）
+  checksums_file: <path>              # doc-advisor 用（forge では無視）
+  work_dir: <path>                    # doc-advisor 用（forge では無視）
+  patterns:
+    target_glob: "**/*.md"            # doc-advisor 用（forge では無視）
+    exclude:
+      - <dir_name>
+  output:                             # doc-advisor 用（forge では無視）
+    header_comment: "<string>"
+    metadata_name: "<string>"
+
+# === specs configuration ===
 specs:
-  <doc_type>:
-    paths: [<directory_path>, ...]
-    exclude: ["<dir_name>", ...] # optional
-    description: "<optional description>"
+  root_dirs:
+    - <directory_path>
+  doc_types_map:
+    <directory_path>: <doc_type>
+  # ... 同構造
+
+# === common configuration ===
+common:                               # doc-advisor 用（forge では無視）
+  parallel:
+    max_workers: <integer>
+    fallback_to_serial: <boolean>
+```
+
+### forge が使用するフィールド
+
+| フィールド | 必須 | 型 | 説明 |
+|-----------|------|------|------|
+| `{category}.root_dirs` | Yes | array[string] | ドキュメントディレクトリ。glob パターン（`*`）対応 |
+| `{category}.doc_types_map` | Yes | object | パス → doc_type のマッピング。glob パターン対応 |
+| `{category}.patterns.exclude` | No | array[string] | 除外するディレクトリ名 |
+
+### doc-advisor 専用フィールド（forge では無視）
+
+| フィールド | 説明 |
+|-----------|------|
+| `toc_file` | ToC 出力ファイルパス |
+| `checksums_file` | 差分検出用ハッシュファイル |
+| `work_dir` | 中間ファイル格納ディレクトリ |
+| `patterns.target_glob` | ファイル検索 glob パターン |
+| `output.header_comment` | ToC ヘッダーコメント |
+| `output.metadata_name` | ToC メタデータ名 |
+| `common.parallel` | 並列処理設定 |
+
+## root_dirs
+
+ドキュメントが格納されるディレクトリの一覧。
+
+- パスはプロジェクトルートからの相対パス
+- 末尾 `/` 推奨
+- glob パターン `*` で1レベルのディレクトリマッチが可能
+
+```yaml
+root_dirs:
+  - docs/rules/                       # リテラルパス
+  - "docs/specs/*/design/"            # glob パターン（全 Feature の design）
+  - "docs/specs/*/plan/"              # glob パターン（全 Feature の plan）
+```
+
+## doc_types_map
+
+パス → doc_type のマッピング。`root_dirs` の各エントリに対応する doc_type を宣言する。
+
+```yaml
+doc_types_map:
+  docs/rules/: rule
+  "docs/specs/*/design/": design
+  "docs/specs/*/plan/": plan
+  "docs/specs/*/requirement/": requirement
+```
+
+### 推奨 doc_type 名
+
+#### specs カテゴリ
+
+| 名前 | 説明 |
+|------|------|
+| `requirement` | 機能・非機能要件 |
+| `design` | 技術設計書、アーキテクチャ仕様 |
+| `plan` | 実装計画、ロードマップ、タスク分割 |
+| `api` | API 仕様、エンドポイント定義 |
+| `reference` | 参考資料、データ辞書 |
+
+#### rules カテゴリ
+
+| 名前 | 説明 |
+|------|------|
+| `rule` | 開発規約、コーディング標準 |
+| `workflow` | ワークフロー手順 |
+| `guide` | ベストプラクティス、ガイド |
+
+## patterns.exclude
+
+除外するディレクトリ名のリスト。
+
+- ディレクトリ名の完全一致でマッチ（ファイル名は対象外）
+- パス内の任意の深さでマッチ
+- `/` を含むパターンはパス部分文字列としてマッチ
+
+```yaml
+patterns:
+  exclude:
+    - archived
+    - _template
+
+# docs/specs/auth/design/a.md         → 対象
+# docs/specs/archived/design/a.md     → 除外（"archived" にマッチ）
+# docs/specs/_template/design/a.md    → 除外（"_template" にマッチ）
+```
+
+## バージョン管理
+
+コメント行でバージョンを管理する:
+
+```yaml
+# doc_structure_version: 2.0
+```
+
+- フォーマット: `X.Y`（X = メジャー、Y = マイナー）
+- メジャーバージョン変更 = フォーマットの破壊的変更
+- マイナーバージョン変更 = 後方互換のオプショナルフィールド追加
+- 詳細は `doc_structure_version_management.md` を参照
+
+## サンプル
+
+### Flat Structure（単一プロジェクト）
+
+```yaml
+# doc_structure_version: 2.0
 
 rules:
-  <doc_type>:
-    paths: [<directory_path>, ...]
-    exclude: ["<dir_name>", ...] # optional
-    description: "<optional description>"
-```
-
-### Fields
-
-| Field     | Required | Type   | Description                                                          |
-| --------- | -------- | ------ | -------------------------------------------------------------------- |
-| `version` | Yes      | string | Schema version. Currently `"1.0"`                                    |
-| `specs`   | No       | object | Specification document types (requirements, designs, plans, etc.)    |
-| `rules`   | No       | object | Rule document types (development rules, workflows, guidelines, etc.) |
-
-### Doc Type Entry
-
-Each key under `specs` or `rules` is a **doc_type name** (e.g., `requirement`, `design`, `plan`).
-
-| Field         | Required | Type          | Description                                                               |
-| ------------- | -------- | ------------- | ------------------------------------------------------------------------- |
-| `paths`       | Yes      | array[string] | Directory paths (relative to project root). Glob patterns (`*`) supported |
-| `exclude`     | No       | array[string] | Directory names to exclude. Matches any path component with that name     |
-| `description` | No       | string        | Human-readable description of this document type                          |
-
-### Path Format
-
-- Paths are relative to the project root
-- Trailing `/` is optional but recommended for clarity
-- Glob pattern `*` matches any single directory level
-
-```yaml
-# Literal path
-paths: [specs/requirements/]
-
-# Glob pattern (matches specs/main/requirements/, specs/auth/requirements/, etc.)
-paths: ["specs/*/requirements/"]
-
-# Multiple paths
-paths:
-  - specs/requirements/
-  - other_specs/requirements/
-```
-
-### Exclude Format
-
-- Each entry is a **directory name** (not a full path)
-- If any component of a resolved path matches an exclude name, that path is excluded
-- Useful for filtering glob pattern (`*`) expansion results
-
-```yaml
-# Exclude directories named "archived" or "_template" anywhere in matched paths
-exclude: ["archived", "_template"]
-
-# specs/login/requirements/     → included
-# specs/archived/requirements/  → EXCLUDED (contains "archived")
-# specs/_template/requirements/ → EXCLUDED (contains "_template")
-```
-
-## Recommended Doc Type Names
-
-These names are recommended for interoperability. Custom names are also valid.
-
-### For `specs` category
-
-| Name          | Description                                     |
-| ------------- | ----------------------------------------------- |
-| `requirement` | Functional and non-functional requirements      |
-| `design`      | Technical design documents, architecture specs  |
-| `plan`        | Implementation plans, roadmaps, task breakdowns |
-| `api`         | API specifications, endpoint documentation      |
-| `reference`   | Reference materials, data dictionaries          |
-
-### For `rules` category
-
-| Name       | Description                                      |
-| ---------- | ------------------------------------------------ |
-| `rule`     | Development rules, coding standards, conventions |
-| `workflow` | Workflow procedures, process guides              |
-| `guide`    | Best practices, how-to guides                    |
-
-## Examples
-
-### Flat Structure
-
-```yaml
-version: "1.0"
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
+  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
+  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+  output:
+    header_comment: "Development documentation search index for query-rules skill"
+    metadata_name: "Development Documentation Search Index"
 
 specs:
-  requirement:
-    paths: [specs/requirements/]
-    description: "Functional and non-functional requirements"
-  design:
-    paths: [specs/design/]
-    description: "Technical design documents"
-  plan:
-    paths: [specs/plan/]
+  root_dirs:
+    - docs/specs/design/
+    - docs/specs/plan/
+    - docs/specs/requirement/
+  doc_types_map:
+    docs/specs/design/: design
+    docs/specs/plan/: plan
+    docs/specs/requirement/: requirement
+  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
+  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
+  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+  output:
+    header_comment: "Project specification document search index for query-specs skill"
+    metadata_name: "Project Specification Document Search Index"
 
-rules:
-  rule:
-    paths: [rules/]
+common:
+  parallel:
+    max_workers: 5
+    fallback_to_serial: true
 ```
 
-### Feature-Based Structure
+### Feature-Based Structure（複数 Feature）
 
 ```yaml
-version: "1.0"
-
-specs:
-  requirement:
-    paths: ["specs/*/requirements/"]
-  design:
-    paths: ["specs/*/design/"]
-  plan:
-    paths: ["specs/*/plan/"]
+# doc_structure_version: 2.0
 
 rules:
-  rule:
-    paths: [rules/]
-  workflow:
-    paths: [rules/workflow/]
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+  # ... doc-advisor フィールド省略
+
+specs:
+  root_dirs:
+    - "docs/specs/*/design/"
+    - "docs/specs/*/plan/"
+    - "docs/specs/*/requirement/"
+  doc_types_map:
+    "docs/specs/*/design/": design
+    "docs/specs/*/plan/": plan
+    "docs/specs/*/requirement/": requirement
+  # ... doc-advisor フィールド省略
 ```
 
-### Feature-Based Structure (with exclude)
+この形式では Feature 追加時に `.doc_structure.yaml` の変更は不要。
+`docs/specs/payment/design/` ディレクトリを作成するだけで自動的に検出される。
+
+### Feature-Based with Exclude
 
 ```yaml
-version: "1.0"
-
 specs:
-  requirement:
-    paths: ["specs/*/requirements/"]
-    exclude: ["archived", "_template"]
-  design:
-    paths: ["specs/*/design/"]
-    exclude: ["archived"]
-
-rules:
-  rule:
-    paths: [rules/]
-```
-
-### Mixed Structure
-
-```yaml
-version: "1.0"
-
-specs:
-  requirement:
-    paths:
-      - specs/requirements/
-      - modules/*/requirements/
-  design:
-    paths: [specs/design/]
-
-rules:
-  rule:
-    paths: [rules/]
-```
-
-### Minimal
-
-```yaml
-version: "1.0"
-
-specs:
-  spec:
-    paths: [docs/specs/]
-
-rules:
-  rule:
-    paths: [docs/rules/]
+  root_dirs:
+    - "docs/specs/*/design/"
+    - "docs/specs/*/requirement/"
+  doc_types_map:
+    "docs/specs/*/design/": design
+    "docs/specs/*/requirement/": requirement
+  patterns:
+    target_glob: "**/*.md"
+    exclude:
+      - archived
+      - _template
 ```
 
 ## Consumer Guide
 
-### For kaizen (direct `.doc_structure.yaml` reading)
+### forge スキルから（推奨）
 
-kaizen は `.doc_structure.yaml` を直接 Read してパスを解決する:
+`doc-structure` スキルの `resolve_doc_structure.py` を使用する:
 
-1. `.doc_structure.yaml` を Read ツールで読み込む
-2. 各 category（`specs`, `rules`）の `paths` を確認
-3. `*` を含むパスは Glob ツールで展開
-4. `exclude` がある場合、パスコンポーネントに exclude 名を含むものを除外
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py"
 
-### For Scripts (direct YAML parsing)
+# 全ファイル一覧
+"$PYTHON" "$SCRIPT" --type all
+
+# Feature 一覧
+"$PYTHON" "$SCRIPT" --features
+
+# 特定 doc_type のファイル
+"$PYTHON" "$SCRIPT" --doc-type design
+```
+
+### Python スクリプトから（同一プラグイン内）
 
 ```python
-import yaml
+from resolve_doc_structure import load_doc_structure, resolve_files
 
-with open(".doc_structure.yaml") as f:
-    structure = yaml.safe_load(f)
-
-# Get paths for a specific doc_type
-plan_paths = structure["specs"]["plan"]["paths"]
-# → ["specs/plan/"]
-
-# Collect all root_dirs for a category
-specs_dirs = []
-for doc_type_info in structure.get("specs", {}).values():
-    specs_dirs.extend(doc_type_info.get("paths", []))
-# → ["specs/requirements/", "specs/design/", "specs/plan/"]
+config, _ = load_doc_structure(project_root)
+rules_files = resolve_files(config, 'rules', project_root)
+specs_files = resolve_files(config, 'specs', project_root)
 ```
 
-### For Doc Advisor
+### Doc Advisor から
 
-Doc Advisor can derive its `config.yaml` settings from `.doc_structure.yaml`:
-
-```
-.doc_structure.yaml specs.*.paths  →  config.yaml specs.root_dirs
-.doc_structure.yaml rules.*.paths  →  config.yaml rules.root_dirs
-doc_type keys                      →  ToC entry doc_type field
-```
-
-## Versioning
-
-- The `version` field uses semantic versioning (`"major.minor"`)
-- Minor version changes are backward-compatible (new optional fields)
-- Major version changes may break consumers
-- Consumers should check `version` and warn on unsupported major versions
+`.doc_structure.yaml` を `config.yaml` として直接読み込める（フォーマット互換）。
+`import_doc_structure.py` による変換は不要。

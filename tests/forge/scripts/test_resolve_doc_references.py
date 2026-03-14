@@ -2,7 +2,8 @@
 """
 resolve_doc_references.py のテスト
 
-.doc_structure.yaml の行ベースパース・パス解決・CLI 動作をテストする。
+resolve_doc_structure.py に委譲後のパス解決・CLI 動作をテストする。
+.doc_structure.yaml は config.yaml 互換フォーマットを使用。
 標準ライブラリのみ使用。
 
 実行:
@@ -23,12 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'scripts'))
 
 from resolve_doc_references import (
-    _collect_md_files,
-    _is_excluded,
-    _parse_inline_array,
     find_project_root,
-    parse_doc_structure,
-    resolve_paths,
     resolve_references,
 )
 
@@ -59,251 +55,7 @@ class _FsTestCase(unittest.TestCase):
 
 
 # =========================================================================
-# 1. ユーティリティ関数のテスト
-# =========================================================================
-
-class TestParseInlineArray(unittest.TestCase):
-    """_parse_inline_array のテスト。"""
-
-    def test_single_item(self):
-        self.assertEqual(_parse_inline_array('[docs/rules/]'), ['docs/rules/'])
-
-    def test_multiple_items(self):
-        result = _parse_inline_array('[docs/rules/, docs/specs/]')
-        self.assertEqual(result, ['docs/rules/', 'docs/specs/'])
-
-    def test_quoted_items(self):
-        result = _parse_inline_array('["specs/*/requirements/", "docs/"]')
-        self.assertEqual(result, ['specs/*/requirements/', 'docs/'])
-
-    def test_empty_array(self):
-        result = _parse_inline_array('[]')
-        self.assertEqual(result, [])
-
-
-class TestIsExcluded(unittest.TestCase):
-    """_is_excluded のテスト。"""
-
-    def test_excluded_component(self):
-        self.assertTrue(_is_excluded('specs/archived/req.md', ['archived']))
-
-    def test_not_excluded(self):
-        self.assertFalse(_is_excluded('specs/login/req.md', ['archived']))
-
-    def test_multiple_excludes(self):
-        self.assertTrue(_is_excluded('specs/_template/req.md', ['archived', '_template']))
-
-    def test_empty_excludes(self):
-        self.assertFalse(_is_excluded('specs/archived/req.md', []))
-
-    def test_partial_name_not_excluded(self):
-        """部分一致ではなくコンポーネント完全一致のみ除外される。"""
-        self.assertFalse(_is_excluded('specs/archived_data/req.md', ['archived']))
-
-
-# =========================================================================
-# 2. parse_doc_structure のテスト
-# =========================================================================
-
-class TestParseDocStructure(_FsTestCase):
-    """parse_doc_structure のテスト。"""
-
-    def test_basic_flat_structure(self):
-        """フラット構造の基本パース。"""
-        self._write_doc_structure("""\
-version: "1.0"
-
-specs:
-  requirement:
-    paths: [specs/requirements/]
-    description: "要件定義書"
-
-rules:
-  rule:
-    paths: [docs/rules/]
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertIn('requirement', result['specs'])
-        self.assertEqual(result['specs']['requirement']['paths'], ['specs/requirements/'])
-        self.assertIn('rule', result['rules'])
-        self.assertEqual(result['rules']['rule']['paths'], ['docs/rules/'])
-
-    def test_glob_paths(self):
-        """glob パターンを含むパスのパース。"""
-        self._write_doc_structure("""\
-version: "1.0"
-
-specs:
-  requirement:
-    paths: ["specs/*/requirements/"]
-    exclude: ["archived", "_template"]
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertEqual(result['specs']['requirement']['paths'], ['specs/*/requirements/'])
-        self.assertEqual(result['specs']['requirement']['exclude'], ['archived', '_template'])
-
-    def test_multiple_paths(self):
-        """複数パスのリスト形式パース。"""
-        self._write_doc_structure("""\
-version: "1.0"
-
-specs:
-  requirement:
-    paths:
-      - specs/requirements/
-      - modules/requirements/
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertEqual(
-            result['specs']['requirement']['paths'],
-            ['specs/requirements/', 'modules/requirements/'],
-        )
-
-    def test_multiple_doc_types(self):
-        """複数 doc_type のパース。"""
-        self._write_doc_structure("""\
-version: "1.0"
-
-specs:
-  requirement:
-    paths: [specs/requirements/]
-  design:
-    paths: [specs/design/]
-  plan:
-    paths: [specs/plan/]
-
-rules:
-  rule:
-    paths: [rules/]
-  workflow:
-    paths: [rules/workflow/]
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertIn('requirement', result['specs'])
-        self.assertIn('design', result['specs'])
-        self.assertIn('plan', result['specs'])
-        self.assertIn('rule', result['rules'])
-        self.assertIn('workflow', result['rules'])
-
-    def test_file_not_found(self):
-        """.doc_structure.yaml が存在しない場合に FileNotFoundError を送出する。"""
-        with self.assertRaises(FileNotFoundError) as ctx:
-            parse_doc_structure('/nonexistent/.doc_structure.yaml')
-        self.assertIn('.doc_structure.yaml', str(ctx.exception))
-
-    def test_comments_ignored(self):
-        """コメント行が無視される。"""
-        self._write_doc_structure("""\
-# このファイルは .doc_structure.yaml のテストです
-version: "1.0"
-
-# specs セクション
-specs:
-  requirement:
-    # 要件定義書のパス
-    paths: [specs/requirements/]
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertEqual(result['specs']['requirement']['paths'], ['specs/requirements/'])
-
-    def test_empty_specs_rules(self):
-        """specs / rules のどちらかが存在しない場合も正常動作する。"""
-        self._write_doc_structure("""\
-version: "1.0"
-
-rules:
-  rule:
-    paths: [docs/rules/]
-""")
-        result = parse_doc_structure(str(self.tmpdir / '.doc_structure.yaml'))
-        self.assertEqual(result['specs'], {})
-        self.assertIn('rule', result['rules'])
-
-
-# =========================================================================
-# 3. resolve_paths のテスト
-# =========================================================================
-
-class TestResolvePaths(_FsTestCase):
-    """resolve_paths のテスト。"""
-
-    def test_literal_directory_path(self):
-        """リテラルディレクトリパスから .md ファイルを収集する。"""
-        self._write_file('docs/rules/coding.md', '# コーディング規約')
-        self._write_file('docs/rules/naming.md', '# 命名規則')
-        self._write_file('docs/rules/readme.txt', 'テキストファイル')  # .md 以外は除外
-
-        category_data = {
-            'rule': {'paths': ['docs/rules'], 'exclude': []},
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertIn('docs/rules/coding.md', result)
-        self.assertIn('docs/rules/naming.md', result)
-        self.assertNotIn('docs/rules/readme.txt', result)
-
-    def test_glob_pattern_expansion(self):
-        """glob パターンが正しく展開される。"""
-        self._write_file('specs/login/requirements/req.md', '# ログイン要件')
-        self._write_file('specs/payment/requirements/req.md', '# 支払い要件')
-
-        category_data = {
-            'requirement': {'paths': ['specs/*/requirements'], 'exclude': []},
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertIn('specs/login/requirements/req.md', result)
-        self.assertIn('specs/payment/requirements/req.md', result)
-
-    def test_exclude_applied(self):
-        """exclude に指定したディレクトリコンポーネントが除外される。"""
-        self._write_file('specs/login/requirements/req.md', '# ログイン要件')
-        self._write_file('specs/archived/requirements/old.md', '# 旧仕様')
-        self._write_file('specs/_template/requirements/tmpl.md', '# テンプレート')
-
-        category_data = {
-            'requirement': {
-                'paths': ['specs/*/requirements'],
-                'exclude': ['archived', '_template'],
-            },
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertIn('specs/login/requirements/req.md', result)
-        self.assertNotIn('specs/archived/requirements/old.md', result)
-        self.assertNotIn('specs/_template/requirements/tmpl.md', result)
-
-    def test_nonexistent_path_skipped(self):
-        """存在しないパスはエラーなくスキップされる。"""
-        category_data = {
-            'rule': {'paths': ['nonexistent/path'], 'exclude': []},
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertEqual(result, [])
-
-    def test_no_duplicate(self):
-        """同一ファイルが複数 doc_type にマッチしても重複しない。"""
-        self._write_file('docs/shared/common.md', '# 共通文書')
-
-        category_data = {
-            'rule': {'paths': ['docs/shared'], 'exclude': []},
-            'workflow': {'paths': ['docs/shared'], 'exclude': []},
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertEqual(result.count('docs/shared/common.md'), 1)
-
-    def test_recursive_glob(self):
-        """** を含む glob パターンで再帰展開される。"""
-        self._write_file('specs/requirements/req.md', '# 要件')
-        self._write_file('specs/design/design.md', '# 設計')
-
-        category_data = {
-            'spec': {'paths': ['specs/**/*.md'], 'exclude': []},
-        }
-        result = resolve_paths(str(self.tmpdir), category_data)
-        self.assertIn('specs/requirements/req.md', result)
-        self.assertIn('specs/design/design.md', result)
-
-
-# =========================================================================
-# 4. resolve_references のテスト
+# 1. resolve_references のテスト
 # =========================================================================
 
 class TestResolveReferences(_FsTestCase):
@@ -313,15 +65,13 @@ class TestResolveReferences(_FsTestCase):
         """--type rules で rules カテゴリのファイルが解決される。"""
         self._write_file('docs/rules/coding.md', '# コーディング規約')
         self._write_doc_structure("""\
-version: "1.0"
-
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 
 specs:
-  requirement:
-    paths: [specs/]
+  root_dirs:
+    - specs/
 """)
         result = resolve_references('rules', str(self.tmpdir))
         self.assertEqual(result['status'], 'resolved')
@@ -333,15 +83,13 @@ specs:
         """--type specs で specs カテゴリのファイルが解決される。"""
         self._write_file('specs/requirements/req.md', '# 要件定義書')
         self._write_doc_structure("""\
-version: "1.0"
-
 specs:
-  requirement:
-    paths: [specs/requirements]
+  root_dirs:
+    - specs/requirements/
 
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 """)
         result = resolve_references('specs', str(self.tmpdir))
         self.assertEqual(result['status'], 'resolved')
@@ -354,15 +102,13 @@ rules:
         self._write_file('docs/rules/coding.md', '# コーディング規約')
         self._write_file('specs/requirements/req.md', '# 要件定義書')
         self._write_doc_structure("""\
-version: "1.0"
-
 specs:
-  requirement:
-    paths: [specs/requirements]
+  root_dirs:
+    - specs/requirements/
 
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 """)
         result = resolve_references('all', str(self.tmpdir))
         self.assertEqual(result['status'], 'resolved')
@@ -380,7 +126,7 @@ rules:
 
     def test_project_root_in_result(self):
         """結果に project_root が含まれる。"""
-        self._write_doc_structure("version: \"1.0\"\n")
+        self._write_doc_structure("# 空の設定\n")
         result = resolve_references('all', str(self.tmpdir))
         self.assertEqual(result['status'], 'resolved')
         self.assertEqual(result['project_root'], str(self.tmpdir))
@@ -390,12 +136,12 @@ rules:
         self._write_file('specs/login/requirements/req.md', '# ログイン要件')
         self._write_file('specs/archived/requirements/old.md', '# 旧仕様')
         self._write_doc_structure("""\
-version: "1.0"
-
 specs:
-  requirement:
-    paths: ["specs/*/requirements"]
-    exclude: ["archived"]
+  root_dirs:
+    - specs/*/requirements/
+  patterns:
+    exclude:
+      - archived
 """)
         result = resolve_references('specs', str(self.tmpdir))
         self.assertEqual(result['status'], 'resolved')
@@ -407,11 +153,9 @@ specs:
         self._write_file('docs/rules/rule.md', '# ルール')
         custom_yaml = self.tmpdir / 'custom_structure.yaml'
         custom_yaml.write_text("""\
-version: "1.0"
-
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 """, encoding='utf-8')
 
         result = resolve_references(
@@ -422,9 +166,34 @@ rules:
         self.assertEqual(result['status'], 'resolved')
         self.assertIn('docs/rules/rule.md', result['rules'])
 
+    def test_multiple_root_dirs(self):
+        """複数の root_dirs が正しく処理される。"""
+        self._write_file('docs/rules/coding.md', '# コーディング規約')
+        self._write_file('extra/rules/naming.md', '# 命名規則')
+        self._write_doc_structure("""\
+rules:
+  root_dirs:
+    - docs/rules/
+    - extra/rules/
+""")
+        result = resolve_references('rules', str(self.tmpdir))
+        self.assertEqual(result['status'], 'resolved')
+        self.assertIn('docs/rules/coding.md', result['rules'])
+        self.assertIn('extra/rules/naming.md', result['rules'])
+
+    def test_empty_root_dirs(self):
+        """root_dirs が空でもエラーにならない。"""
+        self._write_doc_structure("""\
+rules:
+  root_dirs: []
+""")
+        result = resolve_references('rules', str(self.tmpdir))
+        self.assertEqual(result['status'], 'resolved')
+        self.assertEqual(result['rules'], [])
+
 
 # =========================================================================
-# 5. find_project_root のテスト
+# 2. find_project_root のテスト
 # =========================================================================
 
 class TestFindProjectRoot(_FsTestCase):
@@ -443,8 +212,20 @@ class TestFindProjectRoot(_FsTestCase):
             self.tmpdir.resolve(),
         )
 
-    def test_returns_start_if_no_git(self):
-        """.git が見つからない場合は start_path を返す。"""
+    def test_finds_claude_root(self):
+        """.claude ディレクトリが存在するルートを検出する。"""
+        (self.tmpdir / '.claude').mkdir()
+        subdir = self.tmpdir / 'src'
+        subdir.mkdir(parents=True)
+
+        result = find_project_root(str(subdir))
+        self.assertEqual(
+            Path(result).resolve(),
+            self.tmpdir.resolve(),
+        )
+
+    def test_returns_start_if_no_marker(self):
+        """.git / .claude が見つからない場合は start_path を返す。"""
         subdir = self.tmpdir / 'no_git_here'
         subdir.mkdir()
 
@@ -453,7 +234,7 @@ class TestFindProjectRoot(_FsTestCase):
 
 
 # =========================================================================
-# 6. CLI 統合テスト
+# 3. CLI 統合テスト
 # =========================================================================
 
 class TestCLI(_FsTestCase):
@@ -472,19 +253,17 @@ class TestCLI(_FsTestCase):
         )
 
     def _make_project(self):
-        """テスト用プロジェクト構造を作成する。"""
+        """テスト用プロジェクト構造を作成する（config.yaml 互換フォーマット）。"""
         self._write_file('docs/rules/coding.md', '# コーディング規約')
         self._write_file('specs/requirements/req.md', '# 要件定義書')
         self._write_doc_structure("""\
-version: "1.0"
-
 specs:
-  requirement:
-    paths: [specs/requirements]
+  root_dirs:
+    - specs/requirements/
 
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 """)
 
     def test_type_rules(self):
@@ -532,11 +311,9 @@ rules:
         self._write_file('docs/rules/rule.md', '# ルール')
         custom_yaml = self.tmpdir / 'custom.yaml'
         custom_yaml.write_text("""\
-version: "1.0"
-
 rules:
-  rule:
-    paths: [docs/rules]
+  root_dirs:
+    - docs/rules/
 """, encoding='utf-8')
 
         r = self._run(

@@ -182,17 +182,21 @@ The `setup` skill scans project directories for markdown files, classifies them 
 See [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) for the full schema specification.
 
 ```yaml
-version: "1.0"
-
-specs:
-  requirement:
-    paths: [specs/requirements/]
-  design:
-    paths: [specs/design/]
+# doc_structure_version: 2.0
 
 rules:
-  rule:
-    paths: [rules/]
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+
+specs:
+  root_dirs:
+    - "docs/specs/*/design/"
+    - "docs/specs/*/requirement/"
+  doc_types_map:
+    "docs/specs/*/design/": design
+    "docs/specs/*/requirement/": requirement
 ```
 
 ## xcode
