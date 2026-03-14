@@ -1,5 +1,5 @@
 ---
-name: create-requirements
+name: start-requirements
 description: |
   対話・既存ソース解析・Figma の3モードで構造化要件定義書（SCR/FNC/BL 形式）を作成する。
   完了後は /forge:review でレビュー+修正推奨。
@@ -7,7 +7,7 @@ user-invocable: true
 argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
 ---
 
-# /forge:create-requirements
+# /forge:start-requirements
 
 要件定義書を作成する。3つのモードに対応:
 
@@ -18,7 +18,7 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 ## コマンド構文
 
 ```
-/forge:create-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
+/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
 ```
 
 | 引数    | 内容                             |
@@ -58,11 +58,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structur
 
 ### Step 3: プロジェクト固有情報の取得 [MANDATORY]
 
-以下の defaults を**常に**読み込む（ベースライン）:
+以下のプラグイン文書を**常に**読み込む:
 
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
+- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 
 ### Step 4: Figma MCP の利用可否確認
 
@@ -122,7 +122,7 @@ interactive または reverse-engineering を使用してください。
 残存セッション検出:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-requirements
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-requirements
 ```
 
 - `status: "none"` → セッション作成へ
@@ -134,7 +134,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-req
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
-  --skill create-requirements \
+  --skill start-requirements \
   --feature "{feature}" \
   --mode "{interactive|reverse-engineering|from-figma}" \
   --output-dir "{出力先ディレクトリ}"

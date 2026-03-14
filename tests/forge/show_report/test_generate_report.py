@@ -258,9 +258,9 @@ target_files:
 
 reference_docs:
   - path: docs/rules/skill_authoring_notes.md
-  - path: plugins/forge/defaults/review_criteria.md
+  - path: plugins/forge/docs/review_criteria_spec.md
 
-review_criteria_path: plugins/forge/defaults/review_criteria.md
+review_criteria_path: plugins/forge/docs/review_criteria_spec.md
 
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
@@ -276,7 +276,7 @@ related_code:
         )
         self.assertEqual(len(result["reference_docs"]), 2)
         self.assertEqual(result["reference_docs"][0]["path"], "docs/rules/skill_authoring_notes.md")
-        self.assertEqual(result["review_criteria_path"], "plugins/forge/defaults/review_criteria.md")
+        self.assertEqual(result["review_criteria_path"], "plugins/forge/docs/review_criteria_spec.md")
         self.assertEqual(len(result["related_code"]), 2)
         self.assertEqual(result["related_code"][0]["lines"], "1-30")
         self.assertEqual(result["related_code"][1]["reason"], "同種 AI 専用スキルの frontmatter 参考")

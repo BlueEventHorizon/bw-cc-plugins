@@ -86,7 +86,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 > `{review_criteria_path}` のフォールバック:
 >
-> 1. `/query-rules` Skill（利用不可ならスキップ）→ 2. `.claude/review-config.yaml` → 3. `${CLAUDE_PLUGIN_ROOT}/defaults/review_criteria.md`
+> 1. `/query-rules` Skill（利用不可ならスキップ）→ 2. `.claude/review-config.yaml` → 3. `${CLAUDE_PLUGIN_ROOT}/docs/review_criteria_spec.md`
 
 generic 以外の種別 → 2.1 へ進む。
 
@@ -134,7 +134,6 @@ session_dir が提供されており、修正が成功した場合:
    - `fixed_at`: 現在時刻（ISO8601 形式）
    - `files_modified`: 修正したファイルパスのリスト
 3. plan.yaml を Write で上書き保存する
-4. `/forge:show-report --silent` を呼び出して `report.html` を再生成する
 
 ---
 

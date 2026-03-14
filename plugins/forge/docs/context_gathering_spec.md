@@ -22,7 +22,7 @@ agent はこのファイルを読み、指定されたタスクを実行し、
 | `target_description` | - | feature がない場合の検索コンテキスト（タスク説明、対象ファイル等） |
 
 ```yaml
-session_dir: .claude/.temp/create-design-a3f7b2
+session_dir: .claude/.temp/start-design-a3f7b2
 spec: plugins/forge/docs/context_gathering_spec.md
 tasks:
   - 仕様書調査

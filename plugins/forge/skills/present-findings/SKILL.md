@@ -56,7 +56,7 @@ target_files:
   - path/to/file.md
 reference_docs:
   - path: docs/rules/foo.md
-review_criteria_path: plugins/forge/defaults/review_criteria.md
+review_criteria_path: plugins/forge/docs/review_criteria_spec.md
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
     reason: 同種AIスキルのfrontmatter参考
@@ -244,10 +244,12 @@ AskUserQuestion で進め方を確認する:
    - **修正を選択**（A案/B案）→ plan.yaml の status を `in_progress` に更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
    - **このまま（対応しない）** → plan.yaml の status を `needs_review` に更新
    - **一覧に戻る** → Step 2 へ
-4. fixer の修正サマリーをユーザーに報告（修正の場合）
-   4.1. スキップした場合: plan.yaml の status を `skipped` に変更 / skip_reason を記録
+4. fixer の修正後、単独修正レビューを実施（修正の場合） [MANDATORY]
+   4.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
+   4.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
+   4.3. 問題なし → fixer の修正サマリーをユーザーに報告
+   4.4. スキップした場合: plan.yaml の status を `skipped` に変更 / skip_reason を記録
    plan.yaml を Write で上書き保存
-   4.2. `/forge:show-report --silent` を呼び出して report.html を再生成する
 5. 次の項目へ進む
 
 全項目の提示・解決が完了したら、最終サマリーを報告して終了。
@@ -318,7 +320,6 @@ evaluator が推奨に基づく初期状態を書き込み済みなので、pres
 | --------------- | ---------------------------------------------------------------------------------------- |
 | plan.yaml       | 各項目の処理状態（evaluator の推奨で初期化済み → ユーザー判断で上書き更新）              |
 | evaluation.yaml | AI推奨判定（recommendation / auto_fixable を参照のみ、更新しない）                       |
-| report.html     | /forge:show-report --silent で随時再生成                                                 |
 
 ### 再開の仕組み
 

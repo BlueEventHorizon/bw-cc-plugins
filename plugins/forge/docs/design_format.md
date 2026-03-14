@@ -2,8 +2,8 @@
 
 プロジェクト固有の `design_format.md` が見つからない場合に使用する汎用フォーマット。
 
-作成原則: `${CLAUDE_PLUGIN_ROOT}/defaults/design_principles.md`
-要件との境界: `${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`
+作成原則: `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`
+要件との境界: `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`
 
 ---
 

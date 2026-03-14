@@ -32,8 +32,19 @@ argument-hint: "<種別> [--エンジン]"
 | session_dir | 必須 | セッションワーキングディレクトリのパス                 |
 | 種別        | 必須 | `code` / `requirement` / `design` / `plan` / `generic` |
 | エンジン    | 必須 | `codex` / `claude`                                     |
+| スコープ    | 任意 | `--diff-only {files}` — fixer の変更差分のみをレビュー |
 
 target_files / reference_docs / related_code / review_criteria_path は `{session_dir}/refs.yaml` から読み取る。
+
+### スコープ指定（`--diff-only`）
+
+`--diff-only` が指定された場合、refs.yaml の target_files ではなく指定されたファイルの変更差分のみをレビューする。
+これは fixer による修正が新たな問題を引き起こしていないか確認するための**単独修正レビュー**に使用する。
+
+- レビュー対象: 指定されたファイルの変更差分（`git diff` 相当）
+- 参考文書: refs.yaml の reference_docs / review_criteria_path をそのまま使用
+- 出力: `{session_dir}/review.md` を**上書きせず**、修正起因の問題のみを呼び出し元に返す
+- plan.yaml: 更新しない（呼び出し元が判断）
 
 ---
 

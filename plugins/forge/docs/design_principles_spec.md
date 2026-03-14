@@ -9,7 +9,7 @@
 
 **設計書は「How（どう作るか）」を記述する。「What（何を作るか）」は要件定義書に記載する。**
 
-→ 境界の詳細: `${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`
+→ 境界の詳細: `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`
 
 ---
 

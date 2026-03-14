@@ -3,7 +3,7 @@
 プロジェクト固有の `spec_format.md` が見つからない場合に参照するカタログ。
 プロジェクトの性質に合わせて必要なものを選んで使用する。使わない ID は定義しない。
 
-要件・設計の境界ガイド: `${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`
+要件・設計の境界ガイド: `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`
 
 ---
 
@@ -21,7 +21,7 @@ Feature とは、仕様の断片をグループ化した開発単位である。
 
 ### forge での扱い
 
-forge のスキル（create-requirements / create-design / create-plan / start-implement）は、Feature 単位で処理を実行する。スキル実行時に **どの Feature に対して処理するか** を決定する必要がある:
+forge のスキル（start-requirements / start-design / start-plan / start-implement）は、Feature 単位で処理を実行する。スキル実行時に **どの Feature に対して処理するか** を決定する必要がある:
 
 - Feature が1つしかない → そのまま対象とする
 - 複数の Feature がある → ユーザーに確認する

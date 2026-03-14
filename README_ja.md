@@ -62,7 +62,7 @@ forge は **Feature（フィーチャー）** 単位で文書を管理する。F
 | アジャイル開発 | イテレーションごとに Feature 単位で開発・デリバリーする |
 | 小規模プロジェクト | プロジェクト全体を1つの Feature として扱ってもよい |
 
-`create-requirements` / `create-design` / `create-plan` / `start-implement` は Feature 単位で処理を実行する。各 Feature は共通のディレクトリ構造で要件定義書・設計書・計画書を管理する:
+`start-requirements` / `start-design` / `start-plan` / `start-implement` は Feature 単位で処理を実行する。各 Feature は共通のディレクトリ構造で要件定義書・設計書・計画書を管理する:
 
 ```
 specs/
@@ -122,10 +122,10 @@ specs/
 /forge:setup-doc-structure
 
 # 要件定義書を対話的に作成
-/forge:create-requirements
+/forge:start-requirements
 
 # 既存アプリからリバースエンジニアリングで要件定義書を作成
-/forge:create-requirements myfeature --mode reverse-engineering
+/forge:start-requirements myfeature --mode reverse-engineering
 
 # 作成した文書をレビュー+自動修正+ToC更新で品質確定（start-* の後続処理）
 /forge:finalize requirement specs/login/requirements/requirements.md
@@ -138,9 +138,9 @@ specs/
 | --------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `review`              | 可能             | メインのレビュースキル。種別判定、参考文書収集、レビュー実行                                                            |
 | `setup-doc-structure` | 可能             | プロジェクトのディレクトリをスキャン・分類し、`.doc_structure.yaml` を生成                                              |
-| `create-requirements` | 可能             | 対話・リバースエンジニアリング・Figmaの3モードで要件定義書を作成                                                        |
-| `create-design`       | 可能             | 要件定義書から設計書を作成。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用   |
-| `create-plan`         | 可能             | 設計書から計画書を作成・更新。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用 |
+| `start-requirements` | 可能             | 対話・リバースエンジニアリング・Figmaの3モードで要件定義書を作成                                                        |
+| `start-design`       | 可能             | 要件定義書から設計書を作成。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用   |
+| `start-plan`         | 可能             | 設計書から計画書を作成・更新。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用 |
 | `finalize`            | 可能             | 文書作成後の品質確定オーケストレーター。レビュー+修正+ToC更新を一括実行。start-* の後に使用                             |
 | `start-implement`     | 可能             | 計画書からタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行するオーケストレーター               |
 | `setup-version-config`| 可能             | プロジェクトをスキャンして `.version-config.yaml` を生成・更新する。プロジェクト構造変更時に再実行                     |
@@ -169,11 +169,11 @@ specs/
 
 ### レビュー観点
 
-プラグインにはデフォルトのレビュー観点が `defaults/review_criteria.md` に同梱されています。プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
+プラグインにはレビュー観点が `docs/review_criteria_spec.md` に同梱されています。プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
 
 1. **DocAdvisor**: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のレビュー観点を動的に取得
 2. **プロジェクト設定**: `.claude/review-config.yaml` にカスタムパスを保存
-3. **プラグインデフォルト**: 同梱の `defaults/review_criteria.md` にフォールバック
+3. **プラグイン文書**: 同梱の `docs/review_criteria_spec.md` にフォールバック
 
 ### 文書構造管理 (.doc_structure.yaml)
 

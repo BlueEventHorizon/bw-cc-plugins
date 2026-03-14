@@ -1,7 +1,6 @@
 # オーケストレータ セッション通信プロトコル設計
 
-> **⚠️ 廃止**: 本設計書の内容は `plugins/forge/docs/session_format.md` に統合されました。
-> 正規の仕様は統合先を参照してください。本ファイルは設計判断の経緯として保持しています。
+> **実装先**: `plugins/forge/docs/session_format.md`
 
 > 対象: forge プラグイン全オーケストレータスキル
 > 要件: `docs/specs/forge/requirement/orchestrator_pattern.md`
@@ -55,7 +54,7 @@ review 固有の設計（review.md, plan.yaml, evaluation.yaml 等）は
 
 | スキル | 追加ファイル |
 |--------|-------------|
-| review | `review.md`, `plan.yaml`, `evaluation.yaml`, `report.html` |
+| review | `review.md`, `plan.yaml`, `evaluation.yaml` |
 | create-design | `design_draft.md` |
 | create-plan | `plan_draft.md` |
 | create-requirements | `requirements_draft.md` |
@@ -226,7 +225,6 @@ tasks:
 | review.md | — | フォーマット定義 |
 | plan.yaml | — | スキーマ定義 |
 | evaluation.yaml | — | スキーマ定義 |
-| report.html | — | 生成仕様 |
 | ライフサイクル | 共通パターン | review 固有のタイミング |
 
 twinkling-popping-kahan.md は本設計書の共通部分を参照し、

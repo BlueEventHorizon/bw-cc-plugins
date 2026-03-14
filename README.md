@@ -62,7 +62,7 @@ forge manages documents per **Feature** — a grouped unit of related specificat
 | Agile development | Develop and deliver per Feature in each iteration |
 | Small projects | Treat the entire project as a single Feature |
 
-Skills like `create-requirements`, `create-design`, `create-plan`, and `start-implement` operate on a Feature. Each Feature has its own requirements, design docs, and plan under a shared directory:
+Skills like `start-requirements`, `start-design`, `start-plan`, and `start-implement` operate on a Feature. Each Feature has its own requirements, design docs, and plan under a shared directory:
 
 ```
 specs/
@@ -122,10 +122,10 @@ specs/
 /forge:setup-doc-structure
 
 # Create requirements document interactively
-/forge:create-requirements
+/forge:start-requirements
 
 # Create requirements from existing app source code
-/forge:create-requirements myfeature --mode reverse-engineering
+/forge:start-requirements myfeature --mode reverse-engineering
 
 # Review + auto-fix after creating a document
 /forge:review requirement specs/login/requirements/requirements.md --auto
@@ -138,9 +138,9 @@ specs/
 | --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `review`              | Yes            | Orchestrator: collects references, delegates to reviewer/evaluator/fixer, then commits                                                        |
 | `setup-doc-structure` | Yes            | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml`                                                |
-| `create-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
-| `create-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
-| `create-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
+| `start-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
+| `start-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
+| `start-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
 | `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
 | `setup-version-config`| Yes            | Scans project files and generates `.version-config.yaml` for version bump configuration. Re-run on project structure changes                  |
 | `bump`                | Yes            | Bumps version across all files defined in `.version-config.yaml`. Supports patch/minor/major/direct. Optionally auto-generates CHANGELOG      |
@@ -171,11 +171,11 @@ specs/
 
 ### Review Criteria
 
-The plugin includes default review criteria in `defaults/review_criteria.md`. Projects can override this by:
+The plugin includes review criteria in `docs/review_criteria_spec.md`. Projects can override this by:
 
 1. **DocAdvisor**: If the project has DocAdvisor skills (`/query-rules`), the plugin queries them for project-specific review criteria
 2. **Project config**: Save a custom path in `.claude/review-config.yaml`
-3. **Plugin default**: Falls back to the bundled `defaults/review_criteria.md`
+3. **Plugin docs**: Falls back to the bundled `docs/review_criteria_spec.md`
 
 ### Document Structure (.doc_structure.yaml)
 
