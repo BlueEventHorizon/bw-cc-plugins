@@ -27,12 +27,10 @@ claude --plugin-dir ./plugins/forge
 
 ```bash
 # レビュー対象の自動検出
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
+python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
 
 # ディレクトリスキャン（メタデータ JSON 出力）
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
+python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 ```
 
 ## Architecture
@@ -49,13 +47,13 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 2. **`present-findings`** (AI専用, `user-invocable: false`) — レビュー結果を1件ずつ段階的に提示し、ユーザーの修正判断を仰ぐ
 3. **`fix-findings`** (AI専用, `user-invocable: false`) — 指摘事項に基づく修正を subagent で実行
 
-### setup スキル
+### setup-doc-structure スキル
 
-`/forge:setup` (user-invocable) — プロジェクトのディレクトリをスキャンし、AI が分類判定を行い `.doc_structure.yaml` を対話的に生成する。`classify_dirs.py` がディレクトリのメタデータ（ファイル数、frontmatter 等）を JSON で出力し、分類判定は AI が SKILL.md 内のルールに従って行う。
+`/forge:setup-doc-structure` (user-invocable) — プロジェクトのディレクトリをスキャンし、AI が分類判定を行い `.doc_structure.yaml` を対話的に生成する。`classify_dirs.py` がディレクトリのメタデータ（ファイル数、frontmatter 等）を JSON で出力し、分類判定は AI が SKILL.md 内のルールに従って行う。
 
-### create-requirements スキル
+### start-requirements スキル
 
-`/forge:create-requirements` (user-invocable) — 要件定義書を作成する。3つのモードに対応:
+`/forge:start-requirements` (user-invocable) — 要件定義書を作成する。3つのモードに対応:
 
 - **interactive**: 対話形式でゼロから要件を固める
 - **reverse-engineering**: 既存アプリのソースコードを解析して要件を抽出
@@ -66,7 +64,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 ### finalize スキル（post-creation オーケストレーター）
 
 `/forge:finalize` (user-invocable) — 文書作成後の品質確定を担うオーケストレーター。
-`create-requirements` / `start-design`（予定）/ `start-plan`（予定）の後続処理として使用:
+`start-requirements` / `start-design`（予定）/ `start-plan`（予定）の後続処理として使用:
 
 1. `/forge:review {type} {target} --refactor N` を呼び出す
 2. `/create-specs-toc` が利用可能なら実行
@@ -79,9 +77,19 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 
 1. 計画書の読み込みとタスク選択（優先度順 or `--task` 指定）
 2. コンテキスト収集（rules/code agent 並列起動）
-3. task-executor agent に実装を委譲（`task_execution_guide.md` を参照）
+3. task-executor agent に実装を委譲（`task_execution_spec.md` を参照）
 4. `/forge:review code` でレビュー
 5. 計画書のチェックマーク更新（☐ → ☑）
+
+### setup-version-config / bump スキル（バージョン管理）
+
+`/forge:setup-version-config` (user-invocable) — プロジェクトをスキャンし `.version-config.yaml` を対話的に生成・更新する。
+`scan_version_targets.py` がバージョンファイル（plugin.json / package.json / Cargo.toml 等）・README・CHANGELOG を検出し、AI が設定草案を生成してユーザーが確認する。
+プロジェクト構造変更時（プラグイン追加・README フォーマット変更など）に再実行して設定を更新する。
+
+`/forge:bump` (user-invocable) — `.version-config.yaml` の設定に基づきバージョンを一括更新する。
+`patch` / `minor` / `major` または直接バージョン指定に対応。CHANGELOG への git log 自動反映・git commit/tag 作成オプション付き。
+`.version-config.yaml` が存在しない場合は `/forge:setup-version-config` の実行を案内する。
 
 ### レビュー観点の3階層フォールバック
 
@@ -89,7 +97,7 @@ review スキルがレビュー観点を探索する優先順位：
 
 1. **DocAdvisor** — `/query-rules` Skill が動的にプロジェクト固有の観点を特定（`.claude/skills/query-rules/SKILL.md` で利用可否判断）
 2. **プロジェクト設定** — `.claude/review-config.yaml`
-3. **プラグインデフォルト** — `plugins/forge/defaults/review_criteria.md`
+3. **プラグイン文書** — `plugins/forge/docs/review_criteria_spec.md`
 
 ### レビュー種別
 

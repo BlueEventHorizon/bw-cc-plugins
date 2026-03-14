@@ -1,31 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Skill(create-specs-toc)",
-      "mcp__gemini-cli__brainstorm",
-      "Skill(forge:help)",
-      "Bash(python3:*)",
-      "Bash(git commit:*)",
-      "Bash(chmod +x:*)",
-      "WebSearch",
-      "WebFetch(domain:arxiv.org)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh rules)",
-      "Bash(ls .claude/doc-advisor/toc/specs/.toc_work/*.yaml 2>&1)",
-      "Bash(python3 .claude/doc-advisor/scripts/validate_toc.py --target specs 2>&1; echo \"EXIT:$?\")",
-      "Bash(cp .claude/doc-advisor/toc/specs/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/specs/.toc_checksums.yaml && rm -rf .claude/doc-advisor/toc/specs/.toc_work && echo \"Done\")",
-      "Bash(python3 .claude/doc-advisor/scripts/merge_toc.py --target specs --mode incremental 2>&1 && python3 .claude/doc-advisor/scripts/validate_toc.py --target specs 2>&1; echo \"EXIT:$?\")",
-      "Bash(open /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/.temp/20260313-012654-f5ff74/report.html)",
-      "Bash(find ~/.claude/plugins/cache/anthropic-agent-skills -path \"*/eval-viewer/*\" -o -path \"*/eval_viewer/*\" 2>/dev/null | sort)",
-      "Bash(find ~/.claude/plugins/cache/anthropic-agent-skills -path \"*/assets/*eval*.html\" -o -path \"*/eval*.html\" 2>/dev/null | sort)",
-      "Bash(open /tmp/forge-test-session/report.html)",
-      "Bash(grep -n \"mkdir -p.*refs\" plugins/forge/skills/*/SKILL.md)",
-      "Bash(\\\\ echo:*)",
-      "mcp__plugin_claude-mem_mcp-search__smart_outline"
+      "Bash(\\\\ git:*)",
+      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh specs)"
     ]
   },
-  "enabledPlugins": {},
   "sandbox": {
     "enabled": false,
     "autoAllowBashIfSandboxed": false

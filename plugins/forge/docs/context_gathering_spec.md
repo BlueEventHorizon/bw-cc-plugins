@@ -22,7 +22,7 @@ agent はこのファイルを読み、指定されたタスクを実行し、
 | `target_description` | - | feature がない場合の検索コンテキスト（タスク説明、対象ファイル等） |
 
 ```yaml
-session_dir: .claude/.temp/create-design-a3f7b2
+session_dir: .claude/.temp/start-design-a3f7b2
 spec: plugins/forge/docs/context_gathering_spec.md
 tasks:
   - 仕様書調査
@@ -96,8 +96,7 @@ target_description: "..."            # feature がない場合に使用
 `/query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
 ```
 
 JSON 出力の `specs` キーからファイルパス一覧を取得し、関連性を判断する。
@@ -146,8 +145,7 @@ documents:
 `doc-structure` スキルのスクリプトを使用:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
 ```
 
 JSON 出力の `rules` キーからファイルパス一覧を取得する。

@@ -59,8 +59,7 @@ Bash ツールは使用しない。Glob ツールのみで完結する設計。
 Python スクリプトがセッションファイルを読み込み、HTML テンプレートにデータを注入して `report.html` を生成する。
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_SKILL_DIR}/generate_report.py" {session_dir}
+python3 "${CLAUDE_SKILL_DIR}/generate_report.py" {session_dir}
 ```
 
 - exit 0: `{session_dir}/report.html` が生成された

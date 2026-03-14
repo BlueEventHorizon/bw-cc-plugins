@@ -150,7 +150,7 @@ patterns:
 - フォーマット: `X.Y`（X = メジャー、Y = マイナー）
 - メジャーバージョン変更 = フォーマットの破壊的変更
 - マイナーバージョン変更 = 後方互換のオプショナルフィールド追加
-- 詳細は `doc_structure_version_management.md` を参照
+- 詳細は `docs/specs/forge/design/doc_structure_version_management_design.md` を参照
 
 ## サンプル
 
@@ -250,17 +250,16 @@ specs:
 `doc-structure` スキルの `resolve_doc_structure.py` を使用する:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py"
 
 # 全ファイル一覧
-"$PYTHON" "$SCRIPT" --type all
+python3 "$SCRIPT" --type all
 
 # Feature 一覧
-"$PYTHON" "$SCRIPT" --features
+python3 "$SCRIPT" --features
 
 # 特定 doc_type のファイル
-"$PYTHON" "$SCRIPT" --doc-type design
+python3 "$SCRIPT" --doc-type design
 ```
 
 ### Python スクリプトから（同一プラグイン内）

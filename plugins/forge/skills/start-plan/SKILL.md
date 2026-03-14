@@ -1,21 +1,21 @@
 ---
-name: create-plan
+name: start-plan
 description: |
   計画書作成ワークフロー。設計書からタスクを抽出し計画書を作成、または既存計画書を更新。
-  トリガー: "計画書作成", "計画開始", "start planning", "/forge:create-plan"
+  トリガー: "計画書作成", "計画開始", "start planning", "/forge:start-plan"
 user-invocable: true
 argument-hint: "<feature>"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 ---
 
-# /forge:create-plan
+# /forge:start-plan
 
 設計書からタスクを抽出し、計画書を作成または更新する。
 
 ## コマンド構文
 
 ```
-/forge:create-plan [feature]
+/forge:start-plan [feature]
 ```
 
 | 引数    | 内容                             |
@@ -40,9 +40,9 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 - **存在しない** → AskUserQuestion を使用して確認する:
   ```
   .doc_structure.yaml が見つかりません。
-  /forge:setup を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup を実行しますか？
+  /forge:setup-doc-structure を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup-doc-structure を実行しますか？
   ```
-  - **はい** → `/forge:setup` を呼び出し、完了後に次のステップへ進む
+  - **はい** → `/forge:setup-doc-structure` を呼び出し、完了後に次のステップへ進む
   - **いいえ** → 終了
 - **存在する** → 次のステップへ
 
@@ -52,8 +52,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 
 - `doc-structure` スキルのスクリプトで Feature を検索:
   ```bash
-  PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-  "$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
+  python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
   ```
 - 解決できない場合は AskUserQuestion で出力先を確認する
 
@@ -71,13 +70,13 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 - 既存計画書を更新する → 既存計画書を Read して現状を把握し Phase 1 へ
 - レビューのみ行う → `/forge:review plan {既存計画書パス}` を起動して終了
 
-### defaults の読み込み [MANDATORY]
+### プラグイン文書の読み込み [MANDATORY]
 
-以下の defaults を**常に**読み込む（ベースライン）:
+以下のプラグイン文書を**常に**読み込む:
 
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_format.md`** — 計画書テンプレート
-- **`${CLAUDE_PLUGIN_ROOT}/defaults/plan_principles.md`** — 計画書作成原則・タスク設計ガイドライン
+- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`** — 計画書テンプレート
+- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン
 
 ---
 
@@ -86,20 +85,19 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 残存セッション検出:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-plan
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-plan
 ```
 
 - `status: "none"` → セッション作成へ
 - `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-  - **削除** → `"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
+  - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
   - **残す** → 残存ディレクトリを無視して新規セッション作成へ
 
 セッション作成:
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
-  --skill create-plan \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+  --skill start-plan \
   --feature "{feature}" \
   --mode "{new|update}" \
   --output-dir "{計画書の出力先ディレクトリ}"
@@ -153,7 +151,7 @@ skill_type: "計画書作成"
 `{session_dir}/refs/` 内の全ファイルを Read する:
 
 - **refs/specs.yaml** → 要件定義書・設計書を Read
-- **refs/rules.yaml** → プロジェクト固有の計画書フォーマット・タスク設計ルールを把握（defaults より優先）
+- **refs/rules.yaml** → プロジェクト固有の計画書フォーマット・タスク設計ルールを把握（プラグイン文書より優先）
 
 いずれかが存在しない場合（agent 失敗）→ 該当カテゴリなしで続行。
 ただし **設計書が取得できない場合** → AskUserQuestion:
@@ -199,7 +197,7 @@ skill_type: "計画書作成"
 フォーマットの優先順位:
 
 1. **プロジェクト固有ルール**: refs/rules.yaml に含まれるフォーマット定義
-2. **プラグイン defaults**: `${CLAUDE_PLUGIN_ROOT}/defaults/plan_format.md`
+2. **プラグイン文書**: `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`
 
 **作成場所**: session.yaml の `output_dir`
 
@@ -229,7 +227,7 @@ skill_type: "計画書作成"
 
 計画書作成・更新後に `/forge:review plan` でレビューを実行する:
 
-<!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、create-plan のセッションとは干渉しない -->
+<!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、start-plan のセッションとは干渉しない -->
 ```
 /forge:review plan {作成した計画書のファイルパス}
 ```

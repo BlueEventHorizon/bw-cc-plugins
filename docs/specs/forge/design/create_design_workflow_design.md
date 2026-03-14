@@ -1,12 +1,12 @@
-# forge 設計書作成パイプライン 設計書
+# forge 設計書作成ワークフロー 設計書
 
-> 対象プラグイン: forge | スキル: `/forge:create-design`
+> 対象プラグイン: forge | スキル: `/forge:start-design`
 
 ---
 
 ## 1. 概要
 
-`/forge:create-design` は要件定義書から設計書を作成するオーケストレータスキル。
+`/forge:start-design` は要件定義書から設計書を作成するオーケストレータスキル。
 要件定義書の分析 → 既存実装資産の確認 → 設計書作成 → 品質保証の流れで動作する。
 
 ### 現状の課題
@@ -27,32 +27,32 @@
 flowchart TD
     User([ユーザー]) --> ORCHESTRATOR
 
-    ORCHESTRATOR["/forge:create-design\nオーケストレーター"] --> PREREQ
+    ORCHESTRATOR["/forge:start-design<br>オーケストレーター"] --> PREREQ
 
-    PREREQ["前提確認\n.doc_structure.yaml\nFeature名\n出力先\nモード判定"] --> CONTEXT
+    PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>出力先<br>モード判定"] --> CONTEXT
 
-    CONTEXT["コンテキスト収集\n（並列）"] --> DESIGN
+    CONTEXT["コンテキスト収集<br>（並列）"] --> DESIGN
 
     subgraph CONTEXT_AGENTS["コンテキスト収集 agent"]
-        A1["specs agent\n要件定義書取得"] --> REFS_SPECS["refs/specs.yaml"]
-        A2["rules agent\nルール取得"] --> REFS_RULES["refs/rules.yaml"]
-        A3["code agent\n既存実装探索"] --> REFS_CODE["refs/code.yaml"]
+        A1["specs agent<br>要件定義書取得"] --> REFS_SPECS["refs/specs.yaml"]
+        A2["rules agent<br>ルール取得"] --> REFS_RULES["refs/rules.yaml"]
+        A3["code agent<br>既存実装探索"] --> REFS_CODE["refs/code.yaml"]
     end
 
-    DESIGN["設計書作成\n（ファイルごと）"] --> REVIEW_ASK
+    DESIGN["設計書作成<br>（ファイルごと）"] --> REVIEW_ASK
 
-    REVIEW_ASK{"人間レビュー\n（AskUserQuestion）"} -->|"OK"| NEXT_FILE
+    REVIEW_ASK{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| NEXT_FILE
     REVIEW_ASK -->|"修正"| DESIGN
 
     NEXT_FILE{次のファイル?} -->|"あり"| DESIGN
     NEXT_FILE -->|"なし"| AI_REVIEW
 
-    AI_REVIEW["/forge:review design\nAIレビュー"] --> HUMAN_REVIEW2
+    AI_REVIEW["/forge:review design<br>AIレビュー"] --> HUMAN_REVIEW2
 
-    HUMAN_REVIEW2{"人間レビュー\n（AskUserQuestion）"} -->|"OK"| QA
+    HUMAN_REVIEW2{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| QA
     HUMAN_REVIEW2 -->|"修正"| DESIGN
 
-    QA["品質保証\n完全性チェック\n/create-specs-toc"] --> End([完了])
+    QA["品質保証<br>完全性チェック<br>/create-specs-toc"] --> End([完了])
 ```
 
 ---
@@ -72,8 +72,8 @@ flowchart TD
 **読み込む defaults:**
 - `spec_format.md` — ID 分類カタログ
 - `design_format.md` — 設計書テンプレート
-- `design_principles.md` — 設計原則ガイド
-- `spec_design_boundary_guide.md` — 要件/設計の境界ガイド
+- `design_principles_spec.md` — 設計原則ガイド
+- `spec_design_boundary_spec.md` — 要件/設計の境界ガイド
 
 ### Phase 1: コンテキスト収集
 
@@ -102,7 +102,7 @@ flowchart TD
 
 | Step | 内容 | 実行者 |
 |------|------|--------|
-| 3.1 | `/forge:review design` 実行 | subagent（review パイプライン）|
+| 3.1 | `/forge:review design` 実行 | subagent（review ワークフロー）|
 | 3.2 | 人間レビュー確認（AskUserQuestion）| orchestrator |
 
 ### Phase 4: 品質保証
@@ -127,7 +127,7 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 ### What/How の境界
 
-`spec_design_boundary_guide.md` に従い、設計書は「How（どう構成するか）」に集中する。
+`spec_design_boundary_spec.md` に従い、設計書は「How（どう構成するか）」に集中する。
 「What（何を実現するか）」は要件定義書の責務であり、設計書に重複して書かない。
 
 ---
@@ -136,7 +136,7 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 ```
 /forge:review design {path} --auto    # AIレビュー+自動修正
-/forge:create-plan {feature}          # 計画書作成
+/forge:start-plan {feature}           # 計画書作成
 ```
 
 ---
@@ -145,8 +145,8 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 
 | ファイル | 説明 |
 |---------|------|
-| `plugins/forge/skills/create-design/SKILL.md` | スキル仕様 |
-| `plugins/forge/defaults/design_format.md` | 設計書テンプレート |
-| `plugins/forge/defaults/design_principles.md` | 設計原則ガイド |
-| `plugins/forge/defaults/spec_format.md` | ID分類カタログ |
-| `plugins/forge/defaults/spec_design_boundary_guide.md` | 要件/設計の境界ガイド |
+| `plugins/forge/skills/start-design/SKILL.md` | スキル仕様 |
+| `plugins/forge/docs/design_format.md` | 設計書テンプレート |
+| `plugins/forge/docs/design_principles_spec.md` | 設計原則ガイド |
+| `plugins/forge/docs/spec_format.md` | ID分類カタログ |
+| `plugins/forge/docs/spec_design_boundary_spec.md` | 要件/設計の境界ガイド |

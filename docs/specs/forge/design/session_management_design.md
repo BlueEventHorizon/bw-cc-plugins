@@ -8,7 +8,7 @@
 | 関連要件 | FNC-002 (orchestrator_pattern.md)                               |
 | 関連設計 | DES-010 (create_skills_orchestrator_design.md)                  |
 | 作成日   | 2026-03-13                                                      |
-| 対象     | 全オーケストレータースキル（review, create-design, create-plan, create-requirements, start-implement） |
+| 対象     | 全オーケストレータースキル（review, start-design, start-plan, start-requirements, start-implement） |
 
 ---
 
@@ -120,9 +120,9 @@ flowchart LR
 
 | スキル | 事前準備 | セッション管理 | ビジネスフロー |
 |--------|---------|---------------|---------------|
-| create-design | Feature確定・出力先・モード・defaults | `## セッション管理` | Phase 1-4 |
-| create-plan | Feature確定・出力先・モード・defaults | `## セッション管理` | Phase 1-4 |
-| create-requirements | 前提確認・モード選択・Phase 0 | `## セッション管理` | コンテキスト収集 + Mode別処理 |
+| start-design | Feature確定・出力先・モード・defaults | `## セッション管理` | Phase 1-4 |
+| start-plan | Feature確定・出力先・モード・defaults | `## セッション管理` | Phase 1-4 |
+| start-requirements | 前提確認・モード選択・Phase 0 | `## セッション管理` | コンテキスト収集 + Mode別処理 |
 | start-implement | Phase 1(事前確認) + Phase 2(タスク選択) | `## セッション管理` | Phase 3-5 |
 | review | Phase 1(引数解析) + Phase 2(収集) | `## セッション管理` | Phase 3-5 |
 
@@ -175,7 +175,7 @@ flowchart TD
 | 値 | 対象スキル | 根拠 |
 |----|-----------|------|
 | `resume` | review | サイクル実行（reviewer → evaluator → fixer）の中間状態に価値がある。レビュー結果や修正プランの再収集はコストが高い |
-| `none` | create-design, create-plan, create-requirements, start-implement | 直線的ワークフロー。中断時は最初からやり直す方が効率的。コンテキスト収集の再実行コストは低い |
+| `none` | start-design, start-plan, start-requirements, start-implement | 直線的ワークフロー。中断時は最初からやり直す方が効率的。コンテキスト収集の再実行コストは低い |
 
 ### 4.3 データフロー
 

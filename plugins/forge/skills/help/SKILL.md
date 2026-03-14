@@ -23,9 +23,9 @@ AskUserQuestion でスキルを選択する:
 
 選択肢:
 - review             : コード・文書のレビュー（オーケストレーター）
-- create-requirements: 要件定義書の作成
-- create-design      : 設計書の作成
-- create-plan        : 計画書の作成
+- start-requirements: 要件定義書の作成
+- start-design      : 設計書の作成
+- start-plan        : 計画書の作成
 - start-implement    : 計画書からタスクを選択して実装を実行する
 - show-report        : レビューセッションの進捗をHTMLレポートで表示する
 - setup              : .doc_structure.yaml の作成・更新
@@ -91,7 +91,7 @@ AskUserQuestion でスキルを選択する:
 
 ---
 
-### create-requirements
+### start-requirements
 
 #### 2-1. Feature 名
 
@@ -110,7 +110,7 @@ AskUserQuestion でスキルを選択する:
 
 ---
 
-### create-design
+### start-design
 
 #### 2-1. Feature 名
 
@@ -120,7 +120,7 @@ AskUserQuestion でスキルを選択する:
 
 ---
 
-### create-plan
+### start-plan
 
 #### 2-1. Feature 名
 
