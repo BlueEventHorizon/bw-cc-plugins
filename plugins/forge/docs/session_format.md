@@ -1,105 +1,390 @@
-# セッションディレクトリ ファイルフォーマット仕様
+# セッションディレクトリ仕様
 
-forge レビューパイプラインが使用するセッションワーキングディレクトリ（`.claude/.temp/{YYYYMMDD-HHmmss}-{random6}/`）内の全ファイルのスキーマ定義。
+forge のオーケストレータースキルが使用する一時ワーキングディレクトリの共通仕様。
 
 各 SKILL.md ではインラインでスキーマを定義せず、このドキュメントを参照すること。
 
 ---
 
-## セッションディレクトリ構造
+## 1. セッションとは
 
-```
-.claude/.temp/{YYYYMMDD-HHmmss}-{random6}/
-├── session.yaml       # セッションメタデータ（review が作成）
-├── refs.yaml          # 参照ファイルリスト（review が作成）
-├── review.md          # レビュー結果（reviewer が書き出し）
-├── plan.yaml          # 修正プランと進捗状態（reviewer が初期作成）
-├── evaluation.yaml    # evaluator の判定結果（evaluator が作成）
-└── report.html        # 可視化レポート（show-report が生成）
-```
+セッションは、オーケストレータースキルが**フェーズ間のデータをファイル経由で受け渡す**ための一時ディレクトリである。
 
-**ライフサイクル:**
+全てのオーケストレータースキル（review, create-design, create-plan, create-requirements, start-implement）が同じ仕組みを使う:
 
-- Phase 1.5 開始: `review` がディレクトリ作成 + `session.yaml` / `refs.yaml` を書き出す
-- Phase 4 完了: `review` が `rm -rf {session_dir}` で削除する
-- セッション中断: ディレクトリが残存する（次回の `present-findings` 呼び出し時に再開を提案）
+1. スキル開始時にセッションディレクトリを作成
+2. 各フェーズの結果をファイルとして書き込み、後続フェーズが読み取る
+3. スキル正常完了時にディレクトリを削除
+
+### なぜファイル経由か
+
+- **コンテキスト圧縮で消えない** — プロンプトテキストは長時間セッションで圧縮されるが、ファイルは永続
+- **並列エージェントの衝突回避** — 各エージェントが別ファイルに書き込むため競合しない
+- **中断からの復元可能性** — ディレクトリが残っていれば、収集済みデータを再利用できる
 
 ---
 
-## session.yaml
+## 2. ディレクトリ構造
 
-セッションのメタデータ。`review` が Phase 1.5 で作成し、フロー全体を通じて更新する。
+### パス
 
-### スキーマ
+```
+.claude/.temp/{skill_name}-{random6}/
+```
 
-| フィールド      | 型      | 必須 | 説明                                 |
-| --------------- | ------- | ---- | ------------------------------------ |
-| `review_type`   | string  | 必須 | レビュー種別（後述の許容値参照）     |
-| `engine`        | string  | 必須 | レビューエンジン（後述の許容値参照） |
-| `auto_count`    | integer | 必須 | 自動修正サイクル数。`0` = 対話モード |
-| `current_cycle` | integer | 必須 | 現在のサイクル番号。初期値 `0`       |
-| `started_at`    | string  | 必須 | 開始日時（ISO 8601 形式）            |
-| `last_updated`  | string  | 必須 | 最終更新日時（ISO 8601 形式）        |
-| `status`        | string  | 必須 | セッション状態（後述の許容値参照）   |
+例: `.claude/.temp/create-design-a3f7b2/`
 
-### 許容値
+- スキル名: どのスキルのセッションか一目でわかる
+- 6文字ランダム hex: 同一スキルの複数起動でも衝突しない
+- `.gitignore` に `.claude/.temp/` を追加済み
 
-**`review_type`:** `code` / `requirement` / `design` / `plan` / `generic`
+### 共通レイアウト
 
-**`engine`:** `codex` / `claude`
+```
+.claude/.temp/{session}/
+├── session.yaml           # セッションメタデータ（必須）
+├── refs/                  # コンテキスト収集エージェントの出力
+│   ├── specs.yaml         # 仕様書検索結果
+│   ├── rules.yaml         # ルール検索結果
+│   └── code.yaml          # コード探索結果
+└── [スキル固有ファイル]   # 各スキルが自由に追加
+```
 
-**`status`:** `in_progress` / `completed`
+### スキル固有ファイル
+
+| スキル | 追加ファイル | 説明 |
+|--------|-------------|------|
+| review | `refs.yaml`, `review.md`, `plan.yaml`, `evaluation.yaml`, `report.html` | レビューパイプラインの中間成果物 |
+| create-design | （なし） | refs/ のみ使用 |
+| create-plan | （なし） | refs/ のみ使用 |
+| create-requirements | （なし） | refs/ のみ使用 |
+| start-implement | （なし） | refs/ のみ使用 |
+
+スキル固有ファイルのスキーマは本ドキュメントの後半（§7）で定義する。
+
+---
+
+## 3. session.yaml — セッションメタデータ
+
+### 共通フィールド
+
+全オーケストレータースキルが必ず含めるフィールド:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `skill` | string | ○ | 起動スキル名（`review`, `create-design` 等）|
+| `started_at` | string | ○ | セッション開始時刻（ISO 8601）|
+| `last_updated` | string | ○ | 最終更新時刻（ISO 8601）|
+| `status` | enum | ○ | `in_progress` / `completed` |
+| `resume_policy` | enum | - | `resume` / `none`。未指定時は `resume` |
+
+### スキル固有フィールド
+
+共通フィールドに加えて、各スキルが自由にフィールドを追加する:
+
+**review:**
+
+| フィールド | 型 | 説明 |
+|-----------|------|------|
+| `review_type` | string | `code` / `requirement` / `design` / `plan` / `generic` |
+| `engine` | string | `codex` / `claude` |
+| `auto_count` | integer | 自動修正サイクル数。`0` = 対話モード |
+| `current_cycle` | integer | 現在のサイクル番号。初期値 `0` |
+
+**create-design / create-plan / create-requirements:**
+
+| フィールド | 型 | 説明 |
+|-----------|------|------|
+| `feature` | string | 対象 Feature 名 |
+| `mode` | string | `new` / `update` |
+| `output_dir` | string | 出力先ディレクトリ |
+
+**start-implement:**
+
+| フィールド | 型 | 説明 |
+|-----------|------|------|
+| `feature` | string | 対象 Feature 名 |
+| `task_id` | string | 実行中のタスクID |
 
 ### 例
 
 ```yaml
+# review の場合
+skill: review
+started_at: "2026-03-09T18:30:00Z"
+last_updated: "2026-03-09T18:30:00Z"
+status: in_progress
+resume_policy: resume
 review_type: code
 engine: codex
 auto_count: 0
 current_cycle: 0
-started_at: "2026-03-09T18:30:00Z"
-last_updated: "2026-03-09T18:30:00Z"
-status: in_progress
 ```
 
-### 読み書き
-
-| スキル        | 操作                                | タイミング       |
-| ------------- | ----------------------------------- | ---------------- |
-| `review`      | Write（作成）                       | Phase 1.5 Step 7 |
-| `review`      | Write（`status: completed` に更新） | Phase 4 完了時   |
-| `show-report` | Read                                | HTML 生成時      |
+```yaml
+# create-design の場合
+skill: create-design
+feature: "login"
+mode: new
+started_at: "2026-03-12T10:00:00Z"
+last_updated: "2026-03-12T10:05:00Z"
+status: in_progress
+resume_policy: none
+output_dir: "specs/login/design"
+```
 
 ---
 
-## refs.yaml
+## 4. ライフサイクル
 
-レビューパイプライン全体で共有する参照ファイルリスト。`review` が Phase 1.5 で作成し、以降の全スキルはここからファイルパスを取得する（プロンプト経由の受け渡しは行わない）。
+### ライフサイクル全体図
 
-### スキーマ
+```mermaid
+flowchart TD
+    Start([スキル開始]) --> Detect[残存セッション検出<br/>session_manager.py find]
+    Detect --> Found{残存<br/>セッション?}
+    Found -->|なし| Create
+    Found -->|あり| Policy{resume_policy}
 
-| フィールド             | 型       | 必須 | 説明                                                  |
-| ---------------------- | -------- | ---- | ----------------------------------------------------- |
-| `target_files`         | string[] | 必須 | レビュー対象ファイルパス一覧                          |
-| `reference_docs`       | object[] | 必須 | 参考文書リスト（`path` フィールドを持つオブジェクト） |
-| `review_criteria_path` | string   | 必須 | レビュー観点ファイルのパス                            |
-| `related_code`         | object[] | 任意 | 関連コードリスト（後述のフィールド参照）              |
+    Policy -->|resume| AskResume[AskUserQuestion:<br/>再開 or 破棄?]
+    AskResume -->|再開| Reuse[既存 session_dir を使用]
+    AskResume -->|破棄| Cleanup1[session_manager.py cleanup]
+    Cleanup1 --> Create
+
+    Policy -->|none| AskDelete[AskUserQuestion:<br/>削除 or 残す?]
+    AskDelete -->|削除| Cleanup2[session_manager.py cleanup]
+    AskDelete -->|残す| Create
+    Cleanup2 --> Create
+
+    Create[セッション作成<br/>session_manager.py init] --> Phases
+
+    Reuse --> Phases
+
+    subgraph Phases [ビジネスフロー]
+        direction TB
+        P1[Phase 1] --> P2[Phase 2]
+        P2 --> PN[Phase N]
+    end
+
+    Phases --> Delete[セッション削除<br/>rm -rf session_dir]
+    Delete --> End([完了])
+
+    Phases -.->|中断| Remain[session_dir 残存<br/>次回検出される]
+
+    style Phases fill:#f0f8ff,stroke:#4682b4
+    style Remain fill:#fff3cd,stroke:#ffc107
+```
+
+### 作成から削除まで
+
+| タイミング | 操作 |
+|------------|------|
+| スキル開始時 | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
+| 各フェーズ | エージェントやサブスキルがファイルを読み書き |
+| 正常完了時 | オーケストレーターがディレクトリを削除（`rm -rf {session_dir}`） |
+| 中断時 | ディレクトリが残存（次回起動時に検出） |
+
+### 残存セッション検出
+
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
+```
+
+`status: "found"` の場合、`resume_policy` によって分岐する:
+
+#### `resume_policy: resume`
+
+review のように中間状態の価値が高いスキル向け:
+
+1. AskUserQuestion: 「前回のセッションが見つかりました。再開しますか？」
+   - **再開** → 既存 session_dir を使用して処理を続行
+   - **破棄して新規作成** → cleanup して新規開始
+
+#### `resume_policy: none`
+
+create-* のように最初からやり直す方が効率的なスキル向け:
+
+1. AskUserQuestion: 「前回の未完了セッションがあります。削除しますか？」
+   - **削除** → cleanup して新規開始
+   - **残す** → 残存ディレクトリを無視して新規開始
+
+### セッション作成
+
+```bash
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+  --skill {skill_name} \
+  {スキル固有の --key value}
+```
+
+### セッション削除
+
+```bash
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
+```
+
+---
+
+## 5. session_manager.py — CLI リファレンス
+
+セッションの作成・検出・削除を行う Python スクリプト。AI がディレクトリ名生成や YAML 書き出しを手作業で行うとフォーマットミスやフィールド漏れが発生するため、スクリプトに委譲する。
+
+パス: `${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py`
+
+### サブコマンド
+
+#### `init` — セッション作成
+
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+  --skill {skill_name} \
+  [--key value ...]
+```
+
+| 引数 | 必須 | 説明 |
+|------|------|------|
+| `--skill` | ○ | スキル名（`review`, `create-design` 等） |
+| `--key value` | - | 任意のスキル固有フィールド（`session.yaml` に書き込まれる） |
+| `--resume-policy` | - | `resume` / `none`。省略時: review → `resume`、他 → `none` |
+
+**処理内容**:
+1. `.claude/.temp/{skill_name}-{random6}/` ディレクトリ + `refs/` サブディレクトリを作成
+2. `session.yaml` を共通フィールド順序で書き出し
+3. `started_at` / `last_updated` を UTC ISO 8601 で自動生成
+
+**出力** (JSON):
+```json
+{"status": "created", "session_dir": ".claude/.temp/create-design-a3f7b2"}
+```
+
+**スキル別の引数例**:
+
+| スキル | 引数 |
+|--------|------|
+| review | `--review-type code --engine codex --auto-count 1 --current-cycle 0` |
+| create-design | `--feature login --mode new --output-dir specs/login/design` |
+| create-plan | `--feature login --mode new --output-dir specs/login/plan` |
+| create-requirements | `--feature login --mode interactive --output-dir specs/login/requirements` |
+| start-implement | `--feature login --task-id TASK-001` |
+
+> `--key-name` のハイフンは自動的にアンダースコアに変換される（例: `--output-dir` → `output_dir`）。
+
+#### `find` — 残存セッション検索
+
+```bash
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
+```
+
+**処理内容**: `.claude/.temp/*/session.yaml` をパースし `skill` フィールドで検索。
+
+**出力** (JSON):
+```json
+{"status": "found", "sessions": [{"path": ".claude/.temp/create-design-a3f7b2", "skill": "create-design", "started_at": "..."}]}
+```
+```json
+{"status": "none"}
+```
+
+#### `cleanup` — セッション削除
+
+```bash
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
+```
+
+**処理内容**: `.claude/.temp/` 配下であることを検証（パストラバーサル防止）後、`shutil.rmtree()` で削除。
+
+**出力** (JSON):
+```json
+{"status": "deleted", "session_dir": ".claude/.temp/create-design-a3f7b2"}
+```
+
+---
+
+## 6. refs/ — コンテキスト収集結果
+
+### 設計原則
+
+- 各コンテキスト収集エージェントが**独立して** `refs/{category}.yaml` を書き込む
+- ファイルが分かれているため**並列実行でファイル競合が起きない**
+- オーケストレーターが `refs/` 内の全ファイルを読み込んで後続フェーズに渡す
+
+### 共通スキーマ
+
+全ての `refs/{category}.yaml` は同一スキーマに従う:
+
+```yaml
+source: query-specs               # 取得手段の識別子
+query: "login feature design"     # 検索に使用したクエリ（デバッグ用）
+documents:
+  - path: specs/requirements/app_overview.md
+    reason: "アプリ全体の要件定義"
+  - path: specs/design/login_screen_design.md
+    reason: "ログイン画面の設計仕様"
+    lines: "10-50"                 # 関連する行範囲（任意）
+```
+
+### フィールド定義
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `source` | string | ○ | 取得手段（`query-specs`, `query-rules`, `code-exploration`, `doc_structure_fallback` 等）|
+| `query` | string | - | 検索クエリ（デバッグ・再現用）|
+| `documents` | array | ○ | 発見した参照文書のリスト |
+| `documents[].path` | string | ○ | プロジェクトルートからの相対パス |
+| `documents[].reason` | string | ○ | なぜこの文書が関連するか |
+| `documents[].lines` | string | - | 関連する行範囲（例: `"10-50"`）|
+
+### カテゴリ別ファイル
+
+| ファイル | 収集対象 | 主な取得手段 |
+|----------|---------|-------------|
+| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/query-specs` or `.doc_structure.yaml` |
+| `refs/rules.yaml` | 開発ルール・規約 | `/query-rules` or `.doc_structure.yaml` |
+| `refs/code.yaml` | 関連ソースコード・テスト | Glob / Grep 探索 |
+
+### refs/ がない場合の扱い
+
+refs/ ディレクトリ自体が存在しない、または中身が空の場合:
+- コンテキスト収集フェーズがスキップされたことを意味する
+- 後続フェーズは参照文書なしで動作する（最低限の品質でも実行可能）
+
+---
+
+## 7. review 固有ファイル
+
+review オーケストレーターは `refs/` に加えて、レビューパイプライン固有のファイルをセッションに追加する。
+
+### refs.yaml — レビュー参照ファイルリスト
+
+> **注**: review は歴史的経緯により `refs/` ディレクトリではなく `refs.yaml`（単一フラットファイル）を使用する。コンテキスト収集を review スキル自身が行うため、エージェント並列書き込みの必要がないことによる。
+
+レビューパイプライン全体で共有する参照ファイルリスト。`review` がコンテキスト収集フェーズで作成し、以降の全サブスキルはここからファイルパスを取得する。
+
+#### スキーマ
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `target_files` | string[] | 必須 | レビュー対象ファイルパス一覧 |
+| `reference_docs` | object[] | 必須 | 参考文書リスト（`path` フィールドを持つ）|
+| `review_criteria_path` | string | 必須 | レビュー観点ファイルのパス |
+| `related_code` | object[] | 任意 | 関連コードリスト |
 
 **`reference_docs` オブジェクト:**
 
-| フィールド | 型     | 必須 | 説明         |
-| ---------- | ------ | ---- | ------------ |
-| `path`     | string | 必須 | ファイルパス |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `path` | string | 必須 | ファイルパス |
 
 **`related_code` オブジェクト:**
 
-| フィールド | 型     | 必須 | 説明                                                           |
-| ---------- | ------ | ---- | -------------------------------------------------------------- |
-| `path`     | string | 必須 | ファイルパス                                                   |
-| `reason`   | string | 必須 | 関連性の説明（1行）                                            |
-| `lines`    | string | 任意 | 関連する行範囲（例: `"1-30"`）。探索時に特定できた場合のみ記載 |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `path` | string | 必須 | ファイルパス |
+| `reason` | string | 必須 | 関連性の説明（1行） |
+| `lines` | string | 任意 | 関連する行範囲（例: `"1-30"`） |
 
-### 例
+#### 例
 
 ```yaml
 target_files:
@@ -120,24 +405,24 @@ related_code:
     reason: 同種 AI 専用スキルの frontmatter 参考
 ```
 
-### 読み書き
+#### 読み書き
 
-| スキル      | 操作          | タイミング                                         |
-| ----------- | ------------- | -------------------------------------------------- |
-| `review`    | Write（作成） | Phase 1.5 Step 7                                   |
-| `reviewer`  | Read          | Phase 1（参考文書取得）                            |
-| `evaluator` | Read          | Step 1（データ読み込み）                           |
-| `fixer`     | Read          | Step 2（参考文書準備）`session_dir` が渡された場合 |
+| スキル | 操作 | タイミング |
+|--------|------|-----------|
+| `review` | Write（作成） | コンテキスト収集フェーズ |
+| `reviewer` | Read | レビュー実行時 |
+| `evaluator` | Read | データ読み込み時 |
+| `fixer` | Read | 参考文書準備時 |
 
 ---
 
-## review.md
+### review.md — レビュー結果
 
-`reviewer` が書き出すレビュー結果ファイル。Markdown 形式（YAML フロントマターなし）。
+`reviewer` が書き出すレビュー結果。Markdown 形式（YAML フロントマターなし）。
 
 複数サイクル（`--auto N`）では上書きする（最新サイクルのみ保持）。
 
-### フォーマット
+#### フォーマット
 
 ```markdown
 ### 🔴致命的問題
@@ -163,46 +448,40 @@ related_code:
 - 🟢改善: X件
 ```
 
-### 読み書き
+#### 読み書き
 
-| スキル             | 操作                   | タイミング                |
-| ------------------ | ---------------------- | ------------------------- |
-| `reviewer`         | Write（作成 / 上書き） | Phase 2 レビュー完了後    |
-| `evaluator`        | Read                   | Step 1（指摘事項取得）    |
-| `present-findings` | Read                   | Step 0（セッション復元）  |
-| `show-report`      | Read                   | HTML 生成時（オプション） |
+| スキル | 操作 | タイミング |
+|--------|------|-----------|
+| `reviewer` | Write（作成 / 上書き） | レビュー完了後 |
+| `evaluator` | Read | 指摘事項取得時 |
+| `present-findings` | Read | セッション復元時 |
+| `show-report` | Read | HTML 生成時 |
 
 ---
 
-## evaluation.yaml
+### evaluation.yaml — evaluator の判定結果
 
-`evaluator` が各指摘事項を吟味した結果。`--auto` / `--auto-critical` モードでは AI が修正判定を行い、`--interactive` モードでは AI 推奨として記録する（最終判断は人間）。
+`evaluator` が各指摘事項を吟味した結果。auto モードでは AI が修正判定を行い、対話モードでは AI 推奨として記録する（最終判断は人間）。
 
-### スキーマ
+#### スキーマ
 
-| フィールド | 型       | 必須 | 説明                         |
-| ---------- | -------- | ---- | ---------------------------- |
-| `cycle`    | integer  | 必須 | サイクル番号（1 始まり）     |
-| `items`    | object[] | 必須 | 指摘事項ごとの判定結果リスト |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `cycle` | integer | 必須 | サイクル番号（1 始まり）|
+| `items` | object[] | 必須 | 指摘事項ごとの判定結果リスト |
 
 **`items` オブジェクト:**
 
-| フィールド | 型      | 必須 | 説明                             |
-| ---------- | ------- | ---- | -------------------------------- |
-| `id`       | integer | 必須 | plan.yaml の `id` と対応する連番 |
-| `severity` | string  | 必須 | 重大度（後述の許容値参照）       |
-| `title`    | string  | 必須 | 指摘事項のタイトル               |
-| `recommendation` | string  | 必須 | 推奨判定（後述の許容値参照）       |
-| `auto_fixable`   | boolean | 条件 | recommendation: fix の場合のみ必須。一意・局所的・機械的な修正か |
-| `reason`         | string  | 必須 | 判定理由                           |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `id` | integer | 必須 | plan.yaml の `id` と対応する連番 |
+| `severity` | string | 必須 | `critical` / `major` / `minor` |
+| `title` | string | 必須 | 指摘事項のタイトル |
+| `recommendation` | string | 必須 | `fix` / `skip` / `needs_review` |
+| `auto_fixable` | boolean | 条件 | `recommendation: fix` の場合のみ必須 |
+| `reason` | string | 必須 | 判定理由 |
 
-### 許容値
-
-**`severity`:** `critical` / `major` / `minor`
-
-**`recommendation`:** `fix` / `skip` / `needs_review`
-
-### 例
+#### 例
 
 ```yaml
 cycle: 1
@@ -215,70 +494,55 @@ items:
     reason: "明確な仕様不一致、副作用なし。ただし複数の修正案があるため auto_fixable: false"
   - id: 2
     severity: major
-    title: "frontmatter 必須項目不足"
-    recommendation: fix
-    auto_fixable: true
-    reason: "規約違反。修正が一意で副作用なし"
-  - id: 3
-    severity: major
     title: "設計意図が不明瞭な処理"
     recommendation: needs_review
     reason: "意図的な設計の可能性があり、確認が必要"
-  - id: 4
-    severity: minor
-    title: "コメントの表記揺れ"
-    recommendation: skip
-    reason: "既存コードとの一貫性を保つため変更不要"
 ```
 
-### 読み書き
+#### 読み書き
 
-| スキル             | 操作          | タイミング                         |
-| ------------------ | ------------- | ---------------------------------- |
-| `evaluator`        | Write（作成） | Step 3                             |
-| `fixer`            | Read          | 修正対象の確認（`--batch` モード） |
-| `present-findings` | Read          | Step 0（AI 推奨列の表示）          |
-| `show-report`      | Read          | HTML 生成時（オプション）          |
+| スキル | 操作 | タイミング |
+|--------|------|-----------|
+| `evaluator` | Write（作成） | 判定完了後 |
+| `fixer` | Read | 修正対象の確認時 |
+| `present-findings` | Read | AI 推奨の表示時 |
+| `show-report` | Read | HTML 生成時 |
 
 ---
 
-## plan.yaml
+### plan.yaml — 修正プランと進捗状態
 
-修正プランと各指摘事項の進捗状態。`reviewer` が初期作成し、`evaluator` / `present-findings` / `fixer` が更新していく。セッション再開の際はここの `status: pending` 項目から処理を再開する。
+修正プランと各指摘事項の進捗状態。`reviewer` が初期作成し、`evaluator` / `present-findings` / `fixer` が更新していく。セッション再開の際は `status: pending` の項目から処理を再開する。
 
-### スキーマ
+#### スキーマ
 
-| フィールド | 型       | 必須 | 説明                         |
-| ---------- | -------- | ---- | ---------------------------- |
-| `items`    | object[] | 必須 | 指摘事項ごとの修正状態リスト |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `items` | object[] | 必須 | 指摘事項ごとの修正状態リスト |
 
 **`items` オブジェクト:**
 
-| フィールド       | 型       | 必須 | 説明                                                        |
-| ---------------- | -------- | ---- | ----------------------------------------------------------- |
-| `id`             | integer  | 必須 | 1 始まりの連番。evaluation.yaml の `id` と対応              |
-| `severity`       | string   | 必須 | 重大度（後述の許容値参照）                                  |
-| `title`          | string   | 必須 | 指摘事項のタイトル                                          |
-| `status`         | string   | 必須 | 進捗状態（後述の許容値参照）                                |
-| `fixed_at`       | string   | 任意 | 修正完了日時（ISO 8601 形式）。`status: fixed` の場合に記録 |
-| `files_modified` | string[] | 任意 | 修正したファイルパスリスト。`status: fixed` の場合に記録    |
-| `skip_reason`    | string   | 任意 | スキップ理由。`status: skipped` の場合に記録                |
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `id` | integer | 必須 | 1 始まりの連番。evaluation.yaml の `id` と対応 |
+| `severity` | string | 必須 | `critical` / `major` / `minor` |
+| `title` | string | 必須 | 指摘事項のタイトル |
+| `status` | string | 必須 | 進捗状態（下表参照） |
+| `fixed_at` | string | 任意 | 修正完了日時。`status: fixed` の場合 |
+| `files_modified` | string[] | 任意 | 修正ファイル一覧。`status: fixed` の場合 |
+| `skip_reason` | string | 任意 | スキップ理由。`status: skipped` の場合 |
 
-### 許容値
+**`status` の許容値:**
 
-**`severity`:** `critical` / `major` / `minor`
+| 値 | 意味 | 設定者 |
+|----|------|--------|
+| `pending` | 未処理（初期値） | `reviewer` |
+| `in_progress` | 処理中 | `present-findings` |
+| `fixed` | 修正完了 | `fixer` |
+| `skipped` | スキップ | `evaluator` / `present-findings` |
+| `needs_review` | 要確認 | `evaluator` / `present-findings` |
 
-**`status`:**
-
-| 値             | 意味                                    | 設定者                                                |
-| -------------- | --------------------------------------- | ----------------------------------------------------- |
-| `pending`      | 未処理（初期値）                        | `reviewer`                                            |
-| `in_progress`  | 処理中                                  | `present-findings`（ユーザーが修正を選択した瞬間）    |
-| `fixed`        | 修正完了                                | `fixer`                                               |
-| `skipped`      | スキップ（false positive / 設計意図等） | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
-| `needs_review` | 要確認（判断困難）                      | `evaluator`（全モード）/ `present-findings`（対話時・上書き） |
-
-### 例
+#### 例
 
 ```yaml
 items:
@@ -289,42 +553,30 @@ items:
     fixed_at: "2026-03-09T18:35:00Z"
     files_modified:
       - plugins/forge/skills/help/SKILL.md
-    skip_reason: ""
   - id: 2
-    severity: major
-    title: "frontmatter 必須項目不足"
-    status: pending
-    fixed_at: ""
-    files_modified: []
-    skip_reason: ""
-  - id: 3
     severity: major
     title: "設計意図が不明瞭な処理"
     status: needs_review
-    fixed_at: ""
-    files_modified: []
-    skip_reason: ""
-  - id: 4
-    severity: minor
-    title: "コメントの表記揺れ"
-    status: skipped
-    fixed_at: ""
-    files_modified: []
-    skip_reason: "既存コードとの一貫性を保つため変更不要"
 ```
 
-### 読み書き
+#### 読み書き
 
-| スキル             | 操作                                                            | タイミング     |
-| ------------------ | --------------------------------------------------------------- | -------------- |
-| `reviewer`         | Write（初期作成 — 全件 `pending`）                              | Phase 2 完了後 |
-| `evaluator`        | Write（全モード共通で `recommendation` に基づき `status` 初期更新） | Step 4         |
-| `present-findings` | Read / Write（ユーザー判断後に `status` 更新）                  | Step 3.5       |
-| `fixer`            | Write（`status: fixed` + `fixed_at` + `files_modified` を更新） | 修正完了後     |
-| `show-report`      | Read                                                            | HTML 生成時    |
+| スキル | 操作 | タイミング |
+|--------|------|-----------|
+| `reviewer` | Write（初期作成 — 全件 `pending`） | レビュー完了後 |
+| `evaluator` | Write（`recommendation` に基づき `status` 更新） | 判定完了後 |
+| `present-findings` | Read / Write（ユーザー判断後に更新） | 対話時 |
+| `fixer` | Write（`fixed` + `fixed_at` + `files_modified`） | 修正完了後 |
+| `show-report` | Read | HTML 生成時 |
 
 ---
 
-## 付記: `id` の整合性
+## 付記
+
+### `id` の整合性
 
 `review.md` の指摘事項 → `plan.yaml` の `id` → `evaluation.yaml` の `id` は同一の連番で対応している。`reviewer` が `plan.yaml` を初期作成する際に採番し、`evaluator` はその `id` を参照して `evaluation.yaml` を作成する。
+
+### 通信フローの共通パターン
+
+データフロー図は設計書を参照: `docs/specs/forge/design/session_management_design.md` §4.3

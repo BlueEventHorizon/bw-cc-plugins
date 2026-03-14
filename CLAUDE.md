@@ -73,6 +73,16 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 
 ユーザーが明示的に呼び出す設計（start-X からの自動呼び出しは行わない）。
 
+### start-implement スキル（タスク実行オーケストレーター）
+
+`/forge:start-implement` (user-invocable) — 計画書からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を一連で実行する。
+
+1. 計画書の読み込みとタスク選択（優先度順 or `--task` 指定）
+2. コンテキスト収集（rules/code agent 並列起動）
+3. task-executor agent に実装を委譲（`task_execution_guide.md` を参照）
+4. `/forge:review code` でレビュー
+5. 計画書のチェックマーク更新（☐ → ☑）
+
 ### レビュー観点の3階層フォールバック
 
 review スキルがレビュー観点を探索する優先順位：

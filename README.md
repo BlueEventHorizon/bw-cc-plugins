@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin    | Version | Description                                                                                                   |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.17  | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **forge** | 0.0.18  | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 
@@ -51,6 +51,26 @@ claude plugin update forge@bw-cc-plugins --scope local
 ## forge
 
 AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, auto-fix issues, and finalize with quality gates.
+
+### Feature
+
+forge manages documents per **Feature** — a grouped unit of related specifications for development.
+
+| Development Pattern | How Features are used |
+|--------------------|-----------------------|
+| Incremental development | Separate new capabilities from the existing main spec as individual Features |
+| Agile development | Develop and deliver per Feature in each iteration |
+| Small projects | Treat the entire project as a single Feature |
+
+Skills like `create-requirements`, `create-design`, `create-plan`, and `start-implement` operate on a Feature. Each Feature has its own requirements, design docs, and plan under a shared directory:
+
+```
+specs/
+  {feature}/
+    requirements/   # Requirements documents
+    design/         # Design documents
+    plan/           # Implementation plan
+```
 
 ### Usage
 
@@ -121,6 +141,7 @@ AI-powered document lifecycle tool. Create requirements/design/plan docs, review
 | `create-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
 | `create-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
 | `create-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
+| `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
 | `show-report`         | Yes            | Generates an HTML progress report from a review session directory and opens it in the browser                                                 |
@@ -161,17 +182,21 @@ The `setup` skill scans project directories for markdown files, classifies them 
 See [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) for the full schema specification.
 
 ```yaml
-version: "1.0"
-
-specs:
-  requirement:
-    paths: [specs/requirements/]
-  design:
-    paths: [specs/design/]
+# doc_structure_version: 2.0
 
 rules:
-  rule:
-    paths: [rules/]
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+
+specs:
+  root_dirs:
+    - "docs/specs/*/design/"
+    - "docs/specs/*/requirement/"
+  doc_types_map:
+    "docs/specs/*/design/": design
+    "docs/specs/*/requirement/": requirement
 ```
 
 ## xcode

@@ -1,5 +1,8 @@
 # forge レビューパイプライン セッションディレクトリ設計
 
+> **⚠️ 廃止**: 本設計書の内容は `plugins/forge/docs/session_format.md` に統合されました。
+> 正規の仕様は統合先を参照してください。本ファイルは設計判断の経緯として保持しています。
+
 ## Context
 
 ### 問題
@@ -24,13 +27,13 @@
 ### パス
 
 ```
-.claude/.temp/{YYYYMMDD-HHmmss}-{random6}/
+.claude/.temp/{skill_name}-{random6}/
 ```
 
-例: `.claude/.temp/20260309-183000-a3f7b2/`
+例: `.claude/.temp/review-a3f7b2/`
 
-- タイムスタンプ: 人間可読・ソート可能
-- 6文字ランダム hex: 同一秒に複数起動しても衝突しない
+- スキル名: どのスキルのセッションか一目でわかる
+- 6文字ランダム hex: 同一スキルの複数起動でも衝突しない
 - `.gitignore` に `.claude/.temp/` を追加（要変更）
 
 ### ライフサイクル

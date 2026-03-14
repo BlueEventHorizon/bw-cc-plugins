@@ -36,19 +36,26 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 `.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
 
-- **存在しない** → `/forge:setup` を起動を促してエラー終了:
+- **存在しない** → AskUserQuestion を使用して確認する:
   ```
-  Error: .doc_structure.yaml が見つかりません。
-  /forge:setup を実行してから再試行してください。
+  .doc_structure.yaml が見つかりません。
+  /forge:setup を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup を実行しますか？
   ```
+  - **はい** → `/forge:setup` を呼び出し、完了後に Step 2 へ進む
+  - **いいえ** → 終了
 - **存在する** → Step 2 へ
 
 ### Step 2: 出力先ディレクトリの解決
 
-`.doc_structure.yaml` の `specs.requirement.paths` から出力先ディレクトリを取得する。
+`doc-structure` スキルのスクリプトで出力先ディレクトリを取得する。
 
-- 設定あり → そのパスを使用（例: `specs/requirements/`）
-- 設定なし → `specs/{feature}/requirements/` をデフォルトとして使用
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type requirement
+```
+
+- 結果あり → そのパスを使用（例: `specs/requirements/`）
+- 結果なし → `specs/{feature}/requirements/` をデフォルトとして使用
 
 ### Step 3: プロジェクト固有情報の取得 [MANDATORY]
 
@@ -58,32 +65,38 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/defaults/spec_design_boundary_guide.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 
-次に、`/query-rules` Skill が利用可能な場合、以下を実行してプロジェクト固有情報を追加取得する:
+### Step 4: Figma MCP の利用可否確認
 
-```
-/query-rules 要件定義書を作成する
-```
+利用可能なツール一覧に `mcp__figma` 等が存在するかを確認し、結果をコンテキストに保持する。
 
-セマンティック検索により、ワークフロー指示・フォーマット定義・要件記述ルール等、要件定義書作成に関連するすべての規則を取得する。取得した内容はベースラインを**上書き・補完**する形で適用する。
-
-`/query-rules` が利用不可の場合は `.doc_structure.yaml` の `rules` パスから `**/spec_format*` `**/requirement*` を Glob 探索して補完する。
-
+- **利用可能** → `figma_available: true`
+- **利用不可** → `figma_available: false`
 
 ---
 
 ## モード選択
 
-`--mode` 未指定時、AskUserQuestion を使用して3択を提示する:
+`--mode` 未指定時、AskUserQuestion を使用して選択肢を提示する。
+
+`figma_available: true` の場合:
 
 ```
 どの方法で要件定義を開始しますか？
 1. interactive         — ゼロから対話しながら要件を固める
 2. reverse-engineering — 既存アプリのソースコードを解析して要件を抽出
-3. from-figma          — Figmaデザインファイルから要件とデザイントークンを作成（Figma MCP 必須）
+3. from-figma          — Figmaデザインファイルから要件とデザイントークンを作成
 ```
 
-`from-figma` 選択時: Figma MCP の利用可否を確認する（利用可能なツール一覧に `mcp__figma` 等が存在するか）。
-未インストール時はエラーで終了:
+`figma_available: false` の場合:
+
+```
+どの方法で要件定義を開始しますか？
+1. interactive         — ゼロから対話しながら要件を固める
+2. reverse-engineering — 既存アプリのソースコードを解析して要件を抽出
+3. from-figma          — Figmaデザインファイルから要件とデザイントークンを作成（Figma MCP 未接続・利用不可）
+```
+
+`--mode from-figma` が指定されていて `figma_available: false` の場合はエラーで終了:
 
 ```
 Error: Figma MCP が必要です。
@@ -103,9 +116,110 @@ interactive または reverse-engineering を使用してください。
    - 引数で指定済み → そのまま使用
    - 未指定 → AskUserQuestion を使用して入力を求める
 
-3. **既存資産の収集**（`--add` 時のみ）:
-   - DocAdvisor（`/query-specs`）が利用可能 → 既存要件・設計書を取得
-   - 利用不可 → `.doc_structure.yaml` の `specs` パスから Feature に関連するドキュメントを Glob 探索
+---
+
+## セッション管理 [MANDATORY]
+
+残存セッション検出:
+
+```bash
+PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-requirements
+```
+
+- `status: "none"` → セッション作成へ
+- `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
+  - **削除** → `"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
+  - **残す** → 残存ディレクトリを無視して新規セッション作成へ
+
+セッション作成:
+
+```bash
+"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+  --skill create-requirements \
+  --feature "{feature}" \
+  --mode "{interactive|reverse-engineering|from-figma}" \
+  --output-dir "{出力先ディレクトリ}"
+```
+
+JSON 出力の `session_dir` をコンテキストに保持する。
+
+---
+
+## コンテキスト収集フェーズ [MANDATORY]
+
+モードに応じた agent を **Agent ツールで並列起動** し、コンテキストを収集する。
+各 agent には `${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md` のパスと `session_dir` を渡す。
+
+### モード別起動マトリクス
+
+| agent | interactive (新規) | interactive (--add) | reverse-engineering | from-figma |
+|-------|--------------------|---------------------|---------------------|------------|
+| rules agent | ○ | ○ | ○ | ○ |
+| specs agent | - | ○ | - | - |
+| code agent | - | - | ○ | - |
+
+### 各 agent への指示
+
+**rules agent（全モード）**:
+
+```yaml
+session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 実装ルール調査
+feature: "{feature}"
+skill_type: "要件定義書作成"
+```
+
+**specs agent（--add 時のみ）**:
+
+```yaml
+session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 仕様書調査
+feature: "{feature}"
+skill_type: "要件定義書作成"
+```
+
+**code agent（reverse-engineering 時のみ）**:
+
+```yaml
+session_dir: {session_dir}
+spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
+tasks:
+  - 既存コード調査
+feature: "{feature}"
+skill_type: "要件定義書作成"
+```
+
+### 失敗時の扱い
+
+- agent がエラー終了 → 該当カテゴリの refs/ ファイルなしで後続工程に進む
+- agent が空結果 → 正常扱い
+- 失敗した agent がある場合、refs/ 統合表示でその旨を報告する
+
+---
+
+## refs/ 統合・表示 [MANDATORY]
+
+全 agent 完了後、`{session_dir}/refs/` 内のファイルを Read し表示する:
+
+```
+### ✅ コンテキスト収集完了
+
+**rules (N件)**
+- `rules/requirement_format.md` — 要件書フォーマット
+
+**specs (N件)**（--add 時のみ）
+- `specs/{feature}/requirements/xxx.md` — 既存要件定義書
+
+**code (N件)**（reverse-engineering 時のみ）
+- `src/xxx/YYY.swift` — ソースコード
+```
+
+5件以下は全件表示、6件以上は先頭3件+省略。
 
 ---
 
@@ -172,10 +286,13 @@ interactive または reverse-engineering を使用してください。
 
 ### Phase 1: ソースコード解析 [MANDATORY]
 
+`{session_dir}/refs/code.yaml` を Read し、収集済みのソースコード一覧を起点に解析する:
+
+- refs/code.yaml に記載されたファイルを Read して全体構造を把握
 - プロジェクト構造の把握（ディレクトリ構成）
 - 画面・コンポーネントの列挙（View/画面クラスを特定）
 - ナビゲーション構造の特定
-- 利用可能なツールを最大限活用（MCPツール、Glob、Grep 等）
+- 必要に応じて追加の Grep/Glob 探索で補完
 
 ### Phase 2: 要件抽出 [MANDATORY]
 
@@ -198,7 +315,7 @@ interactive または reverse-engineering を使用してください。
 
 ## Mode: from-figma（Figmaデザイン取り込み）
 
-**事前条件**: Figma MCP が利用可能であること（未インストール時は前提確認フェーズでエラー終了）。
+**事前条件**: Figma MCP が利用可能であること（前提確認フェーズで `figma_available: false` と判定された場合はモード選択前後でエラー終了）。
 
 ### Phase 1: Figmaアクセス確認
 
@@ -230,9 +347,19 @@ interactive または reverse-engineering を使用してください。
 
 ---
 
-## 完了後の案内
+## 完了処理
 
-文書作成が完了したら、作成したファイルパスとともに次のステップを案内する:
+### セッション削除
+
+全フェーズ正常完了後、セッションディレクトリを削除する:
+
+```bash
+rm -rf {session_dir}
+```
+
+### 完了案内
+
+作成したファイルパスとともに次のステップを案内する:
 
 ```
 要件定義書を作成しました:
@@ -243,5 +370,3 @@ interactive または reverse-engineering を使用してください。
   /forge:review requirement {作成ファイルパス} --auto 3   # 3サイクル徹底修正
   /forge:review requirement {作成ファイルパス}            # 対話モードでレビュー
 ```
-
----

@@ -278,7 +278,7 @@ fixer に修正を委譲する際、以下を**漏れなく**渡すこと：
 | session_dir                | 必須   | $ARGUMENTS で受け取ったパス         |
 | 指摘事項の詳細             | 必須   | review.md から該当箇所を抜粋        |
 | モード                     | 必須   | `--single` または `--batch`         |
-| 対象項目の id              | 必須   | plan.yaml 更新に使う                |
+| 対象項目の id              | 必須   | 指摘事項の詳細テキスト冒頭に `id: {id}` の形式で含めて渡す（fixer が plan.yaml の status 更新に使用） |
 | ユーザーが選択した修正方針 | あれば | AskUserQuestion の回答（A案/B案等） |
 
 > fixer は session_dir を受け取り、refs.yaml から target_files / reference_docs / related_code を自前で読み込む。個別に渡す必要はない。

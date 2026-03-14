@@ -19,7 +19,10 @@
       "Bash(open /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/.temp/20260313-012654-f5ff74/report.html)",
       "Bash(find ~/.claude/plugins/cache/anthropic-agent-skills -path \"*/eval-viewer/*\" -o -path \"*/eval_viewer/*\" 2>/dev/null | sort)",
       "Bash(find ~/.claude/plugins/cache/anthropic-agent-skills -path \"*/assets/*eval*.html\" -o -path \"*/eval*.html\" 2>/dev/null | sort)",
-      "Bash(open /tmp/forge-test-session/report.html)"
+      "Bash(open /tmp/forge-test-session/report.html)",
+      "Bash(grep -n \"mkdir -p.*refs\" plugins/forge/skills/*/SKILL.md)",
+      "Bash(\\\\ echo:*)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline"
     ]
   },
   "enabledPlugins": {},
