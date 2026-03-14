@@ -83,6 +83,16 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 4. `/forge:review code` でレビュー
 5. 計画書のチェックマーク更新（☐ → ☑）
 
+### setup-version-config / bump スキル（バージョン管理）
+
+`/forge:setup-version-config` (user-invocable) — プロジェクトをスキャンし `.version-config.yaml` を対話的に生成・更新する。
+`scan_version_targets.py` がバージョンファイル（plugin.json / package.json / Cargo.toml 等）・README・CHANGELOG を検出し、AI が設定草案を生成してユーザーが確認する。
+プロジェクト構造変更時（プラグイン追加・README フォーマット変更など）に再実行して設定を更新する。
+
+`/forge:bump` (user-invocable) — `.version-config.yaml` の設定に基づきバージョンを一括更新する。
+`patch` / `minor` / `major` または直接バージョン指定に対応。CHANGELOG への git log 自動反映・git commit/tag 作成オプション付き。
+`.version-config.yaml` が存在しない場合は `/forge:setup-version-config` の実行を案内する。
+
 ### レビュー観点の3階層フォールバック
 
 review スキルがレビュー観点を探索する優先順位：
