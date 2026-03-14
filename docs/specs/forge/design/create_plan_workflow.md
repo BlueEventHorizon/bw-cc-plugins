@@ -26,29 +26,29 @@
 flowchart TD
     User([ユーザー]) --> ORCHESTRATOR
 
-    ORCHESTRATOR["/forge:create-plan\nオーケストレーター"] --> PREREQ
+    ORCHESTRATOR["/forge:create-plan<br>オーケストレーター"] --> PREREQ
 
-    PREREQ["前提確認\n.doc_structure.yaml\nFeature名\nモード判定"] --> CONTEXT
+    PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>モード判定"] --> CONTEXT
 
-    CONTEXT["コンテキスト収集\n（並列）"] --> MODE_CHECK
+    CONTEXT["コンテキスト収集<br>（並列）"] --> MODE_CHECK
 
     subgraph CONTEXT_AGENTS["コンテキスト収集 agent"]
-        A1["specs agent\n要件定義書+設計書取得"] --> REFS_SPECS["refs/specs.yaml"]
-        A2["rules agent\nルール取得"] --> REFS_RULES["refs/rules.yaml"]
+        A1["specs agent<br>要件定義書+設計書取得"] --> REFS_SPECS["refs/specs.yaml"]
+        A2["rules agent<br>ルール取得"] --> REFS_RULES["refs/rules.yaml"]
     end
 
     MODE_CHECK{モード?} -->|"新規作成"| CREATE
     MODE_CHECK -->|"更新"| UPDATE_CHECK
 
-    UPDATE_CHECK["既存計画書の確認\n要件・設計反映状況\n未着手タスク把握"] --> CREATE
+    UPDATE_CHECK["既存計画書の確認<br>要件・設計反映状況<br>未着手タスク把握"] --> CREATE
 
-    CREATE["計画書作成\nタスク抽出・分割\nフォーマット適用"] --> QA
+    CREATE["計画書作成<br>タスク抽出・分割<br>フォーマット適用"] --> QA
 
-    QA["完全性チェック\nトレーサビリティ"] --> AI_REVIEW
+    QA["完全性チェック<br>トレーサビリティ"] --> AI_REVIEW
 
-    AI_REVIEW["/forge:review plan\nAIレビュー"] --> HUMAN_REVIEW
+    AI_REVIEW["/forge:review plan<br>AIレビュー"] --> HUMAN_REVIEW
 
-    HUMAN_REVIEW{"人間レビュー\n（AskUserQuestion）"} -->|"OK"| TOC
+    HUMAN_REVIEW{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| TOC
     HUMAN_REVIEW -->|"修正"| CREATE
 
     TOC["/create-specs-toc"] --> End([完了])

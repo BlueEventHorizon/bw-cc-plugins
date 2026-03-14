@@ -27,32 +27,32 @@
 flowchart TD
     User([ユーザー]) --> ORCHESTRATOR
 
-    ORCHESTRATOR["/forge:create-design\nオーケストレーター"] --> PREREQ
+    ORCHESTRATOR["/forge:create-design<br>オーケストレーター"] --> PREREQ
 
-    PREREQ["前提確認\n.doc_structure.yaml\nFeature名\n出力先\nモード判定"] --> CONTEXT
+    PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>出力先<br>モード判定"] --> CONTEXT
 
-    CONTEXT["コンテキスト収集\n（並列）"] --> DESIGN
+    CONTEXT["コンテキスト収集<br>（並列）"] --> DESIGN
 
     subgraph CONTEXT_AGENTS["コンテキスト収集 agent"]
-        A1["specs agent\n要件定義書取得"] --> REFS_SPECS["refs/specs.yaml"]
-        A2["rules agent\nルール取得"] --> REFS_RULES["refs/rules.yaml"]
-        A3["code agent\n既存実装探索"] --> REFS_CODE["refs/code.yaml"]
+        A1["specs agent<br>要件定義書取得"] --> REFS_SPECS["refs/specs.yaml"]
+        A2["rules agent<br>ルール取得"] --> REFS_RULES["refs/rules.yaml"]
+        A3["code agent<br>既存実装探索"] --> REFS_CODE["refs/code.yaml"]
     end
 
-    DESIGN["設計書作成\n（ファイルごと）"] --> REVIEW_ASK
+    DESIGN["設計書作成<br>（ファイルごと）"] --> REVIEW_ASK
 
-    REVIEW_ASK{"人間レビュー\n（AskUserQuestion）"} -->|"OK"| NEXT_FILE
+    REVIEW_ASK{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| NEXT_FILE
     REVIEW_ASK -->|"修正"| DESIGN
 
     NEXT_FILE{次のファイル?} -->|"あり"| DESIGN
     NEXT_FILE -->|"なし"| AI_REVIEW
 
-    AI_REVIEW["/forge:review design\nAIレビュー"] --> HUMAN_REVIEW2
+    AI_REVIEW["/forge:review design<br>AIレビュー"] --> HUMAN_REVIEW2
 
-    HUMAN_REVIEW2{"人間レビュー\n（AskUserQuestion）"} -->|"OK"| QA
+    HUMAN_REVIEW2{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| QA
     HUMAN_REVIEW2 -->|"修正"| DESIGN
 
-    QA["品質保証\n完全性チェック\n/create-specs-toc"] --> End([完了])
+    QA["品質保証<br>完全性チェック<br>/create-specs-toc"] --> End([完了])
 ```
 
 ---
