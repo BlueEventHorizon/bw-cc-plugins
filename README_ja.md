@@ -119,7 +119,7 @@ specs/
 /forge:review code src/ --claude
 
 # .doc_structure.yaml を対話的に作成・更新
-/forge:setup
+/forge:setup-doc-structure
 
 # 要件定義書を対話的に作成
 /forge:create-requirements
@@ -137,7 +137,7 @@ specs/
 | スキル                | ユーザー呼び出し | 説明                                                                                                                    |
 | --------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `review`              | 可能             | メインのレビュースキル。種別判定、参考文書収集、レビュー実行                                                            |
-| `setup`               | 可能             | プロジェクトのディレクトリをスキャン・分類し、`.doc_structure.yaml` を生成                                              |
+| `setup-doc-structure`  | 可能             | プロジェクトのディレクトリをスキャン・分類し、`.doc_structure.yaml` を生成                                              |
 | `create-requirements` | 可能             | 対話・リバースエンジニアリング・Figmaの3モードで要件定義書を作成                                                        |
 | `create-design`       | 可能             | 要件定義書から設計書を作成。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用   |
 | `create-plan`         | 可能             | 設計書から計画書を作成・更新。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用 |
@@ -175,7 +175,7 @@ specs/
 
 ### 文書構造管理 (.doc_structure.yaml)
 
-`setup` スキルがプロジェクトのディレクトリをスキャンして Markdown ファイルを検出し、対話的に分類して `.doc_structure.yaml` を生成します。forge はこのファイルを直接読み込んで、レビュー・修正時の参考文書を収集します。
+`setup-doc-structure` スキルがプロジェクトのディレクトリをスキャンして Markdown ファイルを検出し、対話的に分類して `.doc_structure.yaml` を生成します。forge はこのファイルを直接読み込んで、レビュー・修正時の参考文書を収集します。
 
 完全なスキーマ仕様は [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) を参照してください。
 

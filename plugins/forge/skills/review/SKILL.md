@@ -74,7 +74,7 @@ user-invocable: true
 
 `.doc_structure.yaml` がプロジェクトルートに存在するか確認する。
 
-- **存在しない** → `/forge:setup` を起動して作成を促す
+- **存在しない** → `/forge:setup-doc-structure` を起動して作成を促す
   - 作成されなかった → エラー終了
 
 #### Step 2: target_files の解決
@@ -86,7 +86,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 
 - `status: "resolved"` → `target_files` を確定し Step 3 へ
 - `status: "needs_input"` → `questions` を AskUserQuestion を使用して確認し、回答を得てから再実行
-- `status: "error"` → `/forge:setup` を起動し `.doc_structure.yaml` の作成を促す
+- `status: "error"` → `/forge:setup-doc-structure` を起動し `.doc_structure.yaml` の作成を促す
 
 解決完了後、以下を出力する（6件以上は先頭3件 + `... 他N件`）:
 

@@ -39,9 +39,9 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 - **存在しない** → AskUserQuestion を使用して確認する:
   ```
   .doc_structure.yaml が見つかりません。
-  /forge:setup を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup を実行しますか？
+  /forge:setup-doc-structure を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup-doc-structure を実行しますか？
   ```
-  - **はい** → `/forge:setup` を呼び出し、完了後に Step 2 へ進む
+  - **はい** → `/forge:setup-doc-structure` を呼び出し、完了後に Step 2 へ進む
   - **いいえ** → 終了
 - **存在する** → Step 2 へ
 

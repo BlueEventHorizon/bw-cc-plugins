@@ -1,5 +1,5 @@
 ---
-name: setup
+name: setup-doc-structure
 description: |
   forge スキルがプロジェクト文書を参照するための .doc_structure.yaml を対話的に生成する。
   初回セットアップ時または文書構造変更時に実行。他の forge スキル（review/create-requirements 等）の前提条件。
@@ -8,7 +8,7 @@ user-invocable: true
 argument-hint: ""
 ---
 
-# /forge:setup
+# /forge:setup-doc-structure
 
 ## 概要
 
