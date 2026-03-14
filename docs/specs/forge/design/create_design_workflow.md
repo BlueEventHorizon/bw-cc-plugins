@@ -1,4 +1,4 @@
-# forge 設計書作成パイプライン 設計書
+# forge 設計書作成ワークフロー 設計書
 
 > 対象プラグイン: forge | スキル: `/forge:create-design`
 
@@ -102,7 +102,7 @@ flowchart TD
 
 | Step | 内容 | 実行者 |
 |------|------|--------|
-| 3.1 | `/forge:review design` 実行 | subagent（review パイプライン）|
+| 3.1 | `/forge:review design` 実行 | subagent（review ワークフロー）|
 | 3.2 | 人間レビュー確認（AskUserQuestion）| orchestrator |
 
 ### Phase 4: 品質保証

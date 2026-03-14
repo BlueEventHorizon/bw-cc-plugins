@@ -27,12 +27,10 @@ claude --plugin-dir ./plugins/forge
 
 ```bash
 # レビュー対象の自動検出
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
+python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
 
 # ディレクトリスキャン（メタデータ JSON 出力）
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
+python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 ```
 
 ## Architecture

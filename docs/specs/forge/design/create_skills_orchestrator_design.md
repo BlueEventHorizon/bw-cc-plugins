@@ -6,7 +6,7 @@
 | -------- | --------------------------------------------------------------- |
 | 設計ID   | DES-010                                                         |
 | 関連要件 | FNC-001, FNC-002, FNC-003, FNC-004 (orchestrator_pattern.md)    |
-| 関連設計 | orchestrator_session_protocol.md（廃止済み・設計経緯参照のみ）, forge_review_pipeline.md（廃止済み・設計経緯参照のみ） |
+| 関連設計 | orchestrator_session_protocol.md（廃止済み・設計経緯参照のみ） |
 | 作成日   | 2026-03-13                                                      |
 | 対象     | create-design, create-plan, create-requirements                 |
 
@@ -541,8 +541,7 @@ sequenceDiagram
 `session_manager.py` スクリプトに委譲する。詳細は DES-011 §5 を参照。
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --skill create-design \
   --feature "{feature}" \
   --mode "{new|update}" \

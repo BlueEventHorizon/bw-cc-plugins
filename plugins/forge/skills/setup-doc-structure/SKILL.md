@@ -37,8 +37,7 @@ argument-hint: ""
 - フォールバック: `classify_dirs.py` を一般的な場所から検索
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
 ```
 
 スキャン結果（JSON）を取得する。`readme_only: true`（`classify_dirs.py` が出力するメタデータフラグ）のディレクトリは分類対象外としてスキップする。

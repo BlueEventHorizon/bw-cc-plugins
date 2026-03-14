@@ -1,15 +1,17 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-13T09:09:33Z
-file_count: 10
+generated_at: 2026-03-14T09:52:02Z
+file_count: 12
 checksums:
-  docs/specs/forge/design/create_design_pipeline.md: 13c58db228600e4b278e16d3fbf482fcd82731edca393eae73ba77b25bee628f
-  docs/specs/forge/design/create_plan_pipeline.md: 0ad0afbe1f5562ec85aae10516b2dc9721b0f9807601dc1d52418eb071b3ed85
-  docs/specs/forge/design/create_requirements_pipeline.md: 3d2a42b206d64835e51586b94d8e81e9d30052408881cb1491efb1f86eb3f3d8
-  docs/specs/forge/design/create_skills_orchestrator_design.md: b07ffe661686c34ff2e009924b3a430a1d20330c10aab4c488fd136c8e438a53
-  docs/specs/forge/design/doc_structure_format.md: 6f34414978be8b0823911c46bccd94b857477b548fb770e3c716411a4a805fac
-  docs/specs/forge/design/forge_review_pipeline.md: b4f0fccf9ef57872d653efe800f936e7670de27403a0bcf0e49cfd1c91f6381f
-  docs/specs/forge/design/orchestrator_session_protocol.md: 44a9674f3cd54e261fced9eea7f4f78b95d68221628259b83c35b3c1d5fbcbf3
-  docs/specs/forge/design/review_session_design.md: 862b3c1daf0e23451619d5a7e5b2bf6977ddd885cf8a4ab7a86a17030be3c317
-  docs/specs/forge/plan/forge_plan.md: 9362e89c5784871cda74b6fe58a16302952f64bc19517d44b0baa5d2b1b21054
-  docs/specs/forge/requirement/orchestrator_pattern.md: d2a4c2d4f4d19b3e08ece94b51163e9370d23ee646231a5822095d22e4dd8101
+  docs/specs/forge/design/context_gathering_design.md: d2e6f6978a97352abc308220dd08677e6f140db12e73391b6549ec7093cc12ec
+  docs/specs/forge/design/create_design_workflow.md: 6a82b19ceef686f9c30f04d6a4d1e93358449d8cf7feb58b458584f782013c40
+  docs/specs/forge/design/create_plan_workflow.md: 0a2db3180a5127342ce9c9047cf5daccb0d19db5e546bb09c481a86edbe299ee
+  docs/specs/forge/design/create_requirements_workflow.md: caf0e463cafc7329500ed706076f939bcdc4c787b91bd1caebc0e06e9e9dfdbb
+  docs/specs/forge/design/create_skills_orchestrator_design.md: 704b72e1fa5c0102449e664d74782ec4418eb065c4e596be5c290e73f6ff481d
+  docs/specs/forge/design/doc_structure_format.md: a8cb5fda460e302d31fc346bf9cd6b3c380993f996494a6253a8d97fe6f55b4d
+  docs/specs/forge/design/doc_structure_version_management.md: aee3f91a1b3444f8aa46c523e5ef3268fe16ef151f6c61a00f64eab689c1f12f
+  docs/specs/forge/design/orchestrator_session_protocol.md: 1dbe878363875c13ee1291835a8ab759f89389ab171230274d32bc16a704b35d
+  docs/specs/forge/design/review_session_design.md: 125ba3c435759f4eb0f5ccd3b6731cd6b1db0b13c6d172eb52884062acd2787e
+  docs/specs/forge/design/session_management_design.md: 3a2b7050d4e68afa6840dc7931d97a62cd34e6715f3595f2e95449361571f5ba
+  docs/specs/forge/plan/forge_plan.md: ba60ee7a987f415cfce94e5480d65f9d2fbfab14c0299336f144e1882f6370a8
+  docs/specs/forge/requirement/orchestrator_pattern.md: d28ff35e906d8edcd11847bd6881e6b5224915c89d5da738591701e158229017

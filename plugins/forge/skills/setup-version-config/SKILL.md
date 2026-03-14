@@ -39,8 +39,7 @@ argument-hint: ""
 以下のコマンドでバージョン関連ファイルを検出する:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/scripts/scan_version_targets.py"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/scan_version_targets.py"
 ```
 
 スキャン結果（JSON）を取得し、以下の情報を確認する:

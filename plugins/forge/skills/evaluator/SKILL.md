@@ -110,7 +110,7 @@ argument-hint: "(内部使用)"
 - `recommendation: skip` → `status: skipped` / `skip_reason` を記録
 - `recommendation: needs_review` → `status: needs_review`
 
-> **interactive モードの場合**: evaluator の更新はあくまで初期推奨状態。present-findings がユーザーの最終判断で上書き更新する（`forge_review_pipeline.md` §4 参照）。
+> **interactive モードの場合**: evaluator の更新はあくまで初期推奨状態。present-findings がユーザーの最終判断で上書き更新する（`review/SKILL.md` §ワークフロー 参照）。
 > そのため evaluator の plan.yaml 更新と present-findings による上書きは意図的な二段階更新であり、競合ではない。
 
 ### Step 5: 次サイクル判定
