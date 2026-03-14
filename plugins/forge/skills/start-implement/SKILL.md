@@ -4,7 +4,7 @@ description: |
   計画書のタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行する。
   トリガー: "実装開始", "タスク実行", "start implement", "/forge:start-implement"
 user-invocable: true
-argument-hint: "<feature> [--task TASK-ID] [--parallel]"
+argument-hint: "<feature> [--task TASK-ID[,TASK-ID,...]]"
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 ---
 
@@ -15,14 +15,13 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 ## コマンド構文
 
 ```
-/forge:start-implement [feature] [--task TASK-ID] [--parallel]
+/forge:start-implement [feature] [--task TASK-ID[,TASK-ID,...]]
 ```
 
 | 引数 | 内容 |
 | --- | --- |
 | feature | Feature 名（省略時は対話で確定） |
-| --task | 実行するタスクID（省略時は優先度順で自動選択） |
-| --parallel | 独立タスクを並列実行（省略時は逐次） |
+| --task | 実行するタスクID（カンマ区切りで複数指定可。省略時は優先度順で自動選択） |
 
 ---
 
@@ -69,8 +68,12 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ### 2.1 タスクの選択
 
-**`--task` 指定あり**:
+**`--task` 指定あり（単一）**:
 - 指定されたタスクを実行対象とする
+
+**`--task` 指定あり（複数: カンマ区切り）**:
+- 指定された全タスクを実行対象とする
+- 例: `--task TASK-001,TASK-003`
 
 **`--task` 指定なし**:
 1. 全タスクを優先度順（数値が大きい順）で確認
@@ -78,17 +81,19 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ### 2.2 実行可能性の確認
 
-選択したタスクについて以下を確認:
+選択した全タスクについて以下を確認:
 
 - **依存関係チェック**: 「依存関係」列の全タスクが完了済み（☑）か確認。未完了の依存がある場合は AskUserQuestion で確認
 - **設計書の存在**: 設計ID ≠ `-` の場合は対応する設計書が存在するか確認
 - **タスクグループの確認**: グループ内タスクはグループ先頭から順次実行。グループ途中からの実行は不可
 
-### 2.3 並列実行の判定（`--parallel` 指定時）
+### 2.3 複数タスク指定時の依存関係チェック [MANDATORY]
 
-依存関係がなく、同一優先度の未完了タスクを並列実行候補として識別する。
+複数タスクが指定された場合、タスク間の相互依存を検証する:
 
-AskUserQuestion: 「以下のタスクを並列実行します。よろしいですか？」とタスクリストを提示。
+1. 指定されたタスク同士で依存関係がないか確認
+2. **依存関係あり** → エラー終了:「TASK-002 は TASK-001 に依存しているため並列実行できません。逐次実行してください。」
+3. **依存関係なし** → AskUserQuestion:「以下のタスクを並列実行します。よろしいですか？」とタスクリストを提示
 
 ---
 
@@ -335,7 +340,7 @@ executor が FAILURE を報告した場合:
 次のタスク候補: {次の最高優先度タスクID} — {タイトル}
 
 次のステップ:
-  /forge:start-implement {feature}                    # 次のタスクを実行
-  /forge:start-implement {feature} --task {TASK-ID}   # 特定タスクを実行
-  /forge:start-implement {feature} --parallel         # 独立タスクを並列実行
+  /forge:start-implement {feature}                              # 次のタスクを実行
+  /forge:start-implement {feature} --task {TASK-ID}             # 特定タスクを実行
+  /forge:start-implement {feature} --task {ID1},{ID2},{ID3}     # 複数タスクを並列実行
 ```
