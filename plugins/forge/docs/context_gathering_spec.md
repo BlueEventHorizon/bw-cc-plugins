@@ -96,8 +96,7 @@ target_description: "..."            # feature がない場合に使用
 `/query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
 ```
 
 JSON 出力の `specs` キーからファイルパス一覧を取得し、関連性を判断する。
@@ -146,8 +145,7 @@ documents:
 `doc-structure` スキルのスクリプトを使用:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
 ```
 
 JSON 出力の `rules` キーからファイルパス一覧を取得する。

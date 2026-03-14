@@ -40,9 +40,9 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 - **存在しない** → AskUserQuestion を使用して確認する:
   ```
   .doc_structure.yaml が見つかりません。
-  /forge:setup を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup を実行しますか？
+  /forge:setup-doc-structure を実行してプロジェクト構造を定義する必要があります。今すぐ /forge:setup-doc-structure を実行しますか？
   ```
-  - **はい** → `/forge:setup` を呼び出し、完了後に次のステップへ進む
+  - **はい** → `/forge:setup-doc-structure` を呼び出し、完了後に次のステップへ進む
   - **いいえ** → 終了
 - **存在する** → 次のステップへ
 
@@ -52,8 +52,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 
 - `doc-structure` スキルのスクリプトで Feature を検索:
   ```bash
-  PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-  "$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
+  python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
   ```
 - 解決できない場合は AskUserQuestion で出力先を確認する
 
@@ -86,19 +85,18 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 残存セッション検出:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-plan
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill create-plan
 ```
 
 - `status: "none"` → セッション作成へ
 - `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-  - **削除** → `"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
+  - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
   - **残す** → 残存ディレクトリを無視して新規セッション作成へ
 
 セッション作成:
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --skill create-plan \
   --feature "{feature}" \
   --mode "{new|update}" \

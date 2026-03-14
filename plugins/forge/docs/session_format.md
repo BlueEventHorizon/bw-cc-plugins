@@ -187,8 +187,7 @@ flowchart TD
 ### 残存セッション検出
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
 ```
 
 `status: "found"` の場合、`resume_policy` によって分岐する:
@@ -212,7 +211,7 @@ create-* のように最初からやり直す方が効率的なスキル向け:
 ### セッション作成
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --skill {skill_name} \
   {スキル固有の --key value}
 ```
@@ -220,7 +219,7 @@ create-* のように最初からやり直す方が効率的なスキル向け:
 ### セッション削除
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 ---
@@ -236,8 +235,7 @@ create-* のように最初からやり直す方が効率的なスキル向け:
 #### `init` — セッション作成
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --skill {skill_name} \
   [--key value ...]
 ```
@@ -273,7 +271,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 #### `find` — 残存セッション検索
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill {skill_name}
 ```
 
 **処理内容**: `.claude/.temp/*/session.yaml` をパースし `skill` フィールドで検索。
@@ -289,7 +287,7 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 #### `cleanup` — セッション削除
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 **処理内容**: `.claude/.temp/` 配下であることを検証（パストラバーサル防止）後、`shutil.rmtree()` で削除。

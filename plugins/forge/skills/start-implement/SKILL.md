@@ -48,8 +48,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 
 1. `doc-structure` スキルのスクリプトで Feature を検索:
    ```bash
-   PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-   "$PYTHON" "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
    ```
 2. 見つからない場合 → `specs/{feature}/plan/{feature}_plan.md` をデフォルトとする
 3. それでも見つからない → AskUserQuestion で手動指定
@@ -100,19 +99,18 @@ AskUserQuestion: 「以下のタスクを並列実行します。よろしいで
 残存セッション検出:
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-implement
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-implement
 ```
 
 - `status: "none"` → セッション作成へ
 - `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-  - **削除** → `"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
+  - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
   - **残す** → 無視して新規作成へ
 
 セッション作成:
 
 ```bash
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --skill start-implement \
   --feature "{feature}" \
   --task-id "{TASK-ID}"

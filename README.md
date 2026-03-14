@@ -119,7 +119,7 @@ specs/
 /forge:review code src/ --claude
 
 # Create or update .doc_structure.yaml interactively
-/forge:setup
+/forge:setup-doc-structure
 
 # Create requirements document interactively
 /forge:create-requirements
@@ -137,11 +137,13 @@ specs/
 | Skill                 | User-invocable | Description                                                                                                                                   |
 | --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `review`              | Yes            | Orchestrator: collects references, delegates to reviewer/evaluator/fixer, then commits                                                        |
-| `setup`               | Yes            | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml`                                                |
+| `setup-doc-structure` | Yes            | Scans project directories, classifies them as rules/specs, and generates `.doc_structure.yaml`                                                |
 | `create-requirements` | Yes            | Creates requirements documents via interactive dialog, source code reverse-engineering, or Figma design                                       |
 | `create-design`       | Yes            | Creates design documents from requirements. Auto-detects project workflow via /query-rules, falls back to built-in workflow                   |
 | `create-plan`         | Yes            | Creates or updates implementation plan from design documents. Auto-detects project workflow via /query-rules, falls back to built-in workflow |
 | `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
+| `setup-version-config`| Yes            | Scans project files and generates `.version-config.yaml` for version bump configuration. Re-run on project structure changes                  |
+| `bump`                | Yes            | Bumps version across all files defined in `.version-config.yaml`. Supports patch/minor/major/direct. Optionally auto-generates CHANGELOG      |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
 | `show-report`         | Yes            | Generates an HTML progress report from a review session directory and opens it in the browser                                                 |
@@ -177,7 +179,7 @@ The plugin includes default review criteria in `defaults/review_criteria.md`. Pr
 
 ### Document Structure (.doc_structure.yaml)
 
-The `setup` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. forge reads this file directly to collect reference documents during review and fix operations.
+The `setup-doc-structure` skill scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. forge reads this file directly to collect reference documents during review and fix operations.
 
 See [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) for the full schema specification.
 

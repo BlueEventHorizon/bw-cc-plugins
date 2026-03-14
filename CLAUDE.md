@@ -27,12 +27,10 @@ claude --plugin-dir ./plugins/forge
 
 ```bash
 # レビュー対象の自動検出
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
+python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
 
 # ディレクトリスキャン（メタデータ JSON 出力）
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
+python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 ```
 
 ## Architecture
@@ -49,9 +47,9 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 2. **`present-findings`** (AI専用, `user-invocable: false`) — レビュー結果を1件ずつ段階的に提示し、ユーザーの修正判断を仰ぐ
 3. **`fix-findings`** (AI専用, `user-invocable: false`) — 指摘事項に基づく修正を subagent で実行
 
-### setup スキル
+### setup-doc-structure スキル
 
-`/forge:setup` (user-invocable) — プロジェクトのディレクトリをスキャンし、AI が分類判定を行い `.doc_structure.yaml` を対話的に生成する。`classify_dirs.py` がディレクトリのメタデータ（ファイル数、frontmatter 等）を JSON で出力し、分類判定は AI が SKILL.md 内のルールに従って行う。
+`/forge:setup-doc-structure` (user-invocable) — プロジェクトのディレクトリをスキャンし、AI が分類判定を行い `.doc_structure.yaml` を対話的に生成する。`classify_dirs.py` がディレクトリのメタデータ（ファイル数、frontmatter 等）を JSON で出力し、分類判定は AI が SKILL.md 内のルールに従って行う。
 
 ### create-requirements スキル
 
@@ -82,6 +80,16 @@ PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
 3. task-executor agent に実装を委譲（`task_execution_guide.md` を参照）
 4. `/forge:review code` でレビュー
 5. 計画書のチェックマーク更新（☐ → ☑）
+
+### setup-version-config / bump スキル（バージョン管理）
+
+`/forge:setup-version-config` (user-invocable) — プロジェクトをスキャンし `.version-config.yaml` を対話的に生成・更新する。
+`scan_version_targets.py` がバージョンファイル（plugin.json / package.json / Cargo.toml 等）・README・CHANGELOG を検出し、AI が設定草案を生成してユーザーが確認する。
+プロジェクト構造変更時（プラグイン追加・README フォーマット変更など）に再実行して設定を更新する。
+
+`/forge:bump` (user-invocable) — `.version-config.yaml` の設定に基づきバージョンを一括更新する。
+`patch` / `minor` / `major` または直接バージョン指定に対応。CHANGELOG への git log 自動反映・git commit/tag 作成オプション付き。
+`.version-config.yaml` が存在しない場合は `/forge:setup-version-config` の実行を案内する。
 
 ### レビュー観点の3階層フォールバック
 

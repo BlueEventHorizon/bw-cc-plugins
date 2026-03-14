@@ -1,5 +1,5 @@
 ---
-name: setup
+name: setup-doc-structure
 description: |
   forge スキルがプロジェクト文書を参照するための .doc_structure.yaml を対話的に生成する。
   初回セットアップ時または文書構造変更時に実行。他の forge スキル（review/create-requirements 等）の前提条件。
@@ -8,7 +8,7 @@ user-invocable: true
 argument-hint: ""
 ---
 
-# /forge:setup
+# /forge:setup-doc-structure
 
 ## 概要
 
@@ -37,8 +37,7 @@ argument-hint: ""
 - フォールバック: `classify_dirs.py` を一般的な場所から検索
 
 ```bash
-PYTHON=$(/usr/bin/which python3 2>/dev/null || echo "python3")
-"$PYTHON" ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/classify_dirs.py
 ```
 
 スキャン結果（JSON）を取得する。`readme_only: true`（`classify_dirs.py` が出力するメタデータフラグ）のディレクトリは分類対象外としてスキップする。
