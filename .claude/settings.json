@@ -73,7 +73,9 @@
       "Skill(create-rules-toc)",
       "Skill(create-specs-toc)",
       "Skill(query-rules)",
-      "Skill(query-specs)"
+      "Skill(query-specs)",
+
+      "Bash(python3 *)"
     ],
     "ask": [
       "Bash(git add *)",
@@ -92,9 +94,7 @@
 
       "Bash(mkdir *)",
       "Bash(cp *)",
-      "Bash(mv *)",
-      
-      "Bash(python3 *)"
+      "Bash(mv *)"
     ],
     "deny": [
       "Bash(git push --force *)",

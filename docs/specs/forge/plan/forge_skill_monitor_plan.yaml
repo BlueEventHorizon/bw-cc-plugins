@@ -75,7 +75,7 @@ tasks:
   - task_id: TASK-001
     title: "YamlReader: セッション YAML パーサー"
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-012
     depends_on: []
     group_id: null
@@ -93,7 +93,7 @@ tasks:
   - task_id: TASK-002
     title: "skill_monitor.py: SSE サーバー本体"
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-012
     depends_on:
       - TASK-001

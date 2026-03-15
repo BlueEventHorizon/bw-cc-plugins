@@ -77,13 +77,21 @@ target_files / reference_docs / related_code / review_criteria_path は `{sessio
 
 #### Codex の場合
 
+スクリプトでレビューを実行する:
+
 ```bash
-codex exec --full-auto --sandbox read-only --cd <project_dir> "<prompt>" > {session_dir}/review.md
+bash ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh {session_dir}/review.md <project_dir> "<prompt>"
 ```
 
-シェルリダイレクトにより、レビュー結果をコンテキストに乗せずに直接ファイルへ保存する。
+| 終了コード | 意味 | 次のアクション |
+|-----------|------|--------------|
+| 0 | 成功（review.md に結果が書き出された） | Phase 2 完了 |
+| 2 | Codex が見つからない | Claude フォールバックへ |
+| 1 | Codex 実行エラー | エラー報告 |
 
-#### Claude の場合
+スクリプトは `codex exec -o` で最終メッセージのみをファイルに書き出す（stdout リダイレクトではセッション全体が混入するため）。
+
+#### Claude の場合（Codex 不在時のフォールバック含む）
 
 general-purpose subagent を起動し、レビュー結果を `{session_dir}/review.md` に Write するよう指示する。
 
