@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode の3プラグインを格納・配布する。
 
-- **forge** (v0.0.20) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
+- **forge** (v0.0.21) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
 
 ## Development
 
@@ -121,8 +121,7 @@ tests/
 ├── common/                 # プラグイン横断（マニフェスト整合性等）
 ├── forge/
 │   ├── review/
-│   ├── scripts/
-│   └── show_report/
+│   └── scripts/
 └── {plugin}/               # 新プラグイン追加時も同構造
 ```
 
@@ -136,7 +135,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 - **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
 - SKILL.md 内のコメント・説明は日本語で記述する
-- Python スクリプトは標準ライブラリのみ使用（外部依存禁止）
+- Python スクリプトは標準ライブラリのみ使用（外部依存禁止）。外部コマンド呼び出し等は Bash スクリプトを積極的に使用する
 - AI専用スキルには `user-invocable: false` を frontmatter で指定
 - スクリプトのパス参照には `${CLAUDE_PLUGIN_ROOT}` を使用
 - `[MANDATORY]` マーカーが付いたセクションは省略・変更不可の必須仕様

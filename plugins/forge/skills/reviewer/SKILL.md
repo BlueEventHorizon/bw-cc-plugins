@@ -77,13 +77,21 @@ target_files / reference_docs / related_code / review_criteria_path は `{sessio
 
 #### Codex の場合
 
+スクリプトでレビューを実行する:
+
 ```bash
-codex exec --full-auto --sandbox read-only --cd <project_dir> "<prompt>" > {session_dir}/review.md
+bash ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh {session_dir}/review.md <project_dir> "<prompt>"
 ```
 
-シェルリダイレクトにより、レビュー結果をコンテキストに乗せずに直接ファイルへ保存する。
+| 終了コード | 意味 | 次のアクション |
+|-----------|------|--------------|
+| 0 | 成功（review.md に結果が書き出された） | Phase 2 完了 |
+| 2 | Codex が見つからない | Claude フォールバックへ |
+| 1 | Codex 実行エラー | エラー報告 |
 
-#### Claude の場合
+スクリプトは `codex exec -o` で最終メッセージのみをファイルに書き出す（stdout リダイレクトではセッション全体が混入するため）。
+
+#### Claude の場合（Codex 不在時のフォールバック含む）
 
 general-purpose subagent を起動し、レビュー結果を `{session_dir}/review.md` に Write するよう指示する。
 
@@ -145,19 +153,17 @@ general-purpose subagent を起動し、レビュー結果を `{session_dir}/rev
 
 ### plan.yaml の初期作成
 
-**注意**: YAML フォーマットを厳密に遵守すること（`session_format.md` のスキーマ参照）。フィールド漏れ・インデントミスに注意。将来的にはスクリプト化を検討。
+スクリプトで review.md から指摘事項を抽出し、plan.yaml を生成する:
 
-`{session_dir}/review.md` から指摘事項を解析し、`{session_dir}/plan.yaml` を初期作成する:
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/extract_review_findings.py {session_dir}/review.md {session_dir}/plan.yaml
+```
 
-1. review.md 内の 🔴🟡🟢 マーカー付き指摘事項を全て抽出してリスト化する
-2. 各指摘事項に対して以下のフィールドを設定する:
-   - `id`: 1 からの連番
-   - `severity`: 🔴 → `critical` / 🟡 → `major` / 🟢 → `minor`
-   - `title`: 指摘事項の問題名（`**[問題名]**` から抽出）
-   - `status`: `pending`（全件）
-   - `fixed_at`: `""`
-   - `files_modified`: `[]`
-   - `skip_reason`: `""`
-3. plan.yaml を Write で書き出す
+JSON 出力でサマリーを確認:
+```json
+{"status": "ok", "total": 10, "critical": 3, "major": 5, "minor": 2}
+```
+
+`status: "error"` の場合はエラー内容を報告して終了する。
 
 （フォーマット: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` の「plan.yaml」参照）

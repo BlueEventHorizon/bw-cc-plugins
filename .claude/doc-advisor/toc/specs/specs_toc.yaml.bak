@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-15T03:55:50Z
+  generated_at: 2026-03-15T04:42:12Z
   file_count: 13
 
 docs:
@@ -206,29 +206,33 @@ docs:
   docs/specs/forge/design/doc_structure_version_management_design.md:
     doc_type: design
     title: .doc_structure.yaml Version Management Design
-    purpose: Defines version management and migration strategy for document structure configuration files, including major/minor change semantics, migration registry implementation, and backward compatibility preservation
+    purpose: Defines version management and migration strategy for .doc_structure.yaml, implementing staged versioning following COMMON-REQ-001 with text-based migration functions
     content_details:
-      - Version identifier format (X.Y notation in YAML comments)
-      - Major vs minor version change definitions (breaking vs backward-compatible additions)
-      - Migration registry design and implementation patterns (MIGRATIONS dict)
-      - User settings preservation rules (root_dirs, doc_types_map, patterns fields)
-      - Doc Advisor v5.0 internal field removal (output.*, common.*, toc_file, checksums_file, work_dir)
-      - Version detection API (resolve_doc_structure.py)
-      - Migration history (v1.0 to v2.0 to v3.0)
+      - Version identifier using YAML comment format (X.Y)
+      - Major/minor versioning semantics (breaking changes vs backward-compatible additions)
+      - Migration registry with versioned functions (v1→v2, v2→v3)
+      - Error handling for partial application, future versions, and version detection failures
+      - Text-based migration (not dict-based due to YAML comment preservation)
+      - v1 format structure with version field and doc_type-centric paths
+      - v1→v2 conversion removing version field and adding comment marker
+      - v2→v3 conversion removing internal fields (toc_file, checksums_file, output, common)
+      - Migration script CLI interface (--dry-run, --check modes)
+      - Version detection API from resolve_doc_structure.py
     applicable_tasks:
-      - Validate .doc_structure.yaml format design
-      - Determine version management strategy
-      - Implement and test migration features
-      - Establish doc-advisor integration settings
+      - .doc_structure.yaml migration planning
+      - Version compatibility checking
+      - Document structure format validation
+      - Migration script implementation
+      - Legacy format conversion
     keywords:
+      - .doc_structure.yaml
       - version management
       - migration
-      - doc_structure.yaml
-      - backwards compatibility
-      - semantic versioning
-      - MIGRATIONS registry
-      - merge_config.py
-      - resolve_doc_structure.py
+      - COMMON-REQ-001
+      - text-based migration
+      - doc_structure_version
+      - backward compatibility
+      - staged versioning
   docs/specs/forge/design/orchestrator_session_protocol_design.md:
     doc_type: design
     title: Orchestrator Session Communication Protocol Design

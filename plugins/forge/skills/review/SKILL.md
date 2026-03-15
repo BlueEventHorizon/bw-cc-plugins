@@ -44,14 +44,14 @@ user-invocable: true
 
 ### Phase 1: 引数解析
 
-`$ARGUMENTS` を解析:
+スクリプトで `$ARGUMENTS` を解析する:
 
-- 最初の単語 → 種別（`requirement` | `design` | `code` | `plan` | `generic`）
-- `--codex` または `--claude` → エンジン指定
-- `--auto` 単独 → `auto_count = 1`
-- `--auto N`（N は整数）→ `auto_count = N`
-- `--auto-critical` → `auto_count = 1`、修正対象を 🔴致命的のみに限定
-- 残り → 対象（ファイルパス(複数可) / Feature名 / ディレクトリ）
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/parse_review_args.py $ARGUMENTS
+```
+
+JSON 出力から `review_type` / `targets` / `engine` / `auto_count` / `auto_critical` を取得する。
+`status: "error"` の場合はエラー内容をユーザーに報告して終了する。
 
 解析完了後、以下を出力する:
 
@@ -264,11 +264,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill review
 → `{session_dir}/review.md` と `{session_dir}/plan.yaml` に保存しました
 ```
 
-#### show-report の呼び出し
+### Phase 4: モードによる分岐 [MANDATORY]
 
-Phase 3 完了後、`/forge:show-report {session_dir}` を呼び出して HTML レポートを初期生成しブラウザに表示する。
-
-### Phase 4: モードによる分岐
+> **注意**: Phase 4 の全ステップ（evaluator → present-findings）は**件数や重大度に関係なく必ず実行する**。
+> 致命的問題が0件でも、品質問題のみでも省略しない。「軽微だから省略」は禁止。
 
 #### 対話モード（--auto なし）
 
