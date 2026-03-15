@@ -121,8 +121,7 @@ tests/
 ├── common/                 # プラグイン横断（マニフェスト整合性等）
 ├── forge/
 │   ├── review/
-│   ├── scripts/
-│   └── show_report/
+│   └── scripts/
 └── {plugin}/               # 新プラグイン追加時も同構造
 ```
 
