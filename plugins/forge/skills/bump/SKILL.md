@@ -73,19 +73,17 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 
 ### Step 4: 新バージョンを決定する
 
-| `version_spec`       | 計算方法               |
-| -------------------- | ---------------------- |
-| `patch`              | `X.Y.Z` → `X.Y.(Z+1)` |
-| `minor`              | `X.Y.Z` → `X.(Y+1).0` |
-| `major`              | `X.Y.Z` → `(X+1).0.0` |
-| 数値（例: `1.2.3`）  | そのまま使用           |
+スクリプトで新バージョンを計算する:
 
-バージョンが `major.minor.patch` 形式でない場合はエラーを表示して終了する。
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/calculate_version.py {current_version} {version_spec}
+```
 
-新バージョンが現バージョン以下の場合は AskUserQuestion を使用して続行を確認する。
+JSON 出力から `new` を取得する。`status: "error"` の場合はエラー内容を表示して終了する。
+`warning` フィールドが存在する場合は AskUserQuestion を使用して続行を確認する。
 
 ```
-新バージョン (forge): 0.0.19
+新バージョン ({target_name}): {new_version}
 ```
 
 ### Step 5: ファイルの更新 [MANDATORY]

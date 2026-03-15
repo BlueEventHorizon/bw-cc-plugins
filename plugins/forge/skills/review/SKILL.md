@@ -44,14 +44,14 @@ user-invocable: true
 
 ### Phase 1: 引数解析
 
-`$ARGUMENTS` を解析:
+スクリプトで `$ARGUMENTS` を解析する:
 
-- 最初の単語 → 種別（`requirement` | `design` | `code` | `plan` | `generic`）
-- `--codex` または `--claude` → エンジン指定
-- `--auto` 単独 → `auto_count = 1`
-- `--auto N`（N は整数）→ `auto_count = N`
-- `--auto-critical` → `auto_count = 1`、修正対象を 🔴致命的のみに限定
-- 残り → 対象（ファイルパス(複数可) / Feature名 / ディレクトリ）
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/parse_review_args.py $ARGUMENTS
+```
+
+JSON 出力から `review_type` / `targets` / `engine` / `auto_count` / `auto_critical` を取得する。
+`status: "error"` の場合はエラー内容をユーザーに報告して終了する。
 
 解析完了後、以下を出力する:
 
