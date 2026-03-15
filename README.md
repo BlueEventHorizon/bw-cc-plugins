@@ -101,7 +101,7 @@ specs/
 /forge:review design specs/login/design/login_design.md
 
 # Review a plan with 1 refactor cycle (default)
-/forge:review plan specs/login/plan/login_plan.md --refactor
+/forge:review plan specs/login/plan/login_plan.yaml --refactor
 
 # Review and refactor up to 3 cycles
 /forge:review code src/ --refactor 3
@@ -184,7 +184,7 @@ The `setup-doc-structure` skill scans project directories for markdown files, cl
 See [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) for the full schema specification.
 
 ```yaml
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:

@@ -10,7 +10,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 
 # /forge:start-implement
 
-計画書（`{feature}_plan.md`）からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を実行する。
+計画書（`{feature}_plan.yaml`）からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を実行する。
 
 ## コマンド構文
 
@@ -49,10 +49,10 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type plan
    ```
-2. 見つからない場合 → `specs/{feature}/plan/{feature}_plan.md` をデフォルトとする
+2. 見つからない場合 → `specs/{feature}/plan/{feature}_plan.yaml` をデフォルトとする
 3. それでも見つからない → AskUserQuestion で手動指定
 
-計画書を Read し、全タスクの状態を把握する。
+計画書（YAML）を Read し、全タスクの状態を把握する。
 
 ### 1.2 要件定義書・設計書の更新確認
 
@@ -76,14 +76,14 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 - 例: `--task TASK-001,TASK-003`
 
 **`--task` 指定なし**:
-1. 全タスクを優先度順（数値が大きい順）で確認
-2. 未完了タスク（☐）から最高優先度のものを1つ選択
+1. `tasks` 配列を `priority` 降順でソート
+2. `status: pending` のタスクから最高優先度のものを1つ選択
 
 ### 2.2 実行可能性の確認
 
 選択した全タスクについて以下を確認:
 
-- **依存関係チェック**: 「依存関係」列の全タスクが完了済み（☑）か確認。未完了の依存がある場合は AskUserQuestion で確認
+- **依存関係チェック**: `depends_on` 配列の全タスクが `status: completed` か確認。未完了の依存がある場合は AskUserQuestion で確認
 - **設計書の存在**: 設計ID ≠ `-` の場合は対応する設計書が存在するか確認
 - **タスクグループの確認**: グループ内タスクはグループ先頭から順次実行。グループ途中からの実行は不可
 
@@ -300,10 +300,10 @@ executor のステータスに基づいて分岐:
 
 ### 6.2 計画書の更新 [MANDATORY]
 
-レビュー完了後、計画書を更新する:
+レビュー完了後、計画書（YAML）を更新する:
 
-1. **タスクのチェックマーク**: `☐` → `☑`
-2. **要件トレーサビリティマトリクス**: 関連する要件が全て実装済みなら `☐` → `☑`
+1. **タスクのステータス**: `status: pending` → `status: completed`
+2. **要件トレーサビリティ**: 関連する要件の全タスクが `completed` なら `status: completed` に更新
 
 ### 6.3 セッション削除・次タスク判定
 

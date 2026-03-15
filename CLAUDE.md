@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Code プラグインのマーケットプレイスリポジトリ。1つのプラグイン（forge）を格納・配布する。
+Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode の3プラグインを格納・配布する。
 
-- **forge** (v0.0.5) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
+- **forge** (v0.0.19) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
 
 ## Development
 
@@ -79,7 +79,7 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 2. コンテキスト収集（rules/code agent 並列起動）
 3. task-executor agent に実装を委譲（`task_execution_spec.md` を参照）
 4. `/forge:review code` でレビュー
-5. 計画書のチェックマーク更新（☐ → ☑）
+5. 計画書のステータス更新（`status: pending` → `status: completed`）
 
 ### setup-version-config / bump スキル（バージョン管理）
 
