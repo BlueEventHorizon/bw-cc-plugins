@@ -73,38 +73,49 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 
 ### Step 4: 新バージョンを決定する
 
-| `version_spec`       | 計算方法               |
-| -------------------- | ---------------------- |
-| `patch`              | `X.Y.Z` → `X.Y.(Z+1)` |
-| `minor`              | `X.Y.Z` → `X.(Y+1).0` |
-| `major`              | `X.Y.Z` → `(X+1).0.0` |
-| 数値（例: `1.2.3`）  | そのまま使用           |
+スクリプトで新バージョンを計算する:
 
-バージョンが `major.minor.patch` 形式でない場合はエラーを表示して終了する。
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/calculate_version.py {current_version} {version_spec}
+```
 
-新バージョンが現バージョン以下の場合は AskUserQuestion を使用して続行を確認する。
+JSON 出力から `new` を取得する。`status: "error"` の場合はエラー内容を表示して終了する。
+`warning` フィールドが存在する場合は AskUserQuestion を使用して続行を確認する。
 
 ```
-新バージョン (forge): 0.0.19
+新バージョン ({target_name}): {new_version}
 ```
 
 ### Step 5: ファイルの更新 [MANDATORY]
 
 #### 5-1. version_file の更新
 
-対象 target の `version_file` を Read して、`version_path` のフィールドを `{current_version}` → `{new_version}` に Edit する。
+スクリプトでバージョンフィールドを更新する:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/update_version_files.py {version_file} {current_version} {new_version} --version-path {version_path}
+```
+
+stdout に更新後の内容が出力される。Write でファイルに書き出す。
+stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
 
 #### 5-2. sync_files の更新
 
 `sync_files` リストを順に処理する。各エントリについて:
 
-1. `path` のファイルを Read する
-   - `optional: true` でファイルが存在しない場合 → スキップ（警告なし）
-   - `optional: false`（デフォルト）でファイルが存在しない場合 → 警告を表示
-2. `filter` が指定されている場合:
-   - `filter` 文字列が存在する行を起点に、同一ブロック（前後の空行区切り）内の `pattern` を特定する
-   - 複数 target を含む JSON ファイルで特定 target の version のみを更新する用途
-3. `pattern` の `{version}` を `{current_version}` → `{new_version}` に Edit する
+1. `optional: true` でファイルが存在しない場合 → スキップ（警告なし）
+   `optional: false`（デフォルト）でファイルが存在しない場合 → 警告を表示
+2. スクリプトで置換を実行:
+   - `filter` なし:
+     ```bash
+     python3 ${CLAUDE_PLUGIN_ROOT}/scripts/update_version_files.py {path} {current_version} {new_version}
+     ```
+   - `filter` あり:
+     ```bash
+     python3 ${CLAUDE_PLUGIN_ROOT}/scripts/update_version_files.py {path} {current_version} {new_version} --filter "{filter}"
+     ```
+3. stdout に更新後の内容が出力される。Write でファイルに書き出す。
+   stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
 
 #### 5-3. 更新完了メッセージ
 
