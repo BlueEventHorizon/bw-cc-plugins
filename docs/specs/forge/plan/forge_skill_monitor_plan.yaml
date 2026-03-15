@@ -30,6 +30,22 @@ requirements_traceability:
     title: ブラウザ UI
     design_id: DES-012
     status: pending
+  - requirement_id: NFR-001
+    title: Python 標準ライブラリのみ
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-002
+    title: フック実行時間 100ms 以内
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-003
+    title: ローカルホストのみリッスン
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-004
+    title: 同時1セッション
+    design_id: DES-012
+    status: pending
 
 design_traceability:
   - design_id: DES-012
@@ -42,6 +58,10 @@ design_traceability:
       - FNC-005
       - FNC-006
       - FNC-007
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
     task_ids:
       - TASK-001
       - TASK-002
@@ -61,11 +81,7 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - "session_manager.py の read_yaml() を参考に YamlReader クラスを実装"
-      - "フラット key-value（session.yaml）のパース"
-      - "リスト付き構造（plan.yaml items、evaluation.yaml items）のパース"
-      - "ネストオブジェクト付きリスト（refs.yaml reference_docs）のパース"
-      - "review.md は文字列としてそのまま読み込み"
+      - "設計書 5.5 節の YAML パターン3種に対応する YamlReader クラスを実装"
       - "read_session_dir() で session_dir 内の全ファイルを読み込み JSON 化"
       - "存在しないファイルは exists: false で返す"
       - "テストを作成（フラット/リスト/ネスト/存在しないファイルの各パターン）"
@@ -84,13 +100,7 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - "Python http.server ベースの HTTP サーバーを実装"
-      - "GET / → index.html を返す"
-      - "GET /session → YamlReader で session_dir を読み込み JSON レスポンス"
-      - "GET /sse → SSE ストリーム（threading で管理）"
-      - "GET /history → メモリ内更新履歴リストを JSON で返す"
-      - "POST /notify → 更新通知受信 → history 追記 → SSE クライアントに Push"
-      - "ハートビート機構（30秒周期で session_dir 存在確認、消失時に自動停止）"
+      - "設計書 5.1〜5.2 節に基づき HTTP サーバーを実装（エンドポイント・SSE・ハートビート）"
       - "CLI: session_dir 引数 + --port + --no-open オプション"
       - "ポートバインド失敗時のエラー JSON 出力"
       - "テストを作成（API エンドポイント、SSE Push、ハートビート）"
@@ -107,11 +117,8 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - "PostToolUse フックから stdin で JSON を読み取る"
-      - "tool_input.file_path が .claude/.temp/ 内かチェック"
-      - "マッチした場合のみ urllib.request で SSE サーバーに HTTP POST"
+      - "設計書 5.6 節に基づき Python フック通知スクリプトを実装"
       - "サーバー未起動時は URLError をキャッチして無視（exit 0 保証）"
-      - "Python 標準ライブラリのみ（jq/curl 依存なし）"
       - "テストを作成（パスフィルタ、POST 送信、エラーハンドリング）"
     acceptance_criteria: "セッションディレクトリ内ファイルへの Write/Edit 時のみ SSE サーバーに通知されること"
     required_reading:
@@ -138,6 +145,7 @@ tasks:
     acceptance_criteria: "ブラウザで session_dir の内容がリアルタイム表示され、更新が自動反映されること"
     required_reading:
       - docs/specs/forge/design/skill_monitor_design.md
+      - docs/specs/forge/requirement/skill_monitor_requirement.md
       - plugins/forge/docs/session_format.md
 
   - task_id: TASK-005
@@ -174,9 +182,10 @@ tasks:
     description:
       - ".claude/hooks/display_notify.py を配置"
       - ".claude/settings.json に PostToolUse フック設定を追記（matcher: Write|Edit）"
-      - "エンドツーエンドテスト: セッション作成 → ファイル更新 → SSE 受信 → ブラウザ表示"
-      - "session_dir 消失 → 自動停止の統合テスト"
-      - "ポート競合時のリカバリ確認"
+      - "Python テスト: セッション作成 → ファイル更新 → SSE 通知受信の自動検証"
+      - "Python テスト: session_dir 消失 → 自動停止の統合テスト"
+      - "Python テスト: ポート競合時のリカバリ確認"
+      - "手動確認: ブラウザ表示の目視確認（手順を README に記載）"
     acceptance_criteria: "フック設定後、SKILL がファイル更新するとブラウザがリアルタイム更新されること"
     required_reading:
       - docs/specs/forge/design/skill_monitor_design.md
