@@ -5,7 +5,6 @@ YamlReader（設計書 5.5 節）と SkillMonitorServer / RequestHandler
 （設計書 5.1〜5.2 節）のテストを含む。
 """
 
-import io
 import json
 import os
 import shutil
@@ -15,8 +14,6 @@ import threading
 import time
 import unittest
 from http.client import HTTPConnection
-from urllib.request import Request, urlopen
-from urllib.error import URLError
 
 # プラグインスクリプトへのパスを追加
 SCRIPTS_DIR = os.path.join(
@@ -788,11 +785,47 @@ class TestSSEPush(unittest.TestCase):
 class TestHeartbeat(unittest.TestCase):
     """ハートビートによる自動停止のテスト。"""
 
+    def test_heartbeat_detects_session_dir_removal(self):
+        """heartbeat_interval を短周期にして _heartbeat_loop の実経路をテストする。
+
+        session_dir を削除すると、ハートビートがそれを検知して
+        サーバーが自動停止することを確認する。
+        """
+        tmpdir = tempfile.mkdtemp()
+        session_dir = os.path.join(tmpdir, "review-hb-real-test")
+        os.makedirs(os.path.join(session_dir, "refs"))
+
+        with open(
+            os.path.join(session_dir, "session.yaml"), "w", encoding="utf-8"
+        ) as f:
+            f.write("skill: review\nstatus: in_progress\n")
+
+        port = _find_free_port()
+        server = SkillMonitorServer(
+            session_dir, port=port, heartbeat_interval=0.5
+        )
+        server_thread = threading.Thread(target=server.start, daemon=True)
+        server_thread.start()
+        time.sleep(0.3)
+
+        try:
+            # session_dir を削除
+            shutil.rmtree(session_dir)
+
+            # ハートビート（0.5秒周期）が検知して自動停止するのを待つ
+            server_thread.join(timeout=5)
+            self.assertFalse(
+                server_thread.is_alive(),
+                "ハートビートが session_dir 消失を検知してサーバーを停止すべき",
+            )
+        finally:
+            server.stop()
+            if os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
+
     def test_session_dir_removal_triggers_shutdown(self):
         """session_dir が消失するとサーバーが自動停止する。
 
-        ハートビート周期を短縮してテスト可能にするため、
-        _heartbeat_loop を直接テストする代わりに、
         session_dir 消失時の /notify の挙動をテストする。
         """
         tmpdir = tempfile.mkdtemp()
@@ -872,6 +905,78 @@ class TestSkillMonitorServerInit(unittest.TestCase):
             self.assertFalse(server.shutdown_event.is_set())
         finally:
             server.server_close()
+            shutil.rmtree(tmpdir)
+
+
+class TestSkillMonitorCLI(unittest.TestCase):
+    """CLI エントリーポイント（main()）のテスト。
+
+    設計書 DES-012 5.1 節で定義された CLI エラー契約を検証する:
+      - session_dir が存在しない場合: stderr に JSON エラーを出力して exit 1
+      - ポートバインド失敗時: stderr に JSON エラーを出力して exit 1
+    """
+
+    # skill_monitor.py のパス
+    SCRIPT_PATH = os.path.join(
+        os.path.dirname(__file__), "..", "..", "..",
+        "plugins", "forge", "scripts", "skill_monitor.py",
+    )
+
+    def test_session_dir_not_found(self):
+        """存在しない session_dir を渡すと exit 1 で JSON エラーを返す。"""
+        import subprocess
+
+        fake_dir = os.path.join(tempfile.gettempdir(), "nonexistent_session_dir_xyz")
+        # 万が一存在していたら削除
+        if os.path.exists(fake_dir):
+            shutil.rmtree(fake_dir)
+
+        result = subprocess.run(
+            [sys.executable, self.SCRIPT_PATH, fake_dir, "--no-open"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        self.assertEqual(result.returncode, 1)
+        # stderr に JSON エラーが出力される
+        error = json.loads(result.stderr.strip())
+        self.assertEqual(error["error"], "session_dir_not_found")
+        self.assertEqual(error["session_dir"], fake_dir)
+
+    def test_port_bind_failed(self):
+        """ポートが既に使用中の場合 exit 1 で JSON エラーを返す。"""
+        import socket
+        import subprocess
+
+        tmpdir = tempfile.mkdtemp()
+        session_dir = os.path.join(tmpdir, "review-cli-port-test")
+        os.makedirs(session_dir)
+
+        try:
+            # 先にポートをバインドしておく
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+
+            result = subprocess.run(
+                [
+                    sys.executable, self.SCRIPT_PATH,
+                    session_dir, "--port", str(port), "--no-open",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            self.assertEqual(result.returncode, 1)
+            # stderr に JSON エラーが出力される
+            error = json.loads(result.stderr.strip())
+            self.assertEqual(error["error"], "port_bind_failed")
+            self.assertEqual(error["port"], port)
+        finally:
+            sock.close()
             shutil.rmtree(tmpdir)
 
 

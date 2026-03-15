@@ -12,10 +12,10 @@ JSON に変換してブラウザに Push する。
 import argparse
 import json
 import os
-import re
+
 import sys
 import threading
-import time
+
 import webbrowser
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -614,6 +614,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "invalid_json"}, status=400)
             return
 
+        # payload が dict でない場合は 400 を返す（配列・文字列・数値等を拒否）
+        if not isinstance(payload, dict):
+            self._send_json({"error": "invalid_payload"}, status=400)
+            return
+
         # session_dir の存在確認（設計書 5.8: 通知時チェック）
         if not os.path.isdir(server.session_dir):
             self._send_session_end(server)
@@ -652,44 +657,18 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _broadcast_sse(self, server, event_name, data):
-        """全 SSE クライアントにイベントを送信する。
+        """全 SSE クライアントにイベントを送信する（server に委譲）。
 
         Args:
             server: SkillMonitorServer インスタンス
             event_name: SSE イベント名
             data: イベントデータ（dict）
         """
-        message = f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-        encoded = message.encode("utf-8")
-
-        with server.sse_lock:
-            dead_clients = []
-            for client in server.sse_clients:
-                try:
-                    client.write(encoded)
-                    client.flush()
-                except (BrokenPipeError, ConnectionResetError, OSError):
-                    dead_clients.append(client)
-            for client in dead_clients:
-                server.sse_clients.remove(client)
+        server.broadcast_sse(event_name, data)
 
     def _send_session_end(self, server):
-        """session_end イベントを全クライアントに送信し、サーバーを停止する。"""
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        event_data = {
-            "type": "session_end",
-            "timestamp": timestamp,
-        }
-        # history に追記
-        with server.history_lock:
-            server.history.append({
-                "timestamp": timestamp,
-                "file": "",
-                "event": "session_end",
-            })
-        self._broadcast_sse(server, "session_end", event_data)
-        # サーバー停止をスケジュール
-        server.schedule_shutdown()
+        """session_end イベントを全クライアントに送信し、サーバーを停止する（server に委譲）。"""
+        server.send_session_end()
 
 
 # ---------------------------------------------------------------------------
@@ -731,16 +710,18 @@ class SkillMonitorServer(_ThreadingHTTPServer):
       - HTTP サーバー（localhost のみ、マルチスレッド）
       - SSE クライアント管理
       - 更新履歴管理
-      - ハートビート（30秒周期で session_dir 存在確認）
+      - ハートビート（定期的に session_dir 存在確認）
 
     Args:
         session_dir: 監視対象のセッションディレクトリ
         port: リッスンポート（デフォルト 8765）
+        heartbeat_interval: ハートビート間隔（秒、デフォルト 30.0）
     """
 
-    def __init__(self, session_dir, port=8765):
+    def __init__(self, session_dir, port=8765, heartbeat_interval=30.0):
         self.session_dir = session_dir
         self.port = port
+        self.heartbeat_interval = heartbeat_interval
         self.history = []
         self.history_lock = threading.Lock()
         self.sse_clients = []
@@ -774,45 +755,61 @@ class SkillMonitorServer(_ThreadingHTTPServer):
         t = threading.Thread(target=self.shutdown, daemon=True)
         t.start()
 
+    def broadcast_sse(self, event_name, data):
+        """全 SSE クライアントにイベントを送信する。
+
+        Args:
+            event_name: SSE イベント名
+            data: イベントデータ（dict）
+        """
+        message = f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+        encoded = message.encode("utf-8")
+
+        with self.sse_lock:
+            dead_clients = []
+            for client in self.sse_clients:
+                try:
+                    client.write(encoded)
+                    client.flush()
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    dead_clients.append(client)
+            for client in dead_clients:
+                self.sse_clients.remove(client)
+
+    def send_session_end(self):
+        """session_end イベントを全クライアントに送信し、サーバー停止をスケジュールする。
+
+        history への追記、SSE broadcast、shutdown スケジュールを一括で行う。
+        RequestHandler._send_session_end() と _heartbeat_loop() の両方から呼び出される。
+        """
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        event_data = {
+            "type": "session_end",
+            "timestamp": timestamp,
+        }
+        # history に追記
+        with self.history_lock:
+            self.history.append({
+                "timestamp": timestamp,
+                "file": "",
+                "event": "session_end",
+            })
+        self.broadcast_sse("session_end", event_data)
+        # サーバー停止をスケジュール
+        self.schedule_shutdown()
+
     def _heartbeat_loop(self):
-        """30秒周期で session_dir の存在を確認し、消失時に停止する。
+        """定期的に session_dir の存在を確認し、消失時に停止する。
 
         設計書 5.8: ハートビートによる自動停止。
+        周期は heartbeat_interval（デフォルト 30 秒）で制御する。
         """
         while not self.shutdown_event.is_set():
-            self.shutdown_event.wait(timeout=30.0)
+            self.shutdown_event.wait(timeout=self.heartbeat_interval)
             if self.shutdown_event.is_set():
                 break
             if not os.path.isdir(self.session_dir):
-                # session_end イベントを送信
-                timestamp = datetime.now(timezone.utc).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                )
-                event_data = {
-                    "type": "session_end",
-                    "timestamp": timestamp,
-                }
-                with self.history_lock:
-                    self.history.append({
-                        "timestamp": timestamp,
-                        "file": "",
-                        "event": "session_end",
-                    })
-                # SSE クライアントに送信
-                message = (
-                    f"event: session_end\n"
-                    f"data: {json.dumps(event_data, ensure_ascii=False)}\n\n"
-                )
-                encoded = message.encode("utf-8")
-                with self.sse_lock:
-                    for client in self.sse_clients:
-                        try:
-                            client.write(encoded)
-                            client.flush()
-                        except (BrokenPipeError, ConnectionResetError, OSError):
-                            pass
-                # サーバー停止
-                self.schedule_shutdown()
+                self.send_session_end()
                 break
 
 
