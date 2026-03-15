@@ -24,7 +24,6 @@
 | `/forge:evaluator` | 指摘事項の吟味・修正判定 |
 | `/forge:present-findings` | 対話モードでの段階的提示 |
 | `/forge:fixer` | 修正実行 |
-| `/forge:show-report` | HTML レポート生成・表示 |
 
 ### レビュー種別
 
@@ -398,4 +397,3 @@ evaluator は各指摘について以下の5観点で評価する:
 | `plugins/forge/skills/evaluator/SKILL.md` | 吟味・判定 AI スキル |
 | `plugins/forge/skills/present-findings/SKILL.md` | 段階的提示 AI スキル |
 | `plugins/forge/skills/fixer/SKILL.md` | 修正実行 AI スキル |
-| `plugins/forge/skills/show-report/SKILL.md` | HTML レポート生成スキル |
