@@ -264,11 +264,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill review
 → `{session_dir}/review.md` と `{session_dir}/plan.yaml` に保存しました
 ```
 
-#### show-report の呼び出し
+### Phase 4: モードによる分岐 [MANDATORY]
 
-Phase 3 完了後、`/forge:show-report {session_dir}` を呼び出して HTML レポートを初期生成しブラウザに表示する。
-
-### Phase 4: モードによる分岐
+> **注意**: Phase 4 の全ステップ（evaluator → present-findings）は**件数や重大度に関係なく必ず実行する**。
+> 致命的問題が0件でも、品質問題のみでも省略しない。「軽微だから省略」は禁止。
 
 #### 対話モード（--auto なし）
 

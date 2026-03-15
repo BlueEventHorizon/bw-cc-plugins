@@ -1,0 +1,197 @@
+# forge skill_monitor 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: FNC-001
+    title: セッションデータのブラウザ表示
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-002
+    title: リアルタイム更新
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-003
+    title: コンテキスト非汚染
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-004
+    title: 全オーケストレータ共通
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-005
+    title: SSE サーバー
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-006
+    title: Claude Code フック
+    design_id: DES-012
+    status: pending
+  - requirement_id: FNC-007
+    title: ブラウザ UI
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-001
+    title: Python 標準ライブラリのみ
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-002
+    title: フック実行時間 100ms 以内
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-003
+    title: ローカルホストのみリッスン
+    design_id: DES-012
+    status: pending
+  - requirement_id: NFR-004
+    title: 同時1セッション
+    design_id: DES-012
+    status: pending
+
+design_traceability:
+  - design_id: DES-012
+    title: skill_monitor 設計書
+    requirement_ids:
+      - FNC-001
+      - FNC-002
+      - FNC-003
+      - FNC-004
+      - FNC-005
+      - FNC-006
+      - FNC-007
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+
+# === タスク一覧 ===
+tasks:
+  - task_id: TASK-001
+    title: "YamlReader: セッション YAML パーサー"
+    priority: 90
+    status: completed
+    design_id: DES-012
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - "設計書 5.5 節の YAML パターン3種に対応する YamlReader クラスを実装"
+      - "read_session_dir() で session_dir 内の全ファイルを読み込み JSON 化"
+      - "存在しないファイルは exists: false で返す"
+      - "テストを作成（フラット/リスト/ネスト/存在しないファイルの各パターン）"
+    acceptance_criteria: "全 YAML パターンのパースが正しく動作し、テストが全パスすること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+      - plugins/forge/docs/session_format.md
+
+  - task_id: TASK-002
+    title: "skill_monitor.py: SSE サーバー本体"
+    priority: 85
+    status: completed
+    design_id: DES-012
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - "設計書 5.1〜5.2 節に基づき HTTP サーバーを実装（エンドポイント・SSE・ハートビート）"
+      - "CLI: session_dir 引数 + --port + --no-open オプション"
+      - "ポートバインド失敗時のエラー JSON 出力"
+      - "テストを作成（API エンドポイント、SSE Push、ハートビート）"
+    acceptance_criteria: "サーバー起動 → /session で JSON 取得 → /notify で SSE Push が動作すること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+
+  - task_id: TASK-003
+    title: "display_notify.py: フック通知スクリプト"
+    priority: 80
+    status: pending
+    design_id: DES-012
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - "設計書 5.6 節に基づき Python フック通知スクリプトを実装"
+      - "サーバー未起動時は URLError をキャッチして無視（exit 0 保証）"
+      - "テストを作成（パスフィルタ、POST 送信、エラーハンドリング）"
+    acceptance_criteria: "セッションディレクトリ内ファイルへの Write/Edit 時のみ SSE サーバーに通知されること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+
+  - task_id: TASK-004
+    title: "index.html: ブラウザ UI"
+    priority: 60
+    status: pending
+    design_id: DES-012
+    depends_on:
+      - TASK-002
+    group_id: null
+    build_check: per_task
+    description:
+      - "起動時に /session で現在状態を取得してレンダリング"
+      - "EventSource で GET /sse に接続し、リアルタイム更新を受信"
+      - "更新イベント受信時に /session を再取得してレンダリング更新"
+      - "onopen で再接続時にも /session を再取得（UC-003）"
+      - "session_end イベント受信時に「セッション終了」表示"
+      - "session_format.md のスキーマに基づく汎用レンダリング"
+      - "VanillaJS（ビルドツール不要）"
+      - "plugins/forge/static/ に配置"
+    acceptance_criteria: "ブラウザで session_dir の内容がリアルタイム表示され、更新が自動反映されること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+      - docs/specs/forge/requirement/skill_monitor_requirement.md
+      - plugins/forge/docs/session_format.md
+
+  - task_id: TASK-005
+    title: "session_manager.py 拡張: --start-monitor オプション"
+    priority: 70
+    status: pending
+    design_id: DES-012
+    depends_on:
+      - TASK-002
+    group_id: null
+    build_check: per_task
+    description:
+      - "init サブコマンドに --start-monitor オプションを追加"
+      - "subprocess.Popen で skill_monitor.py をデタッチ起動"
+      - "JSON 出力に monitor_port フィールドを追加"
+      - "起動失敗時のエラーハンドリング（ポートバインド失敗等）"
+      - "既存テストが壊れないことを確認"
+      - "新オプションのテストを追加"
+    acceptance_criteria: "init --start-monitor で SSE サーバーがバックグラウンド起動し、SKILL 側にコード追加なしで動作すること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+      - plugins/forge/scripts/session_manager.py
+
+  - task_id: TASK-006
+    title: "フック設定 + 統合テスト"
+    priority: 50
+    status: pending
+    design_id: DES-012
+    depends_on:
+      - TASK-003
+      - TASK-005
+    group_id: null
+    build_check: per_task
+    description:
+      - ".claude/hooks/display_notify.py を配置"
+      - ".claude/settings.json に PostToolUse フック設定を追記（matcher: Write|Edit）"
+      - "Python テスト: セッション作成 → ファイル更新 → SSE 通知受信の自動検証"
+      - "Python テスト: session_dir 消失 → 自動停止の統合テスト"
+      - "Python テスト: ポート競合時のリカバリ確認"
+      - "手動確認: ブラウザ表示の目視確認（手順を README に記載）"
+    acceptance_criteria: "フック設定後、SKILL がファイル更新するとブラウザがリアルタイム更新されること"
+    required_reading:
+      - docs/specs/forge/design/skill_monitor_design.md
+      - docs/specs/forge/requirement/skill_monitor_requirement.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-03-15"
+    content: "初版作成"

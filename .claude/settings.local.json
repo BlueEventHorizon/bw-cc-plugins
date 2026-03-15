@@ -3,7 +3,9 @@
     "allow": [
       "Bash(\\\\ git:*)",
       "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh specs)",
-      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh rules)"
+      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh rules)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   },
   "sandbox": {

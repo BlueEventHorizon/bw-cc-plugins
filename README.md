@@ -146,7 +146,6 @@ specs/
 | `bump`                | Yes            | Bumps version across all files defined in `.version-config.yaml`. Supports patch/minor/major/direct. Optionally auto-generates CHANGELOG      |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
-| `show-report`         | Yes            | Generates an HTML progress report from a review session directory and opens it in the browser                                                 |
 | `reviewer`            | No (AI only)   | Executes review and collects reference documents. Returns findings + reference doc paths                                                      |
 | `evaluator`           | No (AI only)   | Scrutinizes review findings with 5 criteria and determines what to fix/skip/confirm                                                           |
 | `fixer`               | No (AI only)   | Fixes issues based on review findings. Accepts reference doc paths to avoid re-collection                                                     |

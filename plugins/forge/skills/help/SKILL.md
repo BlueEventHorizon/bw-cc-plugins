@@ -27,7 +27,6 @@ AskUserQuestion でスキルを選択する:
 - start-design      : 設計書の作成
 - start-plan        : 計画書の作成
 - start-implement    : 計画書からタスクを選択して実装を実行する
-- show-report        : レビューセッションの進捗をHTMLレポートで表示する
 - setup              : .doc_structure.yaml の作成・更新
 ```
 
