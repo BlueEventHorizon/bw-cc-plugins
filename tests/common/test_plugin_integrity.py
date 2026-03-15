@@ -371,45 +371,28 @@ class TestSchemaConsistency(unittest.TestCase):
         sys.path.insert(0, str(PLUGINS_DIR / 'forge' / 'skills' / 'doc-structure' / 'scripts'))
         from resolve_doc_structure import parse_config
 
-        # config.yaml 互換形式の全フィールドを含む YAML
+        # 文書構造フィールドのみの YAML（Doc Advisor v5.0 形式）
         yaml_content = '''\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
-  output:
-    header_comment: "Development documentation search index"
-    metadata_name: "Development Documentation Search Index"
 
 specs:
   root_dirs:
     - "specs/*/requirements/"
   doc_types_map:
     "specs/*/requirements/": requirement
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
       - archived
-  output:
-    header_comment: "Project specification document search index"
-    metadata_name: "Project Specification Document Search Index"
-
-common:
-  parallel:
-    max_workers: 5
-    fallback_to_serial: true
 '''
         result = parse_config(yaml_content)
 

@@ -43,7 +43,7 @@ from resolve_review_context import (
 # ---------------------------------------------------------------------------
 
 CONFIG_WITH_EXCLUDE = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
@@ -86,7 +86,7 @@ common:
 """
 
 CONFIG_NO_EXCLUDE = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
@@ -127,7 +127,7 @@ common:
 """
 
 CONFIG_FLAT = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
@@ -170,7 +170,7 @@ common:
 """
 
 CONFIG_MIXED_EXCLUDE = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:

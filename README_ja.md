@@ -182,7 +182,7 @@ specs/
 完全なスキーマ仕様は [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) を参照してください。
 
 ```yaml
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:

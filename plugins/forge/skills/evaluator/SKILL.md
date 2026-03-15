@@ -61,6 +61,8 @@ argument-hint: "(内部使用)"
 - `--auto-critical`: 🔴致命的のみ
 - `--interactive`: 全件（🔴🟡🟢）
 
+> **吟味対象外の指摘の扱い**: `--auto` では 🟢 が、`--auto-critical` では 🟡🟢 が吟味対象外となる。吟味対象外の指摘は evaluation.yaml に `recommendation: skip`、`reason: "吟味対象外（モードによるフィルタ）"` として記録し、plan.yaml の status を `skipped` に更新する。
+
 各指摘について以下の5つの観点で評価し、`修正する / スキップ / 要確認` を判定する:
 
 | 観点                   | 確認内容                                                                               |
