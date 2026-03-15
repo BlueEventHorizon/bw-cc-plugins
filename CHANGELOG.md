@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.20] - 2026-03-15
+
+### forge
+
+- **refactor**: .doc_structure.yaml v3.0 対応（Doc Advisor v5.0 内部フィールド除去）
+- **feat**: `migrate_doc_structure.py` 新規作成（COMMON-REQ-001 準拠の段階的マイグレーション）
+  - v1→v2→v3 のチェーン実行、--check / --dry-run モード、テスト45件
+- **feat**: `version_migration_spec.md` 新規作成（バージョンマイグレーション実装仕様）
+- **fix**: review ワークフロー実装を設計書に整合
+  - 残存セッション検出フロー追加、session_manager.py cleanup 使用、--diff-only パラメータ明示
+  - 一括修正後の再レビューループ追加、auto 次サイクルで reviewer 再呼び出し
+- **refactor**: 計画書フォーマットを Markdown → YAML に移行（FNC-005）
+- **docs**: 設計書・要件定義書の齟齬修正（COMMON-REQ-001 と version_management_design の整合）
+
 ## [0.0.19] - 2026-03-15
 
 ### forge
