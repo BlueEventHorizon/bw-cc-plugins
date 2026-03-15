@@ -22,7 +22,7 @@ import resolve_doc_structure as rds
 # ---------------------------------------------------------------------------
 
 BASIC_CONFIG = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
@@ -63,7 +63,7 @@ common:
 """
 
 GLOB_CONFIG = """\
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 specs:
   root_dirs:
@@ -147,13 +147,13 @@ class TestGetVersion(unittest.TestCase):
     """バージョン検出のテスト"""
 
     def test_get_version_normal(self):
-        self.assertEqual(rds.get_version(BASIC_CONFIG), '2.0')
+        self.assertEqual(rds.get_version(BASIC_CONFIG), '3.0')
 
     def test_get_version_none(self):
         self.assertIsNone(rds.get_version(NO_VERSION_CONFIG))
 
     def test_get_major_version(self):
-        self.assertEqual(rds.get_major_version(BASIC_CONFIG), 2)
+        self.assertEqual(rds.get_major_version(BASIC_CONFIG), 3)
 
     def test_get_major_version_none(self):
         self.assertIsNone(rds.get_major_version(NO_VERSION_CONFIG))

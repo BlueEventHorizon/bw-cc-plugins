@@ -137,7 +137,7 @@ config.yaml 完全互換。forge は `root_dirs`, `doc_types_map`, `patterns.exc
 他フィールド（toc_file, checksums_file, work_dir, output, common 等）は無視する。
 
 ```yaml
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:

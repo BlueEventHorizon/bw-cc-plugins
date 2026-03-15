@@ -5,6 +5,7 @@ description: |
   参考文書を読んでレビューを実行する。AI専用Skill。
   /forge:review オーケストレーターから呼び出される。
   参考文書収集・target_files 解決は呼び出し元（/forge:review）が担う。
+  session_dir 経由でデータを受け渡し、結果は review.md / plan.yaml に書き出す。
 argument-hint: "<種別> [--エンジン]"
 ---
 

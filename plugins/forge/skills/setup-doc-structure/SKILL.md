@@ -113,10 +113,10 @@ Next steps:
 
 See: `${CLAUDE_PLUGIN_ROOT}/docs/doc_structure_format.md`
 
-### Quick reference（config.yaml 互換フォーマット）
+### Quick reference
 
 ```yaml
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 # === rules configuration ===
 rules:
@@ -124,15 +124,9 @@ rules:
     - <dir_path>
   doc_types_map:
     <dir_path>: <doc_type>
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
-  output:
-    header_comment: "Development documentation search index for query-rules skill"
-    metadata_name: "Development Documentation Search Index"
 
 # === specs configuration ===
 specs:
@@ -140,34 +134,24 @@ specs:
     - <dir_path>
   doc_types_map:
     <dir_path>: <doc_type>
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
-  output:
-    header_comment: "Project specification document search index for query-specs skill"
-    metadata_name: "Project Specification Document Search Index"
-
-# === common configuration ===
-common:
-  parallel:
-    max_workers: 5
-    fallback_to_serial: true
 ```
 
 ### 生成例（Feature-Based）
 
 ```yaml
-# doc_structure_version: 2.0
+# doc_structure_version: 3.0
 
 rules:
   root_dirs:
     - docs/rules/
   doc_types_map:
     docs/rules/: rule
-  # ... doc-advisor フィールド（テンプレートから）
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
 
 specs:
   root_dirs:
@@ -178,7 +162,9 @@ specs:
     "docs/specs/*/design/": design
     "docs/specs/*/plan/": plan
     "docs/specs/*/requirement/": requirement
-  # ... doc-advisor フィールド（テンプレートから）
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
 ```
 
 glob パターン（`*`）を使う場合、root_dirs と doc_types_map の両方に同じパターンを記述する。
