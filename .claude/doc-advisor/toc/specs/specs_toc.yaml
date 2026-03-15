@@ -4,253 +4,381 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-14T13:25:54Z
-  file_count: 9
+  generated_at: 2026-03-15T04:42:12Z
+  file_count: 13
 
 docs:
+  docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
+    doc_type: requirement
+    title: Versioned Migration Requirements Definition
+    purpose: Defines stepwise migration framework for backward compatibility across data format versions
+    content_details:
+      - Version detection from data
+      - Stepwise migration applying one version at a time
+      - Migration function registry with target version keys
+      - Idempotent and side-effect-free migration functions
+      - Error handling with rollback to pre-migration state
+      - Extensibility through new migration function registration
+    applicable_tasks:
+      - Data format versioning implementation
+      - Backward compatibility assurance
+      - Version migration logic implementation
+      - Error handling and rollback implementation
+    keywords:
+      - version migration
+      - backward compatibility
+      - stepwise migration
+      - CURRENT_VERSION
+      - migration registry
+      - data format versioning
+      - idempotent
+      - rollback
+  docs/specs/forge/design/change/doc_structure_yaml_spec_change.md:
+    doc_type: design
+    title: .doc_structure.yaml Specification Change Directive
+    purpose: Specifies changes to .doc_structure.yaml format for forge plugin following Doc Advisor v5.0 architecture migration that eliminates config.yaml and uses YAML as single source of truth
+    content_details:
+      - Doc Advisor v5.0 architecture migration from config.yaml to direct YAML reference
+      - "Fields to remove from forge output: toc_file, checksums_file, work_dir, output.header_comment, output.metadata_name, parallel configuration"
+      - "Fields to maintain: doc_structure_version, root_dirs, doc_types_map, patterns"
+      - New .doc_structure.yaml format with separate rules and specs sections
+      - "doc_type definitions: rule, requirement, design, plan, api, reference, spec"
+      - "Backward compatibility: load_config() uses deep merge so old format still works"
+      - resolve_doc_structure.py must handle new format correctly
+      - Quick reference template updates required in SKILL.md
+    applicable_tasks:
+      - Update forge setup-doc-structure skill output format
+      - Update resolve_doc_structure.py for new YAML structure
+      - Verify other forge skills work with new doc_structure format
+      - Update SKILL.md quick reference templates
+    keywords:
+      - doc_structure_version
+      - config.yaml migration
+      - YAML single source of truth
+      - root_dirs
+      - doc_types_map
+      - pattern matching
+      - backward compatibility
   docs/specs/forge/design/context_gathering_design.md:
     doc_type: design
-    title: Context Gathering Design
-    purpose: Defines context gathering task specifications for create-* and start-implement skills, including task matrix and agent composition guidelines
+    title: Context Gathering Task Specification
+    purpose: Defines context gathering tasks and agent orchestration for create-requirements, create-design, create-plan, and start-implement skills
     content_details:
-      - Task list (5 task types)
-      - Skill-task application matrix
-      - Skill-specific agent composition
-      - Instructions format for context gathering agents
-      - Metadata and related design references
+      - Task matrix defining which context gathering tasks apply to each skill
+      - "| Five context gathering tasks: issue/task confirmation, specs investigation, implementation rules investigation, similar PR investigation, existing code investigation"
+      - "| Agent composition for each skill with conditional task activation"
+      - "| Conditional execution rules for rules agent, specs agent, and code agent"
+      - "| YAML instruction format for passing directives to context gathering agents with session_dir, spec, tasks, feature, and skill_type fields"
     applicable_tasks:
-      - Context gathering for create-requirements
-      - Context gathering for create-design
-      - Context gathering for create-plan
-      - Context gathering for start-implement
-      - Design documentation review
+      - Orchestrating context gathering for create-requirements skill in all modes
+      - "| Orchestrating context gathering for create-design skill with all investigation types"
+      - "| Orchestrating context gathering for create-plan skill with specs and rules investigation"
+      - "| Orchestrating context gathering for start-implement skill with rules and code investigation"
     keywords:
       - context gathering
-      - agent composition
-      - task matrix
-      - specs investigation
-      - rules investigation
-      - code investigation
-      - session directory
+      - "| agent orchestration"
+      - "| task matrix"
+      - "| specs investigation"
+      - "| rules investigation"
+      - "| code investigation"
+      - "| YAML directives"
   docs/specs/forge/design/create_design_workflow_design.md:
     doc_type: design
-    title: forge create-design workflow design
-    purpose: Defines orchestrator workflow, phases, and best practices for creating design documents from requirements
+    title: forge Design Document Creation Workflow Design
+    purpose: Defines the orchestrator pattern for design document creation from requirements, including context collection, design drafting, AI review, and quality assurance phases
     content_details:
-      - Prerequisite validation phase
-      - "Phase 1: context collection from specs, rules, and existing code"
-      - "Phase 2: design document creation with format validation"
-      - "Phase 3: AI review execution and human verification"
-      - "Phase 4: quality assurance and completeness checking"
-      - "Design principle: reuse existing implementation assets"
-      - "Design principle: maintain What/How boundary"
-      - Flowchart showing orchestrator pattern workflow
-      - Integration with query-specs and query-rules
-      - Mandatory AskUserQuestion for human review steps
+      - Orchestrator pattern for design creation
+      - "Phase 1: Context collection from requirements, rules, and existing implementations"
+      - "Phase 2: Design document drafting with format validation and design ID system"
+      - "Phase 3: AI-driven review via /forge:review design"
+      - "Phase 4: Quality assurance with completeness checks and specs ToC generation"
+      - Mandatory reuse of existing implementation assets
+      - What/How boundary guidelines
     applicable_tasks:
       - Design document creation
-      - Orchestrator workflow setup
-      - Design review process design
-      - Phase management design
-      - Quality assurance planning
+      - Design workflow planning and sequencing
       - Context collection orchestration
-      - Design-requirement alignment verification
+      - Design quality assurance
+      - Multi-file design authoring
     keywords:
-      - orchestrator
+      - forge
       - design workflow
-      - phases
-      - requirements analysis
-      - quality assurance
+      - orchestrator pattern
       - context collection
       - design creation
-      - human review
-      - asset reuse
+      - quality assurance
   docs/specs/forge/design/create_plan_workflow_design.md:
     doc_type: design
     title: forge Plan Creation Workflow Design
-    purpose: Defines the workflow, phases, and implementation guidelines for the /forge:create-plan orchestrator skill that creates project plans from requirements and design specifications
+    purpose: Defines the workflow, phases, and design principles for the /forge:start-plan skill that creates plan documents from requirements and design specifications
     content_details:
-      - "Three-phase workflow: prerequisite checking, context collection, plan creation"
-      - Context collection from specs and rules agents through /query-specs and /query-rules
-      - Task extraction from design specifications with agent-executable unit division
-      - "Task granularity rules: 5-10 items per plan, single agent completion capability, build success as completion condition"
-      - Plan creation with format application and completeness checking
-      - "Traceability matrix validation: requirement-design-task correspondence"
-      - Update mode handling for existing plans with requirement and design reflection status assessment
-      - AI review via /forge:review plan and human approval via AskUserQuestion
-      - "Default documents: spec_format.md, plan_format.md, plan_principles_spec.md"
+      - Orchestrator workflow with context collection agents
+      - "Four phases: prerequisite confirmation, context collection, plan creation and validation, and AI review"
+      - Task extraction and splitting strategies based on agent execution units
+      - Traceability matrix from requirements to design to tasks
+      - "Task granularity rules: 5-10 items per plan, single agent completion criteria"
+      - Update mode handling with existing plan reconciliation
+      - Quality assurance and completeness checks
     applicable_tasks:
-      - Plan document creation from requirements and design
-      - Task extraction and division for project planning
-      - Traceability validation and completeness checking
-      - Plan review and approval workflows
-      - Existing plan update and synchronization
+      - forge:start-plan skill implementation
+      - Plan creation workflow design review
+      - Task extraction strategy validation
+      - Orchestrator pattern implementation
     keywords:
-      - create-plan
-      - orchestrator
-      - workflow design
+      - start-plan
+      - plan workflow
       - task extraction
-      - traceability matrix
-      - plan creation
-      - subagent delegation
+      - traceability
+      - orchestrator
       - context collection
+      - agent execution
+      - design principles
   docs/specs/forge/design/create_requirements_workflow_design.md:
     doc_type: design
-    title: forge Create Requirements Workflow Design
-    purpose: "Defines the workflow, phases, and orchestration pattern for the create-requirements skill, supporting three modes: interactive, reverse-engineering, and from-figma."
+    title: forge Requirement Definition Workflow Design
+    purpose: Describes the workflow design for /forge:start-requirements skill, covering three operation modes (interactive, reverse-engineering, from-figma) and their execution phases
     content_details:
-      - Workflow overview and three operation modes
-      - Common prerequisite phase and context collection requirements
-      - Interactive mode with 4 phases and dialogue principles
-      - Reverse-engineering mode for source code analysis
-      - From-figma mode for design system extraction
-      - "Common post-processing: AI review and ToC generation"
-      - "Design principles: focus on requirements, minimal context collection, ID taxonomy consistency"
+      - Three operational modes (interactive, reverse-engineering, from-figma) with distinct workflows
+      - "Common prerequisite phase: validation of .doc_structure.yaml, output directory resolution, and defaults loading"
+      - "Common Phase 0: confirmation of new/add status, feature name, and resource collection"
+      - "Mode-specific phases: each mode has 4-5 phases from initial analysis to quality confirmation"
+      - "Common post-processing: AI review via /forge:review requirement and mandatory /create-specs-toc execution"
+      - "Design principles: focus on What not How, minimal context collection, consistent ID taxonomy"
+      - "Phase details for interactive mode: vision, experience flow, detailed specifications (SCR/FNC/BL/DM), integration"
+      - "Phase details for reverse-engineering mode: source code analysis, requirement extraction, specification creation"
+      - "Phase details for from-figma mode: Figma access confirmation, design system construction with 2-layer token structure, asset management"
+      - Flowchart with decision points and three parallel subgraph workflows
     applicable_tasks:
-      - Create requirements specification from scratch
-      - Analyze existing source code for reverse-engineering requirements
-      - Extract requirements from Figma design files
-      - Requirement document review and quality assurance
+      - Requirement definition document creation
+      - New feature planning and specification
+      - Existing application reverse-engineering
+      - Design system construction from Figma
+      - Feature scope confirmation and management
+      - Requirement quality review and validation
+      - Multi-mode workflow selection guidance
+      - TBD item tracking
     keywords:
-      - create-requirements
+      - forge
+      - start-requirements
       - workflow design
-      - requirements specification
+      - requirement definition
       - interactive mode
       - reverse-engineering
-      - from-figma
+      - Figma integration
       - orchestrator pattern
-      - APP-001
-      - SCR-xxx
       - specification format
+      - design tokens
   docs/specs/forge/design/create_skills_orchestrator_design.md:
     doc_type: design
-    title: Create-* Skills Orchestrator Design
-    purpose: Defines orchestrator-based refactoring of create-design, create-plan, and create-requirements skills with standardized and parallelized context gathering framework
+    title: DES-010 create-* Skills Orchestrator Design
+    purpose: Defines the orchestrator pattern for create-* skills (start-design, start-plan, start-requirements) using parallel context gathering framework to improve code reuse and task concurrency
     content_details:
-      - God-Skill to orchestrator architecture migration
-      - Common context gathering framework (specs/rules/code agents in parallel)
-      - Session directory structure and session.yaml/refs schema definition
-      - As-Is to To-Be phase mapping for each skill
-      - Mode-specific context collection sequences (interactive/reverse-engineering/from-figma)
-      - Session manager.py lifecycle management
-      - Resume policy design (none as default)
+      - "Orchestrator pattern migration: God-Skill structure to parallel subagent architecture"
+      - "Common context gathering framework: specs agent, rules agent, code agent for parallel execution"
+      - "Session directory structure: .claude/.temp/{skill_name}-{random6}/ with session.yaml and refs/"
+      - "refs/ schema: unified structure for specs.yaml, rules.yaml, code.yaml"
+      - "Context collection agent specification: self-contained task execution via context_gathering_spec.md"
+      - "Failure handling: agent independence allows partial failure recovery"
+      - "start-design implementation: Phase transformation from God-Skill to orchestrator model"
+      - "start-plan implementation: simplified context collection (specs + rules agents)"
+      - "start-requirements implementation: mode-dependent context collection (interactive/reverse-engineering/from-figma)"
+      - "Session lifecycle management: delegated to session_manager.py script"
     applicable_tasks:
-      - Create-design skill orchestrator implementation
-      - Create-plan skill orchestrator implementation
-      - Create-requirements skill orchestrator implementation
-      - Common context gathering framework standardization
-      - Parallel multi-agent execution system design
-      - Session lifecycle management implementation
+      - Design document creation with orchestrator pattern
+      - Plan document creation with parallel context gathering
+      - Requirements document creation (interactive/reverse-engineering modes)
+      - Context gathering architecture design
+      - Subagent task specification and implementation
+      - Session management implementation
+      - Parallel execution failure handling
+      - CoE (Center of Engineering) framework extension
     keywords:
       - orchestrator pattern
-      - context gathering
-      - session management
-      - parallel agent execution
-      - create-design
-      - create-plan
-      - create-requirements
-      - refs schema
-      - DES-010
+      - parallel context gathering
+      - session directory
+      - subagent delegation
+      - refs/ schema
+      - God-Skill refactoring
+      - session lifecycle
+      - failure recovery
+      - context_gathering_spec.md
+      - session_manager.py
   docs/specs/forge/design/doc_structure_version_management_design.md:
     doc_type: design
     title: .doc_structure.yaml Version Management Design
-    purpose: Defines .doc_structure.yaml version management, migration strategies, and version detection APIs for format evolution and user setting preservation
+    purpose: Defines version management and migration strategy for .doc_structure.yaml, implementing staged versioning following COMMON-REQ-001 with text-based migration functions
     content_details:
-      - .doc_structure.yaml version identifier format (X.Y in comment line)
-      - Migration flow (version detection, template expansion, user settings preservation)
-      - MIGRATIONS registry for major version transformations
-      - User settings preservation rules and default values
-      - Version detection API (resolve_doc_structure.py functions)
-      - Migration history (v1.0 to v2.0 evolution)
+      - Version identifier using YAML comment format (X.Y)
+      - Major/minor versioning semantics (breaking changes vs backward-compatible additions)
+      - Migration registry with versioned functions (v1→v2, v2→v3)
+      - Error handling for partial application, future versions, and version detection failures
+      - Text-based migration (not dict-based due to YAML comment preservation)
+      - v1 format structure with version field and doc_type-centric paths
+      - v1→v2 conversion removing version field and adding comment marker
+      - v2→v3 conversion removing internal fields (toc_file, checksums_file, output, common)
+      - Migration script CLI interface (--dry-run, --check modes)
+      - Version detection API from resolve_doc_structure.py
     applicable_tasks:
-      - Version management implementation
-      - Configuration format migration
-      - Backward compatibility design
-      - doc-advisor integration
+      - .doc_structure.yaml migration planning
+      - Version compatibility checking
+      - Document structure format validation
+      - Migration script implementation
+      - Legacy format conversion
     keywords:
       - .doc_structure.yaml
       - version management
       - migration
-      - merge_config.py
-      - resolve_doc_structure.py
-      - config format
+      - COMMON-REQ-001
+      - text-based migration
+      - doc_structure_version
       - backward compatibility
-  docs/specs/forge/design/session_management_design.md:
+      - staged versioning
+  docs/specs/forge/design/orchestrator_session_protocol_design.md:
     doc_type: design
-    title: Session Management Design (DES-011)
-    purpose: Defines session lifecycle management for orchestrator skills, including session creation, detection, resumption, and cleanup patterns for file-based inter-phase communication
+    title: Orchestrator Session Communication Protocol Design
+    purpose: Defines the common communication protocol for forge orchestrator skills to exchange data through session directories with subagents and agents
     content_details:
-      - Session lifecycle design (creation, detection, resumption, cleanup)
-      - Resume policy design (resume for review, none for linear workflows)
-      - Session manager script responsibilities (directory creation, YAML formatting, timestamp generation)
-      - SKILL.md structure pattern (preparation, session management, business phases, completion)
-      - Data flow architecture (context collection, parallel agent execution, session file organization)
-      - Session resume behavior (resume_policy enum and user interaction flow)
-      - session_manager.py subcommands (init, find, cleanup)
-      - Session.yaml field ordering (common fields before skill-specific fields)
+      - Session directory structure with skill name and random identifier
+      - Common session.yaml metadata fields and lifecycle management
+      - Resumable session detection flow for different resume policies
+      - Parallel context collection through refs/ directory with independent files
+      - Common reference file schema for specs, rules, PRs, and code documents
+      - Communication flow and agent instruction templates
+      - Relationship with review-specific protocol in twinkling-popping-kahan.md
     applicable_tasks:
-      - Orchestrator skill implementation
-      - Session lifecycle management for review cycles
-      - Session recovery and resumption design
-      - Parallel agent context sharing
-      - Session cleanup and teardown
-      - SKILL.md structure creation
-      - Session state persistence design
+      - Orchestrator skill implementation and communication setup
+      - Session management and resumable workflow implementation
+      - Context gathering agent integration and reference file handling
+      - Review protocol implementation with session directory foundation
     keywords:
-      - session management
-      - orchestrator
-      - session lifecycle
-      - resume policy
-      - file-based communication
-      - session_manager.py
-      - session_dir
-      - SKILL.md pattern
-  docs/specs/forge/plan/forge_plan.md:
-    doc_type: plan
-    title: Forge Implementation Plan
-    purpose: Task planning document defining requirements traceability matrix, design assignments, implementation tasks with priorities, dependencies, and acceptance criteria for forge plugin development
-    content_details:
-      - Requirements traceability matrix
-      - Design traceability matrix
-      - Task list with priorities and dependencies
-      - Acceptance criteria
-      - Version management tasks
-    applicable_tasks:
-      - Forge feature implementation planning
-      - Task execution and prioritization
-      - Design implementation verification
-      - Session directory architecture setup
-      - Version management
-    keywords:
-      - forge
-      - task planning
-      - traceability matrix
-      - implementation
       - orchestrator
       - session directory
-      - version management
+      - protocol design
+      - context gathering
+      - refs schema
+      - resume policy
+      - session.yaml
+      - communication flow
+      - forge plugins
+      - subagent coordination
+  docs/specs/forge/design/review_workflow_design.md:
+    doc_type: design
+    title: forge Review Workflow Design
+    purpose: Defines the orchestration workflow for the /forge:review skill, including phases, mode selection (interactive vs. auto), delegation to specialized skills (reviewer, evaluator, fixer), and session file architecture
+    content_details:
+      - "Phase 1: Argument parsing (type, engine, mode)"
+      - "Phase 2: Target resolution and reference document collection"
+      - "Phase 3: Review execution via /forge:reviewer"
+      - "Phase 4: Mode branching (interactive vs. --auto N modes)"
+      - "Phase 5: Completion processing (testing, summary, commit confirmation)"
+      - Session directory architecture (.claude/.temp/{skill_name}-{random6}/)
+      - Skill delegation pattern (reviewer, evaluator, presenter, fixer)
+      - 5-point evaluation criteria (rule compliance, design intent, side effects, false positives, target file verification)
+      - Reference document collection strategy with 3-level fallback
+      - Review type variants (code, requirement, design, plan, generic)
+    applicable_tasks:
+      - Review workflow implementation
+      - Skill orchestration architecture design
+      - Code review system enhancement
+      - Document review process development
+      - Auto-fix mode implementation
+      - Session management and state persistence
+      - Interactive vs. automated mode design
+      - Evaluation criteria application
+      - Reference document collection strategy
+      - Testing after review completion
+    keywords:
+      - review orchestration
+      - skill delegation
+      - session directory
+      - evaluator
+      - reference documents
+      - code review
+      - auto-fix
+      - interactive mode
+      - phase workflow
+      - evaluation criteria
+  docs/specs/forge/design/session_management_design.md:
+    doc_type: design
+    title: DES-011 Session Management Design
+    purpose: Defines session lifecycle, session_manager.py implementation, and session management patterns in SKILL.md for forge orchestrator skills
+    content_details:
+      - Session lifecycle design with creation, detection, deletion flow
+      - File-based communication rationale for data persistence between phases
+      - session_manager.py design with directory naming and YAML generation
+      - resume_policy design pattern for review vs other skills
+      - SKILL.md structure pattern with prerequisites, session management, phases, cleanup sections
+      - Data flow architecture with parallel agents writing to refs/ directory
+      - session.yaml field ordering with common fields followed by skill-specific fields alphabetically
+      - Path traversal prevention mechanisms in cleanup operations
+      - "session_manager.py subcommands: init, find, cleanup with JSON output format"
+    applicable_tasks:
+      - Orchestrator skill design and implementation
+      - Session management infrastructure development
+      - SKILL.md pattern definition and validation
+      - Session lifecycle testing and verification
+      - Multi-phase workflow integration for review and creation skills
+    keywords:
+      - session management
+      - file-based communication
+      - orchestrator pattern
+      - session_manager.py
+      - resume_policy
+      - SKILL.md structure
+      - phase lifecycle
+      - session.yaml schema
+  docs/specs/forge/plan/forge_plan.md:
+    doc_type: plan
+    title: forge Implementation Plan
+    purpose: Defines forge plugin implementation roadmap with task decomposition, traceability matrices connecting requirements and design, and dependency management across orchestrator skill modernization
+    content_details:
+      - Requirement traceability matrix with 4 requirements
+      - Design traceability matrix linking DES-010 to 7 tasks
+      - 7 implementation tasks with priority, dependencies, and acceptance criteria
+      - Task dependency graph (TASK-001,002 as foundation for TASK-003,004,005)
+      - Priority scale (90-99 high, 40-69 medium, 1-39 low)
+      - Session directory architecture and /query-rules integration tasks
+      - Version management and changelog updates
+    applicable_tasks:
+      - forge plugin implementation planning
+      - Skill orchestrator modernization
+      - Session directory architecture implementation
+      - Context gathering specification
+      - Task dependency analysis and scheduling
+      - Design document organization
+      - Version release planning
+    keywords:
+      - forge
+      - plan
+      - orchestrator
+      - session directory
+      - traceability
+      - task dependency
+      - implementation
+      - design
+      - requirement
   docs/specs/forge/requirement/orchestrator_pattern.md:
     doc_type: requirement
     title: Orchestrator Pattern Requirement
-    purpose: Defines orchestrator design requirements for forge plugin skills to address God-Skill problems, establish session-based data communication, and enable parallel execution across independent agents
+    purpose: Defines orchestrator design pattern for forge skills, including separation of concerns, session-based communication, and document format selection criteria
     content_details:
-      - "Background: God-Skill problems (context consumption, reduced accuracy, sequential processing, information loss)"
-      - review workflow precedent (orchestrator + multiple subagents)
-      - "FNC-001: Orchestrator design (progress management, decision branching, user interaction, detail work delegation)"
-      - "FNC-002: Session directory communication (path-based data transfer, minimal prompts)"
-      - "FNC-003: Self-contained reference documents (external dependency elimination)"
-      - "FNC-004: Parallel-capable structure (independent research parallelization, file conflict prevention)"
-      - Applicable targets table (review/create-design/create-plan/create-requirements implementation status)
+      - Orchestrator design principles and delegation pattern
+      - Session directory-based communication between orchestrator and agents
+      - Self-contained reference documents for autonomous agent execution
+      - Parallel-executable work process structure
+      - Document format selection criteria (YAML vs Markdown)
+      - Applicable target skills (review, start-design, start-plan, start-requirements)
     applicable_tasks:
-      - forge skill design review
-      - Orchestrator pattern implementation evaluation
-      - Session communication protocol design review
-      - Skill-to-skill data flow optimization
+      - Orchestrator skill design and implementation
+      - Multi-agent coordination architecture design
+      - Session directory communication protocol design
+      - Document format standardization and selection
     keywords:
       - orchestrator
+      - delegation
       - session directory
-      - plugin skill
-      - God-Skill
-      - parallel execution
-      - subagent delegation
-      - context management
+      - agent communication
+      - God-Skill antipattern
+      - YAML
+      - Markdown
+      - separation of concerns
