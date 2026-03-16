@@ -3,7 +3,7 @@
 update_version_files.py のテスト
 
 実行:
-    python3 -m unittest tests.forge.bump.test_update_version_files -v
+    python3 -m unittest tests.forge.update-version.test_update_version_files -v
 """
 import json
 import subprocess
@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'bump' / 'scripts'
+SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'update-version' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from update_version_files import update_version_in_text
