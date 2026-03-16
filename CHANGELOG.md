@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.22] - 2026-03-16
+
+### forge
+
+- **refactor**: 全オーケストレーター（start-requirements/design/plan/implement）の完了処理を統一（review --auto → ToC → commit）
+- **refactor**: finalize スキルを廃止。完了処理は各オーケストレーターが直接実行
+- **refactor**: review Phase 1 の引数解析を Python スクリプトから AI 解釈に移行
+- **remove**: `parse_review_args.py` とテスト削除（AI 解析に移行のため）
+- **fix**: README の `--refactor` オプション名を `--auto` に統一（SKILL.md と整合）
+- **refactor**: CLAUDE.md のルールを `docs/rules/implementation_guidelines.md` に移動（DocAdvisor 管理）
+- **docs**: `orchestrator_pattern.md` に FNC-006（共通完了処理フロー）、FNC-007（AI 引数解釈）追加
+
 ## [0.0.21] - 2026-03-16
 
 ### forge
