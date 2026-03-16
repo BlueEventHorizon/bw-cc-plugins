@@ -1,6 +1,6 @@
 {
   "name": "forge",
-  "description": "AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, auto-fix issues, and finalize with quality gates.",
+  "description": "AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.",
   "version": "0.0.22",
   "author": {
     "name": "moons"

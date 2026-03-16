@@ -143,7 +143,9 @@ specs/
 | `bump`                | 可能             | `.version-config.yaml` の設定に従いバージョンを一括更新。patch/minor/major/直接指定対応。CHANGELOG 自動生成オプション付き |
 | `help`                | 可能             | インタラクティブヘルプウィザード。スキルを選択し、引数を1つずつ入力してそのまま実行できる                               |
 | `present-findings`    | AI 専用          | レビュー結果を段階的・対話的に提示                                                                                      |
-| `fix-findings`        | AI 専用          | レビュー指摘に基づく修正を実行。参考文書を収集し（DocAdvisor Skill or .doc_structure.yaml）修正                         |
+| `reviewer`            | AI 専用          | レビュー実行エンジン。参考文書を収集し指摘事項を作成                                                                    |
+| `evaluator`           | AI 専用          | 指摘事項を5つの基準で吟味し、修正・スキップ・確認の判定を行う                                                           |
+| `fixer`               | AI 専用          | レビュー指摘に基づく修正を実行。参考文書パスを受け取り再収集を回避                                                      |
 
 ### レビュー種別
 

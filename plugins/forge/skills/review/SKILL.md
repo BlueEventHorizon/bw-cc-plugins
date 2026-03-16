@@ -40,6 +40,12 @@ user-invocable: true
 
 ---
 
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
+
+---
+
 ## ワークフロー
 
 ### Phase 1: 引数解析
@@ -65,7 +71,7 @@ user-invocable: true
 |------|-----|
 | 種別 | `{種別}` |
 | エンジン | `{codex / claude}` |
-| モード | `{対話モード}` または `--auto {N}（{N}サイクル自動修正）` |
+| モード | `{対話モード}` または `--auto {N}（{N}サイクル自動修正）` または `--auto-critical（🔴致命的のみ自動修正）` |
 
 **対象**
 - `{対象パス or Feature名}`
