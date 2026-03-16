@@ -43,7 +43,7 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 
 #### レビューパイプライン
 
-`review` → `reviewer` → `evaluator` → `fixer` の4スキルがレビューパイプラインを構成する。
+以下のスキルがレビューパイプラインを構成する。
 
 1. **`/forge:review`** (user-invocable) — レビュー実行のオーケストレーター。種別判定・参考文書収集・エンジン選択を行い、レビューを実行。`--auto N` で N サイクルのレビュー+自動修正を繰り返す（🔴+🟡対象）
 2. **`reviewer`** (AI専用) — レビュー実行（指摘事項の作成）
@@ -53,11 +53,13 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 
 #### 共通完了処理フロー
 
-全オーケストレーター（start-requirements, start-design, start-plan, start-implement）は成果物作成後に以下を実行する:
+文書生成系オーケストレーター（start-requirements, start-design, start-plan）は成果物作成後に以下を実行する:
 
 1. `/forge:review {type} {差分ファイル} --auto` — AIレビュー+自動修正（差分のみ対象）
 2. `/create-specs-toc` — ToC 更新（利用可能な場合）
 3. `/anvil:commit` — commit/push 確認
+
+start-implement は ToC 更新を含まず、review → commit の2ステップで完了する。
 
 ### setup-doc-structure スキル
 
