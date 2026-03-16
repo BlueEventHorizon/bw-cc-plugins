@@ -406,7 +406,7 @@ if __name__ == "__main__":
 | YAML パーサー | `plugins/forge/scripts/session_manager.py` の `read_yaml()` | session.yaml 等のフラット YAML 読み込み |
 | ネスト YAML パーサー | `plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py` の `parse_config()` | plan.yaml 等のネスト構造読み込み（参考） |
 | review.md パーサー | `plugins/forge/scripts/extract_review_findings.py` の `SECTION_MARKERS` / `FINDING_PATTERN` | review.md の構造化（オプション） |
-| CLI パターン | `plugins/forge/scripts/parse_review_args.py` | argparse + JSON stdout の規約 |
+| CLI パターン | `plugins/forge/scripts/session_manager.py` | argparse + JSON stdout の規約 |
 
 ---
 

@@ -75,7 +75,7 @@ specs/
 ### 使い方
 
 ```
-/forge:review <種別> [対象] [--エンジン] [--refactor [N]]
+/forge:review <種別> [対象] [--エンジン] [--auto [N]]
 ```
 
 | 引数     | 値                                                                                        |
@@ -83,7 +83,7 @@ specs/
 | 種別     | `code` \| `requirement` \| `design` \| `plan` \| `generic`                                |
 | 対象     | ファイルパス（複数可）、ディレクトリ、Feature 名、省略で対話的に決定                      |
 | エンジン | `--codex`（デフォルト）\| `--claude`                                                      |
-| モード   | `--refactor [N]`（レビュー+修正を N サイクル実行。省略時 N=1）\| `--auto-fix`（後方互換） |
+| モード   | `--auto [N]`（レビュー+修正を N サイクル実行。省略時 N=1）\| `--auto-critical`（🔴のみ修正） |
 
 ### 使用例
 
@@ -101,13 +101,13 @@ specs/
 /forge:review design specs/login/design/login_design.md
 
 # 計画書をレビュー（1サイクル修正、デフォルト）
-/forge:review plan specs/login/plan/login_plan.yaml --refactor
+/forge:review plan specs/login/plan/login_plan.yaml --auto
 
 # 3サイクル繰り返してレビュー+修正
-/forge:review code src/ --refactor 3
+/forge:review code src/ --auto 3
 
 # レビューのみ（修正なし）
-/forge:review code src/ --refactor 0
+/forge:review code src/ --auto 0
 
 # 任意の文書をレビュー
 /forge:review generic README.md
@@ -127,9 +127,6 @@ specs/
 # 既存アプリからリバースエンジニアリングで要件定義書を作成
 /forge:start-requirements myfeature --mode reverse-engineering
 
-# 作成した文書をレビュー+自動修正+ToC更新で品質確定（start-* の後続処理）
-/forge:finalize requirement specs/login/requirements/requirements.md
-/forge:finalize requirement specs/login/requirements/requirements.md --refactor 3
 ```
 
 ### スキル構成
@@ -141,7 +138,6 @@ specs/
 | `start-requirements` | 可能             | 対話・リバースエンジニアリング・Figmaの3モードで要件定義書を作成                                                        |
 | `start-design`       | 可能             | 要件定義書から設計書を作成。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用   |
 | `start-plan`         | 可能             | 設計書から計画書を作成・更新。/query-rules でプロジェクト固有ワークフローを自動取得、なければ組み込みワークフローを使用 |
-| `finalize`            | 可能             | 文書作成後の品質確定オーケストレーター。レビュー+修正+ToC更新を一括実行。start-* の後に使用                             |
 | `start-implement`     | 可能             | 計画書からタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行するオーケストレーター               |
 | `setup-version-config`| 可能             | プロジェクトをスキャンして `.version-config.yaml` を生成・更新する。プロジェクト構造変更時に再実行                     |
 | `bump`                | 可能             | `.version-config.yaml` の設定に従いバージョンを一括更新。patch/minor/major/直接指定対応。CHANGELOG 自動生成オプション付き |

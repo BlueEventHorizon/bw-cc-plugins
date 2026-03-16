@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-03-15T04:44:03Z
+  generated_at: 2026-03-16T03:01:36Z
   file_count: 5
 
 docs:
@@ -69,29 +69,32 @@ docs:
   docs/rules/implementation_guidelines.md:
     doc_type: rule
     title: Implementation Guidelines
-    purpose: Defines rules for plugin Python script and SKILL.md implementation, including testing requirements and script organization guidelines
+    purpose: Defines rules for script language selection, testing requirements, and SKILL.md implementation practices for plugins
     content_details:
-      - Python script testing requirements for plugins
-      - Test placement under tests/ directory
-      - Test execution with unittest discover
-      - SKILL.md inline script prohibition
-      - External script file requirements
-      - Script location conventions (plugins/{plugin}/skills, plugins/{plugin}/scripts)
-      - Environment variable usage (${CLAUDE_SKILL_DIR}, ${CLAUDE_PLUGIN_ROOT})
+      - Python script usage restrictions
+      - Bash script usage for external commands
+      - Testing requirements for plugins directory
+      - Test file organization and discovery rules
+      - No inline scripts in SKILL.md
+      - Script file locations and environment variables
+      - Code deletion requirements
+      - User input interpretation guidelines
     applicable_tasks:
-      - Plugin script implementation
-      - Test code writing for plugin scripts
+      - Plugin script development
+      - Test implementation for plugins
       - SKILL.md authoring
-      - Script organization and placement
-      - Plugin development review
+      - Code review for script usage patterns
+      - Setting up test infrastructure
+      - Script refactoring and cleanup
     keywords:
+      - Python
+      - Bash
       - testing
       - SKILL.md
-      - inline script
-      - unittest
-      - plugin
-      - Python script
-      - implementation guidelines
+      - plugins
+      - script
+      - standard library
+      - external commands
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
     title: SKILL.md Authoring Guidelines
@@ -119,29 +122,34 @@ docs:
       - inter-skill invocation
   docs/rules/version_migration_design.md:
     doc_type: rule
-    title: Version Migration Design Rules
-    purpose: Defines migration patterns and principles for safely upgrading versions of configuration files and data structures across application evolution
+    title: Version Migration and Upgrade Design Rules
+    purpose: Defines principles and patterns for safe data migrations across version changes, including pipeline pattern, idempotency, and forward compatibility requirements
     content_details:
-      - "Anti-patterns: Reading old data directly without migration, passing old data format to all migrations"
-      - "Pipeline principle: Each migration receives previous step output as input, ensuring safe multi-step transformations"
-      - "Five core principles: Pipeline architecture, Single Source of Truth, Idempotency, Forward compatibility, Migration history persistence"
-      - Implementation patterns for YAML/JSON, Swift Codable, and database migrations
-      - Multi-step version skipping (v4 → v6) with sorted migration table lookup
-      - Release checklist covering design, implementation, and multi-stage testing requirements
-      - DocAdvisor-specific migration strategy (YAML config with versioning metadata)
+      - Migration pipeline pattern with sequential step transformation
+      - Idempotency principle for safe reapplication
+      - Single source of truth for version numbers
+      - Forward compatibility through unknown key preservation
+      - Multi-version jumps (v4 → v6) handling strategy
+      - YAML/JSON migration with dict-based transformation
+      - Swift Codable versioned struct pattern with model versioning
+      - Database migrations with history tracking and transactions
+      - Migration test requirements including multi-version scenarios
+      - Integration with doc_structure.yaml migration implementation
     applicable_tasks:
-      - Version upgrade implementation planning
-      - Configuration file migration design
-      - Multi-version backward compatibility testing
-      - Database schema evolution review
-      - Version management system design
+      - Version upgrade planning
+      - Configuration file schema migration
+      - Data format transformation implementation
+      - Database schema migration design
+      - Backward compatibility implementation
+      - Multi-stage migration testing
+      - Version management strategy review
     keywords:
-      - version migration
-      - pipeline principle
+      - migration pipeline
       - idempotency
-      - Single Source of Truth
+      - single source of truth
       - forward compatibility
-      - YAML configuration
-      - multi-step migration
-      - schema evolution
-      - backward compatibility
+      - data versioning
+      - schema transformation
+      - Swift Codable
+      - database migration
+      - version skipping

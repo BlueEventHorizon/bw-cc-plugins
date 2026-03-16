@@ -46,12 +46,11 @@ flowchart TD
 
     QA["完全性チェック<br>トレーサビリティ"] --> AI_REVIEW
 
-    AI_REVIEW["/forge:review plan<br>AIレビュー"] --> HUMAN_REVIEW
+    AI_REVIEW["/forge:review plan --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> TOC
 
-    HUMAN_REVIEW{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| TOC
-    HUMAN_REVIEW -->|"修正"| CREATE
+    TOC["/create-specs-toc"] --> COMMIT
 
-    TOC["/create-specs-toc"] --> End([完了])
+    COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
 ```
 
 ---
@@ -101,12 +100,18 @@ flowchart TD
 - 要件 → 設計 → タスクのトレーサビリティマトリクス
 - 優先度と依存関係の整合性
 
-### Phase 3: AIレビューと承認
+### Phase 3: AIレビュー
 
 | Step | 内容 | 実行者 |
 |------|------|--------|
-| 3.1 | `/forge:review plan` 実行 | subagent（review ワークフロー）|
-| 3.2 | 人間レビュー確認（AskUserQuestion）| orchestrator |
+| 3.1 | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+
+### Phase 4: 完了処理
+
+| Step | 内容 |
+|------|------|
+| 4.1 | `/create-specs-toc` 実行（利用可能な場合）|
+| 4.2 | `/anvil:commit` による commit/push 確認 |
 
 ---
 
@@ -135,7 +140,7 @@ flowchart TD
 ## 5. 次ステップの案内
 
 ```
-計画書の優先度・依存関係に従ってタスクを実行
+/forge:start-implement {feature}    # タスクの実行を開始
 ```
 
 ---
