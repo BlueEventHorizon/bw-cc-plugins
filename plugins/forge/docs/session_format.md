@@ -566,6 +566,72 @@ items:
 
 ---
 
+## 8. セッション YAML 操作スクリプト — CLI リファレンス
+
+セッションディレクトリ内の YAML ファイルを操作する Python スクリプト群。AI が YAML を手作業で生成する代わりに、これらのスクリプトがスキーマ準拠のファイルを生成・更新する。
+
+パス: `${CLAUDE_PLUGIN_ROOT}/scripts/session/`
+
+### write_refs.py — refs.yaml 生成
+
+```bash
+echo '<json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_refs.py {session_dir}
+```
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `target_files` | string[] | ○ | レビュー対象ファイル |
+| `reference_docs` | object[] | ○ | 参考文書（空配列可）|
+| `review_criteria_path` | string | ○ | レビュー観点ファイル |
+| `related_code` | object[] | - | 関連コード |
+
+**出力**: `{"status": "ok", "path": "..."}`
+
+### write_evaluation.py — evaluation.yaml 生成
+
+```bash
+echo '<json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_evaluation.py {session_dir}
+```
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `cycle` | integer | ○ | サイクル番号（1以上）|
+| `items` | object[] | ○ | 指摘ごとの判定（id, severity, title, recommendation, reason 必須）|
+
+**出力**: `{"status": "ok", "path": "...", "summary": {"fix": N, "skip": N, "needs_review": N}}`
+
+### update_plan.py — plan.yaml ステータス更新
+
+**単一項目更新:**
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
+  --id {id} --status {status} \
+  [--fixed-at "2026-03-09T18:35:00Z"] \
+  [--files-modified file1.py file2.py] \
+  [--skip-reason "理由"]
+```
+
+**バッチ更新:**
+```bash
+echo '<json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --batch
+```
+
+| フィールド | 型 | 説明 |
+|-----------|------|------|
+| `updates` | object[] | 各要素に id, status 必須 |
+
+**出力**: `{"status": "ok", "updated": [1, 2], "plan_path": "..."}`
+
+### read_session.py — セッション全ファイル読み取り
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/read_session.py {session_dir} [--files file1 file2]
+```
+
+**出力**: `{"status": "ok", "files": {...}, "refs": {...}}`
+
+---
+
 ## 付記
 
 ### `id` の整合性

@@ -217,8 +217,21 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill review
    ```
    JSON 出力の `session_dir` をコンテキストに保持する。
 
-2. `{session_dir}/refs.yaml` を Write する
-   （フォーマット: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` の「refs.yaml」参照）
+2. refs.yaml をスクリプトで生成する:
+
+   ```bash
+   echo '<refs_json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_refs.py {session_dir}
+   ```
+
+   refs_json のフォーマット:
+   ```json
+   {
+     "target_files": ["対象ファイルパス一覧"],
+     "reference_docs": [{"path": "参考文書パス"}],
+     "review_criteria_path": "レビュー観点ファイルパス",
+     "related_code": [{"path": "パス", "reason": "理由", "lines": "範囲"}]
+   }
+   ```
 
 作成完了後、以下を出力する:
 
