@@ -243,15 +243,38 @@ class TestSkillMdFiles(unittest.TestCase):
                 f"{skill['path']} に description がない")
 
     def test_user_invocable_field(self):
-        """AI 専用 Skill は user-invocable: false を持つ"""
+        """AI 専用 Skill（user-invocable: false）が README で正しくマークされている"""
+        readme_path = REPO_ROOT / 'README.md'
+        if not readme_path.is_file():
+            self.skipTest('README.md が存在しない')
+        readme = readme_path.read_text(encoding='utf-8')
+
         for skill in self.skills:
             fm = skill['frontmatter']
             if fm is None:
                 continue
-            # user-invocable フィールドの存在は任意だが、
-            # false の場合は明示されているべき
-            # ここではフィールドの存在のみチェック
-            # (user-invocable がないデフォルトは true)
+            # user-invocable: false のスキルが README テーブルに含まれる場合、
+            # "No (AI only)" 等の AI 専用マーカーが付いていることを検証する
+            if fm.get('user-invocable') in (False, 'false'):
+                skill_name = fm.get('name', skill['dir_name'])
+                # テーブルの最初のセルにスキル名が含まれる行のみ対象にする
+                # （description セル内の言及は除外）
+                table_lines = []
+                for l in readme.split('\n'):
+                    if not l.strip().startswith('|'):
+                        continue
+                    cells = [c.strip() for c in l.split('|')]
+                    # 最初の非空セル（テーブルの第1列）がスキル名と完全一致するか
+                    # セルから backtick やスペースを除去して比較
+                    first_cell = cells[1].strip(' `') if len(cells) > 1 else ''
+                    if first_cell == skill_name:
+                        table_lines.append(l)
+                for line in table_lines:
+                    self.assertRegex(
+                        line, r'(?i)no\b|ai.only',
+                        f"AI 専用スキル '{skill_name}' ({skill['path']}) が "
+                        f"README テーブルで AI 専用とマークされていない: {line}"
+                    )
 
 
 class TestSkillCrossReferences(unittest.TestCase):
