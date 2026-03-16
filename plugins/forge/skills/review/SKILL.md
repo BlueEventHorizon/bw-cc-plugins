@@ -40,6 +40,12 @@ user-invocable: true
 
 ---
 
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
+
+---
+
 ## ワークフロー
 
 ### Phase 1: 引数解析

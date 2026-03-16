@@ -510,6 +510,71 @@ def _extract_feature_from_match(pattern, matched_path):
 
 
 # ---------------------------------------------------------------------------
+# バリデーション
+# ---------------------------------------------------------------------------
+
+def validate_doc_structure(config, raw_content):
+    """構造とバージョンの妥当性を検証する。
+
+    検証優先順:
+      1. 構造チェック: rules/specs に root_dirs が存在するか
+      2. バージョンチェック: メジャーバージョンが 3 未満でないか
+
+    Args:
+        config: parse_config() の戻り値
+        raw_content: ファイル内容（文字列）
+
+    Returns:
+        dict: {"valid": True} or
+              {"valid": False, "error": "...", "suggestion": "..."}
+    """
+    suggestion = (
+        "/forge:setup-doc-structure を実行して "
+        ".doc_structure.yaml を再生成してください"
+    )
+
+    # 1. 構造チェック: rules または specs に root_dirs があるか
+    has_root_dirs = False
+    for section_name in ('rules', 'specs'):
+        section = config.get(section_name, {})
+        if isinstance(section, dict):
+            root_dirs = section.get('root_dirs')
+            if isinstance(root_dirs, list):
+                has_root_dirs = True
+                break
+
+    if not has_root_dirs:
+        major = get_major_version(raw_content)
+        if major is not None and major < 3:
+            error = (
+                f".doc_structure.yaml は旧フォーマット（v{major}）です。"
+                f" root_dirs が存在しないためパス解決ができません"
+            )
+        else:
+            error = (
+                ".doc_structure.yaml に root_dirs が定義されていません。"
+                " パス解決ができません"
+            )
+        return {"valid": False, "error": error, "suggestion": suggestion}
+
+    # 2. バージョンチェック（root_dirs があっても警告レベルで確認）
+    major = get_major_version(raw_content)
+    if major is not None and major < 3:
+        # v2 は root_dirs を持つ場合があり動作するため valid
+        # ただし情報として返す
+        return {
+            "valid": True,
+            "version_warning": (
+                f"v{major} フォーマットです。"
+                f" 最新の v3 へのマイグレーションを推奨します"
+            ),
+            "suggestion": suggestion,
+        }
+
+    return {"valid": True}
+
+
+# ---------------------------------------------------------------------------
 # メイン解決ロジック
 # ---------------------------------------------------------------------------
 
@@ -645,7 +710,6 @@ def parse_args():
         action='store_true',
         help='.doc_structure.yaml のバージョンを出力する',
     )
-
     parser.add_argument(
         '--project-root',
         default=None,
@@ -696,38 +760,51 @@ def main():
 
     # コマンド実行
     if args.version:
+        # --version は情報取得のみのためバリデーション不要
         version = get_version(raw_content)
         result = {
             'status': 'ok',
             'version': version,
             'major_version': get_major_version(raw_content),
         }
-    elif args.features:
-        features = detect_features(config, project_root)
-        result = {
-            'status': 'ok',
-            'features': features,
-        }
-    elif args.doc_type:
-        files = resolve_files_by_doc_type(
-            config, args.category, args.doc_type, project_root
-        )
-        result = {
-            'status': 'ok',
-            'category': args.category,
-            'doc_type': args.doc_type,
-            'files': files,
-        }
     else:
-        # --type
-        result = {
-            'status': 'ok',
-            'project_root': project_root,
-        }
-        if args.type in ('rules', 'all'):
-            result['rules'] = resolve_files(config, 'rules', project_root)
-        if args.type in ('specs', 'all'):
-            result['specs'] = resolve_files(config, 'specs', project_root)
+        # --type / --features / --doc-type はバリデーション必須
+        validation = validate_doc_structure(config, raw_content)
+        if not validation.get('valid'):
+            error_result = {
+                'status': 'error',
+                'message': validation['error'],
+                'suggestion': validation.get('suggestion', ''),
+            }
+            print(json.dumps(error_result, indent=2, ensure_ascii=False))
+            sys.exit(1)
+
+        if args.features:
+            features = detect_features(config, project_root)
+            result = {
+                'status': 'ok',
+                'features': features,
+            }
+        elif args.doc_type:
+            files = resolve_files_by_doc_type(
+                config, args.category, args.doc_type, project_root
+            )
+            result = {
+                'status': 'ok',
+                'category': args.category,
+                'doc_type': args.doc_type,
+                'files': files,
+            }
+        else:
+            # --type
+            result = {
+                'status': 'ok',
+                'project_root': project_root,
+            }
+            if args.type in ('rules', 'all'):
+                result['rules'] = resolve_files(config, 'rules', project_root)
+            if args.type in ('specs', 'all'):
+                result['specs'] = resolve_files(config, 'specs', project_root)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0

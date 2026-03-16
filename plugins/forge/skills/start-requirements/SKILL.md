@@ -15,6 +15,12 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 - **reverse-engineering**: 既存アプリのソースコードから要件を抽出
 - **from-figma**: Figmaデザインファイルから要件とデザイントークンを作成
 
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
+
+---
+
 ## コマンド構文
 
 ```

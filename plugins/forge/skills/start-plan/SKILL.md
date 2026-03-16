@@ -12,6 +12,12 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
 
 設計書からタスクを抽出し、計画書を作成または更新する。
 
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
+
+---
+
 ## コマンド構文
 
 ```
