@@ -97,20 +97,48 @@ argument-hint: "(内部使用)"
 
 ### Step 3: evaluation.yaml に書き込む
 
-全件の吟味結果を `{session_dir}/evaluation.yaml` に Write する。
+吟味結果を JSON に構造化し、スクリプトで evaluation.yaml を生成する:
+
+```bash
+echo '<evaluation_json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_evaluation.py {session_dir}
+```
+
+evaluation_json のフォーマット:
+```json
+{
+  "cycle": 1,
+  "items": [
+    {"id": 1, "severity": "critical", "title": "問題名",
+     "recommendation": "fix", "auto_fixable": true, "reason": "判定理由"}
+  ]
+}
+```
 
 各項目には `recommendation`（fix / skip / needs_review）と、fix の場合は `auto_fixable`（true / false）を含める。
 
-（フォーマット: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` の「evaluation.yaml」参照）
-
 ### Step 4: plan.yaml を更新する [MANDATORY]
 
-`{session_dir}/plan.yaml` を Read し、以下のルールで各項目の `status` を更新して Write する。
-**全モード共通**で実行する（interactive モードでも更新する）:
+以下のルールで各項目の `status` を更新する。**全モード共通**で実行する（interactive モードでも更新する）:
 
 - `recommendation: fix` → `status: pending` のまま（fixer が後で `fixed` にする）
 - `recommendation: skip` → `status: skipped` / `skip_reason` を記録
 - `recommendation: needs_review` → `status: needs_review`
+
+スクリプトでバッチ更新する:
+
+```bash
+echo '<batch_json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --batch
+```
+
+batch_json のフォーマット:
+```json
+{
+  "updates": [
+    {"id": 1, "status": "pending"},
+    {"id": 2, "status": "skipped", "skip_reason": "理由"}
+  ]
+}
+```
 
 > **interactive モードの場合**: evaluator の更新はあくまで初期推奨状態。present-findings がユーザーの最終判断で上書き更新する（`review/SKILL.md` §ワークフロー 参照）。
 > そのため evaluator の plan.yaml 更新と present-findings による上書きは意図的な二段階更新であり、競合ではない。

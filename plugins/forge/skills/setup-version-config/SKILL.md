@@ -2,7 +2,7 @@
 name: setup-version-config
 description: |
   プロジェクトの構造をスキャンして .version-config.yaml を対話的に生成・更新する。
-  /forge:bump を使う前提条件として実行する。初回セットアップ時またはプロジェクト構造変更時（プラグイン追加、README フォーマット変更など）に再実行して設定を更新する。
+  /forge:update-version を使う前提条件として実行する。初回セットアップ時またはプロジェクト構造変更時（プラグイン追加、README フォーマット変更など）に再実行して設定を更新する。
   トリガー: "version config を作成", "バージョン設定を初期化", "setup version config", ".version-config.yaml を作る", "バージョン管理の設定"
 user-invocable: true
 argument-hint: ""
@@ -13,7 +13,7 @@ argument-hint: ""
 ## 概要
 
 プロジェクトをスキャンして `.version-config.yaml` をプロジェクトルートに生成・更新する。
-このファイルは `/forge:bump` がどのファイルをどのように更新するかを定義する。
+このファイルは `/forge:update-version` がどのファイルをどのように更新するかを定義する。
 
 - **初回実行**: バージョンファイル・README・CHANGELOG を自動検出し、設定草案を生成
 - **再実行時**: 既存設定とスキャン結果を差分比較し、追加・変更された項目のみ更新
@@ -39,7 +39,7 @@ argument-hint: ""
 以下のコマンドでバージョン関連ファイルを検出する:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/scan_version_targets.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/scan_version_targets.py"
 ```
 
 スキャン結果（JSON）を取得し、以下の情報を確認する:
@@ -165,7 +165,7 @@ git:
 .version-config.yaml を生成しました。
 
 次のステップ:
-- /forge:bump [target] patch  でバージョンをバンプできます
+- /forge:update-version [target] patch  でバージョンをバンプできます
 - プロジェクト構造が変わった場合は /forge:setup-version-config を再実行してください
 - .version-config.yaml をバージョン管理に追加することをお勧めします
 ```
@@ -178,7 +178,7 @@ git:
 # version_config_version: 1.0
 
 targets:
-  - name: forge                            # target の論理名（/forge:bump の引数に使う）
+  - name: forge                            # target の論理名（/forge:update-version の引数に使う）
     version_file: plugins/forge/.claude-plugin/plugin.json  # バージョン値の読み取り元
     version_path: version                  # JSON/TOML のフィールドパス（ネストは "a.b.c"）
     sync_files:                            # バージョンを同期するファイルリスト

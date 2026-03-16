@@ -13,7 +13,11 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 - **interactive**: ゼロから対話しながら要件を固める
 - **reverse-engineering**: 既存アプリのソースコードから要件を抽出
-- **from-figma**: Figmaデザインファイルから要件とデザイントークンを作成
+- **from-figma**: Figma デザインファイルから要件とデザイントークンを作成
+
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
 ## コマンド構文
 
@@ -30,7 +34,7 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 ---
 
-## 前提確認フェーズ [MANDATORY]（全モード共通）
+## 前提確認 [MANDATORY]
 
 ### Step 1: .doc_structure.yaml の確認
 
@@ -45,61 +49,15 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
   - **いいえ** → 終了
 - **存在する** → Step 2 へ
 
-### Step 2: 出力先ディレクトリの解決
+### Step 2: モード選択
 
-`doc-structure` スキルのスクリプトで出力先ディレクトリを取得する。
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type requirement
-```
-
-- 結果あり → そのパスを使用（例: `specs/requirements/`）
-- 結果なし → `specs/{feature}/requirements/` をデフォルトとして使用
-
-### Step 3: プロジェクト固有情報の取得 [MANDATORY]
-
-以下のプラグイン文書を**常に**読み込む:
-
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（使用するIDをここから選択）
-- **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
-
-### Step 4: Figma MCP の利用可否確認
-
-利用可能なツール一覧に `mcp__figma` 等が存在するかを確認し、結果をコンテキストに保持する。
-
-- **利用可能** → `figma_available: true`
-- **利用不可** → `figma_available: false`
-
----
-
-## モード選択
-
-`--mode` 未指定時、AskUserQuestion を使用して選択肢を提示する。
-
-`figma_available: true` の場合:
+`--mode` 未指定時、AskUserQuestion を使用して選択肢を提示する:
 
 ```
 どの方法で要件定義を開始しますか？
 1. interactive         — ゼロから対話しながら要件を固める
 2. reverse-engineering — 既存アプリのソースコードを解析して要件を抽出
-3. from-figma          — Figmaデザインファイルから要件とデザイントークンを作成
-```
-
-`figma_available: false` の場合:
-
-```
-どの方法で要件定義を開始しますか？
-1. interactive         — ゼロから対話しながら要件を固める
-2. reverse-engineering — 既存アプリのソースコードを解析して要件を抽出
-3. from-figma          — Figmaデザインファイルから要件とデザイントークンを作成（Figma MCP 未接続・利用不可）
-```
-
-`--mode from-figma` が指定されていて `figma_available: false` の場合はエラーで終了:
-
-```
-Error: Figma MCP が必要です。
-interactive または reverse-engineering を使用してください。
+3. from-figma          — Figma デザインファイルから要件とデザイントークンを作成
 ```
 
 ---
@@ -114,6 +72,15 @@ interactive または reverse-engineering を使用してください。
 2. **Feature 名の確定**:
    - 引数で指定済み → そのまま使用
    - 未指定 → AskUserQuestion を使用して入力を求める
+
+3. **出力先ディレクトリの解決**:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --doc-type requirement
+   ```
+
+   - 結果あり → そのパスを使用（例: `specs/requirements/`）
+   - 結果なし → `specs/{feature}/requirements/` をデフォルトとして使用
 
 ---
 
@@ -144,243 +111,14 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 
 ---
 
-## コンテキスト収集フェーズ [MANDATORY]
+## ワークフローの実行 [MANDATORY]
 
-モードに応じた agent を **Agent ツールで並列起動** し、コンテキストを収集する。
-各 agent には `${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md` のパスと `session_dir` を渡す。
+モード確定後、該当するワークフローファイルを **Read** し、そのファイルの指示に従って作業を実行する。
 
-### モード別起動マトリクス
+| モード | ファイルパス |
+|--------|-------------|
+| interactive | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_interactive_workflow.md` |
+| reverse-engineering | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md` |
+| from-figma | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_from_figma_workflow.md` |
 
-| agent | interactive (新規) | interactive (--add) | reverse-engineering | from-figma |
-|-------|--------------------|---------------------|---------------------|------------|
-| rules agent | ○ | ○ | ○ | ○ |
-| specs agent | - | ○ | - | - |
-| code agent | - | - | ○ | - |
-
-### 各 agent への指示
-
-**rules agent（全モード）**:
-
-```yaml
-session_dir: {session_dir}
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 実装ルール調査
-feature: "{feature}"
-skill_type: "要件定義書作成"
-```
-
-**specs agent（--add 時のみ）**:
-
-```yaml
-session_dir: {session_dir}
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 仕様書調査
-feature: "{feature}"
-skill_type: "要件定義書作成"
-```
-
-**code agent（reverse-engineering 時のみ）**:
-
-```yaml
-session_dir: {session_dir}
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 既存コード調査
-feature: "{feature}"
-skill_type: "要件定義書作成"
-```
-
-### 失敗時の扱い
-
-- agent がエラー終了 → 該当カテゴリの refs/ ファイルなしで後続工程に進む
-- agent が空結果 → 正常扱い
-- 失敗した agent がある場合、refs/ 統合表示でその旨を報告する
-
----
-
-## refs/ 統合・表示 [MANDATORY]
-
-全 agent 完了後、`{session_dir}/refs/` 内のファイルを Read し表示する:
-
-```
-### ✅ コンテキスト収集完了
-
-**rules (N件)**
-- `rules/requirement_format.md` — 要件書フォーマット
-
-**specs (N件)**（--add 時のみ）
-- `specs/{feature}/requirements/xxx.md` — 既存要件定義書
-
-**code (N件)**（reverse-engineering 時のみ）
-- `src/xxx/YYY.swift` — ソースコード
-```
-
-5件以下は全件表示、6件以上は先頭3件+省略。
-
----
-
-## Mode: interactive（対話型）
-
-**対象**: Figma・既存ソースなし、アイデアベースで要件を固める場合。
-
-### 対話の基本原則 [MANDATORY]
-
-1. **選択肢ファースト**: 「A / B / C のどれが近いですか？」形式で提示
-2. **視覚的確認**: ASCII 図や Mermaid 図で画面・フロー確認
-3. **小さく確認**: フェーズ終了時だけでなく都度確認
-4. **未確定の許容**: TBD-001 形式で未確定事項を登録・管理
-5. **What に集中**: How（技術実装）は記載しない（「ユーザーマニュアルに書くか？」で判断）
-6. **段階的な文書提示**: APP-001 承認後に詳細文書へ進む
-7. **スコープ管理**: 必須 / あると良い / 将来 の3段階で分類
-
-### アンチパターン [MANDATORY]
-
-| パターン           | 問題         | 対策                                   |
-| ------------------ | ------------ | -------------------------------------- |
-| 質問攻め           | ユーザー疲弊 | 選択肢提示、1回3〜5問以内              |
-| 曖昧な合意         | 後で認識ズレ | 図表で視覚的確認                       |
-| How 混入           | 設計領域侵食 | 「ユーザーマニュアルに書くか？」で判断 |
-| 完璧主義           | 進まない     | TBD を許容                             |
-| 一気に全部         | 漏れ・矛盾   | フェーズごとに確定                     |
-| 既存無視（追加時） | 整合性崩壊   | 既存資産を必ず確認                     |
-| スコープ膨張       | 終わらない   | 3段階分類                              |
-
-### Phase 1: ビジョン・価値の明確化
-
-- **新規**: APP-001 ドラフト（解決する課題、提供価値、主要機能）を作成
-- **追加**: APP-001 参照のみ、機能の目的と既存機能との関係を確認
-
-### Phase 2: 体験フロー・画面構成
-
-- 主要シナリオ確認（トリガー、操作フロー、完了条件）
-- 画面一覧のドラフト作成・過不足確認
-- ナビゲーション構造確認
-
-### Phase 3: 詳細仕様
-
-- グロッサリー作成（用語定義・共有）[MANDATORY]
-- 画面要件 SCR-xxx: 目的、表示要素、操作、空状態、エラー
-- 機能要件 FNC-xxx: トリガー、入力、出力、制約
-- ビジネスロジック BL-xxx: 計算ルール、バリデーション
-- データ要件 DM-xxx: 保存内容、保存場所
-
-### Phase 4: 統合・品質確認
-
-- フォーマットに従い整形
-- 未確定事項の整理（TBD リスト化）
-
----
-
-## Mode: reverse-engineering（既存アプリのリバースエンジニアリング）
-
-**対象**: 既存のソースコードから要件を抽出・再構築する場合。
-
-### 事前確認
-
-- ソースコードのパスを確認
-- 基本方針確認: **機能保持のみ** / **機能もデザインも刷新**
-
-### Phase 1: ソースコード解析 [MANDATORY]
-
-`{session_dir}/refs/code.yaml` を Read し、収集済みのソースコード一覧を起点に解析する:
-
-- refs/code.yaml に記載されたファイルを Read して全体構造を把握
-- プロジェクト構造の把握（ディレクトリ構成）
-- 画面・コンポーネントの列挙（View/画面クラスを特定）
-- ナビゲーション構造の特定
-- 必要に応じて追加の Grep/Glob 探索で補完
-
-### Phase 2: 要件抽出 [MANDATORY]
-
-- ユーザーアクションの特定（ボタン操作、ジェスチャー等）
-- 条件分岐の要件化（分岐ロジックを What として記述）
-- データ永続化の特定（保存先・内容）
-- エラーハンドリング抽出
-
-### Phase 3: 要件定義書作成
-
-- 解析結果から APP-001 → 画面要件（SCR-xxx）の順に作成
-- デザイン刷新時はデザイン要素を切り離し機能要件のみ記載
-
-### Phase 4: 品質確認
-
-- 全画面の SCR-xxx 存在確認
-- 主要機能の FNC-xxx 存在確認
-
----
-
-## Mode: from-figma（Figmaデザイン取り込み）
-
-**事前条件**: Figma MCP が利用可能であること（前提確認フェーズで `figma_available: false` と判定された場合はモード選択前後でエラー終了）。
-
-### Phase 1: Figmaアクセス確認
-
-- Figmaファイルへのアクセス権限確認
-- デザインが最終版であることを確認
-
-### Phase 2: デザインシステム構築
-
-- カラー・タイポグラフィ・スペーシング・シャドウの抽出
-- 2層構造: 原子的トークン → 意味的定義
-- 再利用可能コンポーネントの特定
-
-### Phase 3: 要件定義書作成
-
-- 出力先ディレクトリ構造の準備
-- 各画面の SCR-xxx 作成（ASCII レイアウト図を含む）
-- UIコンポーネント CMP-xxx の作成
-- 機能要件 FNC-xxx の作成
-
-### Phase 4: 静的アセット管理
-
-- アイコン・イラスト・ロゴ・背景画像の洗い出し
-- アセット管理方針の記載
-
-### Phase 5: 品質確認
-
-- デザイントークン完全性検証
-- 要件定義書の全画面対応確認
-
----
-
-## 完了処理 [MANDATORY]
-
-### AIレビュー
-
-作成した要件定義書に対して `/forge:review` を `--auto` モードで実行する:
-
-```
-/forge:review requirement {作成ファイルパス} --auto
-```
-
-対象はこのワークフローで作成・変更したファイル（差分）のみ。
-
-### specs ToC 更新
-
-`.claude/skills/create-specs-toc/SKILL.md` が存在する場合のみ `/create-specs-toc` を実行する（存在しない場合はスキップ）。
-
-### commit/push 確認
-
-`/anvil:commit` を実行して commit/push を確認する。
-
-### セッション削除
-
-全フェーズ正常完了後、セッションディレクトリを削除する:
-
-```bash
-rm -rf {session_dir}
-```
-
-### 完了案内
-
-作成したファイルパスとともに次のステップを案内する:
-
-```
-要件定義書を作成しました:
-  → {作成ファイルパス}
-
-次のステップ:
-  /forge:start-design {feature}    # 設計書作成へ進む
-```
+Read 後、ワークフローファイルの Phase 1 から開始する。各ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認・セッション削除）まで自己完結している。SKILL.md に戻る必要はない。

@@ -5,7 +5,7 @@ migrate_doc_structure.py のテスト
 COMMON-REQ-001 準拠のマイグレーションフレームワークと各マイグレーション関数をテストする。
 
 実行:
-    python3 -m unittest tests.forge.scripts.test_migrate_doc_structure -v
+    python3 -m unittest tests.forge.doc_structure.test_migrate_doc_structure -v
 """
 import json
 import subprocess
@@ -16,7 +16,7 @@ from pathlib import Path
 
 # スクリプトのパスを追加
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'scripts'
+SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'scripts' / 'doc_structure'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from migrate_doc_structure import (

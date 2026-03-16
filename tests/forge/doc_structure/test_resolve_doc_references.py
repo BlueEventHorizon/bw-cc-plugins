@@ -7,7 +7,7 @@ resolve_doc_structure.py に委譲後のパス解決・CLI 動作をテストす
 標準ライブラリのみ使用。
 
 実行:
-  python3 -m unittest tests.forge.scripts.test_resolve_doc_references -v
+  python3 -m unittest tests.forge.doc_structure.test_resolve_doc_references -v
 """
 
 import json
@@ -21,7 +21,7 @@ from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
-                       / 'plugins' / 'forge' / 'scripts'))
+                       / 'plugins' / 'forge' / 'scripts' / 'doc_structure'))
 
 from resolve_doc_references import (
     find_project_root,
@@ -241,7 +241,8 @@ class TestCLI(_FsTestCase):
     """subprocess で CLI を呼び出すテスト。"""
 
     SCRIPT = str(Path(__file__).resolve().parents[3]
-                 / 'plugins' / 'forge' / 'scripts' / 'resolve_doc_references.py')
+                 / 'plugins' / 'forge' / 'scripts' / 'doc_structure'
+                 / 'resolve_doc_references.py')
 
     def _run(self, *cli_args):
         """スクリプトを subprocess で実行して結果を返す。"""

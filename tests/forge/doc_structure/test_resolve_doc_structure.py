@@ -639,5 +639,141 @@ class TestFindProjectRoot(unittest.TestCase):
                 rds.find_project_root(tmpdir)
 
 
+# ---------------------------------------------------------------------------
+# テスト用 YAML データ（バリデーション用）
+# ---------------------------------------------------------------------------
+
+V1_CONFIG = """\
+version: "1.0"
+
+rules:
+  - docs/rules/
+specs:
+  - docs/specs/
+"""
+
+V2_WITH_ROOT_DIRS_CONFIG = """\
+# doc_structure_version: 2.0
+
+rules:
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+
+specs:
+  root_dirs:
+    - docs/specs/design/
+  doc_types_map:
+    docs/specs/design/: design
+"""
+
+NO_ROOT_DIRS_CONFIG = """\
+# doc_structure_version: 3.0
+
+rules:
+  doc_types_map:
+    docs/rules/: rule
+
+specs:
+  doc_types_map:
+    docs/specs/design/: design
+"""
+
+EMPTY_ROOT_DIRS_CONFIG = """\
+# doc_structure_version: 3.0
+
+rules:
+  root_dirs: []
+  doc_types_map:
+    docs/rules/: rule
+"""
+
+
+class TestValidateDocStructure(unittest.TestCase):
+    """バリデーションのテスト"""
+
+    def test_valid_v3(self):
+        """v3 フォーマット → valid"""
+        config = rds.parse_config(BASIC_CONFIG)
+        result = rds.validate_doc_structure(config, BASIC_CONFIG)
+        self.assertTrue(result['valid'])
+
+    def test_missing_root_dirs(self):
+        """root_dirs なし → invalid"""
+        config = rds.parse_config(NO_ROOT_DIRS_CONFIG)
+        result = rds.validate_doc_structure(config, NO_ROOT_DIRS_CONFIG)
+        self.assertFalse(result['valid'])
+        self.assertIn('root_dirs', result['error'])
+        self.assertIn('suggestion', result)
+
+    def test_v1_format(self):
+        """v1 形式 → invalid（root_dirs が存在しない）"""
+        config = rds.parse_config(V1_CONFIG)
+        result = rds.validate_doc_structure(config, V1_CONFIG)
+        self.assertFalse(result['valid'])
+        self.assertIn('root_dirs', result['error'])
+
+    def test_v1_format_with_comment_version(self):
+        """v1 形式（コメントでバージョン明示）→ invalid + 旧フォーマットメッセージ"""
+        content = "# doc_structure_version: 1.0\nrules:\n  - docs/rules/\n"
+        config = rds.parse_config(content)
+        result = rds.validate_doc_structure(config, content)
+        self.assertFalse(result['valid'])
+        self.assertIn('旧フォーマット', result['error'])
+        self.assertIn('v1', result['error'])
+
+    def test_v2_format_with_root_dirs(self):
+        """v2 形式 + root_dirs あり → valid（警告付き）"""
+        config = rds.parse_config(V2_WITH_ROOT_DIRS_CONFIG)
+        result = rds.validate_doc_structure(config, V2_WITH_ROOT_DIRS_CONFIG)
+        self.assertTrue(result['valid'])
+        self.assertIn('version_warning', result)
+
+    def test_no_version_with_root_dirs(self):
+        """バージョンコメントなし + root_dirs あり → valid"""
+        config = rds.parse_config(NO_VERSION_CONFIG)
+        result = rds.validate_doc_structure(config, NO_VERSION_CONFIG)
+        self.assertTrue(result['valid'])
+
+    def test_no_version_no_root_dirs(self):
+        """バージョンコメントなし + root_dirs なし → invalid"""
+        content = "rules:\n  doc_types_map:\n    docs/: rule\n"
+        config = rds.parse_config(content)
+        result = rds.validate_doc_structure(config, content)
+        self.assertFalse(result['valid'])
+        self.assertIn('root_dirs', result['error'])
+
+    def test_empty_root_dirs(self):
+        """root_dirs が空配列 → valid（設定として正当）"""
+        config = rds.parse_config(EMPTY_ROOT_DIRS_CONFIG)
+        result = rds.validate_doc_structure(config, EMPTY_ROOT_DIRS_CONFIG)
+        self.assertTrue(result['valid'])
+
+    def test_cli_type_with_invalid(self):
+        """--type all で旧フォーマット → exit(1) + error JSON"""
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ds_path = os.path.join(tmpdir, '.doc_structure.yaml')
+            with open(ds_path, 'w') as f:
+                f.write(V1_CONFIG)
+            os.makedirs(os.path.join(tmpdir, '.git'))
+
+            script = os.path.join(
+                os.path.dirname(__file__), '..', '..', '..', 'plugins',
+                'forge', 'skills', 'doc-structure', 'scripts',
+                'resolve_doc_structure.py'
+            )
+            proc = subprocess.run(
+                [sys.executable, script, '--type', 'all',
+                 '--project-root', tmpdir],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(proc.returncode, 1)
+            data = json.loads(proc.stdout)
+            self.assertEqual(data['status'], 'error')
+            self.assertIn('suggestion', data)
+
+
 if __name__ == '__main__':
     unittest.main()

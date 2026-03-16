@@ -3,7 +3,7 @@
 calculate_version.py のテスト
 
 実行:
-    python3 -m unittest tests.forge.scripts.test_calculate_version -v
+    python3 -m unittest tests.forge.update-version.test_calculate_version -v
 """
 import json
 import subprocess
@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'scripts'
+SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'update-version' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from calculate_version import bump_version, parse_semver

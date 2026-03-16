@@ -115,22 +115,9 @@ general-purpose subagent を起動し、レビュー結果を `{session_dir}/rev
 - 必要に応じて関連ファイルを自発的に探索し、整合性を確認すること
 
 ## 出力形式
-### 🔴致命的問題
-1. **[問題名]**: [説明]
-   - 箇所: [ファイル:行]
-   - 修正案: [具体的な修正]
-
-### 🟡品質問題
-1. **[問題名]**: [説明]
-   - 箇所: [ファイル:行]
-
-### 🟢改善提案
-1. **[提案名]**: [説明]
-
-### サマリー
-- 🔴致命的: X件
-- 🟡品質: X件
-- 🟢改善: X件
+`${CLAUDE_SKILL_DIR}/templates/review.md` を Read し、そのフォーマットをコピーして指摘を埋めること。
+見出し形式（### 1. ...）ではなく、番号付きリスト（1. **[問題名]**: ...）で記述すること。
+該当なしのセクションはセクションごと削除すること。
 
 確認や質問は不要です。具体的な指摘と修正案を出力してください。
 ```
@@ -156,7 +143,7 @@ general-purpose subagent を起動し、レビュー結果を `{session_dir}/rev
 スクリプトで review.md から指摘事項を抽出し、plan.yaml を生成する:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/extract_review_findings.py {session_dir}/review.md {session_dir}/plan.yaml
+python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}/review.md {session_dir}/plan.yaml
 ```
 
 JSON 出力でサマリーを確認:
