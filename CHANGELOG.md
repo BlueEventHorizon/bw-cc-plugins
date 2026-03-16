@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.23] - 2026-03-16
+
+### forge
+
+- **refactor**: セッション YAML 操作を scripts/session/ パッケージに委譲（write_refs, write_evaluation, update_plan, read_session, yaml_utils）
+- **refactor**: 単一 SKILL 専用スクリプトをスキルディレクトリへ移動（extract_review_findings → reviewer, calculate/update_version → bump, scan_version_targets → setup-version-config）
+- **refactor**: doc_structure 関連スクリプトを scripts/doc_structure/ に整理（classify_dirs, resolve_doc_references, migrate_doc_structure）
+- **fix**: extract_review_findings.py が見出し形式（`### 1. **問題名**`）の指摘をパースできない問題を修正
+- **feat**: reviewer テンプレート（templates/review.md）を追加し、SKILL.md のプロンプトをテンプレート参照に変更
+- **refactor**: start-requirements ワークフローをモード別ファイルに分離（interactive, reverse-engineering, from-figma）
+
 ## [0.0.22] - 2026-03-16
 
 ### forge

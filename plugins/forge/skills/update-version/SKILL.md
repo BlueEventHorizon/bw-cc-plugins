@@ -1,16 +1,16 @@
 ---
-name: bump
+name: update-version
 description: |
   .version-config.yaml の設定に従いプロジェクトのバージョンを一括更新する。
   patch / minor / major バンプまたは直接バージョン指定に対応。
   CHANGELOG への git log 自動反映、git commit/tag 作成オプション付き。
   前提条件: .version-config.yaml が存在すること（/forge:setup-version-config で生成）。
-  トリガー: "バージョンアップ", "version bump", "バージョンを上げる", "/forge:bump", "patch リリース", "minor バンプ"
+  トリガー: "バージョン更新", "バージョンアップ", "version bump", "update-version", "/forge:update-version"
 user-invocable: true
 argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 ---
 
-# /forge:bump
+# /forge:update-version
 
 ## 概要
 
@@ -19,7 +19,7 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 ## コマンド構文
 
 ```
-/forge:bump [target] <new-version | patch | minor | major>
+/forge:update-version [target] <new-version | patch | minor | major>
 ```
 
 | 引数            | 説明                                                       |
@@ -33,9 +33,9 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 ### 使用例
 
 ```
-/forge:bump patch              # 先頭 target をパッチバンプ
-/forge:bump forge 0.1.0       # forge を 0.1.0 に更新
-/forge:bump anvil minor        # anvil をマイナーバンプ
+/forge:update-version patch              # 先頭 target をパッチバンプ
+/forge:update-version forge 0.1.0       # forge を 0.1.0 に更新
+/forge:update-version anvil minor        # anvil をマイナーバンプ
 ```
 
 ---
