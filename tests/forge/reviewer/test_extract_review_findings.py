@@ -85,6 +85,70 @@ REVIEW_MD_CRITICAL_ONLY = """\
 3. **問題C**: 説明C
 """
 
+# issue 再現: reviewer が見出し形式で出力したケース
+REVIEW_MD_HEADING_FORMAT = """\
+### 🔴致命的問題
+
+### 1. **APP-001 のフォーマット崩れ**: テーブル構文が不正でパースできない
+- 箇所: APP-001_overview.md:44-48行目
+
+### 2. **必須フィールドの欠落**: FNC-003 に必須の入力仕様が未定義
+- 箇所: FNC-003_login.md:15
+
+### 🟡品質問題
+
+### 1. **用語の不統一**: 「ユーザー」と「利用者」が混在
+- 箇所: 全体
+"""
+
+# h2 見出し形式
+REVIEW_MD_H2_HEADING = """\
+### 🔴致命的問題
+
+## 1. **重大な問題**: 説明
+
+### 🟢改善提案
+
+## 1. **改善案**: 説明
+"""
+
+# 見出し形式と通常形式の混在
+REVIEW_MD_MIXED_FORMAT = """\
+### 🔴致命的問題
+
+### 1. **見出し形式の問題**: 説明A
+2. **通常形式の問題**: 説明B
+
+### 🟡品質問題
+
+1. **通常形式の品質問題**: 説明C
+### 2. **見出し形式の品質問題**: 説明D
+"""
+
+# サマリー後に見出し形式の指摘がある（無視されるべき）
+REVIEW_MD_FINDING_AFTER_SUMMARY = """\
+### 🔴致命的問題
+
+1. **正当な指摘**: 説明
+
+### サマリー
+
+- 🔴致命的: 1件
+
+### 1. **サマリー後の偽指摘**: これは抽出されてはいけない
+"""
+
+# 英語 Summary
+REVIEW_MD_ENGLISH_SUMMARY = """\
+### 🔴致命的問題
+
+1. **A problem**: description
+
+### Summary
+
+- 🔴Critical: 1
+"""
+
 
 # ===========================================================================
 # extract_findings テスト
@@ -154,6 +218,58 @@ class TestExtractFindings(unittest.TestCase):
         for t in titles:
             self.assertNotIn('致命的: 2件', t)
 
+    def test_heading_format(self):
+        """### 1. **問題名** 形式（issue 再現ケース）"""
+        findings = extract_findings(REVIEW_MD_HEADING_FORMAT)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], 'APP-001 のフォーマット崩れ')
+        self.assertEqual(findings[1]['severity'], 'critical')
+        self.assertEqual(findings[1]['title'], '必須フィールドの欠落')
+        self.assertEqual(findings[2]['severity'], 'major')
+        self.assertEqual(findings[2]['title'], '用語の不統一')
+
+    def test_h2_heading_format(self):
+        """## 1. **問題名** 形式（h2 見出し）"""
+        findings = extract_findings(REVIEW_MD_H2_HEADING)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '重大な問題')
+        self.assertEqual(findings[1]['severity'], 'minor')
+        self.assertEqual(findings[1]['title'], '改善案')
+
+    def test_mixed_heading_and_normal_format(self):
+        """見出し形式と通常形式の混在"""
+        findings = extract_findings(REVIEW_MD_MIXED_FORMAT)
+        self.assertEqual(len(findings), 4)
+        self.assertEqual(findings[0]['title'], '見出し形式の問題')
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[1]['title'], '通常形式の問題')
+        self.assertEqual(findings[1]['severity'], 'critical')
+        self.assertEqual(findings[2]['title'], '通常形式の品質問題')
+        self.assertEqual(findings[2]['severity'], 'major')
+        self.assertEqual(findings[3]['title'], '見出し形式の品質問題')
+        self.assertEqual(findings[3]['severity'], 'major')
+        # id は混在しても連番
+        self.assertEqual([f['id'] for f in findings], [1, 2, 3, 4])
+
+    def test_finding_after_summary_ignored(self):
+        """サマリー後の見出し形式指摘は無視される"""
+        findings = extract_findings(REVIEW_MD_FINDING_AFTER_SUMMARY)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['title'], '正当な指摘')
+
+    def test_english_summary_resets_severity(self):
+        """英語 Summary でも severity がリセットされる"""
+        findings = extract_findings(REVIEW_MD_ENGLISH_SUMMARY)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['title'], 'A problem')
+
+    def test_empty_string(self):
+        """空文字列入力"""
+        findings = extract_findings("")
+        self.assertEqual(findings, [])
+
 
 # ===========================================================================
 # generate_plan_yaml テスト
@@ -189,6 +305,30 @@ class TestGeneratePlanYaml(unittest.TestCase):
         yaml_text = generate_plan_yaml(findings)
         for field in ('id:', 'severity:', 'title:', 'status:', 'fixed_at:', 'files_modified:', 'skip_reason:'):
             self.assertIn(field, yaml_text)
+
+    def _make_finding(self, title):
+        return [{'id': 1, 'severity': 'critical', 'title': title,
+                 'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': ''}]
+
+    def test_title_with_backslash_and_colon(self):
+        """タイトルにバックスラッシュ+コロンが含まれる場合（エスケープ分岐）"""
+        yaml_text = generate_plan_yaml(self._make_finding('C:\\path: エラー'))
+        self.assertIn('C:\\\\path', yaml_text)
+
+    def test_title_with_double_quote(self):
+        """タイトルにダブルクォートが含まれる場合"""
+        yaml_text = generate_plan_yaml(self._make_finding('値が "null" になる'))
+        self.assertIn('\\"null\\"', yaml_text)
+
+    def test_title_starting_with_brace(self):
+        """タイトルが { で始まる場合"""
+        yaml_text = generate_plan_yaml(self._make_finding('{key: value} の構文エラー'))
+        self.assertIn('title: "{key', yaml_text)
+
+    def test_title_starting_with_bracket(self):
+        """タイトルが [ で始まる場合"""
+        yaml_text = generate_plan_yaml(self._make_finding('[配列] の要素不足'))
+        self.assertIn('title: "[配列]', yaml_text)
 
 
 # ===========================================================================

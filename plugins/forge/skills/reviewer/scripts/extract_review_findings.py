@@ -61,6 +61,23 @@ def extract_findings(content):
                     lower = stripped.lower()
                     if 'サマリー' in lower or 'summary' in lower:
                         current_severity = None
+
+            # # 行でも FINDING_PATTERN を試行（### 1. **問題名** 形式への対応）
+            if current_severity:
+                heading_text = stripped.lstrip('#').strip()
+                match = FINDING_PATTERN.match(heading_text)
+                if match:
+                    finding_id += 1
+                    title = match.group(1).strip()
+                    findings.append({
+                        'id': finding_id,
+                        'severity': current_severity,
+                        'title': title,
+                        'status': 'pending',
+                        'fixed_at': '',
+                        'files_modified': [],
+                        'skip_reason': '',
+                    })
             continue
 
         if current_severity is None:
