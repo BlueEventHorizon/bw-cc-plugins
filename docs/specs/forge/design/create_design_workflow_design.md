@@ -47,12 +47,11 @@ flowchart TD
     NEXT_FILE{次のファイル?} -->|"あり"| DESIGN
     NEXT_FILE -->|"なし"| AI_REVIEW
 
-    AI_REVIEW["/forge:review design<br>AIレビュー"] --> HUMAN_REVIEW2
+    AI_REVIEW["/forge:review design --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> QA
 
-    HUMAN_REVIEW2{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| QA
-    HUMAN_REVIEW2 -->|"修正"| DESIGN
+    QA["品質保証<br>完全性チェック<br>/create-specs-toc"] --> COMMIT
 
-    QA["品質保証<br>完全性チェック<br>/create-specs-toc"] --> End([完了])
+    COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
 ```
 
 ---
@@ -102,15 +101,15 @@ flowchart TD
 
 | Step | 内容 | 実行者 |
 |------|------|--------|
-| 3.1 | `/forge:review design` 実行 | subagent（review ワークフロー）|
-| 3.2 | 人間レビュー確認（AskUserQuestion）| orchestrator |
+| 3.1 | `/forge:review design {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
 
 ### Phase 4: 品質保証
 
 | Step | 内容 |
 |------|------|
 | 4.1 | 完全性チェック（要件反映漏れ、ID一意性、既存資産活用）|
-| 4.2 | `/create-specs-toc` 実行 [MANDATORY] |
+| 4.2 | `/create-specs-toc` 実行（利用可能な場合）|
+| 4.3 | `/anvil:commit` による commit/push 確認 |
 
 ---
 
@@ -135,8 +134,7 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 ## 5. 次ステップの案内
 
 ```
-/forge:review design {path} --auto    # AIレビュー+自動修正
-/forge:start-plan {feature}           # 計画書作成
+/forge:start-plan {feature}           # 計画書作成へ進む
 ```
 
 ---

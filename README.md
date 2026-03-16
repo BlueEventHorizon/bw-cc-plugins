@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin    | Version | Description                                                                                                   |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.21  | AI-powered document lifecycle tool. Create, review, fix, and finalize requirements/design/plan docs and code. |
+| **forge** | 0.0.22  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 
@@ -50,7 +50,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## forge
 
-AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, auto-fix issues, and finalize with quality gates.
+AI-powered document lifecycle tool. Create requirements/design/plan docs, review code & documents, and auto-fix issues.
 
 ### Feature
 
@@ -75,7 +75,7 @@ specs/
 ### Usage
 
 ```
-/forge:review <type> [target] [--engine] [--refactor [N]]
+/forge:review <type> [target] [--engine] [--auto [N]]
 ```
 
 | Argument | Values                                                                              |
@@ -83,7 +83,7 @@ specs/
 | type     | `code` \| `requirement` \| `design` \| `plan` \| `generic`                          |
 | target   | File path(s), directory, feature name, or omit for interactive                      |
 | engine   | `--codex` (default) \| `--claude`                                                   |
-| mode     | `--refactor [N]` (review+fix N cycles, default 1) \| `--auto-fix` (backward compat) |
+| mode     | `--auto [N]` (review+fix N cycles, default 1) \| `--auto-critical` (🔴 only) |
 
 ### Examples
 
@@ -100,14 +100,14 @@ specs/
 # Review a design document
 /forge:review design specs/login/design/login_design.md
 
-# Review a plan with 1 refactor cycle (default)
-/forge:review plan specs/login/plan/login_plan.yaml --refactor
+# Review a plan with 1 auto-fix cycle (default)
+/forge:review plan specs/login/plan/login_plan.yaml --auto
 
-# Review and refactor up to 3 cycles
-/forge:review code src/ --refactor 3
+# Review and auto-fix up to 3 cycles
+/forge:review code src/ --auto 3
 
 # Review only (no fix)
-/forge:review code src/ --refactor 0
+/forge:review code src/ --auto 0
 
 # Review any document
 /forge:review generic README.md

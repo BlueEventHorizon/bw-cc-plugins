@@ -223,32 +223,39 @@ skill_type: "計画書作成"
 
 ---
 
-## Phase 4: AIレビューと承認 [MANDATORY]
+## Phase 4: AIレビュー [MANDATORY]
 
-### 4.1 AIレビュー実施
-
-計画書作成・更新後に `/forge:review plan` でレビューを実行する:
+計画書作成・更新後に `/forge:review plan` を `--auto` モードで実行する:
 
 <!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、start-plan のセッションとは干渉しない -->
 ```
-/forge:review plan {作成した計画書のファイルパス}
+/forge:review plan {作成した計画書のファイルパス} --auto
 ```
 
-致命的問題は修正する。Skill が失敗した場合は Phase 3.4 のチェック項目を手動で確認し、人間にレビューを依頼する。
-
-### 4.2 人間のレビュー依頼
-
-AskUserQuestion を使用して計画書の承認を確認する。
+対象はこのワークフローで作成・変更したファイル（差分）のみ。
+Skill が失敗した場合は Phase 3.4 のチェック項目を手動で確認し、人間にレビューを依頼する。
 
 ---
 
 ## 完了処理
+
+### specs ToC 更新
+
+`.claude/skills/create-specs-toc/SKILL.md` が存在する場合のみ `/create-specs-toc` を実行する（存在しない場合はスキップ）。
+
+### commit/push 確認
+
+`/anvil:commit` を実行して commit/push を確認する。
+
+### セッション削除
 
 セッションディレクトリを削除する:
 
 ```bash
 rm -rf {session_dir}
 ```
+
+### 完了案内
 
 作成したファイルパスとともに次のステップを案内する:
 
@@ -257,6 +264,5 @@ rm -rf {session_dir}
   → {作成ファイルパス}
 
 次のステップ:
-  /forge:start-implement {feature}              # タスクの実行を開始
-  /forge:review plan {作成ファイルパス} --auto  # 計画書をレビュー+修正
+  /forge:start-implement {feature}    # タスクの実行を開始
 ```

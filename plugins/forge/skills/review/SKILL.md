@@ -44,14 +44,17 @@ user-invocable: true
 
 ### Phase 1: 引数解析
 
-スクリプトで `$ARGUMENTS` を解析する:
+`$ARGUMENTS` を AI が直接解釈して以下の値を確定する:
 
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/parse_review_args.py $ARGUMENTS
-```
+| 項目 | 確定方法 |
+|------|---------|
+| `review_type` | `requirement` / `design` / `code` / `plan` / `generic` のいずれか。自然言語から判断可。不明時は AskUserQuestion |
+| `targets` | ファイルパス / ディレクトリ / Feature 名。自然言語の説明（「先ほど作成したファイル」等）は文脈から解決する |
+| `engine` | `--codex`（デフォルト） / `--claude`。明示指定がなければ codex |
+| `auto_count` | `--auto` 指定時のサイクル数（省略時 1）。`--auto` なしは 0（対話モード） |
+| `auto_critical` | `--auto-critical` 指定時のみ `true` |
 
-JSON 出力から `review_type` / `targets` / `engine` / `auto_count` / `auto_critical` を取得する。
-`status: "error"` の場合はエラー内容をユーザーに報告して終了する。
+> **設計判断**: スクリプトではなく AI が解析する。ユーザー入力には自然言語が混在するため、リジッドなトークンパーサーでは対応できない。
 
 解析完了後、以下を出力する:
 
