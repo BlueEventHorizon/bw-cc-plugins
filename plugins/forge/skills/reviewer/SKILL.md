@@ -156,7 +156,7 @@ general-purpose subagent を起動し、レビュー結果を `{session_dir}/rev
 スクリプトで review.md から指摘事項を抽出し、plan.yaml を生成する:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/extract_review_findings.py {session_dir}/review.md {session_dir}/plan.yaml
+python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}/review.md {session_dir}/plan.yaml
 ```
 
 JSON 出力でサマリーを確認:

@@ -25,7 +25,7 @@ import sys
 
 # resolve_doc_structure.py をインポート
 sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), '..', 'skills', 'doc-structure', 'scripts'
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'skills', 'doc-structure', 'scripts'
 ))
 from resolve_doc_structure import (
     load_doc_structure,

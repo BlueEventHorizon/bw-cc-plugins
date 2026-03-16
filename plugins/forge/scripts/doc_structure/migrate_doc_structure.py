@@ -19,7 +19,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PLUGIN_ROOT = SCRIPT_DIR.parent
+PLUGIN_ROOT = SCRIPT_DIR.parent.parent  # doc_structure → scripts → forge
 _rds_path = PLUGIN_ROOT / 'skills' / 'doc-structure' / 'scripts'
 sys.path.insert(0, str(_rds_path))
 from resolve_doc_structure import get_major_version  # noqa: E402

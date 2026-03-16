@@ -127,13 +127,16 @@ subagent の修正サマリーを呼び出し元に返す。呼び出し元（/f
 
 ### Step 5: plan.yaml の更新
 
-session_dir が提供されており、修正が成功した場合:
+session_dir が提供されており、修正が成功した場合、スクリプトで更新する:
 
-1. `{session_dir}/plan.yaml` を Read する
-2. 修正した指摘事項の `id` を特定し、対象項目の `status` を `fixed` に更新する
-   - `fixed_at`: 現在時刻（ISO8601 形式）
-   - `files_modified`: 修正したファイルパスのリスト
-3. plan.yaml を Write で上書き保存する
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
+  --id {修正した指摘事項のid} \
+  --status fixed \
+  --files-modified {修正したファイルパス一覧}
+```
+
+- `--fixed-at` は省略可能（省略時は現在時刻が自動設定される）
 
 ---
 

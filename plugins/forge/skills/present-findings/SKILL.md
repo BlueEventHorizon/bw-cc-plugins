@@ -243,15 +243,14 @@ AskUserQuestion で進め方を確認する:
 1. 項目を丁寧に説明する（提示の原則に従う）
 2. 「選択肢の提示方法」に従い AskUserQuestion で判断を仰ぐ
 3. ユーザーの選択に応じて:
-   - **修正を選択**（A案/B案）→ plan.yaml の status を `in_progress` に更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-   - **このまま（対応しない）** → plan.yaml の status を `needs_review` に更新
+   - **修正を選択**（A案/B案）→ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status in_progress` で更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
+   - **このまま（対応しない）** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status needs_review` で更新
    - **一覧に戻る** → Step 2 へ
 4. fixer の修正後、単独修正レビューを実施（修正の場合） [MANDATORY]
    4.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
    4.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
    4.3. 問題なし → fixer の修正サマリーをユーザーに報告
-   4.4. スキップした場合: plan.yaml の status を `skipped` に変更 / skip_reason を記録
-   plan.yaml を Write で上書き保存
+   4.4. スキップした場合: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新
 5. 次の項目へ進む
 
 全項目の提示・解決が完了したら、最終サマリーを報告して終了。
