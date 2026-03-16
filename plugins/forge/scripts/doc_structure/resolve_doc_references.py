@@ -143,7 +143,7 @@ def main():
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     if result.get('status') == 'error':
-        sys.exit(1)
+        return 1
 
     return 0
 

@@ -103,16 +103,34 @@ def _update_with_path(content, old_version, new_version, version_path):
     return content[:start] + result
 
 
-def _update_with_filter(content, old_version, new_version, filter_pattern):
-    """フィルタパターンにマッチするブロック内のみ置換する。"""
+def _update_with_filter(content, old_version, new_version, filter_pattern,
+                        max_distance=10):
+    """フィルタパターンにマッチするブロック内のみ置換する。
+
+    Args:
+        content: ファイル内容
+        old_version: 置換元バージョン
+        new_version: 置換先バージョン
+        filter_pattern: フィルタパターン
+        max_distance: filter 行から version を探索する最大行数。
+                      この行数以内に version が見つからなければブロックをリセットする。
+    """
     lines = content.split('\n')
     in_block = False
+    lines_since_filter = 0
     result_lines = []
     replaced = False
 
     for line in lines:
         if filter_pattern in line:
+            # 新しい filter マッチ: カウンタをリセットしてブロック開始
             in_block = True
+            lines_since_filter = 0
+        elif in_block:
+            lines_since_filter += 1
+            if lines_since_filter > max_distance:
+                # filter 行から一定行数以内に version が見つからなかった
+                in_block = False
 
         if in_block and not replaced and old_version in line:
             line = line.replace(old_version, new_version, 1)

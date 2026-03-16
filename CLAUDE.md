@@ -30,7 +30,7 @@ claude --plugin-dir ./plugins/forge
 python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
 
 # ディレクトリスキャン（メタデータ JSON 出力）
-python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
+python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクトルート]
 ```
 
 ## Architecture
