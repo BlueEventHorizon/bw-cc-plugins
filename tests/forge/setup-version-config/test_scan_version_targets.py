@@ -6,7 +6,7 @@ scan_version_targets.py のテスト
 標準ライブラリのみ使用。
 
 実行:
-  python3 -m unittest tests.forge.scripts.test_scan_version_targets -v
+  python3 -m unittest tests.forge.setup-version-config.test_scan_version_targets -v
 """
 
 import io
@@ -21,7 +21,8 @@ from pathlib import Path
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
-                       / 'plugins' / 'forge' / 'scripts'))
+                       / 'plugins' / 'forge' / 'skills'
+                       / 'setup-version-config' / 'scripts'))
 
 from scan_version_targets import (
     SKIP_DIRS,

@@ -310,7 +310,7 @@ class TestReferencedFilesExist(unittest.TestCase):
 
     def test_classify_dirs_script_exists(self):
         """setup Skill が参照するスクリプトが存在"""
-        path = PLUGINS_DIR / 'forge' / 'scripts' / 'classify_dirs.py'
+        path = PLUGINS_DIR / 'forge' / 'scripts' / 'doc_structure' / 'classify_dirs.py'
         self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_doc_structure_format_exists(self):
