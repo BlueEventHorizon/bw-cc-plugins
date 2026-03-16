@@ -41,11 +41,23 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 
 ### forge プラグインのスキル連鎖
 
-`review` → `present-findings` → `fix-findings` の3スキルがレビューパイプラインを構成する。
+#### レビューパイプライン
 
-1. **`/forge:review`** (user-invocable) — レビュー実行のエントリーポイント。種別判定・参考文書収集・エンジン選択を行い、レビューを実行。`--refactor N` で N サイクルのレビュー+修正を繰り返す（🔴+🟡対象）
-2. **`present-findings`** (AI専用, `user-invocable: false`) — レビュー結果を1件ずつ段階的に提示し、ユーザーの修正判断を仰ぐ
-3. **`fix-findings`** (AI専用, `user-invocable: false`) — 指摘事項に基づく修正を subagent で実行
+`review` → `reviewer` → `evaluator` → `fixer` の4スキルがレビューパイプラインを構成する。
+
+1. **`/forge:review`** (user-invocable) — レビュー実行のオーケストレーター。種別判定・参考文書収集・エンジン選択を行い、レビューを実行。`--auto N` で N サイクルのレビュー+自動修正を繰り返す（🔴+🟡対象）
+2. **`reviewer`** (AI専用) — レビュー実行（指摘事項の作成）
+3. **`evaluator`** (AI専用) — 指摘事項の吟味・修正判定
+4. **`present-findings`** (AI専用) — 対話モードで指摘を1件ずつ段階的に提示
+5. **`fixer`** (AI専用) — 指摘事項に基づく修正を subagent で実行
+
+#### 共通完了処理フロー
+
+全オーケストレーター（start-requirements, start-design, start-plan, start-implement）は成果物作成後に以下を実行する:
+
+1. `/forge:review {type} {差分ファイル} --auto` — AIレビュー+自動修正（差分のみ対象）
+2. `/create-specs-toc` — ToC 更新（利用可能な場合）
+3. `/anvil:commit` — commit/push 確認
 
 ### setup-doc-structure スキル
 
@@ -59,17 +71,7 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 - **reverse-engineering**: 既存アプリのソースコードを解析して要件を抽出
 - **from-figma**: Figma MCP を使いデザインファイルから要件とデザイントークンを作成（Figma MCP 必須）
 
-文書作成のみに専念し、後処理は行わない。完了後に `/forge:finalize` の実行を案内する。
-
-### finalize スキル（post-creation オーケストレーター）
-
-`/forge:finalize` (user-invocable) — 文書作成後の品質確定を担うオーケストレーター。
-`start-requirements` / `start-design`（予定）/ `start-plan`（予定）の後続処理として使用:
-
-1. `/forge:review {type} {target} --refactor N` を呼び出す
-2. `/create-specs-toc` が利用可能なら実行
-
-ユーザーが明示的に呼び出す設計（start-X からの自動呼び出しは行わない）。
+完了後は共通完了処理フロー（review → ToC → commit）を実行する。
 
 ### start-implement スキル（タスク実行オーケストレーター）
 
@@ -78,8 +80,9 @@ python3 plugins/forge/scripts/classify_dirs.py [プロジェクトルート]
 1. 計画書の読み込みとタスク選択（優先度順 or `--task` 指定）
 2. コンテキスト収集（rules/code agent 並列起動）
 3. task-executor agent に実装を委譲（`task_execution_spec.md` を参照）
-4. `/forge:review code` でレビュー
+4. `/forge:review code {差分} --auto` でレビュー+自動修正
 5. 計画書のステータス更新（`status: pending` → `status: completed`）
+6. `/anvil:commit` で commit/push 確認
 
 ### setup-version-config / bump スキル（バージョン管理）
 
@@ -134,9 +137,5 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 ## Conventions
 
 - **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
-- SKILL.md 内のコメント・説明は日本語で記述する
-- Python スクリプトは標準ライブラリのみ使用（外部依存禁止）。外部コマンド呼び出し等は Bash スクリプトを積極的に使用する
-- AI専用スキルには `user-invocable: false` を frontmatter で指定
-- スクリプトのパス参照には `${CLAUDE_PLUGIN_ROOT}` を使用
-- `[MANDATORY]` マーカーが付いたセクションは省略・変更不可の必須仕様
-- **SKILL.md にインラインスクリプトを書かない** [MANDATORY]: AI がスクリプトを勝手に解釈して失敗するリスクがある。処理ロジックは独立した Python スクリプトファイルとして実装し、SKILL.md からはそのスクリプトを呼び出す形式にすること
+- 詳細なルールは `docs/rules/` に配置し、DocAdvisor（`/query-rules`）経由で参照する
+- CLAUDE.md にルールを直接書かない。コンテキスト肥大化を防ぐため `docs/rules/` で管理する

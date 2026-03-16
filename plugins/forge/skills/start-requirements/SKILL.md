@@ -345,7 +345,25 @@ skill_type: "要件定義書作成"
 
 ---
 
-## 完了処理
+## 完了処理 [MANDATORY]
+
+### AIレビュー
+
+作成した要件定義書に対して `/forge:review` を `--auto` モードで実行する:
+
+```
+/forge:review requirement {作成ファイルパス} --auto
+```
+
+対象はこのワークフローで作成・変更したファイル（差分）のみ。
+
+### specs ToC 更新
+
+`.claude/skills/create-specs-toc/SKILL.md` が存在する場合のみ `/create-specs-toc` を実行する（存在しない場合はスキップ）。
+
+### commit/push 確認
+
+`/anvil:commit` を実行して commit/push を確認する。
 
 ### セッション削除
 
@@ -364,7 +382,5 @@ rm -rf {session_dir}
   → {作成ファイルパス}
 
 次のステップ:
-  /forge:review requirement {作成ファイルパス} --auto     # レビュー+修正（推奨）
-  /forge:review requirement {作成ファイルパス} --auto 3   # 3サイクル徹底修正
-  /forge:review requirement {作成ファイルパス}            # 対話モードでレビュー
+  /forge:start-design {feature}    # 設計書作成へ進む
 ```
