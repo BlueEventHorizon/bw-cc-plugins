@@ -7,7 +7,8 @@
       "Bash(git rm:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(git diff:*)",
-      "Bash(realpath:*)"
+      "Bash(realpath:*)",
+      "Bash(claude plugin:*)"
     ]
   },
   "sandbox": {

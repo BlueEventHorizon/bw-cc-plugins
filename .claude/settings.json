@@ -75,7 +75,11 @@
       "Skill(query-rules)",
       "Skill(query-specs)",
 
-      "Bash(python3 *)"
+      "Bash(python3 .claude/doc-advisor/scripts/*)",
+      "Bash(rm -rf .claude/doc-advisor/toc/specs/.toc_work/)",
+      "Bash(rm -rf .claude/doc-advisor/toc/rules/.toc_work/)",
+      "Bash(cp .claude/doc-advisor/toc/specs/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/specs/.toc_checksums.yaml)",
+      "Bash(cp .claude/doc-advisor/toc/rules/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/rules/.toc_checksums.yaml)"
     ],
     "ask": [
       "Bash(git add *)",

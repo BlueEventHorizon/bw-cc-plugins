@@ -5,6 +5,11 @@ description: |
   --auto でレビュー+修正を N サイクル自動実行。5種別（code/requirement/design/plan/generic）に対応。
   トリガー: "レビュー", "review", "レビューして", "確認して"
 user-invocable: true
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: "ls .claude/.temp/review-*/session.yaml 2>/dev/null && echo '{\"ok\": false, \"reason\": \"review セッション進行中。フロー継続 [MANDATORY] に従い次の Phase に進んでください\"}' || echo '{\"ok\": true}'"
 ---
 
 # /forge:review Skill
