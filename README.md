@@ -144,6 +144,7 @@ specs/
 | `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
 | `setup-version-config`| Yes            | Scans project files and generates `.version-config.yaml` for version bump configuration. Re-run on project structure changes                  |
 | `update-version`      | Yes            | Bumps version across all files defined in `.version-config.yaml`. Supports patch/minor/major/direct. Optionally auto-generates CHANGELOG      |
+| `clean-rules`         | Yes            | Analyzes project rules/ with a document taxonomy, removes forge-covered duplicates, and reorganizes into a clean structure                     |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
 | `reviewer`            | No (AI only)   | Executes review and collects reference documents. Returns findings + reference doc paths                                                      |

@@ -141,6 +141,7 @@ specs/
 | `start-implement`     | 可能             | 計画書からタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行するオーケストレーター               |
 | `setup-version-config`| 可能             | プロジェクトをスキャンして `.version-config.yaml` を生成・更新する。プロジェクト構造変更時に再実行                     |
 | `update-version`      | 可能             | `.version-config.yaml` の設定に従いバージョンを一括更新。patch/minor/major/直接指定対応。CHANGELOG 自動生成オプション付き |
+| `clean-rules`         | 可能             | プロジェクトの rules/ を開発文書の分類学で分析し、forge 内蔵知識との重複を除去して体系的に再構築する                      |
 | `help`                | 可能             | インタラクティブヘルプウィザード。スキルを選択し、引数を1つずつ入力してそのまま実行できる                               |
 | `present-findings`    | AI 専用          | レビュー結果を段階的・対話的に提示                                                                                      |
 | `reviewer`            | AI 専用          | レビュー実行エンジン。参考文書を収集し指摘事項を作成                                                                    |

@@ -141,3 +141,4 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 - **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
 - 詳細なルールは `docs/rules/` に配置し、DocAdvisor（`/query-rules`）経由で参照する
 - CLAUDE.md にルールを直接書かない。コンテキスト肥大化を防ぐため `docs/rules/` で管理する
+- **設計文書の保存**: plan モードで作成した重要な設計文書は `docs/specs/forge/design/` に保存すること
