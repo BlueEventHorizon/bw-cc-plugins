@@ -8,7 +8,11 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(git diff:*)",
       "Bash(realpath:*)",
-      "Bash(claude plugin:*)"
+      "Bash(claude plugin:*)",
+      "WebFetch(domain:addyosmani.com)",
+      "WebFetch(domain:www.humanlayer.dev)",
+      "WebFetch(domain:medium.com)",
+      "Bash(python3:*)"
     ]
   },
   "sandbox": {
