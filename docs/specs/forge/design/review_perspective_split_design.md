@@ -38,18 +38,15 @@ plugins/forge/skills/review/
 
 現在の `review_criteria_path`（単一パス）の概念はなくなる。refs.yaml には `review_criteria_path` を書かず、代わりに `perspectives` 配列で観点ごとの入力・出力を管理する。
 
-### 3階層フォールバックの再設計
+### perspectives の収集
 
-review_workflow_design.md §3 Phase 2 Step 4 で定義された「レビュー観点の3段階フォールバック」は、`review_criteria_path`（単一パス）を確定する設計だった。本設計で `review_criteria_path` を廃止し `perspectives` 配列に置き換えるにあたり、3階層フォールバックを以下のように再設計する。
+review オーケストレーターは以下の全てから perspectives を収集し、配列に追加する。
 
-フォールバックの優先順は従来と同一（DocAdvisor → review-config.yaml → プラグインデフォルト）。各層で `perspectives` 配列への変換方法が異なる。
+**プラグインデフォルト**（常に含む）: `${CLAUDE_SKILL_DIR}/docs/review_criteria_{type}.md` を読み込み、`## Perspective:` セクションから perspectives を構成する。セクションがない場合はファイル全体を単一 perspective として扱う。
 
-#### 層 1: プラグインデフォルト（最低優先）
-
-`${CLAUDE_PLUGIN_ROOT}/skills/review/docs/review_criteria_{type}.md` を読み込み、`## Perspective:` セクションから perspectives 配列を自動構成する。
+**DocAdvisor**（`/query-rules` が利用可能なら追加）: DocAdvisor が返すプロジェクト固有のルール文書を、そのまま追加の perspective として渡す。`section: ""` でファイル全体を観点として使用。
 
 ```yaml
-# 例: review_criteria_code.md から自動構成
 perspectives:
   - name: correctness
     criteria_path: "review/docs/review_criteria_code.md"
@@ -59,79 +56,19 @@ perspectives:
     criteria_path: "review/docs/review_criteria_code.md"
     section: "堅牢性 (Resilience)"
     output_path: review_resilience.md
-  # ...
+  - name: project-rules
+    criteria_path: "docs/rules/coding_standards.md"
+    section: ""
+    output_path: review_project_rules.md
 ```
 
-各 criteria ファイルの `## Perspective:` セクションが perspectives の単位となる。セクションが1つもない場合はファイル全体を単一 perspective として扱う。
-
-#### 層 2: `.claude/review-config.yaml`（中優先）
-
-従来は単一パスを指定するスキーマだったが、以下の2形式をサポートするよう拡張する:
-
-**形式 A: perspectives 配列を直接指定**
-
-```yaml
-review:
-  perspectives:
-    - name: correctness
-      criteria_path: "path/to/custom_criteria.md"
-      section: "正確性"
-    - name: security
-      criteria_path: "path/to/security_criteria.md"
-      section: "セキュリティ"
-```
-
-**形式 B: 単一パス指定（後方互換）**
-
-```yaml
-review:
-  criteria_path: "path/to/custom_criteria.md"
-```
-
-単一パスが指定された場合は、層 1 と同じく `## Perspective:` セクションをパースして perspectives 配列を自動構成する。`## Perspective:` セクションが存在しない場合はファイル全体を単一 perspective として扱う。
-
-#### 層 3: `/query-rules` Skill — DocAdvisor（最高優先）
-
-DocAdvisor が返すルール文書にはプラグイン側の `## Perspective:` セクション分割が存在するとは限らない。以下のルールで変換する:
-
-- **`## Perspective:` セクションあり** → セクション単位で perspectives 配列を構成（層 1 と同じ）
-- **`## Perspective:` セクションなし** → 返されたルール文書全体を**単一 perspective**（name: `docadvisor_rules`）として扱う
-
-```yaml
-# DocAdvisor のルール文書にセクション分割がない場合
-perspectives:
-  - name: docadvisor_rules
-    criteria_path: "{DocAdvisor が返したルール文書パス}"
-    section: null  # ファイル全体を使用
-    output_path: review_docadvisor_rules.md
-```
-
-#### フォールバック統合ルール
-
-上位の層で perspectives が確定した場合、下位の層はスキップする。ただし、DocAdvisor（層 3）が返した perspectives とプラグインデフォルト（層 1）の perspectives は**マージ**される。DocAdvisor は主にプロジェクト固有のルールを提供し、プラグインデフォルトは種別固有の汎用観点を提供するため、両者は補完関係にある。
-
-| 確定パターン | 結果 |
-|-------------|------|
-| 層 3 のみ確定 | 層 3 の perspectives + 層 1 のプラグインデフォルトをマージ |
-| 層 2 のみ確定 | 層 2 の perspectives をそのまま使用（プラグインデフォルトで補完しない） |
-| 層 1 のみ確定 | 層 1 のプラグインデフォルトをそのまま使用 |
+`section: ""` の場合、agent はファイル全体を観点として使用する。
 
 > **設計判断**: 層 2（review-config.yaml）はユーザーが明示的にカスタマイズした設定であるため、プラグインデフォルトとのマージは行わない。一方、DocAdvisor はプロジェクトルールの補完であり、種別固有の汎用観点は引き続き必要なためマージする。
 
 ---
 
 ## 3. 複数 Reviewer Agent の起動
-
-### データ受け渡し: refs.yaml に perspectives を記録
-
-プロンプト直接埋め込みではなく refs.yaml を採用する。
-
-| 比較観点 | プロンプト埋め込み | refs.yaml |
-|---------|-----------------|-----------|
-| 検査可能性 | ❌ セッションファイルから見えない | ✅ 全情報が可視 |
-| 再開可能性 | ❌ 中断時に消失 | ✅ 永続化 |
-| 設計一貫性 | ❌ 旧設計（プロンプト経由）への回帰 | ✅ ファイル経由原則と一貫 |
-| Read コスト | ✅ 不要 | △ 微小（1回の Read） |
 
 ### refs.yaml の拡張
 
@@ -163,21 +100,6 @@ perspectives:
 ```
 
 review オーケストレーターが criteria ファイルを読み、`## Perspective:` セクションを抽出して perspectives 配列を構成し refs.yaml に書き出す。reviewer は refs.yaml の perspectives を読むだけで、分割ロジックを持たない。各 reviewer Agent は自分の `criteria_path` + `section` を読み、該当観点に従ってレビュー。結果は `output_path` に Write する。
-
-> **並列書き込みとの整合性**: session_format.md では「reviewer は並列書き込み不要のため refs.yaml を使用」と注記しているが、本設計の perspectives 追加はこれと矛盾しない。refs.yaml はオーケストレーター（review）がコンテキスト収集フェーズで一括書き出すため、並列書き込みの問題は発生しない。各 reviewer agent の出力は `review_{perspective}.md` として分離されるため、agent 間のファイル競合も起きない。
-
-### 後方互換性
-
-refs.yaml に `perspectives` が存在しない場合（= 現行の `review_criteria_path` 方式）のフォールバック動作を定義する。
-
-reviewer は refs.yaml の `perspectives` フィールド有無で分岐する:
-
-| `perspectives` | 動作 |
-|----------------|------|
-| **あり** | perspectives 配列に基づき、観点別に並列 Agent を起動。各 Agent は `output_path` にレビュー結果を書き出す |
-| **なし** | `review_criteria_path` を使用し、従来の単一 Agent でレビューを実行。結果は `review.md` に書き出す |
-
-この分岐により、perspectives 導入前のセッション（手動作成や旧バージョン）でもレビューが正常に動作する。perspectives への完全移行後に `review_criteria_path` のサポートを廃止する。
 
 ### Codex 対応
 
@@ -254,12 +176,6 @@ python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
 | review オーケストレーター | criteria ファイルを読み、perspectives 配列を構成し refs.yaml に書き出す |
 | reviewer | refs.yaml の perspectives を読み、指定された観点に従ってレビューを実行する |
 
-理由:
-- レビュー種別によって自然な分割は異なる（コード vs 要件定義書 vs 設計書）
-- 固定的な分割は抽象的すぎて実際の観点と乖離する
-- 観点の追加・変更が criteria ファイルの編集だけで完結する（reviewer 側の変更不要）
-- perspectives の構成をオーケストレーターに集約することで、reviewer は単純な「指示されたレビューを実行する」役割に徹する
-
 ---
 
 ## 6. 各種別の Perspective 定義
@@ -305,67 +221,27 @@ python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
 | 事実の誤り、論理矛盾、参照切れ（リンク・ファイルパス・コマンド）、必須情報の欠落 |
 | 論理構成の一貫性、用語の不統一、記述の重複、冗長性の排除 |
 
-> Gemini による外部レビュー結果を反映:
-> - requirement: 「実現可能性・明確性」→「検証可能性」に改名（AI の判定基準として具体的）
-> - requirement: 完全性に「例外系・異常系の考慮漏れ」を追加
-> - design: 堅牢性に「可観測性（ログ・監視）」を追加
-> - design: 整合性に外部システムとの接続を追加
-> - code: 「規約・品質」→「保守性」に改名。テスト可能性（DI 等）を追加
-> - code: 堅牢性にリソース管理・入力バリデーションを追加
-> - 全 Perspective に英語名を併記（Agent ペルソナ付与に有用）
-
 ---
 
 ## 7. 影響範囲
 
 | ファイル | 変更内容 |
 |---------|---------|
-| `review/SKILL.md` | 3階層フォールバック再設計、perspectives 構成追加 |
+| `review/SKILL.md` | perspectives 収集・構成追加、`review_criteria_path` 廃止 |
 | `reviewer/SKILL.md` | `review_criteria_path` 廃止、perspectives 対応 |
 | `evaluator/SKILL.md` | `review_criteria_path` 廃止 |
 | `fixer/SKILL.md` | `review_criteria_path` 廃止 |
 | `present-findings/SKILL.md` | 統合後の review.md を読む設計に更新 |
 | `session_format.md` | refs.yaml スキーマに perspectives 追加、`review_criteria_path` 削除 |
 | `extract_review_findings.py` | 複数 review_*.md のマージ対応 |
-| `write_refs.py` | perspectives フィールド対応 + 排他バリデーション（下記参照） |
+| `write_refs.py` | `review_criteria_path` を廃止し `perspectives` を必須フィールドに変更 |
 | `README.md`, `README_ja.md` | パス参照更新 |
 | `CLAUDE.md` | パス参照更新 |
 | `review_workflow_design.md` | データフロー図更新 |
 
-### write_refs.py のバリデーション方針
-
-`review_criteria_path` と `perspectives` は排他関係にある。write_refs.py は以下のバリデーションを行う:
-
-| `review_criteria_path` | `perspectives` | 結果 |
-|------------------------|---------------|------|
-| あり | なし | ✅ 有効（後方互換モード） |
-| なし | あり | ✅ 有効（新方式） |
-| あり | あり | ✅ 有効（後方互換期間中は両方許容。perspectives を優先使用） |
-| なし | なし | ❌ エラー（どちらか一方が必須） |
-
-後方互換期間中は両方の指定を許容し、perspectives が存在する場合はそちらを優先する。perspectives への完全移行後に `review_criteria_path` のみの指定をエラーとする。
-
 ---
 
-## 8. 設計判断の記録
-
-### トークンコスト分析
-
-perspectives 並列実行は単一 Agent 実行と比べてトークンコストが増加する。トレードオフを以下に整理する。
-
-| 項目 | 単一 Agent | perspectives 並列 |
-|------|-----------|------------------|
-| 入力トークン | 1× (全観点 + 対象ファイル) | 最大 N× (各 Agent に対象ファイルが重複) |
-| 出力トークン | 1× | ≈1× (総指摘数は同程度) |
-| 合計コスト | 1× | 最大 3× (code レビューの場合 3 perspectives) |
-| 実行時間 | 直列のため長い | 並列実行により短縮 |
-| レビュー品質 | 広く浅い | 各観点で深い分析が可能 |
-
-**許容範囲の判断**: 単一 Agent 比で最大 3 倍のトークンコスト増。ただし (1) 各 Agent が専門観点に集中することでレビュー品質が向上し、(2) 並列実行により壁時計時間は短縮される。コストと品質・時間のトレードオフとして許容する。perspectives 数が 2-3 の設計としているのは、この上限を意識した結果でもある。
-
----
-
-## 9. 調査 Sources
+## 8. 調査 Sources
 
 - [How to write a good spec for AI agents - Addy Osmani](https://addyosmani.com/blog/good-spec/)
 - [Writing a good CLAUDE.md - HumanLayer](https://www.humanlayer.dev/blog/writing-a-good-claude-md)
