@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-16T05:08:49Z
-  file_count: 14
+  generated_at: 2026-03-19T23:47:26Z
+  file_count: 16
 
 docs:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
@@ -32,6 +32,35 @@ docs:
       - migration registry
       - CURRENT_VERSION
       - idempotent
+  docs/specs/forge/design/clean_rules_design.md:
+    doc_type: design
+    title: clean-rules Skill Design
+    purpose: Defines the design of the clean-rules skill that systematically restructures project rules based on a documentation taxonomy, integrating forge knowledge into project documentation
+    content_details:
+      - Taxonomy with 6 content types (Constraint, Convention, Format, Process, Decision, Reference)
+      - Authority source dimensions (Tool-provided, Project-defined, External standard)
+      - Scope separation (Universal vs Project-specific)
+      - Responsibility matrix between forge and project
+      - Five-phase workflow (information gathering, classification, proposal, execution, completion)
+      - list_forge_docs.py script specification with JSON output format
+      - Rule categorization and classification criteria
+    applicable_tasks:
+      - clean-rules skill implementation
+      - Rules restructuring and organization
+      - forge knowledge integration into projects
+      - Documentation taxonomy design
+      - Rule categorization and classification
+    keywords:
+      - clean-rules
+      - taxonomy
+      - constraint
+      - convention
+      - format
+      - process
+      - decision
+      - reference
+      - forge docs
+      - authority source
   docs/specs/forge/design/context_gathering_design.md:
     doc_type: design
     title: Context Gathering Task Specification
@@ -121,32 +150,37 @@ docs:
       - completeness check
   docs/specs/forge/design/create_requirements_workflow_design.md:
     doc_type: design
-    title: forge Create Requirements Workflow Design
-    purpose: Defines the workflow and phases for the /forge:start-requirements orchestrator skill, which creates requirement definitions in three modes (interactive, reverse-engineering, from-figma)
+    title: forge Requirements Definition Creation Workflow Design
+    purpose: "Defines the workflow, file structure, and design principles for the /forge:start-requirements skill that creates requirement documents in three modes: interactive, reverse-engineering, and from-figma"
     content_details:
-      - Three operation modes (interactive, reverse-engineering, from-figma) with distinct workflows
-      - Prerequisites phase covering .doc_structure.yaml, output directory resolution, and defaults loading
-      - "Phase 0 (common): new creation/addition confirmation and feature name determination"
-      - "Interactive mode phases: vision/value, experience flow, detailed specifications, integration/quality confirmation"
-      - "Reverse-engineering mode phases: source code analysis, requirement extraction, requirement document creation, quality verification"
-      - "From-Figma mode phases: Figma access confirmation, design system construction, requirement creation, asset management"
-      - "Common post-processing: /forge:review requirement --auto execution and /create-specs-toc / /anvil:commit"
-      - "Design principles: focus on What, minimal context collection, consistent ID system (APP/SCR/FNC/BL/DM)"
+      - "Three workflow modes: interactive, reverse-engineering, from-figma"
+      - SKILL.md dispatcher responsibilities and workflow file delegation
+      - "Interactive mode: on-demand context gathering, phases 0-4"
+      - "Reverse-engineering mode: batch context collection with parallel agents"
+      - "Figma mode: design system construction and token management"
+      - Session management and file structure organization
+      - "Design principles: What-focused requirements, mode-specific context optimization, workflow self-sufficiency"
+      - ID system consistency across requirement types
+      - Quality confirmation and completion processing flow
     applicable_tasks:
-      - Creating requirement definitions from scratch (interactive mode)
-      - Extracting requirements from existing source code (reverse-engineering mode)
-      - Creating requirements from Figma design files (from-figma mode)
-      - Feature requirement specification planning
-      - Workflow design review for start-requirements skill
+      - Start-requirements skill implementation
+      - Requirements document creation workflow
+      - Workflow mode selection and orchestration
+      - Interactive requirements gathering
+      - Requirements reverse-engineering from source code
+      - Requirements generation from Figma design
+      - Context gathering strategy design
     keywords:
       - start-requirements
-      - requirement definition
-      - interactive mode
+      - interactive
       - reverse-engineering
-      - Figma
-      - specification
-      - orchestrator
+      - from-figma
       - workflow design
+      - requirement definition
+      - session management
+      - context gathering
+      - dispatcher
+      - Figma MCP
   docs/specs/forge/design/create_skills_orchestrator_design.md:
     doc_type: design
     title: create-* Skills Orchestrator Architecture Design
@@ -235,6 +269,32 @@ docs:
       - communication flow
       - forge plugins
       - subagent coordination
+  docs/specs/forge/design/review_perspective_split_design.md:
+    doc_type: design
+    title: Reviewer Perspective Split Design
+    purpose: Redesigns the reviewer agent to split review criteria by perspective and execute specialized agents in parallel to improve review quality and depth
+    content_details:
+      - review_criteria file split by perspective with directory organization
+      - Three-layer fallback mechanism redesign (DocAdvisor, review-config.yaml, plugin defaults)
+      - perspectives object schema definition and refs.yaml integration
+      - Multiple reviewer agent parallel execution and result management
+      - Perspective definitions for requirement, design, plan, code, and generic review types
+      - extract_review_findings.py extension for multiple file merge support
+      - write_refs.py validation for review_criteria_path and perspectives exclusivity
+    applicable_tasks:
+      - Implement reviewer subagent for perspective-based review
+      - Develop review orchestrator for perspective composition and parallel launching
+      - Define Perspective sections in review_criteria files
+      - Extend extract_review_findings.py for multi-file merging
+      - Implement write_refs.py validation logic
+    keywords:
+      - reviewer perspective
+      - parallel agent execution
+      - review_criteria split
+      - fallback mechanism
+      - extractReviewFindings
+      - sessionFormat
+      - refs.yaml
   docs/specs/forge/design/review_workflow_design.md:
     doc_type: design
     title: Review Workflow Design
