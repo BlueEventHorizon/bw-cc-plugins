@@ -238,6 +238,8 @@ AskUserQuestion で進め方を確認する:
 
 #### 「段階的に解決」の場合
 
+> **fixer 完了は修正完了ではない。** reviewer の単独修正レビューが完了して初めて修正完了とする。
+
 項目を順に**1件ずつ**提示する（`has_severity` なら🔴→🟡→🟢順、なければ番号順）。各項目で:
 
 1. 項目を丁寧に説明する（提示の原則に従う）
@@ -246,12 +248,22 @@ AskUserQuestion で進め方を確認する:
    - **修正を選択**（A案/B案）→ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status in_progress` で更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
    - **このまま（対応しない）** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status needs_review` で更新
    - **一覧に戻る** → Step 2 へ
-4. fixer の修正後、単独修正レビューを実施（修正の場合） [MANDATORY]
-   4.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
-   4.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
-   4.3. 問題なし → fixer の修正サマリーをユーザーに報告
-   4.4. スキップした場合: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新
-5. 次の項目へ進む
+   - **スキップ** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新 → ステップ5へ
+
+#### 単独修正レビュー [MANDATORY]
+
+**修正を実行した場合、必ずこのステップを実行する。スキップ禁止。**
+
+fixer が修正を完了した直後に、修正差分のみを対象にレビューを実施する:
+
+1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
+2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
+3. 問題なし → fixer の修正サマリーをユーザーに報告
+4. plan.yaml を `fixed` に更新（単独修正レビュー完了後に初めて `fixed` にする）
+
+> **注意**: plan.yaml の `status: fixed` への更新は、fixer 完了時ではなく**単独修正レビュー完了後**に行う。
+
+5. （上記ステップ完了後）次の項目へ進む
 
 全項目の提示・解決が完了したら、最終サマリーを報告して終了。
 
@@ -274,14 +286,24 @@ AskUserQuestion で進め方を確認する:
 
 #### 「✅を一括修正」の場合
 
+> **fixer 完了は修正完了ではない。** reviewer の単独修正レビューが完了して初めて修正完了とする。
+
 1. ✅付き項目を収集し、`/forge:fixer --batch` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-2. 単独修正レビューを実施 [MANDATORY]
-   2.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
-   2.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
-   2.3. 問題なし → 次へ
-3. fixer の修正サマリーをユーザーに報告（項目ごとに何をしたか1行ずつ）
-4. ✅なし項目が残っている場合、「段階的に解決」フローに移行
-5. 全て✅だった場合は修正サマリーを報告して終了
+
+#### 一括修正後の単独修正レビュー [MANDATORY]
+
+**fixer --batch 完了直後に必ず実行する。サマリー報告や次フローへの移行より先に実施する。スキップ禁止。**
+
+1. `/forge:reviewer` を `--diff-only {fixer が修正したファイル一覧}` で呼び出し、修正差分のみをレビュー
+2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
+3. 問題なし → 次へ
+4. plan.yaml を `fixed` に更新（単独修正レビュー完了後に初めて `fixed` にする）
+
+> **注意**: plan.yaml の `status: fixed` への更新は、fixer 完了時ではなく**単独修正レビュー完了後**に行う。
+
+2. fixer の修正サマリーをユーザーに報告（項目ごとに何をしたか1行ずつ）
+3. ✅なし項目が残っている場合、「段階的に解決」フローに移行
+4. 全て✅だった場合は修正サマリーを報告して終了
 
 #### 「一覧で見る」の場合
 
