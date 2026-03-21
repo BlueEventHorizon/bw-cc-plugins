@@ -1,0 +1,273 @@
+# review_perspective_split_design 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: FNC-003
+    title: 参照文書の自己完結性
+    design_id: review_perspective_split_design
+    status: pending
+  - requirement_id: FNC-004
+    title: 並列実行可能な構造
+    design_id: review_perspective_split_design
+    status: pending
+
+design_traceability:
+  - design_id: review_perspective_split_design
+    title: reviewer 観点別 agent 分割 設計書
+    requirement_ids:
+      - FNC-003
+      - FNC-004
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+      - TASK-009
+      - TASK-010
+      - TASK-011
+      - TASK-012
+
+# === タスク一覧 ===
+tasks:
+  - task_id: TASK-001
+    title: session_format.md スキーマ更新
+    priority: 95
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - refs.yaml に perspectives 配列を追加し、review_criteria_path を削除
+      - evaluation.yaml セクションを廃止マーカー付きで残す（後続タスクで参照スキルが更新されるまで）
+      - plan.yaml items に recommendation / auto_fixable / reason / perspective / perspectives フィールドを追加
+      - 読み取り契約テーブル（present-findings / fixer / review の読み取りフィールド）を追加
+    acceptance_criteria: session_format.md が設計書 §4「plan.yaml スキーマ変更」と整合すること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/docs/session_format.md
+
+  - task_id: TASK-002
+    title: review_criteria ファイル作成（5種別）
+    priority: 90
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - plugins/forge/skills/review/docs/ に review_criteria_{requirement,design,plan,code,generic}.md を作成
+      - 各ファイルに ## Perspective: {name} — {表示名} セクションを設ける（設計書 §6 参照）
+      - 現行 review_criteria_spec.md の内容を拡充して分割（箇条書きレベルから詳細な観点記述へ）
+      - generic のみ Perspective セクションなし（ファイル全体を単一 perspective として扱う）
+    acceptance_criteria: 全5ファイルが作成され、各ファイルの Perspective 数が設計書 §6 と一致すること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/docs/review_criteria_spec.md
+
+  - task_id: TASK-003
+    title: write_refs.py perspectives 対応 + テスト
+    priority: 85
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - review_criteria_path を廃止し perspectives を必須フィールドに変更
+      - perspectives の検証ロジック追加（name: ^[a-z0-9_-]+$, output_path: ../ 禁止・絶対パス禁止）
+      - test_write_refs.py を更新（perspectives 必須化・検証テスト追加）
+    acceptance_criteria: python3 -m unittest tests/forge/scripts/session/test_write_refs.py が全件パスすること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/scripts/session/write_refs.py
+      - tests/forge/scripts/session/test_write_refs.py
+
+  - task_id: TASK-004
+    title: reviewer/SKILL.md perspective 単位対応
+    priority: 80
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-001
+      - TASK-002
+    group_id: null
+    build_check: per_task
+    description:
+      - review_criteria_path 入力を廃止
+      - perspective_name / criteria_path / section / output_path 入力を追加
+      - 1回の呼び出しで 1 perspective のみ処理する仕様に変更
+      - 出力先を {session_dir}/{output_path} に変更
+      - プロンプト構成を perspective 単位に更新
+    acceptance_criteria: reviewer/SKILL.md 内に review_criteria_path への参照が残っておらず、perspective_name / criteria_path / section / output_path の入力仕様が記載されていること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/reviewer/SKILL.md
+
+  - task_id: TASK-005
+    title: evaluator/SKILL.md perspective 並列起動 + evaluation.yaml 廃止
+    priority: 75
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-004
+    group_id: null
+    build_check: per_task
+    description:
+      - 入力を review.md → review_{perspective}.md に変更
+      - perspective ごとに並列起動される仕様を明記
+      - evaluation.yaml への書き込みを廃止し、plan.yaml を直接更新する方式に変更
+      - write_evaluation.py の呼び出しを削除
+    acceptance_criteria: evaluator/SKILL.md 内に evaluation.yaml への書き込み参照が残っておらず、plan.yaml 直接更新の仕様が記載されていること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/evaluator/SKILL.md
+
+  - task_id: TASK-006
+    title: extract_review_findings.py multi-file 対応 + テスト
+    priority: 75
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-005
+    group_id: null
+    build_check: per_task
+    description:
+      - 引数を session_dir に変更し review_*.md を glob で収集
+      - ファイル間通し番号 ID 採番
+      - perspective タグの付与（ファイル名から抽出）
+      - ベストエフォートの重複除去（タイトル類似度 + 箇所文字列マッチ）
+      - 統合済み review.md の生成
+      - test_extract_review_findings.py を更新（multi-file / partial-failure / all-failure / generic テスト追加）
+    acceptance_criteria: python3 -m unittest tests/forge/reviewer/test_extract_review_findings.py が全件パスすること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/reviewer/scripts/extract_review_findings.py
+      - tests/forge/reviewer/test_extract_review_findings.py
+
+  - task_id: TASK-007
+    title: review/SKILL.md perspectives 収集・並列起動
+    priority: 70
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - review_criteria_path の概念を廃止
+      - criteria ファイルから ## Perspective: セクションを抽出して perspectives 配列を構成
+      - refs.yaml に perspectives を書き出す（write_refs.py 経由）
+      - Codex エンジン時の並列 sh 起動制御を追加
+      - Claude エンジン時の並列 reviewer subagent 起動制御を追加
+      - 全 perspective 失敗時の hard fail ルールを実装
+      - Codex 不在時の Claude フォールバック切替を実装
+    acceptance_criteria: review/SKILL.md 内に perspectives 収集ロジックが記載され、Codex/Claude 両エンジンの並列起動仕様が明記されていること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/review/SKILL.md
+
+  - task_id: TASK-008
+    title: write_evaluation.py 廃止 + テスト削除
+    priority: 40
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-005
+    group_id: null
+    build_check: per_task
+    description:
+      - plugins/forge/scripts/session/write_evaluation.py を削除
+      - tests/forge/scripts/session/test_write_evaluation.py を削除
+    acceptance_criteria: 削除後に python3 -m unittest discover -s tests -p 'test_*.py' が全件パスすること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+
+  - task_id: TASK-009
+    title: fixer/SKILL.md フォールバックパス更新
+    priority: 40
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-007
+    group_id: null
+    build_check: per_task
+    description:
+      - 単独呼び出し時の参考文書フォールバックパスを review_criteria_spec.md から新しい配置先に更新
+    acceptance_criteria: fixer/SKILL.md 内のフォールバックパスが新配置先を参照していること
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/fixer/SKILL.md
+
+  - task_id: TASK-010
+    title: review_workflow_design.md データフロー更新
+    priority: 30
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-007
+    group_id: null
+    build_check: per_task
+    description:
+      - スキル間データフロー図を perspectives 対応に更新
+      - refs.yaml のフィールド説明を perspectives に変更
+      - evaluation.yaml への参照を削除
+    acceptance_criteria: review_workflow_design.md のデータフロー図が perspectives 対応に更新され、evaluation.yaml への参照が残っていないこと
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - docs/specs/forge/design/review_workflow_design.md
+
+  - task_id: TASK-011
+    title: パス参照更新 + 旧ファイル削除
+    priority: 20
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-007
+      - TASK-009
+      - TASK-010
+      - TASK-012
+    group_id: null
+    build_check: per_task
+    description:
+      - README.md / README_ja.md の review_criteria_spec.md 参照を更新
+      - CLAUDE.md の review_criteria_spec.md 参照を更新
+      - plugins/forge/docs/review_criteria_spec.md を削除
+      - tests/common/test_plugin_integrity.py の test_review_criteria_default_exists を新配置の観点ファイル検証に更新
+      - tests/forge/clean-rules/test_list_forge_docs.py の review_criteria_spec.md 参照をテストデータとして維持（テスト内部のモックデータなので実ファイル依存なし、変更不要であることを確認）
+    acceptance_criteria: python3 -m unittest discover -s tests -p 'test_*.py' が全件パスし、plugins/ / README* / CLAUDE.md に旧パス参照が残っていないこと
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+
+  - task_id: TASK-012
+    title: present-findings/SKILL.md evaluation.yaml 依存除去
+    priority: 65
+    status: pending
+    design_id: review_perspective_split_design
+    depends_on:
+      - TASK-005
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - evaluation.yaml からの読み取りを廃止し、plan.yaml の recommendation / auto_fixable / reason を読む方式に変更
+      - session_dir 入力時の evaluation.yaml Read を plan.yaml 読み取りに統一
+      - ✅マーク判定ロジックを plan.yaml の auto_fixable フィールドから取得するよう更新
+    acceptance_criteria: present-findings/SKILL.md 内に evaluation.yaml への参照が残っていないこと
+    required_reading:
+      - docs/specs/forge/design/review_perspective_split_design.md
+      - plugins/forge/skills/present-findings/SKILL.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-03-21"
+    content: 初版作成
