@@ -40,9 +40,19 @@ plugins/forge/skills/review/
 
 ### perspectives の収集
 
-review オーケストレーターは以下の全てから perspectives を収集し、配列に追加する。
+review オーケストレーターは以下の全てから perspectives を収集し、配列に追加する。**プラグインデフォルト + DocAdvisor 追加を合わせて最大 5 perspectives** をガイドラインとする。超過する場合は DocAdvisor 側を優先度順に絞り込む。
 
 **プラグインデフォルト**（常に含む）: `${CLAUDE_SKILL_DIR}/docs/review_criteria_{type}.md` を読み込み、`## Perspective:` セクションから perspectives を構成する。セクションがない場合はファイル全体を単一 perspective として扱う。
+
+**Perspective 見出しフォーマット**:
+
+```
+## Perspective: {name} — {表示名}
+```
+
+- `{name}`: 英語小文字の識別子（例: `correctness`, `resilience`）。refs.yaml の `name` フィールドと `output_path`（`review_{name}.md`）に使用する
+- `{表示名}`: 人間向けの表示名（例: `正確性 (Logic)`）。present-findings のサマリー表示に使用する
+- 解析は review オーケストレーター（AI）が行う。スクリプトでのパースは不要
 
 **DocAdvisor**（`/query-rules` が利用可能なら追加）: DocAdvisor が返すプロジェクト固有のルール文書を、そのまま追加の perspective として渡す。`section: ""` でファイル全体を観点として使用。
 
@@ -63,8 +73,6 @@ perspectives:
 ```
 
 `section: ""` の場合、agent はファイル全体を観点として使用する。
-
-> **設計判断**: 層 2（review-config.yaml）はユーザーが明示的にカスタマイズした設定であるため、プラグインデフォルトとのマージは行わない。一方、DocAdvisor はプロジェクトルールの補完であり、種別固有の汎用観点は引き続き必要なためマージする。
 
 ---
 
@@ -99,7 +107,24 @@ perspectives:
     output_path: review_maintainability.md
 ```
 
-review オーケストレーターが criteria ファイルを読み、`## Perspective:` セクションを抽出して perspectives 配列を構成し refs.yaml に書き出す。reviewer は refs.yaml の perspectives を読むだけで、分割ロジックを持たない。各 reviewer Agent は自分の `criteria_path` + `section` を読み、該当観点に従ってレビュー。結果は `output_path` に Write する。
+review オーケストレーターが criteria ファイルを読み、`## Perspective:` セクションを抽出して perspectives 配列を構成し refs.yaml に書き出す。reviewer は refs.yaml の perspectives を読むだけで、分割ロジックを持たない。
+
+### reviewer の入力変更
+
+reviewer は1回の呼び出しで **1 perspective のみ処理する**。オーケストレーターが perspectives の数だけ reviewer を並列起動する。
+
+| 入力 | 現行 | 変更後 |
+|------|------|--------|
+| session_dir | ✅ | ✅ |
+| 種別 | ✅ | ✅ |
+| エンジン | ✅ | ✅ |
+| review_criteria_path | ✅ | ❌ 廃止 |
+| perspective_name | — | ✅ 新規（例: `correctness`） |
+| criteria_path | — | ✅ 新規（例: `review/docs/review_criteria_code.md`） |
+| section | — | ✅ 新規（例: `正確性 (Logic)`） |
+| output_path | — | ✅ 新規（例: `review_correctness.md`） |
+
+reviewer は `criteria_path` + `section` を読み、該当観点に従ってレビュー。結果は `{session_dir}/{output_path}` に Write する。
 
 ### Codex 対応
 
@@ -133,12 +158,38 @@ Claude エンジンの場合は `/forge:reviewer` の subagent を perspectives 
 
 ```
 {session_dir}/
-  review_correctness.md     # Perspective A の結果
-  review_resilience.md      # Perspective B の結果
-  review_maintainability.md # Perspective C の結果
-  review.md                 # マージ後の統合レビュー
-  plan.yaml                 # 全指摘を統合管理
+  review_correctness.md     # Perspective A: reviewer 出力 → evaluator が吟味済み
+  review_resilience.md      # Perspective B: 同上
+  review_maintainability.md # Perspective C: 同上
+  plan.yaml                 # 全指摘の統合管理（extract が生成。recommendation, auto_fixable, perspective を含む）
+  review.md                 # extract が生成: 重複除去・統合済みのレビュー結果
 ```
+
+evaluation.yaml は廃止し、その内容（recommendation, auto_fixable, reason）を plan.yaml に統合する。具体的なスキーマ変更は session_format.md の更新時に定義する。
+
+### パイプライン
+
+```
+reviewers (並列) → review_*.md
+    ↓
+evaluators (並列、perspective ごと) → review_*.md を更新（吟味結果を付与）
+    ↓
+extract_review_findings.py → plan.yaml + review.md（統合・重複除去・重大度差異フラグ）
+    ↓
+present-findings / fixer → review.md + plan.yaml 参照
+```
+
+各 evaluator は 1 perspective の findings のみ処理するため、コンテキストサイズは現行と同等。
+
+### evaluator の並列実行
+
+reviewer と同様に、evaluator も perspective ごとに並列起動する。各 evaluator は:
+
+1. 自分の担当 `review_{perspective}.md` を読む
+2. 現行と同じ5観点で各指摘を個別吟味する
+3. 吟味結果（recommendation, auto_fixable, reason）を付与する
+
+evaluator への変更は最小限（入力が review.md → review_{perspective}.md に変わるのみ）。
 
 ### extract_review_findings.py の拡張
 
@@ -146,21 +197,20 @@ Claude エンジンの場合は `/forge:reviewer` の subagent を perspectives 
 
 1. **引数を `session_dir` に変更**: 第1引数に session_dir パスを受け取り、`review_*.md` を glob で収集する
 2. **ID はファイル間通し番号**: 複数ファイルをアルファベット順に処理し、ID はファイルをまたいで連番で付与する
-3. **perspective タグの付与**: ファイル名から perspective 名を抽出する（`review_{perspective}.md` → `perspective: "{perspective}"`）。各指摘に `perspective` フィールドを追加し、evaluator が重複排除時に参考にする
-4. **後方互換**: `review_*.md` が存在せず `review.md` のみの場合は、従来と同じく単一ファイルとして処理する（perspective タグなし）
+3. **perspective タグの付与**: ファイル名から perspective 名を抽出する
+4. **重複除去と統合**: 同一ファイル+重複する行範囲の指摘を検出し、以下のルールで統合する:
+   - **severity**: 最も高いものを採用（🔴 > 🟡 > 🟢）
+   - **description**: 両 perspective の説明を結合して残す（異なる観点からの知見は修正時に有用）
+   - **recommendation**: いずれかが fix → fix を採用
+   - **auto_fixable**: 全 perspective が true の場合のみ true
+   - **perspectives**: 統合元の perspective 名を全て記録（複数 perspective が同一箇所を指摘していること自体が重要度のシグナル）
+5. **review.md の生成**: 統合済みのレビュー結果を review.md として出力する
 
 ```
 # 新しい Usage
-python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
+python3 extract_review_findings.py <session_dir>
+# 出力: {session_dir}/plan.yaml + {session_dir}/review.md
 ```
-
-### 統合 review.md の生成
-
-`extract_review_findings.py` が `review_*.md` → `plan.yaml` 生成時に、統合 `review.md` も同時生成する。統合 review.md は各 perspective の結果を perspective 名見出し付きで連結したファイルである。
-
-- evaluator は統合 `review.md` を読んで吟味を行う
-- present-findings は統合 `review.md` を読んで段階的提示を行う
-- 個別の `review_{perspective}.md` は参照用として残す
 
 ---
 
@@ -175,6 +225,8 @@ python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
 | review_criteria ファイル | `## Perspective:` セクションで観点の分割を宣言する |
 | review オーケストレーター | criteria ファイルを読み、perspectives 配列を構成し refs.yaml に書き出す |
 | reviewer | refs.yaml の perspectives を読み、指定された観点に従ってレビューを実行する |
+| evaluator | perspective ごとに並列起動。各 `review_{perspective}.md` の指摘を5観点で個別吟味する（現行と同じ責務、入力が perspective 単位に変わるのみ） |
+| extract_review_findings.py | 吟味済みの複数 `review_*.md` を統合し、重複除去・重大度差異フラグ・review.md + plan.yaml を生成する |
 
 ---
 
@@ -215,11 +267,21 @@ python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
 
 汎用文書は内容が多様で、perspectives 分割のメリットが薄いため、従来通り単一 agent で全観点を適用する。
 `review_criteria_generic.md` は `## Perspective:` セクションを持たず、全観点を一括記載する。
+refs.yaml の perspectives には単一要素を格納する: ファイル全体を観点とする perspective（`section: ""`）を設定し、他の種別と同じスキーマを維持する。
 
 | 観点 |
 |------|
 | 事実の誤り、論理矛盾、参照切れ（リンク・ファイルパス・コマンド）、必須情報の欠落 |
 | 論理構成の一貫性、用語の不統一、記述の重複、冗長性の排除 |
+
+```yaml
+# generic の perspectives 例
+perspectives:
+  - name: generic
+    criteria_path: "review/docs/review_criteria_generic.md"
+    section: ""
+    output_path: review_generic.md
+```
 
 ---
 
@@ -229,21 +291,13 @@ python3 extract_review_findings.py <session_dir> <output_plan_yaml_path>
 |---------|---------|
 | `review/SKILL.md` | perspectives 収集・構成追加、`review_criteria_path` 廃止 |
 | `reviewer/SKILL.md` | `review_criteria_path` 廃止、perspectives 対応 |
-| `evaluator/SKILL.md` | `review_criteria_path` 廃止 |
-| `fixer/SKILL.md` | `review_criteria_path` 廃止 |
-| `present-findings/SKILL.md` | 統合後の review.md を読む設計に更新 |
-| `session_format.md` | refs.yaml スキーマに perspectives 追加、`review_criteria_path` 削除 |
+| `evaluator/SKILL.md` | `review_criteria_path` 廃止、perspective ごとの並列起動対応（入力が review_{perspective}.md に変更）、evaluation.yaml 廃止・plan.yaml への統合 |
+| `fixer/SKILL.md` | 単独呼び出し時の参考文書フォールバックパスを更新（通常フローでは影響なし） |
+| `session_format.md` | refs.yaml に perspectives 追加、`review_criteria_path` 削除、evaluation.yaml 廃止・plan.yaml に統合、plan.yaml items に perspective フィールド（任意）追加 |
+| `write_evaluation.py` | 廃止。evaluator は plan.yaml を直接更新する |
 | `extract_review_findings.py` | 複数 review_*.md のマージ対応 |
 | `write_refs.py` | `review_criteria_path` を廃止し `perspectives` を必須フィールドに変更 |
 | `README.md`, `README_ja.md` | パス参照更新 |
 | `CLAUDE.md` | パス参照更新 |
 | `review_workflow_design.md` | データフロー図更新 |
 
----
-
-## 8. 調査 Sources
-
-- [How to write a good spec for AI agents - Addy Osmani](https://addyosmani.com/blog/good-spec/)
-- [Writing a good CLAUDE.md - HumanLayer](https://www.humanlayer.dev/blog/writing-a-good-claude-md)
-- [Spec-driven development - Thoughtworks](https://thoughtworks.medium.com/spec-driven-development-d85995a81387)
-- [Taxonomies in Software Engineering - ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0950584917300472)
