@@ -36,7 +36,7 @@ tasks:
   - task_id: TASK-001
     title: session_format.md スキーマ更新
     priority: 95
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on: []
     group_id: null
@@ -54,7 +54,7 @@ tasks:
   - task_id: TASK-002
     title: review_criteria ファイル作成（5種別）
     priority: 90
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on: []
     group_id: null
