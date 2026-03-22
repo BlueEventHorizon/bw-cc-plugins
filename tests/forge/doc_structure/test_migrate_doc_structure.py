@@ -309,14 +309,13 @@ class TestApplyMigrations(unittest.TestCase):
         result = apply_migrations(future, 5)
         self.assertEqual(result, future)
 
-    def test_error_rollback(self):
-        """マイグレーションエラー時はロールバック（FR-04-1）"""
-        # 不正なデータでマイグレーション関数がエラーを起こすケースをシミュレート
+    def test_error_propagates(self):
+        """マイグレーション関数のバグは例外として伝播する"""
         original_fn = MIGRATIONS[2]
         try:
             MIGRATIONS[2] = lambda content: 1 / 0  # ZeroDivisionError
-            result = apply_migrations(V1_CONTENT, 1)
-            self.assertEqual(result, V1_CONTENT)  # 元データが返される
+            with self.assertRaises(ZeroDivisionError):
+                apply_migrations(V1_CONTENT, 1)
         finally:
             MIGRATIONS[2] = original_fn
 

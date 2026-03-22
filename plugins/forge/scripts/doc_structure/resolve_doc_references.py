@@ -42,15 +42,8 @@ def find_project_root(start_path=None):
     """.git または .claude ディレクトリを遡って探索してプロジェクトルートを特定する。
 
     resolve_doc_structure.find_project_root() に委譲する。
-    旧実装との後方互換のため、RuntimeError 時はカレントディレクトリを返す。
     """
-    try:
-        return _find_project_root(start_path)
-    except RuntimeError:
-        # 旧実装の挙動: 見つからなければ start_path を返す
-        from pathlib import Path
-        start = Path(start_path).resolve() if start_path else Path.cwd().resolve()
-        return str(start)
+    return _find_project_root(start_path)
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +68,7 @@ def resolve_references(resolve_type, project_root, doc_structure_path=None):
             'status': 'error',
             'message': str(e),
         }
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         return {
             'status': 'error',
             'message': f".doc_structure.yaml のパースに失敗しました: {e}",

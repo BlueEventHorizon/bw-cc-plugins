@@ -84,7 +84,7 @@ def parse_doc_structure(project_root):
         return config
     except FileNotFoundError:
         return None
-    except Exception as e:
+    except (IOError, OSError) as e:
         print(f"警告: .doc_structure.yaml のパースに失敗しました: {e}", file=sys.stderr)
         return None
 
@@ -182,11 +182,7 @@ def parse_args():
 
 def find_project_root():
     """プロジェクトルートを検出"""
-    try:
-        root = _find_project_root()
-        return Path(root)
-    except RuntimeError:
-        return Path.cwd()
+    return Path(_find_project_root())
 
 
 # ---------------------------------------------------------------------------

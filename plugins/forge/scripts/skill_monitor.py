@@ -21,8 +21,8 @@ from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
-# session_manager.py の read_yaml() を再利用（フラット YAML 対応）
-from session_manager import read_yaml
+# yaml_utils.py の parse_yaml() を使用（content ベースのパース）
+from session.yaml_utils import parse_yaml
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ class YamlReader:
 
         ファイル内容に応じて適切なパーサーを選択する:
           - リスト付き構造 → _parse_yaml_with_lists()
-          - フラット key-value → read_yaml()（session_manager.py）
+          - フラット key-value → parse_yaml()（yaml_utils.py）
 
         Args:
             filepath: YAML ファイルのパス
@@ -159,11 +159,8 @@ class YamlReader:
         if self._has_list_structure(content):
             return self._parse_yaml_with_lists(content)
 
-        # フラット YAML は session_manager.py の read_yaml() を使用
-        try:
-            return read_yaml(filepath)
-        except (IOError, OSError):
-            return None
+        # フラット YAML は parse_yaml() で content から直接パース
+        return parse_yaml(content)
 
     def read_markdown_file(self, filepath):
         """Markdown ファイルを文字列として読み込む。

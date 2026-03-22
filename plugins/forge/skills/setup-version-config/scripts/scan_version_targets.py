@@ -95,7 +95,7 @@ def extract_version_from_json(filepath):
             'name': data.get('name') if isinstance(data.get('name'), str) else None,
             'version': data.get('version') if isinstance(data.get('version'), str) else None,
         }
-    except (IOError, OSError, json.JSONDecodeError, ValueError) as e:
+    except (IOError, OSError, json.JSONDecodeError) as e:
         print(f"警告: JSON パースエラー ({filepath}): {e}", file=sys.stderr)
         return {'name': None, 'version': None}
 
