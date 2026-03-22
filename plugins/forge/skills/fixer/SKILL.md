@@ -49,7 +49,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 | 指摘事項の詳細             | 必須 | 問題の説明・箇所（ファイル:行）・修正案を含むテキスト                                 |
 | 対象ファイルパス           | 必須 | 修正対象のファイルパス一覧                                                            |
 | レビュー種別               | 必須 | `code` / `requirement` / `design` / `plan` / `generic`                                |
-| session_dir                | 推奨 | セッションワーキングディレクトリのパス。提供された場合は refs.yaml から参考文書を取得 |
+| session_dir                | 必須 | セッションワーキングディレクトリのパス。refs.yaml から参考文書を取得                 |
 | 参考文書パス一覧           | 推奨 | /forge:reviewer が収集した参考文書パス。未提供の場合は自前で収集する                  |
 | related_code               | 推奨 | 関連コードのパスと関連性の説明。修正時の実装パターン参照に使用                        |
 | ユーザーが選択した修正方針 | 任意 | AskUserQuestion の回答（A案/B案等）がある場合                                         |
@@ -69,45 +69,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 ### Step 2: 参考文書の準備 [MANDATORY]
 
-#### 参考文書パスが渡された場合（session_dir が渡された場合）
-
 `{session_dir}/refs.yaml` を Read して `reference_docs` / `related_code` を取得する。取得したパスをそのまま使用する。再収集は不要。
-
-#### 参考文書パスが渡されなかった場合（単独呼び出し）
-
-指摘事項の内容と対象ファイルに基づき、参考文書を収集する。
-
-**2.0 generic 種別の場合**
-
-`/query-rules` / `/query-specs` は**使用しない**。
-参考文書は最小限:
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/review/docs/review_criteria_generic.md`（存在すれば）
-
-> レビュー観点ファイルのフォールバック:
->
-> レビュー種別に応じた `${CLAUDE_PLUGIN_ROOT}/skills/review/docs/review_criteria_{type}.md` を参照する。種別が不明な場合は `review_criteria_generic.md` をフォールバックとする。
-
-generic 以外の種別 → 2.1 へ進む。
-
-**2.1 DocAdvisor Skill を試行**
-
-`.claude/skills/query-rules/SKILL.md` が存在するか確認する。存在すれば DocAdvisor が利用可能と判断し、以下の Skill を呼び出す:
-
-- `/query-rules` に「修正作業に必要なルール文書」を問い合わせ
-- `/query-specs` に「修正作業に必要な要件定義書・設計書」を問い合わせ
-
-DocAdvisor が利用不可の場合、2.2 のフォールバックに移行する。
-
-**2.2 DocAdvisor 利用不可時のフォールバック**
-
-`.doc_structure.yaml` を直接読み込んで参考文書を収集する（「.doc_structure.yaml からの参考文書収集手順」参照）。
-
-1. `rules` カテゴリの解決済みパスから rules 文書を Glob 探索
-2. `specs` カテゴリから関連仕様書を Glob 探索
-3. `${CLAUDE_PLUGIN_ROOT}/skills/review/docs/review_criteria_{type}.md` を参照に含める（種別不明時は `review_criteria_generic.md`）
-4. 見つからないファイルはスキップ（エラーにしない）
-5. 参考文書なしでも修正は試みる（指摘事項の情報のみで実行）
 
 ### Step 3: subagent 起動 [MANDATORY]
 
@@ -232,23 +194,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
 
 | エラー                                     | 対応                                                       |
 | ------------------------------------------ | ---------------------------------------------------------- |
-| 入力不足（指摘事項なし・対象ファイルなし） | 呼び出し元にエラーを返す。ユーザーに直接質問しない         |
-| DocAdvisor Skill 利用不可                  | フォールバック手順に従う（Step 2.2 参照）                  |
+| 入力不足（指摘事項なし・対象ファイルなし・session_dir なし） | 呼び出し元にエラーを返す。ユーザーに直接質問しない         |
+| refs.yaml が存在しない・読み込み失敗       | エラー内容を呼び出し元に返す                               |
 | subagent 起動失敗                          | エラー内容を呼び出し元に返す                               |
 | subagent が修正失敗を報告                  | エラー内容を呼び出し元に返す。呼び出し元がユーザーに報告   |
 | subagent が指摘事項と無関係な変更を報告    | 呼び出し元がサマリーを確認し、ユーザーに報告して判断を仰ぐ |
 | plan.yaml の更新失敗                       | エラーを呼び出し元に報告するが、修正自体は成功扱いとする   |
 
----
-
-## .doc_structure.yaml からの参考文書収集手順
-
-DocAdvisor 利用不可時、`doc-structure` スキルのスクリプトを呼び出して参考文書を収集する。
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type rules
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
-```
-
-JSON 出力の `rules` キーからルール文書パス一覧を、`specs` キーから仕様書パス一覧を取得して使用する。
-`status: "error"` の場合は参考文書なしで修正を続行する（エラーにしない）。

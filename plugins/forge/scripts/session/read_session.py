@@ -56,7 +56,7 @@ def read_file_entry(filepath):
         try:
             content = read_yaml(str(filepath))
             return {"exists": True, "content": content}
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             return {"exists": True, "content": None,
                     "error": str(e)}
 

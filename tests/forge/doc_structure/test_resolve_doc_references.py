@@ -224,13 +224,13 @@ class TestFindProjectRoot(_FsTestCase):
             self.tmpdir.resolve(),
         )
 
-    def test_returns_start_if_no_marker(self):
-        """.git / .claude が見つからない場合は start_path を返す。"""
+    def test_raises_if_no_marker(self):
+        """.git / .claude が見つからない場合は RuntimeError を送出する。"""
         subdir = self.tmpdir / 'no_git_here'
         subdir.mkdir()
 
-        result = find_project_root(str(subdir))
-        self.assertEqual(result, str(subdir.resolve()))
+        with self.assertRaises(RuntimeError):
+            find_project_root(str(subdir))
 
 
 # =========================================================================
