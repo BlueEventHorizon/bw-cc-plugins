@@ -131,7 +131,7 @@ tasks:
   - task_id: TASK-006
     title: extract_review_findings.py multi-file 対応 + テスト
     priority: 75
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005
