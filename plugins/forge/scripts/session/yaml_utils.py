@@ -15,7 +15,7 @@ from pathlib import Path
 # スカラー値のエスケープ
 # ---------------------------------------------------------------------------
 
-# クォートが必要な特殊文字（session_manager._yaml_value と同等）
+# クォートが必要な特殊文字
 _SPECIAL_CHARS = frozenset(
     ": # { } [ ] , & * ? | - < > = ! % @ `".split()
 )
@@ -141,7 +141,6 @@ def _append_object_list(lines, items):
                 continue
             if first:
                 lines.append(f"  - {k}: {yaml_scalar(v)}")
-                first = True  # noqa — 明示的に True 設定後 False に
                 first = False
             else:
                 lines.append(f"    {k}: {yaml_scalar(v)}")

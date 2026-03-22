@@ -68,7 +68,7 @@ def get_major_version(content):
     if version:
         try:
             return int(version.split('.')[0])
-        except (ValueError, IndexError):
+        except ValueError:
             return None
     return None
 

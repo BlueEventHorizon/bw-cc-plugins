@@ -21,8 +21,9 @@ import json
 import os
 import shutil
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
+
+from session.yaml_utils import now_iso, read_yaml, write_flat_yaml
 
 # セッションディレクトリのベースパス
 TEMP_BASE = ".claude/.temp"
@@ -37,77 +38,8 @@ DEFAULT_RESUME_POLICY = {
 
 
 # ---------------------------------------------------------------------------
-# YAML ユーティリティ
-# ---------------------------------------------------------------------------
-
-def _yaml_value(v):
-    """値を YAML 安全な文字列に変換する。"""
-    if isinstance(v, bool):
-        return "true" if v else "false"
-    if isinstance(v, int):
-        return str(v)
-    s = str(v)
-    # 特殊文字を含む場合はダブルクォート
-    needs_quote = any(c in s for c in (
-        ":", "#", "{", "}", "[", "]", ",", "&", "*",
-        "?", "|", "-", "<", ">", "=", "!", "%", "@", "`",
-    ))
-    # スペースを含む場合もクォート
-    if needs_quote or " " in s:
-        escaped = s.replace("\\", "\\\\").replace('"', '\\"')
-        return f'"{escaped}"'
-    # 空文字列もクォート
-    if not s:
-        return '""'
-    return s
-
-
-def write_yaml(path, data):
-    """フラットな dict を YAML として書き出す。
-
-    共通フィールドを先に出力し、残りはアルファベット順で出力する。
-    """
-    lines = []
-    # 共通フィールドを定義順で出力
-    ordered_keys = [k for k in COMMON_FIELDS if k in data]
-    # 残りのフィールドをアルファベット順で追加
-    remaining = sorted(k for k in data if k not in COMMON_FIELDS)
-    ordered_keys += remaining
-    for key in ordered_keys:
-        lines.append(f"{key}: {_yaml_value(data[key])}")
-    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def read_yaml(path):
-    """行ベースでフラット YAML を読み込み dict に変換する。"""
-    result = {}
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if ":" not in line:
-                continue
-            key, _, val = line.partition(":")
-            key = key.strip()
-            val = val.strip()
-            # クォートの除去
-            if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
-                val = val[1:-1]
-            # 整数値の変換
-            if val.lstrip("-").isdigit():
-                val = int(val)
-            result[key] = val
-    return result
-
-
-# ---------------------------------------------------------------------------
 # ヘルパー
 # ---------------------------------------------------------------------------
-
-def now_iso():
-    """UTC ISO 8601 タイムスタンプを生成する（Z 表記）。"""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def generate_session_name(skill):
@@ -187,7 +119,7 @@ def cmd_init(args, remaining):
 
     # session.yaml 書き出し
     yaml_path = os.path.join(session_dir, "session.yaml")
-    write_yaml(yaml_path, data)
+    write_flat_yaml(yaml_path, data, field_order=COMMON_FIELDS)
 
     return {"status": "created", "session_dir": session_dir}
 
@@ -201,7 +133,8 @@ def cmd_find(args):
     for yaml_path in sorted(glob.glob(pattern)):
         try:
             data = read_yaml(yaml_path)
-        except (IOError, OSError):
+        except (IOError, OSError) as e:
+            print(f"警告: セッションファイルの読み込みに失敗しました: {yaml_path}: {e}", file=sys.stderr)
             continue
 
         if data.get("skill") == skill:
@@ -265,25 +198,19 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    try:
-        if args.command == "init":
-            result = cmd_init(args, remaining)
-        elif args.command == "find":
-            result = cmd_find(args)
-        elif args.command == "cleanup":
-            result = cmd_cleanup(args)
-        else:
-            parser.print_help()
-            sys.exit(1)
+    if args.command == "init":
+        result = cmd_init(args, remaining)
+    elif args.command == "find":
+        result = cmd_find(args)
+    elif args.command == "cleanup":
+        result = cmd_cleanup(args)
+    else:
+        parser.print_help()
+        sys.exit(1)
 
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
-        if result.get("status") == "error":
-            sys.exit(1)
-
-    except Exception as e:
-        error_result = {"status": "error", "error": str(e)}
-        print(json.dumps(error_result, ensure_ascii=False, indent=2), file=sys.stderr)
+    if result.get("status") == "error":
         sys.exit(1)
 
 

@@ -30,20 +30,8 @@ sys.path.insert(0, os.path.join(
 from resolve_doc_structure import (
     load_doc_structure,
     resolve_files,
-    find_project_root as _find_project_root,
+    find_project_root,
 )
-
-
-# ---------------------------------------------------------------------------
-# プロジェクトルートの自動検出（後方互換ラッパー）
-# ---------------------------------------------------------------------------
-
-def find_project_root(start_path=None):
-    """.git または .claude ディレクトリを遡って探索してプロジェクトルートを特定する。
-
-    resolve_doc_structure.find_project_root() に委譲する。
-    """
-    return _find_project_root(start_path)
 
 
 # ---------------------------------------------------------------------------
