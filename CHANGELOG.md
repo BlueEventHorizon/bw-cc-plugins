@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.26] - 2026-03-22
+
+### forge
+
+- **refactor**: バグ隠蔽フォールバックを除去し YAML ユーティリティを統合
+  - session_manager.py の `except Exception` バグ隠蔽ハンドラを削除
+  - session_manager.py の YAML ユーティリティを yaml_utils.py に統合（約60行削除）
+  - skill_monitor.py の YamlReader 自前パーサーを yaml_utils.parse_yaml に統合（約300行削除）
+  - エラー握りつぶし箇所（4箇所）に stderr 警告を追加
+  - 到達不能コード（IndexError キャッチ、デッドコード、不要ラッパー）を削除
+
 ## [0.0.25] - 2026-03-22
 
 ### forge
