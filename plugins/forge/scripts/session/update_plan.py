@@ -194,7 +194,11 @@ def main():
             json.dump({"status": "error", "error": f"JSON パースエラー: {e}"}, sys.stderr)
             sys.exit(1)
 
-        updates_list = batch_data.get("updates", [])
+        # {"updates": [...]} 形式と [...] 形式の両方を受け付ける
+        if isinstance(batch_data, list):
+            updates_list = batch_data
+        else:
+            updates_list = batch_data.get("updates", [])
         if not updates_list:
             json.dump({"status": "error", "error": "updates が空です"}, sys.stderr)
             sys.exit(1)

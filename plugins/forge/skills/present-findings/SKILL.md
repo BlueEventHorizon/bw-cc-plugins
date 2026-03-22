@@ -59,7 +59,7 @@ target_files:
 reference_docs:
   - path: docs/rules/foo.md
 perspectives:
-  - name: correctness
+  - name: logic
     criteria_path: review/docs/review_criteria_code.md
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md

@@ -151,6 +151,22 @@ class TestExtractVersionFromToml(_FsTestCase):
         result = extract_version_from_toml(self.tmpdir / 'nonexistent.toml')
         self.assertIsNone(result['version'])
 
+    def test_pyproject_with_project_section(self):
+        """PEP 621 の [project] セクションから name と version を抽出"""
+        content = '[project]\nname = "my-app"\nversion = "3.0.0"\n\n[tool.setuptools]\npackages = ["src"]\n'
+        f = self._write_file('pyproject.toml', content)
+        result = extract_version_from_toml(f)
+        self.assertEqual(result['name'], 'my-app')
+        self.assertEqual(result['version'], '3.0.0')
+
+    def test_package_preferred_over_project(self):
+        """[package] と [project] の両方がある場合、先に現れた方を使用"""
+        content = '[package]\nname = "crate"\nversion = "1.0.0"\n\n[project]\nname = "py-app"\nversion = "2.0.0"\n'
+        f = self._write_file('pyproject.toml', content)
+        result = extract_version_from_toml(f)
+        self.assertEqual(result['name'], 'crate')
+        self.assertEqual(result['version'], '1.0.0')
+
 
 # =========================================================================
 # 3. バージョンファイルスキャンテスト

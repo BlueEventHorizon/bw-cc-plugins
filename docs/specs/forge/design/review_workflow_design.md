@@ -209,7 +209,7 @@ plan.yaml 内の `recommendation: fix` が0件でループ終了。
 |---------|---------|---------|------|
 | `session.yaml` | review | 全スキル | セッションメタデータ（種別・エンジン・サイクル数） |
 | `refs.yaml` | review | reviewer / evaluator / fixer / present-findings | 参照ファイルリスト（target_files / reference_docs / related_code / perspectives） |
-| `review_*.md` | reviewer（perspective ごと） | evaluator（perspective ごと） | perspective 別のレビュー結果（生出力）。例: `review_correctness.md`, `review_resilience.md` |
+| `review_*.md` | reviewer（perspective ごと） | evaluator（perspective ごと） | perspective 別のレビュー結果（生出力）。例: `review_logic.md`, `review_resilience.md` |
 | `review.md` | extract_review_findings.py | present-findings / fixer | 全 perspective の統合・重複除去済みレビュー結果 |
 | `plan.yaml` | extract_review_findings.py（初期）→ evaluator / present-findings / fixer（更新） | 全スキル | 修正プランと進捗状態。recommendation / auto_fixable / reason / perspective を含む |
 
@@ -268,10 +268,10 @@ flowchart TD
     end
 
     subgraph Phase3 [Phase 3: 並列レビュー]
-        REFS --> R1[reviewer A<br>correctness]
+        REFS --> R1[reviewer A<br>logic]
         REFS --> R2[reviewer B<br>resilience]
         REFS --> R3[reviewer C<br>maintainability]
-        R1 -->|Write| RA[review_correctness.md]
+        R1 -->|Write| RA[review_logic.md]
         R2 -->|Write| RB[review_resilience.md]
         R3 -->|Write| RC[review_maintainability.md]
     end
@@ -316,7 +316,7 @@ flowchart TD
 | 入力 | エンジン | `codex` / `claude` |
 | 入力 | reference_docs | 収集済み参考文書パス一覧（refs.yaml 経由） |
 | 入力 | related_code | 関連コードのパスと関連性の説明（refs.yaml 経由） |
-| 入力 | perspective_name | perspective の識別子（例: `correctness`） |
+| 入力 | perspective_name | perspective の識別子（例: `logic`） |
 | 入力 | criteria_path | レビュー観点ファイルのパス（例: `review/docs/review_criteria_code.md`） |
 | 入力 | section | criteria ファイル内の対象セクション名（`null` の場合はファイル全体） |
 | 入力 | output_path | レビュー結果の出力先（session_dir からの相対パス） |

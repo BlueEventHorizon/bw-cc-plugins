@@ -264,7 +264,11 @@ Agent(subagent_type: general-purpose, prompt: {構築したパラメータ})
 
 **並列実行時**: 独立タスクごとに別の executor を Agent ツールで同時起動する。
 
-### 4.4 executor の結果受領
+### 4.4 executor の結果受領 [MANDATORY]
+
+> 並列 agent の出力契約パターン（`docs/specs/forge/design/parallel_agent_output_contract_design.md` 参照）に従う。
+
+#### 単一タスク実行時
 
 executor は以下のステータスで報告する:
 
@@ -272,6 +276,31 @@ executor は以下のステータスで報告する:
 |-----------|------|--------------|
 | SUCCESS | 実装完了 | Phase 5（AI レビュー）へ |
 | FAILURE | 実装失敗 | Phase 6.5（エラー対応）へ |
+
+#### 複数タスク並列実行時
+
+**executor は計画書や共有リソースに直接書き込まない。** 各 executor は個別の結果ファイルを Write し、orchestrator が全 executor 完了後に一括処理する。
+
+各 executor は `{session_dir}/exec_{task_id}.json` に結果を Write する:
+
+```json
+{
+  "task_id": "TASK-001",
+  "status": "SUCCESS",
+  "files_modified": ["src/foo.py", "src/bar.py"],
+  "summary": "実装の要約"
+}
+```
+
+| フィールド | 説明 |
+|---|---|
+| `task_id` | タスクID |
+| `status` | `SUCCESS` / `FAILURE` |
+| `files_modified` | 変更したファイルパス一覧 |
+| `summary` | 実装の要約（1-2行） |
+| `error` | FAILURE 時のエラー内容（任意） |
+
+全 executor 完了後、orchestrator が `exec_*.json` を収集して Phase 5-6 を逐次処理する。
 
 ---
 
@@ -281,11 +310,23 @@ executor は以下のステータスで報告する:
 
 ### 5.1 レビューの実施
 
+#### 単一タスク実行時
+
 executor が作成・変更したファイル（差分のみ）に対して `/forge:review code` を `--auto` モードで実行する:
 
 ```
 /forge:review code {変更ファイル一覧} --auto
 ```
+
+#### 複数タスク並列実行時
+
+全 executor 完了後、SUCCESS のタスクについて**逐次的に**レビューを実施する:
+
+1. `exec_*.json` から `status: SUCCESS` のタスクを収集する
+2. 各タスクの `files_modified` に対して `/forge:review code {files} --auto` を逐次実行する
+3. タスク間でファイルが重複する場合、重複ファイルは最初のレビューで対応し、以降はスキップする
+
+> **レビューの並列実行は行わない。** `/forge:review` 自体が内部で並列 agent を使用するため、レビューを更に並列化するとリソース競合が発生する。
 
 `/forge:review` が利用できない場合は `git diff` で変更差分を人間に提示し、手動レビューを依頼する。
 
@@ -303,12 +344,20 @@ executor のステータスに基づいて分岐:
 - **SUCCESS** → 6.2 へ
 - **FAILURE** → 6.5 へ
 
+#### 複数タスク並列実行時
+
+`exec_*.json` を収集し、SUCCESS / FAILURE を分類する:
+- SUCCESS タスク → 6.2 で一括更新
+- FAILURE タスク → 6.5 で個別対応
+
 ### 6.2 計画書の更新 [MANDATORY]
 
 レビュー完了後、計画書（YAML）を更新する:
 
 1. **タスクのステータス**: `status: pending` → `status: completed`
 2. **要件トレーサビリティ**: 関連する要件の全タスクが `completed` なら `status: completed` に更新
+
+> **複数タスク並列実行時**: 全 SUCCESS タスクのステータスを**1回の計画書更新で一括変更**する。個別に更新しない。
 
 ### 6.3 commit/push 確認
 

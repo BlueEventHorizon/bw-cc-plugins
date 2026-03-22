@@ -37,10 +37,10 @@ argument-hint: "<種別> [--エンジン]"
 | session_dir      | 必須 | セッションワーキングディレクトリのパス                                         |
 | 種別             | 必須 | `code` / `requirement` / `design` / `plan` / `generic`                         |
 | エンジン         | 必須 | `codex` / `claude`                                                             |
-| perspective_name | 必須 | perspective の識別子（例: `correctness`, `resilience`）                         |
+| perspective_name | 必須 | perspective の識別子（例: `logic`, `resilience`）                         |
 | criteria_path    | 必須 | レビュー観点ファイルのパス（プラグインルートからの相対パス）                   |
 | section          | 任意 | criteria ファイル内の対象セクション名。`null` の場合はファイル全体を使用する   |
-| output_path      | 必須 | レビュー結果の出力先（session_dir からの相対パス。例: `review_correctness.md`） |
+| output_path      | 必須 | レビュー結果の出力先（session_dir からの相対パス。例: `review_logic.md`） |
 | スコープ         | 任意 | `--diff-only {files}` — fixer の変更差分のみをレビュー                         |
 
 target_files / reference_docs / related_code は `{session_dir}/refs.yaml` から読み取る。
