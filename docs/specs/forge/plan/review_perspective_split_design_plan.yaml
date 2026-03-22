@@ -36,7 +36,7 @@ tasks:
   - task_id: TASK-001
     title: session_format.md スキーマ更新
     priority: 95
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on: []
     group_id: null
@@ -54,7 +54,7 @@ tasks:
   - task_id: TASK-002
     title: review_criteria ファイル作成（5種別）
     priority: 90
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on: []
     group_id: null
@@ -72,7 +72,7 @@ tasks:
   - task_id: TASK-003
     title: write_refs.py perspectives 対応 + テスト
     priority: 85
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-001
@@ -91,7 +91,7 @@ tasks:
   - task_id: TASK-004
     title: reviewer/SKILL.md perspective 単位対応
     priority: 80
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-001
@@ -112,7 +112,7 @@ tasks:
   - task_id: TASK-005
     title: evaluator/SKILL.md perspective 並列起動 + evaluation.yaml 廃止
     priority: 75
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-004
@@ -131,7 +131,7 @@ tasks:
   - task_id: TASK-006
     title: extract_review_findings.py multi-file 対応 + テスト
     priority: 75
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005
@@ -153,7 +153,7 @@ tasks:
   - task_id: TASK-007
     title: review/SKILL.md perspectives 収集・並列起動
     priority: 70
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-002
@@ -179,7 +179,7 @@ tasks:
   - task_id: TASK-008
     title: write_evaluation.py 廃止 + テスト削除
     priority: 40
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005
@@ -195,7 +195,7 @@ tasks:
   - task_id: TASK-009
     title: fixer/SKILL.md フォールバックパス更新
     priority: 40
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -211,7 +211,7 @@ tasks:
   - task_id: TASK-010
     title: review_workflow_design.md データフロー更新
     priority: 30
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -229,7 +229,7 @@ tasks:
   - task_id: TASK-011
     title: パス参照更新 + 旧ファイル削除
     priority: 20
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -251,7 +251,7 @@ tasks:
   - task_id: TASK-012
     title: present-findings/SKILL.md evaluation.yaml 依存除去
     priority: 65
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005

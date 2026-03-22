@@ -102,7 +102,7 @@ review スキルがレビュー観点を探索する優先順位：
 
 1. **DocAdvisor** — `/query-rules` Skill が動的にプロジェクト固有の観点を特定（`.claude/skills/query-rules/SKILL.md` で利用可否判断）
 2. **プロジェクト設定** — `.claude/review-config.yaml`
-3. **プラグイン文書** — `plugins/forge/docs/review_criteria_spec.md`
+3. **プラグイン文書** — `plugins/forge/skills/review/docs/review_criteria_{type}.md`（種別ごとの観点ファイル）
 
 ### レビュー種別
 

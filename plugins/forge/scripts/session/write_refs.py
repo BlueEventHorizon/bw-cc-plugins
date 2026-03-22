@@ -10,7 +10,10 @@ stdin JSON:
     {
         "target_files": ["path/to/file1"],
         "reference_docs": [{"path": "docs/rules.md"}],
-        "review_criteria_path": "plugins/forge/docs/review_criteria_spec.md",
+        "perspectives": [
+            {"name": "correctness", "criteria_path": "review/docs/review_criteria_code.md",
+             "section": "正確性 (Logic)", "output_path": "review_correctness.md"}
+        ],
         "related_code": [{"path": "src/foo.py", "reason": "関連", "lines": "1-50"}]
     }
 
@@ -19,6 +22,7 @@ stdin JSON:
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -27,6 +31,9 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 from session.yaml_utils import write_nested_yaml
+
+# perspectives[].name の許容パターン（英小文字・数字・アンダースコア・ハイフンのみ）
+_PERSPECTIVE_NAME_RE = re.compile(r"^[a-z0-9_-]+$")
 
 
 def validate_refs_data(data):
@@ -41,11 +48,40 @@ def validate_refs_data(data):
     if not isinstance(data.get("target_files"), list) or not data["target_files"]:
         raise ValueError("target_files は非空の配列が必須です")
 
-    if not data.get("review_criteria_path"):
-        raise ValueError("review_criteria_path は必須です")
-
     if not isinstance(data.get("reference_docs"), list):
         raise ValueError("reference_docs は配列が必須です")
+
+    # perspectives: 必須・非空配列
+    perspectives = data.get("perspectives")
+    if not isinstance(perspectives, list) or not perspectives:
+        raise ValueError("perspectives は非空の配列が必須です")
+
+    for i, p in enumerate(perspectives):
+        # name: 必須、パターン検証
+        name = p.get("name")
+        if not name:
+            raise ValueError(f"perspectives[{i}].name は必須です")
+        if not _PERSPECTIVE_NAME_RE.match(name):
+            raise ValueError(
+                f"perspectives[{i}].name は ^[a-z0-9_-]+$ に限定されます: {name!r}"
+            )
+
+        # criteria_path: 必須
+        if not p.get("criteria_path"):
+            raise ValueError(f"perspectives[{i}].criteria_path は必須です")
+
+        # output_path: 必須、../ 禁止、絶対パス禁止
+        output_path = p.get("output_path")
+        if not output_path:
+            raise ValueError(f"perspectives[{i}].output_path は必須です")
+        if ".." in output_path.split("/"):
+            raise ValueError(
+                f"perspectives[{i}].output_path に ../ は使用できません: {output_path!r}"
+            )
+        if output_path.startswith("/"):
+            raise ValueError(
+                f"perspectives[{i}].output_path に絶対パスは使用できません: {output_path!r}"
+            )
 
     for i, doc in enumerate(data.get("reference_docs", [])):
         if not doc.get("path"):
@@ -70,7 +106,7 @@ def build_refs_sections(data):
     sections = [
         ("target_files", data["target_files"]),
         ("reference_docs", data.get("reference_docs", [])),
-        ("review_criteria_path", data["review_criteria_path"]),
+        ("perspectives", data["perspectives"]),
     ]
     related = data.get("related_code")
     if related:

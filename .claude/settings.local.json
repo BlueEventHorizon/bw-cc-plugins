@@ -12,7 +12,11 @@
       "WebFetch(domain:addyosmani.com)",
       "WebFetch(domain:www.humanlayer.dev)",
       "WebFetch(domain:medium.com)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(for id:*)",
+      "Bash(do python3:*)",
+      "Bash(done)",
+      "Bash(bash .claude/doc-advisor/scripts/check_config.sh specs)"
     ]
   },
   "sandbox": {

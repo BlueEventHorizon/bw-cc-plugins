@@ -168,11 +168,19 @@ specs/
 
 ### レビュー観点
 
-プラグインにはレビュー観点が `docs/review_criteria_spec.md` に同梱されています。プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
+プラグインにはレビュー種別ごとの観点ファイルが `skills/review/docs/` に同梱されています:
+
+- `review_criteria_requirement.md` — 要件定義書レビュー観点
+- `review_criteria_design.md` — 設計書レビュー観点
+- `review_criteria_plan.md` — 計画書レビュー観点
+- `review_criteria_code.md` — コードレビュー観点
+- `review_criteria_generic.md` — 汎用文書レビュー観点
+
+プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
 
 1. **DocAdvisor**: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のレビュー観点を動的に取得
 2. **プロジェクト設定**: `.claude/review-config.yaml` にカスタムパスを保存
-3. **プラグイン文書**: 同梱の `docs/review_criteria_spec.md` にフォールバック
+3. **プラグイン文書**: 上記の同梱観点ファイルにフォールバック
 
 ### 文書構造管理 (.doc_structure.yaml)
 
