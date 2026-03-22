@@ -136,7 +136,8 @@ def extract_front_matter(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read(4096)
-    except (IOError, OSError):
+    except (IOError, OSError) as e:
+        print(f"警告: front matter の読み込みに失敗しました: {filepath}: {e}", file=sys.stderr)
         return None
 
     lines = content.split('\n')

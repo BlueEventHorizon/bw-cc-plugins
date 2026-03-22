@@ -26,16 +26,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
 from session_manager import (
     COMMON_FIELDS,
     TEMP_BASE,
-    _yaml_value,
     cmd_cleanup,
     cmd_find,
     cmd_init,
     generate_session_name,
-    now_iso,
     parse_extra_args,
-    read_yaml,
     validate_temp_path,
-    write_yaml,
+)
+from session.yaml_utils import (
+    now_iso,
+    read_yaml,
+    write_flat_yaml,
+    yaml_scalar,
 )
 
 
@@ -66,41 +68,41 @@ class _FsTestCase(unittest.TestCase):
 # =========================================================================
 
 class TestYamlValue(unittest.TestCase):
-    """_yaml_value のテスト"""
+    """yaml_scalar のテスト（yaml_utils に委譲）"""
 
     def test_string_no_special(self):
-        self.assertEqual(_yaml_value("hello"), "hello")
+        self.assertEqual(yaml_scalar("hello"), "hello")
 
     def test_string_with_colon(self):
-        self.assertEqual(_yaml_value("key: value"), '"key: value"')
+        self.assertEqual(yaml_scalar("key: value"), '"key: value"')
 
     def test_string_with_space(self):
-        self.assertEqual(_yaml_value("hello world"), '"hello world"')
+        self.assertEqual(yaml_scalar("hello world"), '"hello world"')
 
     def test_integer(self):
-        self.assertEqual(_yaml_value(42), "42")
+        self.assertEqual(yaml_scalar(42), "42")
 
     def test_bool_true(self):
-        self.assertEqual(_yaml_value(True), "true")
+        self.assertEqual(yaml_scalar(True), "true")
 
     def test_bool_false(self):
-        self.assertEqual(_yaml_value(False), "false")
+        self.assertEqual(yaml_scalar(False), "false")
 
     def test_empty_string(self):
-        self.assertEqual(_yaml_value(""), '""')
+        self.assertEqual(yaml_scalar(""), '""')
 
     def test_string_with_quotes(self):
-        result = _yaml_value('say "hello"')
+        result = yaml_scalar('say "hello"')
         self.assertIn('\\"', result)
 
 
 class TestWriteReadYaml(_FsTestCase):
-    """write_yaml / read_yaml の往復テスト"""
+    """write_flat_yaml / read_yaml の往復テスト"""
 
     def test_roundtrip_basic(self):
         path = self.tmpdir / "test.yaml"
         data = {"skill": "review", "status": "in_progress", "auto_count": 3}
-        write_yaml(path, data)
+        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
         result = read_yaml(path)
         self.assertEqual(result["skill"], "review")
         self.assertEqual(result["status"], "in_progress")
@@ -117,7 +119,7 @@ class TestWriteReadYaml(_FsTestCase):
             "last_updated": "2026-03-13T10:00:00Z",
             "resume_policy": "none",
         }
-        write_yaml(path, data)
+        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
         content = path.read_text(encoding="utf-8")
         lines = [l for l in content.strip().split("\n") if l]
         # 最初の行は skill
@@ -131,7 +133,7 @@ class TestWriteReadYaml(_FsTestCase):
         """スペース・特殊文字を含む値の往復"""
         path = self.tmpdir / "test.yaml"
         data = {"output_dir": "specs/login/design", "skill": "start-design"}
-        write_yaml(path, data)
+        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
         result = read_yaml(path)
         self.assertEqual(result["output_dir"], "specs/login/design")
 
@@ -148,7 +150,7 @@ class TestWriteReadYaml(_FsTestCase):
     def test_integer_roundtrip(self):
         """整数値が正しく往復する"""
         path = self.tmpdir / "test.yaml"
-        write_yaml(path, {"auto_count": 0, "skill": "review"})
+        write_flat_yaml(path, {"auto_count": 0, "skill": "review"}, field_order=COMMON_FIELDS)
         result = read_yaml(path)
         self.assertEqual(result["auto_count"], 0)
         self.assertIsInstance(result["auto_count"], int)
@@ -317,11 +319,12 @@ class TestCmdFind(_FsTestCase):
             name = f"{skill}-aaaaaa"
         session_dir = os.path.join(TEMP_BASE, name)
         os.makedirs(session_dir, exist_ok=True)
-        write_yaml(
+        write_flat_yaml(
             os.path.join(session_dir, "session.yaml"),
             {"skill": skill, "started_at": "2026-03-13T18:00:00Z",
              "last_updated": "2026-03-13T18:00:00Z",
              "status": "in_progress", "resume_policy": "none"},
+            field_order=COMMON_FIELDS,
         )
         return session_dir
 
