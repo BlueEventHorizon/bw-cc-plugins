@@ -32,6 +32,7 @@ from scan_version_targets import (
     scan_version_files,
     scan_catalog_files,
     scan_readme_files,
+    scan_version_ref_files,
     scan_changelog,
     detect_changelog_format,
     output_scan,
@@ -316,6 +317,108 @@ class TestScanReadmeFiles(_FsTestCase):
 
 
 # =========================================================================
+# 5b. バージョン参照ファイル検出テスト
+# =========================================================================
+
+class TestScanVersionRefFiles(_FsTestCase):
+    """scan_version_ref_files のテスト"""
+
+    def test_detect_any_root_file_with_version(self):
+        """ルートのテキストファイルからバージョン参照を自動検出"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('CLAUDE.md',
+                         '# CLAUDE.md\n\n- **forge** (v0.0.23) — ツール\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['path'], 'CLAUDE.md')
+        self.assertEqual(len(result[0]['references']), 1)
+        self.assertEqual(result[0]['references'][0]['name'], 'forge')
+
+    def test_detect_unknown_file_with_version(self):
+        """事前登録なしのファイルでもバージョン参照を検出"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "1.2.3"}')
+        self._write_file('CONTRIBUTING.md', '# Contributing\n\nCurrent: 1.2.3\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        paths = [r['path'] for r in result]
+        self.assertIn('CONTRIBUTING.md', paths)
+
+    def test_no_version_reference(self):
+        """バージョン参照がないファイルは検出しない"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('CLAUDE.md', '# CLAUDE.md\n\nバージョン参照なし\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        self.assertEqual(result, [])
+
+    def test_no_root_text_files(self):
+        """ルートにテキストファイルがない場合は空"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        self.assertEqual(result, [])
+
+    def test_skip_readme_files(self):
+        """readme_files で既に検出済みのファイルは除外"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('README.md', '# Project\n\nforge 0.0.23\n')
+        self._write_file('CLAUDE.md', '# CLAUDE\n\nforge 0.0.23\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        readme_files = ['README.md']
+        result = scan_version_ref_files(str(self.tmpdir), version_files,
+                                        readme_files=readme_files)
+        paths = [r['path'] for r in result]
+        self.assertNotIn('README.md', paths)
+        self.assertIn('CLAUDE.md', paths)
+
+    def test_skip_changelog(self):
+        """CHANGELOG は除外（changelog カテゴリで処理）"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('CHANGELOG.md', '## [0.0.23]\n\n- feature\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        paths = [r['path'] for r in result]
+        self.assertNotIn('CHANGELOG.md', paths)
+
+    def test_multiple_target_references(self):
+        """複数 target のバージョン参照を検出"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('plugins/anvil/.claude-plugin/plugin.json',
+                         '{"name": "anvil", "version": "0.0.4"}')
+        self._write_file('CLAUDE.md',
+                         '# CLAUDE\n\n- forge (v0.0.23)\n- anvil (v0.0.4)\n')
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        self.assertEqual(len(result), 1)
+        names = {r['name'] for r in result[0]['references']}
+        self.assertEqual(names, {'forge', 'anvil'})
+
+    def test_empty_version_files(self):
+        """version_files が空の場合は空"""
+        self._write_file('CLAUDE.md', '# CLAUDE.md\n')
+        result = scan_version_ref_files(str(self.tmpdir), [])
+        self.assertEqual(result, [])
+
+    def test_skip_non_text_extensions(self):
+        """テキスト拡張子以外のファイルはスキップ"""
+        self._write_file('plugins/forge/.claude-plugin/plugin.json',
+                         '{"name": "forge", "version": "0.0.23"}')
+        self._write_file('image.png', '0.0.23')  # バイナリ想定
+        version_files = scan_version_files(str(self.tmpdir))
+        result = scan_version_ref_files(str(self.tmpdir), version_files)
+        paths = [r['path'] for r in result]
+        self.assertNotIn('image.png', paths)
+
+
+# =========================================================================
 # 6. CHANGELOG 検出テスト
 # =========================================================================
 
@@ -374,6 +477,7 @@ class TestOutputScan(unittest.TestCase):
         self.assertIn('version_files', parsed)
         self.assertIn('catalog_files', parsed)
         self.assertIn('readme_files', parsed)
+        self.assertIn('version_ref_files', parsed)
         self.assertIn('changelog', parsed)
 
     def test_output_with_data(self):

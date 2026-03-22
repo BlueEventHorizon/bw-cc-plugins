@@ -1,0 +1,62 @@
+# version_config_version: 1.0
+
+targets:
+  - name: forge
+    version_file: plugins/forge/.claude-plugin/plugin.json
+    version_path: version
+    sync_files:
+      - path: .claude-plugin/marketplace.json
+        pattern: '"version": "{version}"'
+        filter: '"name": "forge"'
+      - path: README.md
+        pattern: '| **forge** | {version} |'
+        filter: '| **forge**'
+      - path: README_ja.md
+        pattern: '| **forge** | {version} |'
+        filter: '| **forge**'
+        optional: true
+      - path: CLAUDE.md
+        pattern: '**forge** (v{version})'
+        filter: '**forge** (v'
+
+  - name: anvil
+    version_file: plugins/anvil/.claude-plugin/plugin.json
+    version_path: version
+    sync_files:
+      - path: .claude-plugin/marketplace.json
+        pattern: '"version": "{version}"'
+        filter: '"name": "anvil"'
+      - path: README.md
+        pattern: '| **anvil** | {version} |'
+        filter: '| **anvil**'
+      - path: README_ja.md
+        pattern: '| **anvil** | {version} |'
+        filter: '| **anvil**'
+        optional: true
+
+  - name: xcode
+    version_file: plugins/xcode/.claude-plugin/plugin.json
+    version_path: version
+    sync_files:
+      - path: .claude-plugin/marketplace.json
+        pattern: '"version": "{version}"'
+        filter: '"name": "xcode"'
+      - path: README.md
+        pattern: '| **xcode** | {version} |'
+        filter: '| **xcode**'
+      - path: README_ja.md
+        pattern: '| **xcode** | {version} |'
+        filter: '| **xcode**'
+        optional: true
+
+changelog:
+  file: CHANGELOG.md
+  format: keep-a-changelog
+  git_log_auto: false
+  section_per_target: true
+
+git:
+  tag_format: "{target}-v{version}"
+  commit_message: "chore: bump {target} to {version}"
+  auto_tag: false
+  auto_commit: false
