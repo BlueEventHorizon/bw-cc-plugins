@@ -30,8 +30,14 @@ def parse_semver(version_str):
     Raises:
         ValueError: 不正なバージョン形式
     """
-    match = SEMVER_PATTERN.match(version_str.strip())
+    stripped = version_str.strip()
+    match = SEMVER_PATTERN.match(stripped)
     if not match:
+        # プレリリースサフィックスの検出（例: 1.2.3-alpha, 1.2.3-beta.1）
+        if re.match(r'^\d+\.\d+\.\d+-', stripped):
+            raise ValueError(
+                f"プレリリースバージョンは非対応です: '{version_str}'（X.Y.Z 形式のみ対応）"
+            )
         raise ValueError(f"不正なバージョン形式: '{version_str}'（例: 1.2.3）")
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
@@ -65,7 +71,7 @@ def bump_version(current, spec):
     result = {
         "current": current.strip(),
         "new": new_version,
-        "spec": spec,
+        "spec": spec.strip(),
     }
 
     # 新 ≦ 旧の warning

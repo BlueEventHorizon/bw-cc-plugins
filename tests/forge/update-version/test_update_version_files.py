@@ -95,6 +95,102 @@ class TestFilterPattern(unittest.TestCase):
         with self.assertRaises(ValueError):
             update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
 
+    def test_filter_max_distance_exceeded(self):
+        """max_distance 超過時はブロックがリセットされバージョン未発見エラー"""
+        # filter 行から 11 行以上離れた位置にバージョンがある場合（max_distance=10）
+        lines = ['| **forge** | header |']
+        lines += ['filler line'] * 11
+        lines += ['999.88.7']
+        content = '\n'.join(lines)
+        with self.assertRaises(ValueError):
+            update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
+
+    def test_filter_version_on_different_line(self):
+        """filter 行とバージョン行が異なる行（JSON ブロック内探索パターン）"""
+        content = (
+            '{\n'
+            '  "plugins": [\n'
+            '    {\n'
+            '      "name": "forge",\n'
+            '      "description": "tools",\n'
+            '      "version": "999.88.7"\n'
+            '    }\n'
+            '  ]\n'
+            '}'
+        )
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", filter_pattern='"name": "forge"'
+        )
+        self.assertIn('"999.88.8"', result)
+        self.assertNotIn('"999.88.7"', result)
+
+    def test_filter_consecutive_blocks_first_no_version(self):
+        """2つの filter ブロックが連続し、1つ目にはバージョンがない場合"""
+        content = (
+            '{\n'
+            '  "name": "anvil",\n'
+            '  "description": "other tool"\n'
+            '},\n'
+            '{\n'
+            '  "name": "forge",\n'
+            '  "version": "999.88.7"\n'
+            '}'
+        )
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", filter_pattern='"name": "forge"'
+        )
+        self.assertIn('"999.88.8"', result)
+
+    def test_filter_within_max_distance(self):
+        """max_distance ちょうどの行数でバージョンが見つかる場合"""
+        lines = ['| **forge** | header |']
+        lines += ['filler line'] * 9  # 9行のフィラー（filter 行から10行目にバージョン）
+        lines += ['999.88.7']
+        content = '\n'.join(lines)
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", filter_pattern="**forge**"
+        )
+        self.assertIn("999.88.8", result)
+
+
+class TestVersionPathToml(unittest.TestCase):
+    """TOML 形式の path モードテスト"""
+
+    def test_toml_top_level_version(self):
+        """TOML のトップレベル version フィールド"""
+        content = '[package]\nname = "my-crate"\nversion = "999.88.7"\n'
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", version_path="version"
+        )
+        self.assertIn('"999.88.8"', result)
+        self.assertNotIn('999.88.7', result)
+
+    def test_toml_preserves_surrounding(self):
+        """TOML の version 置換で前後のフィールドが保持される"""
+        content = '[package]\nname = "my-crate"\nversion = "999.88.7"\nedition = "2021"\n'
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", version_path="version"
+        )
+        self.assertIn('name = "my-crate"', result)
+        self.assertIn('edition = "2021"', result)
+        self.assertIn('"999.88.8"', result)
+
+
+class TestEmptyVersionValidation(unittest.TestCase):
+    """空文字列バリデーションのテスト"""
+
+    def test_empty_old_version(self):
+        """old_version が空文字列の場合 ValueError"""
+        with self.assertRaises(ValueError) as ctx:
+            update_version_in_text('{"version": "1.0.0"}', "", "1.0.1")
+        self.assertIn("old_version", str(ctx.exception))
+
+    def test_empty_new_version(self):
+        """new_version が空文字列の場合 ValueError"""
+        with self.assertRaises(ValueError) as ctx:
+            update_version_in_text('{"version": "1.0.0"}', "1.0.0", "")
+        self.assertIn("new_version", str(ctx.exception))
+
 
 class TestCLI(unittest.TestCase):
     """CLI インターフェースのテスト"""
