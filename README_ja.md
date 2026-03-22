@@ -8,7 +8,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.0.23     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **forge**  | 0.0.24     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
 
@@ -141,6 +141,7 @@ specs/
 | `start-implement`     | 可能             | 計画書からタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行するオーケストレーター               |
 | `setup-version-config`| 可能             | プロジェクトをスキャンして `.version-config.yaml` を生成・更新する。プロジェクト構造変更時に再実行                     |
 | `update-version`      | 可能             | `.version-config.yaml` の設定に従いバージョンを一括更新。patch/minor/major/直接指定対応。CHANGELOG 自動生成オプション付き |
+| `clean-rules`         | 可能             | プロジェクトの rules/ を開発文書の分類学で分析し、forge 内蔵知識との重複を除去して体系的に再構築する                      |
 | `help`                | 可能             | インタラクティブヘルプウィザード。スキルを選択し、引数を1つずつ入力してそのまま実行できる                               |
 | `present-findings`    | AI 専用          | レビュー結果を段階的・対話的に提示                                                                                      |
 | `reviewer`            | AI 専用          | レビュー実行エンジン。参考文書を収集し指摘事項を作成                                                                    |
@@ -167,11 +168,18 @@ specs/
 
 ### レビュー観点
 
-プラグインにはレビュー観点が `docs/review_criteria_spec.md` に同梱されています。プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
+プラグインにはレビュー種別ごとの観点ファイルが `skills/review/docs/` に同梱されています:
 
-1. **DocAdvisor**: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のレビュー観点を動的に取得
-2. **プロジェクト設定**: `.claude/review-config.yaml` にカスタムパスを保存
-3. **プラグイン文書**: 同梱の `docs/review_criteria_spec.md` にフォールバック
+- `review_criteria_requirement.md` — 要件定義書レビュー観点
+- `review_criteria_design.md` — 設計書レビュー観点
+- `review_criteria_plan.md` — 計画書レビュー観点
+- `review_criteria_code.md` — コードレビュー観点
+- `review_criteria_generic.md` — 汎用文書レビュー観点
+
+レビュー観点は以下のソースから累積的に構成されます:
+
+- **プラグインデフォルト**（常に含む）: 上記の同梱観点ファイルの perspectives を使用
+- **DocAdvisor**（追加 perspective）: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のルール文書を追加の perspective として適用
 
 ### 文書構造管理 (.doc_structure.yaml)
 

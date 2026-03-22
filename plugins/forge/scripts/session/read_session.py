@@ -26,7 +26,6 @@ SESSION_FILES = [
     "refs.yaml",
     "review.md",
     "plan.yaml",
-    "evaluation.yaml",
 ]
 
 # refs/ サブディレクトリのファイル

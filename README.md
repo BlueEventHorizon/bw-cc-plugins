@@ -8,7 +8,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Plugin    | Version | Description                                                                                                   |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.23  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **forge** | 0.0.24  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 
@@ -144,6 +144,7 @@ specs/
 | `start-implement`     | Yes            | Orchestrator: selects tasks from a plan, gathers context, delegates to executor agent, reviews, and updates the plan                          |
 | `setup-version-config`| Yes            | Scans project files and generates `.version-config.yaml` for version bump configuration. Re-run on project structure changes                  |
 | `update-version`      | Yes            | Bumps version across all files defined in `.version-config.yaml`. Supports patch/minor/major/direct. Optionally auto-generates CHANGELOG      |
+| `clean-rules`         | Yes            | Analyzes project rules/ with a document taxonomy, removes forge-covered duplicates, and reorganizes into a clean structure                     |
 | `help`                | Yes            | Interactive help wizard. Select a skill, fill in arguments step-by-step, and execute directly                                                 |
 | `present-findings`    | No (AI only)   | Presents review findings interactively, one item at a time (human acts as evaluator)                                                          |
 | `reviewer`            | No (AI only)   | Executes review and collects reference documents. Returns findings + reference doc paths                                                      |
@@ -170,11 +171,18 @@ specs/
 
 ### Review Criteria
 
-The plugin includes review criteria in `docs/review_criteria_spec.md`. Projects can override this by:
+The plugin includes review criteria split by perspective in `skills/review/docs/`:
 
-1. **DocAdvisor**: If the project has DocAdvisor skills (`/query-rules`), the plugin queries them for project-specific review criteria
-2. **Project config**: Save a custom path in `.claude/review-config.yaml`
-3. **Plugin docs**: Falls back to the bundled `docs/review_criteria_spec.md`
+- `review_criteria_requirement.md` — Requirements review
+- `review_criteria_design.md` — Design review
+- `review_criteria_plan.md` — Plan review
+- `review_criteria_code.md` — Code review
+- `review_criteria_generic.md` — Generic document review
+
+Review criteria are accumulated from the following sources:
+
+- **Plugin default** (always included): Perspectives from the bundled criteria files above
+- **DocAdvisor** (additional perspectives): If the project has DocAdvisor skills (`/query-rules`), project-specific rules are added as extra perspectives
 
 ### Document Structure (.doc_structure.yaml)
 

@@ -108,7 +108,7 @@ def extract_version_from_toml(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read(8192)
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return {'name': None, 'version': None}
 
     # [package] セクションを抽出
@@ -248,6 +248,85 @@ def scan_readme_files(project_root):
     return results
 
 
+# version_ref_files で除外するファイル（他のカテゴリで検出済み、またはスキャン不要）
+VERSION_REF_SKIP_FILES = {
+    'CHANGELOG.md', 'CHANGELOG', 'CHANGELOG.rst',
+    'HISTORY.md', 'HISTORY', 'HISTORY.rst',
+    'CHANGES.md', 'CHANGES', 'RELEASES.md',
+}
+
+# テキストファイルとして扱う拡張子
+TEXT_EXTENSIONS = {'.md', '.rst', '.txt', '.yaml', '.yml', '.json', '.toml'}
+
+
+def scan_version_ref_files(project_root, version_files, readme_files=None,
+                           catalog_files=None):
+    """
+    プロジェクトルートの全テキストファイルからバージョン参照を検出する。
+
+    他のカテゴリ（version_files, readme_files, catalog_files, changelog）で
+    既に検出されたファイルは除外する。
+
+    Args:
+        project_root: プロジェクトルートパス
+        version_files: scan_version_files の結果
+        readme_files: scan_readme_files の結果（除外用）
+        catalog_files: scan_catalog_files の結果（除外用）
+
+    Returns:
+        list[dict]: バージョン参照を持つファイルのメタデータ
+            [{"path": "CLAUDE.md", "references": [{"name": "forge", "version": "0.0.23"}]}]
+    """
+    root = Path(project_root)
+    results = []
+
+    # バージョン検索用の辞書を構築
+    version_map = {}
+    for vf in version_files:
+        if vf.get('current_version') and vf.get('detected_name'):
+            version_map[vf['detected_name']] = vf['current_version']
+
+    if not version_map:
+        return results
+
+    # 他カテゴリで検出済みのファイル名を収集（除外用）
+    skip_files = set(VERSION_REF_SKIP_FILES)
+    if readme_files:
+        skip_files.update(readme_files)
+    if catalog_files:
+        for cf in catalog_files:
+            skip_files.add(Path(cf['path']).name)
+    for vf in version_files:
+        skip_files.add(Path(vf['path']).name)
+
+    # ルートの全テキストファイルを走査
+    for filepath in sorted(root.iterdir()):
+        if not filepath.is_file():
+            continue
+        if filepath.suffix.lower() not in TEXT_EXTENSIONS:
+            continue
+        if filepath.name in skip_files:
+            continue
+
+        try:
+            content = filepath.read_text(encoding='utf-8')
+        except (IOError, OSError, UnicodeDecodeError):
+            continue
+
+        references = []
+        for name, version in version_map.items():
+            if version in content:
+                references.append({'name': name, 'version': version})
+
+        if references:
+            results.append({
+                'path': filepath.name,
+                'references': references,
+            })
+
+    return results
+
+
 def detect_changelog_format(filepath):
     """
     CHANGELOG ファイルの形式を判定する。
@@ -258,7 +337,7 @@ def detect_changelog_format(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read(4096)
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return 'unknown'
 
     if KEEP_A_CHANGELOG_PATTERN.search(content):
@@ -292,13 +371,15 @@ def scan_changelog(project_root):
     return None
 
 
-def output_scan(project_root, version_files, catalog_files, readme_files, changelog):
+def output_scan(project_root, version_files, catalog_files, readme_files,
+                changelog, version_ref_files=None):
     """スキャン結果を JSON で出力する。"""
     output = {
         'project_root': project_root,
         'version_files': version_files,
         'catalog_files': catalog_files,
         'readme_files': readme_files,
+        'version_ref_files': version_ref_files or [],
         'changelog': changelog,
     }
     print(json.dumps(output, indent=2, ensure_ascii=False))
@@ -312,9 +393,13 @@ def main():
     version_files = scan_version_files(project_root, max_depth)
     catalog_files = scan_catalog_files(project_root)
     readme_files = scan_readme_files(project_root)
+    version_ref_files = scan_version_ref_files(
+        project_root, version_files,
+        readme_files=readme_files, catalog_files=catalog_files)
     changelog = scan_changelog(project_root)
 
-    output_scan(project_root, version_files, catalog_files, readme_files, changelog)
+    output_scan(project_root, version_files, catalog_files, readme_files,
+                changelog, version_ref_files)
     return 0
 
 

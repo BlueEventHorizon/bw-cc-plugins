@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.24] - 2026-03-22
+
+### forge
+
+- **feat**: perspectives ベースのレビューアーキテクチャを実装（reviewer/evaluator を perspective ごとに並列起動）
+  - review_criteria を5種別（requirement/design/plan/code/generic）に分割し `## Perspective:` セクションで観点を定義
+  - reviewer を 1 perspective 単位処理に変更（並列起動はオーケストレーターが制御）
+  - evaluator を perspective 並列起動対応。出力契約パターン導入（eval_*.json → orchestrator が一括マージ）
+  - extract_review_findings.py を multi-file merge 対応（glob 収集・通し番号 ID・perspective タグ・重複除去）
+  - write_refs.py を perspectives 必須フィールド対応（name/criteria_path/section/output_path バリデーション付き）
+- **feat**: バージョン管理ワークフロー設計書を作成（setup-version-config / update-version の設計を文書化）
+  - scan_version_ref_files 追加（ルート全テキストファイルからバージョン参照を自動検出）
+  - filter ルールを設計書に明記（README/CLAUDE.md 等の複数 target ファイルで誤置換を防止）
+  - .version-config.yaml に CLAUDE.md を sync_files として追加
+- **feat**: clean-rules スキルを追加
+- **refactor**: evaluation.yaml を廃止し plan.yaml に統合（recommendation/auto_fixable/reason フィールド追加）
+  - write_evaluation.py とテストを削除
+  - present-findings から evaluation.yaml 依存を除去
+  - session_format.md から evaluation.yaml セクションを削除
+- **refactor**: evaluator SKILL.md を強化（対象ファイル検証必須化、判定バイアス是正）
+- **fix**: 設計書のパイプライン順序を実装と統一（reviewers → extract → evaluators）
+- **fix**: 廃止済み evaluation.yaml / review_criteria_spec.md への参照を全設計書・スクリプト・テストから削除
+- **fix**: UnicodeDecodeError ハンドリングを extract_review_findings.py / scan_version_targets.py / list_forge_docs.py に追加
+- **fix**: update_plan.py に recommendation/auto_fixable/reason フィールド処理と --recommendation バリデーションを追加
+- **fix**: review/SKILL.md にブランチ確認ステップを追加（ブランチ関連の対象指定時）
+
 ## [0.0.23] - 2026-03-16
 
 ### forge

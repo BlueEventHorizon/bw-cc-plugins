@@ -91,10 +91,54 @@ class TestUpdateItem(unittest.TestCase):
         result = update_item(items, 99, {"status": "fixed"})
         self.assertFalse(result)
 
+    def test_update_recommendation(self):
+        items = _sample_items()
+        result = update_item(items, 1, {
+            "status": "pending",
+            "recommendation": "fix",
+            "auto_fixable": True,
+            "reason": "明確な問題",
+        })
+        self.assertTrue(result)
+        self.assertEqual(items[0]["recommendation"], "fix")
+        self.assertTrue(items[0]["auto_fixable"])
+        self.assertEqual(items[0]["reason"], "明確な問題")
+
+    def test_update_recommendation_skip(self):
+        items = _sample_items()
+        result = update_item(items, 2, {
+            "status": "skipped",
+            "recommendation": "skip",
+            "reason": "FP: 意図的な設計",
+        })
+        self.assertTrue(result)
+        self.assertEqual(items[1]["recommendation"], "skip")
+        self.assertEqual(items[1]["reason"], "FP: 意図的な設計")
+        # auto_fixable は設定されない
+        self.assertNotIn("auto_fixable", items[1])
+
+    def test_update_recommendation_needs_review(self):
+        items = _sample_items()
+        result = update_item(items, 3, {
+            "status": "needs_review",
+            "recommendation": "needs_review",
+            "auto_fixable": False,
+            "reason": "確認が必要",
+        })
+        self.assertTrue(result)
+        self.assertEqual(items[2]["recommendation"], "needs_review")
+        self.assertFalse(items[2]["auto_fixable"])
+        self.assertEqual(items[2]["reason"], "確認が必要")
+
     def test_invalid_status(self):
         items = _sample_items()
         with self.assertRaises(ValueError):
             update_item(items, 1, {"status": "invalid"})
+
+    def test_invalid_recommendation(self):
+        items = _sample_items()
+        with self.assertRaises(ValueError):
+            update_item(items, 1, {"status": "pending", "recommendation": "invalid"})
 
 
 class TestUpdateItemsBatch(unittest.TestCase):
@@ -150,6 +194,33 @@ class TestReadWritePlan(_FsTestCase):
         self.assertEqual(item1["fixed_at"], "2026-03-09T18:35:00Z")
         # files_modified は文字列リストとして読み込まれるはず
         self.assertIn("a.py", item1.get("files_modified", []))
+
+    def test_roundtrip_with_recommendation(self):
+        items = _sample_items()
+        self._write_plan(items)
+
+        plan_data = read_plan(str(self.session_dir))
+        update_item(plan_data["items"], 1, {
+            "status": "pending",
+            "recommendation": "fix",
+            "auto_fixable": True,
+            "reason": "明確な不整合",
+        })
+        update_item(plan_data["items"], 2, {
+            "status": "skipped",
+            "recommendation": "skip",
+            "reason": "FP",
+        })
+        write_plan(str(self.session_dir), plan_data)
+
+        reloaded = read_plan(str(self.session_dir))
+        item1 = reloaded["items"][0]
+        self.assertEqual(item1["recommendation"], "fix")
+        self.assertTrue(item1["auto_fixable"])
+        self.assertEqual(item1["reason"], "明確な不整合")
+        item2 = reloaded["items"][1]
+        self.assertEqual(item2["recommendation"], "skip")
+        self.assertEqual(item2["reason"], "FP")
 
     def test_file_not_found(self):
         with self.assertRaises(FileNotFoundError):
@@ -213,6 +284,94 @@ class TestCLI(_FsTestCase):
             capture_output=True, text=True,
         )
         self.assertNotEqual(proc.returncode, 0)
+
+    def test_single_update_with_recommendation(self):
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "pending",
+             "--recommendation", "fix",
+             "--auto-fixable", "true",
+             "--reason", "明確な問題"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "ok")
+
+        # ファイルを再読み込みして検証
+        plan_data = read_plan(str(self.session_dir))
+        item1 = plan_data["items"][0]
+        self.assertEqual(item1["recommendation"], "fix")
+        self.assertTrue(item1["auto_fixable"])
+        self.assertEqual(item1["reason"], "明確な問題")
+
+    def test_cli_recommendation_args(self):
+        """CLI で --recommendation / --auto-fixable / --reason が plan.yaml に反映される。"""
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "pending",
+             "--recommendation", "fix",
+             "--auto-fixable", "true",
+             "--reason", "テスト理由"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["updated"], [1])
+
+        # plan.yaml を再読み込みして値を検証
+        plan_data = read_plan(str(self.session_dir))
+        item1 = plan_data["items"][0]
+        self.assertEqual(item1["recommendation"], "fix")
+        self.assertTrue(item1["auto_fixable"])
+        self.assertEqual(item1["reason"], "テスト理由")
+
+    def test_cli_invalid_recommendation(self):
+        """CLI で --recommendation に不正な値を渡すと exit 1 になる。"""
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "pending",
+             "--recommendation", "invalid_value"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        error = json.loads(proc.stderr)
+        self.assertEqual(error["status"], "error")
+        self.assertIn("recommendation", error["error"])
+
+    def test_batch_update_with_recommendation(self):
+        self._write_plan(_sample_items())
+        batch = {
+            "updates": [
+                {
+                    "id": 1, "status": "pending",
+                    "recommendation": "fix", "auto_fixable": True,
+                    "reason": "修正すべき",
+                },
+                {
+                    "id": 2, "status": "skipped",
+                    "recommendation": "skip",
+                    "reason": "FP",
+                },
+            ]
+        }
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir), "--batch"],
+            input=json.dumps(batch),
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["updated"], [1, 2])
+
+        plan_data = read_plan(str(self.session_dir))
+        self.assertEqual(plan_data["items"][0]["recommendation"], "fix")
+        self.assertTrue(plan_data["items"][0]["auto_fixable"])
+        self.assertEqual(plan_data["items"][1]["recommendation"], "skip")
 
 
 if __name__ == "__main__":

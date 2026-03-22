@@ -28,7 +28,7 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 
 | ID | 要件 |
 |---|---|
-| FNC-001-1 | セッションディレクトリ内の YAML ファイル（session.yaml, plan.yaml, evaluation.yaml 等）をブラウザに表示できる |
+| FNC-001-1 | セッションディレクトリ内の YAML ファイル（session.yaml, plan.yaml 等）をブラウザに表示できる |
 | FNC-001-2 | 表示はセッションファイルのスキーマ（`session_format.md`）に従う |
 | FNC-001-3 | 中間ファイル（display.json 等）の生成は不要。既存の YAML を SSE サーバーが直接読む |
 
@@ -101,7 +101,7 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 ## データフロー
 
 ```
-SKILL が plan.yaml / evaluation.yaml 等を更新（既存動作、変更なし）
+SKILL が plan.yaml 等を更新（既存動作、変更なし）
     │
     ▼
 PostToolUse フック（.claude/.temp/ 内への Write を検知）
@@ -133,8 +133,7 @@ skill_monitor.py（SSE サーバー）
 | `session.yaml` | セッションメタデータ（スキル名、種別、開始日時、ステータス） |
 | `refs.yaml` | 参照ファイルリスト（target_files, reference_docs, related_code） |
 | `review.md` | レビュー結果（🔴🟡🟢 指摘事項） |
-| `plan.yaml` | 修正プラン・タスク進捗（status: pending/fixed/skipped） |
-| `evaluation.yaml` | AI 推奨判定（recommendation, auto_fixable） |
+| `plan.yaml` | 修正プラン・タスク進捗 + AI 推奨判定（recommendation, auto_fixable）※ evaluation.yaml は plan.yaml に統合済み |
 | `refs/*.yaml` | コンテキスト収集結果（specs.yaml, rules.yaml, code.yaml） |
 
 全ファイルが存在するとは限らない。存在するファイルのみ表示する。

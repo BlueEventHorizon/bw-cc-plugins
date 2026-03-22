@@ -35,7 +35,7 @@ class YamlReader:
 
     設計書 5.5 節で定義された3種の YAML パターンに対応:
       1. フラット key-value（session.yaml 等）
-      2. リスト付き構造（plan.yaml, evaluation.yaml の items リスト）
+      2. リスト付き構造（plan.yaml の items リスト）
       3. ネストオブジェクト付きリスト（refs.yaml の reference_docs 等）
 
     review.md は Markdown のため文字列としてそのまま格納する。
@@ -45,7 +45,6 @@ class YamlReader:
     SESSION_FILES = [
         "session.yaml",
         "plan.yaml",
-        "evaluation.yaml",
         "review.md",
     ]
 

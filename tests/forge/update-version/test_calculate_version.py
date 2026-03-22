@@ -58,18 +58,18 @@ class TestBumpVersion(unittest.TestCase):
     """bump_version のテスト"""
 
     def test_patch(self):
-        result = bump_version("0.0.19", "patch")
-        self.assertEqual(result["new"], "0.0.20")
+        result = bump_version("999.88.7", "patch")
+        self.assertEqual(result["new"], "999.88.8")
         self.assertEqual(result["spec"], "patch")
         self.assertNotIn("warning", result)
 
     def test_minor(self):
-        result = bump_version("0.0.19", "minor")
-        self.assertEqual(result["new"], "0.1.0")
+        result = bump_version("999.88.7", "minor")
+        self.assertEqual(result["new"], "999.89.0")
 
     def test_major(self):
-        result = bump_version("0.0.19", "major")
-        self.assertEqual(result["new"], "1.0.0")
+        result = bump_version("999.88.7", "major")
+        self.assertEqual(result["new"], "1000.0.0")
 
     def test_patch_carry(self):
         """0.9.9 → 0.9.10（パッチは桁上げなし）"""
@@ -83,8 +83,8 @@ class TestBumpVersion(unittest.TestCase):
 
     def test_direct_higher(self):
         """直接指定（高いバージョン）"""
-        result = bump_version("0.0.19", "2.0.0")
-        self.assertEqual(result["new"], "2.0.0")
+        result = bump_version("999.88.7", "1000.0.0")
+        self.assertEqual(result["new"], "1000.0.0")
         self.assertNotIn("warning", result)
 
     def test_direct_same(self):
@@ -109,8 +109,8 @@ class TestBumpVersion(unittest.TestCase):
 
     def test_current_preserved(self):
         """current が正しく保持される"""
-        result = bump_version("0.0.19", "patch")
-        self.assertEqual(result["current"], "0.0.19")
+        result = bump_version("999.88.7", "patch")
+        self.assertEqual(result["current"], "999.88.7")
 
 
 class TestCLI(unittest.TestCase):
@@ -124,11 +124,11 @@ class TestCLI(unittest.TestCase):
         return result
 
     def test_patch_cli(self):
-        result = self._run("0.0.19", "patch")
+        result = self._run("999.88.7", "patch")
         self.assertEqual(result.returncode, 0)
         data = json.loads(result.stdout)
         self.assertEqual(data["status"], "ok")
-        self.assertEqual(data["new"], "0.0.20")
+        self.assertEqual(data["new"], "999.88.8")
 
     def test_invalid_cli(self):
         result = self._run("invalid", "patch")

@@ -77,7 +77,6 @@ class TestReadSessionFiles(_FsTestCase):
         self.assertTrue(result["files"]["refs.yaml"]["exists"])
         self.assertTrue(result["files"]["plan.yaml"]["exists"])
         self.assertTrue(result["files"]["review.md"]["exists"])
-        self.assertFalse(result["files"]["evaluation.yaml"]["exists"])
         self.assertTrue(result["refs"]["specs.yaml"]["exists"])
         self.assertFalse(result["refs"]["rules.yaml"]["exists"])
 

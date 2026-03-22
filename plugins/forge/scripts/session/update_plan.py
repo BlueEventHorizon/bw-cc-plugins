@@ -29,10 +29,12 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 from session.yaml_utils import read_yaml, write_nested_yaml, now_iso
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
+VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
 
 # plan.yaml items のフィールド出力順序
 ITEM_FIELD_ORDER = [
     "id", "severity", "title", "status",
+    "recommendation", "auto_fixable", "reason",
     "fixed_at", "files_modified", "skip_reason",
 ]
 
@@ -73,10 +75,23 @@ def update_item(items, item_id, updates):
     if status and status not in VALID_STATUSES:
         raise ValueError(f"不正な status です: {status}（許容値: {VALID_STATUSES}）")
 
+    recommendation = updates.get("recommendation")
+    if recommendation and recommendation not in VALID_RECOMMENDATIONS:
+        raise ValueError(
+            f"不正な recommendation です: {recommendation}"
+            f"（許容値: {VALID_RECOMMENDATIONS}）"
+        )
+
     for item in items:
         if item.get("id") == item_id:
             if status:
                 item["status"] = status
+            if "recommendation" in updates:
+                item["recommendation"] = updates["recommendation"]
+            if "auto_fixable" in updates:
+                item["auto_fixable"] = updates["auto_fixable"]
+            if "reason" in updates:
+                item["reason"] = updates["reason"]
             if "fixed_at" in updates:
                 item["fixed_at"] = updates["fixed_at"]
             elif status == "fixed" and not item.get("fixed_at"):
@@ -156,6 +171,11 @@ def main():
     parser.add_argument("--files-modified", nargs="*",
                         help="修正ファイルパス一覧")
     parser.add_argument("--skip-reason", help="スキップ理由")
+    parser.add_argument("--recommendation",
+                        help="evaluator の推奨（fix / skip / needs_review）")
+    parser.add_argument("--auto-fixable", type=str,
+                        help="自動修正可能か（true / false）")
+    parser.add_argument("--reason", help="evaluator の判定理由")
     args = parser.parse_args()
 
     try:
@@ -194,6 +214,12 @@ def main():
             sys.exit(1)
 
         updates = {"status": args.status}
+        if args.recommendation:
+            updates["recommendation"] = args.recommendation
+        if args.auto_fixable is not None:
+            updates["auto_fixable"] = args.auto_fixable.lower() == "true"
+        if args.reason:
+            updates["reason"] = args.reason
         if args.fixed_at:
             updates["fixed_at"] = args.fixed_at
         if args.files_modified:

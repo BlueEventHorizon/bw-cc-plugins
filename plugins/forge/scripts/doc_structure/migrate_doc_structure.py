@@ -253,7 +253,8 @@ def apply_migrations(content, detected_version):
     try:
         for v in targets:
             content = MIGRATIONS[v](content)
-    except Exception:
+    except Exception as e:
+        print(f"マイグレーションエラー（ロールバック）: {e}", file=sys.stderr)
         return original
 
     return content
