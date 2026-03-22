@@ -123,10 +123,10 @@ def extract_perspective_from_filename(filename):
     """ファイル名 review_{name}.md から perspective 名を抽出する。
 
     Args:
-        filename: ファイル名（例: "review_correctness.md"）
+        filename: ファイル名（例: "review_logic.md"）
 
     Returns:
-        str: perspective 名（例: "correctness"）。抽出できない場合は空文字列
+        str: perspective 名（例: "logic"）。抽出できない場合は空文字列
     """
     match = re.match(r'^review_(.+)\.md$', filename)
     if match:
