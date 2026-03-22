@@ -45,7 +45,7 @@ def extract_metadata(filepath):
     """
     try:
         content = Path(filepath).read_text(encoding='utf-8')
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return None
 
     title = ''

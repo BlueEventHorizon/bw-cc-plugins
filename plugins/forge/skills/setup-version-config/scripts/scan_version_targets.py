@@ -310,7 +310,7 @@ def scan_version_ref_files(project_root, version_files, readme_files=None,
 
         try:
             content = filepath.read_text(encoding='utf-8')
-        except (IOError, OSError):
+        except (IOError, OSError, UnicodeDecodeError):
             continue
 
         references = []

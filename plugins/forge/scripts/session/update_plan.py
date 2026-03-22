@@ -29,6 +29,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 from session.yaml_utils import read_yaml, write_nested_yaml, now_iso
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
+VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
 
 # plan.yaml items のフィールド出力順序
 ITEM_FIELD_ORDER = [
@@ -73,6 +74,13 @@ def update_item(items, item_id, updates):
     status = updates.get("status")
     if status and status not in VALID_STATUSES:
         raise ValueError(f"不正な status です: {status}（許容値: {VALID_STATUSES}）")
+
+    recommendation = updates.get("recommendation")
+    if recommendation and recommendation not in VALID_RECOMMENDATIONS:
+        raise ValueError(
+            f"不正な recommendation です: {recommendation}"
+            f"（許容値: {VALID_RECOMMENDATIONS}）"
+        )
 
     for item in items:
         if item.get("id") == item_id:

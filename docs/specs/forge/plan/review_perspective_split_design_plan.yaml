@@ -67,7 +67,7 @@ tasks:
     acceptance_criteria: 全5ファイルが作成され、各ファイルの Perspective 数が設計書 §6 と一致すること
     required_reading:
       - docs/specs/forge/design/review_perspective_split_design.md
-      - plugins/forge/docs/review_criteria_spec.md
+      - plugins/forge/skills/review/docs/review_criteria_code.md
 
   - task_id: TASK-003
     title: write_refs.py perspectives 対応 + テスト

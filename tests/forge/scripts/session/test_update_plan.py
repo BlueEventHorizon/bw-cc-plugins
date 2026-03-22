@@ -135,6 +135,11 @@ class TestUpdateItem(unittest.TestCase):
         with self.assertRaises(ValueError):
             update_item(items, 1, {"status": "invalid"})
 
+    def test_invalid_recommendation(self):
+        items = _sample_items()
+        with self.assertRaises(ValueError):
+            update_item(items, 1, {"status": "pending", "recommendation": "invalid"})
+
 
 class TestUpdateItemsBatch(unittest.TestCase):
     """update_items_batch のテスト。"""
@@ -300,6 +305,43 @@ class TestCLI(_FsTestCase):
         self.assertEqual(item1["recommendation"], "fix")
         self.assertTrue(item1["auto_fixable"])
         self.assertEqual(item1["reason"], "明確な問題")
+
+    def test_cli_recommendation_args(self):
+        """CLI で --recommendation / --auto-fixable / --reason が plan.yaml に反映される。"""
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "pending",
+             "--recommendation", "fix",
+             "--auto-fixable", "true",
+             "--reason", "テスト理由"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["updated"], [1])
+
+        # plan.yaml を再読み込みして値を検証
+        plan_data = read_plan(str(self.session_dir))
+        item1 = plan_data["items"][0]
+        self.assertEqual(item1["recommendation"], "fix")
+        self.assertTrue(item1["auto_fixable"])
+        self.assertEqual(item1["reason"], "テスト理由")
+
+    def test_cli_invalid_recommendation(self):
+        """CLI で --recommendation に不正な値を渡すと exit 1 になる。"""
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "pending",
+             "--recommendation", "invalid_value"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        error = json.loads(proc.stderr)
+        self.assertEqual(error["status"], "error")
+        self.assertIn("recommendation", error["error"])
 
     def test_batch_update_with_recommendation(self):
         self._write_plan(_sample_items())
