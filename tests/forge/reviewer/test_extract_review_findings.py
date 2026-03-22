@@ -16,7 +16,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'reviewer' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from extract_review_findings import extract_findings, generate_plan_yaml, summarize
+from extract_review_findings import (
+    extract_findings, generate_plan_yaml, summarize,
+    extract_perspective_from_filename, deduplicate_findings,
+    generate_review_md, run_session_dir_mode,
+)
 
 # ===========================================================================
 # テストデータ
@@ -270,6 +274,14 @@ class TestExtractFindings(unittest.TestCase):
         findings = extract_findings("")
         self.assertEqual(findings, [])
 
+    def test_location_extraction(self):
+        """箇所（location）が正しく抽出される"""
+        findings = extract_findings(REVIEW_MD_MIXED)
+        self.assertEqual(findings[0]['location'], 'plugins/forge/skills/review/SKILL.md:183')
+        self.assertEqual(findings[1]['location'], 'plugins/forge/skills/review/SKILL.md:436')
+        self.assertEqual(findings[2]['location'], 'plugins/forge/skills/present-findings/SKILL.md:255')
+        self.assertEqual(findings[3]['location'], '')  # 箇所なし
+
 
 # ===========================================================================
 # generate_plan_yaml テスト
@@ -330,6 +342,31 @@ class TestGeneratePlanYaml(unittest.TestCase):
         yaml_text = generate_plan_yaml(self._make_finding('[配列] の要素不足'))
         self.assertIn('title: "[配列]', yaml_text)
 
+    def test_perspective_field(self):
+        """単一 perspective フィールドが出力される"""
+        findings = [{'id': 1, 'severity': 'critical', 'title': '問題',
+                     'status': 'pending', 'fixed_at': '', 'files_modified': [],
+                     'skip_reason': '', 'perspective': 'correctness'}]
+        yaml_text = generate_plan_yaml(findings)
+        self.assertIn('perspective: correctness', yaml_text)
+
+    def test_perspectives_field(self):
+        """複数 perspectives フィールド（配列）が出力される"""
+        findings = [{'id': 1, 'severity': 'critical', 'title': '問題',
+                     'status': 'pending', 'fixed_at': '', 'files_modified': [],
+                     'skip_reason': '', 'perspectives': ['correctness', 'resilience']}]
+        yaml_text = generate_plan_yaml(findings)
+        self.assertIn('perspectives: [correctness, resilience]', yaml_text)
+        self.assertNotIn('perspective:', yaml_text.replace('perspectives:', ''))
+
+    def test_no_perspective_field_when_empty(self):
+        """perspective が空文字列の場合はフィールドが出力されない"""
+        findings = [{'id': 1, 'severity': 'critical', 'title': '問題',
+                     'status': 'pending', 'fixed_at': '', 'files_modified': [],
+                     'skip_reason': '', 'perspective': ''}]
+        yaml_text = generate_plan_yaml(findings)
+        self.assertNotIn('perspective:', yaml_text)
+
 
 # ===========================================================================
 # summarize テスト
@@ -353,11 +390,11 @@ class TestSummarize(unittest.TestCase):
 
 
 # ===========================================================================
-# CLI テスト
+# CLI テスト（旧モード: 2引数）
 # ===========================================================================
 
 class TestCLI(unittest.TestCase):
-    """CLI インターフェースのテスト"""
+    """CLI インターフェースのテスト（旧モード）"""
 
     def test_basic_cli(self):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
@@ -399,6 +436,395 @@ class TestCLI(unittest.TestCase):
             capture_output=True, text=True, timeout=10,
         )
         self.assertEqual(result.returncode, 1)
+
+
+# ===========================================================================
+# extract_perspective_from_filename テスト
+# ===========================================================================
+
+class TestExtractPerspectiveFromFilename(unittest.TestCase):
+    """extract_perspective_from_filename のテスト"""
+
+    def test_standard_name(self):
+        self.assertEqual(extract_perspective_from_filename('review_correctness.md'), 'correctness')
+
+    def test_hyphenated_name(self):
+        self.assertEqual(extract_perspective_from_filename('review_project-rules.md'), 'project-rules')
+
+    def test_underscored_name(self):
+        self.assertEqual(extract_perspective_from_filename('review_my_perspective.md'), 'my_perspective')
+
+    def test_generic(self):
+        self.assertEqual(extract_perspective_from_filename('review_generic.md'), 'generic')
+
+    def test_non_review_file(self):
+        """review_ プレフィックスのないファイル"""
+        self.assertEqual(extract_perspective_from_filename('plan.yaml'), '')
+
+    def test_review_md_without_perspective(self):
+        """review.md（perspective なし）"""
+        self.assertEqual(extract_perspective_from_filename('review.md'), '')
+
+
+# ===========================================================================
+# deduplicate_findings テスト
+# ===========================================================================
+
+class TestDeduplicateFindings(unittest.TestCase):
+    """deduplicate_findings のテスト"""
+
+    def test_no_duplicates(self):
+        """重複なしの場合はそのまま返す"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '問題A', 'location': 'file.py:10',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'correctness'},
+            {'id': 2, 'severity': 'major', 'title': '問題B', 'location': 'file.py:20',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'resilience'},
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]['perspective'], 'correctness')
+        self.assertEqual(result[1]['perspective'], 'resilience')
+
+    def test_duplicate_merged(self):
+        """同一タイトル+箇所の重複が統合される"""
+        findings = [
+            {'id': 1, 'severity': 'major', 'title': '問題A', 'location': 'file.py:10',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'correctness'},
+            {'id': 2, 'severity': 'critical', 'title': '問題A', 'location': 'file.py:10',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'resilience'},
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(len(result), 1)
+        # severity は最高を採用
+        self.assertEqual(result[0]['severity'], 'critical')
+        # perspectives に両方が記録される
+        self.assertIn('perspectives', result[0])
+        self.assertEqual(result[0]['perspectives'], ['correctness', 'resilience'])
+        # ID は振り直し
+        self.assertEqual(result[0]['id'], 1)
+
+    def test_different_location_not_merged(self):
+        """同一タイトルでも箇所が異なれば統合しない"""
+        findings = [
+            {'id': 1, 'severity': 'major', 'title': '問題A', 'location': 'file.py:10',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'correctness'},
+            {'id': 2, 'severity': 'major', 'title': '問題A', 'location': 'file.py:20',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'resilience'},
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(len(result), 2)
+
+    def test_severity_max_adopted(self):
+        """severity は最高を採用（minor < major < critical）"""
+        findings = [
+            {'id': 1, 'severity': 'minor', 'title': '問題', 'location': '',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'a'},
+            {'id': 2, 'severity': 'major', 'title': '問題', 'location': '',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'b'},
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(result[0]['severity'], 'major')
+
+    def test_triple_duplicate(self):
+        """3つの perspective から同一指摘がある場合"""
+        findings = [
+            {'id': 1, 'severity': 'minor', 'title': '問題', 'location': 'x.py:1',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'a'},
+            {'id': 2, 'severity': 'major', 'title': '問題', 'location': 'x.py:1',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'b'},
+            {'id': 3, 'severity': 'critical', 'title': '問題', 'location': 'x.py:1',
+             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
+             'perspective': 'c'},
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['severity'], 'critical')
+        self.assertEqual(result[0]['perspectives'], ['a', 'b', 'c'])
+
+
+# ===========================================================================
+# session_dir モード テスト
+# ===========================================================================
+
+# session_dir テスト用のレビューデータ
+REVIEW_CORRECTNESS = """\
+### 🔴致命的問題
+
+1. **境界値チェック漏れ**: 配列の範囲外アクセスが発生する。
+   - 箇所: utils.py:42
+
+### 🟡品質問題
+
+1. **戻り値の型が不統一**: None と空リストが混在。
+   - 箇所: utils.py:88
+"""
+
+REVIEW_RESILIENCE = """\
+### 🔴致命的問題
+
+1. **入力バリデーション不足**: ユーザー入力が未検証のまま使用されている。
+   - 箇所: handler.py:15
+
+### 🟡品質問題
+
+1. **境界値チェック漏れ**: 配列の範囲外アクセスが発生する。
+   - 箇所: utils.py:42
+
+### 🟢改善提案
+
+1. **エラーメッセージの改善**: ユーザーにとって不明瞭。
+"""
+
+REVIEW_GENERIC = """\
+### 🔴致命的問題
+
+1. **事実の誤り**: ドキュメントの記述が実装と異なる。
+   - 箇所: README.md:10
+
+### 🟢改善提案
+
+1. **冗長な記述**: 同じ内容が複数箇所に重複している。
+"""
+
+
+class TestSessionDirMode(unittest.TestCase):
+    """session_dir モードのテスト"""
+
+    def setUp(self):
+        """テスト用の一時 session_dir を作成"""
+        self.tmpdir = tempfile.mkdtemp()
+        self.session_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        """一時ディレクトリを削除"""
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write_review(self, filename, content):
+        (self.session_path / filename).write_text(content, encoding='utf-8')
+
+    def test_basic_multi_file(self):
+        """session_dir モード基本テスト: 2ファイル → 統合 plan.yaml + review.md"""
+        self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
+        self._write_review('review_resilience.md', REVIEW_RESILIENCE)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        data = json.loads(result.stdout)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['files_processed'], 2)
+
+        # plan.yaml が生成されている
+        plan_path = self.session_path / 'plan.yaml'
+        self.assertTrue(plan_path.exists())
+        plan_content = plan_path.read_text(encoding='utf-8')
+        self.assertIn('items:', plan_content)
+
+        # review.md が生成されている
+        review_path = self.session_path / 'review.md'
+        self.assertTrue(review_path.exists())
+        review_content = review_path.read_text(encoding='utf-8')
+        self.assertIn('統合レビュー結果', review_content)
+
+    def test_perspective_tags(self):
+        """perspective タグ付与テスト: ファイル名から perspective 名が正しく抽出される"""
+        self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
+        self._write_review('review_resilience.md', REVIEW_RESILIENCE)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # correctness の指摘に perspective が付いている
+        self.assertIn('perspective: correctness', plan_content)
+        # resilience の指摘に perspective が付いている
+        self.assertIn('perspective: resilience', plan_content)
+
+    def test_cross_file_sequential_ids(self):
+        """ファイル間通し番号テスト: 複数ファイルで ID が連番"""
+        self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
+        self._write_review('review_resilience.md', REVIEW_RESILIENCE)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # ID が連番であることを確認（重複除去後の再採番）
+        import re
+        ids = [int(m) for m in re.findall(r'id: (\d+)', plan_content)]
+        self.assertEqual(ids, list(range(1, len(ids) + 1)))
+
+    def test_deduplication(self):
+        """重複除去テスト: 同一タイトル+箇所の指摘が統合される"""
+        self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
+        self._write_review('review_resilience.md', REVIEW_RESILIENCE)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        data = json.loads(result.stdout)
+        # 「境界値チェック漏れ」が両方に同一タイトル+同一箇所で存在 → 1つに統合
+        self.assertGreater(data['duplicates_removed'], 0)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # 統合された指摘には perspectives フィールドがある
+        self.assertIn('perspectives: [correctness, resilience]', plan_content)
+
+    def test_partial_failure(self):
+        """partial-failure テスト: 一部ファイルが空でも他のファイルが正常処理される"""
+        self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
+        self._write_review('review_resilience.md', '')  # 空ファイル
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        data = json.loads(result.stdout)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['files_processed'], 1)
+        self.assertEqual(data['files_failed'], 1)
+        self.assertGreater(data['total'], 0)
+
+    def test_all_failure(self):
+        """all-failure テスト: review_*.md が0件の場合のエラーハンドリング"""
+        # review_*.md が存在しない
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 1)
+        error_data = json.loads(result.stderr)
+        self.assertEqual(error_data['status'], 'error')
+
+    def test_all_empty_failure(self):
+        """全ファイルが空の場合もエラー"""
+        self._write_review('review_correctness.md', '')
+        self._write_review('review_resilience.md', '')
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 1)
+
+    def test_generic_single_file(self):
+        """generic テスト: review_generic.md 単一ファイルの場合（perspectives 配列なし）"""
+        self._write_review('review_generic.md', REVIEW_GENERIC)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        data = json.loads(result.stdout)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['total'], 2)
+        self.assertEqual(data['files_processed'], 1)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # 単一 perspective なので perspective フィールド（perspectives 配列ではない）
+        self.assertIn('perspective: generic', plan_content)
+        self.assertNotIn('perspectives:', plan_content)
+
+    def test_nonexistent_directory(self):
+        """存在しないディレクトリの場合のエラー"""
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), '/nonexistent/dir'],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 1)
+
+    def test_alphabetical_order(self):
+        """ファイルはアルファベット順に処理される"""
+        # z_ が先に作成されても、a_ が先に処理されるべき
+        self._write_review('review_z_last.md', """\
+### 🟢改善提案
+
+1. **最後の指摘**: 説明
+""")
+        self._write_review('review_a_first.md', """\
+### 🔴致命的問題
+
+1. **最初の指摘**: 説明
+""")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # a_first の指摘が先に来る（ID=1）
+        lines = plan_content.split('\n')
+        first_title_idx = next(i for i, l in enumerate(lines) if 'title:' in l)
+        self.assertIn('最初の指摘', lines[first_title_idx])
+
+
+# ===========================================================================
+# generate_review_md テスト
+# ===========================================================================
+
+class TestGenerateReviewMd(unittest.TestCase):
+    """generate_review_md のテスト"""
+
+    def test_basic_output(self):
+        """基本的な review.md 生成"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '問題A', 'location': 'file.py:10',
+             'perspective': 'correctness'},
+            {'id': 2, 'severity': 'minor', 'title': '問題B', 'location': '',
+             'perspective': 'resilience'},
+        ]
+        md = generate_review_md(findings)
+        self.assertIn('# 統合レビュー結果', md)
+        self.assertIn('🔴致命的問題', md)
+        self.assertIn('問題A', md)
+        self.assertIn('[correctness]', md)
+        self.assertIn('箇所: file.py:10', md)
+        self.assertIn('🟢改善提案', md)
+        self.assertIn('問題B', md)
+
+    def test_empty_findings(self):
+        """0件の場合"""
+        md = generate_review_md([])
+        self.assertIn('（なし）', md)
+
+    def test_perspectives_display(self):
+        """複数 perspectives の表示"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '問題',
+             'location': '', 'perspectives': ['correctness', 'resilience']},
+        ]
+        md = generate_review_md(findings)
+        self.assertIn('[correctness, resilience]', md)
 
 
 if __name__ == '__main__':

@@ -171,11 +171,19 @@ specs/
 
 ### Review Criteria
 
-The plugin includes review criteria in `docs/review_criteria_spec.md`. Projects can override this by:
+The plugin includes review criteria split by perspective in `skills/review/docs/`:
+
+- `review_criteria_requirement.md` — Requirements review
+- `review_criteria_design.md` — Design review
+- `review_criteria_plan.md` — Plan review
+- `review_criteria_code.md` — Code review
+- `review_criteria_generic.md` — Generic document review
+
+Projects can override or extend criteria via the following priority:
 
 1. **DocAdvisor**: If the project has DocAdvisor skills (`/query-rules`), the plugin queries them for project-specific review criteria
 2. **Project config**: Save a custom path in `.claude/review-config.yaml`
-3. **Plugin docs**: Falls back to the bundled `docs/review_criteria_spec.md`
+3. **Plugin docs**: Falls back to the bundled perspective files above
 
 ### Document Structure (.doc_structure.yaml)
 

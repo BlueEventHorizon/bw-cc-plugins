@@ -58,7 +58,9 @@ target_files:
   - path/to/file.md
 reference_docs:
   - path: docs/rules/foo.md
-review_criteria_path: plugins/forge/docs/review_criteria_spec.md
+perspectives:
+  - name: correctness
+    criteria_path: review/docs/review_criteria_code.md
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
     reason: 同種AIスキルのfrontmatter参考
@@ -66,19 +68,6 @@ related_code:
 ```
 
 **review.md** (reviewer が書く): 🔴🟡🟢 指摘事項リストの Markdown
-
-**evaluation.yaml** (evaluator が書く):
-
-```yaml
-cycle: 1
-items:
-  - id: 1
-    severity: critical
-    title: "問題タイトル"
-    recommendation: fix # fix / skip / needs_review
-    auto_fixable: true  # recommendation: fix の場合のみ（一意・局所的・機械的な修正か）
-    reason: "判定理由（AI の判断根拠）"
-```
 
 **plan.yaml** (reviewer が初期作成 → evaluator が推奨で更新 → present-findings がユーザー判断で上書き):
 
@@ -88,6 +77,9 @@ items:
     severity: critical
     title: "問題タイトル"
     status: pending # pending / in_progress / fixed / skipped / needs_review
+    recommendation: fix    # fix / skip / needs_review（evaluator が付与）
+    auto_fixable: true     # recommendation: fix の場合のみ
+    reason: "判定理由"     # evaluator の判断根拠
     fixed_at: ""
     files_modified: []
     skip_reason: ""
@@ -124,7 +116,6 @@ items:
 2. `{session_dir}/refs.yaml` を Read して target_files / reference_docs / related_code を取得
 3. `{session_dir}/plan.yaml` を Read して項目リストを取得（status で処理済みをフィルタ可能）
 4. `{session_dir}/review.md` を Read して各項目の詳細説明を取得
-5. `{session_dir}/evaluation.yaml` を Read して AI 推奨判定を取得（存在する場合のみ）
 
 **既存セッションの再開:**
 plan.yaml に `status: pending` でない項目が存在する場合、「前回の続きから再開しますか？」を AskUserQuestion で確認する。
@@ -164,9 +155,9 @@ plan.yaml に `status: pending` でない項目が存在する場合、「前回
 ### Step 1: 理解と評価 [MANDATORY]
 
 1. 各項目を**深く理解する**
-2. evaluation.yaml から各項目の `auto_fixable` フラグを取得し、✅ マークに使用する
+2. plan.yaml から各項目の `auto_fixable` フラグを取得し、✅ マークに使用する
 3. `has_severity` の場合: 各項目に重大度（Critical🔴 / Major🟡 / Minor🟢）を付与し、重大度順に並べ替え。ない場合: 番号順を維持
-4. evaluation.yaml が存在する場合: 各項目の AI 推奨判定（recommendation / reason）を把握する
+4. plan.yaml の各項目の AI 推奨判定（recommendation / auto_fixable / reason）を把握する
    これを提示時の「AI推奨」として活用する（最終判断は人間）
 5. `has_metadata` で reference_docs がある場合: Read で読み込み、レビュー観点やルールを把握
 6. target_files がある場合: 一覧を把握するのみ（各問題の提示時に該当箇所を Read）
@@ -190,7 +181,7 @@ Step 2 をスキップし、直接 Step 3 へ進む。
 - エンジン: {engine}
 ```
 
-`has_severity = true` の場合（evaluation.yaml ありの場合は AI推奨列を含む）:
+`has_severity = true` の場合（plan.yaml の recommendation フィールドがある場合は AI推奨列を含む）:
 
 ```
 | # | 重大度 | 項目 | AI推奨 | |
@@ -201,9 +192,9 @@ Step 2 をスキップし、直接 Step 3 へ進む。
 | 4 | 🟢 | {問題4のタイトル} | 要確認 | |
 ```
 
-AI推奨の表示: `修正` / `却下` / `要確認`（evaluation.yaml の recommendation から変換）/ （空欄: evaluation.yaml なし）
+AI推奨の表示: `修正` / `却下` / `要確認`（plan.yaml の recommendation から変換）/ （空欄: recommendation 未設定）
 
-**重大度列のルール [MANDATORY]**: evaluation.yaml の `recommendation: skip` の項目は重大度を **❌** で表示する。
+**重大度列のルール [MANDATORY]**: plan.yaml の `recommendation: skip` の項目は重大度を **❌** で表示する。
 却下 = evaluator が「実際には問題ではない」と判断済みであるため、🔴🟡🟢 で表示し続けると誤解を招く。
 
 `has_severity = false` の場合:
@@ -238,6 +229,8 @@ AskUserQuestion で進め方を確認する:
 
 #### 「段階的に解決」の場合
 
+> **fixer 完了は修正完了ではない。** reviewer の単独修正レビューが完了して初めて修正完了とする。
+
 項目を順に**1件ずつ**提示する（`has_severity` なら🔴→🟡→🟢順、なければ番号順）。各項目で:
 
 1. 項目を丁寧に説明する（提示の原則に従う）
@@ -246,12 +239,22 @@ AskUserQuestion で進め方を確認する:
    - **修正を選択**（A案/B案）→ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status in_progress` で更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
    - **このまま（対応しない）** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status needs_review` で更新
    - **一覧に戻る** → Step 2 へ
-4. fixer の修正後、単独修正レビューを実施（修正の場合） [MANDATORY]
-   4.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
-   4.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
-   4.3. 問題なし → fixer の修正サマリーをユーザーに報告
-   4.4. スキップした場合: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新
-5. 次の項目へ進む
+   - **スキップ** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新 → ステップ5へ
+
+#### 単独修正レビュー [MANDATORY]
+
+**修正を実行した場合、必ずこのステップを実行する。スキップ禁止。**
+
+fixer が修正を完了した直後に、修正差分のみを対象にレビューを実施する:
+
+1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
+2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
+3. 問題なし → fixer の修正サマリーをユーザーに報告
+4. plan.yaml を `fixed` に更新（単独修正レビュー完了後に初めて `fixed` にする）
+
+> **注意**: plan.yaml の `status: fixed` への更新は、fixer 完了時ではなく**単独修正レビュー完了後**に行う。
+
+5. （上記ステップ完了後）次の項目へ進む
 
 全項目の提示・解決が完了したら、最終サマリーを報告して終了。
 
@@ -274,14 +277,24 @@ AskUserQuestion で進め方を確認する:
 
 #### 「✅を一括修正」の場合
 
+> **fixer 完了は修正完了ではない。** reviewer の単独修正レビューが完了して初めて修正完了とする。
+
 1. ✅付き項目を収集し、`/forge:fixer --batch` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-2. 単独修正レビューを実施 [MANDATORY]
-   2.1. `/forge:reviewer` を `--diff-only {修正されたファイル}` で呼び出し、修正差分のみをレビュー
-   2.2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
-   2.3. 問題なし → 次へ
-3. fixer の修正サマリーをユーザーに報告（項目ごとに何をしたか1行ずつ）
-4. ✅なし項目が残っている場合、「段階的に解決」フローに移行
-5. 全て✅だった場合は修正サマリーを報告して終了
+
+#### 一括修正後の単独修正レビュー [MANDATORY]
+
+**fixer --batch 完了直後に必ず実行する。サマリー報告や次フローへの移行より先に実施する。スキップ禁止。**
+
+1. `/forge:reviewer` を `--diff-only {fixer が修正したファイル一覧}` で呼び出し、修正差分のみをレビュー
+2. 修正起因の問題が見つかった場合 → fixer を再度呼び出して修正 → 再レビュー（上限: 3回）
+3. 問題なし → 次へ
+4. plan.yaml を `fixed` に更新（単独修正レビュー完了後に初めて `fixed` にする）
+
+> **注意**: plan.yaml の `status: fixed` への更新は、fixer 完了時ではなく**単独修正レビュー完了後**に行う。
+
+2. fixer の修正サマリーをユーザーに報告（項目ごとに何をしたか1行ずつ）
+3. ✅なし項目が残っている場合、「段階的に解決」フローに移行
+4. 全て✅だった場合は修正サマリーを報告して終了
 
 #### 「一覧で見る」の場合
 
@@ -322,8 +335,7 @@ evaluator が推奨に基づく初期状態を書き込み済みなので、pres
 
 | ファイル        | 役割                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------- |
-| plan.yaml       | 各項目の処理状態（evaluator の推奨で初期化済み → ユーザー判断で上書き更新）              |
-| evaluation.yaml | AI推奨判定（recommendation / auto_fixable を参照のみ、更新しない）                       |
+| plan.yaml       | 各項目の処理状態と AI推奨判定を統合管理（evaluator が初期推奨を書き込み → present-findings がユーザー判断で上書き更新）|
 
 ### 再開の仕組み
 
@@ -414,7 +426,7 @@ AskUserQuestion 呼び出し
 ✅ マークは **evaluator が判定した `auto_fixable: true`** の項目に付与する。
 present-findings は独自に ✅ を判定しない（evaluator の判定を信頼する）。
 
-evaluation.yaml の各項目で `recommendation: fix` かつ `auto_fixable: true` の場合に ✅ を表示する。
+plan.yaml の各項目で `recommendation: fix` かつ `auto_fixable: true` の場合に ✅ を表示する。
 
 ### 段階的解決の提示例
 

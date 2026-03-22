@@ -322,9 +322,18 @@ class TestReferencedFilesExist(unittest.TestCase):
     """SKILL.md や plugin.json が参照するファイルの存在確認"""
 
     def test_review_criteria_default_exists(self):
-        """forge のデフォルトレビュー観点ファイルが存在"""
-        path = PLUGINS_DIR / 'forge' / 'docs' / 'review_criteria_spec.md'
-        self.assertTrue(path.is_file(), f'{path} が存在しない')
+        """forge のデフォルトレビュー観点ファイルが存在（種別ごと5ファイル）"""
+        criteria_dir = PLUGINS_DIR / 'forge' / 'skills' / 'review' / 'docs'
+        expected_files = [
+            'review_criteria_requirement.md',
+            'review_criteria_design.md',
+            'review_criteria_plan.md',
+            'review_criteria_code.md',
+            'review_criteria_generic.md',
+        ]
+        for filename in expected_files:
+            path = criteria_dir / filename
+            self.assertTrue(path.is_file(), f'{path} が存在しない')
 
     def test_resolve_review_context_script_exists(self):
         """review Skill が参照するスクリプトが存在"""
