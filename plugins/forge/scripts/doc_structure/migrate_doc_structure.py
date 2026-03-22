@@ -237,7 +237,7 @@ def detect_version(content):
         if stripped.startswith('version:'):
             return 1
 
-    # 検出失敗 → v1 として扱う
+    # 検出失敗 → v1 として扱う（FR-04-3: v1 形式にはバージョンフィールドがない）
     return 1
 
 
