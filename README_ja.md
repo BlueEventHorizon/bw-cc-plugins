@@ -176,11 +176,10 @@ specs/
 - `review_criteria_code.md` — コードレビュー観点
 - `review_criteria_generic.md` — 汎用文書レビュー観点
 
-プロジェクト固有の観点を使用する場合は以下の優先順で解決されます:
+レビュー観点は以下のソースから累積的に構成されます:
 
-1. **DocAdvisor**: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のレビュー観点を動的に取得
-2. **プロジェクト設定**: `.claude/review-config.yaml` にカスタムパスを保存
-3. **プラグイン文書**: 上記の同梱観点ファイルにフォールバック
+- **プラグインデフォルト**（常に含む）: 上記の同梱観点ファイルの perspectives を使用
+- **DocAdvisor**（追加 perspective）: プロジェクトに DocAdvisor Skill（`/query-rules`）がある場合、プロジェクト固有のルール文書を追加の perspective として適用
 
 ### 文書構造管理 (.doc_structure.yaml)
 
