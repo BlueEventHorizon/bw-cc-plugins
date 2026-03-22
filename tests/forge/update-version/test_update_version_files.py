@@ -24,37 +24,37 @@ class TestSimpleReplace(unittest.TestCase):
 
     def test_json_quoted(self):
         """JSON のクォート付きバージョン置換"""
-        content = '{\n  "version": "0.0.19"\n}'
-        result = update_version_in_text(content, "0.0.19", "0.0.20")
-        self.assertIn('"0.0.20"', result)
-        self.assertNotIn('"0.0.19"', result)
+        content = '{\n  "version": "999.88.7"\n}'
+        result = update_version_in_text(content, "999.88.7", "999.88.8")
+        self.assertIn('"999.88.8"', result)
+        self.assertNotIn('"999.88.7"', result)
 
     def test_toml_unquoted(self):
         """TOML のバージョン置換"""
-        content = '[package]\nversion = "0.0.19"\n'
-        result = update_version_in_text(content, "0.0.19", "0.0.20")
-        self.assertIn("0.0.20", result)
+        content = '[package]\nversion = "999.88.7"\n'
+        result = update_version_in_text(content, "999.88.7", "999.88.8")
+        self.assertIn("999.88.8", result)
 
     def test_not_found(self):
         """バージョンが見つからない"""
         content = '{"version": "1.0.0"}'
         with self.assertRaises(ValueError):
-            update_version_in_text(content, "0.0.19", "0.0.20")
+            update_version_in_text(content, "999.88.7", "999.88.8")
 
     def test_first_occurrence_only(self):
         """最初の出現のみ置換"""
-        content = '"version": "0.0.19"\n"other": "0.0.19"'
-        result = update_version_in_text(content, "0.0.19", "0.0.20")
-        self.assertEqual(result.count("0.0.20"), 1)
-        self.assertEqual(result.count("0.0.19"), 1)
+        content = '"version": "999.88.7"\n"other": "999.88.7"'
+        result = update_version_in_text(content, "999.88.7", "999.88.8")
+        self.assertEqual(result.count("999.88.8"), 1)
+        self.assertEqual(result.count("999.88.7"), 1)
 
     def test_preserves_formatting(self):
         """JSON フォーマットを保持"""
-        content = '{\n  "name": "forge",\n  "version": "0.0.19",\n  "author": "moons"\n}'
-        result = update_version_in_text(content, "0.0.19", "0.0.20")
+        content = '{\n  "name": "forge",\n  "version": "999.88.7",\n  "author": "moons"\n}'
+        result = update_version_in_text(content, "999.88.7", "999.88.8")
         self.assertIn('"name": "forge"', result)
         self.assertIn('"author": "moons"', result)
-        self.assertIn('"0.0.20"', result)
+        self.assertIn('"999.88.8"', result)
 
 
 class TestVersionPath(unittest.TestCase):
@@ -62,21 +62,21 @@ class TestVersionPath(unittest.TestCase):
 
     def test_top_level_version(self):
         """トップレベルの version フィールド"""
-        content = '{\n  "version": "0.0.19"\n}'
-        result = update_version_in_text(content, "0.0.19", "0.0.20", version_path="version")
-        self.assertIn('"0.0.20"', result)
+        content = '{\n  "version": "999.88.7"\n}'
+        result = update_version_in_text(content, "999.88.7", "999.88.8", version_path="version")
+        self.assertIn('"999.88.8"', result)
 
     def test_nested_path(self):
         """ネストパス package.version"""
-        content = '{\n  "package": {\n    "version": "0.0.19"\n  }\n}'
-        result = update_version_in_text(content, "0.0.19", "0.0.20", version_path="package.version")
-        self.assertIn('"0.0.20"', result)
+        content = '{\n  "package": {\n    "version": "999.88.7"\n  }\n}'
+        result = update_version_in_text(content, "999.88.7", "999.88.8", version_path="package.version")
+        self.assertIn('"999.88.8"', result)
 
     def test_path_not_found(self):
         """パスが見つからない"""
         content = '{"name": "test"}'
         with self.assertRaises(ValueError):
-            update_version_in_text(content, "0.0.19", "0.0.20", version_path="version")
+            update_version_in_text(content, "999.88.7", "999.88.8", version_path="version")
 
 
 class TestFilterPattern(unittest.TestCase):
@@ -84,16 +84,16 @@ class TestFilterPattern(unittest.TestCase):
 
     def test_filter_match(self):
         """フィルタパターンにマッチするブロック内のみ置換"""
-        content = '| **forge** | 0.0.19 | desc |\n| **anvil** | 0.0.4 | desc |'
-        result = update_version_in_text(content, "0.0.19", "0.0.20", filter_pattern="**forge**")
-        self.assertIn("0.0.20", result)
-        self.assertIn("0.0.4", result)
+        content = '| **forge** | 999.88.7 | desc |\n| **anvil** | 888.77.6 | desc |'
+        result = update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
+        self.assertIn("999.88.8", result)
+        self.assertIn("888.77.6", result)
 
     def test_filter_no_match(self):
         """フィルタパターンにマッチしない"""
-        content = '| **anvil** | 0.0.4 | desc |'
+        content = '| **anvil** | 888.77.6 | desc |'
         with self.assertRaises(ValueError):
-            update_version_in_text(content, "0.0.19", "0.0.20", filter_pattern="**forge**")
+            update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
 
 
 class TestCLI(unittest.TestCase):
@@ -115,31 +115,31 @@ class TestCLI(unittest.TestCase):
             Path(tmp_path).unlink(missing_ok=True)
 
     def test_basic_cli(self):
-        content = '{"version": "0.0.19"}'
-        result = self._run(content, "0.0.19", "0.0.20")
+        content = '{"version": "999.88.7"}'
+        result = self._run(content, "999.88.7", "999.88.8")
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"0.0.20"', result.stdout)
+        self.assertIn('"999.88.8"', result.stdout)
         status = json.loads(result.stderr)
         self.assertEqual(status["status"], "ok")
 
     def test_not_found_cli(self):
         content = '{"version": "1.0.0"}'
-        result = self._run(content, "0.0.19", "0.0.20")
+        result = self._run(content, "999.88.7", "999.88.8")
         self.assertEqual(result.returncode, 1)
 
     def test_file_not_found_cli(self):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / 'update_version_files.py'),
-             '/nonexistent.json', '0.0.19', '0.0.20'],
+             '/nonexistent.json', '999.88.7', '999.88.8'],
             capture_output=True, text=True, timeout=10,
         )
         self.assertEqual(result.returncode, 1)
 
     def test_version_path_cli(self):
-        content = '{"version": "0.0.19"}'
-        result = self._run(content, "0.0.19", "0.0.20", "--version-path", "version")
+        content = '{"version": "999.88.7"}'
+        result = self._run(content, "999.88.7", "999.88.8", "--version-path", "version")
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"0.0.20"', result.stdout)
+        self.assertIn('"999.88.8"', result.stdout)
 
 
 if __name__ == '__main__':
