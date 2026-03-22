@@ -53,11 +53,11 @@ flowchart TD
 
     SESSION["セッション作成<br>refs.yaml 書き出し<br>（perspectives 含む）"] --> REVIEWERS
 
-    REVIEWERS["① /forge:reviewer × N<br>perspective ごとに並列レビュー<br>→ review_*.md"] --> EVALUATORS
+    REVIEWERS["① /forge:reviewer × N<br>perspective ごとに並列レビュー<br>→ review_*.md"] --> EXTRACT
 
-    EVALUATORS["② /forge:evaluator × N<br>perspective ごとに並列吟味<br>→ review_*.md 更新"] --> EXTRACT
+    EXTRACT["② extract_review_findings.py<br>統合・重複除去<br>→ review.md + plan.yaml"] --> EVALUATORS
 
-    EXTRACT["③ extract_review_findings.py<br>統合・重複除去<br>→ review.md + plan.yaml"] --> FIX_CHECK
+    EVALUATORS["③ /forge:evaluator × N<br>perspective ごとに並列吟味<br>→ plan.yaml 更新"] --> FIX_CHECK
 
     FIX_CHECK{修正対象あり?} -->|"No"| COMPLETE
     FIX_CHECK -->|"Yes"| MODE_CHECK
@@ -77,15 +77,15 @@ flowchart TD
     CYCLE_CHECK{未修正の指摘あり<br>AND サイクル上限未到達?} -->|"Yes"| REVIEWERS
     CYCLE_CHECK -->|"No"| COMPLETE
 
-    COMPLETE["Phase 5: 完了処理<br>テスト実行<br>サマリー報告<br>commit 確認"]
+    COMPLETE["Phase 7: 完了処理<br>テスト実行<br>サマリー報告<br>commit 確認"]
 ```
 
 コアループは auto / 対話 で同一。対話モードでは extract 統合と fixer の間に present-findings（UIレイヤー）が挟まるだけ。
 
 ```
-auto モード:   reviewers(並列) → evaluators(並列) → extract → fixer → re-review → (問題あり → fixer → ...) → 次サイクル
-対話モード:    reviewers(並列) → evaluators(並列) → extract → present-findings → fixer → re-review → (問題あり → fixer → ...) → 次サイクル
-                                                               ↑ UIレイヤー（提示+人間判断）
+auto モード:   reviewers(並列) → extract → evaluators(並列) → fixer → re-review → (問題あり → fixer → ...) → 次サイクル
+対話モード:    reviewers(並列) → extract → evaluators(並列) → present-findings → fixer → re-review → (問題あり → fixer → ...) → 次サイクル
+                                                                ↑ UIレイヤー（提示+人間判断）
 ```
 
 fixer の後は必ず reviewer が**単独修正のレビュー**（fixer が変更した差分のみ）を行う。target_files 全体の再レビューではない。修正起因の問題が見つかった場合は fixer → re-review のループで解消してからサイクルを進める。
@@ -110,31 +110,29 @@ fixer の後は必ず reviewer が**単独修正のレビュー**（fixer が変
 | 1 | `.doc_structure.yaml` の存在確認 | orchestrator |
 | 2 | `resolve_review_context.py` で target_files を解決 | スクリプト |
 | 3 | 関連コード探索（subagent 委譲） | general-purpose agent |
-| 4 | レビュー観点の探索（3段階フォールバック） | orchestrator |
+| 4 | レビュー観点の収集（perspectives 構成） | orchestrator |
 | 5 | 参考文書収集（DocAdvisor or .doc_structure.yaml） | orchestrator |
 | 6 | エンジン確認（Codex / Claude） | orchestrator |
 
-#### レビュー観点の3段階フォールバック
+#### レビュー観点の perspectives 構成
 
-1. `/query-rules` Skill（DocAdvisor）
-2. `.claude/review-config.yaml`
-3. `${CLAUDE_PLUGIN_ROOT}/docs/review_criteria_spec.md`
+プラグインデフォルト（`${CLAUDE_SKILL_DIR}/docs/review_criteria_{type}.md`）の `## Perspective:` セクションから perspectives を構成する。DocAdvisor（`/query-rules`）が利用可能な場合はプロジェクト固有の観点を追加の perspective として加える。最大 5 perspectives をガイドラインとする。
 
 ### Phase 3: レビュー実行（perspective ごとに並列）
 
 orchestrator が refs.yaml の `perspectives` 配列を読み、perspective の数だけ `/forge:reviewer` を並列起動する。
 各 reviewer は1つの perspective のみ処理し、`review_{perspective}.md` を出力する。
 
-### Phase 3.5: 吟味（perspective ごとに並列）
+### Phase 4: 統合
 
-全 reviewer 完了後、orchestrator が perspective の数だけ `/forge:evaluator` を並列起動する。
-各 evaluator は担当 `review_{perspective}.md` を読み、各指摘に recommendation / auto_fixable / reason を付与して更新する。
+全 reviewer 完了後、`extract_review_findings.py` が session_dir 内の `review_*.md` を glob で収集し、重複除去・統合を行い `review.md` と `plan.yaml` を生成する。plan.yaml には perspective が含まれる。
 
-### Phase 3.6: 統合
+### Phase 5: 吟味（perspective ごとに並列）
 
-全 evaluator 完了後、`extract_review_findings.py` が session_dir 内の `review_*.md` を glob で収集し、重複除去・統合を行い `review.md` と `plan.yaml` を生成する。plan.yaml には recommendation / auto_fixable / reason / perspective が含まれる。
+extract 完了後、orchestrator が perspective の数だけ `/forge:evaluator` を並列起動する。
+各 evaluator は担当 `review_{perspective}.md` を読み、各指摘に recommendation / auto_fixable / reason を付与して plan.yaml を更新する。
 
-### Phase 4: モード分岐
+### Phase 6: モード分岐
 
 #### 対話モード
 
@@ -153,7 +151,7 @@ N サイクル繰り返す:
 
 plan.yaml 内の `recommendation: fix` が0件でループ終了。
 
-### Phase 5: 完了処理
+### Phase 7: 完了処理
 
 | Step | 内容 |
 |------|------|
@@ -245,18 +243,18 @@ orchestrator (review SKILL.md)
   │     ├─ 入力: session_dir, 種別, エンジン, perspective_name, criteria_path, section, output_path
   │     └─ 出力: review_{perspective}.md（perspective ごとの結果）
   │
-  ├─ Phase 3.5 → /forge:evaluator × N（perspective ごとに並列起動）
-  │     ├─ 入力: session_dir, perspective_name, review_{perspective}.md
-  │     └─ 出力: review_{perspective}.md 更新（recommendation / auto_fixable / reason を付与）
-  │
-  ├─ Phase 3.6 → extract_review_findings.py
+  ├─ Phase 4 → extract_review_findings.py
   │     ├─ 入力: session_dir（review_*.md を glob で収集）
   │     └─ 出力: review.md（統合・重複除去済み）, plan.yaml（全指摘の統合管理）
   │
-  ├─ Phase 4 (対話)
+  ├─ Phase 5 → /forge:evaluator × N（perspective ごとに並列起動）
+  │     ├─ 入力: session_dir, perspective_name, review_{perspective}.md
+  │     └─ 出力: plan.yaml 更新（recommendation / auto_fixable / reason を付与）
+  │
+  ├─ Phase 6 (対話)
   │     └─ /forge:present-findings → plan.yaml 更新, 修正実行
   │
-  └─ Phase 4 (自動) × N サイクル
+  └─ Phase 6 (自動) × N サイクル
         ├─ /forge:fixer → コード・文書修正
         └─ /forge:reviewer → review_*.md 更新, plan.yaml 更新
 ```
@@ -278,31 +276,31 @@ flowchart TD
         R3 -->|Write| RC[review_maintainability.md]
     end
 
-    subgraph Phase3_5 [Phase 3.5: 並列吟味]
-        RA --> E1[evaluator A]
-        RB --> E2[evaluator B]
-        RC --> E3[evaluator C]
-        E1 -->|Update| RA
-        E2 -->|Update| RB
-        E3 -->|Update| RC
-    end
-
-    subgraph Phase3_6 [Phase 3.6: 統合]
+    subgraph Phase4 [Phase 4: 統合]
         RA & RB & RC --> EXT[extract_review_findings.py]
         EXT -->|Write| RM[review.md<br>統合・重複除去済み]
-        EXT -->|Write| PY[plan.yaml<br>recommendation / auto_fixable<br>reason / perspective]
+        EXT -->|Write| PY[plan.yaml<br>perspective]
     end
 
-    subgraph Phase4 [Phase 4: 修正]
+    subgraph Phase5 [Phase 5: 並列吟味]
+        PY --> E1[evaluator A]
+        PY --> E2[evaluator B]
+        PY --> E3[evaluator C]
+        E1 -->|Update| PY
+        E2 -->|Update| PY
+        E3 -->|Update| PY
+    end
+
+    subgraph Phase6 [Phase 6: 修正]
         RM & PY --> PF[present-findings / fixer]
         PF -->|Update| PY
     end
 
     style Phase2 fill:#e8eaf6,stroke:#283593
     style Phase3 fill:#e3f2fd,stroke:#1565c0
-    style Phase3_5 fill:#fce4ec,stroke:#c62828
-    style Phase3_6 fill:#fff3e0,stroke:#e65100
-    style Phase4 fill:#e8f5e9,stroke:#2e7d32
+    style Phase5 fill:#fce4ec,stroke:#c62828
+    style Phase4 fill:#fff3e0,stroke:#e65100
+    style Phase6 fill:#e8f5e9,stroke:#2e7d32
 ```
 
 ---
@@ -374,13 +372,13 @@ present-findings は evaluator が吟味し extract_review_findings.py が統合
 
 ### コアループは auto / 対話 で同一
 
-コアループ（reviewers 並列 → evaluators 並列 → extract 統合 → fixer → re-review）は両モードで共通。
-evaluator は常に実行され、対話モードでは extract 統合の後に present-findings が UIレイヤーとして入るだけ。
+コアループ（reviewers 並列 → extract 統合 → evaluators 並列 → fixer → re-review）は両モードで共通。
+evaluator は常に実行され、対話モードでは evaluators の後に present-findings が UIレイヤーとして入るだけ。
 
 | モード | コアループ | UIレイヤー | 最終判断者 |
 |--------|-----------|-----------|-----------|
-| `--auto N` | reviewers → evaluators → extract → fixer | なし | AI |
-| 対話モード | reviewers → evaluators → extract → fixer | present-findings | 人間 |
+| `--auto N` | reviewers → extract → evaluators → fixer | なし | AI |
+| 対話モード | reviewers → extract → evaluators → fixer | present-findings | 人間 |
 
 **品質の一貫性**: コアの吟味ロジック（evaluator）が常に動くため、auto モードの品質が対話モードと同等になる。
 
@@ -461,7 +459,7 @@ evaluator は各指摘について以下の5観点で評価する:
 |---------|------|
 | `plugins/forge/skills/review/SKILL.md` | スキル仕様 |
 | `plugins/forge/skills/review/scripts/resolve_review_context.py` | target_files 解決スクリプト |
-| `plugins/forge/docs/review_criteria_spec.md` | レビュー観点（フォールバック） |
+| `plugins/forge/skills/review/docs/review_criteria_{type}.md` | レビュー観点（種別ごと） |
 | `plugins/forge/docs/session_format.md` | セッションファイルスキーマ（正規仕様） |
 | `plugins/forge/skills/reviewer/SKILL.md` | レビュー実行 AI スキル |
 | `plugins/forge/skills/evaluator/SKILL.md` | 吟味・判定 AI スキル |

@@ -193,7 +193,11 @@ target_files:
 reference_docs:
   - path: docs/rules/skill_authoring_notes.md
   - path: plugins/forge/docs/review_criteria_spec.md
-review_criteria_path: plugins/forge/docs/review_criteria_spec.md
+perspectives:
+  - name: correctness
+    criteria_path: plugins/forge/docs/review_criteria_spec.md
+    section: "正確性 (Logic)"
+    output_path: review_correctness.md
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
     reason: "同種 AI 専用スキルの frontmatter 参考"
@@ -220,10 +224,19 @@ related_code:
             "docs/rules/skill_authoring_notes.md",
         )
 
-        # review_criteria_path: スカラー値
+        # perspectives: オブジェクトリスト
+        self.assertIn("perspectives", result)
+        self.assertEqual(len(result["perspectives"]), 1)
+        self.assertEqual(result["perspectives"][0]["name"], "correctness")
         self.assertEqual(
-            result["review_criteria_path"],
+            result["perspectives"][0]["criteria_path"],
             "plugins/forge/docs/review_criteria_spec.md",
+        )
+        self.assertEqual(
+            result["perspectives"][0]["section"], "正確性 (Logic)"
+        )
+        self.assertEqual(
+            result["perspectives"][0]["output_path"], "review_correctness.md"
         )
 
         # related_code: オブジェクトリスト（複数フィールド）
@@ -371,21 +384,15 @@ items:
     title: "問題1"
     status: pending
 """)
-        self._write("evaluation.yaml", """\
-cycle: 1
-items:
-  - id: 1
-    severity: critical
-    title: "問題1"
-    recommendation: fix
-    auto_fixable: true
-    reason: "テスト理由"
-""")
         self._write("review.md", "## レビュー結果\n\nテスト")
         self._write("refs.yaml", """\
 target_files:
   - test.py
-review_criteria_path: criteria.md
+perspectives:
+  - name: correctness
+    criteria_path: review/docs/review_criteria_code.md
+    section: "正確性 (Logic)"
+    output_path: review_correctness.md
 reference_docs:
   - path: doc1.md
 """)
@@ -412,11 +419,6 @@ documents:
 
         self.assertTrue(result["files"]["plan.yaml"]["exists"])
         self.assertEqual(len(result["files"]["plan.yaml"]["content"]["items"]), 1)
-
-        self.assertTrue(result["files"]["evaluation.yaml"]["exists"])
-        self.assertEqual(
-            result["files"]["evaluation.yaml"]["content"]["cycle"], 1
-        )
 
         self.assertTrue(result["files"]["review.md"]["exists"])
         self.assertIn("レビュー結果", result["files"]["review.md"]["content"])
@@ -463,7 +465,6 @@ status: in_progress
 
         # 他は exists: false
         self.assertFalse(result["files"]["plan.yaml"]["exists"])
-        self.assertFalse(result["files"]["evaluation.yaml"]["exists"])
         self.assertFalse(result["files"]["review.md"]["exists"])
 
 

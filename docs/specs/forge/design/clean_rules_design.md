@@ -138,7 +138,7 @@ AskUserQuestion で承認を取得。
 | ファイル | 役割 |
 |---------|------|
 | `plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py` | rules 一覧取得に直接使用 |
-| `plugins/forge/docs/review_criteria_spec.md` | forge 内蔵 docs の代表例 |
+| `plugins/forge/skills/review/docs/review_criteria_{type}.md` | forge 内蔵レビュー観点（種別ごと） |
 | `plugins/forge/skills/setup-doc-structure/SKILL.md` | Phase 構成パターン参考 |
 
 ---

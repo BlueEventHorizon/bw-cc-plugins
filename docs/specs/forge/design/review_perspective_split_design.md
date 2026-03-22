@@ -240,13 +240,43 @@ flowchart TD
 
 ### evaluator の並列実行
 
-reviewer と同様に、evaluator も perspective ごとに並列起動する。各 evaluator は:
+reviewer と同様に、evaluator も perspective ごとに並列起動する。
 
-1. 自分の担当 `review_{perspective}.md` を読む
-2. 現行と同じ5観点で各指摘を個別吟味する
-3. 吟味結果（recommendation, auto_fixable, reason）を付与する
+#### 並列 agent の出力契約パターン [MANDATORY]
 
-evaluator への変更は最小限（入力が review.md → review_{perspective}.md に変わるのみ）。
+並列実行される agent は共有リソース（plan.yaml 等）に直接書き込まない。代わりに以下のパターンに従う:
+
+1. **各 agent は個別の結果ファイルを Write する**（書き込み先が重ならない）
+2. **各 agent は完了通知のみを orchestrator に返す**（Agent ツールの戻り値）
+3. **orchestrator は全 agent の完了後に結果ファイルを収集し、共有リソースを1回だけ更新する**
+
+このパターンは reviewer（`review_{perspective}.md` → `extract_review_findings.py`）で既に使用しており、evaluator にも同じパターンを適用する。
+
+#### evaluator の出力
+
+各 evaluator は `{session_dir}/eval_{perspective_name}.json` を Write する:
+
+```json
+{
+  "perspective": "correctness",
+  "updates": [
+    {"id": 1, "status": "pending", "recommendation": "fix", "auto_fixable": true, "reason": "..."},
+    {"id": 2, "status": "skipped", "skip_reason": "...", "recommendation": "skip", "reason": "..."}
+  ]
+}
+```
+
+**evaluator は plan.yaml に直接書き込まない。** 結果ファイルの Write のみを行う。
+
+#### orchestrator による一括マージ
+
+全 evaluator 完了後、review orchestrator が:
+
+1. `eval_*.json` を glob で収集する
+2. 全 `updates` 配列を結合する
+3. `update_plan.py --batch` を1回だけ呼び出して plan.yaml を更新する
+
+これにより plan.yaml への書き込みは1回に限定され、並列書き込み競合が根本的に排除される。
 
 ### extract_review_findings.py の拡張
 
