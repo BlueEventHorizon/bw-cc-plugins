@@ -108,7 +108,7 @@ def extract_version_from_toml(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read(8192)
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return {'name': None, 'version': None}
 
     # [package] セクションを抽出
@@ -258,7 +258,7 @@ def detect_changelog_format(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read(4096)
-    except (IOError, OSError):
+    except (IOError, OSError, UnicodeDecodeError):
         return 'unknown'
 
     if KEEP_A_CHANGELOG_PATTERN.search(content):

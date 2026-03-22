@@ -179,11 +179,10 @@ The plugin includes review criteria split by perspective in `skills/review/docs/
 - `review_criteria_code.md` — Code review
 - `review_criteria_generic.md` — Generic document review
 
-Projects can override or extend criteria via the following priority:
+Review criteria are accumulated from the following sources:
 
-1. **DocAdvisor**: If the project has DocAdvisor skills (`/query-rules`), the plugin queries them for project-specific review criteria
-2. **Project config**: Save a custom path in `.claude/review-config.yaml`
-3. **Plugin docs**: Falls back to the bundled perspective files above
+- **Plugin default** (always included): Perspectives from the bundled criteria files above
+- **DocAdvisor** (additional perspectives): If the project has DocAdvisor skills (`/query-rules`), project-specific rules are added as extra perspectives
 
 ### Document Structure (.doc_structure.yaml)
 

@@ -324,7 +324,8 @@ def run_session_dir_mode(session_dir):
 
         try:
             content = review_path.read_text(encoding='utf-8')
-        except (OSError, IOError) as e:
+        except (OSError, IOError, UnicodeDecodeError) as e:
+            print(f"Warning: {filename}: {e}", file=sys.stderr)
             failed_files.append(filename)
             continue
 
