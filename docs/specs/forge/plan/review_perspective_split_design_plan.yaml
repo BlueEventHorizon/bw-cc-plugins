@@ -153,7 +153,7 @@ tasks:
   - task_id: TASK-007
     title: review/SKILL.md perspectives 収集・並列起動
     priority: 70
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-002
@@ -179,7 +179,7 @@ tasks:
   - task_id: TASK-008
     title: write_evaluation.py 廃止 + テスト削除
     priority: 40
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005
@@ -195,7 +195,7 @@ tasks:
   - task_id: TASK-009
     title: fixer/SKILL.md フォールバックパス更新
     priority: 40
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -211,7 +211,7 @@ tasks:
   - task_id: TASK-010
     title: review_workflow_design.md データフロー更新
     priority: 30
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -229,7 +229,7 @@ tasks:
   - task_id: TASK-011
     title: パス参照更新 + 旧ファイル削除
     priority: 20
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-007
@@ -251,7 +251,7 @@ tasks:
   - task_id: TASK-012
     title: present-findings/SKILL.md evaluation.yaml 依存除去
     priority: 65
-    status: pending
+    status: completed
     design_id: review_perspective_split_design
     depends_on:
       - TASK-005
