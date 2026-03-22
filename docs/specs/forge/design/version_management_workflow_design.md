@@ -396,9 +396,9 @@ Step 5 で生成したエントリを CHANGELOG ファイルの最初の `## [` 
 
 | ファイル | テスト数 | 対象 |
 |---------|---------|------|
-| `tests/forge/scripts/setup-version-config/test_scan_version_targets.py` | ~40 | scan_version_targets.py |
-| `tests/forge/scripts/update-version/test_calculate_version.py` | ~20 | calculate_version.py |
-| `tests/forge/scripts/update-version/test_update_version_files.py` | ~30 | update_version_files.py |
+| `tests/forge/setup-version-config/test_scan_version_targets.py` | ~40 | scan_version_targets.py |
+| `tests/forge/update-version/test_calculate_version.py` | ~20 | calculate_version.py |
+| `tests/forge/update-version/test_update_version_files.py` | ~30 | update_version_files.py |
 
 ### 主要テストケース
 

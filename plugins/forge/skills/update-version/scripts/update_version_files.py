@@ -3,7 +3,7 @@
 
 元ファイルは書き換えない（NFR-01）。更新後の内容を stdout に出力する。
 
-Usage:
+使用例:
     python3 update_version_files.py <file_path> <old_version> <new_version> [--version-path <path>] [--filter <pattern>]
 
 出力:
@@ -36,6 +36,11 @@ def update_version_in_text(content, old_version, new_version, version_path=None,
     Raises:
         ValueError: バージョン文字列が見つからない
     """
+    if not old_version:
+        raise ValueError("old_version が空文字列です")
+    if not new_version:
+        raise ValueError("new_version が空文字列です")
+
     if filter_pattern:
         return _update_with_filter(content, old_version, new_version, filter_pattern)
 

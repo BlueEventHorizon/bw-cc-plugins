@@ -46,6 +46,9 @@ CHANGELOG_NAMES = {
     'CHANGES.md', 'CHANGES', 'RELEASES.md',
 }
 
+# バージョンファイル読み込み時の最大バイト数（64KB）
+MAX_READ_SIZE = 65536
+
 # keep-a-changelog の判定パターン
 KEEP_A_CHANGELOG_PATTERN = re.compile(
     r'^##\s+\[', re.MULTILINE
@@ -53,7 +56,7 @@ KEEP_A_CHANGELOG_PATTERN = re.compile(
 
 
 def get_project_root(path=None):
-    """Find project root by looking for .git directory."""
+    """.git ディレクトリを探索してプロジェクトルートを特定する。"""
     start = Path(path) if path else Path.cwd()
     current = start.resolve()
     while current != current.parent:
@@ -64,7 +67,7 @@ def get_project_root(path=None):
 
 
 def parse_args():
-    """Parse command-line arguments."""
+    """コマンドライン引数をパースする。"""
     parser = argparse.ArgumentParser(
         description='プロジェクトのバージョンファイルをスキャンし、メタデータを JSON で出力する'
     )
@@ -80,11 +83,11 @@ def extract_version_from_json(filepath):
     JSON ファイルから name と version を抽出する。
 
     Returns:
-        dict with 'name' and 'version' keys (may be None)
+        dict: 'name' と 'version' キーを持つ辞書（値は None の場合あり）
     """
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read(8192)
+            content = f.read(MAX_READ_SIZE)
         data = json.loads(content)
         if not isinstance(data, dict):
             return {'name': None, 'version': None}
@@ -92,7 +95,8 @@ def extract_version_from_json(filepath):
             'name': data.get('name') if isinstance(data.get('name'), str) else None,
             'version': data.get('version') if isinstance(data.get('version'), str) else None,
         }
-    except (IOError, OSError, json.JSONDecodeError, ValueError):
+    except (IOError, OSError, json.JSONDecodeError) as e:
+        print(f"警告: JSON パースエラー ({filepath}): {e}", file=sys.stderr)
         return {'name': None, 'version': None}
 
 
@@ -100,19 +104,20 @@ def extract_version_from_toml(filepath):
     """
     TOML ファイルから name と version を抽出する（標準ライブラリのみ）。
 
-    [package] セクション内の name と version を正規表現で取得する。
+    [package] または [project] セクション内の name と version を正規表現で取得する。
 
     Returns:
-        dict with 'name' and 'version' keys (may be None)
+        dict: 'name' と 'version' キーを持つ辞書（値は None の場合あり）
     """
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read(8192)
-    except (IOError, OSError, UnicodeDecodeError):
+            content = f.read(MAX_READ_SIZE)
+    except (IOError, OSError, UnicodeDecodeError) as e:
+        print(f"警告: TOML 読み込みエラー ({filepath}): {e}", file=sys.stderr)
         return {'name': None, 'version': None}
 
-    # [package] セクションを抽出
-    package_match = re.search(r'^\[package\](.*?)(?=^\[|\Z)', content,
+    # [package] または [project] セクションを抽出（最初にマッチした方を使用）
+    package_match = re.search(r'^\[(?:package|project)\](.*?)(?=^\[|\Z)', content,
                                re.MULTILINE | re.DOTALL)
     if not package_match:
         return {'name': None, 'version': None}
@@ -249,11 +254,7 @@ def scan_readme_files(project_root):
 
 
 # version_ref_files で除外するファイル（他のカテゴリで検出済み、またはスキャン不要）
-VERSION_REF_SKIP_FILES = {
-    'CHANGELOG.md', 'CHANGELOG', 'CHANGELOG.rst',
-    'HISTORY.md', 'HISTORY', 'HISTORY.rst',
-    'CHANGES.md', 'CHANGES', 'RELEASES.md',
-}
+VERSION_REF_SKIP_FILES = set(CHANGELOG_NAMES)
 
 # テキストファイルとして扱う拡張子
 TEXT_EXTENSIONS = {'.md', '.rst', '.txt', '.yaml', '.yml', '.json', '.toml'}

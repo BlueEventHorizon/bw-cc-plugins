@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.25] - 2026-03-22
+
+### forge
+
+- **refactor**: バグ起因でしか発生しない例外に対する無用なフォールバックを全スクリプトから除去
+  - `except Exception` を具体的な例外型（IOError, OSError, UnicodeDecodeError）に限定（migrate_doc_structure / resolve_doc_references / resolve_review_context / read_session）
+  - skill_monitor.py の二重ファイル読み込みを排除し、content ベースの parse_yaml に変更
+  - scan_version_targets.py から不要な ValueError catch を除去
+- **refactor**: review SKILL.md の Codex 存在チェック二重化を解消（Phase 3 の exit code ハンドリングに一本化）
+- **refactor**: fixer SKILL.md から到達不能なフォールバック手順を削除し session_dir を必須化
+- **fix**: セッション削除保護機能を追加（in_progress セッションの誤削除防止）
+- **fix**: バージョン管理スクリプトのコードレビュー指摘事項を修正
+- **docs**: subagent diff review ステップを review Phase 5 に追加
+- **docs**: parallel agent output contract 設計書を追加
+
 ## [0.0.24] - 2026-03-22
 
 ### forge

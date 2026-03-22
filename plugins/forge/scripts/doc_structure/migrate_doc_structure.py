@@ -249,13 +249,8 @@ def apply_migrations(content, detected_version):
     targets = [v for v in sorted(MIGRATIONS.keys())
                if detected_version < v <= CURRENT_VERSION]
 
-    original = content  # FR-04-1: エラー時のロールバック用
-    try:
-        for v in targets:
-            content = MIGRATIONS[v](content)
-    except Exception as e:
-        print(f"マイグレーションエラー（ロールバック）: {e}", file=sys.stderr)
-        return original
+    for v in targets:
+        content = MIGRATIONS[v](content)
 
     return content
 

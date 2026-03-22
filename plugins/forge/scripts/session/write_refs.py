@@ -11,8 +11,8 @@ stdin JSON:
         "target_files": ["path/to/file1"],
         "reference_docs": [{"path": "docs/rules.md"}],
         "perspectives": [
-            {"name": "correctness", "criteria_path": "review/docs/review_criteria_code.md",
-             "section": "正確性 (Logic)", "output_path": "review_correctness.md"}
+            {"name": "logic", "criteria_path": "review/docs/review_criteria_code.md",
+             "section": "正確性 (Logic)", "output_path": "review_logic.md"}
         ],
         "related_code": [{"path": "src/foo.py", "reason": "関連", "lines": "1-50"}]
     }
