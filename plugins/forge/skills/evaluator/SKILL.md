@@ -3,7 +3,7 @@ name: evaluator
 user-invocable: false
 description: |
   レビュー指摘を5つの観点で吟味し、修正対象を確定する。AI専用Skill。
-  /forge:review オーケストレーターから呼び出される。
+  /forge:review オーケストレーターから perspective ごとに並列起動される。
   全モード（auto / auto-critical / interactive）で AI 推奨判定と plan.yaml 更新を実行する。
   interactive モードでは present-findings がユーザー判断で plan.yaml を上書き更新する。
 argument-hint: "(内部使用)"
@@ -12,7 +12,8 @@ argument-hint: "(内部使用)"
 # /evaluator Skill
 
 レビュー指摘事項を吟味し、「修正する / スキップ / 要確認」を判定する AI 専用 Skill。
-全モードで AI 推奨（`recommendation`）を `evaluation.yaml` に記録し、`plan.yaml` を更新する。`--interactive` モードでは `/forge:present-findings` が人間の最終判断に基づき `plan.yaml` を上書き更新する。
+perspective ごとに並列起動され、担当の `review_{perspective}.md` の指摘を吟味する。
+全モードで AI 推奨（`recommendation`）を `plan.yaml` に記録する。`--interactive` モードでは `/forge:present-findings` が人間の最終判断に基づき `plan.yaml` を上書き更新する。
 
 ---
 
@@ -21,11 +22,12 @@ argument-hint: "(内部使用)"
 | 原則                    | 説明                                                                                           |
 | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | **subagent として動作** | `/forge:review` から general-purpose subagent として起動される。メインコンテキストを消費しない |
+| **perspective ごとに並列起動** | オーケストレーターが perspectives の数だけ evaluator を並列起動する。各 evaluator は担当の `review_{perspective}.md` のみ処理する |
 | 判定は AI の責務        | レビューエンジンの出力をそのまま修正に渡さない。必ず吟味を挟む                                 |
 | 参考文書に基づく判定    | ルール・設計意図を参照して false positive を排除する                                           |
 | 副作用リスクの考慮      | 修正が他箇所に影響しないか確認してから判定する                                                 |
 | 渡された情報のみ使用    | 参考文書・関連コードの収集・探索は行わない                                                     |
-| 全モード共通ロジック    | auto / interactive を問わず、evaluation.yaml 記録・plan.yaml 更新・should_continue 判定を実行 |
+| 全モード共通ロジック    | auto / interactive を問わず、plan.yaml 更新・should_continue 判定を実行                       |
 
 ---
 
@@ -33,13 +35,15 @@ argument-hint: "(内部使用)"
 
 呼び出し元（/forge:review）から以下を受け取る:
 
-| 項目           | 必須 | 説明                                                                                      |
-| -------------- | ---- | ----------------------------------------------------------------------------------------- |
-| session_dir    | 必須 | セッションワーキングディレクトリのパス                                                    |
-| レビュー種別   | 必須 | `code` / `requirement` / `design` / `plan` / `generic`                                    |
-| 修正対象フラグ | 必須 | `--auto`: 🔴+🟡を対象 / `--auto-critical`: 🔴のみ対象 / `--interactive`: 全件AIが推奨判定 |
+| 項目             | 必須 | 説明                                                                                      |
+| ---------------- | ---- | ----------------------------------------------------------------------------------------- |
+| session_dir      | 必須 | セッションワーキングディレクトリのパス                                                    |
+| レビュー種別     | 必須 | `code` / `requirement` / `design` / `plan` / `generic`                                    |
+| perspective_name | 必須 | 担当する perspective の識別子（例: `correctness`, `resilience`）                           |
+| 修正対象フラグ   | 必須 | `--auto`: 🔴+🟡を対象 / `--auto-critical`: 🔴のみ対象 / `--interactive`: 全件AIが推奨判定 |
 
-※ レビュー結果・参考文書・対象ファイル・related_code はすべて `session_dir` 内のファイルから読む
+※ レビュー結果は `{session_dir}/review_{perspective_name}.md` から読む
+※ 参考文書・対象ファイル・related_code はすべて `{session_dir}/refs.yaml` から読む
 
 ---
 
@@ -47,8 +51,8 @@ argument-hint: "(内部使用)"
 
 ### Step 1: session_dir からデータを読み込む
 
-1. `{session_dir}/refs.yaml` を Read して `reference_docs` / `related_code` / `target_files` / `review_criteria_path` を取得
-2. `{session_dir}/review.md` を Read してレビュー結果（指摘事項リスト）を取得
+1. `{session_dir}/refs.yaml` を Read して `reference_docs` / `related_code` / `target_files` を取得
+2. `{session_dir}/review_{perspective_name}.md` を Read してレビュー結果（指摘事項リスト）を取得
 3. `refs.yaml` の `reference_docs` / `related_code` のパスを全て Read して内容を把握する
 
 （収集・探索は行わない。`refs.yaml` に記載されたパスのみ使用する）
@@ -61,7 +65,7 @@ argument-hint: "(内部使用)"
 - `--auto-critical`: 🔴致命的のみ
 - `--interactive`: 全件（🔴🟡🟢）
 
-> **吟味対象外の指摘の扱い**: `--auto` では 🟢 が、`--auto-critical` では 🟡🟢 が吟味対象外となる。吟味対象外の指摘は evaluation.yaml に `recommendation: skip`、`reason: "吟味対象外（モードによるフィルタ）"` として記録し、plan.yaml の status を `skipped` に更新する。
+> **吟味対象外の指摘の扱い**: `--auto` では 🟢 が、`--auto-critical` では 🟡🟢 が吟味対象外となる。吟味対象外の指摘は plan.yaml に `recommendation: skip`、`reason: "吟味対象外（モードによるフィルタ）"` として記録し、`status` を `skipped` に更新する。
 
 各指摘について以下の5つの観点で評価し、`修正する / スキップ / 要確認` を判定する:
 
@@ -95,34 +99,15 @@ argument-hint: "(内部使用)"
 
 判断に迷ったら `auto_fixable: false` とする。
 
-### Step 3: evaluation.yaml に書き込む
+### Step 3: plan.yaml を更新する [MANDATORY]
 
-吟味結果を JSON に構造化し、スクリプトで evaluation.yaml を生成する:
+吟味結果を JSON に構造化し、`update_plan.py --batch` で plan.yaml の items を直接更新する。**全モード共通**で実行する（interactive モードでも更新する）。
 
-```bash
-echo '<evaluation_json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_evaluation.py {session_dir}
-```
+以下のルールで各項目の `status` / `recommendation` / `auto_fixable` / `reason` を更新する:
 
-evaluation_json のフォーマット:
-```json
-{
-  "cycle": 1,
-  "items": [
-    {"id": 1, "severity": "critical", "title": "問題名",
-     "recommendation": "fix", "auto_fixable": true, "reason": "判定理由"}
-  ]
-}
-```
-
-各項目には `recommendation`（fix / skip / needs_review）と、fix の場合は `auto_fixable`（true / false）を含める。
-
-### Step 4: plan.yaml を更新する [MANDATORY]
-
-以下のルールで各項目の `status` を更新する。**全モード共通**で実行する（interactive モードでも更新する）:
-
-- `recommendation: fix` → `status: pending` のまま（fixer が後で `fixed` にする）
-- `recommendation: skip` → `status: skipped` / `skip_reason` を記録
-- `recommendation: needs_review` → `status: needs_review`
+- `recommendation: fix` → `status: pending` のまま（fixer が後で `fixed` にする）。`auto_fixable` と `reason` を付与
+- `recommendation: skip` → `status: skipped` / `skip_reason` と `reason` を記録
+- `recommendation: needs_review` → `status: needs_review` / `reason` を記録
 
 スクリプトでバッチ更新する:
 
@@ -134,8 +119,9 @@ batch_json のフォーマット:
 ```json
 {
   "updates": [
-    {"id": 1, "status": "pending"},
-    {"id": 2, "status": "skipped", "skip_reason": "理由"}
+    {"id": 1, "status": "pending", "recommendation": "fix", "auto_fixable": true, "reason": "判定理由"},
+    {"id": 2, "status": "skipped", "skip_reason": "理由", "recommendation": "skip", "reason": "判定理由"},
+    {"id": 3, "status": "needs_review", "recommendation": "needs_review", "reason": "判定理由"}
   ]
 }
 ```
@@ -143,7 +129,7 @@ batch_json のフォーマット:
 > **interactive モードの場合**: evaluator の更新はあくまで初期推奨状態。present-findings がユーザーの最終判断で上書き更新する（`review/SKILL.md` §ワークフロー 参照）。
 > そのため evaluator の plan.yaml 更新と present-findings による上書きは意図的な二段階更新であり、競合ではない。
 
-### Step 5: 次サイクル判定
+### Step 4: 次サイクル判定
 
 全モード共通で判定する:
 
@@ -157,13 +143,13 @@ batch_json のフォーマット:
 
 ## 出力
 
-`{session_dir}/evaluation.yaml` に書き込んだ旨を呼び出し元（/forge:review）に報告する。
+`plan.yaml` を更新した旨を呼び出し元（/forge:review）に報告する。
 全モードで `should_continue` フラグを返す。
 
 ```
-## 吟味結果
+## 吟味結果（perspective: {perspective_name}）
 
-evaluation.yaml に書き込みました: {session_dir}/evaluation.yaml
+plan.yaml を更新しました: {session_dir}/plan.yaml
 
 ### 修正する（X件）
 1. **[問題名]**
@@ -191,6 +177,6 @@ evaluation.yaml に書き込みました: {session_dir}/evaluation.yaml
 | エラー                                              | 対応                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------- |
 | `session_dir` が存在しない / `refs.yaml` が読めない | エラーを呼び出し元に返して処理を中断する                            |
-| `review.md` が空 / 読めない                         | `should_continue: false` で呼び出し元に返す                         |
+| `review_{perspective_name}.md` が空 / 読めない       | `should_continue: false` で呼び出し元に返す                         |
 | 参考文書が読めない                                  | 参考文書なしで吟味を続行し、その旨を記録する                        |
-| 判定困難な指摘が多数                                | 「要確認」として全件を `evaluation.yaml` に書き込み呼び出し元に返す |
+| 判定困難な指摘が多数                                | 「要確認」として全件を `plan.yaml` に書き込み呼び出し元に返す       |
