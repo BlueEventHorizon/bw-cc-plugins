@@ -260,6 +260,22 @@ class TestCLI(_FsTestCase):
         result = json.loads(proc.stdout)
         self.assertEqual(result["updated"], [1, 2])
 
+    def test_batch_update_raw_array(self):
+        """JSON 配列を直接渡してもバッチ更新できる。"""
+        self._write_plan(_sample_items())
+        batch = [
+            {"id": 1, "status": "pending"},
+            {"id": 2, "status": "skipped", "skip_reason": "FP"},
+        ]
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir), "--batch"],
+            input=json.dumps(batch),
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["updated"], [1, 2])
+
     def test_missing_plan(self):
         proc = subprocess.run(
             [sys.executable, SCRIPT, str(self.session_dir),
