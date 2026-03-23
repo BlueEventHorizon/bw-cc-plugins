@@ -21,7 +21,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | [**review**](docs/readme/README_forge_ja.md#review) | コード・文書を🔴🟡🟢重大度付きでレビュー。`--auto N` で自動修正。5種別対応 | `"レビュー"` `"review"` |
-| [**setup-doc-structure**](docs/readme/README_forge_ja.md#setup-doc-structure) | `.doc_structure.yaml` を対話的に生成。他の forge スキルの前提条件 | `"forge の初期設定"` |
+| [**setup-doc-structure**](docs/readme/README_forge_ja.md#setup-doc-structure) | `.doc_structure.yaml` 生成 + 不足ディレクトリの scaffold 作成 | `"forge の初期設定"` |
 | [**start-requirements**](docs/readme/README_forge_ja.md#start-requirements) | 対話・ソース解析・Figma の3モードで要件定義書を作成 | `/forge:start-requirements` |
 | [**start-design**](docs/readme/README_forge_ja.md#start-design) | 要件定義書から設計書を作成 | `"設計書作成"` |
 | [**start-plan**](docs/readme/README_forge_ja.md#start-plan) | 設計書からタスクを抽出し計画書を作成・更新 | `"計画書作成"` |

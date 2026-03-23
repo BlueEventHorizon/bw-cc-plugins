@@ -21,7 +21,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | Skill | Description | Trigger |
 |-------|-------------|---------|
 | [**review**](docs/readme/README_forge.md#review) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`. 5 types | `"レビュー"` `"review"` |
-| [**setup-doc-structure**](docs/readme/README_forge.md#setup-doc-structure) | Interactively generate `.doc_structure.yaml`. Prerequisite for other forge skills | `"forge の初期設定"` |
+| [**setup-doc-structure**](docs/readme/README_forge.md#setup-doc-structure) | Generate `.doc_structure.yaml` + scaffold missing doc directories | `"forge の初期設定"` |
 | [**start-requirements**](docs/readme/README_forge.md#start-requirements) | Create requirements docs via dialog, reverse-engineering, or Figma | `/forge:start-requirements` |
 | [**start-design**](docs/readme/README_forge.md#start-design) | Create design documents from requirements | `"設計書作成"` |
 | [**start-plan**](docs/readme/README_forge.md#start-plan) | Create or update implementation plan from design documents | `"計画書作成"` |

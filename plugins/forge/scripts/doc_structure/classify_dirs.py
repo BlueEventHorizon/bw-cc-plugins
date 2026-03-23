@@ -19,6 +19,10 @@ import json
 import argparse
 from pathlib import Path
 
+# resolve_doc_structure.py の find_project_root をインポート
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'skills' / 'doc-structure' / 'scripts'))
+from resolve_doc_structure import find_project_root
+
 
 # スキップするディレクトリ
 SKIP_DIRS = {
@@ -32,17 +36,6 @@ SKIP_DIRS = {
 
 # これらのファイルが存在するディレクトリはソースコードディレクトリと判断しスキップ
 SKIP_INDICATORS = {'package.json', 'Cargo.toml', 'go.mod', 'pom.xml', 'setup.py', 'pyproject.toml'}
-
-
-def get_project_root(path=None):
-    """Find project root by looking for .git directory."""
-    start = Path(path) if path else Path.cwd()
-    current = start.resolve()
-    while current != current.parent:
-        if (current / '.git').exists():
-            return str(current)
-        current = current.parent
-    return str(start.resolve())
 
 
 def parse_args():
@@ -123,7 +116,7 @@ def is_readme_only(project_root, dir_path):
     md_files = [f.name.lower() for f in dir_full.glob('*.md')]
     skip_names = {'readme.md', 'changelog.md', 'contributing.md', 'license.md',
                   'code_of_conduct.md', 'security.md'}
-    return all(f in skip_names for f in md_files)
+    return bool(md_files) and all(f in skip_names for f in md_files)
 
 
 def extract_front_matter(filepath):
@@ -213,7 +206,7 @@ def output_scan(project_root, directories):
 
 def main():
     args = parse_args()
-    project_root = get_project_root(args.project_root)
+    project_root = find_project_root(args.project_root) if args.project_root else find_project_root()
 
     skip_prefixes = None
     if args.skip:

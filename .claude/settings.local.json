@@ -19,7 +19,8 @@
       "Bash(bash .claude/doc-advisor/scripts/check_config.sh specs)",
       "Bash(do)",
       "Bash(echo \"exit:$?\")",
-      "Bash(.claude/.temp/review-4d58e6/fix_result_10.md:*)"
+      "Bash(.claude/.temp/review-4d58e6/fix_result_10.md:*)",
+      "Bash(bash .claude/doc-advisor/scripts/check_config.sh rules)"
     ]
   },
   "sandbox": {

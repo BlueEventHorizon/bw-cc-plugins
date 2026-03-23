@@ -12,6 +12,7 @@ import fnmatch
 import os
 import re
 import shutil
+import sys
 import unicodedata
 from pathlib import Path
 
@@ -700,9 +701,9 @@ def load_checksums(checksums_file):
                     files.add(filepath)
 
         return files
-    except Exception as e:
-        print(f"Warning: Checksum file read error: {e}")
-        print("Fallback: Skipping deletion detection")
+    except (IOError, OSError) as e:
+        # ファイル I/O エラーのみ許容（ファイル破損・権限不足等）
+        print(f"Warning: Checksum file read error: {e}", file=sys.stderr)
         return set()
 
 

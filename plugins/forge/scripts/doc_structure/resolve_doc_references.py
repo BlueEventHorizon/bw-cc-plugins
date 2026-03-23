@@ -61,6 +61,11 @@ def resolve_references(resolve_type, project_root, doc_structure_path=None):
             'status': 'error',
             'message': f".doc_structure.yaml のパースに失敗しました: {e}",
         }
+    except (ValueError, KeyError, IndexError, TypeError) as e:
+        return {
+            'status': 'error',
+            'message': f".doc_structure.yaml のパース中にエラーが発生しました: {e}",
+        }
 
     result = {
         'status': 'resolved',
