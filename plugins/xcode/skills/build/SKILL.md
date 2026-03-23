@@ -2,7 +2,7 @@
 name: build
 description: |
   Xcodeプロジェクトをビルドし、エラーを報告する。iOS/macOS を自動判定。
-  トリガー: "ビルド", "build", "ビルドして", "/xcode:build"
+  トリガー: "ビルド", "build", "ビルドして"
 user-invocable: true
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[scheme-name]"

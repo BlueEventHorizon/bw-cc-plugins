@@ -2,11 +2,8 @@
 name: reviewer
 user-invocable: false
 description: |
-  参考文書を読んでレビューを実行する。AI専用Skill。
-  /forge:review オーケストレーターから呼び出される。
-  参考文書収集・target_files 解決は呼び出し元（/forge:review）が担う。
-  session_dir 経由でデータを受け渡し、結果は {session_dir}/{output_path} に書き出す。
-  1回の呼び出しで 1 perspective のみ処理する。
+  参考文書に基づきレビューを実行し指摘事項を作成する。
+  /forge:review から 1 perspective ずつ並列起動される。
 argument-hint: "<種別> [--エンジン]"
 ---
 

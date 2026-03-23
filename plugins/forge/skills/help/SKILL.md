@@ -1,8 +1,8 @@
 ---
 name: help
 description: |
-  forge スキルのインタラクティブヘルプ。スキルを選択し、引数を対話的に入力してそのまま実行できる。
-  トリガー: "forge help", "使い方", "ヘルプ", "/forge:help"
+  forge スキルのヘルプ。引数を UI で選択できるのでスキルを使いやすくなる。
+  トリガー: "forge help", "使い方", "ヘルプ"
 user-invocable: true
 argument-hint: ""
 allowed-tools: AskUserQuestion

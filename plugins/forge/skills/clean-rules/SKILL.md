@@ -1,8 +1,7 @@
 ---
 name: clean-rules
 description: |
-  プロジェクトの rules/ を開発文書の分類学に基づいて分析し、forge 内蔵知識も含めて
-  プロジェクト内で読める形に体系的に再構築する。
+  ルール文書を分析し、重複や散在を解消して見つけやすくする。
   トリガー: "rules を整理", "重複ルールを削除", "clean rules", "ルールの掃除"
 user-invocable: true
 argument-hint: ""

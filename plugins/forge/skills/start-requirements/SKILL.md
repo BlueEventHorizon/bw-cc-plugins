@@ -1,8 +1,8 @@
 ---
 name: start-requirements
 description: |
-  対話・既存ソース解析・Figma の3モードで構造化要件定義書（SCR/FNC/BL 形式）を作成する。
-  完了後は /forge:review でレビュー+修正推奨。
+  対話・ソース解析・Figma で要件を収集し、構造化した要件定義書を作成する。
+  トリガー: "要件定義", "要件定義書作成", "start requirements"
 user-invocable: true
 argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
 ---
