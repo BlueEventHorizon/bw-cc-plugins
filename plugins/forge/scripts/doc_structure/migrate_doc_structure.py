@@ -183,8 +183,8 @@ def migrate_v2_to_v3(content):
             else:
                 continue
 
-        # 単一行フィールドの除去
-        if stripped.startswith('toc_file:') or stripped.startswith('checksums_file:') or stripped.startswith('work_dir:'):
+        # 単一行フィールドの除去（indent == 2: カテゴリ直下のフィールドのみ対象）
+        if indent == 2 and (stripped.startswith('toc_file:') or stripped.startswith('checksums_file:') or stripped.startswith('work_dir:')):
             continue
 
         # output セクションの除去（indent=2 の output: から次の indent<=2 まで）
@@ -284,6 +284,11 @@ def main():
 
     file_path = sys.argv[1]
     mode = sys.argv[2] if len(sys.argv) > 2 else None
+
+    valid_modes = {'--check', '--dry-run', None}
+    if mode not in valid_modes:
+        print(f"Error: 不正な引数です: {mode}（有効な値: --check, --dry-run）", file=sys.stderr)
+        sys.exit(1)
 
     try:
         content = Path(file_path).read_text(encoding='utf-8')

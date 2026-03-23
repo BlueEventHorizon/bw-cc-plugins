@@ -54,7 +54,7 @@
 
 | ID | 要件 |
 |---|---|
-| FR-04-1 | マイグレーション中にエラーが発生した場合、マイグレーション前の状態を返す（部分適用しない） |
+| FR-04-1 | マイグレーション関数は副作用を持たない純粋関数（FR-03-3）であり、例外はコードバグとして伝播させる。サイレントフォールバック（`except Exception: return original`）で不具合を隠蔽してはならない |
 | FR-04-2 | 検出バージョンが current_version より大きい（未知の将来バージョン）場合、マイグレーションをスキップしそのまま使用する |
 | FR-04-3 | バージョン検出に失敗した場合は最古のバージョンとして扱う（FR-01-2 と同様） |
 
@@ -90,12 +90,10 @@ def apply_migrations(data, detected_version):
     targets = [v for v in sorted(MIGRATIONS.keys())
                if detected_version < v <= CURRENT_VERSION]
 
-    original = data  # FR-04-1: エラー時のロールバック用
-    try:
-        for v in targets:
-            data = MIGRATIONS[v](data)
-    except Exception:
-        return original
+    # FR-04-1: マイグレーション関数は純粋関数（FR-03-3）であり、
+    # 例外はコードバグとして伝播させる。サイレントフォールバックで隠蔽しない。
+    for v in targets:
+        data = MIGRATIONS[v](data)
 
     return data
 ```

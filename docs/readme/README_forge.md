@@ -77,7 +77,9 @@ Review criteria are accumulated from the following sources:
 /forge:setup-doc-structure
 ```
 
-No arguments. Interactively generates or updates `.doc_structure.yaml`.
+No arguments. Interactively generates or updates `.doc_structure.yaml`. When doc directories don't exist, proposes a recommended structure (specs / rules / reference / adr) and creates them with `.gitkeep`.
+
+> Existing Feature directories are auto-detected and configured as glob patterns in `.doc_structure.yaml`. New Feature directories are created by `start-requirements` etc. when starting work.
 
 ### start-requirements
 

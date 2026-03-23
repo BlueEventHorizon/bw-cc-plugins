@@ -78,6 +78,8 @@
       "Skill(query-specs)",
 
       "Bash(python3 .claude/doc-advisor/scripts/*)",
+      "Bash(bash .claude/doc-advisor/scripts/check_config.sh *)",
+      "Bash(mkdir -p .claude/.temp/*)",
       "Bash(rm -rf .claude/doc-advisor/toc/specs/.toc_work/)",
       "Bash(rm -rf .claude/doc-advisor/toc/rules/.toc_work/)",
       "Bash(cp .claude/doc-advisor/toc/specs/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/specs/.toc_checksums.yaml)",
@@ -145,15 +147,11 @@
       "Read(id_ed25519)",
       "Read(**/*key*)",
       "Read(**/.ssh/**)",
-      "Read(apps/app/flavor/*.local.json)",
-      "Read(scripts/firebase/config/*.json)",
 
       "Write(.env*)",
       "Write(.env.*)",
       "Write(**/secrets/**)",
-      "Write(**/.ssh/**)",
-      "Write(apps/app/flavor/*.local.json)",
-      "Write(scripts/firebase/config/*.json)"
+      "Write(**/.ssh/**)"
     ]
   },
   "hooks": {

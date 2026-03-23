@@ -19,6 +19,10 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
+# テスト共通ヘルパー
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from forge.helpers import _FsTestCase
+
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'scripts' / 'doc_structure'))
@@ -32,22 +36,6 @@ from classify_dirs import (
     scan_directories,
     output_scan,
 )
-
-
-class _FsTestCase(unittest.TestCase):
-    """ファイルシステムを使うテストの基底クラス"""
-
-    def setUp(self):
-        self.tmpdir = Path(tempfile.mkdtemp())
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    def _write_file(self, rel_path, content=''):
-        p = self.tmpdir / rel_path
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content, encoding='utf-8')
-        return p
 
 
 # =========================================================================
