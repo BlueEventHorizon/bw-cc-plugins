@@ -1,8 +1,8 @@
 ---
 name: start-plan
 description: |
-  計画書作成ワークフロー。設計書からタスクを抽出し計画書を作成、または既存計画書を更新。
-  トリガー: "計画書作成", "計画開始", "start planning", "/forge:start-plan"
+  設計書から実装タスクを抽出し、計画書を作成・更新できる。
+  トリガー: "計画書作成", "計画開始", "start planning"
 user-invocable: true
 argument-hint: "<feature>"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion

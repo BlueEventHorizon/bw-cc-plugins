@@ -1,8 +1,8 @@
 ---
 name: start-design
 description: |
-  設計書作成ワークフロー。要件定義書から設計書を作成、または既存設計書をレビュー。
-  トリガー: "設計書作成", "設計開始", "start design", "/forge:start-design"
+  要件定義書を入力に設計書を作成し、レビューまで一貫して行える。
+  トリガー: "設計書作成", "設計開始", "start design"
 user-invocable: true
 argument-hint: "<feature>"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion

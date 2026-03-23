@@ -1,7 +1,7 @@
 ---
 name: commit
 description: |
-  変更内容を要約したコミットメッセージを生成し、commit & push する。
+  コミットメッセージを自動生成し、手間なく commit & push できる。
   トリガー: "コミットして", "commit して", "push して", "commit & push"
 user-invocable: true
 argument-hint: "[message]"

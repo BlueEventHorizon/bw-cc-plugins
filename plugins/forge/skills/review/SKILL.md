@@ -1,8 +1,8 @@
 ---
 name: review
 description: |
-  コード・文書を🔴🟡🟢重大度付きでレビューし、修正提案を提示する。
-  --auto でレビュー+修正を N サイクル自動実行。5種別（code/requirement/design/plan/generic）に対応。
+  コード・文書をレビューし、品質問題の発見から修正まで自動化できる。重大度 🔴🟡🟢 で分類。
+  --auto で修正まで一貫実行。code/requirement/design/plan/generic の5種別に対応。
   トリガー: "レビュー", "review", "レビューして", "確認して"
 user-invocable: true
 hooks:

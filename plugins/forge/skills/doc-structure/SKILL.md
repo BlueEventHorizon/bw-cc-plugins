@@ -2,8 +2,8 @@
 name: doc-structure
 user-invocable: false
 description: |
-  .doc_structure.yaml（config.yaml 互換フォーマット）のパース・パス解決を行うユーティリティスキル。
-  他スキルからの呼び出し専用。doc-advisor でもそのまま利用可能な自己完結設計。
+  .doc_structure.yaml のパース・パス解決ユーティリティ。
+  他スキルおよび doc-advisor から呼び出される。
 argument-hint: ""
 ---
 

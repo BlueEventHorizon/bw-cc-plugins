@@ -1,8 +1,8 @@
 ---
 name: start-implement
 description: |
-  計画書のタスクを選択し、コンテキスト収集・実装・レビュー・計画書更新を一連で実行する。
-  トリガー: "実装開始", "タスク実行", "start implement", "/forge:start-implement"
+  計画書からタスクを選び、実装・レビュー・計画更新まで一貫して実行する。
+  トリガー: "実装開始", "タスク実行", "start implement"
 user-invocable: true
 argument-hint: "<feature> [--task TASK-ID[,TASK-ID,...]]"
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
