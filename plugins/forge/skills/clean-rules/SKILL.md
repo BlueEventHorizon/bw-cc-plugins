@@ -50,13 +50,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structur
 - 0 件 → 「rules 文書が見つかりません」で正常終了
 - `status: "error"` → エラー報告して終了
 
-#### Step 3: forge 内蔵 docs のメタデータ取得
+#### Step 3: forge 内蔵 docs の取得
 
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/list_forge_docs.py" "${CLAUDE_PLUGIN_ROOT}/docs"
-```
-
-JSON 出力から `internal: false` のドキュメント一覧を取得する。
+`/forge:query-forge-rules` を呼び出し、タスク「プロジェクト rules との比較対象となる
+forge 内蔵知識の一覧」で検索する。返されたパスリストが比較対象の forge docs。
 
 #### Step 4: 分類学定義の読み込み [MANDATORY]
 
@@ -69,7 +66,7 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 #### Step 5: 全文書の読み込み
 
 - ルール文書（ターゲットプロジェクト側）を全て Read
-- forge docs（`internal: false` のもの）を全て Read
+- forge docs（Step 3 で取得したパスリスト）を全て Read
 
 情報収集完了後、以下を出力する:
 
