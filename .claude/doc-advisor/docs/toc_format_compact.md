@@ -4,7 +4,7 @@ description: Compact format definition for {target}_toc.yaml (for large projects
 applicable_when:
   - Creating or updating ToC entries for large projects (100+ documents)
   - Automatically selected by orchestrator when document count exceeds threshold
-doc-advisor-version-xK9XmQ: 5.0
+doc-advisor-version-xK9XmQ: 5.1
 ---
 
 # ToC YAML Format Definition (Compact)

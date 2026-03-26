@@ -5,7 +5,7 @@ applicable_when:
   - Running as toc-updater Agent
   - Executing /create-rules-toc or /create-specs-toc
   - After adding, modifying, or deleting target documents
-doc-advisor-version-xK9XmQ: 5.0
+doc-advisor-version-xK9XmQ: 5.1
 ---
 
 # ToC Update Workflow
