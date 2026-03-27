@@ -41,4 +41,6 @@ Required documents:
 ## Notes
 
 - false negative は厳禁。迷ったら含める
-- パスは bw-cc-plugins リポジトリルートからの相対パス
+- ToC 内のパスは `plugins/forge/...` 形式だが、ファイルを Read する際は
+  `${CLAUDE_PLUGIN_ROOT}` を起点に解決する
+  （例: `plugins/forge/docs/design_format.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`）
