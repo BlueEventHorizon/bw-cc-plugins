@@ -20,7 +20,11 @@
       "Bash(do)",
       "Bash(echo \"exit:$?\")",
       "Bash(.claude/.temp/review-4d58e6/fix_result_10.md:*)",
-      "Bash(bash .claude/doc-advisor/scripts/check_config.sh rules)"
+      "Bash(bash .claude/doc-advisor/scripts/check_config.sh rules)",
+      "Bash(gh:*)",
+      "Bash(/opt/homebrew/bin/python3 /Users/moons/.claude/plugins/marketplaces/bw-cc-plugins/plugins/forge/skills/review/scripts/resolve_review_context.py plugins/forge/skills/clean-rules/SKILL.md plugins/forge/skills/query-forge-rules/SKILL.md 2>&1)",
+      "Bash(/opt/homebrew/bin/python3 /Users/moons/.claude/plugins/marketplaces/bw-cc-plugins/plugins/forge/skills/review/scripts/resolve_review_context.py plugins/forge/skills/clean-rules/SKILL.md plugins/forge/skills/query-forge-rules/SKILL.md --type code 2>&1)",
+      "Bash(/opt/homebrew/bin/python3 -m unittest discover -s tests -p 'test_*.py')"
     ]
   },
   "sandbox": {

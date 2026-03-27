@@ -4,152 +4,153 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-03-16T03:01:36Z
+  generated_at: 2026-03-26T09:35:57Z
   file_count: 5
 
 docs:
   docs/rules/cli_output_formatting.md:
     doc_type: rule
     title: CLI Output Formatting Guidelines
-    purpose: Defines color codes and formatting patterns for shell script and CLI tool output to ensure consistent and accessible user communication
+    purpose: Defines color codes and formatting patterns for shell script and CLI tool output to ensure consistent visual presentation
     content_details:
       - Color code definitions (red, green, blue, yellow)
-      - Header/footer banner formatting
-      - Configuration value display pattern
-      - Warning message styling
-      - User command/next steps highlighting
-      - Success and error message patterns
-      - Accessibility best practices and consistency guidelines
+      - Use cases for each color
+      - Header and footer banner formatting
+      - Configuration value display patterns
+      - Warning message formatting
+      - Success and error message formatting
+      - Accessibility guidelines
+      - Practical application examples
     applicable_tasks:
       - Shell script development
-      - CLI tool output formatting
-      - User-facing message design
-      - Error and success message styling
-      - Configuration display implementation
+      - CLI tool implementation
+      - Output formatting standardization
+      - Documentation of color conventions
     keywords:
+      - ANSI color codes
       - CLI output
-      - color codes
-      - ANSI escape sequences
+      - bash formatting
+      - shell script
+      - visual presentation
+      - color conventions
       - echo -e
-      - accessibility
-      - user messages
   docs/rules/document_writing_rules.md:
     doc_type: rule
     title: Document Writing Rules
-    purpose: Defines consistent documentation standards and conventions for all documentation across the project including formatting, terminology, structure, and code example rules
+    purpose: Establishes unified conventions for document structure, terminology, formatting, and code examples across all documentation types to ensure consistency and AI readability
     content_details:
       - Heading and tag conventions with MANDATORY, CRITICAL, IMPORTANT tags
-      - Terminology standardization and long-vowel sound rules
-      - Document structure patterns for workflows, agents, rules, and commands
-      - Formatting and markup rules including code blocks, lists, and tables
-      - "Document type classification: rules vs specs"
-      - Code example rules with Foo, Bar, Hoge, Fuga placeholders
-      - Specs metadata and related requirement ID references
-      - Tag placement validation and common mistakes
-      - Verification methods and correction checklist
+      - Unified terminology including long sound rules and English phrase enforcement
+      - Document structure requirements for workflows, agents, rules, and commands
+      - Emphasis and formatting rules for text, code blocks, lists, and tables
+      - File reference notation rules for paths in specs/ and rules/
+      - Code example and placeholder naming rules for rules/ documents
+      - Metadata requirements for specs/ documents including related requirements
+      - Common mistakes and verification methods
     applicable_tasks:
-      - Documentation creation and review
-      - Document structure verification
-      - Terminology consistency checking
-      - Code example validation in rules
-      - Specs metadata maintenance
-      - Heading and tag audit across projects
-      - Template compliance verification
+      - Document writing and review
+      - Documentation structure validation
+      - Code example standardization
+      - Rule document creation
+      - Multi-project documentation template reuse
+      - Documentation consistency checking
     keywords:
-      - documentation
-      - MANDATORY
-      - tag
+      - document conventions
+      - MANDATORY tag
       - terminology
       - frontmatter
-      - code example
-      - Foo Bar placeholder
-      - specs
-      - formatting
-      - rules
+      - placeholder naming
+      - code examples
+      - file references
+      - metadata
   docs/rules/implementation_guidelines.md:
     doc_type: rule
     title: Implementation Guidelines
-    purpose: Defines rules for script language selection, testing requirements, and SKILL.md implementation practices for plugins
+    purpose: Defines rules for script language selection, testing requirements, and code organization for plugins and skills
     content_details:
-      - Python script usage restrictions
-      - Bash script usage for external commands
-      - Testing requirements for plugins directory
-      - Test file organization and discovery rules
-      - No inline scripts in SKILL.md
-      - Script file locations and environment variables
-      - Code deletion requirements
-      - User input interpretation guidelines
+      - Script language selection by task type
+      - Python standard library only constraint
+      - Test requirements for plugins and skills
+      - Test file organization in tests/ directory
+      - Prohibition of inline scripts in SKILL.md
+      - External script placement in plugins/{plugin}/skills or plugins/{plugin}/scripts
+      - Removal of unused code
+      - AI interpretation of user input without parsers
     applicable_tasks:
-      - Plugin script development
-      - Test implementation for plugins
+      - Script development
+      - Plugin implementation
       - SKILL.md authoring
-      - Code review for script usage patterns
-      - Setting up test infrastructure
-      - Script refactoring and cleanup
+      - Code review
+      - Test design
     keywords:
+      - script language
       - Python
       - Bash
       - testing
       - SKILL.md
-      - plugins
-      - script
-      - standard library
-      - external commands
+      - inline scripts
+      - plugin structure
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
-    title: SKILL.md Authoring Guidelines
-    purpose: Defines guidelines and conventions for creating and editing Claude Code plugin skill SKILL.md files, including frontmatter fields, argument references, inter-skill invocation, and mandatory user interaction patterns
+    title: SKILL.md Authoring Notes
+    purpose: Defines frontmatter configuration, skill invocation settings, code organization, and mandatory guidelines for Claude Code plugin skill development
     content_details:
-      - Frontmatter field configuration (name, description, user-invocable, disable-model-invocation)
-      - Description writing guidelines for automatic invocation triggering
-      - Argument reference syntax and available variables
-      - Inter-skill invocation through Claude instructions
-      - Directory structure conventions for skills and supporting files
-      - SKILL.md file splitting criteria based on content type
-      - AskUserQuestion tool mandatory usage for user interactions
+      - frontmatter fields and their usage
+      - user-invocable vs disable-model-invocation settings
+      - description writing guidelines
+      - argument variables (, /bin/zsh, )
+      - available variables (CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
+      - inter-skill invocation patterns
+      - directory structure conventions
+      - SKILL.md splitting criteria
+      - AskUserQuestion mandatory requirement for user interaction
+      - project-specific coding conventions
     applicable_tasks:
-      - Skill creation and editing
-      - Plugin development
-      - SKILL.md documentation maintenance
-      - Frontmatter configuration review
+      - SKILL.md creation
+      - SKILL.md editing
+      - AI skill authoring
+      - Plugin scaffold setup
+      - Skill invocation decision review
+      - Code organization planning
     keywords:
       - SKILL.md
       - frontmatter
       - user-invocable
       - AskUserQuestion
-      - Claude Code
+      - MANDATORY
+      - Claude plugin
       - skill authoring
-      - inter-skill invocation
+      - argument variables
+      - plugin convention
   docs/rules/version_migration_design.md:
     doc_type: rule
-    title: Version Migration and Upgrade Design Rules
-    purpose: Defines principles and patterns for safe data migrations across version changes, including pipeline pattern, idempotency, and forward compatibility requirements
+    title: Version Migration Design Rules
+    purpose: Defines version migration design principles, patterns, and implementation strategies for safely handling data transformations across version upgrades
     content_details:
-      - Migration pipeline pattern with sequential step transformation
-      - Idempotency principle for safe reapplication
-      - Single source of truth for version numbers
-      - Forward compatibility through unknown key preservation
-      - Multi-version jumps (v4 → v6) handling strategy
-      - YAML/JSON migration with dict-based transformation
-      - Swift Codable versioned struct pattern with model versioning
-      - Database migrations with history tracking and transactions
-      - Migration test requirements including multi-version scenarios
-      - Integration with doc_structure.yaml migration implementation
+      - Pipeline principle for multi-stage migrations
+      - "Anti-patterns: reading old data directly and fixed old_data in loops"
+      - Single Source of Truth for version numbers with self-describing data
+      - Idempotency principle for safe re-application
+      - Forward compatibility by preserving unknown keys
+      - Migration history persistence
+      - YAML/JSON configuration migration patterns
+      - Swift Codable/PropertyList versioned struct pattern
+      - Database migration with schema_migrations tracking table
+      - Version skipping strategy for multi-stage jumps
     applicable_tasks:
       - Version upgrade planning
-      - Configuration file schema migration
-      - Data format transformation implementation
-      - Database schema migration design
-      - Backward compatibility implementation
-      - Multi-stage migration testing
-      - Version management strategy review
+      - Data migration implementation
+      - Schema design for version management
+      - Migration testing strategy
+      - Backward compatibility design
+      - Database schema evolution
     keywords:
-      - migration pipeline
+      - migration
+      - version management
+      - pipeline principle
       - idempotency
-      - single source of truth
+      - Single Source of Truth
       - forward compatibility
-      - data versioning
-      - schema transformation
-      - Swift Codable
-      - database migration
-      - version skipping
+      - schema evolution
+      - Codable
+      - PropertyList
