@@ -60,11 +60,11 @@ class TestVersionDetection(unittest.TestCase):
         # 正規表現 r'^#\s*doc_structure_version:\s*(\d+)' でマッチ
         self.assertEqual(toc_utils._detect_version(content), 3)
 
-    def test_version_comment_after_yaml_body_ignored(self):
-        """YAML本文行後のバージョンコメントは無視される"""
+    def test_version_comment_after_yaml_body_detected(self):
+        """YAML本文行後のバージョンコメントも検出される（全行走査）"""
         content = 'rules:\n  root_dirs:\n    - rules/\n# doc_structure_version: 3.0\n'
-        # 最初の非コメント行でスキャン打ち切り → v1
-        self.assertEqual(toc_utils._detect_version(content), 1)
+        # 全行走査により位置に関わらずバージョンコメントを検出する
+        self.assertEqual(toc_utils._detect_version(content), 3)
 
 
 class TestV1ToV3ChainMigration(unittest.TestCase):

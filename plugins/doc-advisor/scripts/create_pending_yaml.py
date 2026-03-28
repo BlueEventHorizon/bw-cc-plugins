@@ -22,7 +22,7 @@ import hashlib
 import re
 from datetime import datetime, timezone
 
-from toc_utils import get_project_root, load_config, should_exclude, resolve_config_path, get_system_exclude_patterns, rglob_follow_symlinks, normalize_path, expand_root_dir_globs
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums
 
 # Global configuration (initialized in init_config())
 CONFIG = None
@@ -37,21 +37,8 @@ EXCLUDE_PATTERNS = None
 CATEGORY = None  # 'rules' or 'specs'
 DOC_TYPES_MAP = None  # path → doc_type name (from .doc_structure.yaml)
 
-# Pending YAML templates
-PENDING_TEMPLATE_RULES = """_meta:
-  source_file: {source_file}
-  doc_type: {doc_type}
-  status: pending
-  updated_at: null
-
-title: null
-purpose: null
-content_details: []
-applicable_tasks: []
-keywords: []
-"""
-
-PENDING_TEMPLATE_SPECS = """_meta:
+# Pending YAML template (rules/specs 共通)
+PENDING_TEMPLATE = """_meta:
   source_file: {source_file}
   doc_type: {doc_type}
   status: pending
@@ -106,34 +93,22 @@ def init_config(category):
     CATEGORY = category
 
     try:
-        CONFIG = load_config(category)
-        PROJECT_ROOT = get_project_root()
-    except RuntimeError as e:
-        print(f"Error: {e}")
-        return False
-    except FileNotFoundError as e:
+        common = init_common_config(category)
+    except (RuntimeError, FileNotFoundError) as e:
         print(f"Error: {e}")
         return False
 
-    default_dir = f'{category}/'
-    root_dirs_config = CONFIG.get('root_dirs', [default_dir])
-    if isinstance(root_dirs_config, str):
-        root_dirs_config = [root_dirs_config]
-    # Expand glob patterns in root_dirs (e.g., "specs/*/requirements/")
-    root_dirs_config = expand_root_dir_globs(root_dirs_config, PROJECT_ROOT)
-    ROOT_DIRS = []
-    for entry in root_dirs_config:
-        name = entry.rstrip('/')
-        ROOT_DIRS.append((PROJECT_ROOT / name, name))
+    CONFIG = common['config']
+    PROJECT_ROOT = common['project_root']
+    ROOT_DIRS = common['root_dirs']
+    PATTERNS_CONFIG = common['patterns_config']
+    TARGET_GLOB = common['target_glob']
+    EXCLUDE_PATTERNS = common['exclude_patterns']
 
-    first_dir = ROOT_DIRS[0][0] if ROOT_DIRS else PROJECT_ROOT / category
+    first_dir = common['first_dir']
     TOC_WORK_DIR = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), first_dir, PROJECT_ROOT)
     CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'), first_dir, PROJECT_ROOT)
     TOC_FILE = resolve_config_path(CONFIG.get('toc_file', f'{category}_toc.yaml'), first_dir, PROJECT_ROOT)
-    PATTERNS_CONFIG = CONFIG.get('patterns', {})
-    TARGET_GLOB = PATTERNS_CONFIG.get('target_glob', '**/*.md')
-    # System patterns (always excluded) + user-defined patterns
-    EXCLUDE_PATTERNS = get_system_exclude_patterns(category) + PATTERNS_CONFIG.get('exclude', [])
     DOC_TYPES_MAP = CONFIG.get('doc_types_map', {})
     return True
 
@@ -155,14 +130,15 @@ def determine_doc_type(root_dir_name):
 
 def get_pending_template():
     """Get the pending YAML template for the current category"""
-    if CATEGORY == 'specs':
-        return PENDING_TEMPLATE_SPECS
-    return PENDING_TEMPLATE_RULES
+    return PENDING_TEMPLATE
 
 
 def has_substantive_content(filepath, min_content_lines=1):
     """
     Check if file has content beyond headers, blank lines, and frontmatter.
+
+    frontmatter はファイル先頭の '---' で開始し、次の '---' で終了する
+    ステートマシン方式で判定（先頭以外の '---' は通常行として扱う）。
 
     Args:
         filepath: Path to the file
@@ -180,18 +156,30 @@ def has_substantive_content(filepath, min_content_lines=1):
     if not content.strip():
         return False  # Empty file
 
+    # ステートマシン: 'before_start' → 'in_frontmatter' → 'after_frontmatter'
+    # 先頭行（空行を除く）が '---' の場合のみ frontmatter 開始
+    state = 'before_start'
     content_lines = 0
-    in_frontmatter = False
     for line in content.splitlines():
         stripped = line.strip()
 
-        # YAML frontmatter delimiter
-        if stripped == '---':
-            in_frontmatter = not in_frontmatter
-            continue
-        if in_frontmatter:
+        if state == 'before_start':
+            # 先頭の空行はスキップ
+            if not stripped:
+                continue
+            if stripped == '---':
+                state = 'in_frontmatter'
+                continue
+            else:
+                # 先頭が '---' でない → frontmatter なし
+                state = 'after_frontmatter'
+                # fall through してこの行を評価
+        elif state == 'in_frontmatter':
+            if stripped == '---':
+                state = 'after_frontmatter'
             continue
 
+        # state == 'after_frontmatter'
         # Skip empty lines and header-only lines
         if not stripped or stripped.startswith('#'):
             continue
@@ -220,48 +208,6 @@ def get_all_md_files():
 
     md_files.sort()
     return md_files, file_root_map
-
-
-def calculate_file_hash(filepath):
-    """
-    Calculate SHA256 hash of file
-
-    Returns:
-        str: Hash value, None on error
-    """
-    try:
-        with open(filepath, "rb") as f:
-            return hashlib.sha256(f.read()).hexdigest()
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: File read error: {filepath} - {e}")
-        return None
-
-
-def load_checksums():
-    """Load existing checksum file (standard library only)"""
-    if not CHECKSUMS_FILE.exists():
-        return {}
-
-    checksums = {}
-    try:
-        with open(CHECKSUMS_FILE, "r", encoding="utf-8") as f:
-            in_checksums = False
-            for line in f:
-                stripped = line.strip()
-                if stripped == "checksums:":
-                    in_checksums = True
-                    continue
-                if in_checksums and stripped and not stripped.startswith("#"):
-                    match = re.match(r"^\s+(.+?):\s*([a-f0-9]+)\s*$", line)
-                    if match:
-                        filepath = match.group(1)
-                        hash_val = match.group(2)
-                        checksums[filepath] = hash_val
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to read checksums file: {e}")
-        return {}
-
-    return checksums
 
 
 def get_source_file_path(md_file, root_dir, root_dir_name):
@@ -355,7 +301,7 @@ def main():
             return 0
         if not CHECKSUMS_FILE.exists():
             return 0
-        old_checksums = load_checksums()
+        old_checksums = load_checksums(CHECKSUMS_FILE)
         all_files, file_root_map = get_all_md_files()
         current_files = {}
         for f in all_files:
@@ -409,7 +355,7 @@ def main():
         print(f"Full mode: processing {len(target_files)} files")
     else:
         # Incremental mode: changed files only
-        old_checksums = load_checksums()
+        old_checksums = load_checksums(CHECKSUMS_FILE)
         current_files = {}
         for f in all_files:
             root_dir, root_dir_name = file_root_map[f]
@@ -446,6 +392,9 @@ def main():
         if not target_files and deleted_files:
             print(f"\nDeleted files only: {len(deleted_files)} files")
             print("Use --delete-only with merge script")
+            # Phase 1 スナップショットを保存（delete-only merge 後のチェックサム更新用）
+            TOC_WORK_DIR.mkdir(parents=True, exist_ok=True)
+            save_pending_checksums(all_files, file_root_map)
             return 0
 
         print(f"\nIncremental mode: {len(target_files)} changes, {len(deleted_files)} deletions")

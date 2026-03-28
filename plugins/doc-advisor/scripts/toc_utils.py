@@ -893,24 +893,24 @@ def backup_existing_file(file_path):
 
 def load_checksums(checksums_file):
     """
-    Get file list from checksum file
+    チェックサムファイルを読み込み、ファイルパス→ハッシュ値の辞書を返す
 
     Args:
         checksums_file: Path to checksum file (str or Path)
 
     Returns:
-        set: Set of file paths
+        dict: ファイルパス → ハッシュ値のマッピング
     """
     checksums_file = Path(checksums_file)
 
     if not checksums_file.exists():
-        return set()
+        return {}
 
     try:
         with open(checksums_file, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        files = set()
+        checksums = {}
         in_checksums = False
         for line in content.split('\n'):
             stripped = line.strip()
@@ -929,13 +929,14 @@ def load_checksums(checksums_file):
                     parts = stripped.rsplit(': ', 1)
                     if len(parts) == 2:
                         filepath = parts[0].strip()
-                        files.add(filepath)
+                        hash_val = parts[1].strip()
+                        checksums[filepath] = hash_val
 
-        return files
+        return checksums
     except (FileNotFoundError, ValueError, KeyError) as e:
         print(f"Warning: Checksum file read error: {e}")
         print("Fallback: Skipping deletion detection")
-        return set()
+        return {}
 
 
 def cleanup_work_dir(work_dir):
@@ -1111,3 +1112,57 @@ def rglob_follow_symlinks(root_dir, pattern):
         # 非再帰モードの場合は最初のディレクトリのみ
         if not recursive:
             break
+
+
+def init_common_config(category):
+    """
+    スクリプト共通の設定初期化を行い、計算済みの設定値を辞書で返す。
+
+    各スクリプトの init_config() から呼び出して共通ロジックを集約する。
+
+    Args:
+        category: 'rules' or 'specs'
+
+    Returns:
+        dict: 以下のキーを含む設定辞書
+            - config: load_config() の結果
+            - project_root: プロジェクトルート Path
+            - root_dirs: [(root_dir_path, root_dir_name), ...] のリスト
+            - first_dir: 最初の root_dir（フォールバック用）
+            - patterns_config: patterns セクション dict
+            - target_glob: ターゲット glob パターン
+            - exclude_patterns: 除外パターンリスト
+
+    Raises:
+        RuntimeError: プロジェクトルートが見つからない場合
+        FileNotFoundError: 設定ファイルが見つからない場合
+    """
+    config = load_config(category)
+    project_root = get_project_root()
+
+    default_dir = f'{category}/'
+    root_dirs_config = config.get('root_dirs', [default_dir])
+    if isinstance(root_dirs_config, str):
+        root_dirs_config = [root_dirs_config]
+    root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)
+
+    root_dirs = []
+    for entry in root_dirs_config:
+        name = entry.rstrip('/')
+        root_dirs.append((project_root / name, name))
+
+    first_dir = root_dirs[0][0] if root_dirs else project_root / category
+
+    patterns_config = config.get('patterns', {})
+    target_glob = patterns_config.get('target_glob', '**/*.md')
+    exclude_patterns = get_system_exclude_patterns(category) + patterns_config.get('exclude', [])
+
+    return {
+        'config': config,
+        'project_root': project_root,
+        'root_dirs': root_dirs,
+        'first_dir': first_dir,
+        'patterns_config': patterns_config,
+        'target_glob': target_glob,
+        'exclude_patterns': exclude_patterns,
+    }

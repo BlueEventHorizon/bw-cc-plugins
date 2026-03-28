@@ -20,9 +20,10 @@ ToC 検査スクリプト（rules / specs 共通）
 """
 
 import sys
+import argparse
 from pathlib import Path
 
-from toc_utils import get_project_root, load_config, resolve_config_path, validate_path_within_base, expand_root_dir_globs
+from toc_utils import get_project_root, load_config, resolve_config_path, validate_path_within_base, expand_root_dir_globs, load_existing_toc
 
 # Global configuration (initialized in init_config())
 CATEGORY = None  # 'rules' or 'specs'
@@ -71,80 +72,6 @@ def init_config(category):
         CONFIG.get('toc_file', f'{category}_toc.yaml'), CATEGORY_DIR, PROJECT_ROOT
     )
     return True
-
-
-def load_existing_toc(toc_path):
-    """既存の {category}_toc.yaml を読み込み（docs: セクション形式対応）"""
-    if not toc_path.exists():
-        return {}
-
-    try:
-        with open(toc_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to read {toc_path}: {e}")
-        return {}
-
-    docs = {}
-    current_section = None
-    current_path = None
-    current_entry = {}
-    current_list = None
-
-    for line in content.split('\n'):
-        stripped = line.strip()
-
-        if stripped.startswith('#') or not stripped:
-            continue
-
-        # セクション検出
-        if stripped == 'docs:':
-            current_section = 'docs'
-            continue
-        elif stripped.startswith('metadata:'):
-            current_section = 'metadata'
-            continue
-
-        # docs セクション内のエントリ解析
-        if current_section == 'docs':
-            # ファイルパスキーの検出（2スペースインデントで : で終わる）
-            if line.startswith('  ') and not line.startswith('    ') and stripped.endswith(':'):
-                # 前のエントリを保存
-                if current_path and current_entry:
-                    docs[current_path] = current_entry
-                current_path = stripped.rstrip(':')
-                # Handle quoted YAML keys: "path/to/file.md"
-                if current_path.startswith('"') and current_path.endswith('"'):
-                    current_path = current_path[1:-1]
-                current_entry = {}
-                current_list = None
-
-            # エントリのフィールド解析
-            elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
-                if current_path:
-                    key, _, val = stripped.partition(':')
-                    key = key.strip()
-                    val = val.strip().strip('"\'')
-                    if val == '[]':
-                        # Inline empty array (e.g., "keywords: []")
-                        current_list = []
-                        current_entry[key] = current_list
-                    elif val:
-                        current_entry[key] = val
-                    else:
-                        current_list = []
-                        current_entry[key] = current_list
-
-            # リスト項目
-            elif stripped.startswith('- ') and current_list is not None:
-                item = stripped[2:].strip().strip('"\'')
-                current_list.append(item)
-
-    # 最後のエントリを保存
-    if current_path and current_entry:
-        docs[current_path] = current_entry
-
-    return docs
 
 
 def validate_toc(toc_path):
@@ -248,40 +175,34 @@ def validate_toc(toc_path):
         return True
 
 
+def parse_args():
+    """Parse command-line arguments"""
+    parser = argparse.ArgumentParser(
+        description='Validate generated ToC YAML file'
+    )
+    parser.add_argument('--category', required=True, choices=['rules', 'specs'],
+                        help='検査対象カテゴリ: rules or specs')
+    parser.add_argument('--file', default=None,
+                        help='検査対象ファイルパス（デフォルト: 設定から自動解決）')
+    return parser.parse_args()
+
+
 def main():
-    # --category オプションの処理（必須）
-    if '--category' not in sys.argv:
-        print("エラー: --category rules|specs が必要です", file=sys.stderr)
-        print("使用方法: python3 validate_toc.py --category rules|specs [--file PATH]",
-              file=sys.stderr)
-        return 1
-
-    category_idx = sys.argv.index('--category')
-    if category_idx + 1 >= len(sys.argv):
-        print("エラー: --category に値が指定されていません", file=sys.stderr)
-        return 1
-
-    category = sys.argv[category_idx + 1]
-    if category not in ('rules', 'specs'):
-        print(f"エラー: --category は rules または specs を指定してください（指定値: {category}）",
-              file=sys.stderr)
-        return 1
+    args = parse_args()
 
     # Initialize configuration
-    if not init_config(category):
+    if not init_config(args.category):
         return 1
 
     # --file オプションの処理
     toc_path = DEFAULT_TOC_FILE
-    if '--file' in sys.argv:
-        idx = sys.argv.index('--file')
-        if idx + 1 < len(sys.argv):
-            toc_path = Path(sys.argv[idx + 1])
-            try:
-                toc_path = validate_path_within_base(toc_path, PROJECT_ROOT)
-            except ValueError:
-                print(f"エラー: 不正なパス: {toc_path}")
-                return 1
+    if args.file:
+        toc_path = Path(args.file)
+        try:
+            toc_path = validate_path_within_base(toc_path, PROJECT_ROOT)
+        except ValueError:
+            print(f"エラー: 不正なパス: {toc_path}")
+            return 1
 
     if not toc_path.exists():
         print(f"エラー: ファイルが存在しません: {toc_path}")

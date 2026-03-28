@@ -13,11 +13,10 @@ rules/ または specs/ 配下の全 .md ファイルの SHA-256 ハッシュを
 
 import sys
 import argparse
-import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-from toc_utils import get_project_root, load_config, should_exclude, resolve_config_path, get_system_exclude_patterns, rglob_follow_symlinks, normalize_path, expand_root_dir_globs
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash
 
 # Global configuration (initialized in init_config())
 CATEGORY = None  # 'rules' or 'specs'
@@ -56,52 +55,22 @@ def init_config(category):
     CATEGORY = category
 
     try:
-        CONFIG = load_config(category)
-        PROJECT_ROOT = get_project_root()
-    except RuntimeError as e:
-        print(f"Error: {e}")
-        return False
-    except FileNotFoundError as e:
+        common = init_common_config(category)
+    except (RuntimeError, FileNotFoundError) as e:
         print(f"Error: {e}")
         return False
 
-    default_dir = f'{category}/'
-    root_dirs_config = CONFIG.get('root_dirs', [default_dir])
-    if isinstance(root_dirs_config, str):
-        root_dirs_config = [root_dirs_config]
-    # Expand glob patterns in root_dirs (e.g., "specs/*/requirements/")
-    root_dirs_config = expand_root_dir_globs(root_dirs_config, PROJECT_ROOT)
-    ROOT_DIRS = []
-    for entry in root_dirs_config:
-        name = entry.rstrip('/')
-        ROOT_DIRS.append((PROJECT_ROOT / name, name))
+    CONFIG = common['config']
+    PROJECT_ROOT = common['project_root']
+    ROOT_DIRS = common['root_dirs']
+    PATTERNS_CONFIG = common['patterns_config']
+    TARGET_GLOB = common['target_glob']
+    EXCLUDE_PATTERNS = common['exclude_patterns']
 
-    first_dir = ROOT_DIRS[0][0] if ROOT_DIRS else PROJECT_ROOT / category
+    first_dir = common['first_dir']
     CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'),
                                           first_dir, PROJECT_ROOT)
-    PATTERNS_CONFIG = CONFIG.get('patterns', {})
-    TARGET_GLOB = PATTERNS_CONFIG.get('target_glob', '**/*.md')
-    # System patterns (always excluded) + user-defined patterns
-    EXCLUDE_PATTERNS = get_system_exclude_patterns(category) + PATTERNS_CONFIG.get('exclude', [])
     return True
-
-
-def calculate_file_hash(filepath):
-    """
-    ファイルの SHA-256 ハッシュを計算
-
-    Returns:
-        str: ハッシュ値、エラー時はNone
-    """
-    try:
-        sha256 = hashlib.sha256()
-        with open(filepath, 'rb') as f:
-            for chunk in iter(lambda: f.read(8192), b''):
-                sha256.update(chunk)
-        return sha256.hexdigest()
-    except (IOError, OSError, PermissionError) as e:
-        print(f"⚠️ ファイル読み込みエラー: {filepath} - {e}")
-        return None
 
 
 def find_md_files(root_dir, exclude_patterns, target_glob="**/*.md"):

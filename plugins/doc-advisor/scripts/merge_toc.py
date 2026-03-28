@@ -17,23 +17,23 @@ Options:
     --delete-only  Apply deletions without .toc_work/
 """
 
+import os
 import sys
 import argparse
+import tempfile
 from datetime import datetime, timezone
 
 from toc_utils import (
-    get_project_root,
-    load_config,
+    init_common_config,
     load_entry_file,
     yaml_escape,
     backup_existing_file,
     load_checksums,
+    load_existing_toc,
     should_exclude,
     resolve_config_path,
-    get_system_exclude_patterns,
     rglob_follow_symlinks,
     normalize_path,
-    expand_root_dir_globs,
 )
 
 # Global configuration (initialized in init_config())
@@ -80,107 +80,24 @@ def init_config(category):
     CATEGORY = category
 
     try:
-        CONFIG = load_config(category)
-        PROJECT_ROOT = get_project_root()
-    except RuntimeError as e:
-        print(f"Error: {e}")
-        return False
-    except FileNotFoundError as e:
+        common = init_common_config(category)
+    except (RuntimeError, FileNotFoundError) as e:
         print(f"Error: {e}")
         return False
 
-    default_dir = f'{category}/'
-    root_dirs_config = CONFIG.get('root_dirs', [default_dir])
-    if isinstance(root_dirs_config, str):
-        root_dirs_config = [root_dirs_config]
-    # Expand glob patterns in root_dirs (e.g., "specs/*/requirements/")
-    root_dirs_config = expand_root_dir_globs(root_dirs_config, PROJECT_ROOT)
-    ROOT_DIRS = []
-    for entry in root_dirs_config:
-        name = entry.rstrip('/')
-        ROOT_DIRS.append((PROJECT_ROOT / name, name))
+    CONFIG = common['config']
+    PROJECT_ROOT = common['project_root']
+    ROOT_DIRS = common['root_dirs']
+    PATTERNS_CONFIG = common['patterns_config']
+    TARGET_GLOB = common['target_glob']
+    EXCLUDE_PATTERNS = common['exclude_patterns']
 
-    first_dir = ROOT_DIRS[0][0] if ROOT_DIRS else PROJECT_ROOT / category
+    first_dir = common['first_dir']
     TOC_WORK_DIR = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), first_dir, PROJECT_ROOT)
     OUTPUT_FILE = resolve_config_path(CONFIG.get('toc_file', f'{category}_toc.yaml'), first_dir, PROJECT_ROOT)
     CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'), first_dir, PROJECT_ROOT)
     OUTPUT_CONFIG = CONFIG.get('output', {})
-    PATTERNS_CONFIG = CONFIG.get('patterns', {})
-    TARGET_GLOB = PATTERNS_CONFIG.get('target_glob', '**/*.md')
-    # System patterns (always excluded) + user-defined patterns
-    EXCLUDE_PATTERNS = get_system_exclude_patterns(category) + PATTERNS_CONFIG.get('exclude', [])
     return True
-
-
-def load_existing_toc(toc_path):
-    """Load existing {category}_toc.yaml"""
-    if not toc_path.exists():
-        return {}
-
-    try:
-        with open(toc_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to read {toc_path}: {e}")
-        return {}
-
-    docs = {}
-    current_section = None
-    current_path = None
-    current_entry = {}
-    current_list = None
-
-    for line in content.split('\n'):
-        stripped = line.strip()
-
-        if stripped.startswith('#') or not stripped:
-            continue
-
-        if stripped == 'docs:':
-            current_section = 'docs'
-            continue
-        elif stripped.startswith('metadata:'):
-            current_section = 'metadata'
-            continue
-
-        if current_section != 'docs':
-            continue
-
-        # Detect file path as key (2-space indent)
-        if line.startswith('  ') and not line.startswith('    '):
-            key_candidate = stripped.rstrip(':')
-            # Handle quoted YAML keys: "path/to/file.md"
-            if key_candidate.startswith('"') and key_candidate.endswith('"'):
-                key_candidate = key_candidate[1:-1]
-            if key_candidate.endswith('.md'):
-                if current_path and current_entry:
-                    docs[current_path] = current_entry
-                current_path = key_candidate
-                current_entry = {}
-                current_list = None
-        elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
-            if current_path:
-                key, _, val = stripped.partition(':')
-                key = key.strip()
-                val = val.strip().strip('"\'')
-                if val == '[]':
-                    # Inline empty array (e.g., "keywords: []")
-                    current_list = []
-                    current_entry[key] = current_list
-                elif val:
-                    current_entry[key] = val
-                    current_list = None
-                else:
-                    current_list = []
-                    current_entry[key] = current_list
-        elif stripped.startswith('- ') and current_list is not None:
-            item = stripped[2:].strip().strip('"\'')
-            current_list.append(item)
-
-    if current_path and current_entry:
-        docs[current_path] = current_entry
-
-    return docs
 
 
 def get_existing_files():
@@ -241,9 +158,21 @@ def write_yaml_output(docs, output_path):
                 for item in entry[key]:
                     lines.append(f"      - {yaml_escape(item)}")
 
+    # 一時ファイルに書き込んでから rename する（書き込み途中の異常でファイルが壊れるのを防止）
     try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines) + '\n')
+        output_dir = output_path.parent
+        fd, tmp_path = tempfile.mkstemp(dir=str(output_dir), suffix='.tmp', prefix='.toc_')
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+            os.replace(tmp_path, str(output_path))
+        except BaseException:
+            # 書き込み失敗時は一時ファイルを削除
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
         return True
     except (IOError, OSError, PermissionError) as e:
         print(f"Error: Failed to write file: {output_path} - {e}")
@@ -266,7 +195,7 @@ def delete_only_mode():
     docs = load_existing_toc(OUTPUT_FILE)
 
     # Delete entries that exist in checksums but file doesn't exist
-    checksum_files = load_checksums(CHECKSUMS_FILE)
+    checksum_files = set(load_checksums(CHECKSUMS_FILE).keys())
     existing_files = get_existing_files()
     deleted_files = checksum_files - existing_files
 
@@ -315,7 +244,7 @@ def merge_toc_files(mode='full'):
     if mode == 'incremental':
         docs = load_existing_toc(OUTPUT_FILE)
         # Delete entries that exist in checksums but file doesn't exist
-        checksum_files = load_checksums(CHECKSUMS_FILE)
+        checksum_files = set(load_checksums(CHECKSUMS_FILE).keys())
         deleted_files = checksum_files - existing_files
         for del_file in deleted_files:
             if del_file in docs:
