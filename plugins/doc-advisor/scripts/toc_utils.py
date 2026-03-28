@@ -52,7 +52,12 @@ def normalize_path(path_str):
 
 def get_project_root():
     """
-    Detect project root (searches for .git or .claude directory)
+    Detect project root directory.
+
+    3-stage fallback:
+    1. CLAUDE_PROJECT_DIR environment variable (set by Claude Code)
+    2. Traverse from CWD upward looking for .git or .claude directory
+    3. RuntimeError if not found
 
     Returns:
         Path: Path to project root
@@ -60,18 +65,24 @@ def get_project_root():
     Raises:
         RuntimeError: When project root cannot be found
     """
-    current = Path(__file__).parent.absolute()
+    # Stage 1: CLAUDE_PROJECT_DIR
+    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if project_dir:
+        p = Path(project_dir)
+        if p.is_dir():
+            return p
 
-    # Search up to 10 levels
-    for _ in range(10):
-        if (current / ".git").exists() or (current / ".claude").exists():
-            return current
-        parent = current.parent
-        if parent == current:
-            break
-        current = parent
+    # Stage 2: CWD upward traversal
+    current = Path.cwd().resolve()
+    for parent in [current] + list(current.parents):
+        if (parent / ".git").exists() or (parent / ".claude").exists():
+            return parent
 
-    raise RuntimeError("Project root not found (.git or .claude directory required)")
+    # Stage 3: Error
+    raise RuntimeError(
+        "Project root not found.\n"
+        "Set CLAUDE_PROJECT_DIR environment variable or run from project root."
+    )
 
 
 def validate_path_within_base(path, base_dir):
@@ -139,13 +150,14 @@ def find_config_file():
     Raises:
         FileNotFoundError: When no configuration file is found
     """
-    doc_structure = Path.cwd() / ".doc_structure.yaml"
+    project_root = get_project_root()
+    doc_structure = project_root / ".doc_structure.yaml"
     if doc_structure.exists():
         return doc_structure
 
     raise FileNotFoundError(
         ".doc_structure.yaml not found.\n"
-        "Run /forge:setup-doc-structure to create document structure configuration."
+        "Run /forge:setup-doc-structure to create it."
     )
 
 
@@ -166,7 +178,7 @@ def load_config(category=None):
 
     try:
         config_path = find_config_file()
-    except FileNotFoundError:
+    except (FileNotFoundError, RuntimeError):
         if category:
             return defaults.get(category, {})
         return defaults

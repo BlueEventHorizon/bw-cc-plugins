@@ -188,7 +188,7 @@ tasks:
   - task_id: TASK-008
     title: toc_utils.py プラグイン環境対応（get_project_root 3段階フォールバック）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-007
