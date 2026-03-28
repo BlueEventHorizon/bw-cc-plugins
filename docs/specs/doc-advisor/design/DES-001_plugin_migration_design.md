@@ -345,17 +345,17 @@ config = _deep_merge(defaults, doc_structure)   # doc_structure が defaults を
 
 reference テンプレートの check_doc_structure.sh（`check_config.sh` から改名済み）は既に `.doc_structure.yaml` のみをチェックする実装に更新済み。プラグイン移行時の変更は不要。
 
-### 5.4 エージェント名前空間
+### 5.4 エージェント名前空間 [確定]
 
-`toc_orchestrator.md` / `toc_update_workflow.md` 内の `Task(subagent_type: toc-updater)` 参照（14箇所）について、プラグイン内エージェントの名前空間解決仕様が未確定。
+`toc_orchestrator.md` / `toc_update_workflow.md` 内の `Task(subagent_type: toc-updater)` 参照（14箇所）について。
 
-**事前調査**: Phase 1（基盤構築）の開始前に `claude-code-guide` agent でプラグイン内エージェントの名前空間仕様を確認する。
+**調査結果（TASK-001）**: Claude Code 公式ドキュメントにより **名前空間付き `doc-advisor:toc-updater` が必要** と確定。プラグイン内エージェントは `{plugin-name}:{agent-name}` 形式で参照される。名前空間なし `toc-updater` はプロジェクトレベル（`.claude/agents/`）が優先されるため、プラグイン内エージェントを確実に参照するには名前空間付きが必須。
 
-**対応方針**: 調査結果に基づき実装する。調査で判明しない場合は、まず `toc-updater`（名前空間なし）で実装し、Phase 7 の統合テストで動作確認する。失敗した場合は `doc-advisor:toc-updater` に変更する。
+**対応**: 14箇所全てを `doc-advisor:toc-updater` に更新する。
 
-**切り替え対象リスト**（14箇所）:
-- `docs/toc_orchestrator.md`: subagent_type 指定（6箇所）+ 説明参照（3箇所）= 9箇所
-- `docs/toc_update_workflow.md`: subagent_type 指定（2箇所）+ 説明参照（3箇所）= 5箇所
+**変更対象リスト**（14箇所）:
+- `docs/toc_orchestrator.md`: `subagent_type: doc-advisor:toc-updater`（6箇所）+ 説明参照（3箇所）= 9箇所
+- `docs/toc_update_workflow.md`: `subagent_type: doc-advisor:toc-updater`（2箇所）+ 説明参照（3箇所）= 5箇所
 
 ### 5.5 バージョン識別子の除去
 
@@ -420,9 +420,12 @@ forge:clean-rules  ──呼び出し──>  doc-advisor:create-rules-toc
 }
 ```
 
-**仕様確認**: plugin.json に `settings` セクションでパーミッションを宣言できるかは、Phase 1 開始前に `claude-code-guide` agent で確認する。宣言できない場合の代替手段:
-- プラグインの README.md にパーミッション設定手順を記載
-- 初回スキル実行時に必要なパーミッションが自動プロンプトされる（Claude Code 標準動作）ことを案内
+**調査結果（TASK-002）**: plugin.json でのパーミッション宣言は **不可** と確定。plugin.json にパーミッション系セクションは存在しない。プラグイン独自 settings.json は `agent` キーのみサポート。
+
+**対応策**:
+- README.md に「インストール後の設定」セクションを追加し、上記パーミッションの設定手順を記載
+- 初回スキル実行時に Claude Code 標準のパーミッションプロンプトが表示されることを案内
+- `${CLAUDE_PLUGIN_ROOT}` は SKILL.md 内で展開されるが、settings.json パーミッション定義内での展開は不確実。ユーザー向けには実際のパスでの記載を案内する
 
 ## 7. ファイル移行マッピング
 
