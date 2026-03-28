@@ -5,5 +5,6 @@
   "author": {
     "name": "moons"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "skills": "./skills/"
 }
