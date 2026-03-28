@@ -210,7 +210,7 @@ tasks:
   - task_id: TASK-009
     title: ユニットテスト移行（toc_utils + merge + write_pending + checksums）
     priority: 55
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-008
@@ -232,7 +232,7 @@ tasks:
   - task_id: TASK-009b
     title: ユニットテスト移行（残り3ファイル + setup_upgrade テスト）
     priority: 55
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-008
@@ -251,7 +251,7 @@ tasks:
   - task_id: TASK-010
     title: 統合テスト + プラグイン環境テスト
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-008
