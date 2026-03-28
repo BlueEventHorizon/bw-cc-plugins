@@ -59,11 +59,11 @@ graph TD
 
 ### 1.3 ルール文書・既存仕様の取得 [MANDATORY]
 
-1. **`/query-rules`** でルール文書を特定（利用可能な場合）
+1. **`/doc-advisor:query-rules`** でルール文書を特定（利用可能な場合）
    - タスク内容: Figma デザインからの要件定義書作成
    - Skill 利用不可の場合は Glob で `docs/rules/` を探索
 
-2. **`/query-specs`** で既存要件定義書・設計書を確認（利用可能な場合）
+2. **`/doc-advisor:query-specs`** で既存要件定義書・設計書を確認（利用可能な場合）
    - タスク内容: Figma デザインからの要件定義書作成
    - Skill 利用不可の場合は Glob で specs 配下を探索
 
@@ -214,7 +214,7 @@ Figma から抽出した画像の扱い:
 
 ### 5.4 specs ToC 更新
 
-`.claude/skills/create-specs-toc/SKILL.md` が存在する場合のみ `/create-specs-toc` を実行する。
+`/doc-advisor:create-specs-toc` が利用可能であれば実行する。
 
 ### 5.5 commit/push 確認
 
