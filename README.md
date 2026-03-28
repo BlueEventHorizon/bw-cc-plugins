@@ -11,6 +11,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | **forge** | 0.0.26  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
+| **doc-advisor** | 0.1.0 | AI-searchable document index (ToC) generator for Claude Code |
 
 ## Skills
 
@@ -21,7 +22,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | Skill | Description | Trigger |
 |-------|-------------|---------|
 | [**review**](docs/readme/README_forge.md#review) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`. 5 types | `"レビュー"` `"review"` |
-| [**setup-doc-structure**](docs/readme/README_forge.md#setup-doc-structure) | Interactively generate `.doc_structure.yaml`. Prerequisite for other forge skills | `"forge の初期設定"` |
+| [**setup-doc-structure**](docs/readme/README_forge.md#setup-doc-structure) | Generate `.doc_structure.yaml` + scaffold missing doc directories | `"forge の初期設定"` |
 | [**start-requirements**](docs/readme/README_forge.md#start-requirements) | Create requirements docs via dialog, reverse-engineering, or Figma | `/forge:start-requirements` |
 | [**start-design**](docs/readme/README_forge.md#start-design) | Create design documents from requirements | `"設計書作成"` |
 | [**start-plan**](docs/readme/README_forge.md#start-plan) | Create or update implementation plan from design documents | `"計画書作成"` |
@@ -53,6 +54,15 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 |-------|-------------|---------|
 | [**build**](docs/readme/README_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"ビルド"` `"build"` |
 | [**test**](docs/readme/README_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"テスト"` `"test"` |
+
+### doc-advisor
+
+| Skill | Description | Trigger |
+|-------|-------------|---------|
+| [**query-rules**](#) | Search the pre-analyzed rules document index (ToC) to identify relevant rule documents | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](#) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
+| [**create-rules-toc**](#) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
+| [**create-specs-toc**](#) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 

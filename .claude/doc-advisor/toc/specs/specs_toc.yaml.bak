@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-19T23:47:26Z
+  generated_at: 2026-03-21T14:03:47Z
   file_count: 16
 
 docs:
@@ -271,30 +271,33 @@ docs:
       - subagent coordination
   docs/specs/forge/design/review_perspective_split_design.md:
     doc_type: design
-    title: Reviewer Perspective Split Design
-    purpose: Redesigns the reviewer agent to split review criteria by perspective and execute specialized agents in parallel to improve review quality and depth
+    title: reviewer Perspective Split Design
+    purpose: Defines the design for splitting reviewer agent by perspective to improve review quality through parallel evaluation of multiple review criteria
     content_details:
-      - review_criteria file split by perspective with directory organization
-      - Three-layer fallback mechanism redesign (DocAdvisor, review-config.yaml, plugin defaults)
-      - perspectives object schema definition and refs.yaml integration
-      - Multiple reviewer agent parallel execution and result management
-      - Perspective definitions for requirement, design, plan, code, and generic review types
-      - extract_review_findings.py extension for multiple file merge support
-      - write_refs.py validation for review_criteria_path and perspectives exclusivity
+      - Perspective-based review criteria split
+      - Multiple reviewer agent parallel execution
+      - Evaluator parallel execution by perspective
+      - Deduplication and integration of multiple review results
+      - plan.yaml schema changes for recommendation and perspective tracking
+      - extract_review_findings.py multi-file merge implementation
+      - review_criteria files split into requirement, design, plan, code, generic perspectives
     applicable_tasks:
-      - Implement reviewer subagent for perspective-based review
-      - Develop review orchestrator for perspective composition and parallel launching
-      - Define Perspective sections in review_criteria files
-      - Extend extract_review_findings.py for multi-file merging
-      - Implement write_refs.py validation logic
+      - Review system refactoring
+      - Code review perspective implementation
+      - Design document review enhancement
+      - Plan and requirement review improvement
+      - Review pipeline execution
+      - Reviewer agent parallel orchestration
     keywords:
-      - reviewer perspective
-      - parallel agent execution
-      - review_criteria split
-      - fallback mechanism
-      - extractReviewFindings
-      - sessionFormat
-      - refs.yaml
+      - perspective
+      - parallel review
+      - reviewer agent
+      - evaluation
+      - deduplication
+      - review criteria
+      - session format
+      - plan.yaml
+      - extract_review_findings
   docs/specs/forge/design/review_workflow_design.md:
     doc_type: design
     title: Review Workflow Design
@@ -418,31 +421,34 @@ docs:
   docs/specs/forge/requirement/orchestrator_pattern.md:
     doc_type: requirement
     title: Orchestrator Pattern Requirement
-    purpose: Defines orchestrator design pattern for forge plugins to address context consumption, precision degradation, and sequential processing limitations
+    purpose: Specifies orchestrator design pattern requirements for forge plugin skills to decompose God-Skill problems through delegation and session-based communication
     content_details:
-      - "Background: context consumption, precision degradation, parallel processing limitations"
-      - "FNC-001: Orchestrator design with delegation to subagent"
-      - "FNC-002: Session directory communication protocol"
-      - "FNC-003: Self-contained reference documents"
-      - "FNC-004: Parallel-executable structure for independent surveys"
-      - "FNC-005: Document format selection criteria (YAML vs Markdown)"
-      - "FNC-006: Common completion flow (review, ToC update, commit)"
-      - "FNC-007: User input interpretation by AI"
+      - God-Skill problems (context consumption, instruction tracking, parallelization)
+      - FNC-001 Orchestrator design pattern with delegation
+      - FNC-002 Session directory communication protocol
+      - FNC-003 Self-contained reference documents
+      - FNC-004 Parallelizable independent work phases
+      - FNC-005 Document format selection criteria (YAML for structured, Markdown for expressive)
+      - FNC-006 Common completion flow (review, ToC, commit)
+      - FNC-007 AI-driven user input interpretation
+      - Orchestrator vs agent responsibilities and separation of concerns
+      - Session directory initialization and data exchange patterns
     applicable_tasks:
-      - Orchestrator skill design
-      - Session directory communication implementation
-      - Document generation workflow design
-      - User input handling design
-      - Agent delegation pattern implementation
+      - Orchestrator skill design and implementation
+      - Agent skill creation with delegation
+      - Skill refactoring from monolithic to delegated patterns
+      - Document format standardization
+      - Session protocol implementation
+      - Parallel work phase design
     keywords:
       - orchestrator
       - God-Skill
-      - context consumption
-      - session directory
       - delegation
+      - session directory
       - parallel execution
-      - YAML
-      - Markdown format selection
+      - YAML format
+      - subagent
+      - FNC requirements
   docs/specs/forge/requirement/skill_monitor_requirement.md:
     doc_type: requirement
     title: skill_monitor Requirement Definition

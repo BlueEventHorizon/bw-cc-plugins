@@ -72,12 +72,12 @@ plugins/forge/skills/clean-rules/
   SKILL.md
   docs/
     taxonomy.md              # 上記分類学の定義（AI が参照する判定基準）
-  scripts/
-    list_forge_docs.py       # forge 内蔵 docs のメタデータ一覧を JSON 出力
 
-tests/forge/clean-rules/
-  __init__.py
-  test_list_forge_docs.py
+plugins/forge/skills/query-forge-rules/
+  SKILL.md                   # forge 内蔵 docs の ToC 検索スキル
+
+plugins/forge/toc/
+  rules_toc.yaml             # forge 内蔵 docs の検索インデックス（doc-advisor で生成）
 ```
 
 ---
@@ -88,9 +88,9 @@ tests/forge/clean-rules/
 
 1. `.doc_structure.yaml` の存在確認（なければ `/forge:setup-doc-structure` を案内しエラー終了）
 2. ルール文書一覧を取得（`resolve_doc_structure.py --type rules`）
-3. forge 内蔵 docs のメタデータを取得（`list_forge_docs.py`）
+3. forge 内蔵 docs を取得（`/forge:query-forge-rules` で ToC 検索）
 4. 分類学定義を Read（`taxonomy.md`）
-5. ルール文書（ターゲット側）と forge docs（`internal: false` のもの）を全て Read
+5. ルール文書（ターゲット側）と forge docs（Step 3 で取得したパスリスト）を全て Read
 
 ### Phase 2: 分類・分析（AI）
 
@@ -125,11 +125,13 @@ AskUserQuestion で承認を取得。
 
 ---
 
-## 5. `list_forge_docs.py` 仕様
+## 5. forge 内蔵 docs の取得方式
 
-- 引数: `docs_dir`（`${CLAUDE_PLUGIN_ROOT}/docs`）
-- 出力: JSON（`status`, `docs[]` — 各 doc の `path`, `full_path`, `title`, `topics[]`, `content_type`, `internal`）
-- `internal: true` の対象: `session_format.md`, `doc_structure_format.md`, `context_gathering_spec.md`, `task_execution_spec.md`
+`/forge:query-forge-rules` スキルが `${CLAUDE_PLUGIN_ROOT}/toc/rules_toc.yaml` を検索し、
+タスクに関連する forge 内蔵ドキュメントのパスリストを返す。
+
+- ToC は doc-advisor の `/create-rules-toc` で生成後、forge docs エントリのみ抽出してコピー
+- ToC 内のパスは `plugins/forge/...` 形式。Read 時は `${CLAUDE_PLUGIN_ROOT}` 起点で解決
 
 ---
 

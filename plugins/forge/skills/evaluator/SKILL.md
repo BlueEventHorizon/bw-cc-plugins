@@ -2,10 +2,8 @@
 name: evaluator
 user-invocable: false
 description: |
-  レビュー指摘を5つの観点で吟味し、修正対象を確定する。AI専用Skill。
-  /forge:review オーケストレーターから perspective ごとに並列起動される。
-  全モード（auto / auto-critical / interactive）で AI 推奨判定と plan.yaml 更新を実行する。
-  interactive モードでは present-findings がユーザー判断で plan.yaml を上書き更新する。
+  レビュー指摘を吟味し修正/スキップ/要確認を判定する。
+  /forge:review から perspective ごとに並列起動される。
 argument-hint: "(内部使用)"
 ---
 

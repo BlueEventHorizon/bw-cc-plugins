@@ -1,9 +1,8 @@
 ---
 name: setup-version-config
 description: |
-  プロジェクトの構造をスキャンして .version-config.yaml を対話的に生成・更新する。
-  /forge:update-version を使う前提条件として実行する。初回セットアップ時またはプロジェクト構造変更時（プラグイン追加、README フォーマット変更など）に再実行して設定を更新する。
-  トリガー: "version config を作成", "バージョン設定を初期化", "setup version config", ".version-config.yaml を作る", "バージョン管理の設定"
+  プロジェクトをスキャンし、バージョンの一括更新を設定する（.version-config.yaml）。
+  トリガー: "version config を作成", "バージョン設定", "setup version config"
 user-invocable: true
 argument-hint: ""
 ---

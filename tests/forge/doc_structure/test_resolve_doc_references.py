@@ -12,12 +12,14 @@ resolve_doc_structure.py に委譲後のパス解決・CLI 動作をテストす
 
 import json
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 from pathlib import Path
+
+# テスト共通ヘルパー
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from forge.helpers import _FsTestCase as _FsTestCaseBase
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
@@ -33,21 +35,8 @@ from resolve_doc_references import (
 # テスト基底クラス
 # ---------------------------------------------------------------------------
 
-class _FsTestCase(unittest.TestCase):
+class _FsTestCase(_FsTestCaseBase):
     """ファイルシステムを使うテストの基底クラス。"""
-
-    def setUp(self):
-        self.tmpdir = Path(tempfile.mkdtemp())
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    def _write_file(self, rel_path, content=''):
-        """テスト用ファイルを作成する。"""
-        p = self.tmpdir / rel_path
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content, encoding='utf-8')
-        return p
 
     def _write_doc_structure(self, content):
         """.doc_structure.yaml を tmpdir に作成する。"""

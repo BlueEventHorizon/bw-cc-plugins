@@ -1,8 +1,7 @@
 ---
 name: create-pr
 description: |
-  現在のブランチから GitHub PR をドラフト作成する。AI専用ではなくユーザー起動。
-  PR テンプレート自動適用・コミット差分からタイトル/本文生成。gh CLI 必須。
+  コミット差分からタイトル・本文を生成し、PR を素早く作成できる。
   トリガー: "PR を作成", "プルリクエスト作成", "create-pr", "PR 出して"
 user-invocable: true
 argument-hint: "[base-branch]"

@@ -2,11 +2,8 @@
 name: present-findings
 user-invocable: false
 description: |
-  項目の段階的・対話的提示。AI専用Skill。
-  項目（レビュー指摘、検証結果、調査結果、質問への回答等）を対話3原則に従って丁寧に提示する。
-  1件でも有効（提示品質の向上）。2件以上では段階的に1件ずつ提示。
-  用途1: /forge:review Skill からのレビュー結果ファイル提示（session_dir ベース）
-  用途2: AI が分析・調査・回答で項目を提示する場合（--inline）
+  レビュー結果や調査結果を1件ずつ段階的に提示し、ユーザーの判断を仰ぐ。
+  /forge:review の対話モードまたは --inline で呼び出される。
 argument-hint: "<session_dir> | --inline"
 ---
 

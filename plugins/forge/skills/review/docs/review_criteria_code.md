@@ -1,7 +1,7 @@
 # コードレビュー観点
 
 プロジェクト固有のレビュー観点がない場合に使用するプラグインデフォルト定義。
-DocAdvisor（`/query-rules`）が利用可能な場合は、プロジェクト固有の観点が追加の perspective として加わる。
+DocAdvisor（`/doc-advisor:query-rules`）が利用可能な場合は、プロジェクト固有の観点が追加の perspective として加わる。
 
 ---
 

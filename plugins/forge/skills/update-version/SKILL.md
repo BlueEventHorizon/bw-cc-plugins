@@ -1,11 +1,8 @@
 ---
 name: update-version
 description: |
-  .version-config.yaml の設定に従いプロジェクトのバージョンを一括更新する。
-  patch / minor / major バンプまたは直接バージョン指定に対応。
-  CHANGELOG への git log 自動反映、git commit/tag 作成オプション付き。
-  前提条件: .version-config.yaml が存在すること（/forge:setup-version-config で生成）。
-  トリガー: "バージョン更新", "バージョンアップ", "version bump", "update-version", "/forge:update-version"
+  プロジェクトのバージョンを一括更新する。patch/minor/major/直接指定に対応。CHANGELOG 自動反映付き。
+  トリガー: "バージョン更新", "バージョンアップ", "version bump"
 user-invocable: true
 argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 ---

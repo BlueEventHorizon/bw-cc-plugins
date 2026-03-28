@@ -77,7 +77,9 @@ specs/
 /forge:setup-doc-structure
 ```
 
-引数なし。対話的に `.doc_structure.yaml` を生成・更新する。
+引数なし。対話的に `.doc_structure.yaml` を生成・更新する。ドキュメントディレクトリが存在しない場合は推奨構成（specs / rules / reference / adr）を提示し、選択に基づき `.gitkeep` 付きで作成する。
+
+> 既存の Feature ディレクトリは自動検出し `.doc_structure.yaml` に glob パターンで設定する。新規 Feature の空ディレクトリ作成は `start-requirements` 等が担う。
 
 ### start-requirements
 

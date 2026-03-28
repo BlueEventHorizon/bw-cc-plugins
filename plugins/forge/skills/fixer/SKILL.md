@@ -2,7 +2,7 @@
 name: fixer
 user-invocable: false
 description: |
-  レビュー指摘事項に基づきコード・文書を修正する。AI専用Skill。
+  レビュー指摘事項に基づきコード・文書を修正する。
   /forge:present-findings からの対話的修正と /forge:review --auto からの自動修正で使用。
 argument-hint: "<修正モード> (--single | --batch)"
 ---

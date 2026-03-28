@@ -1,8 +1,8 @@
 ---
 name: start-plan
 description: |
-  計画書作成ワークフロー。設計書からタスクを抽出し計画書を作成、または既存計画書を更新。
-  トリガー: "計画書作成", "計画開始", "start planning", "/forge:start-plan"
+  設計書から実装タスクを抽出し、計画書を作成・更新できる。
+  トリガー: "計画書作成", "計画開始", "start planning"
 user-invocable: true
 argument-hint: "<feature>"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
@@ -247,7 +247,7 @@ Skill が失敗した場合は Phase 3.4 のチェック項目を手動で確認
 
 ### specs ToC 更新
 
-`.claude/skills/create-specs-toc/SKILL.md` が存在する場合のみ `/create-specs-toc` を実行する（存在しない場合はスキップ）。
+`/doc-advisor:create-specs-toc` が利用可能であれば実行する（利用不可の場合はスキップ）。
 
 ### commit/push 確認
 

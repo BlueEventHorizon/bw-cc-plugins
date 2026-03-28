@@ -1,8 +1,7 @@
 ---
 name: clean-rules
 description: |
-  プロジェクトの rules/ を開発文書の分類学に基づいて分析し、forge 内蔵知識も含めて
-  プロジェクト内で読める形に体系的に再構築する。
+  ルール文書を分析し、重複や散在を解消して見つけやすくする。
   トリガー: "rules を整理", "重複ルールを削除", "clean rules", "ルールの掃除"
 user-invocable: true
 argument-hint: ""
@@ -51,13 +50,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structur
 - 0 件 → 「rules 文書が見つかりません」で正常終了
 - `status: "error"` → エラー報告して終了
 
-#### Step 3: forge 内蔵 docs のメタデータ取得
+#### Step 3: forge 内蔵 docs の取得
 
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/list_forge_docs.py" "${CLAUDE_PLUGIN_ROOT}/docs"
-```
-
-JSON 出力から `internal: false` のドキュメント一覧を取得する。
+`/forge:query-forge-rules` を呼び出し、タスク「プロジェクト rules との比較対象となる
+forge 内蔵知識の一覧」で検索する。返されたパスリストが比較対象の forge docs。
 
 #### Step 4: 分類学定義の読み込み [MANDATORY]
 
@@ -70,7 +66,7 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 #### Step 5: 全文書の読み込み
 
 - ルール文書（ターゲットプロジェクト側）を全て Read
-- forge docs（`internal: false` のもの）を全て Read
+- forge docs（Step 3 で取得したパスリスト）を全て Read
 
 情報収集完了後、以下を出力する:
 
@@ -198,8 +194,7 @@ rules/ のディレクトリ構造に変更があった場合、`.doc_structure.
 
 #### DocAdvisor ToC の更新
 
-`/create-rules-toc` Skill が利用可能か確認する（`.claude/skills/create-rules-toc/SKILL.md` の存在）。
-利用可能な場合は呼び出す。
+`/doc-advisor:create-rules-toc` Skill が利用可能であれば呼び出す。
 
 #### commit 確認
 

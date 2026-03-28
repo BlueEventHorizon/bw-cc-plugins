@@ -2,7 +2,7 @@
 name: test
 description: |
   Xcodeプロジェクトのテストを実行し、失敗を報告する。iOS/macOS を自動判定。
-  トリガー: "テスト", "test", "テストして", "/xcode:test"
+  トリガー: "テスト", "test", "テストして"
 user-invocable: true
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[scheme-name] [test-target]"
