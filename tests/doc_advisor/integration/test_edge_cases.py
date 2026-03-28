@@ -177,5 +177,95 @@ rules:
         self.assertEqual(files, [])
 
 
+# ===========================================================================
+# expand_root_dir_globs additional tests
+# ===========================================================================
+
+class TestExpandRootDirGlobs(unittest.TestCase):
+    """expand_root_dir_globs() additional test cases."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_non_glob_passthrough(self):
+        """Non-glob directory is returned as-is."""
+        result = toc_utils.expand_root_dir_globs(
+            ['docs/rules/'], Path(self.tmpdir)
+        )
+        self.assertEqual(result, ['docs/rules/'])
+
+    def test_glob_match_expanded(self):
+        """Glob directory with matches is expanded."""
+        for name in ('app1', 'app2'):
+            (Path(self.tmpdir) / 'specs' / name / 'requirements').mkdir(parents=True)
+        result = toc_utils.expand_root_dir_globs(
+            ['specs/*/requirements/'], Path(self.tmpdir)
+        )
+        self.assertIn('specs/app1/requirements/', result)
+        self.assertIn('specs/app2/requirements/', result)
+        self.assertEqual(len(result), 2)
+
+    def test_glob_no_match_returns_original(self):
+        """Glob directory with no matches returns the original list."""
+        result = toc_utils.expand_root_dir_globs(
+            ['nonexistent/*/foo/'], Path(self.tmpdir)
+        )
+        # When expanded list is empty, original dirs are returned as fallback
+        self.assertEqual(result, ['nonexistent/*/foo/'])
+
+
+# ===========================================================================
+# Integration: init_common_config with glob patterns
+# ===========================================================================
+
+class TestInitCommonConfigGlobExpansion(unittest.TestCase):
+    """Integration test: init_common_config() expands glob patterns in doc_types_map."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmpdir, '.git'))
+        # Create directory structure matching globs
+        for name in ('core', 'ui'):
+            os.makedirs(os.path.join(self.tmpdir, 'specs', name, 'design'))
+        # Write .doc_structure.yaml with glob patterns
+        doc_structure = """\
+# doc_structure_version: 3.0
+
+specs:
+  root_dirs:
+    - specs/*/design/
+  doc_types_map:
+    specs/*/design/: design
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+"""
+        with open(os.path.join(self.tmpdir, '.doc_structure.yaml'), 'w') as f:
+            f.write(doc_structure)
+        self.original_env = os.environ.get('CLAUDE_PROJECT_DIR')
+        os.environ['CLAUDE_PROJECT_DIR'] = self.tmpdir
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        if self.original_env is None:
+            os.environ.pop('CLAUDE_PROJECT_DIR', None)
+        else:
+            os.environ['CLAUDE_PROJECT_DIR'] = self.original_env
+
+    def test_doc_types_map_expanded_in_init_common_config(self):
+        """init_common_config() returns expanded doc_types_map with concrete paths."""
+        result = toc_utils.init_common_config('specs')
+        doc_types_map = result['doc_types_map']
+        # Glob pattern should be expanded to concrete paths
+        self.assertNotIn('specs/*/design/', doc_types_map)
+        self.assertIn('specs/core/design/', doc_types_map)
+        self.assertIn('specs/ui/design/', doc_types_map)
+        self.assertEqual(doc_types_map['specs/core/design/'], 'design')
+        self.assertEqual(doc_types_map['specs/ui/design/'], 'design')
+
+
 if __name__ == '__main__':
     unittest.main()

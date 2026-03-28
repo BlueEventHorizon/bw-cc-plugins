@@ -48,4 +48,4 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/check_doc_structure.sh rules
 
 ## Error Handling
 
-If an unexpected error occurs during processing, report the error details clearly and ask the user how to proceed.
+If an unexpected error occurs during processing, report the error details clearly and use AskUserQuestion to ask the user how to proceed.

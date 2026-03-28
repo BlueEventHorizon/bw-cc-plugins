@@ -19,10 +19,8 @@ Run from: Project root
 import sys
 import argparse
 import hashlib
-import re
-from datetime import datetime, timezone
 
-from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml
 
 # Global configuration (initialized in init_config())
 CONFIG = None
@@ -109,7 +107,7 @@ def init_config(category):
     TOC_WORK_DIR = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), first_dir, PROJECT_ROOT)
     CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'), first_dir, PROJECT_ROOT)
     TOC_FILE = resolve_config_path(CONFIG.get('toc_file', f'{category}_toc.yaml'), first_dir, PROJECT_ROOT)
-    DOC_TYPES_MAP = CONFIG.get('doc_types_map', {})
+    DOC_TYPES_MAP = common['doc_types_map']
     return True
 
 
@@ -150,7 +148,7 @@ def has_substantive_content(filepath, min_content_lines=1):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-    except (IOError, OSError, PermissionError):
+    except (IOError, OSError, PermissionError, UnicodeDecodeError):
         return False
 
     if not content.strip():
@@ -269,22 +267,11 @@ def save_pending_checksums(all_files, file_root_map):
             checksums[source_file] = hash_value
 
     pending_checksums_path = TOC_WORK_DIR / ".toc_checksums_pending.yaml"
-    lines = [
-        "# Phase 1 snapshot - used to replace .toc_checksums.yaml after merge",
-        "# Auto-generated - do not edit",
-        f"generated_at: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
-        f"file_count: {len(checksums)}",
-        "checksums:",
-    ]
-    for path, hash_val in sorted(checksums.items()):
-        lines.append(f"  {path}: {hash_val}")
-
-    try:
-        with open(pending_checksums_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines) + '\n')
+    if write_checksums_yaml(checksums, pending_checksums_path,
+                            header_comment="Phase 1 snapshot - used to replace .toc_checksums.yaml after merge"):
         print(f"Saved pending checksums: {len(checksums)} files")
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to save pending checksums: {e}")
+    else:
+        print(f"Warning: Failed to save pending checksums")
 
 
 def main():

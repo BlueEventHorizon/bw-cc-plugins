@@ -9,11 +9,13 @@ doc-advisor プラグインの ToC 生成で使用する共通関数。
 
 import copy
 import fnmatch
+import hashlib
 import os
 import re
 import shutil
 import sys
 import unicodedata
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -185,13 +187,12 @@ def load_config(category=None):
 
     try:
         config_path = find_config_file()
-    except (FileNotFoundError, RuntimeError, PermissionError):
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except (FileNotFoundError, RuntimeError, PermissionError, OSError):
         if category:
             return defaults.get(category, {})
         return defaults
-
-    with open(config_path, 'r', encoding='utf-8') as f:
-        content = f.read()
 
     doc_structure = _parse_config_yaml(content)
 
@@ -623,6 +624,35 @@ def expand_root_dir_globs(dirs, project_root):
     return expanded if expanded else dirs
 
 
+def expand_doc_types_map(doc_types_map, project_root):
+    """
+    Expand glob patterns in doc_types_map keys.
+
+    For each key containing glob characters (* or ?), expand it against
+    the filesystem and create entries for each matching directory.
+    Non-glob keys are passed through unchanged.
+
+    Args:
+        doc_types_map: dict mapping path patterns to doc_type strings
+        project_root: Path to project root
+
+    Returns:
+        dict: Expanded mapping with concrete paths as keys
+    """
+    expanded = {}
+    for path_pattern, doc_type in doc_types_map.items():
+        if '*' in path_pattern or '?' in path_pattern:
+            pattern = path_pattern.rstrip('/')
+            matches = sorted(project_root.glob(pattern))
+            for match in matches:
+                if match.is_dir():
+                    rel = str(match.relative_to(project_root))
+                    expanded[rel + '/'] = doc_type
+        else:
+            expanded[path_pattern] = doc_type
+    return expanded
+
+
 def parse_simple_yaml(content):
     """
     Simple YAML parser (for entry files)
@@ -854,6 +884,37 @@ def load_existing_toc(toc_path):
     return docs
 
 
+def write_checksums_yaml(checksums, output_path, header_comment="Auto-generated checksum file"):
+    """Write checksums dict to YAML format file.
+
+    Args:
+        checksums: dict of {filepath: hash_value}
+        output_path: Output file path (str or Path)
+        header_comment: First line comment in the output file
+
+    Returns:
+        bool: True on success, False on failure
+    """
+    lines = [
+        f"# {header_comment}",
+        "# Auto-generated - do not edit",
+        f"generated_at: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
+        f"file_count: {len(checksums)}",
+        "checksums:",
+    ]
+
+    for rel_path, hash_value in sorted(checksums.items()):
+        lines.append(f"  {rel_path}: {hash_value}")
+
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines) + '\n')
+        return True
+    except (IOError, OSError, PermissionError) as e:
+        print(f"Error: Failed to write file: {output_path} - {e}")
+        return False
+
+
 def calculate_file_hash(path, chunk_size=65536):
     """
     ファイルの SHA-256 ハッシュをチャンク読み込みで計算する（大ファイル対応）
@@ -865,7 +926,6 @@ def calculate_file_hash(path, chunk_size=65536):
     Returns:
         str: SHA-256 ハッシュ値（16進数文字列）。エラー時は None
     """
-    import hashlib
     try:
         sha256 = hashlib.sha256()
         with open(path, 'rb') as f:
@@ -918,10 +978,10 @@ def load_checksums(checksums_file):
                 in_checksums = True
                 continue
             if in_checksums:
-                # 空行または次のトップレベルセクション（インデントなしで ': ' を含む行）でセクション終了
+                # Skip blank lines within checksums section
                 if not stripped:
-                    in_checksums = False
                     continue
+                # Next top-level section (no indent + contains ': ') ends checksums
                 if ': ' in stripped and not line.startswith(' '):
                     in_checksums = False
                     continue
@@ -933,7 +993,7 @@ def load_checksums(checksums_file):
                         checksums[filepath] = hash_val
 
         return checksums
-    except (FileNotFoundError, ValueError, KeyError) as e:
+    except (FileNotFoundError, ValueError, KeyError, OSError) as e:
         print(f"Warning: Checksum file read error: {e}")
         print("Fallback: Skipping deletion detection")
         return {}
@@ -960,49 +1020,6 @@ def cleanup_work_dir(work_dir):
             print("   Please delete manually")
             return False
     return True
-
-
-def extract_id_from_filename(filename):
-    """
-    DEPRECATED: This function is no longer recommended.
-
-    Document identification should use file path instead of filename-based ID.
-    See DES-003_document_identifier.md for details.
-
-    This function is kept for backward compatibility but should not be used
-    in new code. The file path (relative to the root directory) serves as
-    the unique identifier for each document.
-
-    ---
-    Original docstring:
-    Extract document ID from filename (generic regex version)
-
-    Args:
-        filename: Filename (path also accepted)
-
-    Returns:
-        str or None: Extracted ID, None if not found
-
-    Examples:
-        'SCR-001_foo.md' → 'SCR-001'
-        'DES-042_bar.md' → 'DES-042'
-        'CUSTOM-123_baz.md' → 'CUSTOM-123'
-    """
-    import warnings
-    warnings.warn(
-        "extract_id_from_filename is deprecated. Use file path as document identifier.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    # Get only filename part if path is provided
-    if '/' in filename:
-        filename = filename.split('/')[-1]
-
-    # Match [A-Z]+-\d+ pattern
-    match = re.match(r'([A-Z]+-\d+)', filename)
-    if match:
-        return match.group(1)
-    return None
 
 
 def should_exclude(filepath, root_dir, exclude_patterns):
@@ -1157,6 +1174,8 @@ def init_common_config(category):
     target_glob = patterns_config.get('target_glob', '**/*.md')
     exclude_patterns = get_system_exclude_patterns(category) + patterns_config.get('exclude', [])
 
+    doc_types_map = expand_doc_types_map(config.get('doc_types_map', {}), project_root)
+
     return {
         'config': config,
         'project_root': project_root,
@@ -1165,4 +1184,5 @@ def init_common_config(category):
         'patterns_config': patterns_config,
         'target_glob': target_glob,
         'exclude_patterns': exclude_patterns,
+        'doc_types_map': doc_types_map,
     }
