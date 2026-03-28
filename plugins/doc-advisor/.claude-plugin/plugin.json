@@ -4,6 +4,5 @@
   "version": "0.1.0",
   "author": { "name": "moons" },
   "license": "MIT",
-  "skills": "./skills/",
-  "agents": "./agents/"
+  "skills": "./skills/"
 }
