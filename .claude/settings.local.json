@@ -1,30 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\\\\ git:*)",
-      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh specs)",
-      "Bash(bash /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/.claude/doc-advisor/scripts/check_config.sh rules)",
-      "Bash(git rm:*)",
-      "WebFetch(domain:docs.anthropic.com)",
-      "Bash(git diff:*)",
-      "Bash(realpath:*)",
-      "Bash(claude plugin:*)",
-      "WebFetch(domain:addyosmani.com)",
-      "WebFetch(domain:www.humanlayer.dev)",
-      "WebFetch(domain:medium.com)",
-      "Bash(python3:*)",
-      "Bash(for id:*)",
-      "Bash(do python3:*)",
-      "Bash(done)",
-      "Bash(bash .claude/doc-advisor/scripts/check_config.sh specs)",
-      "Bash(do)",
-      "Bash(echo \"exit:$?\")",
-      "Bash(.claude/.temp/review-4d58e6/fix_result_10.md:*)",
-      "Bash(bash .claude/doc-advisor/scripts/check_config.sh rules)",
-      "Bash(gh:*)",
-      "Bash(/opt/homebrew/bin/python3 /Users/moons/.claude/plugins/marketplaces/bw-cc-plugins/plugins/forge/skills/review/scripts/resolve_review_context.py plugins/forge/skills/clean-rules/SKILL.md plugins/forge/skills/query-forge-rules/SKILL.md 2>&1)",
-      "Bash(/opt/homebrew/bin/python3 /Users/moons/.claude/plugins/marketplaces/bw-cc-plugins/plugins/forge/skills/review/scripts/resolve_review_context.py plugins/forge/skills/clean-rules/SKILL.md plugins/forge/skills/query-forge-rules/SKILL.md --type code 2>&1)",
-      "Bash(/opt/homebrew/bin/python3 -m unittest discover -s tests -p 'test_*.py')"
+
     ]
   },
   "sandbox": {
