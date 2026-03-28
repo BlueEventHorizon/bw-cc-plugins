@@ -159,9 +159,6 @@ def validate_toc(toc_path):
         print(f"✗ ファイル参照検査: {len(file_errors)}件のエラー")
         errors.extend(file_errors)
 
-    # 4. 重複パス検査（辞書なので本質的に重複はないが確認）
-    print(f"✓ 重複パス検査: OK（{len(docs)}件のユニークパス）")
-
     # 結果サマリー
     print()
     if errors:

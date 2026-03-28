@@ -49,6 +49,21 @@ targets:
         filter: '| **xcode**'
         optional: true
 
+  - name: doc-advisor
+    version_file: plugins/doc-advisor/.claude-plugin/plugin.json
+    version_path: version
+    sync_files:
+      - path: .claude-plugin/marketplace.json
+        pattern: '"version": "{version}"'
+        filter: '"name": "doc-advisor"'
+      - path: README.md
+        pattern: '| **doc-advisor** | {version} |'
+        filter: '| **doc-advisor**'
+      - path: README_ja.md
+        pattern: '| **doc-advisor** | {version} |'
+        filter: '| **doc-advisor**'
+        optional: true
+
 changelog:
   file: CHANGELOG.md
   format: keep-a-changelog

@@ -550,5 +550,70 @@ class TestGetSystemExcludePatterns(unittest.TestCase):
         self.assertNotIn('extra', p2)
 
 
+# ===========================================================================
+# expand_doc_types_map テスト
+# ===========================================================================
+
+class TestExpandDocTypesMap(unittest.TestCase):
+    """expand_doc_types_map() unit tests."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_empty_map(self):
+        """Empty map returns empty dict."""
+        result = toc_utils.expand_doc_types_map({}, Path(self.tmpdir))
+        self.assertEqual(result, {})
+
+    def test_no_glob_key_passthrough(self):
+        """Non-glob key is passed through unchanged."""
+        doc_map = {'docs/rules/': 'rule'}
+        result = toc_utils.expand_doc_types_map(doc_map, Path(self.tmpdir))
+        self.assertEqual(result, {'docs/rules/': 'rule'})
+
+    def test_glob_match_expands(self):
+        """Glob key expands to matching directories with correct doc_type."""
+        # Create dirs: specs/app1/design/, specs/app2/design/
+        for name in ('app1', 'app2'):
+            (Path(self.tmpdir) / 'specs' / name / 'design').mkdir(parents=True)
+        doc_map = {'specs/*/design/': 'design'}
+        result = toc_utils.expand_doc_types_map(doc_map, Path(self.tmpdir))
+        self.assertIn('specs/app1/design/', result)
+        self.assertIn('specs/app2/design/', result)
+        self.assertEqual(result['specs/app1/design/'], 'design')
+        self.assertEqual(result['specs/app2/design/'], 'design')
+
+    def test_glob_no_match_excluded(self):
+        """Glob key with no matches produces no entries."""
+        doc_map = {'nonexistent/*/foo/': 'bar'}
+        result = toc_utils.expand_doc_types_map(doc_map, Path(self.tmpdir))
+        self.assertEqual(result, {})
+
+    def test_mixed_glob_and_non_glob(self):
+        """Mix of glob and non-glob keys are both handled correctly."""
+        (Path(self.tmpdir) / 'specs' / 'core' / 'plan').mkdir(parents=True)
+        doc_map = {
+            'docs/rules/': 'rule',
+            'specs/*/plan/': 'plan',
+        }
+        result = toc_utils.expand_doc_types_map(doc_map, Path(self.tmpdir))
+        self.assertEqual(result['docs/rules/'], 'rule')
+        self.assertIn('specs/core/plan/', result)
+        self.assertEqual(result['specs/core/plan/'], 'plan')
+
+    def test_multiple_glob_matches_same_doc_type(self):
+        """Multiple glob matches all receive the same doc_type."""
+        for name in ('alpha', 'beta', 'gamma'):
+            (Path(self.tmpdir) / 'modules' / name).mkdir(parents=True)
+        doc_map = {'modules/*/': 'module'}
+        result = toc_utils.expand_doc_types_map(doc_map, Path(self.tmpdir))
+        self.assertEqual(len(result), 3)
+        for key, doc_type in result.items():
+            self.assertEqual(doc_type, 'module')
+
+
 if __name__ == '__main__':
     unittest.main()

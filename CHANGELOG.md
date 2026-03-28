@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-03-28
+
+### doc-advisor
+
+- **fix**: `determine_doc_type()` が `doc_types_map` の glob パターンキーとマッチしないバグを修正。`expand_doc_types_map()` を追加し `init_common_config()` で事前展開する根本対応
+- **fix**: `load_checksums()` が空行でパースを中止する問題を修正
+- **fix**: `load_config()` / `load_checksums()` の例外捕捉に OSError を追加
+- **fix**: `has_substantive_content()` に UnicodeDecodeError 捕捉を追加
+- **refactor**: DEPRECATED 関数 `extract_id_from_filename()` を削除
+- **refactor**: checksums YAML 書き込みを `write_checksums_yaml()` に共通化
+- **refactor**: 未使用 `import re` 削除、`import hashlib` をトップレベルに移動
+- **refactor**: `validate_toc.py` の形骸化した重複パス検査を削除
+- **docs**: SKILL.md の Error Handling に AskUserQuestion を明示
+- **test**: `has_substantive_content()`, `determine_doc_type()`, `expand_doc_types_map()`, `expand_root_dir_globs()` のテスト追加
+
+## [0.1.0] - 2026-03-28
+
+### doc-advisor
+
+- **feat**: .claude/ 配下のローカルスキルから独立プラグインに移行（TASK-001〜013）
+  - スキル・agent・docs・scripts を `plugins/doc-advisor/` に移行
+  - toc_utils.py をプラグイン環境に適応（`CLAUDE_PROJECT_DIR` / CWD 探索）
+  - 全テストを Python unittest に移行（統合テスト含む）
+  - forge プラグインからの namespace 参照を更新
+- **refactor**: 重複関数の統一とコード一貫性の改善
+
 ## [0.0.26] - 2026-03-22
 
 ### forge

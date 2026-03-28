@@ -207,5 +207,163 @@ class TestCreatePendingEmptyDir(TestCreatePendingBase):
         self.assertIn('Warning:', result.stdout)
 
 
+class TestHasSubstantiveContent(unittest.TestCase):
+    """Unit tests for has_substantive_content()"""
+
+    def setUp(self):
+        """Add scripts dir to sys.path for direct import"""
+        if SCRIPTS_DIR not in sys.path:
+            sys.path.insert(0, SCRIPTS_DIR)
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write_file(self, content):
+        """Write content to a temp file and return its path"""
+        path = os.path.join(self.tmpdir, 'test.md')
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return path
+
+    def test_empty_file(self):
+        """Empty file returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_whitespace_only(self):
+        """File with only whitespace returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('   \n\n  \n')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_frontmatter_only(self):
+        """File with only frontmatter returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('---\ntitle: Test\ndate: 2024-01-01\n---\n')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_frontmatter_and_headers_only(self):
+        """File with frontmatter + headers but no body returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('---\ntitle: Test\n---\n\n# Header\n\n## Sub Header\n')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_frontmatter_with_body(self):
+        """File with frontmatter + body returns True"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('---\ntitle: Test\n---\n\n# Header\n\nSome actual content here.\n')
+        self.assertTrue(has_substantive_content(path))
+
+    def test_no_frontmatter_with_body(self):
+        """File without frontmatter but with body returns True"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('# Header\n\nThis is body content.\n')
+        self.assertTrue(has_substantive_content(path))
+
+    def test_unclosed_frontmatter(self):
+        """Unclosed frontmatter (missing closing ---) returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('---\ntitle: Test\nkey: value\nmore: data\n')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_headers_only_no_frontmatter(self):
+        """File with only headers (no frontmatter) returns False"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('# Header\n\n## Sub Header\n')
+        self.assertFalse(has_substantive_content(path))
+
+    def test_leading_blank_lines_before_frontmatter(self):
+        """Leading blank lines before frontmatter are skipped correctly"""
+        from create_pending_yaml import has_substantive_content
+        path = self._write_file('\n\n---\ntitle: Test\n---\n\nBody text.\n')
+        self.assertTrue(has_substantive_content(path))
+
+    def test_nonexistent_file(self):
+        """Nonexistent file returns False"""
+        from create_pending_yaml import has_substantive_content
+        self.assertFalse(has_substantive_content('/nonexistent/path/file.md'))
+
+
+class TestDetermineDocType(unittest.TestCase):
+    """Unit tests for determine_doc_type()"""
+
+    def setUp(self):
+        """Add scripts dir to sys.path and import the module"""
+        if SCRIPTS_DIR not in sys.path:
+            sys.path.insert(0, SCRIPTS_DIR)
+        import create_pending_yaml as mod
+        self.mod = mod
+        # Save original globals
+        self._orig_doc_types_map = mod.DOC_TYPES_MAP
+        self._orig_category = mod.CATEGORY
+
+    def tearDown(self):
+        """Restore original globals"""
+        self.mod.DOC_TYPES_MAP = self._orig_doc_types_map
+        self.mod.CATEGORY = self._orig_category
+
+    def test_direct_match_in_doc_types_map(self):
+        """DOC_TYPES_MAP direct match returns the mapped type"""
+        self.mod.DOC_TYPES_MAP = {'docs/design/': 'design'}
+        self.mod.CATEGORY = 'specs'
+        result = self.mod.determine_doc_type('docs/design/')
+        self.assertEqual(result, 'design')
+
+    def test_doc_types_map_trailing_slash_normalization(self):
+        """Trailing slashes are normalized for DOC_TYPES_MAP matching"""
+        self.mod.DOC_TYPES_MAP = {'specs/api': 'api'}
+        self.mod.CATEGORY = 'specs'
+        # Input with trailing slash should match entry without
+        result = self.mod.determine_doc_type('specs/api/')
+        self.assertEqual(result, 'api')
+
+    def test_keyword_fallback(self):
+        """DOC_TYPE_KEYWORDS fallback when DOC_TYPES_MAP has no match"""
+        self.mod.DOC_TYPES_MAP = {}
+        self.mod.CATEGORY = 'specs'
+        result = self.mod.determine_doc_type('some/path/requirements')
+        self.assertEqual(result, 'requirement')
+
+    def test_keyword_fallback_case_insensitive(self):
+        """DOC_TYPE_KEYWORDS lookup uses lowercase directory name"""
+        self.mod.DOC_TYPES_MAP = {}
+        self.mod.CATEGORY = 'specs'
+        result = self.mod.determine_doc_type('project/Design/')
+        self.assertEqual(result, 'design')
+
+    def test_category_default_fallback(self):
+        """Falls back to category-based default when no map or keyword matches"""
+        self.mod.DOC_TYPES_MAP = {}
+        self.mod.CATEGORY = 'rules'
+        result = self.mod.determine_doc_type('some/unknown/directory')
+        self.assertEqual(result, 'rule')
+
+    def test_category_default_specs(self):
+        """Category default for specs returns 'spec'"""
+        self.mod.DOC_TYPES_MAP = {}
+        self.mod.CATEGORY = 'specs'
+        result = self.mod.determine_doc_type('random/dir')
+        self.assertEqual(result, 'spec')
+
+    def test_doc_types_map_takes_priority(self):
+        """DOC_TYPES_MAP takes priority over DOC_TYPE_KEYWORDS"""
+        # 'rules/' would match keyword 'rules' -> 'rule',
+        # but DOC_TYPES_MAP should win with a custom type
+        self.mod.DOC_TYPES_MAP = {'rules/': 'custom-rule-type'}
+        self.mod.CATEGORY = 'rules'
+        result = self.mod.determine_doc_type('rules/')
+        self.assertEqual(result, 'custom-rule-type')
+
+    def test_none_category_fallback(self):
+        """When CATEGORY is None, fallback returns 'unknown'"""
+        self.mod.DOC_TYPES_MAP = {}
+        self.mod.CATEGORY = None
+        result = self.mod.determine_doc_type('no/match/here')
+        self.assertEqual(result, 'unknown')
+
+
 if __name__ == '__main__':
     unittest.main()

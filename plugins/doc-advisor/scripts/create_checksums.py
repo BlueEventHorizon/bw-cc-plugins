@@ -13,10 +13,9 @@ rules/ または specs/ 配下の全 .md ファイルの SHA-256 ハッシュを
 
 import sys
 import argparse
-from datetime import datetime, timezone
 from pathlib import Path
 
-from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, write_checksums_yaml
 
 # Global configuration (initialized in init_config())
 CATEGORY = None  # 'rules' or 'specs'
@@ -82,33 +81,6 @@ def find_md_files(root_dir, exclude_patterns, target_glob="**/*.md"):
     return sorted(md_files)
 
 
-def write_checksums_yaml(checksums, output_path, category):
-    """
-    チェックサムをYAML形式で出力
-
-    Returns:
-        bool: 成功時True、失敗時False
-    """
-    lines = [
-        f"# {category}_toc.yaml 用チェックサムファイル",
-        "# 自動生成 - 手動編集禁止",
-        f"generated_at: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
-        f"file_count: {len(checksums)}",
-        "checksums:",
-    ]
-
-    for rel_path, hash_value in sorted(checksums.items()):
-        lines.append(f"  {rel_path}: {hash_value}")
-
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines) + '\n')
-        return True
-    except (IOError, OSError, PermissionError) as e:
-        print(f"エラー: ファイル書き込み失敗: {output_path} - {e}")
-        return False
-
-
 def main():
     args = parse_args()
 
@@ -166,7 +138,8 @@ def main():
         return 1
 
     # 出力
-    if not write_checksums_yaml(checksums, CHECKSUMS_FILE, CATEGORY):
+    if not write_checksums_yaml(checksums, CHECKSUMS_FILE,
+                                header_comment=f"{CATEGORY}_toc.yaml checksum file"):
         return 1
 
     print(f"\n✅ 生成完了: {CHECKSUMS_FILE}")
