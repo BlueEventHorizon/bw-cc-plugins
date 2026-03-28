@@ -1,11 +1,19 @@
 {
   "permissions": {
     "allow": [
-
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/**)",
+      "Bash(done)",
+      "Bash(/opt/homebrew/bin/python3 -m unittest discover -s tests -p 'test_*.py' -v)",
+      "Bash(\\\\ python3:*)",
+      "Bash(python3:*)",
+      "Bash(git -C /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins log --oneline -5 docs/specs/doc-advisor/reference/)",
+      "Bash(git:*)"
     ]
   },
   "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true
+    "enabled": false,
+    "autoAllowBashIfSandboxed": false
   }
 }

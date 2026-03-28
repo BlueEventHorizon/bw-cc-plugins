@@ -274,7 +274,7 @@ tasks:
   - task_id: TASK-011
     title: E2E 統合テスト（claude --plugin-dir）
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-006
@@ -298,7 +298,7 @@ tasks:
   - task_id: TASK-012
     title: forge 側スキル名参照の名前空間更新
     priority: 40
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-011
@@ -316,7 +316,7 @@ tasks:
   - task_id: TASK-013
     title: 移行後クリーンアップ（旧 .claude/ ファイル削除）
     priority: 15
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-011

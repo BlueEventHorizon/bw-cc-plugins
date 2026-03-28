@@ -55,6 +55,15 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | [**build**](docs/readme/README_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"ビルド"` `"build"` |
 | [**test**](docs/readme/README_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"テスト"` `"test"` |
 
+### doc-advisor
+
+| Skill | Description | Trigger |
+|-------|-------------|---------|
+| [**query-rules**](#) | Search the pre-analyzed rules document index (ToC) to identify relevant rule documents | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](#) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
+| [**create-rules-toc**](#) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
+| [**create-specs-toc**](#) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 
 ## Installation

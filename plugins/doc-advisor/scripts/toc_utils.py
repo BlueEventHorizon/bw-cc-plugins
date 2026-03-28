@@ -12,6 +12,7 @@ import fnmatch
 import os
 import re
 import shutil
+import sys
 import unicodedata
 from pathlib import Path
 
@@ -71,6 +72,12 @@ def get_project_root():
         p = Path(project_dir)
         if p.is_dir():
             return p
+        else:
+            print(
+                f"Warning: CLAUDE_PROJECT_DIR='{project_dir}' does not exist or is not a directory. "
+                "Falling back to CWD traversal.",
+                file=sys.stderr
+            )
 
     # Stage 2: CWD upward traversal
     current = Path.cwd().resolve()
@@ -178,7 +185,7 @@ def load_config(category=None):
 
     try:
         config_path = find_config_file()
-    except (FileNotFoundError, RuntimeError):
+    except (FileNotFoundError, RuntimeError, PermissionError):
         if category:
             return defaults.get(category, {})
         return defaults
@@ -314,15 +321,17 @@ def _detect_version(content):
     Returns:
         int: Detected major version number
     """
+    # バージョンコメントの位置に関わらず全行を走査する（YAML本文後にある場合も検出できるよう break しない）
+    version_found = None
     for line in content.split('\n'):
         stripped = line.strip()
         if not stripped:
             continue
-        if not stripped.startswith('#'):
-            break  # YAML本文行に到達、走査打ち切り
         match = re.match(r'^#\s*doc_structure_version:\s*(\d+)', stripped)
         if match:
-            return int(match.group(1))
+            version_found = int(match.group(1))
+    if version_found is not None:
+        return version_found
     return 1  # FR-01-2: default to v1
 
 
@@ -424,15 +433,22 @@ def _get_default_config():
     }
 
 
+# _parse_config_yaml で使用するインデントレベル定数
+_INDENT_LEVEL_ROOT = 0    # トップレベルセクション（rules, specs, common）
+_INDENT_LEVEL_1 = 2       # サブセクション（root_dirs, patterns, output 等）
+_INDENT_LEVEL_2 = 4       # サブサブセクション（target_glob, exclude 等）
+_INDENT_LEVEL_3 = 6       # サブサブセクション内のキー値ペア
+
+
 def _parse_config_yaml(content):
     """
     Parse YAML configuration (simple YAML parser)
 
     Handles up to 4 levels of nesting:
-    - Level 0: Top-level sections (rules, specs, common)
-    - Level 2: Subsections (root_dirs, patterns, output)
-    - Level 4: Sub-subsections (target_glob, exclude)
-    - Level 6: Items (key-value pairs or list items)
+    - Level 0 (_INDENT_LEVEL_ROOT): Top-level sections (rules, specs, common)
+    - Level 2 (_INDENT_LEVEL_1): Subsections (root_dirs, patterns, output)
+    - Level 4 (_INDENT_LEVEL_2): Sub-subsections (target_glob, exclude)
+    - Level 6 (_INDENT_LEVEL_3): Items (key-value pairs or list items)
     """
     result = {}
     current_section = None
@@ -458,7 +474,7 @@ def _parse_config_yaml(content):
             key = key.strip()
             value = value.strip()
 
-            if indent == 0:
+            if indent == _INDENT_LEVEL_ROOT:
                 # Top-level section
                 current_section = key
                 result[key] = {}
@@ -466,7 +482,7 @@ def _parse_config_yaml(content):
                 current_subsubsection = None
                 current_list = None
                 current_dict = None
-            elif indent == 2 and current_section:
+            elif indent == _INDENT_LEVEL_1 and current_section:
                 # Subsection
                 current_subsection = key
                 if value:
@@ -474,7 +490,7 @@ def _parse_config_yaml(content):
                     current_list = None
                 else:
                     # Look ahead to determine if list or dict
-                    if _lookahead_is_list(lines, i + 1, parent_indent=2):
+                    if _lookahead_is_list(lines, i + 1, parent_indent=_INDENT_LEVEL_1):
                         result[current_section][key] = []
                         current_list = result[current_section][key]
                     else:
@@ -482,7 +498,7 @@ def _parse_config_yaml(content):
                         current_list = None
                 current_subsubsection = None
                 current_dict = None
-            elif indent == 4 and current_section and current_subsection:
+            elif indent == _INDENT_LEVEL_2 and current_section and current_subsection:
                 # Sub-subsection - look ahead to determine if list or dict
                 current_subsubsection = key
                 if value:
@@ -500,7 +516,7 @@ def _parse_config_yaml(content):
                         result[current_section][current_subsection][key] = {}
                         current_dict = result[current_section][current_subsection][key]
                         current_list = None
-            elif indent == 6 and current_dict is not None:
+            elif indent == _INDENT_LEVEL_3 and current_dict is not None:
                 # Key-value pair inside sub-subsection dict
                 current_dict[key] = _parse_value(value) if value else ''
         elif stripped.startswith('- ') and current_list is not None:
@@ -759,6 +775,108 @@ def yaml_escape(s):
     return s
 
 
+def load_existing_toc(toc_path):
+    """
+    既存の {category}_toc.yaml を読み込む（docs: セクション形式対応）
+
+    Args:
+        toc_path: ToC ファイルパス (str or Path)
+
+    Returns:
+        dict: source_file → entry_dict のマッピング
+    """
+    toc_path = Path(toc_path)
+    if not toc_path.exists():
+        return {}
+
+    try:
+        with open(toc_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except (IOError, OSError, PermissionError) as e:
+        print(f"Warning: Failed to read {toc_path}: {e}")
+        return {}
+
+    docs = {}
+    current_section = None
+    current_path = None
+    current_entry = {}
+    current_list = None
+
+    for line in content.split('\n'):
+        stripped = line.strip()
+
+        if stripped.startswith('#') or not stripped:
+            continue
+
+        if stripped == 'docs:':
+            current_section = 'docs'
+            continue
+        elif stripped.startswith('metadata:'):
+            current_section = 'metadata'
+            continue
+
+        if current_section != 'docs':
+            continue
+
+        # ファイルパスキーの検出（2スペースインデント）
+        if line.startswith('  ') and not line.startswith('    '):
+            key_candidate = stripped.rstrip(':')
+            # クォートされた YAML キーを処理: "path/to/file.md"
+            if key_candidate.startswith('"') and key_candidate.endswith('"'):
+                key_candidate = key_candidate[1:-1]
+            if key_candidate.endswith('.md'):
+                if current_path and current_entry:
+                    docs[current_path] = current_entry
+                current_path = key_candidate
+                current_entry = {}
+                current_list = None
+        elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
+            if current_path:
+                key, _, val = stripped.partition(':')
+                key = key.strip()
+                val = val.strip().strip('"\'')
+                if val == '[]':
+                    current_list = []
+                    current_entry[key] = current_list
+                elif val:
+                    current_entry[key] = val
+                    current_list = None
+                else:
+                    current_list = []
+                    current_entry[key] = current_list
+        elif stripped.startswith('- ') and current_list is not None:
+            item = stripped[2:].strip().strip('"\'')
+            current_list.append(item)
+
+    if current_path and current_entry:
+        docs[current_path] = current_entry
+
+    return docs
+
+
+def calculate_file_hash(path, chunk_size=65536):
+    """
+    ファイルの SHA-256 ハッシュをチャンク読み込みで計算する（大ファイル対応）
+
+    Args:
+        path: ファイルパス (str or Path)
+        chunk_size: 読み込みチャンクサイズ（デフォルト 64KB）
+
+    Returns:
+        str: SHA-256 ハッシュ値（16進数文字列）。エラー時は None
+    """
+    import hashlib
+    try:
+        sha256 = hashlib.sha256()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(chunk_size), b''):
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except (IOError, OSError, PermissionError) as e:
+        print(f"Warning: File read error: {path} - {e}")
+        return None
+
+
 def backup_existing_file(file_path):
     """
     Backup existing file (with .bak extension)
@@ -799,14 +917,22 @@ def load_checksums(checksums_file):
             if stripped == 'checksums:':
                 in_checksums = True
                 continue
-            if in_checksums and ': ' in stripped:
-                parts = stripped.rsplit(': ', 1)
-                if len(parts) == 2:
-                    filepath = parts[0].strip()
-                    files.add(filepath)
+            if in_checksums:
+                # 空行または次のトップレベルセクション（インデントなしで ': ' を含む行）でセクション終了
+                if not stripped:
+                    in_checksums = False
+                    continue
+                if ': ' in stripped and not line.startswith(' '):
+                    in_checksums = False
+                    continue
+                if ': ' in stripped:
+                    parts = stripped.rsplit(': ', 1)
+                    if len(parts) == 2:
+                        filepath = parts[0].strip()
+                        files.add(filepath)
 
         return files
-    except Exception as e:
+    except (FileNotFoundError, ValueError, KeyError) as e:
         print(f"Warning: Checksum file read error: {e}")
         print("Fallback: Skipping deletion detection")
         return set()

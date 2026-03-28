@@ -81,19 +81,19 @@ target_description: "..."            # feature がない場合に使用
 
 **手順（優先順）**:
 
-### 方法 A: `/query-specs` Skill を使用
+### 方法 A: `/doc-advisor:query-specs` Skill を使用
 
-`.claude/skills/query-specs/SKILL.md` が存在する場合:
+`/doc-advisor:query-specs` が利用可能な場合:
 
 ```
-/query-specs {タスクの説明やキーワード}
+/doc-advisor:query-specs {タスクの説明やキーワード}
 ```
 
 返された文書パスを結果に含める。
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
 
-`/query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
+`/doc-advisor:query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
@@ -132,12 +132,12 @@ documents:
 
 **手順（優先順）**:
 
-### 方法 A: `/query-rules` Skill を使用
+### 方法 A: `/doc-advisor:query-rules` Skill を使用
 
-`.claude/skills/query-rules/SKILL.md` が存在する場合:
+`/doc-advisor:query-rules` が利用可能な場合:
 
 ```
-/query-rules {タスクの説明やキーワード}
+/doc-advisor:query-rules {タスクの説明やキーワード}
 ```
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
@@ -256,6 +256,6 @@ documents:
 ## エラー時の振る舞い
 
 - 各タスクで検索結果が 0 件の場合: 空の documents で yaml を書き込む
-- `/query-specs` や `/query-rules` が利用不可の場合: フォールバック手段に切り替える
+- `/doc-advisor:query-specs` や `/doc-advisor:query-rules` が利用不可の場合: フォールバック手段に切り替える
 - `gh` CLI が利用不可の場合: 「類似PR調査」をスキップ（refs/prs.yaml を作成しない）
 - 予期しないエラーの場合: エラー内容をオーケストレータに報告し、該当タスクをスキップ
