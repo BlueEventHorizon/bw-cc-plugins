@@ -148,7 +148,7 @@ tasks:
   - task_id: TASK-006
     title: スキル・エージェント・ドキュメント移行（パス書き換え + 名前空間化）
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-005
@@ -167,7 +167,7 @@ tasks:
   - task_id: TASK-007
     title: Python スクリプト移行（パス書き換え + docstring 更新）
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-001
     depends_on:
       - TASK-005
