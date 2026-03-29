@@ -470,7 +470,7 @@ class TestLoadConfig(unittest.TestCase):
 # ===========================================================================
 
 class TestGetProjectRoot(unittest.TestCase):
-    """get_project_root() の3段階フォールバックテスト。"""
+    """get_project_root() のテスト。"""
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
@@ -483,41 +483,33 @@ class TestGetProjectRoot(unittest.TestCase):
         else:
             os.environ['CLAUDE_PROJECT_DIR'] = self.original_env
 
-    def test_stage1_env_var(self):
-        """Stage 1: CLAUDE_PROJECT_DIR 環境変数"""
+    def test_env_var(self):
+        """CLAUDE_PROJECT_DIR set → returns that path"""
         os.environ['CLAUDE_PROJECT_DIR'] = self.tmpdir
         result = toc_utils.get_project_root()
         self.assertEqual(result, Path(self.tmpdir))
 
-    def test_stage1_invalid_dir(self):
-        """Stage 1: CLAUDE_PROJECT_DIR が無効なディレクトリの場合は Stage 2 へ"""
+    def test_invalid_env_falls_back_to_cwd(self):
+        """CLAUDE_PROJECT_DIR invalid → falls back to cwd"""
         os.environ['CLAUDE_PROJECT_DIR'] = '/nonexistent/path'
-        # CWD にも .git/.claude がなければ RuntimeError
-        # テスト実行環境に .git があるため、Stage 2 で見つかる可能性がある
-        # ここでは Stage 1 のスキップのみ検証
+        original_cwd = os.getcwd()
         try:
+            os.chdir(self.tmpdir)
             result = toc_utils.get_project_root()
-            # Stage 2 で見つかった場合（テスト環境による）
-            self.assertIsInstance(result, Path)
-        except RuntimeError:
-            # Stage 3: 見つからなかった場合も正常
-            pass
-
-    def test_stage3_error(self):
-        """Stage 3: プロジェクトルートが見つからない場合は RuntimeError"""
-        os.environ.pop('CLAUDE_PROJECT_DIR', None)
-        # 空のディレクトリで .git も .claude もない状態をシミュレート
-        empty_dir = tempfile.mkdtemp()
-        try:
-            original_cwd = os.getcwd()
-            os.chdir(empty_dir)
-            try:
-                with self.assertRaises(RuntimeError):
-                    toc_utils.get_project_root()
-            finally:
-                os.chdir(original_cwd)
+            self.assertEqual(result, Path(self.tmpdir).resolve())
         finally:
-            shutil.rmtree(empty_dir, ignore_errors=True)
+            os.chdir(original_cwd)
+
+    def test_no_env_returns_cwd(self):
+        """No CLAUDE_PROJECT_DIR → returns cwd"""
+        os.environ.pop('CLAUDE_PROJECT_DIR', None)
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(self.tmpdir)
+            result = toc_utils.get_project_root()
+            self.assertEqual(result, Path(self.tmpdir).resolve())
+        finally:
+            os.chdir(original_cwd)
 
 
 # ===========================================================================

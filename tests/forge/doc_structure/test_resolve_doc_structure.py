@@ -617,26 +617,28 @@ class TestLoadDocStructure(unittest.TestCase):
 class TestFindProjectRoot(unittest.TestCase):
     """プロジェクトルート検出のテスト"""
 
-    def test_find_with_git(self):
+    def test_with_explicit_path(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             real_tmpdir = os.path.realpath(tmpdir)
-            os.makedirs(os.path.join(real_tmpdir, '.git'))
-            sub = os.path.join(real_tmpdir, 'a', 'b')
-            os.makedirs(sub)
-            result = rds.find_project_root(sub)
-            self.assertEqual(result, real_tmpdir)
-
-    def test_find_with_claude(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            real_tmpdir = os.path.realpath(tmpdir)
-            os.makedirs(os.path.join(real_tmpdir, '.claude'))
             result = rds.find_project_root(real_tmpdir)
             self.assertEqual(result, real_tmpdir)
 
-    def test_not_found(self):
+    def test_without_args_returns_cwd(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            with self.assertRaises(RuntimeError):
-                rds.find_project_root(tmpdir)
+            real_tmpdir = os.path.realpath(tmpdir)
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(real_tmpdir)
+                result = rds.find_project_root()
+                self.assertEqual(result, real_tmpdir)
+            finally:
+                os.chdir(original_cwd)
+
+    def test_resolves_symlinks(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            real_tmpdir = os.path.realpath(tmpdir)
+            result = rds.find_project_root(tmpdir)
+            self.assertEqual(result, real_tmpdir)
 
 
 # ---------------------------------------------------------------------------

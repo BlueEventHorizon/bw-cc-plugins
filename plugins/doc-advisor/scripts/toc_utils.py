@@ -60,20 +60,18 @@ def normalize_path(path_str):
 
 def get_project_root():
     """
-    Detect project root directory.
+    Return the project root directory.
 
-    3-stage fallback:
-    1. CLAUDE_PROJECT_DIR environment variable (set by Claude Code)
-    2. Traverse from CWD upward looking for .git or .claude directory
-    3. RuntimeError if not found
+    Claude Code's Bash tool always sets cwd to the project root,
+    so upward traversal is unnecessary and risky (can hit ~/.claude/).
+
+    Fallback order:
+    1. CLAUDE_PROJECT_DIR environment variable (if set and valid)
+    2. Current working directory (= project root in Claude Code context)
 
     Returns:
         Path: Path to project root
-
-    Raises:
-        RuntimeError: When project root cannot be found
     """
-    # Stage 1: CLAUDE_PROJECT_DIR
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if project_dir:
         p = Path(project_dir)
@@ -82,21 +80,11 @@ def get_project_root():
         else:
             print(
                 f"Warning: CLAUDE_PROJECT_DIR='{project_dir}' does not exist or is not a directory. "
-                "Falling back to CWD traversal.",
+                "Falling back to CWD.",
                 file=sys.stderr
             )
 
-    # Stage 2: CWD upward traversal
-    current = Path.cwd().resolve()
-    for parent in [current] + list(current.parents):
-        if (parent / ".git").exists() or (parent / ".claude").exists():
-            return parent
-
-    # Stage 3: Error
-    raise RuntimeError(
-        "Project root not found.\n"
-        "Set CLAUDE_PROJECT_DIR environment variable or run from project root."
-    )
+    return Path.cwd().resolve()
 
 
 def validate_path_within_base(path, base_dir):

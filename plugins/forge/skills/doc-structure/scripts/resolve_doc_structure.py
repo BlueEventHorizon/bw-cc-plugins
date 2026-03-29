@@ -92,31 +92,21 @@ def normalize_path(path_str):
 # ---------------------------------------------------------------------------
 
 def find_project_root(start_path=None):
-    """.git または .claude ディレクトリを遡って探索し、プロジェクトルートを特定する。
+    """Return the project root directory.
+
+    Claude Code's Bash tool always sets cwd to the project root,
+    so upward traversal is unnecessary and risky (can hit ~/.claude/).
 
     Args:
-        start_path: 探索開始パス（省略時はカレントディレクトリ）
+        start_path: Explicit project root path (used by --project-root CLI arg)
+                    If None, returns cwd (= project root in Claude Code context)
 
     Returns:
-        str: プロジェクトルートの絶対パス
-
-    Raises:
-        RuntimeError: プロジェクトルートが見つからない場合
+        str: Absolute path to the project root
     """
-    start = Path(start_path).resolve() if start_path else Path.cwd().resolve()
-    current = start
-
-    for _ in range(10):
-        if (current / '.git').exists() or (current / '.claude').exists():
-            return str(current)
-        parent = current.parent
-        if parent == current:
-            break
-        current = parent
-
-    raise RuntimeError(
-        f"プロジェクトルートが見つかりません（.git または .claude が必要）: {start}"
-    )
+    if start_path:
+        return str(Path(start_path).resolve())
+    return str(Path.cwd().resolve())
 
 
 # ---------------------------------------------------------------------------
