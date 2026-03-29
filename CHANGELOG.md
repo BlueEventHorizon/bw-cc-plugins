@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
   - `ConfigNotReadyError` を `init_common_config()` に追加。設定未完了時に `{"status": "config_required"}` JSON を出力し、SKILL.md の Error Handling で AskUserQuestion による設定案内に対応
   - 4 SKILL.md の Pre-check セクションを削除し Error Handling を更新
 
+### doc-advisor / forge 共通
+
+- **fix**: `find_project_root()` / `get_project_root()` の親方向探索を削除。`~/.claude/` 誤検出によるホームディレクトリスキャンを防止
+
 ### forge
 
 - **docs**: present-findings サマリーテーブルの5列目ヘッダを `AF` に修正
