@@ -27,17 +27,6 @@ Generate/update specs ToC (Table of Contents) for AI-searchable document index.
 | (none)   | Incremental update (hash-based) or resume processing  |
 | `--full` | Full file scan (for initial creation or regeneration) |
 
-## Pre-check (MANDATORY - Run first)
-
-Run the configuration check:
-
-```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/check_doc_structure.sh specs
-```
-
-- **No output** → Proceed to Execution Flow
-- **Output present** → STOP. Run `/forge:setup-doc-structure` skill first to configure document directories, then restart this skill
-
 ## Execution Flow
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/docs/toc_orchestrator.md` for orchestrator workflow
@@ -48,4 +37,9 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/check_doc_structure.sh specs
 
 ## Error Handling
 
-If an unexpected error occurs during processing, report the error details clearly and use AskUserQuestion to ask the user how to proceed.
+If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to ask the user:
+- "Document directories are not configured. Run /forge:setup-doc-structure to configure?"
+  - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
+  - No → abort
+
+For other unexpected errors, report the error details clearly and use AskUserQuestion to ask the user how to proceed.

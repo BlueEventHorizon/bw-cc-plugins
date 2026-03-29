@@ -19,6 +19,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+class ConfigNotReadyError(RuntimeError):
+    """Raised when .doc_structure.yaml is missing or not configured for a category."""
+    pass
+
+
 # System files that are always excluded (not configurable)
 SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
 SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']
@@ -1161,6 +1166,17 @@ def init_common_config(category):
     root_dirs_config = config.get('root_dirs', [default_dir])
     if isinstance(root_dirs_config, str):
         root_dirs_config = [root_dirs_config]
+
+    # Validate: if root_dirs is still the default and the directory doesn't exist,
+    # .doc_structure.yaml is missing or not configured for this category.
+    if root_dirs_config == [default_dir]:
+        default_path = project_root / default_dir.rstrip('/')
+        if not default_path.is_dir():
+            raise ConfigNotReadyError(
+                f"Document directories not configured for '{category}'. "
+                f"Run /forge:setup-doc-structure to configure."
+            )
+
     root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)
 
     root_dirs = []

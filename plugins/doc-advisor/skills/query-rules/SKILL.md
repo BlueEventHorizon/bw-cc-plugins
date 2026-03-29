@@ -18,17 +18,6 @@ argument-hint: "[task description]"
 
 Analyze task content and return a list of required development document paths.
 
-## Pre-check (MANDATORY - Run first)
-
-Run the configuration check:
-
-```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/check_doc_structure.sh rules
-```
-
-- **No output** → Proceed to Staleness Check
-- **Output present** → STOP. Run `/forge:setup-doc-structure` skill first to configure document directories, then restart this skill
-
 ## Staleness Check
 
 ```bash
@@ -72,3 +61,10 @@ Required documents:
 - False negatives are strictly prohibited. When in doubt, include it
 - Requirements, design documents, and plans are out of scope (use /doc-advisor:query-specs instead)
 - Target is rules documents only (directories configured in `.doc_structure.yaml` `rules.root_dirs`)
+
+## Error Handling
+
+If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to ask the user:
+- "Document directories are not configured. Run /forge:setup-doc-structure to configure?"
+  - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
+  - No → abort

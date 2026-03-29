@@ -267,5 +267,44 @@ specs:
         self.assertEqual(doc_types_map['specs/ui/design/'], 'design')
 
 
+class TestConfigNotReadyError(unittest.TestCase):
+    """ConfigNotReadyError validation in init_common_config()"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @patch.object(toc_utils, 'get_project_root')
+    def test_raises_when_no_config_and_no_default_dir(self, mock_root):
+        """No .doc_structure.yaml + no rules/ dir → ConfigNotReadyError"""
+        mock_root.return_value = Path(self.tmpdir)
+        # No .doc_structure.yaml, no rules/ directory
+        with self.assertRaises(toc_utils.ConfigNotReadyError):
+            toc_utils.init_common_config('rules')
+
+    @patch.object(toc_utils, 'get_project_root')
+    def test_no_error_when_default_dir_exists(self, mock_root):
+        """No .doc_structure.yaml but rules/ dir exists → no error (uses default)"""
+        mock_root.return_value = Path(self.tmpdir)
+        os.makedirs(os.path.join(self.tmpdir, 'rules'))
+        # Should not raise — default dir exists
+        result = toc_utils.init_common_config('rules')
+        self.assertIn('root_dirs', result)
+
+    @patch.object(toc_utils, 'get_project_root')
+    def test_no_error_when_config_has_root_dirs(self, mock_root):
+        """Configured .doc_structure.yaml with root_dirs → no error"""
+        mock_root.return_value = Path(self.tmpdir)
+        docs_dir = os.path.join(self.tmpdir, 'docs', 'rules')
+        os.makedirs(docs_dir)
+        config_path = os.path.join(self.tmpdir, '.doc_structure.yaml')
+        with open(config_path, 'w') as f:
+            f.write('rules:\n  root_dirs:\n    - docs/rules/\n')
+        result = toc_utils.init_common_config('rules')
+        self.assertIn('root_dirs', result)
+
+
 if __name__ == '__main__':
     unittest.main()
