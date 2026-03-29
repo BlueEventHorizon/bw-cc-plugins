@@ -188,38 +188,26 @@ rules:
 class TestFindProjectRoot(_FsTestCase):
     """find_project_root のテスト。"""
 
-    def test_finds_git_root(self):
-        """.git ディレクトリが存在するルートを検出する。"""
-        (self.tmpdir / '.git').mkdir()
-        subdir = self.tmpdir / 'src' / 'lib'
-        subdir.mkdir(parents=True)
-
-        result = find_project_root(str(subdir))
-        # macOS では /var → /private/var のシンボリックリンクがあるため resolve() で比較する
+    def test_returns_explicit_path(self):
+        """引数指定時はそのパスを resolve して返す。"""
+        result = find_project_root(str(self.tmpdir))
         self.assertEqual(
             Path(result).resolve(),
             self.tmpdir.resolve(),
         )
 
-    def test_finds_claude_root(self):
-        """.claude ディレクトリが存在するルートを検出する。"""
-        (self.tmpdir / '.claude').mkdir()
-        subdir = self.tmpdir / 'src'
-        subdir.mkdir(parents=True)
-
-        result = find_project_root(str(subdir))
-        self.assertEqual(
-            Path(result).resolve(),
-            self.tmpdir.resolve(),
-        )
-
-    def test_raises_if_no_marker(self):
-        """.git / .claude が見つからない場合は RuntimeError を送出する。"""
-        subdir = self.tmpdir / 'no_git_here'
-        subdir.mkdir()
-
-        with self.assertRaises(RuntimeError):
-            find_project_root(str(subdir))
+    def test_returns_cwd_without_args(self):
+        """引数なしの場合は cwd を返す。"""
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(str(self.tmpdir))
+            result = find_project_root()
+            self.assertEqual(
+                Path(result).resolve(),
+                self.tmpdir.resolve(),
+            )
+        finally:
+            os.chdir(original_cwd)
 
 
 # =========================================================================
