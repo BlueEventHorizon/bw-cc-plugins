@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.27] - 2026-03-29
+
+### forge
+
+- **fix**: `find_project_root()` の親方向探索を削除。`~/.claude/` 誤検出によるホームディレクトリスキャンを防止
+- **docs**: review SKILL.md の reviewer/evaluator/fixer subagent 起動方法を明確化（`subagent_type` 指定なし = general-purpose を明示）
+- **docs**: present-findings サマリーテーブルの5列目ヘッダを `AF`（auto_fixable）に修正
+
 ## [0.1.2] - 2026-03-29
 
 ### doc-advisor
