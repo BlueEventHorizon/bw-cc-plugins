@@ -18,10 +18,12 @@ specs:
     - "docs/specs/*/design/"
     - "docs/specs/*/plan/"
     - "docs/specs/*/requirement/"
+    - "docs/specs/*/*/requirements/"
   doc_types_map:
     "docs/specs/*/design/": design
     "docs/specs/*/plan/": plan
     "docs/specs/*/requirement/": requirement
+    "docs/specs/*/*/requirements/": requirement
   patterns:
     target_glob: "**/*.md"
     exclude: []
