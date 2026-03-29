@@ -198,13 +198,13 @@ class TestCreatePendingEmptyDir(TestCreatePendingBase):
         self.assertIn('Created 0 pending YAMLs', result.stdout)
 
     def test_nonexistent_root_dir(self):
-        """root_dirs に指定されたディレクトリが存在しない場合"""
-        # rules/ ディレクトリを作成しない
+        """root_dirs に指定されたディレクトリが存在しない場合 → config_required エラー"""
+        # rules/ ディレクトリを作成しない → ConfigNotReadyError
 
         result = self._run_create_pending('--full')
 
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('Warning:', result.stdout)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('config_required', result.stdout)
 
 
 class TestHasSubstantiveContent(unittest.TestCase):

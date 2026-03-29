@@ -37,19 +37,9 @@ Read the following before processing:
 
 ## Orchestrator Processing Flow
 
-### Pre-check: Document Structure Verification
-
-Before Phase 1, verify that document directories are configured:
-
-1. The skill's Pre-check step runs `check_doc_structure.sh {category}` which verifies
-   that `root_dirs` is set for the given category in `.doc_structure.yaml`
-2. If `check_doc_structure.sh` outputs a warning, stop and direct the user to run
-   `/forge:setup-doc-structure` first
-3. Once `check_doc_structure.sh` passes (no output), proceed to Phase 1
-
-Note: `.doc_structure.yaml` is referenced at runtime by load_config() (FR-08). `root_dirs` must be configured in `.doc_structure.yaml` via `/forge:setup-doc-structure`.
-
 ### Phase 1: Initialization
+
+> **Note**: `init_common_config()` validates that `root_dirs` is configured for the category. If `.doc_structure.yaml` is missing or the category is not configured, scripts output `{"status": "config_required", ...}`. The skill's Error Handling section directs the user to run `/forge:setup-doc-structure`.
 
 ````
 1. Check if .claude/doc-advisor/toc/{category}/.toc_work/ exists

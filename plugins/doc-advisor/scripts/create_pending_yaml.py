@@ -16,11 +16,12 @@ Options:
 Run from: Project root
 """
 
+import json
 import sys
 import argparse
 import hashlib
 
-from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml, ConfigNotReadyError
 
 # Global configuration (initialized in init_config())
 CONFIG = None
@@ -92,6 +93,9 @@ def init_config(category):
 
     try:
         common = init_common_config(category)
+    except ConfigNotReadyError as e:
+        print(json.dumps({"status": "config_required", "message": str(e)}))
+        return False
     except (RuntimeError, FileNotFoundError) as e:
         print(f"Error: {e}")
         return False
