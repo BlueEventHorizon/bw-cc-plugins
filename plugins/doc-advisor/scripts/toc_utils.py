@@ -19,6 +19,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+class ConfigNotReadyError(RuntimeError):
+    """Raised when .doc_structure.yaml is missing or not configured for a category."""
+    pass
+
+
 # System files that are always excluded (not configurable)
 SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
 SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']
@@ -55,20 +60,18 @@ def normalize_path(path_str):
 
 def get_project_root():
     """
-    Detect project root directory.
+    Return the project root directory.
 
-    3-stage fallback:
-    1. CLAUDE_PROJECT_DIR environment variable (set by Claude Code)
-    2. Traverse from CWD upward looking for .git or .claude directory
-    3. RuntimeError if not found
+    Claude Code's Bash tool always sets cwd to the project root,
+    so upward traversal is unnecessary and risky (can hit ~/.claude/).
+
+    Fallback order:
+    1. CLAUDE_PROJECT_DIR environment variable (if set and valid)
+    2. Current working directory (= project root in Claude Code context)
 
     Returns:
         Path: Path to project root
-
-    Raises:
-        RuntimeError: When project root cannot be found
     """
-    # Stage 1: CLAUDE_PROJECT_DIR
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if project_dir:
         p = Path(project_dir)
@@ -77,21 +80,11 @@ def get_project_root():
         else:
             print(
                 f"Warning: CLAUDE_PROJECT_DIR='{project_dir}' does not exist or is not a directory. "
-                "Falling back to CWD traversal.",
+                "Falling back to CWD.",
                 file=sys.stderr
             )
 
-    # Stage 2: CWD upward traversal
-    current = Path.cwd().resolve()
-    for parent in [current] + list(current.parents):
-        if (parent / ".git").exists() or (parent / ".claude").exists():
-            return parent
-
-    # Stage 3: Error
-    raise RuntimeError(
-        "Project root not found.\n"
-        "Set CLAUDE_PROJECT_DIR environment variable or run from project root."
-    )
+    return Path.cwd().resolve()
 
 
 def validate_path_within_base(path, base_dir):
@@ -1161,6 +1154,17 @@ def init_common_config(category):
     root_dirs_config = config.get('root_dirs', [default_dir])
     if isinstance(root_dirs_config, str):
         root_dirs_config = [root_dirs_config]
+
+    # Validate: if root_dirs is still the default and the directory doesn't exist,
+    # .doc_structure.yaml is missing or not configured for this category.
+    if root_dirs_config == [default_dir]:
+        default_path = project_root / default_dir.rstrip('/')
+        if not default_path.is_dir():
+            raise ConfigNotReadyError(
+                f"Document directories not configured for '{category}'. "
+                f"Run /forge:setup-doc-structure to configure."
+            )
+
     root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)
 
     root_dirs = []

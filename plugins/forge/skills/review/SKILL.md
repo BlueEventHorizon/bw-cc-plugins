@@ -366,7 +366,7 @@ done
 
 #### Claude エンジンの場合
 
-perspectives の数だけ `/forge:reviewer` subagent を Agent ツールで**並列起動**する。各 subagent に以下を渡す:
+perspectives の数だけ Agent ツール（`subagent_type` 指定なし = general-purpose）で**並列起動**する。各 subagent の prompt に `/forge:reviewer` の役割と以下の情報を渡す:
 
 - `session_dir`
 - 種別
@@ -422,7 +422,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py
 
 ##### Step 1: evaluator を perspectives 並列起動（AI推奨判定）
 
-perspectives の数だけ `/forge:evaluator` を並列起動する。各 evaluator に以下を渡す:
+perspectives の数だけ Agent ツール（general-purpose）で並列起動する。各 subagent の prompt に `/forge:evaluator` の役割と以下の情報を渡す:
 
 - session_dir
 - レビュー種別
@@ -475,7 +475,7 @@ present-findings が plan.yaml を読み、人間の判定を仲介する。
 
 ##### Step 1: evaluator を perspectives 並列起動
 
-perspectives の数だけ `/forge:evaluator` を並列起動する。各 evaluator に以下を渡す:
+perspectives の数だけ Agent ツール（general-purpose）で並列起動する。各 subagent の prompt に `/forge:evaluator` の役割と以下の情報を渡す:
 
 - session_dir
 - レビュー種別
@@ -510,7 +510,7 @@ evaluator 完了後、以下を出力する:
 
 ##### Step 2: fixer を呼び出す
 
-`/forge:fixer --batch` を呼び出し、以下を渡す:
+Agent ツール（general-purpose）で `/forge:fixer --batch` を起動し、以下を渡す:
 
 - session_dir
 - レビュー種別
