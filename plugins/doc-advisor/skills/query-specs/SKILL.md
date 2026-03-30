@@ -22,30 +22,30 @@ Analyze task content and return a list of required specification document paths.
 ## Staleness Check
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_pending_yaml.py --category specs --check
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --check
 ```
 
-- **WARNING output present** → Inform user of the warning message, then proceed to Procedure
-- **No output** → Proceed to Procedure directly
+- `{"status": "fresh"}` → Proceed to Procedure
+- `{"status": "stale", ...}` → Warn the user that the index is stale, recommend running `/doc-advisor:create-specs-toc` to rebuild. **Do NOT proceed with search while stale**
 
 ## Procedure
 
-1. Read `.claude/doc-advisor/toc/specs/specs_toc.yaml` **completely** (YAML format index)
-   - **MANDATORY**: Read the entire file with the Read tool. Do NOT use Grep or search tools on ToC
-   - **If not found**: Read `.doc_structure.yaml` to get `specs.root_dirs`, then search with Glob `<dir>/**/*.md` for each configured directory
-2. Deeply understand all entries, then identify relevant candidates from task content
-   - Find relevant entries (match by keywords, purpose, title, applicable_tasks)
-3. If there's any chance of relevance, read the actual file to confirm (no false negatives allowed)
+1. Run semantic search:
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search_docs.py --category specs --query "{task description}"
+   ```
+2. Review the results. If the query contains proper nouns or identifiers, run full-text search to supplement:
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/grep_docs.py --category specs --keyword "{proper noun or identifier}"
+   ```
+3. Read each candidate document with the Read tool to confirm relevance
 4. Return the confirmed path list
 
 ## Critical Rule
 
-**ToC must be fully read and deeply understood before making decisions.**
-
-- ❌ PROHIBITED: Using Grep/search tools on ToC content
-- ❌ PROHIBITED: Partial reading or skimming the ToC
-- ✅ REQUIRED: Read the entire ToC file with Read tool
-- ✅ REQUIRED: Understand all entries before identifying relevant documents
+- ❌ PROHIBITED: Searching while the index is stale (staleness check returned `"stale"`)
+- ✅ REQUIRED: Read each candidate document returned by search to confirm relevance before including it
+- False negatives are strictly prohibited. When in doubt, include it
 
 ## Output Format
 
@@ -66,3 +66,10 @@ If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to
 - "Document directories are not configured. Run /forge:setup-doc-structure to configure?"
   - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
   - No → abort
+
+If `search_docs.py` outputs `{"status": "error", ...}`, handle based on the error message:
+- **"Index not found"** → Inform user to run `/doc-advisor:create-specs-toc` first
+- **"Model mismatch"** → Inform user to run `/doc-advisor:create-specs-toc` with `--full` to rebuild
+- **"Index is stale"** → Inform user to run `/doc-advisor:create-specs-toc` to update
+- **"API error"** → Report the error details to the user
+- **"OPENAI_API_KEY not set"** → Ask user to set the `OPENAI_API_KEY` environment variable

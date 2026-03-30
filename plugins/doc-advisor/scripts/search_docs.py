@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+セマンティック検索スクリプト (doc-advisor plugin)
+
+インデックス JSON をロードし、クエリ文字列をベクトル化してコサイン類似度で
+関連文書を検索する。結果は JSON 形式で標準出力に出力する。
+
+Usage:
+    python3 search_docs.py --category {specs|rules} --query "タスクの説明文" [--threshold 0.3]
+
+Options:
+    --category   対象カテゴリ（必須）: specs または rules
+    --query      検索クエリ（必須）
+    --threshold  類似度スコアの下限閾値（デフォルト: 0.3）
+
+Run from: Project root
+"""
+
+import argparse
+import json
+import math
+import os
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+# embed_docs.py が存在する場合は EMBEDDING_MODEL をインポートしてモデルを一元管理する。
+# embed_docs.py が未実装の場合はローカルの定数を使用する。
+try:
+    # sys.path に scripts ディレクトリを追加して同ディレクトリからインポート
+    _scripts_dir = str(Path(__file__).parent)
+    if _scripts_dir not in sys.path:
+        sys.path.insert(0, _scripts_dir)
+    from embed_docs import EMBEDDING_MODEL
+except ImportError:
+    EMBEDDING_MODEL = "text-embedding-3-small"
+
+# toc_utils のインポート（設定読み込み・パス正規化）
+from toc_utils import (
+    ConfigNotReadyError,
+    get_all_md_files,
+    init_common_config,
+    normalize_path,
+    resolve_config_path,
+)
+
+
+def parse_args():
+    """コマンドライン引数をパースする"""
+    parser = argparse.ArgumentParser(
+        description="セマンティック検索: クエリに類似した文書をインデックスから検索する"
+    )
+    parser.add_argument(
+        "--category",
+        required=True,
+        choices=["rules", "specs"],
+        help="対象カテゴリ: rules または specs",
+    )
+    parser.add_argument(
+        "--query",
+        required=False,
+        default="",
+        help="検索クエリ（必須）",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.3,
+        help="類似度スコアの下限閾値（デフォルト: 0.3）",
+    )
+    return parser.parse_args()
+
+
+def get_index_path(common_config):
+    """
+    インデックス JSON ファイルのパスを返す。
+
+    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
+    （既存の ToC YAML と同じディレクトリに配置）
+
+    Args:
+        common_config: init_common_config() の返り値 dict
+
+    Returns:
+        Path: インデックスファイルの絶対パス
+    """
+    config = common_config["config"]
+    first_dir = common_config["first_dir"]
+    project_root = common_config["project_root"]
+
+    # checksums_file のパスからディレクトリを導出してインデックスを配置する
+    # checksums_file: .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
+    checksums_file = resolve_config_path(
+        config.get("checksums_file", ".toc_checksums.yaml"),
+        first_dir,
+        project_root,
+    )
+    index_dir = checksums_file.parent
+
+    # カテゴリ名を config から取得
+    category = config.get("category", "")
+    if not category:
+        # common_config には category が含まれていないため checksums_file のパスから推定
+        # .claude/doc-advisor/toc/specs/.toc_checksums.yaml → specs
+        category = index_dir.name
+
+    return index_dir / f"{category}_index.json"
+
+
+def load_index(index_path):
+    """
+    インデックス JSON を読み込む。
+
+    Args:
+        index_path: Path to index JSON file
+
+    Returns:
+        dict: インデックス内容
+
+    Raises:
+        FileNotFoundError: インデックスが存在しない場合
+        ValueError: JSON が破損している場合
+    """
+    index_path = Path(index_path)
+    if not index_path.exists():
+        raise FileNotFoundError(f"Index not found: {index_path}")
+
+    try:
+        with open(index_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Index JSON is corrupted: {e}") from e
+
+
+def check_model_mismatch(index):
+    """
+    インデックスのモデルと現在のモデル定数を比較する。
+
+    Args:
+        index: load_index() が返したインデックス dict
+
+    Returns:
+        str or None: モデル不一致の場合はエラーメッセージ、一致する場合は None
+    """
+    index_model = index.get("metadata", {}).get("model", "")
+    if index_model and index_model != EMBEDDING_MODEL:
+        return (
+            f"Model mismatch: index uses {index_model}, "
+            f"current is {EMBEDDING_MODEL}. "
+            "Run embed_docs.py --full to rebuild."
+        )
+    return None
+
+
+def check_staleness(index, common_config):
+    """
+    インデックスの鮮度を確認する（チェックサム比較）。
+
+    インデックス内の各エントリが持つ checksum と、現在のファイルのハッシュを比較する。
+    いずれか不一致または存在しないファイルがある場合は stale と判定する。
+
+    Args:
+        index: load_index() が返したインデックス dict
+        common_config: init_common_config() の返り値 dict
+
+    Returns:
+        bool: stale であれば True、新鮮であれば False
+    """
+    from toc_utils import calculate_file_hash
+
+    project_root = common_config["project_root"]
+    entries = index.get("entries", {})
+
+    for rel_path, entry in entries.items():
+        stored_checksum = entry.get("checksum", "")
+        abs_path = project_root / rel_path
+        if not abs_path.exists():
+            # インデックスに記録されたファイルが削除されている → stale
+            return True
+        current_hash = calculate_file_hash(abs_path)
+        if current_hash != stored_checksum:
+            return True
+
+    # ディスク上の新規ファイルがインデックスに存在しない場合は stale
+    if "root_dirs" in common_config:
+        md_files, file_root_map = get_all_md_files(common_config)
+        disk_paths = set()
+        for f in md_files:
+            root_dir, root_dir_name = file_root_map[f]
+            rel_path = normalize_path(f.relative_to(root_dir))
+            disk_paths.add(f"{root_dir_name}/{rel_path}")
+        index_paths = set(entries.keys())
+        if disk_paths - index_paths:
+            return True
+
+    return False
+
+
+def cosine_similarity(vec_a, vec_b):
+    """
+    コサイン類似度を純粋 Python で計算する。
+
+    Args:
+        vec_a: ベクトル A（list of float）
+        vec_b: ベクトル B（list of float）
+
+    Returns:
+        float: コサイン類似度（-1.0〜1.0）
+    """
+    dot = sum(a * b for a, b in zip(vec_a, vec_b))
+    norm_a = math.sqrt(sum(a * a for a in vec_a))
+    norm_b = math.sqrt(sum(b * b for b in vec_b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def call_embedding_api(text, api_key):
+    """
+    OpenAI Embedding API を呼び出し、テキストのベクトルを返す。
+
+    Args:
+        text: Embedding するテキスト
+        api_key: OpenAI API キー
+
+    Returns:
+        list[float]: Embedding ベクトル
+
+    Raises:
+        RuntimeError: API 呼び出し失敗時
+    """
+    url = "https://api.openai.com/v1/embeddings"
+    payload = json.dumps({"model": EMBEDDING_MODEL, "input": [text]}).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data["data"][0]["embedding"]
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8")
+        except Exception:
+            pass
+        raise RuntimeError(f"HTTP {e.code}: {body}") from e
+    except urllib.error.URLError as e:
+        # ネットワークエラー: 1 回リトライ
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["data"][0]["embedding"]
+        except Exception as retry_err:
+            raise RuntimeError(f"Network error: {retry_err}") from retry_err
+
+
+def search(query, index, api_key, threshold):
+    """
+    インデックス内の全エントリとコサイン類似度を計算し、閾値以上の候補を返す。
+
+    Args:
+        query: 検索クエリ文字列
+        index: load_index() が返したインデックス dict
+        api_key: OpenAI API キー
+        threshold: 類似度スコアの下限閾値
+
+    Returns:
+        list[dict]: score 降順でソートされた {"path": ..., "title": ..., "score": ...} のリスト
+    """
+    query_vec = call_embedding_api(query, api_key)
+
+    entries = index.get("entries", {})
+    results = []
+    for rel_path, entry in entries.items():
+        embedding = entry.get("embedding")
+        if not embedding:
+            continue
+        score = cosine_similarity(query_vec, embedding)
+        if score >= threshold:
+            results.append({
+                "path": normalize_path(rel_path),
+                "title": entry.get("title", ""),
+                "score": round(score, 6),
+            })
+
+    # スコア降順でソート
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results
+
+
+def main():
+    """メインエントリーポイント"""
+    args = parse_args()
+
+    # --query が空文字または未指定の場合はエラー
+    if not args.query or not args.query.strip():
+        print(json.dumps({
+            "status": "error",
+            "error": "--query is required and must not be empty.",
+        }))
+        sys.exit(1)
+
+    # 設定初期化
+    try:
+        common_config = init_common_config(args.category)
+    except ConfigNotReadyError as e:
+        print(json.dumps({"status": "error", "error": str(e)}))
+        sys.exit(1)
+    except (RuntimeError, FileNotFoundError) as e:
+        print(json.dumps({"status": "error", "error": str(e)}))
+        sys.exit(1)
+
+    # インデックスパスの解決
+    index_path = get_index_path(common_config)
+
+    # インデックスの読み込み
+    try:
+        index = load_index(index_path)
+    except FileNotFoundError:
+        print(json.dumps({
+            "status": "error",
+            "error": "Index not found. Run embed_docs.py first.",
+        }))
+        sys.exit(1)
+    except ValueError as e:
+        print(json.dumps({
+            "status": "error",
+            "error": f"Index is corrupted: {e}. Run embed_docs.py --full to rebuild.",
+        }))
+        sys.exit(1)
+
+    # モデル不一致チェック
+    model_error = check_model_mismatch(index)
+    if model_error:
+        print(json.dumps({"status": "error", "error": model_error}))
+        sys.exit(1)
+
+    # Staleness チェック（FNC-002: stale 時は検索を実行せずエラーを返す）
+    if check_staleness(index, common_config):
+        print(json.dumps({
+            "status": "error",
+            "error": "Index is stale. Run embed_docs.py to update.",
+        }))
+        sys.exit(1)
+
+    # API キーの取得
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        print(json.dumps({
+            "status": "error",
+            "error": (
+                "OPENAI_API_KEY not set. "
+                "Set it with: export OPENAI_API_KEY=sk-..."
+            ),
+        }))
+        sys.exit(1)
+
+    # 検索実行
+    try:
+        results = search(args.query, index, api_key, args.threshold)
+    except RuntimeError as e:
+        print(json.dumps({"status": "error", "error": f"API error: {e}"}))
+        sys.exit(1)
+
+    # JSON 出力（DES-006 §3.4 準拠）
+    print(json.dumps({
+        "status": "ok",
+        "query": args.query,
+        "results": results,
+    }, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-03-30
+
+### doc-advisor
+
+- **feat**: OpenAI Embedding ベースのセマンティック検索を導入（`embed_docs.py`, `search_docs.py`, `grep_docs.py`）。従来の ToC YAML 全量読み込みから Embedding 類似度検索 + 全文 grep のハイブリッド方式に移行
+- **feat**: `toc_utils.py` に `get_all_md_files()` / `load_metadata()` を追加し、スクリプト間の共通処理を統合
+- **refactor**: `query-specs` / `query-rules` / `create-specs-toc` / `create-rules-toc` の SKILL.md をセマンティック検索ワークフローに更新
+- **fix**: `check_staleness()` がディスク上の新規ファイルを検出するよう設計修正（`get_all_md_files` との差分チェック追加）
+- **fix**: `embed_docs.py` の差分モードにおける dead code（削除ファイルガード節）を除去
+- **test**: `embed_docs` / `search_docs` / `grep_docs` のユニットテスト追加（913件、全パス）
+- **test**: FNC-002 精度検証用ゴールデンセット（13クエリ、見落しゼロ確認）を追加
+- **test**: コードレビューで発見したテストカバレッジギャップ8件を修正
+
 ## [0.0.27] - 2026-03-29
 
 ### forge

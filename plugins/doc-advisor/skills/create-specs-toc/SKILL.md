@@ -1,20 +1,19 @@
 ---
 name: create-specs-toc
 description: |
-  Update the specs search index (ToC) after modifying, creating, or deleting
-  requirement or design documents such as functional requirements,
-  use cases, or technical design specs.
+  Build or update the specs Embedding index for semantic document search.
+  Extracts metadata from existing ToC YAML and vectorizes via OpenAI Embedding API.
   Trigger:
   - After editing, adding, or removing spec documents
-  - "Rebuild the specs ToC"
-allowed-tools: Bash, Read, Task
+  - "Rebuild the specs index"
+allowed-tools: Bash, Read
 user-invocable: true
 argument-hint: "[--full]"
 ---
 
 # create-specs-toc
 
-Generate/update specs ToC (Table of Contents) for AI-searchable document index.
+Build/update the specs Embedding index for AI-searchable semantic document search.
 
 ## Usage
 
@@ -24,16 +23,21 @@ Generate/update specs ToC (Table of Contents) for AI-searchable document index.
 
 | Argument | Description                                           |
 | -------- | ----------------------------------------------------- |
-| (none)   | Incremental update (hash-based) or resume processing  |
-| `--full` | Full file scan (for initial creation or regeneration) |
+| (none)   | Incremental update (hash-based diff)                  |
+| `--full` | Full rebuild (for initial creation or regeneration)    |
 
 ## Execution Flow
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/docs/toc_orchestrator.md` for orchestrator workflow
-2. Read `${CLAUDE_PLUGIN_ROOT}/docs/toc_format.md` for format definition
-3. Execute the full orchestrator workflow as described in the document, with **category = specs**
-   - If `$0` = `--full`: Execute in **full mode** (rebuild entire ToC)
-   - Otherwise: Execute in **incremental mode** (process changes only)
+Run the Embedding index builder:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs [--full]
+```
+
+- If `$0` = `--full`: pass `--full` flag (rebuild entire index)
+- Otherwise: run without `--full` (incremental diff update)
+
+> **Migration note**: During the migration period, metadata is sourced from the existing ToC YAML. The ToC YAML will continue to be maintained alongside the Embedding index.
 
 ## Error Handling
 
@@ -41,5 +45,12 @@ If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to
 - "Document directories are not configured. Run /forge:setup-doc-structure to configure?"
   - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
   - No → abort
+
+If a script outputs `{"status": "error", ...}` with an OPENAI_API_KEY-related message, use AskUserQuestion to inform the user:
+- "OPENAI_API_KEY is not set. Please run `export OPENAI_API_KEY='your-api-key'` and retry."
+
+If a script outputs `{"status": "partial", ...}`, report the partial failure details to the user:
+- Show the number of successfully processed and failed files
+- Explain that failed files will be automatically reprocessed on the next incremental run
 
 For other unexpected errors, report the error details clearly and use AskUserQuestion to ask the user how to proceed.
