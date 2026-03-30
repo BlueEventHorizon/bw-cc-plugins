@@ -182,7 +182,12 @@ def load_config(category=None):
         config_path = find_config_file()
         with open(config_path, 'r', encoding='utf-8') as f:
             content = f.read()
-    except (FileNotFoundError, RuntimeError, PermissionError, OSError):
+    except (FileNotFoundError, RuntimeError):
+        if category:
+            return defaults.get(category, {})
+        return defaults
+    except (PermissionError, OSError) as e:
+        print(f"Warning: load_config failed to read config file: {e}", file=sys.stderr)
         if category:
             return defaults.get(category, {})
         return defaults
@@ -850,7 +855,7 @@ def load_existing_toc(toc_path):
             if key_candidate.endswith('.md'):
                 if current_path and current_entry:
                     docs[current_path] = current_entry
-                current_path = key_candidate
+                current_path = normalize_path(key_candidate)
                 current_entry = {}
                 current_list = None
         elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
@@ -979,6 +984,7 @@ def load_checksums(checksums_file):
                     in_checksums = False
                     continue
                 if ': ' in stripped:
+                    # SHA-256 ハッシュのみを想定（ハッシュ値自体に ': ' は含まれない前提）
                     parts = stripped.rsplit(': ', 1)
                     if len(parts) == 2:
                         filepath = parts[0].strip()
@@ -1155,8 +1161,8 @@ def init_common_config(category):
     if isinstance(root_dirs_config, str):
         root_dirs_config = [root_dirs_config]
 
-    # Validate: if root_dirs is still the default and the directory doesn't exist,
-    # .doc_structure.yaml is missing or not configured for this category.
+    # デフォルト設定のまま（.doc_structure.yaml 未設定）かつデフォルトディレクトリが存在しない場合は
+    # セットアップが必要と判断する
     if root_dirs_config == [default_dir]:
         default_path = project_root / default_dir.rstrip('/')
         if not default_path.is_dir():
@@ -1190,3 +1196,79 @@ def init_common_config(category):
         'exclude_patterns': exclude_patterns,
         'doc_types_map': doc_types_map,
     }
+
+
+def get_all_md_files(common_config):
+    """
+    全 root_dirs から対象 .md ファイルを収集する（シンボリックリンク対応）。
+
+    create_pending_yaml.py から移植。グローバル変数依存を除去し、
+    init_common_config() の返り値を引数として受け取る。
+
+    Args:
+        common_config: init_common_config() の返り値 dict。
+            必須キー: root_dirs, target_glob, exclude_patterns
+
+    Returns:
+        tuple: (md_files, file_root_map)
+            - md_files: list[Path] — ソート済みの対象ファイルリスト
+            - file_root_map: dict[Path, (Path, str)] — filepath → (root_dir, root_dir_name)
+    """
+    root_dirs = common_config['root_dirs']
+    target_glob = common_config['target_glob']
+    exclude_patterns = common_config['exclude_patterns']
+
+    md_files = []
+    file_root_map = {}
+
+    for root_dir, root_dir_name in root_dirs:
+        if not root_dir.exists():
+            print(f"Warning: {root_dir} does not exist, skipping")
+            continue
+        for filepath in rglob_follow_symlinks(root_dir, target_glob):
+            if should_exclude(filepath, root_dir, exclude_patterns):
+                continue
+            md_files.append(filepath)
+            file_root_map[filepath] = (root_dir, root_dir_name)
+
+    md_files.sort()
+    return md_files, file_root_map
+
+
+def load_metadata(category, file_path, toc_path=None):
+    """
+    文書ファイルのメタデータを ToC YAML から読み込む（抽象化レイヤー）。
+
+    embed_docs.py がメタデータを取得するための統一インターフェース。
+    Phase 3 で ToC 廃止後はこの関数の実装のみを変更すればよく、
+    embed_docs.py への影響を局所化できる。
+
+    Args:
+        category: 'rules' or 'specs'
+        file_path: 文書のプロジェクト相対パス（str）
+        toc_path: ToC YAML ファイルパス（省略時は設定から自動解決）
+
+    Returns:
+        dict: メタデータ dict。キー: title, purpose, keywords,
+              applicable_tasks, content_details。
+              ToC に存在しない場合は空 dict。
+    """
+    if toc_path is None:
+        try:
+            config = load_config(category)
+            project_root = get_project_root()
+            default_dir = project_root / category
+            # ToC ファイルパスを設定から解決
+            toc_file_setting = config.get('toc_file', f'.claude/doc-advisor/toc/{category}/{category}_toc.yaml')
+            toc_path = resolve_config_path(toc_file_setting, default_dir, project_root)
+        except Exception as e:
+            print(f"Warning: load_metadata failed for {file_path}: {e}", file=sys.stderr)
+            return {}
+
+    toc_entries = load_existing_toc(toc_path)
+    # NFC 正規化してキー検索
+    normalized_path = normalize_path(file_path)
+    entry = toc_entries.get(normalized_path, {})
+    return entry
+
+

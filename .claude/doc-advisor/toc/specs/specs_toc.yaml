@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-28T12:54:12Z
-  file_count: 23
+  generated_at: 2026-03-30T02:06:12Z
+  file_count: 31
 
 docs:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
@@ -189,6 +189,220 @@ docs:
       - SHA-256
       - doc-advisor
       - orchestrator
+  docs/specs/doc-advisor/semantic-query/requirements/FNC-001_context_external_search_spec.md:
+    doc_type: requirement
+    title: FNC-001 Context-External Search Specification
+    purpose: Defines requirements for performing document search outside the AI context window, returning only candidate document paths to the AI
+    content_details:
+      - Search execution outside context window
+      - Search result format as candidate document path list
+      - Input from task description text
+      - Error handling for missing index and empty results
+      - Related requirements for search accuracy and index generation
+      - Test requirements for Python scripts
+    applicable_tasks:
+      - Context-external search implementation
+      - Search engine integration for doc-advisor
+      - AI context cost optimization
+      - Document path resolution
+    keywords:
+      - Context-external search
+      - doc-advisor
+      - semantic search
+      - context window
+      - indexing
+      - candidate paths
+  docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md:
+    doc_type: requirement
+    title: Zero-Miss Search Accuracy Specification
+    purpose: Defines requirements to achieve zero-miss search accuracy in document retrieval, ensuring all related documents are found without false negatives
+    content_details:
+      - False negative elimination requirement
+      - Unlimited result count to return all relevant documents
+      - "Search field targets: title, purpose, content_details, applicable_tasks, keywords"
+      - "Category separation: independent rules and specs indexes"
+      - Golden test set for accuracy validation
+      - Manual verification of ground truth data
+      - Index staleness handling and regeneration guidance
+      - Related FNC-001 context-out search requirement
+    applicable_tasks:
+      - Search functionality implementation
+      - Accuracy measurement and validation
+      - Index generation and maintenance
+      - Test query set design
+      - Search result comparison with golden set
+      - Index staleness detection and handling
+    keywords:
+      - zero-miss
+      - search accuracy
+      - false negatives
+      - relevance
+      - index validation
+      - golden set
+      - query matching
+      - document retrieval
+  docs/specs/doc-advisor/semantic-query/requirements/FNC-003_fast_index_generation_spec.md:
+    doc_type: requirement
+    title: FNC-003 Fast Index Generation Specification
+    purpose: Defines requirements for accelerating document index generation to be faster than the current ToC generation pipeline, including full reconstruction and differential update capabilities
+    content_details:
+      - Full index reconstruction faster than current ToC generation pipeline
+      - Differential update support for modified, added, and deleted documents
+      - Index generation triggered by create-specs-toc and create-rules-toc skill execution
+      - Index persistence under .claude/doc-advisor/ with SHA-256 checksum-based diff detection
+      - Error handling for corrupted indexes and deleted files during diff detection
+      - "Prerequisite: .doc_structure.yaml must be configured"
+      - "TBD items: specific index data format and numerical performance targets"
+    applicable_tasks:
+      - Index generation performance optimization
+      - Differential index update implementation
+      - Create-specs-toc and create-rules-toc skill enhancement
+      - File deletion and corruption handling in index management
+    keywords:
+      - index
+      - performance
+      - generation
+      - differential update
+      - checksum
+      - sha256
+      - doc-advisor
+      - toc
+      - fast
+  docs/specs/doc-advisor/semantic-query/requirements/NFR-001_context_cost_reduction_spec.md:
+    doc_type: requirement
+    title: NFR-001 Context Cost Reduction Requirements
+    purpose: Defines non-functional requirements for reducing AI context window consumption during document search operations
+    content_details:
+      - Eliminate full ToC YAML loading from AI context
+      - Achieve 50 percent or greater context consumption reduction
+      - Measure success using token count metrics
+      - Define measurement conditions using fixed query set
+      - Error handling for unavailable search index
+      - "Prerequisite: FNC-001 context-external search implementation"
+    applicable_tasks:
+      - Context cost optimization validation
+      - Document search optimization planning
+      - AI token consumption measurement
+      - Search performance review
+    keywords:
+      - context cost reduction
+      - token consumption
+      - ToC YAML
+      - search index
+      - semantic query
+      - non-functional requirements
+  docs/specs/doc-advisor/semantic-query/requirements/NFR-002_yaml_toc_abolition_spec.md:
+    doc_type: requirement
+    title: NFR-002 YAML ToC Abolition Requirement Specification
+    purpose: Defines requirements for abolishing the YAML ToC system and migration plan after achieving search accuracy verification
+    content_details:
+      - Abolition conditions requiring zero omission verification
+      - "Abolition targets: YAML ToC files and generation pipeline"
+      - "Maintenance targets: checksums, doc structure, query skill contracts"
+      - "Operational continuity requirements: differential updates, recovery, resumption"
+      - Error handling for premature abolition attempts
+      - "Related requirements: FNC-002 search accuracy, FNC-003 generation speedup"
+      - Implementation timeline and prerequisites
+      - TBD items for design phase
+    applicable_tasks:
+      - Doc-Advisor system migration planning
+      - Specification review for YAML ToC replacement
+      - Pipeline deprecation planning
+      - Search accuracy verification assessment
+    keywords:
+      - YAML ToC
+      - abolition
+      - requirements
+      - search precision
+      - doc-advisor
+      - indexing
+      - migration
+      - FNC-002
+  docs/specs/doc-advisor/semantic-query/requirements/NFR-003_standard_library_preferred_spec.md:
+    doc_type: requirement
+    title: NFR-003 Standard Library Preferred Specification
+    purpose: Defines library selection policy for search index implementation, allowing external libraries when standard library cannot meet accuracy and performance requirements
+    content_details:
+      - Library selection policy (prioritize standard library, allow external libraries when necessary)
+      - Applicable scope (index construction, search execution, result ranking)
+      - Error handling (missing external library installation guidance)
+      - Related requirements (FNC-001, FNC-003)
+      - Approval notes regarding deviation from REQ-001
+    applicable_tasks:
+      - Search index implementation
+      - Library dependency selection and evaluation
+      - Implementation specification review
+    keywords:
+      - standard library
+      - semantic search
+      - library selection
+      - search index
+      - dependency management
+  docs/specs/doc-advisor/semantic-query/requirements/technical_qa.md:
+    doc_type: requirement
+    title: Semantic Search Technical Q&A
+    purpose: Documents technical decision-making for semantic-query requirements, addressing embedding technology, vector search implementation, API dependencies, and architecture design
+    content_details:
+      - Embedding vs rule-based matching comparison
+      - Vector search delegation and architecture
+      - External dependencies analysis for embedding systems
+      - OpenAI API usage and cost analysis
+      - Modern embedding models and semantic understanding
+      - BM25 vs Embedding tradeoffs and hybrid approaches
+      - Query handling with proper nouns and full-text search
+      - Vector storage and search without Vector DB
+      - Python implementation using standard library
+      - Final semantic search architecture with OpenAI API
+    applicable_tasks:
+      - Semantic search implementation design
+      - doc-advisor search requirements definition
+      - Technology selection for embedding-based retrieval
+      - Architecture review for query systems
+      - Vector search system implementation
+      - Embedding model integration planning
+    keywords:
+      - semantic search
+      - embedding
+      - vector search
+      - OpenAI API
+      - BM25
+      - cosine similarity
+      - doc-advisor
+      - text-embedding-3
+      - hybrid search
+      - technical requirements
+  docs/specs/doc-advisor/semantic-query/requirements/technical_research_report.md:
+    doc_type: requirement
+    title: Semantic Search Technical Research Report
+    purpose: Documents technical investigation of semantic search approaches, embedding models, and full-text search technologies to inform design decisions for semantic-query requirements
+    content_details:
+      - Full-text search and indexing concepts (BM25, embedding, tokenization)
+      - SQLite FTS5 capabilities and limitations
+      - Lightweight search library survey (Whoosh, tantivy, bm25s)
+      - Embedding models comparison (OpenAI, Voyage, multilingual-e5)
+      - Vector database options (ChromaDB, LanceDB, sqlite-vec)
+      - Hybrid search approaches and ranking fusion (RRF, Convex Combination)
+      - Japanese tokenization strategies for multilingual content
+      - Re-ranking techniques and applicability to 600-document corpus
+      - Four design approaches (FTS5, BM25 self-implementation, Vector, Hybrid)
+      - Recommended adoption strategy (Embedding + grep-based full-text search)
+    applicable_tasks:
+      - Semantic search implementation planning
+      - Embedding and vector database integration design
+      - Search algorithm selection and optimization
+      - Multilingual document search implementation
+      - Full-text search system architecture
+    keywords:
+      - semantic search
+      - embedding
+      - BM25
+      - ChromaDB
+      - FTS5
+      - tokenizer
+      - vector search
+      - hybrid search
+      - information retrieval
+      - doc-advisor
   docs/specs/forge/design/clean_rules_design.md:
     doc_type: design
     title: clean-rules Skill Design

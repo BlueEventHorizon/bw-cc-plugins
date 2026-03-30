@@ -1,0 +1,73 @@
+# ゴールデンセット — FNC-002 精度検証用
+# 各クエリに対して正解文書（expected_paths）を定義
+# search_docs.py の結果に expected_paths が全件含まれることを検証
+#
+# expected_paths はプロジェクトルートからの相対パス（.doc_structure.yaml の root_dirs 基準）
+# False Positive は許容するが、False Negative は 1 件でもテスト失敗
+
+specs:
+  - query: "セマンティック検索の設計"
+    expected_paths:
+      - "docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md"
+    note: "直接的な設計文書"
+
+  - query: "文書モデルの設計仕様"
+    expected_paths:
+      - "docs/specs/doc-advisor/design/DES-004_document_model.md"
+    note: "ドキュメントモデル設計書"
+
+  - query: "レビューワークフローの設計"
+    expected_paths:
+      - "docs/specs/forge/design/review_workflow_design.md"
+    note: "レビューパイプラインの設計文書"
+
+  - query: "バージョン管理の設計と移行"
+    expected_paths:
+      - "docs/specs/forge/design/version_management_workflow_design.md"
+    note: "バージョン管理ワークフロー設計"
+
+  - query: "見落としゼロの検索精度要件"
+    expected_paths:
+      - "docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md"
+    note: "検索精度の要件定義"
+
+  - query: "ToC 生成フローの設計"
+    expected_paths:
+      - "docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md"
+    note: "ToC 生成フロー設計書"
+
+  - query: "セッション管理の設計"
+    expected_paths:
+      - "docs/specs/forge/design/session_management_design.md"
+    note: "セッション管理設計書 DES-011"
+
+  - query: "プラグイン移行の設計"
+    expected_paths:
+      - "docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md"
+    note: "doc-advisor プラグイン移行設計"
+
+rules:
+  - query: "SKILL.md の作成方法やルール"
+    expected_paths:
+      - "docs/rules/skill_authoring_notes.md"
+    note: "スキル作成ルール文書"
+
+  - query: "CLI の出力フォーマット規則"
+    expected_paths:
+      - "docs/rules/cli_output_formatting.md"
+    note: "CLI 出力整形ルール"
+
+  - query: "文書の書き方ガイドライン"
+    expected_paths:
+      - "docs/rules/document_writing_rules.md"
+    note: "文書作成ルール"
+
+  - query: "実装時のコーディング規約"
+    expected_paths:
+      - "docs/rules/implementation_guidelines.md"
+    note: "実装ガイドライン"
+
+  - query: "バージョンマイグレーションの設計ルール"
+    expected_paths:
+      - "docs/rules/version_migration_design.md"
+    note: "バージョン移行設計ルール"

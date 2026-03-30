@@ -161,6 +161,7 @@ def main():
     parser.add_argument('new_version', help='置換先バージョン')
     parser.add_argument('--version-path', help='バージョンフィールドのネストパス（例: version, package.version）')
     parser.add_argument('--filter', dest='filter_pattern', help='フィルタパターン（マッチするブロック内のみ置換）')
+    parser.add_argument('--optional', action='store_true', help='パターン未マッチ時にエラーではなく警告で終了（exit 0）')
 
     args = parser.parse_args()
 
@@ -189,6 +190,11 @@ def main():
         print(json.dumps(status, ensure_ascii=False, indent=2), file=sys.stderr)
         sys.exit(0)
     except ValueError as e:
+        if args.optional:
+            # optional モード: パターン未マッチは警告扱いで exit 0
+            warning = {"status": "skipped", "file": args.file_path, "reason": str(e)}
+            print(json.dumps(warning, ensure_ascii=False, indent=2), file=sys.stderr)
+            sys.exit(0)
         error = {"status": "error", "error": str(e)}
         print(json.dumps(error, ensure_ascii=False, indent=2), file=sys.stderr)
         sys.exit(1)
