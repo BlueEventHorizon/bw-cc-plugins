@@ -228,7 +228,7 @@ tasks:
   - task_id: TASK-008
     title: query-specs / query-rules SKILL.md を新検索方式に更新
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-002
@@ -253,7 +253,7 @@ tasks:
   - task_id: TASK-009
     title: create-specs-toc / create-rules-toc SKILL.md をインデックス生成方式に更新
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-002
