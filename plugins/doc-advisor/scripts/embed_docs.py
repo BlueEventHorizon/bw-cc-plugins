@@ -472,9 +472,6 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         # 失敗したファイルはチェックサムを更新しない（次回の差分で再処理される）
         if source_file in failed_sources:
             continue
-        # 削除ファイルは除外
-        if source_file in deleted_files:
-            continue
         checksum = calculate_file_hash(full_path)
         if checksum is not None:
             current_checksums[source_file] = checksum

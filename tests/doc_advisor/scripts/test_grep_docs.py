@@ -362,17 +362,19 @@ class TestGrepDocsEdgeCases(GrepDocsTestBase):
         self.assertEqual(len(results), 1)
 
     def test_non_md_files_ignored(self):
-        """*.md 以外のファイルは検索対象外"""
+        """*.md 以外のファイルは検索対象外（.md のみがヒットすることを検証）"""
         self._create_doc('rules/readme.txt', 'このファイルにはキーワードがある。\n')
         self._create_doc('rules/data.json', '{"keyword": "テスト"}')
-        self._create_doc('rules/actual.md', '# ルール\n\n通常のマークダウン。\n')
+        # .md にもキーワードを含める。.txt/.json が除外されなければ余分な結果が混入する
+        self._create_doc('rules/actual.md', '# ルール\n\nこのファイルにはキーワードがある。\n')
 
         search_files, init_common_config = self._get_search_files()
         common_config = init_common_config('rules')
         results = search_files('キーワード', common_config)
 
-        # .txt と .json はマッチしない
-        self.assertEqual(results, [])
+        # .md のみがヒットし、.txt と .json は除外される
+        self.assertEqual(len(results), 1)
+        self.assertIn('rules/actual.md', results[0])
 
 
 if __name__ == '__main__':

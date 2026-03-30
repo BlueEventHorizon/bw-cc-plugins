@@ -40,6 +40,7 @@ except ImportError:
 # toc_utils のインポート（設定読み込み・パス正規化）
 from toc_utils import (
     ConfigNotReadyError,
+    get_all_md_files,
     init_common_config,
     normalize_path,
     resolve_config_path,
@@ -180,6 +181,18 @@ def check_staleness(index, common_config):
             return True
         current_hash = calculate_file_hash(abs_path)
         if current_hash != stored_checksum:
+            return True
+
+    # ディスク上の新規ファイルがインデックスに存在しない場合は stale
+    if "root_dirs" in common_config:
+        md_files, file_root_map = get_all_md_files(common_config)
+        disk_paths = set()
+        for f in md_files:
+            root_dir, root_dir_name = file_root_map[f]
+            rel_path = normalize_path(f.relative_to(root_dir))
+            disk_paths.add(f"{root_dir_name}/{rel_path}")
+        index_paths = set(entries.keys())
+        if disk_paths - index_paths:
             return True
 
     return False

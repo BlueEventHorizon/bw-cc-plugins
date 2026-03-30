@@ -267,6 +267,44 @@ class TestCheckStaleness(unittest.TestCase):
         result = check_staleness(index, common_config)
         self.assertFalse(result)
 
+    def test_stale_new_file_on_disk(self):
+        """ディスク上に新規 .md ファイルが存在するがインデックスに未登録の場合は True（stale）
+
+        root_dir_name（エイリアス "my_docs"）と実際のディレクトリ名（"documents"）が異なるケースで
+        インデックスキーの形式 "{root_dir_name}/{rel_path}" が正しく構築されることを検証する。
+        """
+        # 実際のディレクトリ名は "documents"、エイリアスは "my_docs"
+        docs_dir = self.project_root / "documents"
+        docs_dir.mkdir(parents=True)
+        new_file = docs_dir / "new.md"
+        new_file.write_text("# New\n\nNewly added.\n")
+
+        # インデックスは空（新規ファイルを未登録）
+        index = {"entries": {}}
+        common_config = {
+            "project_root": self.project_root,
+            "root_dirs": [(docs_dir, "my_docs")],  # エイリアスがディレクトリ名と異なる
+            "target_glob": "*.md",
+            "exclude_patterns": [],
+        }
+
+        result = check_staleness(index, common_config)
+        self.assertTrue(result)
+
+    def test_fresh_when_no_root_dirs(self):
+        """root_dirs が common_config に存在しない場合は新規ファイルチェックをスキップする"""
+        # ディスク上にファイルを配置（インデックス未登録）
+        docs_dir = self.project_root / "docs"
+        docs_dir.mkdir(parents=True)
+        (docs_dir / "new.md").write_text("# New\n")
+
+        # root_dirs なし → 後方互換のためスキップして False を返す
+        index = {"entries": {}}
+        common_config = {"project_root": self.project_root}
+
+        result = check_staleness(index, common_config)
+        self.assertFalse(result)
+
 
 # ===========================================================================
 # search() テスト
@@ -649,6 +687,57 @@ specs:
             self.assertIn("path", r)
             self.assertIn("title", r)
             self.assertIn("score", r)
+
+
+# ===========================================================================
+# call_embedding_api() テスト
+# ===========================================================================
+
+class TestCallEmbeddingApi(unittest.TestCase):
+    """call_embedding_api() の API モックテスト。"""
+
+    @patch("search_docs.urllib.request.urlopen")
+    def test_success_returns_embedding(self, mock_urlopen):
+        """正常系: モックレスポンスから embedding ベクトルが返される"""
+        response_bytes = _make_api_response(E1)
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = response_bytes
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        result = search_docs.call_embedding_api("テストクエリ", "fake-api-key")
+
+        self.assertEqual(len(result), len(E1))
+        self.assertAlmostEqual(result[0], 1.0, places=6)
+
+    @patch("search_docs.urllib.request.urlopen")
+    def test_rate_limit_raises_runtime_error(self, mock_urlopen):
+        """429 レート制限で RuntimeError が発生する"""
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="https://api.openai.com/v1/embeddings",
+            code=429,
+            msg="Too Many Requests",
+            hdrs={},
+            fp=None,
+        )
+
+        with self.assertRaises(RuntimeError) as ctx:
+            search_docs.call_embedding_api("テスト", "fake-key")
+        self.assertIn("429", str(ctx.exception))
+
+    @patch("search_docs.urllib.request.urlopen")
+    def test_network_error_raises_runtime_error(self, mock_urlopen):
+        """ネットワークエラー（URLError）でリトライ後に RuntimeError が発生する"""
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
+
+        with self.assertRaises(RuntimeError) as ctx:
+            search_docs.call_embedding_api("テスト", "fake-key")
+        self.assertIn("Network error", str(ctx.exception))
+        # 初回 + リトライ 1 回 = 合計 2 回呼ばれる
+        self.assertEqual(mock_urlopen.call_count, 2)
 
 
 if __name__ == '__main__':

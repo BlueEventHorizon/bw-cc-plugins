@@ -35,6 +35,10 @@ def load_queries_yaml(yaml_path):
 
     Returns:
         dict: {"specs": [...], "rules": [...]} 形式
+
+    Raises:
+        FileNotFoundError: ファイルが存在しない場合
+        ValueError: パース結果が空（カテゴリなし、またはエントリなし）の場合
     """
     with open(yaml_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
@@ -101,6 +105,11 @@ def load_queries_yaml(yaml_path):
                     current_key = None
                     continue
 
+    if not result:
+        raise ValueError(f"load_queries_yaml: '{yaml_path}' をパースしましたがカテゴリが1件も見つかりませんでした。ファイル形式を確認してください。")
+    for category, entries in result.items():
+        if not entries:
+            raise ValueError(f"load_queries_yaml: カテゴリ '{category}' にエントリがありません。'{yaml_path}' の内容を確認してください。")
     return result
 
 
@@ -341,6 +350,37 @@ class TestLoadQueriesYaml(unittest.TestCase):
                 self.assertIsInstance(entry["query"], str)
                 self.assertIsInstance(entry["expected_paths"], list)
                 self.assertGreater(len(entry["expected_paths"]), 0)
+
+    def test_inline_expected_paths(self):
+        """expected_paths のインライン形式（1行で値を書く形式）を正しくパースできること"""
+        import tempfile
+
+        yaml_content = """\
+specs:
+  - query: "テストクエリ"
+    expected_paths: "docs/specs/some/file.md"
+    note: "インライン形式テスト"
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", encoding="utf-8", delete=False
+        ) as f:
+            f.write(yaml_content)
+            tmp_path = f.name
+
+        try:
+            queries = load_queries_yaml(tmp_path)
+        finally:
+            import os as _os
+            _os.unlink(tmp_path)
+
+        self.assertIn("specs", queries)
+        self.assertEqual(len(queries["specs"]), 1)
+
+        entry = queries["specs"][0]
+        self.assertEqual(entry["query"], "テストクエリ")
+        self.assertIsInstance(entry["expected_paths"], list)
+        self.assertEqual(entry["expected_paths"], ["docs/specs/some/file.md"])
+        self.assertEqual(entry["note"], "インライン形式テスト")
 
 
 if __name__ == "__main__":

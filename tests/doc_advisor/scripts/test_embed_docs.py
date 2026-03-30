@@ -33,6 +33,7 @@ EMBED_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'embed_docs.py')
 import embed_docs
 from embed_docs import (
     build_embedding_text,
+    build_index,
     call_embedding_api,
     get_index_path,
     load_index,
@@ -314,8 +315,8 @@ class TestCallEmbeddingApi(unittest.TestCase):
             call_embedding_api(["テスト"], "fake-key")
         # リトライ回数 + 初回 = API_RETRY_COUNT + 1 回呼ばれる
         self.assertEqual(mock_urlopen.call_count, embed_docs.API_RETRY_COUNT + 1)
-        # sleep が呼ばれている
-        mock_sleep.assert_called_once()
+        # sleep が API_RETRY_COUNT 回呼ばれている
+        self.assertEqual(mock_sleep.call_count, embed_docs.API_RETRY_COUNT)
 
 
 # ===========================================================================
@@ -629,7 +630,6 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from embed_docs import init_common_config, build_index
                 from toc_utils import init_common_config as toc_init
 
                 common = toc_init('rules')
@@ -727,6 +727,65 @@ specs:
         self.assertIn("rules/new_file.md", index["entries"])
         # API が呼ばれた（2ファイル分）
         mock_api.assert_called_once()
+
+    def test_diff_mode_removes_deleted_file_checksum(self):
+        """差分モードで削除されたファイルのチェックサムが更新後のファイルに含まれないこと"""
+        self._create_rule_file('rules/kept.md', content='# Kept\n\nKept content.\n')
+
+        # ToC YAML（kept.md のみ）
+        toc_path = os.path.join(self.toc_dir, 'rules_toc.yaml')
+        with open(toc_path, 'w') as f:
+            f.write('docs:\n  rules/kept.md:\n    title: "Kept"\n')
+
+        # 既存インデックス（kept.md と removed.md）
+        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        existing_index = {
+            "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 2},
+            "entries": {
+                "rules/kept.md": {"title": "Kept", "embedding": FIXED_VECTOR, "checksum": "old_hash"},
+                "rules/removed.md": {"title": "Removed", "embedding": FIXED_VECTOR, "checksum": "removed_hash"},
+            },
+        }
+        with open(index_path, 'w') as f:
+            json.dump(existing_index, f)
+
+        # チェックサム（kept.md と removed.md が登録済み）
+        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        with open(checksums_path, 'w') as f:
+            f.write("checksums:\n  rules/kept.md: old_hash\n  rules/removed.md: removed_hash\n")
+
+        with patch("embed_docs.call_embedding_api") as mock_api:
+            mock_api.return_value = [FIXED_VECTOR]
+
+            original_env = os.environ.get('CLAUDE_PROJECT_DIR')
+            os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
+
+            try:
+                from toc_utils import init_common_config as toc_init, resolve_config_path
+                common = toc_init('rules')
+                project_root = common['project_root']
+                config = common['config']
+                idx_path = get_index_path('rules', project_root)
+                default_dir = project_root / 'rules'
+                checksums_file = resolve_config_path(
+                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.toc_checksums.yaml'),
+                    default_dir,
+                    project_root,
+                )
+
+                exit_code = embed_docs.build_index('rules', common, idx_path, checksums_file, False, 'fake-key')
+            finally:
+                if original_env is None:
+                    os.environ.pop('CLAUDE_PROJECT_DIR', None)
+                else:
+                    os.environ['CLAUDE_PROJECT_DIR'] = original_env
+
+        self.assertEqual(exit_code, 0)
+        # チェックサムファイルを読んで removed.md が含まれないことを確認
+        with open(checksums_file, 'r') as f:
+            checksums_content = f.read()
+        self.assertNotIn("rules/removed.md", checksums_content)
+        self.assertIn("rules/kept.md", checksums_content)
 
     def test_config_not_ready_error(self):
         """doc_structure.yaml が未設定の場合にエラー JSON を返す"""
