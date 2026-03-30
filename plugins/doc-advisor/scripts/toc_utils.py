@@ -850,7 +850,7 @@ def load_existing_toc(toc_path):
             if key_candidate.endswith('.md'):
                 if current_path and current_entry:
                     docs[current_path] = current_entry
-                current_path = key_candidate
+                current_path = normalize_path(key_candidate)
                 current_entry = {}
                 current_list = None
         elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
@@ -1147,6 +1147,15 @@ def init_common_config(category):
         RuntimeError: プロジェクトルートが見つからない場合
         FileNotFoundError: 設定ファイルが見つからない場合
     """
+    # Validate: .doc_structure.yaml exists before loading config
+    try:
+        find_config_file()
+    except FileNotFoundError:
+        raise ConfigNotReadyError(
+            ".doc_structure.yaml is missing. "
+            "Run /forge:setup-doc-structure to create it."
+        )
+
     config = load_config(category)
     project_root = get_project_root()
 
@@ -1154,16 +1163,6 @@ def init_common_config(category):
     root_dirs_config = config.get('root_dirs', [default_dir])
     if isinstance(root_dirs_config, str):
         root_dirs_config = [root_dirs_config]
-
-    # Validate: if root_dirs is still the default and the directory doesn't exist,
-    # .doc_structure.yaml is missing or not configured for this category.
-    if root_dirs_config == [default_dir]:
-        default_path = project_root / default_dir.rstrip('/')
-        if not default_path.is_dir():
-            raise ConfigNotReadyError(
-                f"Document directories not configured for '{category}'. "
-                f"Run /forge:setup-doc-structure to configure."
-            )
 
     root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)
 
@@ -1190,3 +1189,42 @@ def init_common_config(category):
         'exclude_patterns': exclude_patterns,
         'doc_types_map': doc_types_map,
     }
+
+
+def get_all_md_files(common_config):
+    """
+    全 root_dirs から対象 .md ファイルを収集する（シンボリックリンク対応）。
+
+    create_pending_yaml.py から移植。グローバル変数依存を除去し、
+    init_common_config() の返り値を引数として受け取る。
+
+    Args:
+        common_config: init_common_config() の返り値 dict。
+            必須キー: root_dirs, target_glob, exclude_patterns
+
+    Returns:
+        tuple: (md_files, file_root_map)
+            - md_files: list[Path] — ソート済みの対象ファイルリスト
+            - file_root_map: dict[Path, (Path, str)] — filepath → (root_dir, root_dir_name)
+    """
+    root_dirs = common_config['root_dirs']
+    target_glob = common_config['target_glob']
+    exclude_patterns = common_config['exclude_patterns']
+
+    md_files = []
+    file_root_map = {}
+
+    for root_dir, root_dir_name in root_dirs:
+        if not root_dir.exists():
+            print(f"Warning: {root_dir} does not exist, skipping")
+            continue
+        for filepath in rglob_follow_symlinks(root_dir, target_glob):
+            if should_exclude(filepath, root_dir, exclude_patterns):
+                continue
+            md_files.append(filepath)
+            file_root_map[filepath] = (root_dir, root_dir_name)
+
+    md_files.sort()
+    return md_files, file_root_map
+
+
