@@ -7,22 +7,22 @@ requirements_traceability:
   - requirement_id: FNC-001
     title: コンテキスト外検索
     design_id: DES-006
-    status: pending
+    status: completed
 
   - requirement_id: FNC-002
     title: 見落としゼロの検索精度
     design_id: DES-006
-    status: pending
+    status: completed
 
   - requirement_id: FNC-003
     title: インデックス生成の高速化（差分更新対応）
     design_id: DES-006
-    status: pending
+    status: completed
 
   - requirement_id: NFR-001
     title: コンテキストコスト 50% 削減
     design_id: DES-006
-    status: pending
+    status: completed
 
   - requirement_id: NFR-002
     title: YAML ToC 廃止（Phase 3 後）
@@ -33,7 +33,7 @@ requirements_traceability:
   - requirement_id: NFR-003
     title: 標準ライブラリ優先（pip install 不要）
     design_id: DES-006
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: DES-006
@@ -277,7 +277,7 @@ tasks:
   - task_id: TASK-010
     title: ゴールデンセット作成と精度検証テスト（FNC-002）
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-008
