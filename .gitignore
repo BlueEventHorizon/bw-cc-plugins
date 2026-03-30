@@ -1,6 +1,21 @@
-reference_projects
-__pycache__
-*.bak
+# ===========================
+
+# Claude Code
+.claude/settings.local.json
 .claude/.temp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+*.bak
+.DS_Store
+
+# プロジェクト外参照
+
 **/meta/
 **/meta
+
+**/reference_projects/
+**/reference_projects

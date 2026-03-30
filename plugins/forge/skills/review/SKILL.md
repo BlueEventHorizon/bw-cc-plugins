@@ -366,7 +366,15 @@ done
 
 #### Claude エンジンの場合
 
-perspectives の数だけ Agent ツール（`subagent_type` 指定なし = general-purpose）で**並列起動**する。各 subagent の prompt に `/forge:reviewer` の役割と以下の情報を渡す:
+perspectives の数だけ Agent ツール（`subagent_type` 指定なし = general-purpose）で**並列起動**する。各 subagent の prompt に以下を含める:
+
+**[MANDATORY]** subagent の prompt の冒頭に必ず以下を含めること:
+```
+あなたは /forge:reviewer として動作します。
+まず `plugins/forge/skills/reviewer/SKILL.md` を Read し、そこに記述されたワークフローと出力フォーマットに厳密に従ってください。
+```
+
+加えて、以下の情報を渡す:
 
 - `session_dir`
 - 種別
@@ -379,6 +387,8 @@ perspectives の数だけ Agent ツール（`subagent_type` 指定なし = gener
 （target_files / reference_docs / related_code は reviewer が refs.yaml から読む）
 
 各 `/forge:reviewer` は指定された perspective のレビューを実行し、結果を `{session_dir}/{output_path}` に Write する。
+
+> **なぜ reviewer SKILL.md を読ませるか**: reviewer SKILL.md には出力フォーマットの厳密な仕様（`1. **[問題名]**: 説明` 形式）が定義されており、このフォーマットに従わないと後続の `extract_review_findings.py` がパースに失敗して指摘事項が 0 件になる。general-purpose agent は SKILL.md を自動ロードしないため、明示的に読ませる必要がある。
 
 - **部分失敗**: Codex エンジンと同様、失敗した perspective は欠損として扱い、成功分のみで続行する
 - **全 perspective 失敗（成功 0 件）**: hard fail — エラーメッセージを出力して終了する
