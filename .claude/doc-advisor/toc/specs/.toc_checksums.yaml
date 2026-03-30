@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-29T12:42:29Z
-file_count: 29
+generated_at: 2026-03-30T02:05:37Z
+file_count: 31
 checksums:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
   docs/specs/common/requirement/COMMON-REQ-002_error_handling_policy.md: efb584be874fa55804860ab97e1534c0f0edafd9f4edf596d6b9afa24cb58449
@@ -15,6 +15,8 @@ checksums:
   docs/specs/doc-advisor/semantic-query/requirements/NFR-001_context_cost_reduction_spec.md: 71ee160fda23b83fd84ca5582067f8e4806e8df1875ec4743d5901d8f379edb5
   docs/specs/doc-advisor/semantic-query/requirements/NFR-002_yaml_toc_abolition_spec.md: 2959644b2d9eeaee036b5f7a4a61cefbf0329242e08d996a9275575d9332e7a0
   docs/specs/doc-advisor/semantic-query/requirements/NFR-003_standard_library_preferred_spec.md: 0ad4f7fa8ae5439676bc3e7df32c8ea6f6a4f263d108f318958a1d4fa9c45793
+  docs/specs/doc-advisor/semantic-query/requirements/technical_qa.md: 34d991192aacf29395911a6486e23160f06b7a9c1004064e1ae531799d8ac831
+  docs/specs/doc-advisor/semantic-query/requirements/technical_research_report.md: 288f805a56a29e72733ce5744fe8b3c3c4050c7a856e2b56708aa9fb04ce79c8
   docs/specs/forge/design/clean_rules_design.md: 65bf0801b8de5f18956e28ebe92208edee52b182b7ac6f1bc721210afe91025a
   docs/specs/forge/design/context_gathering_design.md: 6bec75b3fa85a9f3b38a2d185144708af56376ff045a72a704b70597fc0069f4
   docs/specs/forge/design/create_design_workflow_design.md: 1b867615bb4daa9755908de136fe6271c30491f005e64c768028d52c67217f43

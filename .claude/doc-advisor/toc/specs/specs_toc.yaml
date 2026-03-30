@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-29T12:43:07Z
-  file_count: 29
+  generated_at: 2026-03-30T02:06:12Z
+  file_count: 31
 
 docs:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
@@ -338,6 +338,71 @@ docs:
       - library selection
       - search index
       - dependency management
+  docs/specs/doc-advisor/semantic-query/requirements/technical_qa.md:
+    doc_type: requirement
+    title: Semantic Search Technical Q&A
+    purpose: Documents technical decision-making for semantic-query requirements, addressing embedding technology, vector search implementation, API dependencies, and architecture design
+    content_details:
+      - Embedding vs rule-based matching comparison
+      - Vector search delegation and architecture
+      - External dependencies analysis for embedding systems
+      - OpenAI API usage and cost analysis
+      - Modern embedding models and semantic understanding
+      - BM25 vs Embedding tradeoffs and hybrid approaches
+      - Query handling with proper nouns and full-text search
+      - Vector storage and search without Vector DB
+      - Python implementation using standard library
+      - Final semantic search architecture with OpenAI API
+    applicable_tasks:
+      - Semantic search implementation design
+      - doc-advisor search requirements definition
+      - Technology selection for embedding-based retrieval
+      - Architecture review for query systems
+      - Vector search system implementation
+      - Embedding model integration planning
+    keywords:
+      - semantic search
+      - embedding
+      - vector search
+      - OpenAI API
+      - BM25
+      - cosine similarity
+      - doc-advisor
+      - text-embedding-3
+      - hybrid search
+      - technical requirements
+  docs/specs/doc-advisor/semantic-query/requirements/technical_research_report.md:
+    doc_type: requirement
+    title: Semantic Search Technical Research Report
+    purpose: Documents technical investigation of semantic search approaches, embedding models, and full-text search technologies to inform design decisions for semantic-query requirements
+    content_details:
+      - Full-text search and indexing concepts (BM25, embedding, tokenization)
+      - SQLite FTS5 capabilities and limitations
+      - Lightweight search library survey (Whoosh, tantivy, bm25s)
+      - Embedding models comparison (OpenAI, Voyage, multilingual-e5)
+      - Vector database options (ChromaDB, LanceDB, sqlite-vec)
+      - Hybrid search approaches and ranking fusion (RRF, Convex Combination)
+      - Japanese tokenization strategies for multilingual content
+      - Re-ranking techniques and applicability to 600-document corpus
+      - Four design approaches (FTS5, BM25 self-implementation, Vector, Hybrid)
+      - Recommended adoption strategy (Embedding + grep-based full-text search)
+    applicable_tasks:
+      - Semantic search implementation planning
+      - Embedding and vector database integration design
+      - Search algorithm selection and optimization
+      - Multilingual document search implementation
+      - Full-text search system architecture
+    keywords:
+      - semantic search
+      - embedding
+      - BM25
+      - ChromaDB
+      - FTS5
+      - tokenizer
+      - vector search
+      - hybrid search
+      - information retrieval
+      - doc-advisor
   docs/specs/forge/design/clean_rules_design.md:
     doc_type: design
     title: clean-rules Skill Design
