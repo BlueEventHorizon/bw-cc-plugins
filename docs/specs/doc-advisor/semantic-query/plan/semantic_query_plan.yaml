@@ -28,6 +28,7 @@ requirements_traceability:
     title: YAML ToC 廃止（Phase 3 後）
     design_id: DES-006
     status: pending
+    note: 廃止タスク（create_pending_yaml.py 等の削除）は Phase 3 で対応予定。本計画の範囲外
 
   - requirement_id: NFR-003
     title: 標準ライブラリ優先（pip install 不要）
@@ -66,7 +67,7 @@ tasks:
     status: pending
     design_id: DES-006
     depends_on: []
-    group_id: null
+    group_id: "phase-1-foundation"
     build_check: per_task
     description:
       - toc_utils.py に get_all_md_files(common_config) を追加（DES-006 §5 参照）
@@ -90,7 +91,7 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - CLI の実装（--category, --full, --check オプション）（DES-006 §3.3 参照）
@@ -102,11 +103,14 @@ tasks:
       - エラーハンドリング（DES-006 §8 参照）：API キー未設定/429/部分失敗/中断再開
       - EMBEDDING_MODEL = "text-embedding-3-small" 定数をモジュールトップに定義
     acceptance_criteria: |
-      --full でインデックスが生成され、差分モードで変更ファイルのみ API 呼び出しが行われる
+      --full でインデックスが生成され、差分モードで変更ファイルのみ API 呼び出しが行われる。
+      API キー未設定時にエラー JSON が出力される。
+      部分失敗時は成功分のみ保存されインデックスが破損しない。
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - plugins/doc-advisor/scripts/toc_utils.py
       - plugins/doc-advisor/scripts/create_pending_yaml.py
+      - docs/specs/doc-advisor/semantic-query/requirements/NFR-003_standard_library_preferred_spec.md
 
   - task_id: TASK-003
     title: test_embed_docs.py — embed_docs.py ユニットテスト実装
@@ -115,7 +119,8 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+      - TASK-002
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - build_embedding_text() のテスト（API 呼び出しなし）
@@ -137,7 +142,7 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - CLI の実装（--category, --query, --threshold オプション）（DES-006 §3.4 参照）
@@ -145,6 +150,7 @@ tasks:
       - 件数上限なし（FNC-002 要件）
       - embed_docs.py の EMBEDDING_MODEL 定数を import してモデル一元管理
       - エラーケース：インデックス不在/stale/モデル不一致/API 失敗（DES-006 §3.4 参照）
+      - エラーケース：--query 空文字/未指定時にエラー JSON を返す（FNC-001 §エラーケース参照）
       - stale 時は検索を実行せず error JSON を返す（FNC-002 要件）
     acceptance_criteria: |
       threshold 以上が全件返され、stale/モデル不一致時は error JSON が返される
@@ -159,13 +165,15 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+      - TASK-004
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - cosine_similarity() の数値検証（平行/直交/ゼロベクトル）
       - 閾値フィルタリングテスト（threshold 以上のみ返される）
       - 出力 JSON 形式テスト（status, query, results フィールド）
       - インデックス不在・stale・モデル不一致の各エラーケーステスト
+      - 空クエリ時のエラー JSON 出力テスト
       - 件数上限なし検証（50 件返るケース）
     acceptance_criteria: |
       全テストが OPENAI_API_KEY なしで実行できる
@@ -180,7 +188,7 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - CLI の実装（--category, --keyword オプション）（DES-006 §3.5 参照）
@@ -201,7 +209,8 @@ tasks:
     design_id: DES-006
     depends_on:
       - TASK-001
-    group_id: null
+      - TASK-006
+    group_id: "phase-2-scripts"
     build_check: per_task
     description:
       - キーワード本文マッチのテスト
@@ -225,7 +234,7 @@ tasks:
       - TASK-002
       - TASK-004
       - TASK-006
-    group_id: null
+    group_id: "phase-2-skills"
     build_check: per_task
     description:
       - Staleness Check を embed_docs.py --check に変更（DES-006 §6.1 参照）
@@ -250,7 +259,7 @@ tasks:
       - TASK-002
       - TASK-004
       - TASK-006
-    group_id: null
+    group_id: "phase-2-skills"
     build_check: per_task
     description:
       - toc_orchestrator.md 参照の 3 フェーズパイプラインを削除（DES-006 §6.2 参照）
@@ -273,7 +282,7 @@ tasks:
     depends_on:
       - TASK-008
       - TASK-009
-    group_id: null
+    group_id: "phase-2-validation"
     build_check: per_task
     description:
       - tests/doc_advisor/golden_set/queries.yaml を作成（DES-006 §9.3 参照）
@@ -284,7 +293,8 @@ tasks:
       - OPENAI_API_KEY 未設定時は skipTest でスキップ（CI 非破壊）
     acceptance_criteria: |
       queries.yaml に 10 件以上のクエリが存在し、
-      test_golden_set.py が見落とし 0 件でパスする
+      test_golden_set.py が見落とし 0 件でパスする。
+      OPENAI_API_KEY が設定された環境で embed_docs.py --full 実行済みであること。
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md
@@ -294,3 +304,5 @@ tasks:
 revision_history:
   - date: "2026-03-30"
     content: 初版作成
+  - date: "2026-03-30"
+    content: レビュー指摘反映（depends_on 補完、acceptance_criteria 強化、group_id 付与、NFR-002 注記追加）
