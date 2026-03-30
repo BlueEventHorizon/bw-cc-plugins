@@ -194,7 +194,7 @@ def cosine_similarity(vec_a, vec_b):
         vec_b: ベクトル B（list of float）
 
     Returns:
-        float: コサイン類似度（0.0〜1.0）
+        float: コサイン類似度（-1.0〜1.0）
     """
     dot = sum(a * b for a, b in zip(vec_a, vec_b))
     norm_a = math.sqrt(sum(a * a for a in vec_a))

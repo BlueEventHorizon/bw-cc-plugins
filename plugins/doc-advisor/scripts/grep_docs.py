@@ -93,8 +93,9 @@ def search_files(keyword, common_config):
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
-        except (IOError, OSError, PermissionError):
-            # 読み取り不可ファイルはスキップ
+        except (IOError, OSError, PermissionError) as e:
+            # 読み取り不可ファイルはスキップ（警告を stderr に出力）
+            print(f"Warning: skipping unreadable file {filepath}: {e}", file=sys.stderr)
             continue
 
         if keyword_lower in content.lower():

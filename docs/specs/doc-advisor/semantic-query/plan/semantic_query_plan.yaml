@@ -87,7 +87,7 @@ tasks:
   - task_id: TASK-002
     title: embed_docs.py — Embedding インデックス構築スクリプト実装
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
@@ -115,7 +115,7 @@ tasks:
   - task_id: TASK-003
     title: test_embed_docs.py — embed_docs.py ユニットテスト実装
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
@@ -138,7 +138,7 @@ tasks:
   - task_id: TASK-004
     title: search_docs.py — セマンティック検索スクリプト実装
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
@@ -161,7 +161,7 @@ tasks:
   - task_id: TASK-005
     title: test_search_docs.py — search_docs.py ユニットテスト実装
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
@@ -184,7 +184,7 @@ tasks:
   - task_id: TASK-006
     title: grep_docs.py — 全文検索スクリプト実装
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
@@ -205,7 +205,7 @@ tasks:
   - task_id: TASK-007
     title: test_grep_docs.py — grep_docs.py ユニットテスト実装
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-006
     depends_on:
       - TASK-001
