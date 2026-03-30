@@ -408,6 +408,9 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         metadata = load_metadata(category, source_file, toc_path=toc_path)
         text = build_embedding_text(metadata)
         title = metadata.get("title") or source_file
+        # メタデータが空の場合はファイルパスと title をフォールバックテキストとして使用
+        if not text.strip():
+            text = f"{title}\n{source_file}"
         texts_to_embed.append(text)
         paths_to_embed.append((source_file, full_path, title))
 
