@@ -182,7 +182,12 @@ def load_config(category=None):
         config_path = find_config_file()
         with open(config_path, 'r', encoding='utf-8') as f:
             content = f.read()
-    except (FileNotFoundError, RuntimeError, PermissionError, OSError):
+    except (FileNotFoundError, RuntimeError):
+        if category:
+            return defaults.get(category, {})
+        return defaults
+    except (PermissionError, OSError) as e:
+        print(f"Warning: load_config failed to read config file: {e}", file=sys.stderr)
         if category:
             return defaults.get(category, {})
         return defaults
@@ -979,6 +984,7 @@ def load_checksums(checksums_file):
                     in_checksums = False
                     continue
                 if ': ' in stripped:
+                    # SHA-256 ハッシュのみを想定（ハッシュ値自体に ': ' は含まれない前提）
                     parts = stripped.rsplit(': ', 1)
                     if len(parts) == 2:
                         filepath = parts[0].strip()
@@ -1147,15 +1153,6 @@ def init_common_config(category):
         RuntimeError: プロジェクトルートが見つからない場合
         FileNotFoundError: 設定ファイルが見つからない場合
     """
-    # Validate: .doc_structure.yaml exists before loading config
-    try:
-        find_config_file()
-    except FileNotFoundError:
-        raise ConfigNotReadyError(
-            ".doc_structure.yaml is missing. "
-            "Run /forge:setup-doc-structure to create it."
-        )
-
     config = load_config(category)
     project_root = get_project_root()
 
@@ -1163,6 +1160,16 @@ def init_common_config(category):
     root_dirs_config = config.get('root_dirs', [default_dir])
     if isinstance(root_dirs_config, str):
         root_dirs_config = [root_dirs_config]
+
+    # デフォルト設定のまま（.doc_structure.yaml 未設定）かつデフォルトディレクトリが存在しない場合は
+    # セットアップが必要と判断する
+    if root_dirs_config == [default_dir]:
+        default_path = project_root / default_dir.rstrip('/')
+        if not default_path.is_dir():
+            raise ConfigNotReadyError(
+                f"Document directories not configured for '{category}'. "
+                f"Run /forge:setup-doc-structure to configure."
+            )
 
     root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)
 
@@ -1226,5 +1233,42 @@ def get_all_md_files(common_config):
 
     md_files.sort()
     return md_files, file_root_map
+
+
+def load_metadata(category, file_path, toc_path=None):
+    """
+    文書ファイルのメタデータを ToC YAML から読み込む（抽象化レイヤー）。
+
+    embed_docs.py がメタデータを取得するための統一インターフェース。
+    Phase 3 で ToC 廃止後はこの関数の実装のみを変更すればよく、
+    embed_docs.py への影響を局所化できる。
+
+    Args:
+        category: 'rules' or 'specs'
+        file_path: 文書のプロジェクト相対パス（str）
+        toc_path: ToC YAML ファイルパス（省略時は設定から自動解決）
+
+    Returns:
+        dict: メタデータ dict。キー: title, purpose, keywords,
+              applicable_tasks, content_details。
+              ToC に存在しない場合は空 dict。
+    """
+    if toc_path is None:
+        try:
+            config = load_config(category)
+            project_root = get_project_root()
+            default_dir = project_root / category
+            # ToC ファイルパスを設定から解決
+            toc_file_setting = config.get('toc_file', f'.claude/doc-advisor/toc/{category}/{category}_toc.yaml')
+            toc_path = resolve_config_path(toc_file_setting, default_dir, project_root)
+        except Exception as e:
+            print(f"Warning: load_metadata failed for {file_path}: {e}", file=sys.stderr)
+            return {}
+
+    toc_entries = load_existing_toc(toc_path)
+    # NFC 正規化してキー検索
+    normalized_path = normalize_path(file_path)
+    entry = toc_entries.get(normalized_path, {})
+    return entry
 
 
