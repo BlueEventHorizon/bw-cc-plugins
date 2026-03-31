@@ -22,6 +22,7 @@ import json
 import math
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -189,35 +190,47 @@ def call_embedding_api(text, api_key):
     """
     url = "https://api.openai.com/v1/embeddings"
     payload = json.dumps({"model": EMBEDDING_MODEL, "input": [text]}).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data["data"][0]["embedding"]
-    except urllib.error.HTTPError as e:
-        body = ""
-        try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            pass
-        raise RuntimeError(f"HTTP {e.code}: {body}") from e
-    except urllib.error.URLError as e:
-        # ネットワークエラー: 1 回リトライ
+    last_error = None
+    for attempt in range(2):  # 最大1回リトライ
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["data"][0]["embedding"]
-        except Exception as retry_err:
-            raise RuntimeError(f"Network error: {retry_err}") from retry_err
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt == 0:
+                # レート制限: 5秒待機してリトライ（検索は単発リクエストのため短い待機で十分）
+                print(f"  レート制限 (429)。5秒待機してリトライします...", file=sys.stderr)
+                time.sleep(5)
+                last_error = e
+                continue
+            if e.code == 401:
+                raise RuntimeError(
+                    "API 認証エラー (401)。OPENAI_API_KEY が正しいか確認してください。"
+                ) from e
+            body = ""
+            try:
+                body = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise RuntimeError(f"HTTP {e.code}: {body}") from e
+        except urllib.error.URLError as e:
+            if attempt == 0:
+                # ネットワークエラー: 1回リトライ
+                last_error = e
+                continue
+            raise RuntimeError(f"Network error: {e}") from e
+
+    raise RuntimeError(f"API 呼び出し失敗: {last_error}") from last_error
 
 
 def search(query, index, api_key, threshold):
