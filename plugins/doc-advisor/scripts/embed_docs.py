@@ -30,6 +30,7 @@ from pathlib import Path
 
 from toc_utils import (
     ConfigNotReadyError,
+    EMBEDDING_MODEL,
     calculate_file_hash,
     get_all_md_files,
     init_common_config,
@@ -38,9 +39,6 @@ from toc_utils import (
     resolve_config_path,
     write_checksums_yaml,
 )
-
-# Embedding モデル定数（他スクリプトから from embed_docs import EMBEDDING_MODEL でインポート可能）
-EMBEDDING_MODEL = "text-embedding-3-small"
 
 # Embedding API バッチ上限
 EMBEDDING_BATCH_SIZE = 100

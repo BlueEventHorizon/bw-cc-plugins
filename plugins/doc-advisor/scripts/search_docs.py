@@ -26,16 +26,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-# embed_docs.py が存在する場合は EMBEDDING_MODEL をインポートしてモデルを一元管理する。
-# embed_docs.py が未実装の場合はローカルの定数を使用する。
-try:
-    # sys.path に scripts ディレクトリを追加して同ディレクトリからインポート
-    _scripts_dir = str(Path(__file__).parent)
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
-    from embed_docs import EMBEDDING_MODEL
-except ImportError:
-    EMBEDDING_MODEL = "text-embedding-3-small"
+from toc_utils import EMBEDDING_MODEL
 
 # toc_utils のインポート（設定読み込み・パス正規化）
 from toc_utils import (

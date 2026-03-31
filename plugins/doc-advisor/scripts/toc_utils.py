@@ -24,6 +24,9 @@ class ConfigNotReadyError(RuntimeError):
     pass
 
 
+# Embedding モデル定数（embed_docs.py / search_docs.py で共有）
+EMBEDDING_MODEL = "text-embedding-3-small"
+
 # System files that are always excluded (not configurable)
 SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
 SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']
