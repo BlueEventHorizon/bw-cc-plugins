@@ -13,7 +13,7 @@
 doc-advisor の文書検索（query-specs / query-rules）を、AI が ToC YAML を全量読み込む方式から、**Embedding ベースのセマンティック検索 + 全文検索スクリプト** に置き換える。
 
 採用アプローチ:
-- **OpenAI Embedding API** で文書メタデータをベクトル化し、JSON ファイルに保存
+- **OpenAI Embedding API** で文書本文をベクトル化し、JSON ファイルに保存
 - 検索時はコサイン類似度で候補を絞り込み、AI には候補パスリストのみ渡す
 - 固有名詞・識別子の検索は全文検索スクリプトで補完（AI が判断して呼び出す）
 - 外部依存は **OpenAI API キーのみ**（pip install 不要）
@@ -26,7 +26,7 @@ doc-advisor の文書検索（query-specs / query-rules）を、AI が ToC YAML 
 flowchart TB
     subgraph インデックス構築
         A[".doc_structure.yaml"] --> B["embed_docs.py"]
-        C["文書メタデータ\n(title, purpose, keywords...)"] --> B
+        C["文書本文\n(.md ファイル)"] --> B
         B -->|"OpenAI API"| D["Embedding ベクトル"]
         D --> E["{category}_index.json"]
         F[".index_checksums.yaml"] --> B
@@ -83,7 +83,9 @@ classDiagram
         +main(args) void
         -load_index(index_path) dict
         -save_index(index, index_path) void
-        -build_embedding_text(metadata) str
+        -read_file_content(file_path) str
+        -extract_title(content, fallback) str
+        -truncate_to_token_limit(text) str
         -call_embedding_api(texts, api_key) list~list~float~~
     }
 
@@ -100,10 +102,11 @@ classDiagram
     }
 
     class TocUtils {
+        +EMBEDDING_MODEL str
         +load_config(category) dict
         +init_common_config(category) dict
         +get_all_md_files() tuple
-        +load_metadata(category, file_path) dict
+        +get_index_path(category, project_root) Path
         +calculate_file_hash(path) str
         +load_checksums(path) dict
         +write_checksums_yaml(checksums, path) void
@@ -349,7 +352,7 @@ python3 grep_docs.py --category {specs|rules} --keyword "doc_structure.yaml"
 | ---------- | ------ | ------ | ---------- | --------- |
 | `embed_docs.py` | JSON（結果） | 進捗ログ | 0: 成功, 1: 失敗/部分失敗 | `ok`, `partial`, `error` |
 | `embed_docs.py --check` | JSON（鮮度） | なし | 0 | `fresh`, `stale`, `error` |
-| `search_docs.py` | JSON（検索結果） | エラーログ | 0: 成功, 1: エラー | `ok`, `stale`, `error` |
+| `search_docs.py` | JSON（検索結果） | エラーログ | 0: 成功, 1: エラー | `ok`, `error` |
 | `grep_docs.py` | JSON（検索結果） | なし | 0: 成功, 1: エラー | `ok`, `error` |
 
 ## 4. ユースケース設計
@@ -379,7 +382,7 @@ sequenceDiagram
     User->>Skill: /doc-advisor:create-specs-toc
     Skill->>Script: python3 embed_docs.py --category specs --full
     Script->>FS: 指定カテゴリの全 .md ファイル読み込み<br/>(.doc_structure.yaml の root_dirs に基づく)
-    Script->>Script: メタデータ抽出・Embedding テキスト生成
+    Script->>Script: 本文読み込み・タイトル抽出・トークン切り詰め
     Script->>API: POST /v1/embeddings（バッチ）
     API-->>Script: ベクトル配列
     Script->>FS: specs_index.json 保存
@@ -466,7 +469,7 @@ python3 embed_docs.py --category {category} [--full]
 
 単一スクリプトの実行で完了。AI による並列解析が不要になるため、大幅に高速化される。
 
-ただし **メタデータの取得元が必要**。移行期間中は既存 ToC YAML のメタデータを使用する。ToC 廃止後のメタデータ取得方式は NFR-002 の移行設計で別途定義する。
+ファイル本文を直接読み込んで Embedding テキストとして使用するため、メタデータの中間層は不要。
 
 ## 7. データフロー設計
 
@@ -480,8 +483,8 @@ root_dirs, patterns
 対象 .md ファイル一覧
     ↓ load_checksums() + calculate_file_hash()
 差分ファイル一覧（新規・変更のみ）
-    ↓ 各ファイルのメタデータ読み込み（ToC YAML から）
-Embedding テキスト生成
+    ↓ 各ファイルの本文読み込み（read_file_content）
+タイトル抽出 + トークン上限で切り詰め
     ↓ OpenAI API（バッチ）
 ベクトル配列
     ↓ save_index()
@@ -543,11 +546,11 @@ Embedding テキスト生成
 
 ### 10.1 移行フェーズ
 
-| Phase | 内容 | ToC YAML | Embedding インデックス |
-| ----- | ---- | -------- | --------------------- |
-| **Phase 1** | Embedding インデックス構築。既存 ToC からメタデータ取得 | **維持** | 構築 |
-| **Phase 2** | query-* SKILL.md を新方式に切り替え。精度検証 | **維持**（フォールバック用） | 運用 |
-| **Phase 3** | 精度検証完了後、ToC YAML と生成パイプラインを廃止 | **廃止** | 運用 |
+| Phase | 内容 | ToC YAML | Embedding インデックス | ステータス |
+| ----- | ---- | -------- | --------------------- | ---------- |
+| **Phase 1** | Embedding インデックス構築 | **維持** | 構築 | ✅ 完了 |
+| **Phase 2** | query-* SKILL.md を新方式に切り替え。精度検証 | **維持**（フォールバック用） | 運用 | ✅ 完了 |
+| **Phase 3** | ToC YAML と生成パイプラインを廃止 | **廃止** | 運用 | 🔄 一部完了（本文直接 Embedding 採用済み、ToC 廃止は未実施） |
 
 ### 10.2 Phase 3 での廃止対象
 
@@ -561,16 +564,15 @@ NFR-002 に定義された以下を廃止:
 - `.toc_work/` ディレクトリ機構
 - 上記廃止対象に対応するテストファイル（`test_create_pending.py`, `test_write_pending.py`, `test_merge_toc.py`, `test_validate_toc.py` 等）
 
-### 10.3 Phase 3 でのメタデータ取得
+### 10.3 Embedding テキストの方式（確定）
 
-ToC YAML 廃止後、Embedding テキストの元となるメタデータは **文書本文から直接抽出** する。
-抽出方法の選択肢:
+Phase 2 の精度検証（ゴールデンセットテスト）を経て、**選択肢 3: 文書本文を直接 Embedding** を採用した。
 
-1. **Front Matter から抽出**: 文書に YAML Front Matter（title, keywords 等）が記述されている場合
-2. **AI による抽出**: toc-updater agent と同等のメタデータ抽出を embed_docs.py 内で実行（ただし AI 呼び出しコスト増）
-3. **文書本文の先頭 N 文字を直接 Embedding**: メタデータ抽出をスキップし、本文をそのままベクトル化
+- `read_file_content()` でファイル本文を読み込み
+- `extract_title()` でタイトルを抽出（空ファイル時のフォールバック用）
+- `truncate_to_token_limit()` でトークン上限（7,500 文字）に切り詰め
 
-選択肢 3 が最もシンプルだが、精度への影響を Phase 2 の検証で確認する。
+メタデータ抽出の中間層を排除したことで、ToC YAML への依存が解消され、実装もシンプルになった。
 
 ## 改定履歴
 

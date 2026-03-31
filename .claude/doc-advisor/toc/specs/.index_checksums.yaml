@@ -1,6 +1,6 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-03-31T09:09:01Z
+generated_at: 2026-03-31T09:39:07Z
 file_count: 32
 checksums:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
@@ -9,7 +9,7 @@ checksums:
   docs/specs/doc-advisor/design/DES-003_document_identifier.md: 392ac77041e109c5d6f84243ea019a398cae4a6d2aa3d37190e4e350dc8dcc2a
   docs/specs/doc-advisor/design/DES-004_document_model.md: a8ad742518f682ca2d0104ee79477e3c578448162db6b853e8b02e836f6f749c
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: 20266019e35092b522f6c604ebbc2095d8437ef8d7fb4927a61c4776ebd4ae6c
-  docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md: b9f518105c8d64201bd56899f3099ad6e3c517bbe42148cebadb67ba01866505
+  docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md: 55b7699993f1cf11d1e4e41fc26f310a7c97370f6e02b760c7cb02bbe3ba1686
   docs/specs/doc-advisor/semantic-query/requirements/FNC-001_context_external_search_spec.md: 173181c21c8f789d7a7ec73ef2e14e0438d7457829489cbca294af0db4016e41
   docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md: e51725e7552fbe77d8f75e6608b1ca8f674a165a11cbb3c3f52d17cf157dc096
   docs/specs/doc-advisor/semantic-query/requirements/FNC-003_fast_index_generation_spec.md: 5aa6fde0c4356f821a6c56dcb1de62c0c23be8619cb42d67921bca9495bd3781

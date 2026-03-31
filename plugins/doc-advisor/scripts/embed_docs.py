@@ -3,7 +3,7 @@
 """
 Embedding インデックス構築スクリプト (doc-advisor plugin)
 
-文書メタデータを OpenAI Embedding API でベクトル化し、
+文書本文を OpenAI Embedding API でベクトル化し、
 {category}_index.json に保存する。差分更新・全体再構築・
 staleness check の3モードに対応。
 

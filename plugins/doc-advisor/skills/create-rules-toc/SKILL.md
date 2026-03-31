@@ -48,7 +48,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category rules [--full]
 
 **出力フォーマット**:
 - File: `.claude/doc-advisor/toc/rules/rules_index.json`
-- Schema: `{"documents": [{"path": "相対パス", "title": "抽出タイトル", "embedding": [1.0, -0.5, ...]}]}`
+- Schema: `{"metadata": {"category": "rules", "model": "text-embedding-3-small", ...}, "entries": {"path/to/file.md": {"title": "...", "embedding": [...], "checksum": "..."}}}`
 
 ## Error Handling
 

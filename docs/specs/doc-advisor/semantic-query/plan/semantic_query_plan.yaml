@@ -95,8 +95,8 @@ tasks:
     build_check: per_task
     description:
       - CLI の実装（--category, --full, --check オプション）（DES-006 §3.3 参照）
-      - init_common_config() → get_all_md_files() → 差分検出 → load_metadata() の処理フロー
-      - build_embedding_text() によるメタデータ → Embedding テキスト変換
+      - init_common_config() → get_all_md_files() → 差分検出 → read_file_content() の処理フロー
+      - read_file_content() → extract_title() → truncate_to_token_limit() によるファイル本文 → Embedding テキスト変換
       - OpenAI Embedding API バッチ呼び出し（urllib.request, バッチ上限 100）
       - {category}_index.json への保存（DES-006 §3.3 インデックス JSON スキーマ参照）
       - write_checksums_yaml() でチェックサム更新
