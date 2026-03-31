@@ -47,7 +47,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category rules [--full]
 - API: OpenAI text-embedding-3-small（1536 dimensions）
 
 **出力フォーマット**:
-- File: `.claude/doc-advisor/toc/rules/rules_index.json`
+- File: `.claude/doc-advisor/indexes/rules/rules_index.json`
 - Schema: `{"metadata": {"category": "rules", "model": "text-embedding-3-small", ...}, "entries": {"path/to/file.md": {"title": "...", "embedding": [...], "checksum": "..."}}}`
 
 ## Error Handling

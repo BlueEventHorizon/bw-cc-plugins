@@ -51,11 +51,11 @@ class GrepDocsTestBase(unittest.TestCase):
 
         # ToC ディレクトリ作成（init_common_config が参照する場合あり）
         os.makedirs(
-            os.path.join(self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'),
+            os.path.join(self.project_root, '.claude', 'doc-advisor', 'indexes', 'rules'),
             exist_ok=True,
         )
         os.makedirs(
-            os.path.join(self.project_root, '.claude', 'doc-advisor', 'toc', 'specs'),
+            os.path.join(self.project_root, '.claude', 'doc-advisor', 'indexes', 'specs'),
             exist_ok=True,
         )
 
@@ -136,7 +136,7 @@ class TestSearchFiles(GrepDocsTestBase):
     def _get_search_files(self):
         """search_files と init_common_config をインポートして返す"""
         from grep_docs import search_files
-        from toc_utils import init_common_config
+        from index_utils import init_common_config
         return search_files, init_common_config
 
     def test_keyword_body_match(self):
@@ -314,7 +314,7 @@ class TestGrepDocsEdgeCases(GrepDocsTestBase):
 
     def _get_search_files(self):
         from grep_docs import search_files
-        from toc_utils import init_common_config
+        from index_utils import init_common_config
         return search_files, init_common_config
 
     def test_file_with_special_characters_in_content(self):

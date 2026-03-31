@@ -24,7 +24,7 @@ SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPTS_DIR))
 
-import toc_utils
+import index_utils
 
 
 class TestJapaneseFilenames(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestJapaneseFilenames(unittest.TestCase):
     def test_japanese_filename_detected(self):
         """日本語ファイル名が rglob_follow_symlinks で検出される"""
         rules_dir = Path(self.tmpdir) / 'rules'
-        files = list(toc_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
+        files = list(index_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
         self.assertEqual(len(files), 1)
         self.assertIn('日本語ルール.md', str(files[0]))
 
@@ -55,7 +55,7 @@ class TestJapaneseFilenames(unittest.TestCase):
         # NFD 形式の「プラグイン」
         nfd_text = unicodedata.normalize('NFD', 'プラグイン')
         nfc_text = unicodedata.normalize('NFC', 'プラグイン')
-        result = toc_utils.normalize_path(nfd_text)
+        result = index_utils.normalize_path(nfd_text)
         self.assertEqual(result, nfc_text)
 
     def test_should_exclude_japanese_dir(self):
@@ -66,7 +66,7 @@ class TestJapaneseFilenames(unittest.TestCase):
         test_file = jp_dir / 'test.md'
         test_file.write_text('# test', encoding='utf-8')
 
-        result = toc_utils.should_exclude(test_file, base, ['テスト除外'])
+        result = index_utils.should_exclude(test_file, base, ['テスト除外'])
         self.assertTrue(result)
 
 
@@ -87,14 +87,14 @@ class TestDeepNesting(unittest.TestCase):
     def test_deep_nested_file_found(self):
         """5レベルの深さのファイルが検出される"""
         rules_dir = Path(self.tmpdir) / 'rules'
-        files = list(toc_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
+        files = list(index_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
         self.assertEqual(len(files), 1)
         self.assertIn('deep_rule.md', str(files[0]))
 
     def test_deep_nested_file_relative_path(self):
         """深いファイルの相対パスが正しい"""
         rules_dir = Path(self.tmpdir) / 'rules'
-        files = list(toc_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
+        files = list(index_utils.rglob_follow_symlinks(rules_dir, '**/*.md'))
         rel_path = str(files[0].relative_to(rules_dir))
         # パスの区切り文字を統一して検証
         parts = Path(rel_path).parts
@@ -127,18 +127,18 @@ rules:
     exclude: []
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
         self.assertEqual(config['root_dirs'], [])
 
     def test_empty_root_dirs_expand_globs(self):
         """空の root_dirs で expand_root_dir_globs がクラッシュしない"""
-        result = toc_utils.expand_root_dir_globs([], Path(self.tmpdir))
+        result = index_utils.expand_root_dir_globs([], Path(self.tmpdir))
         self.assertEqual(result, [])
 
     def test_empty_root_dirs_rglob(self):
         """存在しないディレクトリで rglob_follow_symlinks がクラッシュしない"""
         nonexistent = Path(self.tmpdir) / 'nonexistent'
-        files = list(toc_utils.rglob_follow_symlinks(nonexistent, '**/*.md'))
+        files = list(index_utils.rglob_follow_symlinks(nonexistent, '**/*.md'))
         self.assertEqual(files, [])
 
 
@@ -157,7 +157,7 @@ class TestExpandRootDirGlobs(unittest.TestCase):
 
     def test_non_glob_passthrough(self):
         """Non-glob directory is returned as-is."""
-        result = toc_utils.expand_root_dir_globs(
+        result = index_utils.expand_root_dir_globs(
             ['docs/rules/'], Path(self.tmpdir)
         )
         self.assertEqual(result, ['docs/rules/'])
@@ -166,7 +166,7 @@ class TestExpandRootDirGlobs(unittest.TestCase):
         """Glob directory with matches is expanded."""
         for name in ('app1', 'app2'):
             (Path(self.tmpdir) / 'specs' / name / 'requirements').mkdir(parents=True)
-        result = toc_utils.expand_root_dir_globs(
+        result = index_utils.expand_root_dir_globs(
             ['specs/*/requirements/'], Path(self.tmpdir)
         )
         self.assertIn('specs/app1/requirements/', result)
@@ -175,7 +175,7 @@ class TestExpandRootDirGlobs(unittest.TestCase):
 
     def test_glob_no_match_returns_original(self):
         """Glob directory with no matches returns the original list."""
-        result = toc_utils.expand_root_dir_globs(
+        result = index_utils.expand_root_dir_globs(
             ['nonexistent/*/foo/'], Path(self.tmpdir)
         )
         # When expanded list is empty, original dirs are returned as fallback
@@ -222,7 +222,7 @@ specs:
 
     def test_doc_types_map_expanded_in_init_common_config(self):
         """init_common_config() returns expanded doc_types_map with concrete paths."""
-        result = toc_utils.init_common_config('specs')
+        result = index_utils.init_common_config('specs')
         doc_types_map = result['doc_types_map']
         # Glob pattern should be expanded to concrete paths
         self.assertNotIn('specs/*/design/', doc_types_map)
@@ -241,24 +241,24 @@ class TestConfigNotReadyError(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    @patch.object(toc_utils, 'get_project_root')
+    @patch.object(index_utils, 'get_project_root')
     def test_raises_when_no_config_and_no_default_dir(self, mock_root):
         """No .doc_structure.yaml + no rules/ dir → ConfigNotReadyError"""
         mock_root.return_value = Path(self.tmpdir)
         # No .doc_structure.yaml, no rules/ directory
-        with self.assertRaises(toc_utils.ConfigNotReadyError):
-            toc_utils.init_common_config('rules')
+        with self.assertRaises(index_utils.ConfigNotReadyError):
+            index_utils.init_common_config('rules')
 
-    @patch.object(toc_utils, 'get_project_root')
+    @patch.object(index_utils, 'get_project_root')
     def test_no_error_when_default_dir_exists(self, mock_root):
         """No .doc_structure.yaml but rules/ dir exists → no error (uses default)"""
         mock_root.return_value = Path(self.tmpdir)
         os.makedirs(os.path.join(self.tmpdir, 'rules'))
         # Should not raise — default dir exists
-        result = toc_utils.init_common_config('rules')
+        result = index_utils.init_common_config('rules')
         self.assertIn('root_dirs', result)
 
-    @patch.object(toc_utils, 'get_project_root')
+    @patch.object(index_utils, 'get_project_root')
     def test_no_error_when_config_has_root_dirs(self, mock_root):
         """Configured .doc_structure.yaml with root_dirs → no error"""
         mock_root.return_value = Path(self.tmpdir)
@@ -267,7 +267,7 @@ class TestConfigNotReadyError(unittest.TestCase):
         config_path = os.path.join(self.tmpdir, '.doc_structure.yaml')
         with open(config_path, 'w') as f:
             f.write('rules:\n  root_dirs:\n    - docs/rules/\n')
-        result = toc_utils.init_common_config('rules')
+        result = index_utils.init_common_config('rules')
         self.assertIn('root_dirs', result)
 
 

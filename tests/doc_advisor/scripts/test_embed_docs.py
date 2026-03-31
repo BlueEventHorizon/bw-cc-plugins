@@ -176,14 +176,14 @@ class TestGetIndexPath(unittest.TestCase):
         """specs カテゴリのインデックスパス"""
         root = Path("/project")
         result = get_index_path("specs", root)
-        expected = Path("/project/.claude/doc-advisor/toc/specs/specs_index.json")
+        expected = Path("/project/.claude/doc-advisor/indexes/specs/specs_index.json")
         self.assertEqual(result, expected)
 
     def test_rules_path(self):
         """rules カテゴリのインデックスパス"""
         root = Path("/project")
         result = get_index_path("rules", root)
-        expected = Path("/project/.claude/doc-advisor/toc/rules/rules_index.json")
+        expected = Path("/project/.claude/doc-advisor/indexes/rules/rules_index.json")
         self.assertEqual(result, expected)
 
 
@@ -389,10 +389,10 @@ specs:
             f.write(doc_structure)
 
         # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
+        self.index_dir = os.path.join(
             self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -436,7 +436,7 @@ specs:
         self._create_rule_file('rules/test.md')
 
         # インデックスだけ作成（チェックサムなし）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -452,7 +452,7 @@ specs:
         file_path = self._create_rule_file('rules/test.md')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -463,7 +463,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/test.md: {file_hash}\n")
 
@@ -479,7 +479,7 @@ specs:
         self._create_rule_file('rules/new_file.md')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -491,7 +491,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/existing.md: {file_hash}\n")
 
@@ -507,12 +507,12 @@ specs:
         self._create_rule_file('rules/test.md', content='# Original\n\nOriginal content.\n')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 古いチェックサム（不一致なハッシュ）
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/test.md: old_hash_value\n")
 
@@ -529,12 +529,12 @@ specs:
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 存在しないファイルのチェックサムを登録
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/deleted.md: some_hash\n")
 
@@ -589,10 +589,10 @@ specs:
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
         # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
+        self.index_dir = os.path.join(
             self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -657,7 +657,7 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from toc_utils import init_common_config as toc_init
+                from index_utils import init_common_config as toc_init
 
                 common = toc_init('rules')
                 project_root = common['project_root']
@@ -665,10 +665,10 @@ specs:
 
                 index_path = get_index_path('rules', project_root)
 
-                from toc_utils import resolve_config_path
+                from index_utils import resolve_config_path
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/indexes/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )
@@ -697,7 +697,7 @@ specs:
         self._create_rule_file('rules/new_file.md', content='# New\n\nNew content.\n')
 
         # 既存インデックスを作成（existing.md と deleted.md がある状態）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         existing_index = {
             "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 2},
             "entries": {
@@ -709,7 +709,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（existing.md は古いハッシュ、deleted.md も登録）
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/existing.md: old_hash\n  rules/deleted.md: deleted_hash\n")
 
@@ -720,14 +720,14 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from toc_utils import init_common_config as toc_init, resolve_config_path
+                from index_utils import init_common_config as toc_init, resolve_config_path
                 common = toc_init('rules')
                 project_root = common['project_root']
                 config = common['config']
                 idx_path = get_index_path('rules', project_root)
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/indexes/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )
@@ -755,7 +755,7 @@ specs:
         self._create_rule_file('rules/kept.md', content='# Kept\n\nKept content.\n')
 
         # 既存インデックス（kept.md と removed.md）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         existing_index = {
             "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 2},
             "entries": {
@@ -767,7 +767,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（kept.md と removed.md が登録済み）
-        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/kept.md: old_hash\n  rules/removed.md: removed_hash\n")
 
@@ -778,14 +778,14 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from toc_utils import init_common_config as toc_init, resolve_config_path
+                from index_utils import init_common_config as toc_init, resolve_config_path
                 common = toc_init('rules')
                 project_root = common['project_root']
                 config = common['config']
                 idx_path = get_index_path('rules', project_root)
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/indexes/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )

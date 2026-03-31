@@ -1,8 +1,8 @@
 ---
 name: query-specs
 description: |
-  Search the pre-analyzed document index (ToC) to identify specification
-  documents needed for a task. The ToC contains AI-extracted
+  Search the pre-analyzed document index to identify specification
+  documents needed for a task. The index contains AI-extracted
   metadata (keywords, applicable_tasks) that enables discovery beyond
   simple file search.
   Trigger:

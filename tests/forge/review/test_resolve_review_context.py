@@ -50,9 +50,9 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -67,9 +67,9 @@ specs:
   doc_types_map:
     "specs/*/requirements/": requirement
     "specs/*/design/": design
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
@@ -93,9 +93,9 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -110,9 +110,9 @@ specs:
   doc_types_map:
     "specs/*/requirements/": requirement
     specs/design/: design
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -134,9 +134,9 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -153,9 +153,9 @@ specs:
     specs/requirements/: requirement
     specs/design/: design
     specs/plan/: plan
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -177,9 +177,9 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
@@ -197,9 +197,9 @@ specs:
     "specs/*/requirements/": requirement
     "modules/*/requirements/": requirement
     "specs/*/design/": design
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:

@@ -29,9 +29,9 @@ rules:
     - docs/rules/
   doc_types_map:
     docs/rules/: rule
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/rules/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -46,9 +46,9 @@ specs:
   doc_types_map:
     docs/specs/design/: design
     docs/specs/plan/: plan
-  toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/toc/specs/.toc_work/
+  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
+  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -231,7 +231,7 @@ class TestParseConfig(unittest.TestCase):
     def test_scalar_values(self):
         config = rds.parse_config(BASIC_CONFIG)
         self.assertEqual(config['rules']['toc_file'],
-                         '.claude/doc-advisor/toc/rules/rules_toc.yaml')
+                         '.claude/doc-advisor/indexes/rules/rules_index.yaml')
 
     def test_common_section(self):
         config = rds.parse_config(BASIC_CONFIG)

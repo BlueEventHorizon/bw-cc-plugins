@@ -28,7 +28,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-from toc_utils import (
+from index_utils import (
     ConfigNotReadyError,
     EMBEDDING_MODEL,
     calculate_file_hash,
@@ -545,7 +545,7 @@ def main():
     config = common["config"]
     default_dir = project_root / category
     checksums_file = resolve_config_path(
-        config.get("checksums_file", f".claude/doc-advisor/toc/{category}/.index_checksums.yaml"),
+        config.get("checksums_file", f".claude/doc-advisor/indexes/{category}/.index_checksums.yaml"),
         default_dir,
         project_root,
     )

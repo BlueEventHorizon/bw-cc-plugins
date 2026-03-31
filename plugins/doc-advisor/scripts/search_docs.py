@@ -27,10 +27,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from toc_utils import EMBEDDING_MODEL
+from index_utils import EMBEDDING_MODEL
 
-# toc_utils のインポート（設定読み込み・パス正規化）
-from toc_utils import (
+# index_utils のインポート（設定読み込み・パス正規化）
+from index_utils import (
     ConfigNotReadyError,
     get_all_md_files,
     get_index_path,
@@ -125,7 +125,7 @@ def check_staleness(index, common_config):
     Returns:
         bool: stale であれば True、新鮮であれば False
     """
-    from toc_utils import calculate_file_hash
+    from index_utils import calculate_file_hash
 
     project_root = common_config["project_root"]
     entries = index.get("entries", {})

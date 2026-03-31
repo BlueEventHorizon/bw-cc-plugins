@@ -218,7 +218,7 @@ class TestCheckStaleness(unittest.TestCase):
         doc_path.write_text("# Test\n\nContent.\n")
 
         # calculate_file_hash でハッシュを取得
-        from toc_utils import calculate_file_hash
+        from index_utils import calculate_file_hash
         current_hash = calculate_file_hash(doc_path)
 
         index = {
@@ -493,10 +493,10 @@ specs:
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
         # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
+        self.index_dir = os.path.join(
             self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
         # 環境変数を保存
         self._orig_env = {}
@@ -565,7 +565,7 @@ specs:
             "metadata": {"model": "text-embedding-3-large"},
             "entries": {},
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -597,7 +597,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -618,7 +618,7 @@ specs:
         with open(rule_path, 'w') as f:
             f.write("# Test\n\nContent.\n")
 
-        from toc_utils import calculate_file_hash
+        from index_utils import calculate_file_hash
         current_hash = calculate_file_hash(Path(rule_path))
 
         index_data = {
@@ -631,7 +631,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -649,7 +649,7 @@ specs:
         with open(rule_path, 'w') as f:
             f.write("# Test\n\nContent.\n")
 
-        from toc_utils import calculate_file_hash
+        from index_utils import calculate_file_hash
         current_hash = calculate_file_hash(Path(rule_path))
 
         index_data = {
@@ -662,7 +662,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 

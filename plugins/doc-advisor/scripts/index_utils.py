@@ -30,7 +30,7 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 def get_index_path(category, project_root):
     """Embedding インデックス JSON のパスを返す。
 
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
+    保存先: .claude/doc-advisor/indexes/{category}/{category}_index.json
 
     Args:
         category: 'rules' または 'specs'
@@ -39,12 +39,12 @@ def get_index_path(category, project_root):
     Returns:
         Path: インデックスファイルの絶対パス
     """
-    return Path(project_root) / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
+    return Path(project_root) / ".claude" / "doc-advisor" / "indexes" / category / f"{category}_index.json"
 
 
 # System files that are always excluded (not configurable)
-SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.index_checksums.yaml']
-SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.index_checksums.yaml']
+SYSTEM_EXCLUDE_PATTERNS_RULES = ['rules_index.yaml', '.index_checksums.yaml']
+SYSTEM_EXCLUDE_PATTERNS_SPECS = ['specs_index.yaml', '.index_checksums.yaml']
 
 
 def get_system_exclude_patterns(category):
@@ -415,9 +415,7 @@ def _get_default_config():
     return {
         'rules': {
             'root_dirs': ['rules/'],
-            'toc_file': '.claude/doc-advisor/toc/rules/rules_toc.yaml',
-            'checksums_file': '.claude/doc-advisor/toc/rules/.index_checksums.yaml',
-            'work_dir': '.claude/doc-advisor/toc/rules/.toc_work/',
+            'checksums_file': '.claude/doc-advisor/indexes/rules/.index_checksums.yaml',
             'patterns': {
                 'target_glob': '**/*.md',
                 'exclude': []  # User-defined only; system files excluded separately
@@ -429,9 +427,7 @@ def _get_default_config():
         },
         'specs': {
             'root_dirs': ['specs/'],
-            'toc_file': '.claude/doc-advisor/toc/specs/specs_toc.yaml',
-            'checksums_file': '.claude/doc-advisor/toc/specs/.index_checksums.yaml',
-            'work_dir': '.claude/doc-advisor/toc/specs/.toc_work/',
+            'checksums_file': '.claude/doc-advisor/indexes/specs/.index_checksums.yaml',
             'patterns': {
                 'target_glob': '**/*.md',
                 'exclude': []  # User-defined only; system files excluded separately

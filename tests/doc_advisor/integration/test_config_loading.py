@@ -20,7 +20,7 @@ SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPTS_DIR))
 
-import toc_utils
+import index_utils
 
 
 class TestDocStructureLoading(unittest.TestCase):
@@ -63,7 +63,7 @@ specs:
     exclude: []
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config()
+            config = index_utils.load_config()
         self.assertIn('rules', config)
         self.assertIn('specs', config)
         self.assertEqual(config['rules']['root_dirs'], ['docs/rules/'])
@@ -80,7 +80,7 @@ rules:
     rules/: rule
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            rules_config = toc_utils.load_config('rules')
+            rules_config = index_utils.load_config('rules')
         self.assertIn('root_dirs', rules_config)
         self.assertEqual(rules_config['root_dirs'], ['rules/'])
 
@@ -88,12 +88,12 @@ rules:
         """.doc_structure.yaml 不在時は FileNotFoundError"""
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
             with self.assertRaises(FileNotFoundError):
-                toc_utils.find_config_file()
+                index_utils.find_config_file()
 
     def test_file_not_found_load_config_returns_defaults(self):
         """.doc_structure.yaml 不在時、load_config はデフォルト値を返す"""
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config()
+            config = index_utils.load_config()
         # デフォルト値が返ること
         self.assertIn('rules', config)
         self.assertEqual(config['rules']['root_dirs'], ['rules/'])
@@ -107,7 +107,7 @@ rules:
     - my_rules/
 """)
         with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': self.tmpdir}):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
         self.assertEqual(config['root_dirs'], ['my_rules/'])
 
     def test_defaults_merged_with_doc_structure(self):
@@ -121,7 +121,7 @@ rules:
     custom_rules/: rule
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
         # .doc_structure.yaml の値
         self.assertEqual(config['root_dirs'], ['custom_rules/'])
         # コードデフォルトからマージされた値
@@ -158,7 +158,7 @@ rules:
     exclude: []
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
         self.assertEqual(config['root_dirs'], ['guidelines/'])
 
     def test_custom_specs_dir_name(self):
@@ -175,7 +175,7 @@ specs:
     exclude: []
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('specs')
+            config = index_utils.load_config('specs')
         self.assertEqual(config['root_dirs'], ['documents/'])
 
     def test_exclude_pattern_in_config(self):
@@ -194,7 +194,7 @@ specs:
       - _draft
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('specs')
+            config = index_utils.load_config('specs')
         self.assertEqual(config['patterns']['exclude'], ['archive', '_draft'])
 
     def test_multiple_root_dirs(self):
@@ -213,7 +213,7 @@ specs:
     exclude: []
 """)
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('specs')
+            config = index_utils.load_config('specs')
         self.assertEqual(
             config['root_dirs'],
             ['docs/requirements/', 'docs/design/']
