@@ -52,8 +52,8 @@ echo -e "${RED}Warning: File not found${NC}"
 
 ```bash
 echo "Next steps:"
-echo -e "  1. Run ${YELLOW}/create-rules-index --full${NC} for initial ToC generation"
-echo -e "  2. Run ${YELLOW}/create-specs-index --full${NC} for initial ToC generation"
+echo -e "  1. Run ${YELLOW}/create-rules-index --full${NC} for initial index generation"
+echo -e "  2. Run ${YELLOW}/create-specs-index --full${NC} for initial index generation"
 ```
 
 ### 成功メッセージ（緑）

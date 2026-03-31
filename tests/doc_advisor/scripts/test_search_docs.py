@@ -494,7 +494,7 @@ specs:
 
         # ToC ディレクトリ作成
         self.index_dir = os.path.join(
-            self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
+            self.project_root, '.claude', 'doc-advisor', 'indexes', 'rules'
         )
         os.makedirs(self.index_dir, exist_ok=True)
 

@@ -233,9 +233,8 @@ class TestLoadConfig(unittest.TestCase):
         self.assertNotIn('rules', config)  # トップレベルキーではなくセクション内容
 
     def test_load_config_defaults_merged(self):
-        """デフォルト値（toc_file 等）がマージされる"""
+        """デフォルト値（checksums_file 等）がマージされる"""
         config = index_utils.load_config(category='rules')
-        self.assertIn('toc_file', config)
         self.assertIn('checksums_file', config)
 
     def test_load_config_user_override(self):

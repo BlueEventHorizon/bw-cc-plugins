@@ -120,10 +120,7 @@ def migrate_v1_to_v2(content):
             lines.append(f'    {p}: {dt}')
 
         # v2 のデフォルトフィールド
-        toc_target = category
-        lines.append(f'  toc_file: .claude/doc-advisor/indexes/{toc_target}/{toc_target}_index.yaml')
-        lines.append(f'  checksums_file: .claude/doc-advisor/indexes/{toc_target}/.index_checksums.yaml')
-        lines.append(f'  work_dir: .claude/doc-advisor/indexes/{toc_target}/.toc_work/')
+        lines.append(f'  checksums_file: .claude/doc-advisor/indexes/{category}/.index_checksums.yaml')
         lines.append('  patterns:')
         lines.append('    target_glob: "**/*.md"')
         lines.append('    exclude: []')

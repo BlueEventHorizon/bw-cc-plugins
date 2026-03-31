@@ -111,7 +111,7 @@ rules:
         self.assertEqual(config['root_dirs'], ['my_rules/'])
 
     def test_defaults_merged_with_doc_structure(self):
-        """コードデフォルト（toc_file 等）が .doc_structure.yaml とマージされる"""
+        """コードデフォルト（checksums_file 等）が .doc_structure.yaml とマージされる"""
         self._write_doc_structure("""\
 # doc_structure_version: 3.0
 rules:
@@ -125,7 +125,6 @@ rules:
         # .doc_structure.yaml の値
         self.assertEqual(config['root_dirs'], ['custom_rules/'])
         # コードデフォルトからマージされた値
-        self.assertIn('toc_file', config)
         self.assertIn('checksums_file', config)
 
 

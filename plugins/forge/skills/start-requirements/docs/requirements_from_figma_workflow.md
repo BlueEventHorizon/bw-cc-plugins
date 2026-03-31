@@ -212,7 +212,7 @@ Figma から抽出した画像の扱い:
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。
 
-### 5.4 specs ToC 更新
+### 5.4 specs index 更新
 
 `/doc-advisor:create-specs-index` が利用可能であれば実行する。
 

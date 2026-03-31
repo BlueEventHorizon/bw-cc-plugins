@@ -246,7 +246,7 @@ class TestLoadConfigV1Integration(unittest.TestCase):
         self.assertIn('root_dirs', config)
         self.assertEqual(config['root_dirs'], ['rules/'])
         # コードデフォルトがマージされている
-        self.assertIn('toc_file', config)
+        self.assertIn('checksums_file', config)
 
     def test_v2_file_migrated(self):
         """v2 形式の .doc_structure.yaml が load_config で正しく処理される"""
@@ -266,10 +266,10 @@ class TestLoadConfigV1Integration(unittest.TestCase):
 
         self.assertEqual(config['root_dirs'], ['my_rules/'])
         # v2→v3 で内部フィールドが除去され、コードデフォルトがマージされる
-        # toc_file はコードデフォルト値
+        # checksums_file はコードデフォルト値
         self.assertEqual(
-            config['toc_file'],
-            '.claude/doc-advisor/indexes/rules/rules_index.yaml'
+            config['checksums_file'],
+            '.claude/doc-advisor/indexes/rules/.index_checksums.yaml'
         )
 
 

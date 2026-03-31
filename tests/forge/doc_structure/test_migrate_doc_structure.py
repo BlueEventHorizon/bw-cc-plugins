@@ -188,9 +188,9 @@ class TestMigrateV1ToV2(unittest.TestCase):
         """description フィールドが除去される"""
         self.assertNotIn('description:', self.result)
 
-    def test_toc_file_added(self):
-        """v2 の toc_file フィールドが追加される"""
-        self.assertIn('toc_file:', self.result)
+    def test_toc_file_not_added(self):
+        """v2 でも toc_file フィールドは追加されない（v3 で不要なため省略）"""
+        self.assertNotIn('toc_file:', self.result)
 
     def test_output_section_added(self):
         """v2 の output セクションが追加される"""
