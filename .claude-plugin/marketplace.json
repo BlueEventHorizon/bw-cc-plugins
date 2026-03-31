@@ -37,7 +37,7 @@
     },
     {
       "name": "doc-advisor",
-      "description": "AI-searchable document index (ToC) generator for Claude Code",
+      "description": "Semantic document index generator with OpenAI Embedding for Claude Code",
       "version": "0.2.1",
       "author": {
         "name": "moons"

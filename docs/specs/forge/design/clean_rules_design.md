@@ -74,10 +74,10 @@ plugins/forge/skills/clean-rules/
     taxonomy.md              # 上記分類学の定義（AI が参照する判定基準）
 
 plugins/forge/skills/query-forge-rules/
-  SKILL.md                   # forge 内蔵 docs の ToC 検索スキル
+  SKILL.md                   # forge 内蔵 docs の index 検索スキル
 
-plugins/forge/toc/
-  rules_toc.yaml             # forge 内蔵 docs の検索インデックス（doc-advisor で生成）
+plugins/forge/indexes/
+  rules_index.yaml           # forge 内蔵 docs の検索インデックス（doc-advisor で生成）
 ```
 
 ---
@@ -88,7 +88,7 @@ plugins/forge/toc/
 
 1. `.doc_structure.yaml` の存在確認（なければ `/forge:setup-doc-structure` を案内しエラー終了）
 2. ルール文書一覧を取得（`resolve_doc_structure.py --type rules`）
-3. forge 内蔵 docs を取得（`/forge:query-forge-rules` で ToC 検索）
+3. forge 内蔵 docs を取得（`/forge:query-forge-rules` で index 検索）
 4. 分類学定義を Read（`taxonomy.md`）
 5. ルール文書（ターゲット側）と forge docs（Step 3 で取得したパスリスト）を全て Read
 
@@ -120,18 +120,18 @@ AskUserQuestion で承認を取得。
 
 - 結果サマリー出力
 - `.doc_structure.yaml` 更新確認
-- DocAdvisor ToC 更新
+- DocAdvisor index 更新
 - `/anvil:commit` で commit 確認
 
 ---
 
 ## 5. forge 内蔵 docs の取得方式
 
-`/forge:query-forge-rules` スキルが `${CLAUDE_PLUGIN_ROOT}/toc/rules_toc.yaml` を検索し、
+`/forge:query-forge-rules` スキルが `${CLAUDE_PLUGIN_ROOT}/indexes/rules_index.yaml` を検索し、
 タスクに関連する forge 内蔵ドキュメントのパスリストを返す。
 
-- ToC は doc-advisor の `/create-rules-index` で生成後、forge docs エントリのみ抽出してコピー
-- ToC 内のパスは `plugins/forge/...` 形式。Read 時は `${CLAUDE_PLUGIN_ROOT}` 起点で解決
+- index は doc-advisor の `/create-rules-index` で生成後、forge docs エントリのみ抽出してコピー
+- index 内のパスは `plugins/forge/...` 形式。Read 時は `${CLAUDE_PLUGIN_ROOT}` 起点で解決
 
 ---
 

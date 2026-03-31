@@ -1,6 +1,6 @@
 # DES-005: ToC 生成フロー設計書
 
-> **HISTORICAL**: 本設計書は旧 ToC YAML パイプラインの設計を記述したものであり、現在は Embedding ベースの index 方式に移行済みである。歴史的参照として内容を保持する。
+> **HISTORICAL**: この設計書は Embedding index 方式への移行前の旧 ToC YAML 生成パイプラインを記述しています。現行システムは DES-006 を参照してください。
 
 ## 概要
 

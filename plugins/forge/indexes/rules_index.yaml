@@ -520,7 +520,7 @@ docs:
       - Glossary creation
       - Static asset management and naming conventions
       - Quality validation checklist for design tokens and requirements
-      - AI review and specs ToC update process
+      - AI review and specs index update process
     applicable_tasks:
       - Requirements definition from Figma design
       - Design system setup

@@ -20,7 +20,7 @@
 
 | データ形式 | バージョン識別方法 | 適用箇所 |
 |---|---|---|
-| `.doc_structure.yaml` | `# doc_structure_version: X.0` コメント | `toc_utils.py` の `load_config()` |
+| `.doc_structure.yaml` | `# doc_structure_version: X.0` コメント | `index_utils.py` の `load_config()` |
 
 ## 機能要件
 

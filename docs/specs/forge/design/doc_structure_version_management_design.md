@@ -239,7 +239,7 @@ NFR-01「元データを書き換えない」に従い、スクリプトは stdo
 | `patterns.target_glob` | 非空の場合 |
 | `patterns.exclude` | 非空の場合 |
 
-> **Note**: Doc Advisor v5.0 で `output.*`, `common.*`, `toc_file`, `checksums_file`, `work_dir` は `.doc_structure.yaml` から除去され、Doc Advisor のコードデフォルト（`toc_utils.py`）で管理される。マイグレーション時にこれらのフィールドが存在しても無視される（後方互換性あり）。
+> **Note**: Doc Advisor v5.0 で `output.*`, `common.*`, `toc_file`, `checksums_file`, `work_dir` は `.doc_structure.yaml` から除去され、Doc Advisor のコードデフォルト（`index_utils.py`）で管理される。マイグレーション時にこれらのフィールドが存在しても無視される（後方互換性あり）。
 
 ## バージョン検出 API
 
