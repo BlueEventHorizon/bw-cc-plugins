@@ -32,12 +32,14 @@ EMBED_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'embed_docs.py')
 
 import embed_docs
 from embed_docs import (
-    build_embedding_text,
     build_index,
     call_embedding_api,
+    extract_title,
     get_index_path,
     load_index,
+    read_file_content,
     save_index,
+    truncate_to_token_limit,
 )
 
 
@@ -60,79 +62,107 @@ def _make_api_response(vectors):
 
 
 # ===========================================================================
-# build_embedding_text() テスト
+# read_file_content() / extract_title() / truncate_to_token_limit() テスト
 # ===========================================================================
 
-class TestBuildEmbeddingText(unittest.TestCase):
-    """build_embedding_text() の単体テスト。"""
+class TestReadFileContent(unittest.TestCase):
+    """read_file_content() の単体テスト。"""
 
-    def test_all_fields_present(self):
-        """全フィールドが揃っている場合のテキスト生成"""
-        metadata = {
-            "title": "設計書タイトル",
-            "purpose": "設計目的の説明",
-            "keywords": ["セマンティック", "検索"],
-            "applicable_tasks": ["設計", "レビュー"],
-            "content_details": ["詳細1", "詳細2"],
-        }
-        result = build_embedding_text(metadata)
-        self.assertIn("設計書タイトル", result)
-        self.assertIn("設計目的の説明", result)
-        self.assertIn("セマンティック 検索", result)
-        self.assertIn("設計 レビュー", result)
-        self.assertIn("詳細1\n詳細2", result)
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
 
-    def test_fields_order(self):
-        """フィールドが重要度順（title → purpose → keywords → applicable_tasks → content_details）に結合される"""
-        metadata = {
-            "title": "TITLE",
-            "purpose": "PURPOSE",
-            "keywords": ["KW1", "KW2"],
-            "applicable_tasks": ["TASK1"],
-            "content_details": ["DETAIL1"],
-        }
-        result = build_embedding_text(metadata)
-        lines = result.split("\n")
-        self.assertEqual(lines[0], "TITLE")
-        self.assertEqual(lines[1], "PURPOSE")
-        self.assertEqual(lines[2], "KW1 KW2")
-        self.assertEqual(lines[3], "TASK1")
-        self.assertEqual(lines[4], "DETAIL1")
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
 
-    def test_missing_optional_fields(self):
-        """title のみの場合、他のフィールドはスキップされる"""
-        metadata = {"title": "タイトルのみ"}
-        result = build_embedding_text(metadata)
-        self.assertEqual(result, "タイトルのみ")
+    def test_read_normal_md_file(self):
+        """通常の .md ファイル本文が読めること"""
+        p = Path(self.tmpdir) / "test.md"
+        p.write_text("# タイトル\n\n本文です。\n", encoding="utf-8")
+        result = read_file_content(p)
+        self.assertIn("# タイトル", result)
+        self.assertIn("本文です。", result)
 
-    def test_empty_metadata(self):
-        """空メタデータの場合は空文字列を返す"""
-        result = build_embedding_text({})
+    def test_read_empty_file(self):
+        """空ファイルは空文字列を返す"""
+        p = Path(self.tmpdir) / "empty.md"
+        p.write_text("", encoding="utf-8")
+        result = read_file_content(p)
         self.assertEqual(result, "")
 
-    def test_none_values_skipped(self):
-        """None 値のフィールドはスキップされる"""
-        metadata = {"title": "タイトル", "purpose": None, "keywords": None}
-        result = build_embedding_text(metadata)
-        self.assertEqual(result, "タイトル")
+    def test_read_file_with_frontmatter(self):
+        """frontmatter 付きファイルの全文が読めること"""
+        content = "---\ntitle: テスト\n---\n# 見出し\n\n本文\n"
+        p = Path(self.tmpdir) / "fm.md"
+        p.write_text(content, encoding="utf-8")
+        result = read_file_content(p)
+        self.assertEqual(result, content)
 
-    def test_empty_list_fields_skipped(self):
-        """空リストのフィールドはスキップされる"""
-        metadata = {"title": "タイトル", "keywords": [], "applicable_tasks": []}
-        result = build_embedding_text(metadata)
-        self.assertEqual(result, "タイトル")
 
-    def test_string_keywords(self):
-        """keywords が文字列の場合もそのまま使用される"""
-        metadata = {"title": "T", "keywords": "キーワード文字列"}
-        result = build_embedding_text(metadata)
-        self.assertIn("キーワード文字列", result)
+class TestExtractTitle(unittest.TestCase):
+    """extract_title() の単体テスト。"""
 
-    def test_string_content_details(self):
-        """content_details が文字列の場合もそのまま使用される"""
-        metadata = {"title": "T", "content_details": "詳細文字列"}
-        result = build_embedding_text(metadata)
-        self.assertIn("詳細文字列", result)
+    def test_extract_title_from_heading(self):
+        """最初の # 見出しからタイトルを抽出"""
+        content = "# 設計書タイトル\n\n本文です。\n"
+        result = extract_title(content, "fallback.md")
+        self.assertEqual(result, "設計書タイトル")
+
+    def test_extract_title_from_frontmatter(self):
+        """YAML frontmatter の title からタイトルを抽出"""
+        content = '---\ntitle: "FM タイトル"\n---\n# 見出し\n'
+        result = extract_title(content, "fallback.md")
+        self.assertEqual(result, "FM タイトル")
+
+    def test_frontmatter_priority_over_heading(self):
+        """frontmatter が # 見出しより優先される"""
+        content = "---\ntitle: 優先タイトル\n---\n# 見出しタイトル\n"
+        result = extract_title(content, "fallback.md")
+        self.assertEqual(result, "優先タイトル")
+
+    def test_extract_title_fallback(self):
+        """タイトルが見つからない場合はフォールバック名を返す"""
+        content = "本文のみ。見出しなし。\n"
+        result = extract_title(content, "docs/rules/test.md")
+        self.assertEqual(result, "docs/rules/test.md")
+
+    def test_extract_title_empty_content(self):
+        """空コンテンツの場合はフォールバック名を返す"""
+        result = extract_title("", "fallback.md")
+        self.assertEqual(result, "fallback.md")
+
+    def test_extract_title_h2_not_used(self):
+        """## 見出しはタイトルとして使わない"""
+        content = "## サブ見出し\n\n本文\n"
+        result = extract_title(content, "fallback.md")
+        self.assertEqual(result, "fallback.md")
+
+
+class TestTruncateToTokenLimit(unittest.TestCase):
+    """truncate_to_token_limit() の単体テスト。"""
+
+    def test_short_text_unchanged(self):
+        """短いテキストはそのまま返される"""
+        text = "短いテキスト"
+        result = truncate_to_token_limit(text)
+        self.assertEqual(result, text)
+
+    def test_long_text_truncated(self):
+        """長いテキストは max_chars で切り詰められる"""
+        text = "あ" * 10000
+        result = truncate_to_token_limit(text)
+        self.assertEqual(len(result), embed_docs.EMBEDDING_MAX_CHARS)
+
+    def test_exact_limit_unchanged(self):
+        """ちょうど max_chars のテキストはそのまま"""
+        text = "x" * embed_docs.EMBEDDING_MAX_CHARS
+        result = truncate_to_token_limit(text)
+        self.assertEqual(len(result), embed_docs.EMBEDDING_MAX_CHARS)
+
+    def test_custom_max_chars(self):
+        """カスタム max_chars が使える"""
+        text = "あ" * 200
+        result = truncate_to_token_limit(text, max_chars=100)
+        self.assertEqual(len(result), 100)
 
 
 # ===========================================================================
@@ -614,12 +644,7 @@ specs:
 
     def test_full_mode_with_mock_api(self):
         """--full モードで API をモックしてインデックスが生成されること（直接呼び出し）"""
-        self._create_rule_file('rules/test.md')
-
-        # ToC YAML を作成（load_metadata が参照するため）
-        toc_path = os.path.join(self.toc_dir, 'rules_toc.yaml')
-        with open(toc_path, 'w') as f:
-            f.write('docs:\n  rules/test.md:\n    title: "Test Rule"\n    purpose: "テスト用"\n')
+        self._create_rule_file('rules/test.md', content='# Test Rule\n\nテスト用ルール文書。\n')
 
         # 直接モジュール関数を呼び出してテスト（API をモック）
         with patch("embed_docs.call_embedding_api") as mock_api:
@@ -668,11 +693,6 @@ specs:
         """差分モードで新規・変更・削除を検出してインデックスを更新すること"""
         self._create_rule_file('rules/existing.md', content='# Existing\n\nExisting content.\n')
         self._create_rule_file('rules/new_file.md', content='# New\n\nNew content.\n')
-
-        # ToC YAML を作成
-        toc_path = os.path.join(self.toc_dir, 'rules_toc.yaml')
-        with open(toc_path, 'w') as f:
-            f.write('docs:\n  rules/existing.md:\n    title: "Existing"\n  rules/new_file.md:\n    title: "New"\n  rules/deleted.md:\n    title: "Deleted"\n')
 
         # 既存インデックスを作成（existing.md と deleted.md がある状態）
         index_path = os.path.join(self.toc_dir, 'rules_index.json')
@@ -731,11 +751,6 @@ specs:
     def test_diff_mode_removes_deleted_file_checksum(self):
         """差分モードで削除されたファイルのチェックサムが更新後のファイルに含まれないこと"""
         self._create_rule_file('rules/kept.md', content='# Kept\n\nKept content.\n')
-
-        # ToC YAML（kept.md のみ）
-        toc_path = os.path.join(self.toc_dir, 'rules_toc.yaml')
-        with open(toc_path, 'w') as f:
-            f.write('docs:\n  rules/kept.md:\n    title: "Kept"\n')
 
         # 既存インデックス（kept.md と removed.md）
         index_path = os.path.join(self.toc_dir, 'rules_index.json')
