@@ -7,7 +7,7 @@ search_docs.py を subprocess で呼び出し、queries.yaml に定義された
 見落とし 1 件でもテスト失敗とする。
 
 前提条件:
-- OPENAI_API_KEY 環境変数が設定されていること（未設定時は skipTest）
+- DOC_ADVISOR_OPENAI_API_KEY 環境変数が設定されていること（未設定時は skipTest）
 - Embedding インデックスが構築済みであること（未構築時は skipTest）
 """
 
@@ -220,12 +220,12 @@ class TestGoldenSet(unittest.TestCase):
         # ゴールデンセットの読み込み（API 不要なバリデーションテストでも使用）
         cls.queries = load_queries_yaml(QUERIES_YAML)
 
-        # OPENAI_API_KEY チェック（検索テストのみスキップ）
-        cls.api_key = os.environ.get("OPENAI_API_KEY", "")
+        # DOC_ADVISOR_OPENAI_API_KEY チェック（OPENAI_API_KEY にフォールバック、検索テストのみスキップ）
+        cls.api_key = os.environ.get("DOC_ADVISOR_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
         cls.skip_reason = None
 
         if not cls.api_key:
-            cls.skip_reason = "OPENAI_API_KEY が設定されていないためスキップ"
+            cls.skip_reason = "DOC_ADVISOR_OPENAI_API_KEY が設定されていないためスキップ"
             return
 
         # プロジェクトルートの解決

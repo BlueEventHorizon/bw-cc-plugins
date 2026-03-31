@@ -130,7 +130,7 @@ tasks:
       - --full モードの API モックテスト（urllib.request.urlopen をパッチ）
       - API キー未設定時のエラー JSON 出力テスト
     acceptance_criteria: |
-      全テストが OPENAI_API_KEY なしで実行できる
+      全テストが DOC_ADVISOR_OPENAI_API_KEY なしで実行できる
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - tests/doc_advisor/scripts/test_create_pending.py
@@ -176,7 +176,7 @@ tasks:
       - 空クエリ時のエラー JSON 出力テスト
       - 件数上限なし検証（50 件返るケース）
     acceptance_criteria: |
-      全テストが OPENAI_API_KEY なしで実行できる
+      全テストが DOC_ADVISOR_OPENAI_API_KEY なしで実行できる
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - tests/doc_advisor/scripts/test_create_pending.py
@@ -290,11 +290,11 @@ tasks:
       - tests/doc_advisor/golden_set/test_golden_set.py を作成
       - search_docs.py を subprocess 呼び出しし、expected_paths が全件含まれるか検証
       - 見落とし 1 件でもテスト失敗（FNC-002 要件）
-      - OPENAI_API_KEY 未設定時は skipTest でスキップ（CI 非破壊）
+      - DOC_ADVISOR_OPENAI_API_KEY 未設定時は skipTest でスキップ（CI 非破壊）
     acceptance_criteria: |
       queries.yaml に 10 件以上のクエリが存在し、
       test_golden_set.py が見落とし 0 件でパスする。
-      OPENAI_API_KEY が設定された環境で embed_docs.py --full 実行済みであること。
+      DOC_ADVISOR_OPENAI_API_KEY が設定された環境で embed_docs.py --full 実行済みであること。
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md

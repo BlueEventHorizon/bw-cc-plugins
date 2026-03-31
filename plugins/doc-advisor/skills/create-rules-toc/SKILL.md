@@ -3,7 +3,7 @@ name: create-rules-toc
 description: |
   Build or update the rules Embedding index for semantic document search.
   Reads full file content (max 7500 characters) and vectorizes via OpenAI Embedding API.
-  No external dependencies except OPENAI_API_KEY.
+  No external dependencies except DOC_ADVISOR_OPENAI_API_KEY.
   Trigger:
   - After editing, adding, or removing rule documents
   - "Rebuild the rules index"
@@ -57,8 +57,8 @@ If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to
   - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
   - No → abort
 
-If a script outputs `{"status": "error", ...}` with an OPENAI_API_KEY-related message, use AskUserQuestion to inform the user:
-- "OPENAI_API_KEY is not set. Please run `export OPENAI_API_KEY='your-api-key'` and retry."
+If a script outputs `{"status": "error", ...}` with an DOC_ADVISOR_OPENAI_API_KEY-related message, use AskUserQuestion to inform the user:
+- "DOC_ADVISOR_OPENAI_API_KEY is not set. Please run `export DOC_ADVISOR_OPENAI_API_KEY='your-api-key'` and retry."
 
 If a script outputs `{"status": "partial", ...}`, report the partial failure details to the user:
 - Show the number of successfully processed and failed files

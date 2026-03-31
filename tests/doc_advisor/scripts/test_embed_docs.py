@@ -414,6 +414,7 @@ specs:
         env = os.environ.copy()
         env['CLAUDE_PROJECT_DIR'] = self.project_root
         # API キーを除去（--check モードでは不要）
+        env.pop('DOC_ADVISOR_OPENAI_API_KEY', None)
         env.pop('OPENAI_API_KEY', None)
         result = subprocess.run(
             cmd, capture_output=True, text=True, cwd=self.project_root, env=env
@@ -620,12 +621,13 @@ specs:
         return result
 
     def test_no_api_key_error(self):
-        """OPENAI_API_KEY 未設定時にエラー JSON を出力する"""
+        """DOC_ADVISOR_OPENAI_API_KEY 未設定時にエラー JSON を出力する"""
         self._create_rule_file('rules/test.md')
 
-        # API キーを除去
+        # API キーを除去（DOC_ADVISOR_OPENAI_API_KEY + フォールバックの OPENAI_API_KEY）
         env_override = {}
         env_clean = os.environ.copy()
+        env_clean.pop('DOC_ADVISOR_OPENAI_API_KEY', None)
         env_clean.pop('OPENAI_API_KEY', None)
         env_clean['CLAUDE_PROJECT_DIR'] = self.project_root
 
@@ -640,7 +642,7 @@ specs:
         self.assertEqual(result.returncode, 1)
         output = json.loads(result.stdout.strip())
         self.assertEqual(output["status"], "error")
-        self.assertIn("OPENAI_API_KEY", output["error"])
+        self.assertIn("DOC_ADVISOR_OPENAI_API_KEY", output["error"])
 
     def test_full_mode_with_mock_api(self):
         """--full モードで API をモックしてインデックスが生成されること（直接呼び出し）"""
@@ -811,6 +813,7 @@ specs:
             shutil.rmtree(rules_dir)
 
         env_clean = os.environ.copy()
+        env_clean.pop('DOC_ADVISOR_OPENAI_API_KEY', None)
         env_clean.pop('OPENAI_API_KEY', None)
         env_clean['CLAUDE_PROJECT_DIR'] = self.project_root
 

@@ -74,4 +74,4 @@ If `search_docs.py` outputs `{"status": "error", ...}`, handle based on the erro
 - **"Model mismatch"** → Inform user to run `/doc-advisor:create-rules-toc` with `--full` to rebuild
 - **"Index is stale"** → Inform user to run `/doc-advisor:create-rules-toc` to update
 - **"API error"** → Report the error details to the user
-- **"OPENAI_API_KEY not set"** → Ask user to set the `OPENAI_API_KEY` environment variable
+- **"DOC_ADVISOR_OPENAI_API_KEY not set"** → Ask user to set the `DOC_ADVISOR_OPENAI_API_KEY` environment variable

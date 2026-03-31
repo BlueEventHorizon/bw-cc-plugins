@@ -221,7 +221,7 @@ sequenceDiagram
 ```
 POST https://api.openai.com/v1/embeddings
 Content-Type: application/json
-Authorization: Bearer {OPENAI_API_KEY}
+Authorization: Bearer {DOC_ADVISOR_OPENAI_API_KEY}
 
 {
   "model": "text-embedding-3-small",
@@ -229,7 +229,7 @@ Authorization: Bearer {OPENAI_API_KEY}
 }
 ```
 
-- API キーは環境変数 `OPENAI_API_KEY` から取得
+- API キーは環境変数 `DOC_ADVISOR_OPENAI_API_KEY` から取得
 - バッチサイズ: 最大 100 テキスト/リクエスト（API 制限内）
 - エラー時: JSON エラー出力（`{"status": "error", "error": "..."}`)
 - API キー未設定時: エラーメッセージで設定方法を案内
@@ -303,7 +303,7 @@ def cosine_similarity(vec_a, vec_b):
 | インデックスが存在しない | `{"status": "error", "error": "Index not found. Run embed_docs.py first."}` |
 | インデックスが古い（チェックサム不一致） | `{"status": "error", "error": "Index is stale. Run embed_docs.py to update."}` — 検索を実行せず再生成を案内する（FNC-002 対応） |
 | Embedding モデル不一致 | `{"status": "error", "error": "Model mismatch: index uses {old_model}, current is {new_model}. Run embed_docs.py --full to rebuild."}` — インデックスの `metadata.model` と現在のモデル定数を比較し、不一致時は検索を実行せず `--full` 再構築を案内する |
-| API キー未設定 | `{"status": "error", "error": "OPENAI_API_KEY not set."}` |
+| API キー未設定 | `{"status": "error", "error": "DOC_ADVISOR_OPENAI_API_KEY not set."}` |
 | API 呼び出し失敗 | `{"status": "error", "error": "API error: {詳細}"}` |
 
 ### 3.5 grep_docs.py 詳細設計
@@ -508,7 +508,7 @@ Embedding テキスト生成
 
 | エラー | 検出方法 | 対応 |
 | ------ | -------- | ---- |
-| OPENAI_API_KEY 未設定 | `os.environ.get()` が None | JSON エラー出力 + 設定方法を案内 |
+| DOC_ADVISOR_OPENAI_API_KEY 未設定 | `os.environ.get()` が None | JSON エラー出力 + 設定方法を案内 |
 | API 呼び出し失敗（ネットワーク） | `urllib.error.URLError` | リトライ 1 回 → 失敗時 JSON エラー出力 |
 | API 呼び出し失敗（認証エラー） | HTTP 401 | JSON エラー出力 + API キー確認を案内 |
 | API 呼び出し失敗（レート制限） | HTTP 429 | 60 秒待機 → リトライ 1 回 |

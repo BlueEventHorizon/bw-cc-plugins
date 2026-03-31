@@ -243,7 +243,7 @@ def call_embedding_api(texts, api_key):
                 last_error = e
             elif e.code == 401:
                 raise RuntimeError(
-                    f"API 認証エラー (401)。OPENAI_API_KEY が正しいか確認してください。"
+                    f"API 認証エラー (401)。DOC_ADVISOR_OPENAI_API_KEY が正しいか確認してください。"
                 ) from e
             else:
                 if attempt < API_RETRY_COUNT:
@@ -556,14 +556,14 @@ def main():
         run_check_mode(category, common, index_path, checksums_file)
         return 0
 
-    # API キーの確認
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # API キーの確認（DOC_ADVISOR_OPENAI_API_KEY 優先、OPENAI_API_KEY にフォールバック）
+    api_key = os.environ.get("DOC_ADVISOR_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": (
-                "OPENAI_API_KEY が設定されていません。"
-                "export OPENAI_API_KEY='your-api-key' を実行してください。"
+                "DOC_ADVISOR_OPENAI_API_KEY が設定されていません。"
+                "export DOC_ADVISOR_OPENAI_API_KEY='your-api-key' を実行してください。"
             ),
         }))
         return 1

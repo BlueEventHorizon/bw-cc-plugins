@@ -500,7 +500,7 @@ specs:
 
         # 環境変数を保存
         self._orig_env = {}
-        for key in ('CLAUDE_PROJECT_DIR', 'OPENAI_API_KEY'):
+        for key in ('CLAUDE_PROJECT_DIR', 'DOC_ADVISOR_OPENAI_API_KEY'):
             self._orig_env[key] = os.environ.get(key)
 
     def tearDown(self):
@@ -520,6 +520,7 @@ specs:
         env = os.environ.copy()
         env['CLAUDE_PROJECT_DIR'] = self.project_root
         # デフォルトで API キーを除去（テスト側で明示的に設定する）
+        env.pop('DOC_ADVISOR_OPENAI_API_KEY', None)
         env.pop('OPENAI_API_KEY', None)
         if env_override:
             env.update(env_override)
@@ -549,7 +550,7 @@ specs:
         """インデックスが存在しない場合のエラー JSON"""
         result = self._run_search(
             '--query', 'test query',
-            env_override={'OPENAI_API_KEY': 'fake-key'},
+            env_override={'DOC_ADVISOR_OPENAI_API_KEY': 'fake-key'},
         )
 
         self.assertEqual(result.returncode, 1)
@@ -570,7 +571,7 @@ specs:
 
         result = self._run_search(
             '--query', 'test query',
-            env_override={'OPENAI_API_KEY': 'fake-key'},
+            env_override={'DOC_ADVISOR_OPENAI_API_KEY': 'fake-key'},
         )
 
         self.assertEqual(result.returncode, 1)
@@ -602,7 +603,7 @@ specs:
 
         result = self._run_search(
             '--query', 'test query',
-            env_override={'OPENAI_API_KEY': 'fake-key'},
+            env_override={'DOC_ADVISOR_OPENAI_API_KEY': 'fake-key'},
         )
 
         self.assertEqual(result.returncode, 1)
@@ -611,7 +612,7 @@ specs:
         self.assertIn("stale", output["error"].lower())
 
     def test_no_api_key_error(self):
-        """OPENAI_API_KEY 未設定時のエラー JSON"""
+        """DOC_ADVISOR_OPENAI_API_KEY 未設定時のエラー JSON"""
         # 新鮮なインデックスを作成（stale チェックを通過させるため）
         rule_path = os.path.join(self.project_root, 'rules', 'test.md')
         with open(rule_path, 'w') as f:
@@ -639,7 +640,7 @@ specs:
         self.assertEqual(result.returncode, 1)
         output = json.loads(result.stdout)
         self.assertEqual(output["status"], "error")
-        self.assertIn("OPENAI_API_KEY", output["error"])
+        self.assertIn("DOC_ADVISOR_OPENAI_API_KEY", output["error"])
 
     def test_output_json_format(self):
         """正常時の出力 JSON に status, query, results フィールドが含まれる"""
