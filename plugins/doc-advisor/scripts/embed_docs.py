@@ -34,7 +34,6 @@ from toc_utils import (
     get_all_md_files,
     init_common_config,
     load_checksums,
-    load_metadata,
     normalize_path,
     resolve_config_path,
     write_checksums_yaml,
@@ -123,47 +122,77 @@ def save_index(index, index_path):
         json.dump(index, f, ensure_ascii=False, separators=(",", ":"))
 
 
-def build_embedding_text(metadata):
-    """メタデータから Embedding API に送信するテキストを生成する。
+# text-embedding-3-small のトークン上限: 8,191
+# 日本語は保守的に 1文字≒1トークンで見積もり、安全マージンを確保
+EMBEDDING_MAX_CHARS = 7500
 
-    各フィールドを重要度順（title が先頭）で結合する。
-    フィールドが存在しない場合はスキップする。
+
+def read_file_content(file_path):
+    """ファイル本文を読み込み、Embedding テキストとして返す。
 
     Args:
-        metadata: load_metadata() の返り値 dict
+        file_path: ファイルの絶対パス (Path)
 
     Returns:
-        str: Embedding テキスト
+        str: ファイル本文
     """
-    parts = []
+    return file_path.read_text(encoding="utf-8")
 
-    title = metadata.get("title") or ""
-    if title:
-        parts.append(title)
 
-    purpose = metadata.get("purpose") or ""
-    if purpose:
-        parts.append(purpose)
+def extract_title(content, fallback_name=""):
+    """Markdown ファイルからタイトルを抽出する。
 
-    keywords = metadata.get("keywords") or []
-    if isinstance(keywords, list) and keywords:
-        parts.append(" ".join(str(k) for k in keywords))
-    elif isinstance(keywords, str) and keywords:
-        parts.append(keywords)
+    以下の優先順で抽出する:
+    1. YAML frontmatter の title フィールド
+    2. 最初の # 見出し
+    3. fallback_name（ファイル名など）
 
-    applicable_tasks = metadata.get("applicable_tasks") or []
-    if isinstance(applicable_tasks, list) and applicable_tasks:
-        parts.append(" ".join(str(t) for t in applicable_tasks))
-    elif isinstance(applicable_tasks, str) and applicable_tasks:
-        parts.append(applicable_tasks)
+    Args:
+        content: ファイル本文
+        fallback_name: タイトルが見つからない場合のフォールバック
 
-    content_details = metadata.get("content_details") or []
-    if isinstance(content_details, list) and content_details:
-        parts.append("\n".join(str(d) for d in content_details))
-    elif isinstance(content_details, str) and content_details:
-        parts.append(content_details)
+    Returns:
+        str: 抽出されたタイトル
+    """
+    # YAML frontmatter からの抽出
+    if content.startswith("---"):
+        end_idx = content.find("---", 3)
+        if end_idx != -1:
+            frontmatter = content[3:end_idx]
+            for line in frontmatter.split("\n"):
+                stripped = line.strip()
+                if stripped.startswith("title:"):
+                    title = stripped[6:].strip().strip('"').strip("'")
+                    if title:
+                        return title
 
-    return "\n".join(parts)
+    # 最初の # 見出しからの抽出
+    for line in content.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("# ") and not stripped.startswith("##"):
+            title = stripped[2:].strip()
+            if title:
+                return title
+
+    return fallback_name
+
+
+def truncate_to_token_limit(text, max_chars=EMBEDDING_MAX_CHARS):
+    """テキストをトークン上限に合わせて切り詰める。
+
+    text-embedding-3-small の上限（8,191 tokens）に対し、
+    日本語テキストを保守的に 1文字≒1トークンで見積もる。
+
+    Args:
+        text: 入力テキスト
+        max_chars: 最大文字数（デフォルト: EMBEDDING_MAX_CHARS）
+
+    Returns:
+        str: 切り詰められたテキスト（max_chars 以下の場合はそのまま）
+    """
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars]
 
 
 def call_embedding_api(texts, api_key):
@@ -332,12 +361,6 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
     """
     project_root = common["project_root"]
 
-    # ToC YAML パスを取得（load_metadata() で使用）
-    config = common["config"]
-    default_dir = project_root / category
-    toc_file_setting = config.get("toc_file", f".claude/doc-advisor/toc/{category}/{category}_toc.yaml")
-    toc_path = resolve_config_path(toc_file_setting, default_dir, project_root)
-
     # 全対象ファイルを取得
     all_files, file_root_map = get_all_md_files(common)
     print(f"対象ファイル数: {len(all_files)}")
@@ -401,16 +424,16 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
     for sf in deleted_files:
         entries.pop(sf, None)
 
-    # Embedding テキストを生成
+    # Embedding テキストを生成（ファイル本文を直接使用）
     texts_to_embed = []
     paths_to_embed = []
     for source_file, full_path in target_files:
-        metadata = load_metadata(category, source_file, toc_path=toc_path)
-        text = build_embedding_text(metadata)
-        title = metadata.get("title") or source_file
-        # メタデータが空の場合はファイルパスと title をフォールバックテキストとして使用
+        text = read_file_content(full_path)
+        title = extract_title(text, source_file)
+        # 空ファイルの場合はファイルパスと title をフォールバックテキストとして使用
         if not text.strip():
             text = f"{title}\n{source_file}"
+        text = truncate_to_token_limit(text)
         texts_to_embed.append(text)
         paths_to_embed.append((source_file, full_path, title))
 

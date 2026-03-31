@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-03-31
+
+### doc-advisor
+
+- **refactor**: Embedding テキストを ToC YAML メタデータから `.md` ファイル本文の直接読み込みに変更。情報劣化を排除し検索品質を向上
+- **feat**: `extract_title()` を追加。frontmatter → `# ` 見出し → ファイル名の優先順でタイトル抽出
+- **feat**: `truncate_to_token_limit()` を追加。`text-embedding-3-small` の 8,191 トークン上限に対応（7,500文字で切り詰め）
+- **fix**: `update_version_files.py` に `--optional` フラグを追加。optional sync_file のパターン未マッチ時に exit 0 で終了
+
 ## [0.2.0] - 2026-03-30
 
 ### doc-advisor
