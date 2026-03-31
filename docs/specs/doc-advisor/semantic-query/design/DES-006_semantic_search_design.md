@@ -101,7 +101,7 @@ classDiagram
         -search_files(keyword, root_dirs, patterns) list~str~
     }
 
-    class TocUtils {
+    class IndexUtils {
         +EMBEDDING_MODEL str
         +load_config(category) dict
         +init_common_config(category) dict
@@ -113,9 +113,9 @@ classDiagram
         +normalize_path(path_str) str
     }
 
-    EmbedDocs --> TocUtils : 設定読み込み・差分検出
-    SearchDocs --> TocUtils : 設定読み込み
-    GrepDocs --> TocUtils : 設定読み込み・ファイル列挙
+    EmbedDocs --> IndexUtils : 設定読み込み・差分検出
+    SearchDocs --> IndexUtils : 設定読み込み
+    GrepDocs --> IndexUtils : 設定読み込み・ファイル列挙
 ```
 
 ### 3.3 embed_docs.py 詳細設計
@@ -173,7 +173,7 @@ sequenceDiagram
 
 **空ファイル時のフォールバック**: 本文が空（空白のみ含む）の場合、`{title}\n{source_file}` をフォールバックテキストとして使用する。
 
-技術選択の理由: ファイル本文を直接 Embedding することで、メタデータ抽出の中間層を排除し、文書内容の意味的類似性を最大限に活用できる。旧 ToC YAML メタデータへの依存も解消される。
+技術選択の理由: ファイル本文を直接 Embedding することで、メタデータ抽出の中間層を排除し、文書内容の意味的類似性を最大限に活用できる。
 
 #### インデックス JSON スキーマ
 
@@ -293,8 +293,8 @@ def cosine_similarity(vec_a, vec_b):
   "status": "ok",
   "query": "検索機能を改善するタスク",
   "results": [
-    {"path": "docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md", "title": "ToC Generation Flow Design", "score": 0.89},
-    {"path": "docs/specs/doc-advisor/design/DES-004_document_model.md", "title": "Document Model Design", "score": 0.82}
+    {"path": "docs/specs/doc-advisor/design/DES-004_document_model.md", "title": "Document Model Design", "score": 0.89},
+    {"path": "docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md", "title": "Semantic Search Design", "score": 0.82}
   ]
 }
 ```
@@ -436,40 +436,23 @@ sequenceDiagram
 
 ### 6.1 query-specs / query-rules SKILL.md
 
-現行のワークフローを以下に置き換える:
+検索ワークフロー:
 
-```
-[現行]
-1. staleness check
-2. Read: {category}_toc.yaml（全量読み込み）
-3. AI がメタデータを解析して候補を特定
-4. 候補文書を Read
-
-[新方式]
-1. python3 search_docs.py --category {category} --query "{タスク説明}"
-2. AI が結果を確認し、固有名詞があれば grep_docs.py で補完
+1. `python3 search_docs.py --category {category} --query "{タスク説明}"` でセマンティック検索
+2. AI が結果を確認し、固有名詞があれば `grep_docs.py` で補完
 3. 候補文書を Read して最終確認
-```
 
-staleness check は `embed_docs.py --check` モード（インデックスの新鮮さを確認）に置き換える。
+インデックスの鮮度は `embed_docs.py --check` モードで確認する。
 
 ### 6.2 create-specs-index / create-rules-index SKILL.md
 
-現行の 3 フェーズパイプライン（pending YAML → toc-updater agent × N → merge）を以下に置き換える:
+インデックス構築は単一スクリプトで完了:
 
 ```
-[現行]
-Phase 1: create_pending_yaml.py → pending YAML テンプレート生成
-Phase 2: toc-updater agent × N（並列 AI 解析）
-Phase 3: merge_toc.py → validate_toc.py → checksums
-
-[新方式]
 python3 embed_docs.py --category {category} [--full]
 ```
 
-単一スクリプトの実行で完了。AI による並列解析が不要になるため、大幅に高速化される。
-
-ファイル本文を直接読み込んで Embedding テキストとして使用するため、メタデータの中間層は不要。
+ファイル本文を直接読み込んで Embedding テキストとして使用する。差分更新がデフォルト、`--full` で全体再構築。
 
 ## 7. データフロー設計
 
@@ -534,45 +517,13 @@ root_dirs, patterns
 
 - **OpenAI API 呼び出しはモック化する**: テスト用の固定ベクトルを返すモックを使用
 - **コサイン類似度の計算は実値でテスト**: 既知のベクトルペアで期待値を検証
-- **差分検出は既存テスト（test_create_pending.py）のパターンを踏襲**
+- **差分検出はチェックサムベースのテストで検証**
 
 ### 9.3 精度検証テスト（FNC-002 対応）
 
 - ゴールデンセット（テストクエリ + 正解文書のペア）を `tests/doc_advisor/golden_set/` に配置
 - テストスクリプトが search_docs.py を実行し、正解文書が全て候補に含まれるか検証
 - 見落とし 0 件を自動テストで確認
-
-## 10. 移行設計
-
-### 10.1 移行フェーズ
-
-| Phase | 内容 | 旧 ToC YAML | Embedding インデックス | ステータス |
-| ----- | ---- | -------- | --------------------- | ---------- |
-| **Phase 1** | Embedding インデックス構築 | **維持** | 構築 | ✅ 完了 |
-| **Phase 2** | query-* SKILL.md を新方式に切り替え。精度検証 | **維持**（フォールバック用） | 運用 | ✅ 完了 |
-| **Phase 3** | 旧 ToC YAML と生成パイプラインを廃止 | **廃止** | 運用 | 🔄 一部完了（本文直接 Embedding 採用済み、旧 ToC 廃止は未実施） |
-
-### 10.2 Phase 3 での廃止対象
-
-NFR-002 に定義された以下を廃止:
-- `{category}_toc.yaml`
-- `create_pending_yaml.py`（差分検出ロジックは `index_utils.py` に残す）
-- `write_pending.py`
-- `merge_toc.py`
-- `validate_toc.py`
-- `toc-updater.md`（エージェント定義）
-- `.index_work/` ディレクトリ機構
-- 上記廃止対象に対応するテストファイル（`test_create_pending.py`, `test_write_pending.py`, `test_merge_toc.py`, `test_validate_toc.py` 等）
-
-### 10.3 Embedding テキストの方式（確定）
-
-Phase 2 の精度検証（ゴールデンセットテスト）を経て、**選択肢 3: 文書本文を直接 Embedding** を採用した。
-
-- `read_file_content()` でファイル本文を読み込み
-- `extract_title()` でタイトルを抽出（空ファイル時のフォールバック用）
-- `truncate_to_token_limit()` でトークン上限（7,500 文字）に切り詰め
-
-メタデータ抽出の中間層を排除したことで、旧 ToC YAML への依存が解消され、実装もシンプルになった。
 
 ## 改定履歴
 

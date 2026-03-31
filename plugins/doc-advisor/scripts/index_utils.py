@@ -186,7 +186,7 @@ def load_config(category=None):
     Load .doc_structure.yaml and merge with internal defaults.
 
     .doc_structure.yaml provides document structure (root_dirs, doc_types_map, patterns).
-    Internal defaults provide Doc Advisor settings (toc_file, checksums_file, work_dir, output, common).
+    Internal defaults provide Doc Advisor settings (checksums_file, output, common).
 
     Args:
         category: 'rules' or 'specs'. If specified, returns only that section

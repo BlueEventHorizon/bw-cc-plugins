@@ -177,7 +177,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | --------------------------------- | ---------------- |
 | `.doc_structure.yaml`（プロジェクトルート） | 文書構造設定（root_dirs, doc_types_map, patterns） |
 
-> **Note**: Doc Advisor 内部設定（toc_file, checksums_file, work_dir, output, common）は `index_utils.py` の `_get_default_config()` にコードデフォルトとして定義。`load_config()` が `.doc_structure.yaml` とマージして返す。
+> **Note**: Doc Advisor 内部設定（checksums_file, output, common）は `index_utils.py` の `_get_default_config()` にコードデフォルトとして定義。`load_config()` が `.doc_structure.yaml` とマージして返す。
 
 ### .doc_structure.yaml スキーマ
 
@@ -225,7 +225,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 > **Note**: 上記は組み込みタイプである。`doc_types_map` に任意の識別子文字列を指定することでカスタムタイプも使用可能（例: `adr`）。
 >
 > **カスタムタイプの仕様**:
-> - `validate_toc.py` は `doc_type` を非空文字列としてのみ検証し、固定リストへの照合は行わない
+> - `doc_type` は非空文字列としてのみ検証し、固定リストへの照合は行わない
 > - 検証ポリシー: フォーマット制約は設けない。タイポ検出はプロジェクトオーナーの責任とする
 > - 下流への影響: 検索スキル（`/query-rules`, `/query-specs`）は index 全件を AI が解釈する方式であり、カスタム doc_type の追加による動作影響はない
 
@@ -233,7 +233,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 
 `index_utils.py` の `load_config()` は以下の順序で設定を構築する:
 
-1. `_get_default_config()` でコードデフォルトを取得（toc_file, checksums_file, work_dir, output, common + フォールバック用 root_dirs）
+1. `_get_default_config()` でコードデフォルトを取得（checksums_file, output, common + フォールバック用 root_dirs）
 2. `.doc_structure.yaml` を読み込み・パース
 3. `_deep_merge(defaults, doc_structure)` でマージ（`.doc_structure.yaml` の値が優先）
 4. 後方互換: `root_dir`（単数）→ `root_dirs`（複数）の変換
@@ -250,9 +250,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | パス → doc_type の対応。FR-01-6 参照 |
 | `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
 | `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
-| `toc_file`              | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/rules/rules_index.yaml`      | 出力 index ファイルパス                |
 | `checksums_file`        | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/rules/.index_checksums.yaml` | チェックサムファイルパス             |
-| `work_dir`              | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/rules/.index_work/`          | 作業ディレクトリパス                 |
 | `output.header_comment` | string | コードデフォルト（`index_utils.py`）                                 | index ヘッダーコメント                 |
 | `output.metadata_name`  | string | コードデフォルト（`index_utils.py`）                                 | メタデータ名                         |
 
@@ -264,9 +262,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | パス → doc_type の対応。FR-01-6 参照 |
 | `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
 | `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
-| `toc_file`              | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/specs/specs_index.yaml`      | 出力 index ファイルパス                |
 | `checksums_file`        | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/specs/.index_checksums.yaml` | チェックサムファイルパス             |
-| `work_dir`              | string | コードデフォルト（`index_utils.py`）: `.claude/doc-advisor/indexes/specs/.index_work/`          | 作業ディレクトリパス                 |
 | `output.header_comment` | string | コードデフォルト（`index_utils.py`）                                 | index ヘッダーコメント                 |
 | `output.metadata_name`  | string | コードデフォルト（`index_utils.py`）                                 | メタデータ名                         |
 
@@ -291,9 +287,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 rules:
   root_dirs:
     - rules/
-  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml        # コードデフォルト
   checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml  # コードデフォルト
-  work_dir: .claude/doc-advisor/indexes/rules/.index_work/
 
   patterns:
     target_glob: "**/*.md"
@@ -310,9 +304,7 @@ specs:
     - specs/
     # - screen_design/
     # - api_specs/
-  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
-  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/specs/.index_work/
+  checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml  # コードデフォルト
 
   patterns:
     target_glob: "**/*.md"
@@ -362,6 +354,4 @@ common:
 
 | 設計書  | 内容                                  |
 | ------- | ------------------------------------- |
-| DES-001 | セットアップスクリプト                |
-| DES-003 | 文書識別子の設計                      |
-| DES-005 | 旧 ToC 生成フローと Skill/Agent 設計根拠（HISTORICAL） |
+| DES-006 | セマンティック検索設計                |

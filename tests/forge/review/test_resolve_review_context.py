@@ -2,7 +2,7 @@
 """
 resolve_review_context.py のテスト
 
-config.yaml 互換形式の .doc_structure.yaml を使用した種別判定、
+.doc_structure.yaml形式の .doc_structure.yaml を使用した種別判定、
 Feature 検出、exclude 判定をテストする。
 標準ライブラリのみ使用。
 
@@ -39,7 +39,7 @@ from resolve_review_context import (
 
 
 # ---------------------------------------------------------------------------
-# テスト用 config.yaml 互換テンプレート
+# テスト用 .doc_structure.yamlテンプレート
 # ---------------------------------------------------------------------------
 
 CONFIG_WITH_EXCLUDE = """\
@@ -50,9 +50,7 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
   checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -67,9 +65,7 @@ specs:
   doc_types_map:
     "specs/*/requirements/": requirement
     "specs/*/design/": design
-  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
   checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
@@ -93,9 +89,7 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
   checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -110,9 +104,7 @@ specs:
   doc_types_map:
     "specs/*/requirements/": requirement
     specs/design/: design
-  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
   checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -134,9 +126,7 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
   checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -153,9 +143,7 @@ specs:
     specs/requirements/: requirement
     specs/design/: design
     specs/plan/: plan
-  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
   checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude: []
@@ -177,9 +165,7 @@ rules:
     - rules/
   doc_types_map:
     rules/: rule
-  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml
   checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
@@ -197,9 +183,7 @@ specs:
     "specs/*/requirements/": requirement
     "modules/*/requirements/": requirement
     "specs/*/design/": design
-  toc_file: .claude/doc-advisor/indexes/specs/specs_index.yaml
   checksums_file: .claude/doc-advisor/indexes/specs/.index_checksums.yaml
-  work_dir: .claude/doc-advisor/indexes/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"
     exclude:
@@ -232,7 +216,7 @@ class _YamlFileTestCase(unittest.TestCase):
         return path
 
     def _load_config(self, content):
-        """config.yaml 互換形式を書き出してパースする"""
+        """.doc_structure.yaml形式を書き出してパースする"""
         self._write_yaml(content)
         return parse_doc_structure(self.tmpdir)
 
@@ -507,7 +491,7 @@ class TestDetectFeaturesFromDocStructure(_YamlFileTestCase):
             (self.tmpdir / 'specs' / name / 'requirements' / 'req.md').touch()
 
     def _make_config(self, exclude=None):
-        """config.yaml 互換形式の config dict を作成"""
+        """.doc_structure.yaml形式の config dict を作成"""
         config = {
             'specs': {
                 'root_dirs': ['specs/*/requirements/'],

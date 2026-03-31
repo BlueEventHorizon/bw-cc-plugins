@@ -46,9 +46,9 @@ flowchart TD
 
     QA["完全性チェック<br>トレーサビリティ"] --> AI_REVIEW
 
-    AI_REVIEW["/forge:review plan --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> TOC
+    AI_REVIEW["/forge:review plan --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> INDEX
 
-    TOC["/create-specs-index"] --> COMMIT
+    INDEX["/create-specs-index"] --> COMMIT
 
     COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
 ```

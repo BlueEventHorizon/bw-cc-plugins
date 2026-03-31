@@ -657,9 +657,9 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from index_utils import init_common_config as toc_init
+                from index_utils import init_common_config as idx_init
 
-                common = toc_init('rules')
+                common = idx_init('rules')
                 project_root = common['project_root']
                 config = common['config']
 
@@ -720,8 +720,8 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from index_utils import init_common_config as toc_init, resolve_config_path
-                common = toc_init('rules')
+                from index_utils import init_common_config as idx_init, resolve_config_path
+                common = idx_init('rules')
                 project_root = common['project_root']
                 config = common['config']
                 idx_path = get_index_path('rules', project_root)
@@ -778,8 +778,8 @@ specs:
             os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
             try:
-                from index_utils import init_common_config as toc_init, resolve_config_path
-                common = toc_init('rules')
+                from index_utils import init_common_config as idx_init, resolve_config_path
+                common = idx_init('rules')
                 project_root = common['project_root']
                 config = common['config']
                 idx_path = get_index_path('rules', project_root)

@@ -3,7 +3,7 @@
 resolve_doc_references.py のテスト
 
 resolve_doc_structure.py に委譲後のパス解決・CLI 動作をテストする。
-.doc_structure.yaml は config.yaml 互換フォーマットを使用。
+.doc_structure.yaml は .doc_structure.yamlフォーマットを使用。
 標準ライブラリのみ使用。
 
 実行:
@@ -231,7 +231,7 @@ class TestCLI(_FsTestCase):
         )
 
     def _make_project(self):
-        """テスト用プロジェクト構造を作成する（config.yaml 互換フォーマット）。"""
+        """テスト用プロジェクト構造を作成する（.doc_structure.yamlフォーマット）。"""
         self._write_file('docs/rules/coding.md', '# コーディング規約')
         self._write_file('specs/requirements/req.md', '# 要件定義書')
         self._write_doc_structure("""\
