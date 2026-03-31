@@ -61,8 +61,8 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 |--------|------|----------|
 | [**query-rules**](#) | Embedding インデックスを使ったルール文書のセマンティック検索 | `"ルール確認"` `"What rules apply?"` |
 | [**query-specs**](#) | Embedding インデックスを使った仕様文書のセマンティック検索 | `"仕様確認"` `"What specs apply?"` |
-| [**create-rules-toc**](#) | ルール文書の Embedding インデックスを構築・更新 | `"rules インデックスを再構築"` |
-| [**create-specs-toc**](#) | 仕様文書の Embedding インデックスを構築・更新 | `"specs インデックスを再構築"` |
+| [**create-rules-index**](#) | ルール文書の Embedding インデックスを構築・更新 | `"rules インデックスを再構築"` |
+| [**create-specs-index**](#) | 仕様文書の Embedding インデックスを構築・更新 | `"specs インデックスを再構築"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 

@@ -19,7 +19,7 @@
 
 ### インデックス生成のトリガー
 
-- create-specs-toc / create-rules-toc スキル実行時に生成される
+- create-specs-index / create-rules-index スキル実行時に生成される
 - 文書の追加・変更・削除を検出し、差分のみ更新する
 
 ### インデックスの管理

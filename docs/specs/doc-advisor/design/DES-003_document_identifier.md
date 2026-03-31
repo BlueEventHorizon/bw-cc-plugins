@@ -158,7 +158,7 @@ flowchart TD
 | --------------------------- | ------------------------------------------------- |
 | `toc_utils.py`              | `extract_id_from_filename()` に非推奨コメント追加 |
 | `default-config.yaml`       | ID関連コメント削除                                |
-| `create-specs-toc/SKILL.md` | ID抽出の説明を削除                                |
+| `create-specs-index/SKILL.md` | ID抽出の説明を削除                                |
 | `toc_format.md`             | ID要件の記述がないことを確認                      |
 
 ### 変更不要なファイル

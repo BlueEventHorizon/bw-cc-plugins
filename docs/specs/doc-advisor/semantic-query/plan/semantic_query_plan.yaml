@@ -251,7 +251,7 @@ tasks:
       - plugins/doc-advisor/skills/query-rules/SKILL.md
 
   - task_id: TASK-009
-    title: create-specs-toc / create-rules-toc SKILL.md をインデックス生成方式に更新
+    title: create-specs-index / create-rules-index SKILL.md をインデックス生成方式に更新
     priority: 80
     status: completed
     design_id: DES-006
@@ -266,13 +266,13 @@ tasks:
       - embed_docs.py --category {category} [--full] の単一コマンドに置き換え
       - allowed-tools から Task を削除（toc-updater agent 不要になるため）
       - 移行期間中の注記（ToC YAML が維持される旨）を追加
-      - create-specs-toc と create-rules-toc の両方を更新
+      - create-specs-index と create-rules-index の両方を更新
     acceptance_criteria: |
       両 SKILL.md が embed_docs.py 単一コマンドのフローに更新されている
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
-      - plugins/doc-advisor/skills/create-specs-toc/SKILL.md
-      - plugins/doc-advisor/skills/create-rules-toc/SKILL.md
+      - plugins/doc-advisor/skills/create-specs-index/SKILL.md
+      - plugins/doc-advisor/skills/create-rules-index/SKILL.md
 
   - task_id: TASK-010
     title: ゴールデンセット作成と精度検証テスト（FNC-002）

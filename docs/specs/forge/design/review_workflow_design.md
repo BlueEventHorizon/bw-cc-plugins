@@ -158,7 +158,7 @@ plan.yaml 内の `recommendation: fix` が0件でループ終了。
 | 1 | テスト実行（修正ありの場合） |
 | 2 | 設計書の更新確認 |
 | 3 | サマリー報告 |
-| 4 | `/create-specs-toc` 実行（利用可能な場合） |
+| 4 | `/create-specs-index` 実行（利用可能な場合） |
 | 5 | commit 確認 → `/anvil:commit` |
 | 6 | セッションディレクトリ削除 |
 

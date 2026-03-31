@@ -214,7 +214,7 @@ Figma から抽出した画像の扱い:
 
 ### 5.4 specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する。
+`/doc-advisor:create-specs-index` が利用可能であれば実行する。
 
 ### 5.5 commit/push 確認
 

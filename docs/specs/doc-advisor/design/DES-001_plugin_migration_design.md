@@ -43,9 +43,9 @@ plugins/doc-advisor/
 │   │   └── SKILL.md
 │   ├── query-specs/
 │   │   └── SKILL.md
-│   ├── create-rules-toc/
+│   ├── create-rules-index/
 │   │   └── SKILL.md
-│   └── create-specs-toc/
+│   └── create-specs-index/
 │       └── SKILL.md
 ├── scripts/                          # 共有スクリプト（フラット配置）
 │   ├── toc_utils.py
@@ -90,8 +90,8 @@ plugins/doc-advisor/
 | create_checksums.py | SHA-256 チェックサム生成（増分更新の差分検知） | toc_utils.py |
 | check_doc_structure.sh | .doc_structure.yaml の Pre-check（スキル実行前の検証） | なし |
 | toc-updater agent | 個別文書の ToC エントリ生成（並列実行） | write_pending.py, toc_format.md |
-| create-rules-toc スキル | rules カテゴリの ToC 更新オーケストレーション | 全スクリプト, toc-updater agent |
-| create-specs-toc スキル | specs カテゴリの ToC 更新オーケストレーション | 全スクリプト, toc-updater agent |
+| create-rules-index スキル | rules カテゴリの ToC 更新オーケストレーション | 全スクリプト, toc-updater agent |
+| create-specs-index スキル | specs カテゴリの ToC 更新オーケストレーション | 全スクリプト, toc-updater agent |
 | query-rules スキル | rules ToC を検索して関連文書を返却 | create_pending_yaml.py（staleness check） |
 | query-specs スキル | specs ToC を検索して関連文書を返却 | create_pending_yaml.py（staleness check） |
 
@@ -101,8 +101,8 @@ plugins/doc-advisor/
 flowchart TB
     subgraph Plugin["plugins/doc-advisor/"]
         subgraph Skills["skills/"]
-            CRT[create-rules-toc]
-            CST[create-specs-toc]
+            CRT[create-rules-index]
+            CST[create-specs-index]
             QR[query-rules]
             QS[query-specs]
         end
@@ -167,8 +167,8 @@ flowchart TB
 
 | ユースケース | 説明 |
 | ------------ | ---- |
-| UC-1: ToC フル生成 | `/doc-advisor:create-rules-toc --full` で全文書の ToC を生成 |
-| UC-2: ToC 増分更新 | `/doc-advisor:create-rules-toc` で変更分のみ更新 |
+| UC-1: ToC フル生成 | `/doc-advisor:create-rules-index --full` で全文書の ToC を生成 |
+| UC-2: ToC 増分更新 | `/doc-advisor:create-rules-index` で変更分のみ更新 |
 | UC-3: ルール文書検索 | `/doc-advisor:query-rules` でタスクに関連するルール文書を特定 |
 | UC-4: 仕様文書検索 | `/doc-advisor:query-specs` でタスクに関連する仕様文書を特定 |
 | UC-5: forge レビュー連携 | forge:review が query-rules/query-specs を呼び出し perspectives を取得 |
@@ -178,7 +178,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     actor User
-    participant Skill as create-rules-toc
+    participant Skill as create-rules-index
     participant CDS as check_doc_structure.sh
     participant Orch as toc_orchestrator.md
     participant CPY as create_pending_yaml.py
@@ -188,7 +188,7 @@ sequenceDiagram
     participant VT as validate_toc.py
     participant CC as create_checksums.py
 
-    User->>Skill: /doc-advisor:create-rules-toc --full
+    User->>Skill: /doc-advisor:create-rules-index --full
     Skill->>CDS: Pre-check (.doc_structure.yaml)
     CDS-->>Skill: OK
     Skill->>Orch: Phase 1 開始
@@ -305,8 +305,8 @@ config = _deep_merge(defaults, doc_structure)   # doc_structure が defaults を
 | -------- | ------ |
 | skills/query-rules/SKILL.md | 2 |
 | skills/query-specs/SKILL.md | 2 |
-| skills/create-rules-toc/SKILL.md | 3 |
-| skills/create-specs-toc/SKILL.md | 3 |
+| skills/create-rules-index/SKILL.md | 3 |
+| skills/create-specs-index/SKILL.md | 3 |
 | agents/toc-updater.md | 4 |
 | docs/toc_orchestrator.md | 16 |
 | create_pending_yaml.py | 3 |
@@ -321,8 +321,8 @@ config = _deep_merge(defaults, doc_structure)   # doc_structure が defaults を
 
 | 変更前 | 変更後 |
 | ------ | ------ |
-| `/create-rules-toc` | `/doc-advisor:create-rules-toc` |
-| `/create-specs-toc` | `/doc-advisor:create-specs-toc` |
+| `/create-rules-index` | `/doc-advisor:create-rules-index` |
+| `/create-specs-index` | `/doc-advisor:create-specs-index` |
 | `/query-rules` | `/doc-advisor:query-rules` |
 | `/query-specs` | `/doc-advisor:query-specs` |
 | `/classify-docs` | `/forge:setup-doc-structure`（代替） |
@@ -336,7 +336,7 @@ config = _deep_merge(defaults, doc_structure)   # doc_structure が defaults を
 | ファイル | 変更内容 |
 | -------- | -------- |
 | `plugins/forge/skills/review/SKILL.md` | `/query-rules` → `/doc-advisor:query-rules` 等（約6箇所） |
-| `plugins/forge/skills/clean-rules/SKILL.md` | `/create-rules-toc` → `/doc-advisor:create-rules-toc`（約2箇所） |
+| `plugins/forge/skills/clean-rules/SKILL.md` | `/create-rules-index` → `/doc-advisor:create-rules-index`（約2箇所） |
 | `plugins/forge/skills/fixer/SKILL.md` | `/query-rules` → `/doc-advisor:query-rules`（約2箇所） |
 
 > **Note**: forge 側の更新は doc-advisor プラグイン移行完了後に別タスクで実施する。forge は「利用可能な場合」の条件分岐でスキルを参照しているため、名前空間更新前でも動作に支障はない。
@@ -397,10 +397,10 @@ DocAdvisor-CC の `feature/for_plugin` ブランチで `doc-advisor-version-xK9X
 ```
 forge:setup-doc-structure  ──作成──>  .doc_structure.yaml  <──読み込み──  doc-advisor:*
 forge:review  ──呼び出し──>  doc-advisor:query-rules / doc-advisor:query-specs
-forge:clean-rules  ──呼び出し──>  doc-advisor:create-rules-toc
+forge:clean-rules  ──呼び出し──>  doc-advisor:create-rules-index
 ```
 
-**forge 側の必要変更**: forge の SKILL.md 内で `/query-rules`, `/query-specs`, `/create-rules-toc`, `/create-specs-toc` を参照している箇所を `doc-advisor:` 名前空間付きに更新する。ただし forge は既に「利用可能な場合」の条件分岐で DocAdvisor スキルを参照しているため、doc-advisor プラグイン未インストール時も動作する。
+**forge 側の必要変更**: forge の SKILL.md 内で `/query-rules`, `/query-specs`, `/create-rules-index`, `/create-specs-index` を参照している箇所を `doc-advisor:` 名前空間付きに更新する。ただし forge は既に「利用可能な場合」の条件分岐で DocAdvisor スキルを参照しているため、doc-advisor プラグイン未インストール時も動作する。
 
 ### 6.4 パーミッション設計
 
@@ -436,8 +436,8 @@ forge:clean-rules  ──呼び出し──>  doc-advisor:create-rules-toc
 
 | ソース（reference 配下） | デスティネーション（plugins/doc-advisor/ 配下） | アクション |
 | ----------------------- | ----------------------------------------------- | ---------- |
-| `templates/skills/create-rules-toc/SKILL.md` | `skills/create-rules-toc/SKILL.md` | コピー + パス書き換え + 名前空間化 |
-| `templates/skills/create-specs-toc/SKILL.md` | `skills/create-specs-toc/SKILL.md` | コピー + パス書き換え + 名前空間化 |
+| `templates/skills/create-rules-index/SKILL.md` | `skills/create-rules-index/SKILL.md` | コピー + パス書き換え + 名前空間化 |
+| `templates/skills/create-specs-index/SKILL.md` | `skills/create-specs-index/SKILL.md` | コピー + パス書き換え + 名前空間化 |
 | `templates/skills/query-rules/SKILL.md` | `skills/query-rules/SKILL.md` | コピー + パス書き換え + 名前空間化 |
 | `templates/skills/query-specs/SKILL.md` | `skills/query-specs/SKILL.md` | コピー + パス書き換え + 名前空間化 |
 | `templates/agents/toc-updater.md` | `agents/toc-updater.md` | コピー + パス書き換え |
@@ -583,8 +583,8 @@ doc-advisor プラグインの正常動作確認後、bw-cc-plugins リポジト
 | `.claude/doc-advisor/docs/` | プラグイン内 `docs/` に移行済み |
 | `.claude/skills/query-rules/` | `/doc-advisor:query-rules` に置き換え |
 | `.claude/skills/query-specs/` | `/doc-advisor:query-specs` に置き換え |
-| `.claude/skills/create-rules-toc/` | `/doc-advisor:create-rules-toc` に置き換え |
-| `.claude/skills/create-specs-toc/` | `/doc-advisor:create-specs-toc` に置き換え |
+| `.claude/skills/create-rules-index/` | `/doc-advisor:create-rules-index` に置き換え |
+| `.claude/skills/create-specs-index/` | `/doc-advisor:create-specs-index` に置き換え |
 | `.claude/agents/toc-updater.md` | プラグイン内 `agents/` に移行済み |
 
 > **Note**: `.claude/doc-advisor/toc/` はプロジェクトデータであり削除しない。

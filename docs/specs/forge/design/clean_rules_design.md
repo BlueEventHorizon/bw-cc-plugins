@@ -130,7 +130,7 @@ AskUserQuestion で承認を取得。
 `/forge:query-forge-rules` スキルが `${CLAUDE_PLUGIN_ROOT}/toc/rules_toc.yaml` を検索し、
 タスクに関連する forge 内蔵ドキュメントのパスリストを返す。
 
-- ToC は doc-advisor の `/create-rules-toc` で生成後、forge docs エントリのみ抽出してコピー
+- ToC は doc-advisor の `/create-rules-index` で生成後、forge docs エントリのみ抽出してコピー
 - ToC 内のパスは `plugins/forge/...` 形式。Read 時は `${CLAUDE_PLUGIN_ROOT}` 起点で解決
 
 ---

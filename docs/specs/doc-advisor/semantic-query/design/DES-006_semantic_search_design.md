@@ -369,17 +369,17 @@ python3 grep_docs.py --category {specs|rules} --keyword "doc_structure.yaml"
 
 ### 4.2 シーケンス図
 
-#### UC-1: インデックス構築（create-specs-toc 経由）
+#### UC-1: インデックス構築（create-specs-index 経由）
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant Skill as create-specs-toc
+    participant Skill as create-specs-index
     participant Script as embed_docs.py
     participant API as OpenAI API
     participant FS as ファイルシステム
 
-    User->>Skill: /doc-advisor:create-specs-toc
+    User->>Skill: /doc-advisor:create-specs-index
     Skill->>Script: python3 embed_docs.py --category specs --full
     Script->>FS: 指定カテゴリの全 .md ファイル読み込み<br/>(.doc_structure.yaml の root_dirs に基づく)
     Script->>Script: 本文読み込み・タイトル抽出・トークン切り詰め
@@ -453,7 +453,7 @@ sequenceDiagram
 
 staleness check は `embed_docs.py --check` モード（インデックスの新鮮さを確認）に置き換える。
 
-### 6.2 create-specs-toc / create-rules-toc SKILL.md
+### 6.2 create-specs-index / create-rules-index SKILL.md
 
 現行の 3 フェーズパイプライン（pending YAML → toc-updater agent × N → merge）を以下に置き換える:
 

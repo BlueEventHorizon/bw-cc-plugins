@@ -287,7 +287,7 @@ tasks:
     build_check: per_task
     description:
       - "claude --plugin-dir plugins/doc-advisor でスキル認識を確認"
-      - "4スキルの名前空間認識確認: /doc-advisor:query-rules, /doc-advisor:query-specs, /doc-advisor:create-rules-toc, /doc-advisor:create-specs-toc"
+      - "4スキルの名前空間認識確認: /doc-advisor:query-rules, /doc-advisor:query-specs, /doc-advisor:create-rules-index, /doc-advisor:create-specs-index"
       - "toc-updater agent の認識確認（TASK-001 の調査結果に基づく名前空間で検証）"
       - "CLAUDE_PLUGIN_ROOT が SKILL.md 内で正しく展開されることを確認（設計書 10 節リスク項目）"
       - "スキル認識されない場合は plugin.json に skills/agents フィールドを追加"
@@ -308,7 +308,7 @@ tasks:
       - "forge プラグイン内のスキル名参照を名前空間付きに更新（設計書 5.2 節カテゴリ C、約10箇所）"
       - "対象: review/SKILL.md（約6箇所）、clean-rules/SKILL.md（約2箇所）、fixer/SKILL.md（約2箇所）"
       - "/query-rules → /doc-advisor:query-rules, /query-specs → /doc-advisor:query-specs 等"
-    acceptance_criteria: "forge プラグイン内に名前空間なしの /query-rules, /query-specs, /create-rules-toc, /create-specs-toc 参照が残っていないこと"
+    acceptance_criteria: "forge プラグイン内に名前空間なしの /query-rules, /query-specs, /create-rules-index, /create-specs-index 参照が残っていないこと"
     required_reading:
       - docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md
       - plugins/forge/skills/review/SKILL.md
@@ -324,7 +324,7 @@ tasks:
     build_check: per_task
     description:
       - "旧ファイルを削除（設計書 10.2 節）: .claude/doc-advisor/scripts/, .claude/doc-advisor/docs/"
-      - ".claude/skills/query-rules/, .claude/skills/query-specs/, .claude/skills/create-rules-toc/, .claude/skills/create-specs-toc/ を削除"
+      - ".claude/skills/query-rules/, .claude/skills/query-specs/, .claude/skills/create-rules-index/, .claude/skills/create-specs-index/ を削除"
       - ".claude/agents/toc-updater.md を削除"
       - ".claude/doc-advisor/config.yaml.bak 等のレガシーファイルを削除"
       - ".claude/doc-advisor/toc/ はプロジェクトデータのため削除しない"

@@ -48,7 +48,7 @@ flowchart TD
 
     AI_REVIEW["/forge:review plan --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> TOC
 
-    TOC["/create-specs-toc"] --> COMMIT
+    TOC["/create-specs-index"] --> COMMIT
 
     COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
 ```
@@ -110,7 +110,7 @@ flowchart TD
 
 | Step | 内容 |
 |------|------|
-| 4.1 | `/create-specs-toc` 実行（利用可能な場合）|
+| 4.1 | `/create-specs-index` 実行（利用可能な場合）|
 | 4.2 | `/anvil:commit` による commit/push 確認 |
 
 ---

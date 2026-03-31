@@ -194,7 +194,7 @@ rules/ のディレクトリ構造に変更があった場合、`.doc_structure.
 
 #### DocAdvisor ToC の更新
 
-`/doc-advisor:create-rules-toc` Skill が利用可能であれば呼び出す。
+`/doc-advisor:create-rules-index` Skill が利用可能であれば呼び出す。
 
 #### commit 確認
 

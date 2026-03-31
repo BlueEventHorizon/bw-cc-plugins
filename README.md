@@ -61,8 +61,8 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 |-------|-------------|---------|
 | [**query-rules**](#) | Semantic search for relevant rule documents using Embedding index | `"What rules apply?"` `"ルール確認"` |
 | [**query-specs**](#) | Semantic search for relevant spec documents using Embedding index | `"What specs apply?"` `"仕様確認"` |
-| [**create-rules-toc**](#) | Build or update the rules Embedding index after modifying rule documents | `"Rebuild the rules index"` |
-| [**create-specs-toc**](#) | Build or update the specs Embedding index after modifying spec documents | `"Rebuild the specs index"` |
+| [**create-rules-index**](#) | Build or update the rules Embedding index after modifying rule documents | `"Rebuild the rules index"` |
+| [**create-specs-index**](#) | Build or update the specs Embedding index after modifying spec documents | `"Rebuild the specs index"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 

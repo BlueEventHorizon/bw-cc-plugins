@@ -127,8 +127,8 @@
       "Skill(anvil *)",
       "Skill(xcode *)",
       
-      "Skill(create-rules-toc)",
-      "Skill(create-specs-toc)",
+      "Skill(create-rules-index)",
+      "Skill(create-specs-index)",
       "Skill(query-rules)",
       "Skill(query-specs)",
 

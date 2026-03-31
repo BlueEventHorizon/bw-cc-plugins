@@ -13,7 +13,7 @@ v3.0 以降で以下の構造変更が行われた:
 | コマンド     | `commands/create-*_toc.md`               | `skills/create-*-toc/SKILL.md`          |
 | 設定         | `doc-advisor/config.yaml`                | `doc-advisor/config.yaml`（場所は同じ） |
 | ドキュメント | `doc-advisor/docs/`                      | `doc-advisor/docs/`（場所は同じ）       |
-| コマンド形式 | `/create-rules_toc`                      | `/create-rules-toc`                     |
+| コマンド形式 | `/create-rules_toc`                      | `/create-rules-index`                     |
 | ToC 出力先   | `doc-advisor/rules/`                     | `doc-advisor/toc/rules/`                |
 | Advisor      | agent (`rules-advisor`, `specs-advisor`) | skill (`/query-rules`, `/query-specs`)  |
 | 設定構造     | `root_dir` (単数) + `target_dirs`        | `root_dirs` (複数) + `target_glob`      |

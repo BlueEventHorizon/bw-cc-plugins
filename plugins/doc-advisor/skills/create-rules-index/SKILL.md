@@ -1,25 +1,25 @@
 ---
-name: create-specs-toc
+name: create-rules-index
 description: |
-  Build or update the specs Embedding index for semantic document search.
+  Build or update the rules Embedding index for semantic document search.
   Reads full file content (max 7500 characters) and vectorizes via OpenAI Embedding API.
   No external dependencies except DOC_ADVISOR_OPENAI_API_KEY.
   Trigger:
-  - After editing, adding, or removing spec documents
-  - "Rebuild the specs index"
+  - After editing, adding, or removing rule documents
+  - "Rebuild the rules index"
 allowed-tools: Bash, Read
 user-invocable: true
 argument-hint: "[--full]"
 ---
 
-# create-specs-toc
+# create-rules-index
 
-Build/update the specs Embedding index for AI-searchable semantic document search.
+Build/update the rules Embedding index for AI-searchable semantic document search.
 
 ## Usage
 
 ```
-/doc-advisor:create-specs-toc [--full]
+/doc-advisor:create-rules-index [--full]
 ```
 
 | Argument | Description                                           |
@@ -32,7 +32,7 @@ Build/update the specs Embedding index for AI-searchable semantic document searc
 Run the Embedding index builder:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs [--full]
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category rules [--full]
 ```
 
 - If `$0` = `--full`: pass `--full` flag (rebuild entire index)
@@ -47,8 +47,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs [--full]
 - API: OpenAI text-embedding-3-small（1536 dimensions）
 
 **出力フォーマット**:
-- File: `.claude/doc-advisor/toc/specs/specs_index.json`
-- Schema: `{"metadata": {"category": "specs", "model": "text-embedding-3-small", ...}, "entries": {"path/to/file.md": {"title": "...", "embedding": [...], "checksum": "..."}}}`
+- File: `.claude/doc-advisor/toc/rules/rules_index.json`
+- Schema: `{"metadata": {"category": "rules", "model": "text-embedding-3-small", ...}, "entries": {"path/to/file.md": {"title": "...", "embedding": [...], "checksum": "..."}}}`
 
 ## Error Handling
 

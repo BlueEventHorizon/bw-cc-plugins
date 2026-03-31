@@ -57,7 +57,7 @@ python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクト
 文書生成系オーケストレーター（start-requirements, start-design, start-plan）は成果物作成後に以下を実行する:
 
 1. `/forge:review {type} {差分ファイル} --auto` — AIレビュー+自動修正（差分のみ対象）
-2. `/create-specs-toc` — ToC 更新（利用可能な場合）
+2. `/create-specs-index` — ToC 更新（利用可能な場合）
 3. `/anvil:commit` — commit/push 確認
 
 start-implement は ToC 更新を含まず、review → commit の2ステップで完了する。

@@ -324,7 +324,7 @@ Phase 2 の主要シナリオを元に、ユーザーとシステムの相互作
 
 ### 4.5 specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する（利用不可の場合はスキップ）。
+`/doc-advisor:create-specs-index` が利用可能であれば実行する（利用不可の場合はスキップ）。
 
 ### 4.6 commit/push 確認
 

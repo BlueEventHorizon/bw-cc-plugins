@@ -535,7 +535,7 @@ flowchart TD
 
 [Action Required]
 - Review error files manually
-- Re-run /doc-advisor:create-specs-toc to retry
+- Re-run /doc-advisor:create-specs-index to retry
 ```
 
 ---
@@ -573,7 +573,7 @@ flowchart TD
 | コンポーネント                         | 種別                        | 根拠                                                                                                   |
 | -------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `query-rules`, `query-specs`           | **Skill** (`context: fork`) | ユーザー呼び出し (`/query-*`)、Claude 自動トリガー、隔離実行が必要                                     |
-| `create-rules-toc`, `create-specs-toc` | **Skill** (fork なし)       | ユーザー呼び出し (`/create-*-toc`) が必要。agent を並列起動するため fork 不可                          |
+| `create-rules-index`, `create-specs-index` | **Skill** (fork なし)       | ユーザー呼び出し (`/create-*-toc`) が必要。agent を並列起動するため fork 不可                          |
 | `toc-updater`                          | **Agent**                   | ツール制限 (`Read, Bash` のみ)、並列起動、system prompt の確実性が必要。`--category rules\|specs` で分岐 |
 
 ### 重要な制約: fork と subagent の関係

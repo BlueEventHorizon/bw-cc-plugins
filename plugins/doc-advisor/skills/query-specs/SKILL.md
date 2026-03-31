@@ -26,7 +26,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --check
 ```
 
 - `{"status": "fresh"}` → Proceed to Procedure
-- `{"status": "stale", ...}` → Warn the user that the index is stale, recommend running `/doc-advisor:create-specs-toc` to rebuild. **Do NOT proceed with search while stale**
+- `{"status": "stale", ...}` → Warn the user that the index is stale, recommend running `/doc-advisor:create-specs-index` to rebuild. **Do NOT proceed with search while stale**
 
 ## Procedure
 
@@ -68,8 +68,8 @@ If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to
   - No → abort
 
 If `search_docs.py` outputs `{"status": "error", ...}`, handle based on the error message:
-- **"Index not found"** → Inform user to run `/doc-advisor:create-specs-toc` first
-- **"Model mismatch"** → Inform user to run `/doc-advisor:create-specs-toc` with `--full` to rebuild
-- **"Index is stale"** → Inform user to run `/doc-advisor:create-specs-toc` to update
+- **"Index not found"** → Inform user to run `/doc-advisor:create-specs-index` first
+- **"Model mismatch"** → Inform user to run `/doc-advisor:create-specs-index` with `--full` to rebuild
+- **"Index is stale"** → Inform user to run `/doc-advisor:create-specs-index` to update
 - **"API error"** → Report the error details to the user
 - **"DOC_ADVISOR_OPENAI_API_KEY not set"** → Ask user to set the `DOC_ADVISOR_OPENAI_API_KEY` environment variable

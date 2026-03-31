@@ -247,7 +247,7 @@ Skill が失敗した場合は Phase 3.4 のチェック項目を手動で確認
 
 ### specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する（利用不可の場合はスキップ）。
+`/doc-advisor:create-specs-index` が利用可能であれば実行する（利用不可の場合はスキップ）。
 
 ### commit/push 確認
 
