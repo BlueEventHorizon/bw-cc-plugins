@@ -11,7 +11,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | **forge** | 0.0.27  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.2.1 | AI-searchable document index (ToC) generator for Claude Code |
+| **doc-advisor** | 0.2.1 | Semantic search document index generator. Vectorizes document content via OpenAI Embedding API for task-relevant document discovery |
 
 ## Skills
 
@@ -59,10 +59,10 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**query-rules**](#) | Search the pre-analyzed rules document index (ToC) to identify relevant rule documents | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](#) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
-| [**create-rules-toc**](#) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
-| [**create-specs-toc**](#) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+| [**query-rules**](#) | Semantic search for relevant rule documents using Embedding index | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](#) | Semantic search for relevant spec documents using Embedding index | `"What specs apply?"` `"仕様確認"` |
+| [**create-rules-toc**](#) | Build or update the rules Embedding index after modifying rule documents | `"Rebuild the rules index"` |
+| [**create-specs-toc**](#) | Build or update the specs Embedding index after modifying spec documents | `"Rebuild the specs index"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 
@@ -147,6 +147,21 @@ github:
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 - Xcode with `xcodebuild` (for xcode plugin)
+- `DOC_ADVISOR_OPENAI_API_KEY` environment variable (for doc-advisor semantic search)
+
+### Setting up doc-advisor
+
+doc-advisor requires an OpenAI API key for Embedding index generation and semantic search. Only the `/v1/embeddings` endpoint is used.
+
+1. Go to [OpenAI API Keys](https://platform.openai.com/api-keys) and create a **restricted key**
+2. Grant only **Embeddings** → **Write** permission (deny all others)
+3. Set the environment variable:
+
+```bash
+export DOC_ADVISOR_OPENAI_API_KEY='sk-...'
+```
+
+Add this to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.) to persist across sessions. Model: `text-embedding-3-small` ($0.02/1M tokens — a full index rebuild of 600 docs costs less than $0.01).
 
 ## License
 
