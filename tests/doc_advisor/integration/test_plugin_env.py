@@ -22,7 +22,7 @@ SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPTS_DIR))
 
-import toc_utils
+import index_utils
 
 
 class TestGetProjectRootEnvVar(unittest.TestCase):
@@ -37,14 +37,14 @@ class TestGetProjectRootEnvVar(unittest.TestCase):
     def test_claude_project_dir_set(self):
         """CLAUDE_PROJECT_DIR set → returns that path"""
         with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': self.tmpdir}):
-            result = toc_utils.get_project_root()
+            result = index_utils.get_project_root()
         self.assertEqual(result, Path(self.tmpdir))
 
     def test_claude_project_dir_empty_string_fallback(self):
         """CLAUDE_PROJECT_DIR empty string → falls back to cwd"""
         with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': ''}):
             with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-                result = toc_utils.get_project_root()
+                result = index_utils.get_project_root()
         self.assertEqual(result, Path(self.tmpdir).resolve())
 
     def test_claude_project_dir_nonexistent_fallback(self):
@@ -52,7 +52,7 @@ class TestGetProjectRootEnvVar(unittest.TestCase):
         nonexistent = os.path.join(self.tmpdir, 'nonexistent_xyz')
         with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': nonexistent}):
             with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-                result = toc_utils.get_project_root()
+                result = index_utils.get_project_root()
         self.assertEqual(result, Path(self.tmpdir).resolve())
 
 
@@ -66,7 +66,7 @@ class TestGetProjectRootCwd(unittest.TestCase):
             with patch.dict(os.environ, {}, clear=False):
                 os.environ.pop('CLAUDE_PROJECT_DIR', None)
                 with patch.object(Path, 'cwd', return_value=Path(tmpdir)):
-                    result = toc_utils.get_project_root()
+                    result = index_utils.get_project_root()
             self.assertEqual(result, Path(tmpdir).resolve())
         finally:
             shutil.rmtree(tmpdir)
@@ -79,7 +79,7 @@ class TestGetProjectRootCwd(unittest.TestCase):
                 os.environ.pop('CLAUDE_PROJECT_DIR', None)
                 with patch.object(Path, 'cwd', return_value=Path(tmpdir)):
                     # Should NOT raise RuntimeError
-                    result = toc_utils.get_project_root()
+                    result = index_utils.get_project_root()
             self.assertEqual(result, Path(tmpdir).resolve())
         finally:
             shutil.rmtree(tmpdir)
@@ -96,7 +96,7 @@ class TestFindConfigFile(unittest.TestCase):
             f.write('rules:\n  root_dirs:\n    - rules/\n')
         try:
             with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': tmpdir}):
-                result = toc_utils.find_config_file()
+                result = index_utils.find_config_file()
             self.assertEqual(result, Path(tmpdir) / '.doc_structure.yaml')
         finally:
             shutil.rmtree(tmpdir)
@@ -107,7 +107,7 @@ class TestFindConfigFile(unittest.TestCase):
         try:
             with patch.dict(os.environ, {'CLAUDE_PROJECT_DIR': tmpdir}):
                 with self.assertRaises(FileNotFoundError):
-                    toc_utils.find_config_file()
+                    index_utils.find_config_file()
         finally:
             shutil.rmtree(tmpdir)
 

@@ -3,7 +3,7 @@
 """
 Embedding インデックス構築スクリプト (doc-advisor plugin)
 
-文書メタデータを OpenAI Embedding API でベクトル化し、
+文書本文を OpenAI Embedding API でベクトル化し、
 {category}_index.json に保存する。差分更新・全体再構築・
 staleness check の3モードに対応。
 
@@ -28,19 +28,18 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-from toc_utils import (
+from index_utils import (
     ConfigNotReadyError,
+    EMBEDDING_MODEL,
     calculate_file_hash,
     get_all_md_files,
+    get_index_path,
     init_common_config,
     load_checksums,
     normalize_path,
     resolve_config_path,
     write_checksums_yaml,
 )
-
-# Embedding モデル定数（他スクリプトから from embed_docs import EMBEDDING_MODEL でインポート可能）
-EMBEDDING_MODEL = "text-embedding-3-small"
 
 # Embedding API バッチ上限
 EMBEDDING_BATCH_SIZE = 100
@@ -53,6 +52,11 @@ API_RETRY_COUNT = 1
 
 # レート制限（429）時の待機秒数
 RATE_LIMIT_WAIT_SECONDS = 60
+
+
+def log(msg):
+    """進捗ログを stderr に出力する。stdout は JSON 出力専用。"""
+    print(msg, file=sys.stderr)
 
 
 def parse_args():
@@ -77,14 +81,6 @@ def parse_args():
         help="インデックスの新鮮さを確認のみ（再構築なし）",
     )
     return parser.parse_args()
-
-
-def get_index_path(category, project_root):
-    """インデックス JSON のパスを返す。
-
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
-    """
-    return project_root / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
 
 
 def load_index(index_path):
@@ -230,31 +226,35 @@ def call_embedding_api(texts, api_key):
                 result = json.loads(resp.read().decode("utf-8"))
                 # data は入力順にソート済みのはず。index でソートして安全に取得する
                 embeddings = sorted(result["data"], key=lambda x: x["index"])
+                if len(embeddings) != len(texts):
+                    raise RuntimeError(
+                        f"API 応答件数の不一致: 送信 {len(texts)} 件, 受信 {len(embeddings)} 件"
+                    )
                 return [e["embedding"] for e in embeddings]
 
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 # レート制限: 待機してリトライ
                 if attempt < API_RETRY_COUNT:
-                    print(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
+                    log(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
                     time.sleep(RATE_LIMIT_WAIT_SECONDS)
                     last_error = e
                     continue
                 last_error = e
             elif e.code == 401:
                 raise RuntimeError(
-                    f"API 認証エラー (401)。OPENAI_API_KEY が正しいか確認してください。"
+                    f"API 認証エラー (401)。DOC_ADVISOR_OPENAI_API_KEY が正しいか確認してください。"
                 ) from e
             else:
                 if attempt < API_RETRY_COUNT:
-                    print(f"  API エラー ({e.code})。リトライします...")
+                    log(f"  API エラー ({e.code})。リトライします...")
                     last_error = e
                     continue
                 last_error = e
 
         except urllib.error.URLError as e:
             if attempt < API_RETRY_COUNT:
-                print(f"  ネットワークエラー。リトライします: {e}")
+                log(f"  ネットワークエラー。リトライします: {e}")
                 last_error = e
                 continue
             last_error = e
@@ -363,7 +363,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
 
     # 全対象ファイルを取得
     all_files, file_root_map = get_all_md_files(common)
-    print(f"対象ファイル数: {len(all_files)}")
+    log(f"対象ファイル数: {len(all_files)}")
 
     # 現在のファイル一覧（プロジェクト相対パス → 絶対パス）
     current_files = {}
@@ -377,7 +377,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         target_files = list(current_files.items())
         deleted_files = []
         existing_index = {"entries": {}}
-        print(f"全体モード: {len(target_files)} ファイルを処理します")
+        log(f"全体モード: {len(target_files)} ファイルを処理します")
     else:
         # 差分モード: 変更・新規ファイルのみ処理
         old_checksums = load_checksums(checksums_file)
@@ -386,7 +386,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         try:
             existing_index = load_index(index_path)
         except ValueError as e:
-            print(f"警告: {e} — 全体再構築にフォールバックします")
+            log(f"警告: {e} — 全体再構築にフォールバックします")
             existing_index = {"entries": {}}
             full_mode = True
             old_checksums = {}
@@ -401,23 +401,23 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
                 continue
             old_hash = old_checksums.get(source_file)
             if old_hash is None:
-                print(f"  [新規] {source_file}")
+                log(f"  [新規] {source_file}")
                 target_files.append((source_file, full_path))
             elif current_hash != old_hash:
-                print(f"  [変更] {source_file}")
+                log(f"  [変更] {source_file}")
                 target_files.append((source_file, full_path))
 
         # 削除ファイルの検出
         deleted_files = [sf for sf in old_checksums if sf not in current_files]
         for sf in deleted_files:
-            print(f"  [削除] {sf}")
+            log(f"  [削除] {sf}")
 
         if not target_files and not deleted_files:
-            print("変更なし — インデックスは最新です")
+            log("変更なし — インデックスは最新です")
             print(json.dumps({"status": "ok", "message": "インデックスは最新です。", "file_count": len(all_files)}))
             return 0
 
-        print(f"差分モード: {len(target_files)} 件の変更, {len(deleted_files)} 件の削除")
+        log(f"差分モード: {len(target_files)} 件の変更, {len(deleted_files)} 件の削除")
 
     # 削除ファイルをインデックスから除去
     entries = existing_index.get("entries", {})
@@ -447,12 +447,12 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         batch_texts = texts_to_embed[batch_start:batch_end]
         batch_paths = paths_to_embed[batch_start:batch_end]
 
-        print(f"  Embedding API: {batch_start + 1}〜{batch_end} 件目")
+        log(f"  Embedding API: {batch_start + 1}〜{batch_end} 件目")
 
         try:
             embeddings = call_embedding_api(batch_texts, api_key)
         except RuntimeError as e:
-            print(f"  エラー: バッチ {batch_start + 1}〜{batch_end} の処理に失敗しました: {e}")
+            log(f"  エラー: バッチ {batch_start + 1}〜{batch_end} の処理に失敗しました: {e}")
             # 部分失敗: このバッチおよび残りバッチをスキップし、処理済み分を保存する
             for source_file, _, _ in batch_paths:
                 failed_sources.append(source_file)
@@ -487,7 +487,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         "entries": entries,
     }
     save_index(index_data, index_path)
-    print(f"インデックスを保存しました: {index_path} ({len(entries)} 件)")
+    log(f"インデックスを保存しました: {index_path} ({len(entries)} 件)")
 
     # チェックサムを更新（処理成功ファイルのみ）
     current_checksums = {}
@@ -506,10 +506,10 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         checksums_file_path,
         header_comment=f"Embedding index checksums for {category}",
     )
-    print(f"チェックサムを更新しました: {len(current_checksums)} 件")
+    log(f"チェックサムを更新しました: {len(current_checksums)} 件")
 
     if batch_failed and failed_sources:
-        print(f"警告: {len(failed_sources)} 件の処理に失敗しました。次回の差分更新で自動的に再処理されます。")
+        log(f"警告: {len(failed_sources)} 件の処理に失敗しました。次回の差分更新で自動的に再処理されます。")
         print(json.dumps({
             "status": "partial",
             "message": f"{success_count} 件処理成功、{len(failed_sources)} 件失敗（次回差分更新で再処理されます）",
@@ -545,7 +545,7 @@ def main():
     config = common["config"]
     default_dir = project_root / category
     checksums_file = resolve_config_path(
-        config.get("checksums_file", f".claude/doc-advisor/toc/{category}/.toc_checksums.yaml"),
+        config.get("checksums_file", f".claude/doc-advisor/indexes/{category}/.index_checksums.yaml"),
         default_dir,
         project_root,
     )
@@ -556,14 +556,14 @@ def main():
         run_check_mode(category, common, index_path, checksums_file)
         return 0
 
-    # API キーの確認
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # API キーの確認（DOC_ADVISOR_OPENAI_API_KEY 優先、OPENAI_API_KEY にフォールバック）
+    api_key = os.environ.get("DOC_ADVISOR_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": (
-                "OPENAI_API_KEY が設定されていません。"
-                "export OPENAI_API_KEY='your-api-key' を実行してください。"
+                "DOC_ADVISOR_OPENAI_API_KEY が設定されていません。"
+                "export DOC_ADVISOR_OPENAI_API_KEY='your-api-key' を実行してください。"
             ),
         }))
         return 1
@@ -573,7 +573,7 @@ def main():
     # インデックスが存在しない場合は自動的に全体モードに切り替え
     if not index_path.exists():
         if not full_mode:
-            print(f"インデックスが存在しません。全体モードで構築します。")
+            log(f"インデックスが存在しません。全体モードで構築します。")
         full_mode = True
 
     return build_index(category, common, index_path, checksums_file, full_mode, api_key)

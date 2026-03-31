@@ -139,5 +139,5 @@ def apply_migrations(content, detected_version):
 | v0.0.25 | プロジェクト全体 | `except Exception` を具体的な例外型に限定（コミット `7c14919`） |
 | v0.0.26 | プロジェクト全体 | 残存するバグ隠蔽フォールバックの除去（コミット `3a2c8c1`） |
 | v0.0.26 | COMMON-REQ-001 FR-04-1 | 純粋関数のロールバック禁止に要件文を修正 |
-| v0.0.26 | toc_utils.py | `except Exception` → `except (IOError, OSError)` に限定 |
+| v0.0.26 | index_utils.py | `except Exception` → `except (IOError, OSError)` に限定 |
 | v0.0.26 | resolve_doc_references.py | `except Exception` → 具体的な例外型に限定 |

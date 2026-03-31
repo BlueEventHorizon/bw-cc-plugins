@@ -127,18 +127,14 @@
       "Skill(anvil *)",
       "Skill(xcode *)",
       
-      "Skill(create-rules-toc)",
-      "Skill(create-specs-toc)",
+      "Skill(create-rules-index)",
+      "Skill(create-specs-index)",
       "Skill(query-rules)",
       "Skill(query-specs)",
 
       "Bash(python3 .claude/doc-advisor/scripts/*)",
       "Bash(bash .claude/doc-advisor/scripts/check_config.sh *)",
-      "Bash(mkdir -p .claude/.temp/*)",
-      "Bash(rm -rf .claude/doc-advisor/toc/specs/.toc_work/)",
-      "Bash(rm -rf .claude/doc-advisor/toc/rules/.toc_work/)",
-      "Bash(cp .claude/doc-advisor/toc/specs/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/specs/.toc_checksums.yaml)",
-      "Bash(cp .claude/doc-advisor/toc/rules/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/rules/.toc_checksums.yaml)"
+      "Bash(mkdir -p .claude/.temp/*)"
     ],
     "ask": [
       "Bash(git mv *)",

@@ -133,8 +133,8 @@ from resolve_doc_structure import (
 
 ## .doc_structure.yaml フォーマット
 
-config.yaml 完全互換。forge は `root_dirs`, `doc_types_map`, `patterns.exclude` のみ使用する。
-他フィールド（toc_file, checksums_file, work_dir, output, common 等）は無視する。
+forge は `root_dirs`, `doc_types_map`, `patterns.exclude` のみ使用する。
+他フィールド（checksums_file, output, common 等）は Doc Advisor 内部設定であり、forge は無視する。
 
 ```yaml
 # doc_structure_version: 3.0

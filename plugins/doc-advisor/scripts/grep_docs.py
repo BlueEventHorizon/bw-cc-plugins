@@ -43,7 +43,7 @@ import argparse
 import json
 import sys
 
-from toc_utils import (
+from index_utils import (
     ConfigNotReadyError,
     get_all_md_files,
     init_common_config,

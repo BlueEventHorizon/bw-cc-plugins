@@ -192,9 +192,9 @@ AskUserQuestion で承認を取得する:
 
 rules/ のディレクトリ構造に変更があった場合、`.doc_structure.yaml` の更新が必要か確認する。
 
-#### DocAdvisor ToC の更新
+#### DocAdvisor index の更新
 
-`/doc-advisor:create-rules-toc` Skill が利用可能であれば呼び出す。
+`/doc-advisor:create-rules-index` Skill が利用可能であれば呼び出す。
 
 #### commit 確認
 

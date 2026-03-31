@@ -1,6 +1,6 @@
-# plugins/forge/toc/rules_toc.yaml
+# plugins/forge/indexes/rules_index.yaml
 # forge 内蔵ドキュメントの検索インデックス（query-forge-rules 用）
-# /create-rules-toc で生成後、forge docs エントリのみ抽出してコピー
+# /create-rules-index で生成後、forge docs エントリのみ抽出してコピー
 
 metadata:
   name: Forge Built-in Document Search Index
@@ -520,7 +520,7 @@ docs:
       - Glossary creation
       - Static asset management and naming conventions
       - Quality validation checklist for design tokens and requirements
-      - AI review and specs ToC update process
+      - AI review and specs index update process
     applicable_tasks:
       - Requirements definition from Figma design
       - Design system setup

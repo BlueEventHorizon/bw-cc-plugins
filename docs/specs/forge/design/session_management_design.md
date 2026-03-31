@@ -194,7 +194,7 @@ flowchart TD
 
     Context --> parallel
     parallel --> Work[本作業<br/>refs/ を読み込み → スキル固有ファイル書き込み]
-    Work --> Post[後処理<br/>ユーザー確認・レビュー・ToC 更新]
+    Work --> Post[後処理<br/>ユーザー確認・レビュー・index 更新]
     Post --> Delete[session_dir 削除]
 
     style parallel fill:#f0f8ff,stroke:#4682b4

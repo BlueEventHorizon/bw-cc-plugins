@@ -22,7 +22,7 @@ SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPTS_DIR))
 
-import toc_utils
+import index_utils
 
 
 class TestSymlinkFileDetection(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestSymlinkFileDetection(unittest.TestCase):
 
     def test_symlinked_file_found(self):
         """シンボリックリンク経由のファイルが検出される"""
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         filenames = [f.name for f in files]
@@ -65,7 +65,7 @@ class TestSymlinkFileDetection(unittest.TestCase):
 
     def test_symlinked_directory_traversed(self):
         """シンボリックリンクディレクトリが正しくトラバースされる"""
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         # ローカル1つ + 外部1つ = 2つ
@@ -93,7 +93,7 @@ class TestSymlinkLoopDetection(unittest.TestCase):
         os.symlink(loop_dir, os.path.join(loop_dir, 'self_loop'))
 
         # タイムアウトせずに完了すること
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         # 少なくとも normal.md は見つかる
@@ -115,7 +115,7 @@ class TestSymlinkLoopDetection(unittest.TestCase):
         with open(os.path.join(dir_b, 'b.md'), 'w') as f:
             f.write('# B\n')
 
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         filenames = [f.name for f in files]
@@ -147,7 +147,7 @@ class TestSymlinkDeduplication(unittest.TestCase):
         os.symlink(self.external_dir, os.path.join(self.rules_dir, 'link1'))
         os.symlink(self.external_dir, os.path.join(self.rules_dir, 'link2'))
 
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         # shared_rule.md は1回だけ出現すべき（inode ベースの重複排除）
@@ -160,7 +160,7 @@ class TestSymlinkDeduplication(unittest.TestCase):
         os.symlink(src_file, os.path.join(self.rules_dir, 'link_a.md'))
         os.symlink(src_file, os.path.join(self.rules_dir, 'link_b.md'))
 
-        files = list(toc_utils.rglob_follow_symlinks(
+        files = list(index_utils.rglob_follow_symlinks(
             Path(self.rules_dir), '**/*.md'
         ))
         # inode ベースの重複排除で1つのみ

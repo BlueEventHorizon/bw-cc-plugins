@@ -9,7 +9,7 @@
 
 テスト方針:
 - tmpdir に仮文書を配置し、CLAUDE_PROJECT_DIR 環境変数でルートを指定
-- OPENAI_API_KEY 不要（grep_docs.py はローカル検索のみ）
+- DOC_ADVISOR_OPENAI_API_KEY 不要（grep_docs.py はローカル検索のみ）
 - 既存テスト test_create_pending.py のパターンを踏襲
 """
 
@@ -49,13 +49,13 @@ class GrepDocsTestBase(unittest.TestCase):
         # specs/ ディレクトリ作成
         os.makedirs(os.path.join(self.project_root, 'specs'), exist_ok=True)
 
-        # ToC ディレクトリ作成（init_common_config が参照する場合あり）
+        # index ディレクトリ作成（init_common_config が参照する場合あり）
         os.makedirs(
-            os.path.join(self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'),
+            os.path.join(self.project_root, '.claude', 'doc-advisor', 'indexes', 'rules'),
             exist_ok=True,
         )
         os.makedirs(
-            os.path.join(self.project_root, '.claude', 'doc-advisor', 'toc', 'specs'),
+            os.path.join(self.project_root, '.claude', 'doc-advisor', 'indexes', 'specs'),
             exist_ok=True,
         )
 
@@ -136,7 +136,7 @@ class TestSearchFiles(GrepDocsTestBase):
     def _get_search_files(self):
         """search_files と init_common_config をインポートして返す"""
         from grep_docs import search_files
-        from toc_utils import init_common_config
+        from index_utils import init_common_config
         return search_files, init_common_config
 
     def test_keyword_body_match(self):
@@ -314,7 +314,7 @@ class TestGrepDocsEdgeCases(GrepDocsTestBase):
 
     def _get_search_files(self):
         from grep_docs import search_files
-        from toc_utils import init_common_config
+        from index_utils import init_common_config
         return search_files, init_common_config
 
     def test_file_with_special_characters_in_content(self):
