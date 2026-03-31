@@ -462,7 +462,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/test.md: {file_hash}\n")
 
@@ -490,7 +490,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/existing.md: {file_hash}\n")
 
@@ -511,7 +511,7 @@ specs:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 古いチェックサム（不一致なハッシュ）
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/test.md: old_hash_value\n")
 
@@ -533,7 +533,7 @@ specs:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 存在しないファイルのチェックサムを登録
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/deleted.md: some_hash\n")
 
@@ -666,7 +666,7 @@ specs:
                 from toc_utils import resolve_config_path
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.toc_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )
@@ -707,7 +707,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（existing.md は古いハッシュ、deleted.md も登録）
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/existing.md: old_hash\n  rules/deleted.md: deleted_hash\n")
 
@@ -725,7 +725,7 @@ specs:
                 idx_path = get_index_path('rules', project_root)
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.toc_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )
@@ -765,7 +765,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（kept.md と removed.md が登録済み）
-        checksums_path = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_path = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/kept.md: old_hash\n  rules/removed.md: removed_hash\n")
 
@@ -783,7 +783,7 @@ specs:
                 idx_path = get_index_path('rules', project_root)
                 default_dir = project_root / 'rules'
                 checksums_file = resolve_config_path(
-                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.toc_checksums.yaml'),
+                    config.get('checksums_file', '.claude/doc-advisor/toc/rules/.index_checksums.yaml'),
                     default_dir,
                     project_root,
                 )

@@ -122,7 +122,7 @@ class TestV2ToV3Migration(unittest.TestCase):
             '  root_dirs:\n    - rules/\n'
             '  doc_types_map:\n    rules/: rule\n'
             '  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml\n'
-            '  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml\n'
+            '  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml\n'
             '  work_dir: .claude/doc-advisor/toc/rules/.toc_work/\n'
             '  output:\n    header_comment: test\n'
             'common:\n  parallel:\n    max_workers: 5'

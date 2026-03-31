@@ -1,20 +1,20 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-03-31T08:41:10Z
+generated_at: 2026-03-31T08:47:16Z
 file_count: 32
 checksums:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
   docs/specs/common/requirement/COMMON-REQ-002_error_handling_policy.md: efb584be874fa55804860ab97e1534c0f0edafd9f4edf596d6b9afa24cb58449
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md: b2f429969f1f0fa3fe0410d9d18937e6d3b97954ef8a0739a0cda79eea108e2c
   docs/specs/doc-advisor/design/DES-003_document_identifier.md: 392ac77041e109c5d6f84243ea019a398cae4a6d2aa3d37190e4e350dc8dcc2a
-  docs/specs/doc-advisor/design/DES-004_document_model.md: cac4758107519baaae5ebc8614ee4e016c6d509e00d42b7330a1beb5e8298d7e
-  docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: 23cf674a93e111f5c0c82965245cdb09ec1ec86e2385a62c6ff18b7b37a6ebc4
-  docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md: deb2daeff86e392b08b855a4b6c18e02a2e1c6424eb8e6e3ec1c8d2aa3f9ff38
+  docs/specs/doc-advisor/design/DES-004_document_model.md: a8ad742518f682ca2d0104ee79477e3c578448162db6b853e8b02e836f6f749c
+  docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: 20266019e35092b522f6c604ebbc2095d8437ef8d7fb4927a61c4776ebd4ae6c
+  docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md: ae1147f96e7c28c98dbdfe3b3e177f8a851f40affeb035e93c5cbee052f64808
   docs/specs/doc-advisor/semantic-query/requirements/FNC-001_context_external_search_spec.md: 173181c21c8f789d7a7ec73ef2e14e0438d7457829489cbca294af0db4016e41
   docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md: e51725e7552fbe77d8f75e6608b1ca8f674a165a11cbb3c3f52d17cf157dc096
   docs/specs/doc-advisor/semantic-query/requirements/FNC-003_fast_index_generation_spec.md: 5aa6fde0c4356f821a6c56dcb1de62c0c23be8619cb42d67921bca9495bd3781
   docs/specs/doc-advisor/semantic-query/requirements/NFR-001_context_cost_reduction_spec.md: 71ee160fda23b83fd84ca5582067f8e4806e8df1875ec4743d5901d8f379edb5
-  docs/specs/doc-advisor/semantic-query/requirements/NFR-002_yaml_toc_abolition_spec.md: 2959644b2d9eeaee036b5f7a4a61cefbf0329242e08d996a9275575d9332e7a0
+  docs/specs/doc-advisor/semantic-query/requirements/NFR-002_yaml_toc_abolition_spec.md: 5060929c0890e3868815899d3f58747557abf4e242555ce8cefd3f9088c6aeda
   docs/specs/doc-advisor/semantic-query/requirements/NFR-003_standard_library_preferred_spec.md: 0ad4f7fa8ae5439676bc3e7df32c8ea6f6a4f263d108f318958a1d4fa9c45793
   docs/specs/doc-advisor/semantic-query/requirements/technical_qa.md: f41592221577c011a4b06c0f3f0e41ee2f1b281aaf20c8d7d61572c52d9bdaea
   docs/specs/doc-advisor/semantic-query/requirements/technical_research_report.md: 8e9a78c46d3e1ef7900913407ff78b71039b470ef63544c5503dd9417ea74304

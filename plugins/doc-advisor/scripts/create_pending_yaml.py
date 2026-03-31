@@ -110,7 +110,7 @@ def init_config(category):
 
     first_dir = common['first_dir']
     TOC_WORK_DIR = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), first_dir, PROJECT_ROOT)
-    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'), first_dir, PROJECT_ROOT)
+    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.index_checksums.yaml'), first_dir, PROJECT_ROOT)
     TOC_FILE = resolve_config_path(CONFIG.get('toc_file', f'{category}_toc.yaml'), first_dir, PROJECT_ROOT)
     DOC_TYPES_MAP = common['doc_types_map']
     return True
@@ -254,7 +254,7 @@ def create_pending_yaml(source_file, doc_type):
 def save_pending_checksums(all_files, file_root_map):
     """Save checksums snapshot at Phase 1 time to .toc_work/
 
-    Used to replace .toc_checksums.yaml after merge (Phase 3).
+    Used to replace .index_checksums.yaml after merge (Phase 3).
     This ensures that files modified during Phase 2 will be
     detected as changed in the next incremental run.
     """
@@ -268,7 +268,7 @@ def save_pending_checksums(all_files, file_root_map):
 
     pending_checksums_path = TOC_WORK_DIR / ".toc_checksums_pending.yaml"
     if write_checksums_yaml(checksums, pending_checksums_path,
-                            header_comment="Phase 1 snapshot - used to replace .toc_checksums.yaml after merge"):
+                            header_comment="Phase 1 snapshot - used to replace .index_checksums.yaml after merge"):
         print(f"Saved pending checksums: {len(checksums)} files")
     else:
         print(f"Warning: Failed to save pending checksums")
@@ -330,7 +330,7 @@ def main():
     # Force full mode if checksums doesn't exist
     if not full_mode and not CHECKSUMS_FILE.exists():
         full_mode = True
-        print(".toc_checksums.yaml not found, running in full mode")
+        print(".index_checksums.yaml not found, running in full mode")
 
     # Get target files
     all_files, file_root_map = get_all_md_files()

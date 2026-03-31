@@ -100,7 +100,7 @@ def init_config(category):
     first_dir = common['first_dir']
     TOC_WORK_DIR = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), first_dir, PROJECT_ROOT)
     OUTPUT_FILE = resolve_config_path(CONFIG.get('toc_file', f'{category}_toc.yaml'), first_dir, PROJECT_ROOT)
-    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'), first_dir, PROJECT_ROOT)
+    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.index_checksums.yaml'), first_dir, PROJECT_ROOT)
     OUTPUT_CONFIG = CONFIG.get('output', {})
     return True
 

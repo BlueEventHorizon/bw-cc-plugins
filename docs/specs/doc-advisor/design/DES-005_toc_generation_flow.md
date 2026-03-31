@@ -41,7 +41,7 @@ flowchart LR
     end
 
     P0 -.- C[.doc_structure.yaml<br>root_dirs]
-    P1 -.- CS[.toc_checksums.yaml]
+    P1 -.- CS[.index_checksums.yaml]
     P2 -.- W[.toc_work/]
     P4 -.- T[*_toc.yaml]
 ```
@@ -173,12 +173,12 @@ flowchart TD
 
 - **Git 非依存**: コミット状態に関係なく、実際のファイル内容で判定
 - **高精度**: SHA-256 ハッシュで変更を確実に検出
-- **チーム共有**: `.claude/doc-advisor/toc/{target}/.toc_checksums.yaml` を Git 管理し、チーム間で差分検出を共有
+- **チーム共有**: `.claude/doc-advisor/toc/{target}/.index_checksums.yaml` を Git 管理し、チーム間で差分検出を共有
 
 ### チェックサムファイル形式
 
 ```yaml
-# .claude/doc-advisor/toc/{target}/.toc_checksums.yaml
+# .claude/doc-advisor/toc/{target}/.index_checksums.yaml
 generated_at: 2026-01-22T12:00:00Z
 file_count: 25
 checksums:
@@ -191,7 +191,7 @@ checksums:
 ```mermaid
 flowchart TD
     A[現在のファイル一覧取得] --> B[各ファイルのハッシュ計算]
-    B --> C[".toc_checksums.yaml 読み込み"]
+    B --> C[".index_checksums.yaml 読み込み"]
     C --> D{比較}
 
     D --> E[新規ファイル<br>checksums に無い]

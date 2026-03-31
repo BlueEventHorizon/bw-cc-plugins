@@ -169,7 +169,7 @@ class TestCreatePendingCheck(TestCreatePendingBase):
         self._run_create_pending('--full')
 
         # checksums ファイルを作成（空の checksums で新規ファイルとして検出させる）
-        checksums_file = os.path.join(self.toc_dir, '.toc_checksums.yaml')
+        checksums_file = os.path.join(self.toc_dir, '.index_checksums.yaml')
         with open(checksums_file, 'w') as f:
             f.write('checksums:\n')
 

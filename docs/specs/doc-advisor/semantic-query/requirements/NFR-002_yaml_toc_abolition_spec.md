@@ -27,7 +27,7 @@
 
 ### 維持対象
 
-- `.toc_checksums.yaml`（差分検出に引き続き使用）
+- `.index_checksums.yaml`（差分検出に引き続き使用）
 - `.doc_structure.yaml`（文書構造の定義）
 - query-specs / query-rules スキルの公開契約（入出力形式は現行互換を維持）
 - create-specs-toc / create-rules-toc スキル（インデックス生成方式のみ変更）

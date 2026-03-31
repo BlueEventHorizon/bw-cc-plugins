@@ -103,11 +103,11 @@ api_specs/                # root_dirs[2]
 .claude/doc-advisor/toc/
 ├── rules/
 │   ├── rules_toc.yaml           # 生成される ToC
-│   ├── .toc_checksums.yaml      # 変更検出用チェックサム
+│   ├── .index_checksums.yaml      # 変更検出用チェックサム
 │   └── .toc_work/               # 作業ディレクトリ（一時）
 └── specs/
     ├── specs_toc.yaml
-    ├── .toc_checksums.yaml
+    ├── .index_checksums.yaml
     └── .toc_work/
 ```
 
@@ -165,7 +165,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | `specs/design/info/readme.md` | `/info/`     | 除外                                                             |
 | `specs/requirements/info.md`  | `/info/`     | **対象**（`info.md` はファイル名であり `/info/` にマッチしない） |
 
-> **Note**: `.toc_work`, `rules_toc.yaml`, `specs_toc.yaml`, `.toc_checksums.yaml` はシステム除外として常に無視される。
+> **Note**: `.toc_work`, `rules_toc.yaml`, `specs_toc.yaml`, `.index_checksums.yaml` はシステム除外として常に無視される。
 
 ---
 
@@ -251,7 +251,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
 | `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
 | `toc_file`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/rules_toc.yaml`      | 出力 ToC ファイルパス                |
-| `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/.toc_checksums.yaml` | チェックサムファイルパス             |
+| `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/.index_checksums.yaml` | チェックサムファイルパス             |
 | `work_dir`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/.toc_work/`          | 作業ディレクトリパス                 |
 | `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                 | ToC ヘッダーコメント                 |
 | `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                 | メタデータ名                         |
@@ -265,7 +265,7 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 | `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
 | `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
 | `toc_file`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/specs_toc.yaml`      | 出力 ToC ファイルパス                |
-| `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/.toc_checksums.yaml` | チェックサムファイルパス             |
+| `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/.index_checksums.yaml` | チェックサムファイルパス             |
 | `work_dir`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/.toc_work/`          | 作業ディレクトリパス                 |
 | `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                 | ToC ヘッダーコメント                 |
 | `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                 | メタデータ名                         |
@@ -292,7 +292,7 @@ rules:
   root_dirs:
     - rules/
   toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml        # コードデフォルト
-  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml  # コードデフォルト
+  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml  # コードデフォルト
   work_dir: .claude/doc-advisor/toc/rules/.toc_work/
 
   patterns:
@@ -311,7 +311,7 @@ specs:
     # - screen_design/
     # - api_specs/
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
+  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/
 
   patterns:
@@ -346,8 +346,8 @@ common:
 
 | カテゴリ | ファイル                                            | 用途               |
 | -------- | --------------------------------------------------- | ------------------ |
-| rule     | `.claude/doc-advisor/toc/rules/.toc_checksums.yaml` | 差分検出用ハッシュ |
-| spec     | `.claude/doc-advisor/toc/specs/.toc_checksums.yaml` | 差分検出用ハッシュ |
+| rule     | `.claude/doc-advisor/toc/rules/.index_checksums.yaml` | 差分検出用ハッシュ |
+| spec     | `.claude/doc-advisor/toc/specs/.index_checksums.yaml` | 差分検出用ハッシュ |
 
 ### 作業ディレクトリ
 

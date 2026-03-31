@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-.toc_checksums.yaml 生成スクリプト（統合版）
+.index_checksums.yaml 生成スクリプト（統合版）
 
 rules/ または specs/ 配下の全 .md ファイルの SHA-256 ハッシュを計算し、
-.toc_checksums.yaml に保存する。incremental モード判定に使用。
+.index_checksums.yaml に保存する。incremental モード判定に使用。
 
 使用方法:
     python3 create_checksums.py --category rules
@@ -32,7 +32,7 @@ EXCLUDE_PATTERNS = None
 def parse_args():
     """Parse command-line arguments"""
     parser = argparse.ArgumentParser(
-        description='Generate .toc_checksums.yaml for incremental mode detection'
+        description='Generate .index_checksums.yaml for incremental mode detection'
     )
     parser.add_argument('--category', required=True, choices=['rules', 'specs'],
                         help='Document category: rules or specs')
@@ -71,7 +71,7 @@ def init_config(category):
     EXCLUDE_PATTERNS = common['exclude_patterns']
 
     first_dir = common['first_dir']
-    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'),
+    CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.index_checksums.yaml'),
                                           first_dir, PROJECT_ROOT)
     return True
 
@@ -93,7 +93,7 @@ def main():
         return 1
 
     print("=" * 50)
-    print(f".toc_checksums.yaml 生成スクリプト（{CATEGORY}）")
+    print(f".index_checksums.yaml 生成スクリプト（{CATEGORY}）")
     print("=" * 50)
 
     # Ensure output directory exists

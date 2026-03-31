@@ -177,7 +177,7 @@ The script handles:
 ### Step 1: Check Checksum File
 
 ```bash
-test -f .claude/doc-advisor/toc/{category}/.toc_checksums.yaml && echo "EXISTS" || echo "NOT_EXISTS"
+test -f .claude/doc-advisor/toc/{category}/.index_checksums.yaml && echo "EXISTS" || echo "NOT_EXISTS"
 ```
 
 - If not exists → Fallback to full mode
@@ -187,7 +187,7 @@ test -f .claude/doc-advisor/toc/{category}/.toc_checksums.yaml && echo "EXISTS" 
 The `create_pending_yaml.py --category {category}` script handles:
 
 1. Reading current file list and computing hashes
-2. Comparing with `.toc_checksums.yaml`
+2. Comparing with `.index_checksums.yaml`
 3. Categorizing files as New/Changed/Deleted/Unchanged
 4. Generating pending YAMLs for New/Changed files
 
@@ -256,7 +256,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_toc.py --category {category}
 # 3. Update checksums (only on validation success)
 #    Use Phase 1 snapshot instead of recalculating current hashes.
 #    This ensures files modified during Phase 2 will be re-processed next time.
-cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
+cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.index_checksums.yaml
 
 # 4. Cleanup
 rm -rf .claude/doc-advisor/toc/{category}/.toc_work
@@ -274,7 +274,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_toc.py --category {category}
 # → exit 1: Validation failed, restore from backup and abort
 
 # 3. Update checksums (only on validation success)
-cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
+cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.index_checksums.yaml
 
 # 4. Cleanup
 rm -rf .claude/doc-advisor/toc/{category}/.toc_work

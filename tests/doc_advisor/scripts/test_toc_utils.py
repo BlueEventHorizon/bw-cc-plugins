@@ -523,7 +523,7 @@ class TestGetSystemExcludePatterns(unittest.TestCase):
         patterns = toc_utils.get_system_exclude_patterns('rules')
         self.assertIn('.toc_work', patterns)
         self.assertIn('rules_toc.yaml', patterns)
-        self.assertIn('.toc_checksums.yaml', patterns)
+        self.assertIn('.index_checksums.yaml', patterns)
 
     def test_specs_patterns(self):
         patterns = toc_utils.get_system_exclude_patterns('specs')

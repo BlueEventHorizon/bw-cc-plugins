@@ -545,7 +545,7 @@ def main():
     config = common["config"]
     default_dir = project_root / category
     checksums_file = resolve_config_path(
-        config.get("checksums_file", f".claude/doc-advisor/toc/{category}/.toc_checksums.yaml"),
+        config.get("checksums_file", f".claude/doc-advisor/toc/{category}/.index_checksums.yaml"),
         default_dir,
         project_root,
     )

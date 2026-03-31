@@ -256,7 +256,7 @@ class TestMergeTocDeleteOnly(TestMergeTocBase):
 
         # 3. checksums ファイル作成（削除検知のため）
         checksums_path = os.path.join(
-            self.tmpdir, '.claude', 'doc-advisor', 'toc', 'rules', '.toc_checksums.yaml'
+            self.tmpdir, '.claude', 'doc-advisor', 'toc', 'rules', '.index_checksums.yaml'
         )
         with open(checksums_path, 'w') as f:
             f.write('checksums:\n  rules/coding_standards.md: abc123\n')

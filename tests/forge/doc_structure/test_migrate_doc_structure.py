@@ -62,7 +62,7 @@ rules:
   doc_types_map:
     docs/rules/: rule
   toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml
+  checksums_file: .claude/doc-advisor/toc/rules/.index_checksums.yaml
   work_dir: .claude/doc-advisor/toc/rules/.toc_work/
   patterns:
     target_glob: "**/*.md"
@@ -77,7 +77,7 @@ specs:
   doc_types_map:
     "docs/specs/*/design/": design
   toc_file: .claude/doc-advisor/toc/specs/specs_toc.yaml
-  checksums_file: .claude/doc-advisor/toc/specs/.toc_checksums.yaml
+  checksums_file: .claude/doc-advisor/toc/specs/.index_checksums.yaml
   work_dir: .claude/doc-advisor/toc/specs/.toc_work/
   patterns:
     target_glob: "**/*.md"

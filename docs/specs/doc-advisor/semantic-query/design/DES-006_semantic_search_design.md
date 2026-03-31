@@ -29,7 +29,7 @@ flowchart TB
         C["文書メタデータ\n(title, purpose, keywords...)"] --> B
         B -->|"OpenAI API"| D["Embedding ベクトル"]
         D --> E["{category}_index.json"]
-        F[".toc_checksums.yaml"] --> B
+        F[".index_checksums.yaml"] --> B
     end
 
     subgraph 検索
@@ -383,7 +383,7 @@ sequenceDiagram
     Script->>API: POST /v1/embeddings（バッチ）
     API-->>Script: ベクトル配列
     Script->>FS: specs_index.json 保存
-    Script->>FS: .toc_checksums.yaml 更新
+    Script->>FS: .index_checksums.yaml 更新
     Script-->>Skill: 完了（JSON: file_count, status）
     Skill-->>User: インデックス構築完了
 ```
@@ -487,7 +487,7 @@ Embedding テキスト生成
     ↓ save_index()
 {category}_index.json
     ↓ write_checksums_yaml()
-.toc_checksums.yaml 更新
+.index_checksums.yaml 更新
 ```
 
 ### 7.2 検索時

@@ -44,8 +44,8 @@ def get_index_path(category, project_root):
 
 
 # System files that are always excluded (not configurable)
-SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
-SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']
+SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.index_checksums.yaml']
+SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.index_checksums.yaml']
 
 
 def get_system_exclude_patterns(category):
@@ -417,7 +417,7 @@ def _get_default_config():
         'rules': {
             'root_dirs': ['rules/'],
             'toc_file': '.claude/doc-advisor/toc/rules/rules_toc.yaml',
-            'checksums_file': '.claude/doc-advisor/toc/rules/.toc_checksums.yaml',
+            'checksums_file': '.claude/doc-advisor/toc/rules/.index_checksums.yaml',
             'work_dir': '.claude/doc-advisor/toc/rules/.toc_work/',
             'patterns': {
                 'target_glob': '**/*.md',
@@ -431,7 +431,7 @@ def _get_default_config():
         'specs': {
             'root_dirs': ['specs/'],
             'toc_file': '.claude/doc-advisor/toc/specs/specs_toc.yaml',
-            'checksums_file': '.claude/doc-advisor/toc/specs/.toc_checksums.yaml',
+            'checksums_file': '.claude/doc-advisor/toc/specs/.index_checksums.yaml',
             'work_dir': '.claude/doc-advisor/toc/specs/.toc_work/',
             'patterns': {
                 'target_glob': '**/*.md',

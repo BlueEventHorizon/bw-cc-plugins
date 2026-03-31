@@ -100,7 +100,7 @@ specs:
 
     def _get_checksums_path(self, category):
         return os.path.join(
-            self.tmpdir, '.claude', 'doc-advisor', 'toc', category, '.toc_checksums.yaml'
+            self.tmpdir, '.claude', 'doc-advisor', 'toc', category, '.index_checksums.yaml'
         )
 
 

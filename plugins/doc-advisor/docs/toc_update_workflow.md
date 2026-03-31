@@ -29,7 +29,7 @@ Workflow for updating `.claude/doc-advisor/toc/{category}/{category}_toc.yaml`. 
 ```
 .claude/doc-advisor/toc/{category}/
 ├── {category}_toc.yaml            # Final artifact (after merge)
-├── .toc_checksums.yaml          # Change detection checksums
+├── .index_checksums.yaml          # Change detection checksums
 └── .toc_work/                   # Work directory (.gitignore target)
     ├── {category}_subdir_file1.yaml
     ├── {category}_subdir_file2.yaml
@@ -155,11 +155,11 @@ Verify each `.toc_work/*.yaml` meets:
 #### incremental mode
 
 1. Read existing `{category}_toc.yaml`
-2. Delete entries recorded in `.toc_checksums.yaml` but file doesn't exist
+2. Delete entries recorded in `.index_checksums.yaml` but file doesn't exist
 3. Overwrite/add entries from `.toc_work/*.yaml` (exclude `_meta`)
 4. Update `metadata.generated_at`, `metadata.file_count`
 5. Write to `{category}_toc.yaml`
-6. Update checksums: `cp .toc_work/.toc_checksums_pending.yaml .toc_checksums.yaml`
+6. Update checksums: `cp .toc_work/.toc_checksums_pending.yaml .index_checksums.yaml`
 
 ### Step 3.3: Cleanup
 
