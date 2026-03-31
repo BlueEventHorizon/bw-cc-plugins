@@ -38,7 +38,7 @@
     {
       "name": "doc-advisor",
       "description": "Semantic document index generator with OpenAI Embedding for Claude Code",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "author": {
         "name": "moons"
       },
