@@ -32,6 +32,7 @@ from toc_utils import EMBEDDING_MODEL
 from toc_utils import (
     ConfigNotReadyError,
     get_all_md_files,
+    get_index_path,
     init_common_config,
     normalize_path,
     resolve_config_path,
@@ -62,42 +63,6 @@ def parse_args():
         help="類似度スコアの下限閾値（デフォルト: 0.3）",
     )
     return parser.parse_args()
-
-
-def get_index_path(common_config):
-    """
-    インデックス JSON ファイルのパスを返す。
-
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
-    （既存の ToC YAML と同じディレクトリに配置）
-
-    Args:
-        common_config: init_common_config() の返り値 dict
-
-    Returns:
-        Path: インデックスファイルの絶対パス
-    """
-    config = common_config["config"]
-    first_dir = common_config["first_dir"]
-    project_root = common_config["project_root"]
-
-    # checksums_file のパスからディレクトリを導出してインデックスを配置する
-    # checksums_file: .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
-    checksums_file = resolve_config_path(
-        config.get("checksums_file", ".toc_checksums.yaml"),
-        first_dir,
-        project_root,
-    )
-    index_dir = checksums_file.parent
-
-    # カテゴリ名を config から取得
-    category = config.get("category", "")
-    if not category:
-        # common_config には category が含まれていないため checksums_file のパスから推定
-        # .claude/doc-advisor/toc/specs/.toc_checksums.yaml → specs
-        category = index_dir.name
-
-    return index_dir / f"{category}_index.json"
 
 
 def load_index(index_path):
@@ -312,7 +277,7 @@ def main():
         sys.exit(1)
 
     # インデックスパスの解決
-    index_path = get_index_path(common_config)
+    index_path = get_index_path(args.category, common_config["project_root"])
 
     # インデックスの読み込み
     try:

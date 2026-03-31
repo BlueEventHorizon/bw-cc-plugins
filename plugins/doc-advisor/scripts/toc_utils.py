@@ -27,6 +27,22 @@ class ConfigNotReadyError(RuntimeError):
 # Embedding モデル定数（embed_docs.py / search_docs.py で共有）
 EMBEDDING_MODEL = "text-embedding-3-small"
 
+
+def get_index_path(category, project_root):
+    """Embedding インデックス JSON のパスを返す。
+
+    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
+
+    Args:
+        category: 'rules' または 'specs'
+        project_root: プロジェクトルート (Path)
+
+    Returns:
+        Path: インデックスファイルの絶対パス
+    """
+    return Path(project_root) / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
+
+
 # System files that are always excluded (not configurable)
 SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
 SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']

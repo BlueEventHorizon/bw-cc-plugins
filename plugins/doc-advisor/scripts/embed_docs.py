@@ -33,6 +33,7 @@ from toc_utils import (
     EMBEDDING_MODEL,
     calculate_file_hash,
     get_all_md_files,
+    get_index_path,
     init_common_config,
     load_checksums,
     normalize_path,
@@ -80,14 +81,6 @@ def parse_args():
         help="インデックスの新鮮さを確認のみ（再構築なし）",
     )
     return parser.parse_args()
-
-
-def get_index_path(category, project_root):
-    """インデックス JSON のパスを返す。
-
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
-    """
-    return project_root / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
 
 
 def load_index(index_path):
