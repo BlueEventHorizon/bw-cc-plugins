@@ -2,7 +2,8 @@
 name: create-rules-toc
 description: |
   Build or update the rules Embedding index for semantic document search.
-  Extracts metadata from existing ToC YAML and vectorizes via OpenAI Embedding API.
+  Reads full file content (max 7500 characters) and vectorizes via OpenAI Embedding API.
+  No external dependencies except OPENAI_API_KEY.
   Trigger:
   - After editing, adding, or removing rule documents
   - "Rebuild the rules index"
@@ -37,7 +38,17 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category rules [--full]
 - If `$0` = `--full`: pass `--full` flag (rebuild entire index)
 - Otherwise: run without `--full` (incremental diff update)
 
-> **Migration note**: During the migration period, metadata is sourced from the existing ToC YAML. The ToC YAML will continue to be maintained alongside the Embedding index.
+### Processing Details
+
+**Embedding テキスト構成**:
+- Source: 各 .md ファイル全文（フロントマター含む）
+- Encoding: UTF-8
+- Truncation: 最初 7500 文字で自動切り詰め（テキスト全体の意味情報を保持しつつ、token コスト削減のため）
+- API: OpenAI text-embedding-3-small（1536 dimensions）
+
+**出力フォーマット**:
+- File: `.claude/doc-advisor/toc/rules/rules_index.json`
+- Schema: `{"documents": [{"path": "相対パス", "title": "抽出タイトル", "embedding": [1.0, -0.5, ...]}]}`
 
 ## Error Handling
 

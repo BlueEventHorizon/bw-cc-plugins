@@ -341,6 +341,17 @@ python3 grep_docs.py --category {specs|rules} --keyword "doc_structure.yaml"
 
 技術選択の理由: 600 件程度のファイルを順次読み込んでの文字列検索は、外部ツール（ripgrep 等）なしでも数百ミリ秒で完了する。AI が固有名詞を検出した場合にのみ呼び出されるため、頻度も低い。
 
+### 3.6 スクリプト I/O 契約
+
+全スクリプトは stdout に JSON のみを出力し、進捗ログは stderr に出力する。
+
+| スクリプト | stdout | stderr | 終了コード | status 値 |
+| ---------- | ------ | ------ | ---------- | --------- |
+| `embed_docs.py` | JSON（結果） | 進捗ログ | 0: 成功, 1: 失敗/部分失敗 | `ok`, `partial`, `error` |
+| `embed_docs.py --check` | JSON（鮮度） | なし | 0 | `fresh`, `stale`, `error` |
+| `search_docs.py` | JSON（検索結果） | エラーログ | 0: 成功, 1: エラー | `ok`, `stale`, `error` |
+| `grep_docs.py` | JSON（検索結果） | なし | 0: 成功, 1: エラー | `ok`, `error` |
+
 ## 4. ユースケース設計
 
 ### 4.1 ユースケース一覧

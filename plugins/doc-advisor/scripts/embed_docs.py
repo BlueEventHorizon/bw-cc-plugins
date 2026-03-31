@@ -226,6 +226,10 @@ def call_embedding_api(texts, api_key):
                 result = json.loads(resp.read().decode("utf-8"))
                 # data は入力順にソート済みのはず。index でソートして安全に取得する
                 embeddings = sorted(result["data"], key=lambda x: x["index"])
+                if len(embeddings) != len(texts):
+                    raise RuntimeError(
+                        f"API 応答件数の不一致: 送信 {len(texts)} 件, 受信 {len(embeddings)} 件"
+                    )
                 return [e["embedding"] for e in embeddings]
 
         except urllib.error.HTTPError as e:
