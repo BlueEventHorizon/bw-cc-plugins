@@ -70,41 +70,6 @@ class TestJapaneseFilenames(unittest.TestCase):
         self.assertTrue(result)
 
 
-class TestSpecialCharacters(unittest.TestCase):
-    """特殊文字を含むコンテンツのテスト"""
-
-    def test_yaml_escape_special_chars(self):
-        """特殊文字が正しくエスケープされる"""
-        # コロン+スペース
-        result = toc_utils.yaml_escape('foo: bar')
-        self.assertTrue(result.startswith('"'))
-
-        # アンパサンドで始まる
-        result = toc_utils.yaml_escape('&reference')
-        self.assertTrue(result.startswith('"'))
-
-        # パイプ文字で始まる
-        result = toc_utils.yaml_escape('|literal')
-        self.assertTrue(result.startswith('"'))
-
-    def test_yaml_escape_quotes_in_content(self):
-        """引用符を含むコンテンツが正しくエスケープされる"""
-        result = toc_utils.yaml_escape('Special: "quotes" & ampersand')
-        self.assertTrue(result.startswith('"'))
-        # ダブルクォートがエスケープされていること
-        self.assertIn('\\"', result)
-
-    def test_yaml_escape_plain_text_not_quoted(self):
-        """プレーンテキストはクォートされない"""
-        result = toc_utils.yaml_escape('normal text')
-        self.assertFalse(result.startswith('"'))
-
-    def test_yaml_escape_empty_string(self):
-        """空文字列はクォートされる"""
-        result = toc_utils.yaml_escape('')
-        self.assertEqual(result, '""')
-
-
 class TestDeepNesting(unittest.TestCase):
     """深いネスト（5レベル）のファイル検出テスト"""
 

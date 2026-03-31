@@ -12,7 +12,6 @@ import fnmatch
 import hashlib
 import os
 import re
-import shutil
 import sys
 import unicodedata
 from datetime import datetime, timezone
@@ -745,162 +744,6 @@ def parse_simple_yaml(content):
     return meta, result
 
 
-def load_entry_file(filepath):
-    """
-    Load and parse entry file
-
-    Args:
-        filepath: File path (str or Path)
-
-    Returns:
-        tuple: (meta_dict, entry_dict)
-
-    Raises:
-        IOError: When file read fails
-    """
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return parse_simple_yaml(content)
-    except (IOError, OSError, PermissionError) as e:
-        raise IOError(f"Entry file read error: {filepath} - {e}") from e
-
-
-def yaml_escape(s):
-    """
-    Escape string for YAML output
-
-    Args:
-        s: String to escape
-
-    Returns:
-        str: Escaped string
-    """
-    if not s:
-        return '""'
-
-    # Convert to string if not already
-    s = str(s)
-
-    # Check if first character is a YAML indicator (block plain scalar rule)
-    first_char_indicators = set('-?:,[]{}#&*!|>\'"% @`~')
-    needs_quotes = s[0] in first_char_indicators
-
-    # Patterns special ANYWHERE in block plain scalar
-    # ": " and " #" are YAML spec restrictions
-    # '"' and "'" cause round-trip issues with parse_simple_yaml's strip()
-    if not needs_quotes:
-        needs_quotes = ': ' in s or ' #' in s or '"' in s or "'" in s
-
-    # Trailing colon or trailing space
-    if not needs_quotes:
-        needs_quotes = s.endswith(':') or s.endswith(' ')
-
-    # Control characters always need quoting
-    if not needs_quotes:
-        needs_quotes = any(c in s for c in '\n\r\t')
-
-    # Check if it looks like a number (would be parsed as int/float)
-    if not needs_quotes:
-        try:
-            float(s)
-            needs_quotes = True
-        except ValueError:
-            pass
-
-    # Check if it's a YAML boolean or null keyword
-    if s.lower() in ('true', 'false', 'yes', 'no', 'on', 'off', 'null', 'none', '~'):
-        needs_quotes = True
-
-    if needs_quotes:
-        # Escape backslash first, then double quote
-        escaped = s.replace('\\', '\\\\').replace('"', '\\"')
-        # Escape newline and tab
-        escaped = escaped.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
-        return f'"{escaped}"'
-
-    return s
-
-
-def load_existing_toc(toc_path):
-    """
-    既存の {category}_toc.yaml を読み込む（docs: セクション形式対応）
-
-    Args:
-        toc_path: ToC ファイルパス (str or Path)
-
-    Returns:
-        dict: source_file → entry_dict のマッピング
-    """
-    toc_path = Path(toc_path)
-    if not toc_path.exists():
-        return {}
-
-    try:
-        with open(toc_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to read {toc_path}: {e}")
-        return {}
-
-    docs = {}
-    current_section = None
-    current_path = None
-    current_entry = {}
-    current_list = None
-
-    for line in content.split('\n'):
-        stripped = line.strip()
-
-        if stripped.startswith('#') or not stripped:
-            continue
-
-        if stripped == 'docs:':
-            current_section = 'docs'
-            continue
-        elif stripped.startswith('metadata:'):
-            current_section = 'metadata'
-            continue
-
-        if current_section != 'docs':
-            continue
-
-        # ファイルパスキーの検出（2スペースインデント）
-        if line.startswith('  ') and not line.startswith('    '):
-            key_candidate = stripped.rstrip(':')
-            # クォートされた YAML キーを処理: "path/to/file.md"
-            if key_candidate.startswith('"') and key_candidate.endswith('"'):
-                key_candidate = key_candidate[1:-1]
-            if key_candidate.endswith('.md'):
-                if current_path and current_entry:
-                    docs[current_path] = current_entry
-                current_path = normalize_path(key_candidate)
-                current_entry = {}
-                current_list = None
-        elif line.startswith('    ') and ':' in stripped and not stripped.startswith('-'):
-            if current_path:
-                key, _, val = stripped.partition(':')
-                key = key.strip()
-                val = val.strip().strip('"\'')
-                if val == '[]':
-                    current_list = []
-                    current_entry[key] = current_list
-                elif val:
-                    current_entry[key] = val
-                    current_list = None
-                else:
-                    current_list = []
-                    current_entry[key] = current_list
-        elif stripped.startswith('- ') and current_list is not None:
-            item = stripped[2:].strip().strip('"\'')
-            current_list.append(item)
-
-    if current_path and current_entry:
-        docs[current_path] = current_entry
-
-    return docs
-
-
 def write_checksums_yaml(checksums, output_path, header_comment="Auto-generated checksum file"):
     """Write checksums dict to YAML format file.
 
@@ -954,20 +797,6 @@ def calculate_file_hash(path, chunk_size=65536):
         return None
 
 
-def backup_existing_file(file_path):
-    """
-    Backup existing file (with .bak extension)
-
-    Args:
-        file_path: File path to backup (str or Path)
-    """
-    file_path = Path(file_path)
-    if file_path.exists():
-        backup_path = file_path.with_suffix('.yaml.bak')
-        shutil.copy(file_path, backup_path)
-        print(f"Backup created: {backup_path}")
-
-
 def load_checksums(checksums_file):
     """
     チェックサムファイルを読み込み、ファイルパス→ハッシュ値の辞書を返す
@@ -1015,29 +844,6 @@ def load_checksums(checksums_file):
         print(f"Warning: Checksum file read error: {e}")
         print("Fallback: Skipping deletion detection")
         return {}
-
-
-def cleanup_work_dir(work_dir):
-    """
-    Delete work directory
-
-    Args:
-        work_dir: Directory path to delete (str or Path)
-
-    Returns:
-        bool: True on success, False on failure
-    """
-    work_dir = Path(work_dir)
-    if work_dir.exists():
-        try:
-            shutil.rmtree(work_dir)
-            print(f"Cleanup complete: {work_dir}")
-            return True
-        except (OSError, PermissionError) as e:
-            print(f"Warning: Cleanup failed: {work_dir} - {e}")
-            print("   Please delete manually")
-            return False
-    return True
 
 
 def should_exclude(filepath, root_dir, exclude_patterns):
@@ -1254,40 +1060,5 @@ def get_all_md_files(common_config):
     return md_files, file_root_map
 
 
-def load_metadata(category, file_path, toc_path=None):
-    """
-    文書ファイルのメタデータを ToC YAML から読み込む（抽象化レイヤー）。
-
-    embed_docs.py がメタデータを取得するための統一インターフェース。
-    Phase 3 で ToC 廃止後はこの関数の実装のみを変更すればよく、
-    embed_docs.py への影響を局所化できる。
-
-    Args:
-        category: 'rules' or 'specs'
-        file_path: 文書のプロジェクト相対パス（str）
-        toc_path: ToC YAML ファイルパス（省略時は設定から自動解決）
-
-    Returns:
-        dict: メタデータ dict。キー: title, purpose, keywords,
-              applicable_tasks, content_details。
-              ToC に存在しない場合は空 dict。
-    """
-    if toc_path is None:
-        try:
-            config = load_config(category)
-            project_root = get_project_root()
-            default_dir = project_root / category
-            # ToC ファイルパスを設定から解決
-            toc_file_setting = config.get('toc_file', f'.claude/doc-advisor/toc/{category}/{category}_toc.yaml')
-            toc_path = resolve_config_path(toc_file_setting, default_dir, project_root)
-        except Exception as e:
-            print(f"Warning: load_metadata failed for {file_path}: {e}", file=sys.stderr)
-            return {}
-
-    toc_entries = load_existing_toc(toc_path)
-    # NFC 正規化してキー検索
-    normalized_path = normalize_path(file_path)
-    entry = toc_entries.get(normalized_path, {})
-    return entry
 
 
