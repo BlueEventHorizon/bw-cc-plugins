@@ -121,4 +121,4 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 | reverse-engineering | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md` |
 | from-figma | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_from_figma_workflow.md` |
 
-Read 後、ワークフローファイルの Phase 1 から開始する。各ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認・セッション削除）まで自己完結している。SKILL.md に戻る必要はない。
+Read 後、ワークフローファイルの Phase 1 から開始する。各ワークフローは完了処理（AI レビュー・index 更新・commit 確認・セッション削除）まで自己完結している。SKILL.md に戻る必要はない。

@@ -11,7 +11,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | **forge**  | 0.0.27     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
-| **doc-advisor** | 0.2.1 | AI 検索可能なドキュメントインデックス（ToC）ジェネレーター                                                              |
+| **doc-advisor** | 0.3.0 | セマンティック検索対応のドキュメントインデックス生成・検索ツール。OpenAI Embedding API で文書本文をベクトル化し、タスクに関連する文書を自動発見 |
 
 ## スキル一覧
 
@@ -54,6 +54,15 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 |--------|------|----------|
 | [**build**](docs/readme/README_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` `"build"` |
 | [**test**](docs/readme/README_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` `"test"` |
+
+### doc-advisor
+
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**query-rules**](#) | Embedding インデックスを使ったルール文書のセマンティック検索 | `"ルール確認"` `"What rules apply?"` |
+| [**query-specs**](#) | Embedding インデックスを使った仕様文書のセマンティック検索 | `"仕様確認"` `"What specs apply?"` |
+| [**create-rules-index**](#) | ルール文書の Embedding インデックスを構築・更新 | `"rules インデックスを再構築"` |
+| [**create-specs-index**](#) | 仕様文書の Embedding インデックスを構築・更新 | `"specs インデックスを再構築"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 
@@ -138,6 +147,21 @@ github:
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 - Xcode / `xcodebuild`（xcode プラグイン用）
+- `DOC_ADVISOR_OPENAI_API_KEY` 環境変数（doc-advisor セマンティック検索用）
+
+### doc-advisor のセットアップ
+
+doc-advisor は Embedding インデックスの生成とセマンティック検索に OpenAI API キーが必要です。使用するのは `/v1/embeddings` エンドポイントのみです。
+
+1. [OpenAI API Keys](https://platform.openai.com/api-keys) で**制限付きキー**を作成
+2. **Embeddings** → **Write** 権限のみ付与（他は全て拒否）
+3. 環境変数を設定:
+
+```bash
+export DOC_ADVISOR_OPENAI_API_KEY='sk-...'
+```
+
+シェルプロファイル（`~/.zshrc`、`~/.bashrc` 等）に追記すればセッション間で永続化されます。使用モデルは `text-embedding-3-small`（$0.02/1M tokens — 600件の全体再構築でも $0.01 以下）。
 
 ## ライセンス
 

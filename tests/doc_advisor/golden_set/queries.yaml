@@ -31,20 +31,10 @@ specs:
       - "docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md"
     note: "検索精度の要件定義"
 
-  - query: "ToC 生成フローの設計"
-    expected_paths:
-      - "docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md"
-    note: "ToC 生成フロー設計書"
-
   - query: "セッション管理の設計"
     expected_paths:
       - "docs/specs/forge/design/session_management_design.md"
     note: "セッション管理設計書 DES-011"
-
-  - query: "プラグイン移行の設計"
-    expected_paths:
-      - "docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md"
-    note: "doc-advisor プラグイン移行設計"
 
 rules:
   - query: "SKILL.md の作成方法やルール"

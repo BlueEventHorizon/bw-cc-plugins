@@ -28,7 +28,7 @@ SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPTS_DIR))
 
-import toc_utils
+import index_utils
 
 
 class TestVersionDetection(unittest.TestCase):
@@ -37,34 +37,34 @@ class TestVersionDetection(unittest.TestCase):
     def test_no_version_comment_returns_v1(self):
         """バージョンコメントなし → v1"""
         content = 'rules:\n  rule:\n    paths:\n      - rules/'
-        self.assertEqual(toc_utils._detect_version(content), 1)
+        self.assertEqual(index_utils._detect_version(content), 1)
 
     def test_version_2(self):
         """# doc_structure_version: 2.0 → 2"""
         content = '# doc_structure_version: 2.0\nrules:\n'
-        self.assertEqual(toc_utils._detect_version(content), 2)
+        self.assertEqual(index_utils._detect_version(content), 2)
 
     def test_version_3(self):
         """# doc_structure_version: 3.0 → 3"""
         content = '# doc_structure_version: 3.0\nrules:\n'
-        self.assertEqual(toc_utils._detect_version(content), 3)
+        self.assertEqual(index_utils._detect_version(content), 3)
 
     def test_version_4_future(self):
         """# doc_structure_version: 4.0 → 4"""
         content = '# doc_structure_version: 4.0\nrules:\n'
-        self.assertEqual(toc_utils._detect_version(content), 4)
+        self.assertEqual(index_utils._detect_version(content), 4)
 
     def test_version_comment_with_extra_spaces(self):
         """バージョンコメントにスペースが含まれていても検出"""
         content = '#  doc_structure_version:  3.0\nrules:\n'
         # 正規表現 r'^#\s*doc_structure_version:\s*(\d+)' でマッチ
-        self.assertEqual(toc_utils._detect_version(content), 3)
+        self.assertEqual(index_utils._detect_version(content), 3)
 
     def test_version_comment_after_yaml_body_detected(self):
         """YAML本文行後のバージョンコメントも検出される（全行走査）"""
         content = 'rules:\n  root_dirs:\n    - rules/\n# doc_structure_version: 3.0\n'
         # 全行走査により位置に関わらずバージョンコメントを検出する
-        self.assertEqual(toc_utils._detect_version(content), 3)
+        self.assertEqual(index_utils._detect_version(content), 3)
 
 
 class TestV1ToV3ChainMigration(unittest.TestCase):
@@ -73,8 +73,8 @@ class TestV1ToV3ChainMigration(unittest.TestCase):
     def test_single_category(self):
         """v1 単一カテゴリ → v3"""
         v1_content = 'rules:\n  rule:\n    paths:\n      - rules/'
-        parsed = toc_utils._parse_config_yaml(v1_content)
-        result = toc_utils.apply_migrations(parsed, 1)
+        parsed = index_utils._parse_config_yaml(v1_content)
+        result = index_utils.apply_migrations(parsed, 1)
 
         self.assertEqual(result['rules']['root_dirs'], ['rules/'])
         self.assertEqual(result['rules']['doc_types_map'], {'rules/': 'rule'})
@@ -89,8 +89,8 @@ class TestV1ToV3ChainMigration(unittest.TestCase):
             'specs:\n  requirement:\n    paths:\n      - specs/requirements/\n'
             '  design:\n    paths:\n      - specs/design/'
         )
-        parsed = toc_utils._parse_config_yaml(v1_content)
-        result = toc_utils.apply_migrations(parsed, 1)
+        parsed = index_utils._parse_config_yaml(v1_content)
+        result = index_utils.apply_migrations(parsed, 1)
 
         # rules
         self.assertEqual(result['rules']['root_dirs'], ['rules/', 'guidelines/'])
@@ -121,14 +121,14 @@ class TestV2ToV3Migration(unittest.TestCase):
             'rules:\n'
             '  root_dirs:\n    - rules/\n'
             '  doc_types_map:\n    rules/: rule\n'
-            '  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml\n'
-            '  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml\n'
-            '  work_dir: .claude/doc-advisor/toc/rules/.toc_work/\n'
+            '  toc_file: .claude/doc-advisor/indexes/rules/rules_index.yaml\n'
+            '  checksums_file: .claude/doc-advisor/indexes/rules/.index_checksums.yaml\n'
+            '  work_dir: .claude/doc-advisor/indexes/rules/.toc_work/\n'
             '  output:\n    header_comment: test\n'
             'common:\n  parallel:\n    max_workers: 5'
         )
-        parsed = toc_utils._parse_config_yaml(v2_content)
-        result = toc_utils.apply_migrations(parsed, 2)
+        parsed = index_utils._parse_config_yaml(v2_content)
+        result = index_utils.apply_migrations(parsed, 2)
 
         self.assertNotIn('toc_file', result.get('rules', {}))
         self.assertNotIn('checksums_file', result.get('rules', {}))
@@ -152,16 +152,16 @@ class TestV3NoOp(unittest.TestCase):
             '  doc_types_map:\n    rules/: rule\n'
             '  patterns:\n    target_glob: "**/*.md"\n    exclude: []'
         )
-        parsed = toc_utils._parse_config_yaml(v3_content)
+        parsed = index_utils._parse_config_yaml(v3_content)
         original = copy.deepcopy(parsed)
-        result = toc_utils.apply_migrations(parsed, 3)
+        result = index_utils.apply_migrations(parsed, 3)
 
         self.assertEqual(result, original)
 
     def test_future_version_unchanged(self):
         """v4（未来バージョン）でもデータは変わらない"""
         data = {'rules': {'root_dirs': ['rules/']}}
-        result = toc_utils.apply_migrations(data, 4)
+        result = index_utils.apply_migrations(data, 4)
         self.assertEqual(result, data)
         self.assertIn('root_dirs', result.get('rules', {}))
 
@@ -172,9 +172,9 @@ class TestIdempotency(unittest.TestCase):
     def test_v1_migration_idempotent(self):
         """v1 マイグレーションを2回適用しても結果が同じ"""
         v1_content = 'rules:\n  rule:\n    paths:\n      - rules/'
-        parsed = toc_utils._parse_config_yaml(v1_content)
-        first = toc_utils.apply_migrations(copy.deepcopy(parsed), 1)
-        second = toc_utils.apply_migrations(copy.deepcopy(first), 1)
+        parsed = index_utils._parse_config_yaml(v1_content)
+        first = index_utils.apply_migrations(copy.deepcopy(parsed), 1)
+        second = index_utils.apply_migrations(copy.deepcopy(first), 1)
 
         self.assertEqual(first, second)
 
@@ -188,8 +188,8 @@ class TestIdempotency(unittest.TestCase):
             },
             'common': {'parallel': {'max_workers': 5}},
         }
-        first = toc_utils.apply_migrations(copy.deepcopy(v2_data), 2)
-        second = toc_utils.apply_migrations(copy.deepcopy(first), 2)
+        first = index_utils.apply_migrations(copy.deepcopy(v2_data), 2)
+        second = index_utils.apply_migrations(copy.deepcopy(first), 2)
 
         self.assertEqual(first, second)
 
@@ -200,23 +200,23 @@ class TestRollback(unittest.TestCase):
     def test_rollback_on_failure(self):
         """マイグレーション失敗時にオリジナルデータが返される"""
         v1_content = 'rules:\n  rule:\n    paths:\n      - custom_rules/'
-        parsed = toc_utils._parse_config_yaml(v1_content)
+        parsed = index_utils._parse_config_yaml(v1_content)
         original_copy = copy.deepcopy(parsed)
 
         # v3 マイグレーションを失敗させる
         def _fail_migration(p):
             raise RuntimeError('テスト用の意図的な失敗')
 
-        saved_migrations = dict(toc_utils.MIGRATIONS)
-        toc_utils.MIGRATIONS[3] = _fail_migration
+        saved_migrations = dict(index_utils.MIGRATIONS)
+        index_utils.MIGRATIONS[3] = _fail_migration
 
         try:
-            result = toc_utils.apply_migrations(parsed, 1)
+            result = index_utils.apply_migrations(parsed, 1)
             # オリジナルデータが返されること
             self.assertEqual(result, original_copy)
         finally:
-            toc_utils.MIGRATIONS.clear()
-            toc_utils.MIGRATIONS.update(saved_migrations)
+            index_utils.MIGRATIONS.clear()
+            index_utils.MIGRATIONS.update(saved_migrations)
 
 
 class TestLoadConfigV1Integration(unittest.TestCase):
@@ -240,13 +240,13 @@ class TestLoadConfigV1Integration(unittest.TestCase):
             f.write(v1_content)
 
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
 
         # v1→v3 マイグレーション済み
         self.assertIn('root_dirs', config)
         self.assertEqual(config['root_dirs'], ['rules/'])
         # コードデフォルトがマージされている
-        self.assertIn('toc_file', config)
+        self.assertIn('checksums_file', config)
 
     def test_v2_file_migrated(self):
         """v2 形式の .doc_structure.yaml が load_config で正しく処理される"""
@@ -262,14 +262,14 @@ class TestLoadConfigV1Integration(unittest.TestCase):
             f.write(v2_content)
 
         with patch.object(Path, 'cwd', return_value=Path(self.tmpdir)):
-            config = toc_utils.load_config('rules')
+            config = index_utils.load_config('rules')
 
         self.assertEqual(config['root_dirs'], ['my_rules/'])
         # v2→v3 で内部フィールドが除去され、コードデフォルトがマージされる
-        # toc_file はコードデフォルト値
+        # checksums_file はコードデフォルト値
         self.assertEqual(
-            config['toc_file'],
-            '.claude/doc-advisor/toc/rules/rules_toc.yaml'
+            config['checksums_file'],
+            '.claude/doc-advisor/indexes/rules/.index_checksums.yaml'
         )
 
 

@@ -22,25 +22,18 @@ import json
 import math
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-# embed_docs.py が存在する場合は EMBEDDING_MODEL をインポートしてモデルを一元管理する。
-# embed_docs.py が未実装の場合はローカルの定数を使用する。
-try:
-    # sys.path に scripts ディレクトリを追加して同ディレクトリからインポート
-    _scripts_dir = str(Path(__file__).parent)
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
-    from embed_docs import EMBEDDING_MODEL
-except ImportError:
-    EMBEDDING_MODEL = "text-embedding-3-small"
+from index_utils import EMBEDDING_MODEL
 
-# toc_utils のインポート（設定読み込み・パス正規化）
-from toc_utils import (
+# index_utils のインポート（設定読み込み・パス正規化）
+from index_utils import (
     ConfigNotReadyError,
     get_all_md_files,
+    get_index_path,
     init_common_config,
     normalize_path,
     resolve_config_path,
@@ -71,42 +64,6 @@ def parse_args():
         help="類似度スコアの下限閾値（デフォルト: 0.3）",
     )
     return parser.parse_args()
-
-
-def get_index_path(common_config):
-    """
-    インデックス JSON ファイルのパスを返す。
-
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
-    （既存の ToC YAML と同じディレクトリに配置）
-
-    Args:
-        common_config: init_common_config() の返り値 dict
-
-    Returns:
-        Path: インデックスファイルの絶対パス
-    """
-    config = common_config["config"]
-    first_dir = common_config["first_dir"]
-    project_root = common_config["project_root"]
-
-    # checksums_file のパスからディレクトリを導出してインデックスを配置する
-    # checksums_file: .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
-    checksums_file = resolve_config_path(
-        config.get("checksums_file", ".toc_checksums.yaml"),
-        first_dir,
-        project_root,
-    )
-    index_dir = checksums_file.parent
-
-    # カテゴリ名を config から取得
-    category = config.get("category", "")
-    if not category:
-        # common_config には category が含まれていないため checksums_file のパスから推定
-        # .claude/doc-advisor/toc/specs/.toc_checksums.yaml → specs
-        category = index_dir.name
-
-    return index_dir / f"{category}_index.json"
 
 
 def load_index(index_path):
@@ -168,7 +125,7 @@ def check_staleness(index, common_config):
     Returns:
         bool: stale であれば True、新鮮であれば False
     """
-    from toc_utils import calculate_file_hash
+    from index_utils import calculate_file_hash
 
     project_root = common_config["project_root"]
     entries = index.get("entries", {})
@@ -233,35 +190,47 @@ def call_embedding_api(text, api_key):
     """
     url = "https://api.openai.com/v1/embeddings"
     payload = json.dumps({"model": EMBEDDING_MODEL, "input": [text]}).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data["data"][0]["embedding"]
-    except urllib.error.HTTPError as e:
-        body = ""
-        try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            pass
-        raise RuntimeError(f"HTTP {e.code}: {body}") from e
-    except urllib.error.URLError as e:
-        # ネットワークエラー: 1 回リトライ
+    last_error = None
+    for attempt in range(2):  # 最大1回リトライ
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["data"][0]["embedding"]
-        except Exception as retry_err:
-            raise RuntimeError(f"Network error: {retry_err}") from retry_err
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt == 0:
+                # レート制限: 5秒待機してリトライ（検索は単発リクエストのため短い待機で十分）
+                print(f"  レート制限 (429)。5秒待機してリトライします...", file=sys.stderr)
+                time.sleep(5)
+                last_error = e
+                continue
+            if e.code == 401:
+                raise RuntimeError(
+                    "API 認証エラー (401)。DOC_ADVISOR_OPENAI_API_KEY が正しいか確認してください。"
+                ) from e
+            body = ""
+            try:
+                body = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise RuntimeError(f"HTTP {e.code}: {body}") from e
+        except urllib.error.URLError as e:
+            if attempt == 0:
+                # ネットワークエラー: 1回リトライ
+                last_error = e
+                continue
+            raise RuntimeError(f"Network error: {e}") from e
+
+    raise RuntimeError(f"API 呼び出し失敗: {last_error}") from last_error
 
 
 def search(query, index, api_key, threshold):
@@ -321,7 +290,7 @@ def main():
         sys.exit(1)
 
     # インデックスパスの解決
-    index_path = get_index_path(common_config)
+    index_path = get_index_path(args.category, common_config["project_root"])
 
     # インデックスの読み込み
     try:
@@ -353,14 +322,14 @@ def main():
         }))
         sys.exit(1)
 
-    # API キーの取得
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    # API キーの取得（DOC_ADVISOR_OPENAI_API_KEY 優先、OPENAI_API_KEY にフォールバック）
+    api_key = os.environ.get("DOC_ADVISOR_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": (
-                "OPENAI_API_KEY not set. "
-                "Set it with: export OPENAI_API_KEY=sk-..."
+                "DOC_ADVISOR_OPENAI_API_KEY not set. "
+                "Set it with: export DOC_ADVISOR_OPENAI_API_KEY=sk-..."
             ),
         }))
         sys.exit(1)

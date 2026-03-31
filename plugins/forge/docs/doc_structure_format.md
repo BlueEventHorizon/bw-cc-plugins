@@ -8,7 +8,7 @@
 doc-advisor の `config.yaml` と完全互換のフォーマットを採用し、以下のツールが共通で参照する:
 
 - **forge スキル** — ドキュメント作成先の特定、レビュー対象の解決、Feature 検出
-- **Doc Advisor** — ToC 生成のスキャン対象・doc_type 判定
+- **Doc Advisor** — index 生成のスキャン対象・doc_type 判定
 - **resolve_doc_structure.py** — プログラムからのパス解決（JSON 出力）
 
 ## ファイル配置

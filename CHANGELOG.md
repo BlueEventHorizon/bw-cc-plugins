@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-31
+
+### doc-advisor
+
+- **refactor**: ToC → Embedding index への全面リネーム。`toc_utils.py` → `index_utils.py`、`.claude/doc-advisor/toc/` → `.claude/doc-advisor/indexes/`、スキル名 `create-*-toc` → `create-*-index`
+- **refactor**: 環境変数を `DOC_ADVISOR_OPENAI_API_KEY` に変更（`OPENAI_API_KEY` にフォールバック）。Embeddings 権限のみの制限付きキー推奨
+- **refactor**: 旧 ToC パイプラインを完全削除。スクリプト5件・エージェント1件・ドキュメント4件・テスト5件・`index_utils.py` 内の旧関数6件
+- **fix**: `embed_docs.py` の進捗ログを stderr に分離。stdout は JSON 出力専用に
+- **fix**: `search_docs.py` に HTTP 429 リトライ処理を追加（5秒待機）
+- **fix**: `embed_docs.py` に API 応答件数の整合性チェックを追加
+- **refactor**: `EMBEDDING_MODEL` / `get_index_path()` を `index_utils.py` に移動し、スクリプト間の依存関係を設計通りに整理
+- **fix**: 設計書（DES-006）を実装に合わせて全面更新。旧メタデータ記述の除去、I/O 契約表の追加、移行セクションの削除
+- **chore**: 完了済み設計書・要件書・計画書を削除（DES-001, DES-003, DES-005, REQ-002, 計画書2件、要件書5件）
+
 ## [0.2.1] - 2026-03-31
 
 ### doc-advisor
@@ -17,7 +31,7 @@ All notable changes to this project will be documented in this file.
 
 - **feat**: OpenAI Embedding ベースのセマンティック検索を導入（`embed_docs.py`, `search_docs.py`, `grep_docs.py`）。従来の ToC YAML 全量読み込みから Embedding 類似度検索 + 全文 grep のハイブリッド方式に移行
 - **feat**: `toc_utils.py` に `get_all_md_files()` / `load_metadata()` を追加し、スクリプト間の共通処理を統合
-- **refactor**: `query-specs` / `query-rules` / `create-specs-toc` / `create-rules-toc` の SKILL.md をセマンティック検索ワークフローに更新
+- **refactor**: `query-specs` / `query-rules` / `create-specs-index` / `create-rules-index` の SKILL.md をセマンティック検索ワークフローに更新
 - **fix**: `check_staleness()` がディスク上の新規ファイルを検出するよう設計修正（`get_all_md_files` との差分チェック追加）
 - **fix**: `embed_docs.py` の差分モードにおける dead code（削除ファイルガード節）を除去
 - **test**: `embed_docs` / `search_docs` / `grep_docs` のユニットテスト追加（913件、全パス）
