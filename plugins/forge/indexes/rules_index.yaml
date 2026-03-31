@@ -1,4 +1,4 @@
-# plugins/forge/toc/rules_toc.yaml
+# plugins/forge/indexes/rules_index.yaml
 # forge 内蔵ドキュメントの検索インデックス（query-forge-rules 用）
 # /create-rules-index で生成後、forge docs エントリのみ抽出してコピー
 

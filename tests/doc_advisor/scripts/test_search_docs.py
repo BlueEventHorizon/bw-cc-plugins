@@ -492,7 +492,7 @@ specs:
         # rules ディレクトリ作成
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
-        # ToC ディレクトリ作成
+        # index ディレクトリ作成
         self.index_dir = os.path.join(
             self.project_root, '.claude', 'doc-advisor', 'indexes', 'rules'
         )

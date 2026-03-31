@@ -11,12 +11,12 @@
 現在、文書IDとして以下の2つの方式が混在している：
 
 1. **ファイル名ベースのID抽出**
-   - `toc_utils.py` の `extract_id_from_filename()` 関数
+   - `index_utils.py` の `extract_id_from_filename()` 関数
    - 正規表現 `[A-Z]+-\d+` でファイル名からIDを抽出
    - 例: `SCR-001_login.md` → `SCR-001`
 
 2. **ファイルパスベースのキー**
-   - `specs_toc.yaml` / `rules_toc.yaml` のキー
+   - `specs_index.yaml` / `rules_index.yaml` のキー
    - 例: `specs/requirements/login.md`
 
 ### 問題点
@@ -56,8 +56,8 @@ specs/design/SCR-001_login_design.md
 
 | 識別方法                             | 使用箇所                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------- |
-| ID (`SCR-001`)                       | `.claude/doc-advisor/toc/specs/.toc_work/SCR-001.yaml`、validate の重複チェック |
-| パス (`specs/requirements/login.md`) | ToC YAML のキー、実際のファイル参照                                             |
+| ID (`SCR-001`)                       | `.claude/doc-advisor/indexes/specs/.index_work/SCR-001.yaml`、validate の重複チェック |
+| パス (`specs/requirements/login.md`) | index YAML のキー、実際のファイル参照                                             |
 
 2つの識別子を管理する必要があり、冗長である。
 
@@ -92,7 +92,7 @@ flowchart LR
 
 1. **ファイルパスは必ずユニーク** - ファイルシステムが保証
 2. **追加の命名規則が不要** - ユーザーは自由にファイル名を決められる
-3. **ToC YAML のキーとして既に使用** - 一貫性がある
+3. **index YAML のキーとして既に使用** - 一貫性がある
 
 ### ファイル名は自由
 
@@ -117,7 +117,7 @@ identifier: "specs/requirements/login.md"
 file_path: specs/requirements/login.md
 ```
 
-### `.claude/doc-advisor/toc/specs/.toc_work/` ファイル名生成
+### `.claude/doc-advisor/indexes/specs/.index_work/` ファイル名生成
 
 **現在の実装（変更不要）:**
 
@@ -133,7 +133,7 @@ work_filename = rel_path.replace("/", "_").replace(".md", ".yaml")
 
 | 機能                         | 場所                    | 対応                                   |
 | ---------------------------- | ----------------------- | -------------------------------------- |
-| `extract_id_from_filename()` | `toc_utils.py`          | 廃止または非推奨化                     |
+| `extract_id_from_filename()` | `index_utils.py`          | 廃止または非推奨化                     |
 | ID重複チェック               | `validate_specs_toc.py` | パス重複チェックに変更（既に実装済み） |
 | ID抽出コメント               | `default-config.yaml`   | 削除                                   |
 
@@ -147,7 +147,7 @@ flowchart TD
     A --> A1["設計書・README から<br>ID強制の記述を削除"]
     B --> B1["extract_id_from_filename() を<br>非推奨マーク"]
     B --> B2["config コメントを更新"]
-    C --> C1["ID なしファイルで<br>ToC 生成テスト"]
+    C --> C1["ID なしファイルで<br>index 生成テスト"]
 ```
 
 ## 影響範囲
@@ -156,7 +156,7 @@ flowchart TD
 
 | ファイル                    | 変更内容                                          |
 | --------------------------- | ------------------------------------------------- |
-| `toc_utils.py`              | `extract_id_from_filename()` に非推奨コメント追加 |
+| `index_utils.py`              | `extract_id_from_filename()` に非推奨コメント追加 |
 | `default-config.yaml`       | ID関連コメント削除                                |
 | `create-specs-index/SKILL.md` | ID抽出の説明を削除                                |
 | `toc_format.md`             | ID要件の記述がないことを確認                      |

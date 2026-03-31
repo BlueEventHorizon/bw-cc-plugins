@@ -5,7 +5,7 @@
 
 config.yaml 互換フォーマットを読み込み、root_dirs の glob 展開、
 doc_types_map の逆引き、exclude 適用、.md ファイル収集を行う。
-doc-advisor の toc_utils.py 互換ロジックで実装。
+doc-advisor の index_utils.py 互換ロジックで実装。
 
 使用例:
     python3 resolve_doc_structure.py --type rules
@@ -116,7 +116,7 @@ def find_project_root(start_path=None):
 def parse_config(content):
     """config.yaml 形式の YAML を行ベースでパースする。
 
-    toc_utils.py の _parse_config_yaml() 互換ロジック。
+    index_utils.py の _parse_config_yaml() 互換ロジック。
     最大4レベルのネストに対応:
       - Level 0: トップレベルセクション（rules, specs, common）
       - Level 2: サブセクション（root_dirs, patterns, output）
@@ -272,7 +272,7 @@ def _parse_value(value):
 def expand_globs(dirs, project_root):
     """root_dirs 内の glob パターンを展開する。
 
-    toc_utils.py の expand_root_dir_globs() 互換。
+    index_utils.py の expand_root_dir_globs() 互換。
 
     Args:
         dirs: ディレクトリパスのリスト（glob パターン含む可能性あり）
@@ -305,7 +305,7 @@ def expand_globs(dirs, project_root):
 def is_excluded(filepath, root_dir, exclude_patterns):
     """ファイルが exclude パターンにマッチするか判定する。
 
-    toc_utils.py の should_exclude() 互換。
+    index_utils.py の should_exclude() 互換。
     ディレクトリパスのみでマッチし、ファイル名は対象外。
 
     Args:

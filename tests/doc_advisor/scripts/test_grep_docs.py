@@ -49,7 +49,7 @@ class GrepDocsTestBase(unittest.TestCase):
         # specs/ ディレクトリ作成
         os.makedirs(os.path.join(self.project_root, 'specs'), exist_ok=True)
 
-        # ToC ディレクトリ作成（init_common_config が参照する場合あり）
+        # index ディレクトリ作成（init_common_config が参照する場合あり）
         os.makedirs(
             os.path.join(self.project_root, '.claude', 'doc-advisor', 'indexes', 'rules'),
             exist_ok=True,

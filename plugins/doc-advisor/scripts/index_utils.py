@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ToC Auto-Generation Common Utilities (doc-advisor plugin)
+Document Index Common Utilities (doc-advisor plugin)
 
-doc-advisor プラグインの ToC 生成で使用する共通関数。
+doc-advisor プラグインのインデックス生成・検索で使用する共通関数。
 標準ライブラリのみ使用。
 """
 
