@@ -16,7 +16,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, write_checksums_yaml, ConfigNotReadyError
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, write_checksums_yaml, ConfigNotReadyError, log
 
 # Global configuration (initialized in init_config())
 CATEGORY = None  # 'rules' or 'specs'
@@ -60,7 +60,7 @@ def init_config(category):
         print(json.dumps({"status": "config_required", "message": str(e)}))
         return False
     except (RuntimeError, FileNotFoundError) as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return False
 
     CONFIG = common['config']
@@ -92,9 +92,9 @@ def main():
     if not init_config(args.category):
         return 1
 
-    print("=" * 50)
-    print(f".toc_checksums.yaml 生成スクリプト（{CATEGORY}）")
-    print("=" * 50)
+    log("=" * 50)
+    log(f".toc_checksums.yaml 生成スクリプト（{CATEGORY}）")
+    log("=" * 50)
 
     # Ensure output directory exists
     CHECKSUMS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -104,7 +104,7 @@ def main():
     root_dir_map = {}  # filepath → (root_dir, root_dir_name)
     for root_dir, root_dir_name in ROOT_DIRS:
         if not root_dir.exists():
-            print(f"警告: {root_dir} が存在しません、スキップします")
+            log(f"警告: {root_dir} が存在しません、スキップします")
             continue
         files = find_md_files(root_dir, EXCLUDE_PATTERNS, TARGET_GLOB)
         for f in files:
@@ -114,10 +114,10 @@ def main():
     md_files.sort()
 
     if not md_files:
-        print(f"エラー: 対象ディレクトリに .md ファイルが見つかりません")
+        log(f"エラー: 対象ディレクトリに .md ファイルが見つかりません")
         return 1
 
-    print(f"対象ファイル: {len(md_files)} 件")
+    log(f"対象ファイル: {len(md_files)} 件")
 
     # ハッシュ計算
     checksums = {}
@@ -132,13 +132,13 @@ def main():
             skipped_count += 1
             continue
         checksums[prefixed_path] = hash_value
-        print(f"  ✓ {prefixed_path}")
+        log(f"  ✓ {prefixed_path}")
 
     if skipped_count > 0:
-        print(f"\n⚠️ {skipped_count}件のファイルをスキップしました")
+        log(f"\n⚠️ {skipped_count}件のファイルをスキップしました")
 
     if not checksums:
-        print("エラー: 有効なファイルがありません")
+        log("エラー: 有効なファイルがありません")
         return 1
 
     # 出力
@@ -146,8 +146,8 @@ def main():
                                 header_comment=f"{CATEGORY}_toc.yaml checksum file"):
         return 1
 
-    print(f"\n✅ 生成完了: {CHECKSUMS_FILE}")
-    print(f"   - ファイル数: {len(checksums)}")
+    log(f"\n✅ 生成完了: {CHECKSUMS_FILE}")
+    log(f"   - ファイル数: {len(checksums)}")
 
     return 0
 
