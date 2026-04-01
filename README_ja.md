@@ -11,6 +11,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | **forge**  | 0.0.26     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
+| **doc-advisor** | 0.1.2 | AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール                                                           |
 
 ## スキル一覧
 
@@ -53,6 +54,17 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 |--------|------|----------|
 | [**build**](docs/readme/README_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` `"build"` |
 | [**test**](docs/readme/README_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` `"test"` |
+
+### doc-advisor
+
+> [詳細ガイド](docs/readme/README_doc-advisor_ja.md) — 使い方、使用例
+
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ルール文書の ToC を検索し、タスクに関連するルール文書を特定する | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | 仕様文書の ToC を検索し、タスクに関連する仕様文書を特定する | `"What specs apply?"` `"仕様確認"` |
+| [**create-rules-toc**](docs/readme/README_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"Rebuild the rules ToC"` |
+| [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 

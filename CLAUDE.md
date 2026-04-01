@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode の3プラグインを格納・配布する。
+Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode / doc-advisor の4プラグインを格納・配布する。
 
 - **forge** (v0.0.27) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
+- **doc-advisor** (v0.1.2) — AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール。文書から AI がメタデータを抽出し、タスクに関連する rules/specs 文書を自動発見する
 
 ## Development
 
