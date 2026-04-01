@@ -21,7 +21,7 @@ import sys
 import argparse
 import hashlib
 
-from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml, ConfigNotReadyError
+from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml, ConfigNotReadyError, log
 
 # Global configuration (initialized in init_config())
 CONFIG = None
@@ -97,7 +97,7 @@ def init_config(category):
         print(json.dumps({"status": "config_required", "message": str(e)}))
         return False
     except (RuntimeError, FileNotFoundError) as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return False
 
     CONFIG = common['config']
@@ -200,7 +200,7 @@ def get_all_md_files():
 
     for root_dir, root_dir_name in ROOT_DIRS:
         if not root_dir.exists():
-            print(f"Warning: {root_dir} does not exist, skipping")
+            log(f"Warning: {root_dir} does not exist, skipping")
             continue
         for filepath in rglob_follow_symlinks(root_dir, TARGET_GLOB):
             if should_exclude(filepath, root_dir, EXCLUDE_PATTERNS):
@@ -251,7 +251,7 @@ def create_pending_yaml(source_file, doc_type):
             f.write(template.format(source_file=source_file, doc_type=doc_type))
         return yaml_path
     except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: File write error: {yaml_path} - {e}")
+        log(f"Warning: File write error: {yaml_path} - {e}")
         return None
 
 
@@ -273,9 +273,9 @@ def save_pending_checksums(all_files, file_root_map):
     pending_checksums_path = TOC_WORK_DIR / ".toc_checksums_pending.yaml"
     if write_checksums_yaml(checksums, pending_checksums_path,
                             header_comment="Phase 1 snapshot - used to replace .toc_checksums.yaml after merge"):
-        print(f"Saved pending checksums: {len(checksums)} files")
+        log(f"Saved pending checksums: {len(checksums)} files")
     else:
-        print(f"Warning: Failed to save pending checksums")
+        log(f"Warning: Failed to save pending checksums")
 
 
 def main():
@@ -288,7 +288,7 @@ def main():
     # --check mode: report staleness without creating files
     if args.check:
         if not TOC_FILE.exists():
-            print(f"WARNING: ToC not found. Run /doc-advisor:create-{CATEGORY}-toc to generate it.")
+            log(f"WARNING: ToC not found. Run /doc-advisor:create-{CATEGORY}-toc to generate it.")
             return 0
         if not CHECKSUMS_FILE.exists():
             return 0
@@ -319,8 +319,8 @@ def main():
                 parts.append(f"{modified_count} modified")
             if deleted_count:
                 parts.append(f"{deleted_count} deleted")
-            print(f"WARNING: ToC may be stale ({', '.join(parts)}).")
-            print(f"Consider running /doc-advisor:create-{CATEGORY}-toc to refresh the index.")
+            log(f"WARNING: ToC may be stale ({', '.join(parts)}).")
+            log(f"Consider running /doc-advisor:create-{CATEGORY}-toc to refresh the index.")
         return 0
 
     full_mode = args.full
@@ -329,12 +329,12 @@ def main():
     # Force full mode if toc file doesn't exist
     if not TOC_FILE.exists():
         full_mode = True
-        print(f"{toc_name} not found, running in full mode")
+        log(f"{toc_name} not found, running in full mode")
 
     # Force full mode if checksums doesn't exist
     if not full_mode and not CHECKSUMS_FILE.exists():
         full_mode = True
-        print(".toc_checksums.yaml not found, running in full mode")
+        log(".toc_checksums.yaml not found, running in full mode")
 
     # Get target files
     all_files, file_root_map = get_all_md_files()
@@ -343,7 +343,7 @@ def main():
         # Full mode: process all files
         target_files = all_files
         deleted_files = []
-        print(f"Full mode: processing {len(target_files)} files")
+        log(f"Full mode: processing {len(target_files)} files")
     else:
         # Incremental mode: changed files only
         old_checksums = load_checksums(CHECKSUMS_FILE)
@@ -362,10 +362,10 @@ def main():
             old_hash = old_checksums.get(source_file)
 
             if old_hash is None:
-                print(f"  [New] {source_file}")
+                log(f"  [New] {source_file}")
                 target_files.append(full_path)
             elif current_hash != old_hash:
-                print(f"  [Modified] {source_file}")
+                log(f"  [Modified] {source_file}")
                 target_files.append(full_path)
 
         # Detect deleted files
@@ -374,21 +374,21 @@ def main():
             if sf not in current_files
         ]
         for sf in deleted_files:
-            print(f"  [Deleted] {sf}")
+            log(f"  [Deleted] {sf}")
 
         if not target_files and not deleted_files:
-            print(f"No changes - {toc_name} is up to date")
+            log(f"No changes - {toc_name} is up to date")
             return 0
 
         if not target_files and deleted_files:
-            print(f"\nDeleted files only: {len(deleted_files)} files")
-            print("Use --delete-only with merge script")
+            log(f"\nDeleted files only: {len(deleted_files)} files")
+            log("Use --delete-only with merge script")
             # Phase 1 スナップショットを保存（delete-only merge 後のチェックサム更新用）
             TOC_WORK_DIR.mkdir(parents=True, exist_ok=True)
             save_pending_checksums(all_files, file_root_map)
             return 0
 
-        print(f"\nIncremental mode: {len(target_files)} changes, {len(deleted_files)} deletions")
+        log(f"\nIncremental mode: {len(target_files)} changes, {len(deleted_files)} deletions")
 
     # Create .toc_work directory
     TOC_WORK_DIR.mkdir(parents=True, exist_ok=True)
@@ -406,7 +406,7 @@ def main():
 
         # Skip empty/stub files (no substantive content)
         if not has_substantive_content(md_file):
-            print(f"  [Skipped] {source_file} (empty or headers only)")
+            log(f"  [Skipped] {source_file} (empty or headers only)")
             skipped_files.append(source_file)
             continue
 
@@ -418,14 +418,14 @@ def main():
         created_files.append(source_file)
 
     if skipped_files:
-        print(f"\nSkipped {len(skipped_files)} empty/stub files")
+        log(f"\nSkipped {len(skipped_files)} empty/stub files")
 
     if failed_count > 0:
-        print(f"\nWarning: {failed_count} files failed to create")
+        log(f"\nWarning: {failed_count} files failed to create")
 
-    print(f"\nCreated {len(created_files)} pending YAMLs:")
+    log(f"\nCreated {len(created_files)} pending YAMLs:")
     for sf in created_files:
-        print(f"  - {sf}")
+        log(f"  - {sf}")
 
     return 0
 

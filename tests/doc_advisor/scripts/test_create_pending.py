@@ -108,7 +108,7 @@ class TestCreatePendingFull(TestCreatePendingBase):
         result = self._run_create_pending('--full')
 
         self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
-        self.assertIn('Created 2 pending YAMLs', result.stdout)
+        self.assertIn('Created 2 pending YAMLs', result.stderr)
 
         # .toc_work ディレクトリが作成されていること
         work_dir = os.path.join(self.toc_dir, '.toc_work')
@@ -127,8 +127,8 @@ class TestCreatePendingFull(TestCreatePendingBase):
         result = self._run_create_pending('--full')
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn('Created 1 pending YAMLs', result.stdout)
-        self.assertIn('Skipped', result.stdout)
+        self.assertIn('Created 1 pending YAMLs', result.stderr)
+        self.assertIn('Skipped', result.stderr)
 
     def test_full_mode_pending_yaml_content(self):
         """生成された pending YAML の内容が正しいこと"""
@@ -160,7 +160,7 @@ class TestCreatePendingCheck(TestCreatePendingBase):
         result = self._run_create_pending('--check')
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn('WARNING: ToC not found', result.stdout)
+        self.assertIn('WARNING: ToC not found', result.stderr)
 
     def test_check_mode_stale_detection(self):
         """変更があった場合に WARNING が出力されること"""
@@ -181,8 +181,8 @@ class TestCreatePendingCheck(TestCreatePendingBase):
         result = self._run_create_pending('--check')
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn('WARNING: ToC may be stale', result.stdout)
-        self.assertIn('1 new', result.stdout)
+        self.assertIn('WARNING: ToC may be stale', result.stderr)
+        self.assertIn('1 new', result.stderr)
 
 
 class TestCreatePendingEmptyDir(TestCreatePendingBase):
@@ -195,7 +195,7 @@ class TestCreatePendingEmptyDir(TestCreatePendingBase):
         result = self._run_create_pending('--full')
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn('Created 0 pending YAMLs', result.stdout)
+        self.assertIn('Created 0 pending YAMLs', result.stderr)
 
     def test_nonexistent_root_dir(self):
         """root_dirs に指定されたディレクトリが存在しない場合 → config_required エラー"""
