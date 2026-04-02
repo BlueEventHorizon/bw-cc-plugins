@@ -9,7 +9,7 @@ description: |
   - Before starting implementation work
 context: fork
 agent: general-purpose
-model: haiku
+model: sonnet
 user-invocable: true
 argument-hint: "[task description]"
 ---
