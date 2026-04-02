@@ -1,6 +1,12 @@
-# code_index 実装計画書
+# Code Index Implementation Plan (DES-007 / REQ-004)
 
-# === トレーサビリティ ===
+metadata:
+  plan_id: code_index
+  design_id: DES-007
+  requirement_id: REQ-004
+  created_date: 2026-04-02
+  status: pending
+
 requirements_traceability:
   - requirement_id: REQ-004
     title: コードインデックス要件（ソースファイルの構造抽出・2段階検索・差分更新・永続化）
@@ -99,6 +105,7 @@ tasks:
     design_id: DES-007
     depends_on:
       - TASK-CI-002
+    # Note: TASK-CI-002 は TASK-CI-001 に依存するため、結果として 3 段階の依存鎖（CI-001 → CI-002 → CI-004）となる
     group_id: null
     build_check: per_task
     description:
@@ -123,10 +130,10 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - "create-code-index/SKILL.md: オーケストレーター（§7.1）"
+      - "plugins/doc-advisor/skills/create-code-index/SKILL.md: オーケストレーター（§7.1）"
       - "フロー: --full 判定 → build_code_index.py --diff → 言語振り分け → subagent 起動 → --mcp-data でインデックス更新"
-      - "拡張子→言語テーブルは create-code-index/SKILL.md 内にインラインで定義。REQ-004 FR-02-2 に基づき各言語 subagent（lang/swift/SKILL.md 等）は対応拡張子を comment で宣言し、オーケストレーターが集約したテーブルを参照して言語振り分けを実行"
-      - "lang/swift/SKILL.md: Swift-Selena MCP 5ツール（initialize_project, analyze_imports, list_symbols, list_protocol_conformances, list_extensions）を統合し共通 JSON を出力（§3.3-3.4）"
+      - "拡張子→言語テーブルは create-code-index/SKILL.md 内にインラインで定義。REQ-004 FR-02-2 に基づき各言語 subagent（plugins/doc-advisor/skills/create-code-index/lang/swift/SKILL.md 等）は対応拡張子を comment で宣言し、オーケストレーターが集約したテーブルを参照して言語振り分けを実行"
+      - "plugins/doc-advisor/skills/create-code-index/lang/swift/SKILL.md: Swift-Selena MCP 5ツール（initialize_project, analyze_imports, list_symbols, list_protocol_conformances, list_extensions）を統合し共通 JSON を出力（§3.3-3.4）"
       - "MARK コメントからセクション抽出"
       - "既存スキルパターン（create-specs-toc）に準拠した frontmatter・AskUserQuestion・エラーハンドリング"
     acceptance_criteria: "以下すべてを満たすこと: (1) docs/rules/skill_authoring_notes.md で定義される frontmatter（name, description, user-invocable）・AskUserQuestion・エラーハンドリングが実装されている、(2) create-code-index/SKILL.md の拡張子→言語テーブルが DES-007 §3.3 と一致、(3) フロー（--full 判定→--diff→言語振り分け→subagent→--mcp-data）が DES-007 §6.1 と一致、(4) subagent 出力 JSON が共通フォーマットスキーマ（imports/exports キー）を満たす"
