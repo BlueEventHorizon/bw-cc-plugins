@@ -33,7 +33,7 @@ tasks:
   - task_id: TASK-CI-001
     title: ImportGraph データ構造 (graph.py + テスト)
     priority: 99
-    status: pending
+    status: completed
     design_id: DES-007
     depends_on: []
     group_id: null
