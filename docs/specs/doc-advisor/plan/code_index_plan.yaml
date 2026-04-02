@@ -80,7 +80,7 @@ tasks:
   - task_id: TASK-CI-003
     title: build_code_index.py CLI (+ テスト)
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-007
     depends_on:
       - TASK-CI-002
@@ -101,7 +101,7 @@ tasks:
   - task_id: TASK-CI-004
     title: search_code.py CLI (+ テスト)
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-007
     depends_on:
       - TASK-CI-002
