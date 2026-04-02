@@ -5,7 +5,7 @@
 | 項目     | 値 |
 |----------|-----|
 | 設計ID   | DES-007 |
-| 関連要件 | REQ-004 |
+| 関連要件 | REQ-004, DES-005 |
 | 作成日   | 2026-04-02 |
 
 ## 1. 概要
@@ -66,7 +66,7 @@ flowchart TB
 |-----------|-------------|------|------|
 | core | `scripts/code_index/core.py` | スキャン・差分検出・インデックス構築 | `toc_utils.py`, `graph.py` |
 | graph | `scripts/code_index/graph.py` | import 依存関係グラフの構築・探索（`ImportGraph` クラス） | なし |
-| build_code_index | `scripts/code_index/build_code_index.py` | CLI エントリポイント（インデックス構築）。`--mcp-data` で subagent が出力した共通 JSON を受け取りインデックスを構築する | core |
+| build_code_index | `scripts/code_index/build_code_index.py` | CLI エントリポイント（インデックス構築）。`--mcp-data` で subagent が出力した共通 JSON を受け取りインデックスを構築する。subagent 出力 JSON のスキーマ検証（必須キー `imports`/`exports` の存在・型チェック）も担当する | core |
 | search_code | `scripts/code_index/search_code.py` | CLI エントリポイント（キーワード検索・影響範囲検索） | core |
 
 #### 言語 subagent（SKILL.md ベース）
@@ -412,6 +412,8 @@ flowchart TD
 
 書き込み順序: インデックス JSON → チェックサム YAML。インデックス書き込み成功後にチェックサムを更新する。中断時はチェックサムが古いまま残るため、次回実行時の差分検出で自動的に再処理される（冪等性保証）。
 
+なお、entries のキーはファイルパス（プロジェクトルート相対）であり、同一ファイルの再処理時は既存エントリを上書きするため、重複エントリは発生しない。これが冪等性の根拠である。
+
 #### 実行結果レポート
 
 `build_code_index.py` の成功時 JSON 出力に統計フィールドを含める:
@@ -476,7 +478,7 @@ flowchart TD
 >
 > **FR-02-4 対応**: 新言語追加は `lang/` ディレクトリに言語 subagent（SKILL.md）を追加し、オーケストレーターの拡張子→言語テーブルに1行追加するのみで完結する。ロジック変更は不要。
 >
-> **FR-09-1 との差異**: REQ-004 FR-09-1 は `build_code_index.py [--full]` を CLI として定義しているが、設計上 `--full` はスキル（オーケストレーター）レベルのオプションであり、`build_code_index.py` 自体は `--mcp-data` / `--diff` / `--check` の3モードで動作する。`--full` の責務をオーケストレーターに移したのは、差分検出→subagent 起動→インデックス更新の連携フロー（§6.1）を実現するための設計判断である。
+> **設計注記**: `build_code_index.py` は `--mcp-data` / `--diff` / `--check` の3モードで動作する。`--full`（全ファイル再構築）はスキル（オーケストレーター）レベルのオプションであり、差分検出→subagent 起動→インデックス更新の連携フロー（§6.1）を実現するための設計判断である。REQ-004 FR-09-1 にもこの責務分担を反映済み。
 
 ### 7.2 query-code スキル
 
@@ -507,6 +509,7 @@ flowchart TD
 | Swift-Selena 接続失敗 | MCP ツール呼び出しタイムアウト | エラー終了し再接続を案内 |
 | subagent 内 MCP 呼び出し失敗 | 言語 subagent 内で MCP ツール呼び出し中にエラー発生 | subagent がエラーを報告。オーケストレーターはエラー終了し、再実行を案内 |
 | subagent 出力 JSON のスキーマ不正 | 必須キー（imports/exports）の存在チェック・型チェック | エラー終了し、subagent の出力内容をログ出力 |
+| `build_code_index.py --diff` 実行失敗 | 終了コード非0、または stdout が JSON としてパースできない | エラー終了し、stderr の内容をログ出力して再実行を案内 |
 | ファイル読み取りエラー | `IOError` / `PermissionError` | スキップして stderr に警告 |
 
 ## 9. テスト設計

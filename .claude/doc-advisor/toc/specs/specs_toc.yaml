@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-03-28T12:54:12Z
-  file_count: 23
+  generated_at: 2026-04-02T09:44:37Z
+  file_count: 24
 
 docs:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
@@ -189,6 +189,39 @@ docs:
       - SHA-256
       - doc-advisor
       - orchestrator
+  docs/specs/doc-advisor/design/DES-007_code_index_design.md:
+    doc_type: design
+    title: Code Index Design
+    purpose: Specifies the design of a persistent code index that extracts structural information from source code files using two-stage search (machine learning plus AI inference) to enable high-speed accurate code symbol search across large projects
+    content_details:
+      - Responsibility division (scan, extraction, graph, search, persistence, AI inference)
+      - Module design and integration (core.py, graph.py, build_code_index.py, search_code.py, language subagents)
+      - Language subagent interface with common output format for multi-language support
+      - Swift subagent implementation using Swift-Selena MCP for AST-based metadata extraction
+      - Import graph design with module resolution and N-hop breadth-first traversal algorithm
+      - Stage 1 keyword search scoring by matched keyword count with 30KB output constraint
+      - Affected-range search via import graph dependency analysis with configurable hop distance
+      - Index schema version management for backward compatibility and differential updates
+      - Differential update workflow using SHA-256 file hash change detection to process only modified files
+    applicable_tasks:
+      - Code index building and full reconstruction
+      - Code metadata extraction from Swift source files
+      - Code symbol search by name and documentation
+      - Import dependency analysis and module resolution
+      - Impact analysis using import graph traversal
+      - MCP server integration and tool orchestration
+      - Change detection for efficient differential indexing
+    keywords:
+      - code index
+      - code metadata
+      - import graph
+      - search
+      - Swift
+      - MCP
+      - AST
+      - symbol
+      - import dependency
+      - differential update
   docs/specs/forge/design/clean_rules_design.md:
     doc_type: design
     title: clean-rules Skill Design

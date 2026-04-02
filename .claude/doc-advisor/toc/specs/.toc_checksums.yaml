@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-03-28T12:53:34Z
-file_count: 23
+generated_at: 2026-04-02T09:44:02Z
+file_count: 24
 checksums:
   docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
   docs/specs/common/requirement/COMMON-REQ-002_error_handling_policy.md: efb584be874fa55804860ab97e1534c0f0edafd9f4edf596d6b9afa24cb58449
@@ -9,6 +9,7 @@ checksums:
   docs/specs/doc-advisor/design/DES-003_document_identifier.md: 392ac77041e109c5d6f84243ea019a398cae4a6d2aa3d37190e4e350dc8dcc2a
   docs/specs/doc-advisor/design/DES-004_document_model.md: cac4758107519baaae5ebc8614ee4e016c6d509e00d42b7330a1beb5e8298d7e
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: 23cf674a93e111f5c0c82965245cdb09ec1ec86e2385a62c6ff18b7b37a6ebc4
+  docs/specs/doc-advisor/design/DES-007_code_index_design.md: 39b9bf1d4d90a5a78b509eb3e337255aa84a45568ccc5cfd97d3c376a79398a5
   docs/specs/forge/design/clean_rules_design.md: 65bf0801b8de5f18956e28ebe92208edee52b182b7ac6f1bc721210afe91025a
   docs/specs/forge/design/context_gathering_design.md: 6bec75b3fa85a9f3b38a2d185144708af56376ff045a72a704b70597fc0069f4
   docs/specs/forge/design/create_design_workflow_design.md: 1b867615bb4daa9755908de136fe6271c30491f005e64c768028d52c67217f43

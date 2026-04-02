@@ -132,7 +132,7 @@ SwiftSyntax を用いた AST ベースの Swift コード解析 MCP サーバー
 
 | ID      | 要件 |
 |---------|------|
-| FR-09-1 | インデックス生成: `python3 build_code_index.py [--full]` |
+| FR-09-1 | インデックス生成: `python3 build_code_index.py --diff | --mcp-data | --check`。`--full`（全ファイル再構築）はスキルレベルのオプションであり、`build_code_index.py` の CLI には含めない |
 | FR-09-2 | キーワード検索: `python3 search_code.py --query "検索文字列"` |
 | FR-09-3 | 影響範囲検索: `python3 search_code.py --affected-by <ファイルパス> [--hops N]` |
 | FR-09-4 | 鮮度チェック: `python3 build_code_index.py --check` |
