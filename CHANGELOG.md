@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-04-03
+
+### doc-advisor
+
+- **feat**: コードインデックス機能を実装（REQ-004 / DES-007）
+  - `graph.py`: ImportGraph クラス（BFS N-hop 依存探索、逆引きインデックス）
+  - `core.py`: ファイルスキャン・差分検出・インデックス構築・アトミック書き込み
+  - `build_code_index.py`: CLI ラッパー（--diff / --mcp-data / --check）
+  - `search_code.py`: CLI 検索（--query キーワード検索 / --affected-by 影響範囲検索）
+  - `create-code-index` スキル: オーケストレーター + Swift subagent（Swift-Selena MCP 統合）
+  - `query-code` スキル: 2段階検索（キーワード絞り込み + AI 評価）
+- **feat**: テスト 91 件追加（graph 22件 + core 28件 + build CLI 21件 + search CLI 20件）
+
 ## [0.0.27] - 2026-03-29
 
 ### forge
