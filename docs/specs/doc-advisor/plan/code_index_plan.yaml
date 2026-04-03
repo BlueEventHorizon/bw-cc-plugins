@@ -5,13 +5,13 @@ metadata:
   design_id: DES-007
   requirement_id: REQ-004
   created_date: 2026-04-02
-  status: pending
+  status: completed
 
 requirements_traceability:
   - requirement_id: REQ-004
     title: コードインデックス要件（ソースファイルの構造抽出・2段階検索・差分更新・永続化）
     design_id: DES-007
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: DES-007
@@ -123,7 +123,7 @@ tasks:
   - task_id: TASK-CI-005
     title: create-code-index オーケストレーター + Swift subagent SKILL.md
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-007
     depends_on:
       - TASK-CI-003
@@ -146,7 +146,7 @@ tasks:
   - task_id: TASK-CI-006
     title: query-code SKILL.md
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-007
     depends_on:
       - TASK-CI-004
