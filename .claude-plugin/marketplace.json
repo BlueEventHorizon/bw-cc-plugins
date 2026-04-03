@@ -38,7 +38,7 @@
     {
       "name": "doc-advisor",
       "description": "AI-searchable document index (ToC) generator for Claude Code",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "author": {
         "name": "moons"
       },
