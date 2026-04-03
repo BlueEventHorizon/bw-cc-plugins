@@ -23,7 +23,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from toc_utils import get_project_root, load_config, resolve_config_path, validate_path_within_base, expand_root_dir_globs, load_existing_toc
+from toc_utils import get_project_root, load_config, resolve_config_path, validate_path_within_base, expand_root_dir_globs, load_existing_toc, log
 
 # Global configuration (initialized in init_config())
 CATEGORY = None  # 'rules' or 'specs'
@@ -51,10 +51,10 @@ def init_config(category):
         CONFIG = load_config(category)
         PROJECT_ROOT = get_project_root()
     except RuntimeError as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return False
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return False
 
     root_dirs_config = CONFIG.get('root_dirs', [f'{category}/'])
@@ -82,11 +82,11 @@ def validate_toc(toc_path):
     - ファイル参照検査
     - 重複パス検査
     """
-    print("=" * 50)
-    print(f"{CATEGORY}_toc.yaml 検査")
-    print("=" * 50)
-    print(f"対象: {toc_path}")
-    print()
+    log("=" * 50)
+    log(f"{CATEGORY}_toc.yaml 検査")
+    log("=" * 50)
+    log(f"対象: {toc_path}")
+    log()
 
     errors = []
 
@@ -94,12 +94,12 @@ def validate_toc(toc_path):
     try:
         with open(toc_path, 'r', encoding='utf-8') as f:
             f.read()
-        print("✓ ファイル読み込み検査: OK（ファイル読み込み成功）")
+        log("✓ ファイル読み込み検査: OK（ファイル読み込み成功）")
     except Exception as e:
         errors.append(f"ファイル読み込み検査: ファイル読み込み失敗 - {e}")
-        print(f"\n❌ 検査失敗: {len(errors)} 件のエラー")
+        log(f"\n❌ 検査失敗: {len(errors)} 件のエラー")
         for err in errors:
-            print(f"  - {err}")
+            log(f"  - {err}")
         return False
 
     # パース
@@ -108,13 +108,13 @@ def validate_toc(toc_path):
     # docs キー存在検査（壊れた YAML で空 dict が返された場合のガード）
     if not docs or not isinstance(docs, dict):
         errors.append("docs セクションが見つからないか、エントリが空です")
-        print("✗ docs セクション検査: docs が見つからないか空です")
-        print(f"\n❌ 検査失敗: {len(errors)} 件のエラー")
+        log("✗ docs セクション検査: docs が見つからないか空です")
+        log(f"\n❌ 検査失敗: {len(errors)} 件のエラー")
         for err in errors:
-            print(f"  - {err}")
+            log(f"  - {err}")
         return False
     else:
-        print("✓ docs セクション検査: OK")
+        log("✓ docs セクション検査: OK")
 
     # 2. 必須フィールド検査
     # title/purpose/doc_type が必須（文字列）
@@ -136,9 +136,9 @@ def validate_toc(toc_path):
                 )
 
     if not field_errors:
-        print(f"✓ 必須フィールド検査: OK（{len(docs)}件のエントリ）")
+        log(f"✓ 必須フィールド検査: OK（{len(docs)}件のエントリ）")
     else:
-        print(f"✗ 必須フィールド検査: {len(field_errors)}件のエラー")
+        log(f"✗ 必須フィールド検査: {len(field_errors)}件のエラー")
         errors.extend(field_errors)
 
     # 3. ファイル参照検査
@@ -154,21 +154,21 @@ def validate_toc(toc_path):
             file_errors.append(f"ファイル不在: '{file_path}' が存在しません")
 
     if not file_errors:
-        print(f"✓ ファイル参照検査: OK（全ファイルが存在）")
+        log(f"✓ ファイル参照検査: OK（全ファイルが存在）")
     else:
-        print(f"✗ ファイル参照検査: {len(file_errors)}件のエラー")
+        log(f"✗ ファイル参照検査: {len(file_errors)}件のエラー")
         errors.extend(file_errors)
 
     # 結果サマリー
-    print()
+    log()
     if errors:
-        print(f"❌ 検査失敗: {len(errors)} 件のエラー")
-        print("-" * 40)
+        log(f"❌ 検査失敗: {len(errors)} 件のエラー")
+        log("-" * 40)
         for err in errors:
-            print(f"  - {err}")
+            log(f"  - {err}")
         return False
     else:
-        print(f"✅ 検査完了: 全チェックOK")
+        log(f"✅ 検査完了: 全チェックOK")
         return True
 
 
@@ -198,11 +198,11 @@ def main():
         try:
             toc_path = validate_path_within_base(toc_path, PROJECT_ROOT)
         except ValueError:
-            print(f"エラー: 不正なパス: {toc_path}")
+            log(f"エラー: 不正なパス: {toc_path}")
             return 1
 
     if not toc_path.exists():
-        print(f"エラー: ファイルが存在しません: {toc_path}")
+        log(f"エラー: ファイルが存在しません: {toc_path}")
         return 1
 
     success = validate_toc(toc_path)

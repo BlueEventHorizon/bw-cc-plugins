@@ -57,12 +57,17 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 
 ### doc-advisor
 
+> [Detailed Guide](docs/readme/README_doc-advisor.md) — Usage and examples
+
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**query-rules**](#) | Search the pre-analyzed rules document index (ToC) to identify relevant rule documents | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](#) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
-| [**create-rules-toc**](#) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
-| [**create-specs-toc**](#) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+| [**query-rules**](docs/readme/README_doc-advisor.md#query-rules) | Search the pre-analyzed rules document index (ToC) to identify relevant rule documents | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](docs/readme/README_doc-advisor.md#query-specs) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
+| [**create-rules-toc**](docs/readme/README_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
+| [**create-specs-toc**](docs/readme/README_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+| [**create-code-index**](docs/readme/README_doc-advisor.md#create-code-index) | Create/update code index by extracting source file structure (imports/exports/sections) | `/doc-advisor:create-code-index` |
+| [**query-code**](docs/readme/README_doc-advisor.md#query-code) | Search code index with 2-stage search (keyword filtering + AI evaluation) | `/doc-advisor:query-code` |
+| *swift* | Extract Swift source structure via Swift-Selena MCP. AI-only, called by create-code-index | — |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 

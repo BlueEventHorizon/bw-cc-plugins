@@ -36,6 +36,7 @@ from toc_utils import (
     rglob_follow_symlinks,
     normalize_path,
     ConfigNotReadyError,
+    log,
 )
 
 # Global configuration (initialized in init_config())
@@ -87,7 +88,7 @@ def init_config(category):
         print(json.dumps({"status": "config_required", "message": str(e)}))
         return False
     except (RuntimeError, FileNotFoundError) as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return False
 
     CONFIG = common['config']
@@ -180,17 +181,17 @@ def write_yaml_output(docs, output_path):
             raise
         return True
     except (IOError, OSError, PermissionError) as e:
-        print(f"Error: Failed to write file: {output_path} - {e}")
+        log(f"Error: Failed to write file: {output_path} - {e}")
         return False
 
 
 def delete_only_mode():
     """Delete-only mode: Apply deletions without .toc_work/"""
     toc_name = f"{CATEGORY}_toc.yaml"
-    print("Mode: delete-only")
+    log("Mode: delete-only")
 
     if not OUTPUT_FILE.exists():
-        print(f"Error: {toc_name} does not exist")
+        log(f"Error: {toc_name} does not exist")
         return False
 
     # Create backup
@@ -208,24 +209,24 @@ def delete_only_mode():
     for del_file in deleted_files:
         if del_file in docs:
             del docs[del_file]
-            print(f"  Deleted: {del_file}")
+            log(f"  Deleted: {del_file}")
             deleted_count += 1
 
     # Also delete stale entries in ToC but not in current valid files
     stale_entries = [p for p in docs if p not in existing_files]
     for stale in stale_entries:
         del docs[stale]
-        print(f"  Deleted (stale): {stale}")
+        log(f"  Deleted (stale): {stale}")
         deleted_count += 1
 
     if deleted_count == 0:
-        print("No entries to delete")
+        log("No entries to delete")
         return True
 
     if not write_yaml_output(docs, OUTPUT_FILE):
         return False
 
-    print(f"\nDeletion complete: {deleted_count} entries deleted")
+    log(f"\nDeletion complete: {deleted_count} entries deleted")
     return True
 
 
@@ -233,11 +234,11 @@ def merge_toc_files(mode='full'):
     yaml_files = sorted(f for f in TOC_WORK_DIR.glob("*.yaml") if not f.name.startswith('.'))
 
     if not yaml_files:
-        print(f"Error: No YAML files found in {TOC_WORK_DIR}")
+        log(f"Error: No YAML files found in {TOC_WORK_DIR}")
         return False
 
-    print(f"Target files: {len(yaml_files)}")
-    print(f"Mode: {mode}")
+    log(f"Target files: {len(yaml_files)}")
+    log(f"Mode: {mode}")
 
     # Create backup (common to all modes)
     backup_existing_file(OUTPUT_FILE)
@@ -254,7 +255,7 @@ def merge_toc_files(mode='full'):
         for del_file in deleted_files:
             if del_file in docs:
                 del docs[del_file]
-                print(f"  Deleted: {del_file}")
+                log(f"  Deleted: {del_file}")
     else:
         docs = {}
 
@@ -286,7 +287,7 @@ def merge_toc_files(mode='full'):
                 entry['doc_type'] = doc_type
 
             docs[source_file] = entry
-            print(f"  {source_file}")
+            log(f"  {source_file}")
 
         except Exception as e:
             errors.append(f"{filename}: {e}")
@@ -296,22 +297,22 @@ def merge_toc_files(mode='full'):
         stale_entries = [p for p in docs if p not in existing_files]
         for stale in stale_entries:
             del docs[stale]
-            print(f"  Deleted (stale): {stale}")
+            log(f"  Deleted (stale): {stale}")
 
     if errors:
-        print("\nWarnings:")
+        log("\nWarnings:")
         for err in errors:
-            print(f"  - {err}")
+            log(f"  - {err}")
 
     if not docs:
-        print("Error: No valid entries")
+        log("Error: No valid entries")
         return False
 
     if not write_yaml_output(docs, OUTPUT_FILE):
         return False
 
-    print(f"\nGeneration complete: {OUTPUT_FILE}")
-    print(f"   - File count: {len(docs)}")
+    log(f"\nGeneration complete: {OUTPUT_FILE}")
+    log(f"   - File count: {len(docs)}")
 
     return True
 
@@ -325,9 +326,9 @@ def main():
 
     toc_name = f"{CATEGORY}_toc.yaml"
 
-    print("=" * 50)
-    print(f"{toc_name} Merge Script")
-    print("=" * 50)
+    log("=" * 50)
+    log(f"{toc_name} Merge Script")
+    log("=" * 50)
 
     if args.delete_only:
         success = delete_only_mode()

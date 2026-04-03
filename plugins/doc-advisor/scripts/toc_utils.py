@@ -24,6 +24,12 @@ class ConfigNotReadyError(RuntimeError):
     pass
 
 
+def log(*args, **kwargs):
+    """stderr にログメッセージを出力する。stdout の JSON 出力を汚染しない。"""
+    kwargs.setdefault('file', sys.stderr)
+    print(*args, **kwargs)
+
+
 # System files that are always excluded (not configurable)
 SYSTEM_EXCLUDE_PATTERNS_RULES = ['.toc_work', 'rules_toc.yaml', '.toc_checksums.yaml']
 SYSTEM_EXCLUDE_PATTERNS_SPECS = ['.toc_work', 'specs_toc.yaml', '.toc_checksums.yaml']
@@ -78,10 +84,9 @@ def get_project_root():
         if p.is_dir():
             return p
         else:
-            print(
+            log(
                 f"Warning: CLAUDE_PROJECT_DIR='{project_dir}' does not exist or is not a directory. "
-                "Falling back to CWD.",
-                file=sys.stderr
+                "Falling back to CWD."
             )
 
     return Path.cwd().resolve()
@@ -355,8 +360,8 @@ def apply_migrations(parsed, detected_version):
         for v in targets:
             parsed = MIGRATIONS[v](parsed)
     except Exception as e:
-        print(f"Warning: Migration from v{detected_version} failed: {e}")
-        print("Fallback: Using original data without migration")
+        log(f"Warning: Migration from v{detected_version} failed: {e}")
+        log("Fallback: Using original data without migration")
         return original
 
     return parsed
@@ -816,7 +821,7 @@ def load_existing_toc(toc_path):
         with open(toc_path, 'r', encoding='utf-8') as f:
             content = f.read()
     except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: Failed to read {toc_path}: {e}")
+        log(f"Warning: Failed to read {toc_path}: {e}")
         return {}
 
     docs = {}
@@ -904,7 +909,7 @@ def write_checksums_yaml(checksums, output_path, header_comment="Auto-generated 
             f.write('\n'.join(lines) + '\n')
         return True
     except (IOError, OSError, PermissionError) as e:
-        print(f"Error: Failed to write file: {output_path} - {e}")
+        log(f"Error: Failed to write file: {output_path} - {e}")
         return False
 
 
@@ -926,7 +931,7 @@ def calculate_file_hash(path, chunk_size=65536):
                 sha256.update(chunk)
         return sha256.hexdigest()
     except (IOError, OSError, PermissionError) as e:
-        print(f"Warning: File read error: {path} - {e}")
+        log(f"Warning: File read error: {path} - {e}")
         return None
 
 
@@ -941,7 +946,7 @@ def backup_existing_file(file_path):
     if file_path.exists():
         backup_path = file_path.with_suffix('.yaml.bak')
         shutil.copy(file_path, backup_path)
-        print(f"Backup created: {backup_path}")
+        log(f"Backup created: {backup_path}")
 
 
 def load_checksums(checksums_file):
@@ -987,8 +992,8 @@ def load_checksums(checksums_file):
 
         return checksums
     except (FileNotFoundError, ValueError, KeyError, OSError) as e:
-        print(f"Warning: Checksum file read error: {e}")
-        print("Fallback: Skipping deletion detection")
+        log(f"Warning: Checksum file read error: {e}")
+        log("Fallback: Skipping deletion detection")
         return {}
 
 
@@ -1006,11 +1011,11 @@ def cleanup_work_dir(work_dir):
     if work_dir.exists():
         try:
             shutil.rmtree(work_dir)
-            print(f"Cleanup complete: {work_dir}")
+            log(f"Cleanup complete: {work_dir}")
             return True
         except (OSError, PermissionError) as e:
-            print(f"Warning: Cleanup failed: {work_dir} - {e}")
-            print("   Please delete manually")
+            log(f"Warning: Cleanup failed: {work_dir} - {e}")
+            log("   Please delete manually")
             return False
     return True
 

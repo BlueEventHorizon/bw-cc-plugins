@@ -590,6 +590,7 @@ class TestSkillMonitorServerEndpoints(unittest.TestCase):
 
     def tearDown(self):
         self.server.stop()
+        self.server.server_close()
         self.server_thread.join(timeout=5)
         shutil.rmtree(self.tmpdir)
 
@@ -713,6 +714,7 @@ class TestSSEPush(unittest.TestCase):
 
     def tearDown(self):
         self.server.stop()
+        self.server.server_close()
         self.server_thread.join(timeout=5)
         shutil.rmtree(self.tmpdir)
 
@@ -821,6 +823,7 @@ class TestHeartbeat(unittest.TestCase):
             )
         finally:
             server.stop()
+            server.server_close()
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
 
@@ -866,6 +869,7 @@ class TestHeartbeat(unittest.TestCase):
             server_thread.join(timeout=5)
         finally:
             server.stop()
+            server.server_close()
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
 

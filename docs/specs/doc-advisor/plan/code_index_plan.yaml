@@ -1,0 +1,172 @@
+# Code Index Implementation Plan (DES-007 / REQ-004)
+
+metadata:
+  plan_id: code_index
+  design_id: DES-007
+  requirement_id: REQ-004
+  created_date: 2026-04-02
+  status: completed
+
+requirements_traceability:
+  - requirement_id: REQ-004
+    title: コードインデックス要件（ソースファイルの構造抽出・2段階検索・差分更新・永続化）
+    design_id: DES-007
+    status: completed
+
+design_traceability:
+  - design_id: DES-007
+    title: Code Index Design（コードインデックス設計書）
+    requirement_ids:
+      - REQ-004
+    task_ids:
+      - TASK-CI-001
+      - TASK-CI-002
+      - TASK-CI-003
+      - TASK-CI-004
+      - TASK-CI-005
+      - TASK-CI-006
+
+# === タスク一覧 ===
+tasks:
+  # --- 基盤（依存なし） ---
+
+  - task_id: TASK-CI-001
+    title: ImportGraph データ構造 (graph.py + テスト)
+    priority: 99
+    status: completed
+    design_id: DES-007
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - "ImportGraph クラスを実装する（DES-007 §4.1-4.3）"
+      - "_imports / _module_to_files の2つの辞書で双方向参照を管理"
+      - "build(entries) でインデックスから依存グラフを構築"
+      - "dependents_of / dependencies_of で直接依存を取得"
+      - "affected_files(file, hops) で BFS N-hop 探索を実装"
+      - "モジュール解決: ディレクトリ名マッチング（§4.2）"
+      - "テスト: A→B→C チェーン、外部フレームワーク除外、hops=1/2 の検証"
+    acceptance_criteria: "python3 -m unittest tests/doc_advisor/code_index/test_graph.py が全件パスすること"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+
+  # --- コアモジュール ---
+
+  - task_id: TASK-CI-002
+    title: コアモジュール (core.py + テスト)
+    priority: 90
+    status: completed
+    design_id: DES-007
+    depends_on:
+      - TASK-CI-001
+    group_id: null
+    build_check: per_task
+    description:
+      - "ファイルスキャン: rglob_follow_symlinks() + 除外ディレクトリ（§3.1）"
+      - "言語判定: 拡張子→言語マッピングテーブル（§3.3）"
+      - "差分検出: calculate_file_hash() / load_checksums() で new/modified/deleted を分類（§6.2）"
+      - "インデックス構築: subagent JSON を統合し lines/language を付加（§6.3）"
+      - "アトミック書き込み: tempfile + os.replace（§6.3）。書き込み順序: index → checksums"
+      - "インデックス読み込み・スキーマバージョン検証（§5.4）"
+      - "toc_utils.py の関数を再利用（§3.2）"
+      - "テスト: tmpdir でスキャン・差分検出・インデックス統合を検証"
+    acceptance_criteria: "python3 -m unittest tests/doc_advisor/code_index/test_core.py が全件パスすること"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+      - plugins/doc-advisor/scripts/toc_utils.py
+
+  # --- CLI（並列実行可） ---
+
+  - task_id: TASK-CI-003
+    title: build_code_index.py CLI (+ テスト)
+    priority: 80
+    status: completed
+    design_id: DES-007
+    depends_on:
+      - TASK-CI-002
+    group_id: null
+    build_check: per_task
+    description:
+      - "core.py の薄い CLI ラッパー。3モード: --diff / --mcp-data / --check（§6.4-6.5）"
+      - "--diff: 変更ファイルリストを JSON で出力"
+      - "--mcp-data: subagent JSON のスキーマ検証（imports/exports 必須キー・型チェック）→ インデックス更新"
+      - "--check: インデックスの鮮度を判定（fresh/stale）"
+      - "全モードの出力は JSON（status: ok/error/fresh/stale）"
+      - "テスト: subprocess パターンで各モードを検証。無効な JSON 入力のエラーハンドリングも確認"
+    acceptance_criteria: "python3 -m unittest tests/doc_advisor/code_index/test_build_code_index.py が全件パスすること"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+      - tests/doc_advisor/scripts/test_create_checksums.py
+
+  - task_id: TASK-CI-004
+    title: search_code.py CLI (+ テスト)
+    priority: 80
+    status: completed
+    design_id: DES-007
+    depends_on:
+      - TASK-CI-002
+    # Note: TASK-CI-002 は TASK-CI-001 に依存するため、結果として 3 段階の依存鎖（CI-001 → CI-002 → CI-004）となる
+    group_id: null
+    build_check: per_task
+    description:
+      - "2モード: --query（キーワード検索）/ --affected-by（影響範囲検索）（§5.1-5.3）"
+      - "--query: パス・export名・doc・import名をマッチ。スコア順で上位100件。30KB 出力制限"
+      - "--affected-by: validate_path_within_base() → ImportGraph.affected_files() で N-hop BFS"
+      - "出力は JSON。インデックス未作成時はエラーメッセージ"
+      - "テスト: 事前構築した code_index.json フィクスチャで検索精度・パフォーマンス（<100ms）を検証"
+    acceptance_criteria: "python3 -m unittest tests/doc_advisor/code_index/test_search_code.py が全件パスすること"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+
+  # --- スキル（並列実行可） ---
+
+  - task_id: TASK-CI-005
+    title: create-code-index オーケストレーター + Swift subagent SKILL.md
+    priority: 70
+    status: completed
+    design_id: DES-007
+    depends_on:
+      - TASK-CI-003
+    group_id: null
+    build_check: per_task
+    description:
+      - "plugins/doc-advisor/skills/create-code-index/SKILL.md: オーケストレーター（§7.1）"
+      - "フロー: --full 判定 → build_code_index.py --diff → 言語振り分け → subagent 起動 → --mcp-data でインデックス更新"
+      - "拡張子→言語テーブルは create-code-index/SKILL.md 内にインラインで定義。REQ-004 FR-02-2 に基づき各言語 subagent（plugins/doc-advisor/skills/create-code-index/lang/swift/SKILL.md 等）は対応拡張子を comment で宣言し、オーケストレーターが集約したテーブルを参照して言語振り分けを実行"
+      - "plugins/doc-advisor/skills/create-code-index/lang/swift/SKILL.md: Swift-Selena MCP 5ツール（initialize_project, analyze_imports, list_symbols, list_protocol_conformances, list_extensions）を統合し共通 JSON を出力（§3.3-3.4）"
+      - "MARK コメントからセクション抽出"
+      - "既存スキルパターン（create-specs-toc）に準拠した frontmatter・AskUserQuestion・エラーハンドリング"
+    acceptance_criteria: "以下すべてを満たすこと: (1) docs/rules/skill_authoring_notes.md で定義される frontmatter（name, description, user-invocable）・AskUserQuestion・エラーハンドリングが実装されている、(2) create-code-index/SKILL.md の拡張子→言語テーブルが DES-007 §3.3 と一致、(3) フロー（--full 判定→--diff→言語振り分け→subagent→--mcp-data）が DES-007 §6.1 と一致、(4) subagent 出力 JSON が共通フォーマットスキーマ（imports/exports キー）を満たす"
+    required_reading:
+      - docs/specs/doc-advisor/requirements/REQ-004_code_index.md
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+      - plugins/doc-advisor/skills/create-specs-toc/SKILL.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-CI-006
+    title: query-code SKILL.md
+    priority: 60
+    status: completed
+    design_id: DES-007
+    depends_on:
+      - TASK-CI-004
+    group_id: null
+    build_check: per_task
+    description:
+      - "query-code/SKILL.md: 2段階検索スキル（§7.2）"
+      - "Stage 1: build_code_index.py --check → search_code.py --query で候補絞り込み"
+      - "Stage 2: AI が候補メタデータを読み評価・選別"
+      - "出力: query-rules/query-specs と同じ形式（Required source files: + パスリスト）"
+      - "鮮度警告（非ブロッキング）、30KB メタデータ制限"
+      - "docs/rules/skill_authoring_notes.md に準拠した frontmatter・AskUserQuestion・エラーハンドリング"
+    acceptance_criteria: "以下すべてを満たすこと: (1) docs/rules/skill_authoring_notes.md で定義される frontmatter・AskUserQuestion・エラーハンドリングが実装されている、(2) 2段階検索フロー（Stage 1: --check→--query でキーワード絞り込み、Stage 2: AI が候補メタデータを読む）が DES-007 §7.2 と一致、(3) 出力フォーマット（Required source files: + パス形式）が query-rules スキルと統一されている、(4) 鮮度警告と 30KB 制限が実装されている"
+    required_reading:
+      - docs/specs/doc-advisor/requirements/REQ-004_code_index.md
+      - docs/specs/doc-advisor/design/DES-007_code_index_design.md
+      - plugins/doc-advisor/skills/query-rules/SKILL.md
+      - docs/rules/skill_authoring_notes.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-04-02"
+    content: "初版作成（6タスク: 基盤1 + コア1 + CLI2 + スキル2）"

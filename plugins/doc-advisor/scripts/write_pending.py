@@ -33,7 +33,7 @@ import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
-from toc_utils import yaml_escape, load_entry_file, get_project_root, validate_path_within_base
+from toc_utils import yaml_escape, load_entry_file, get_project_root, validate_path_within_base, log
 
 
 # Validation settings
@@ -86,8 +86,8 @@ def parse_separated(value, separator='|||'):
 def validate_array(name, items, min_count):
     """Validate array element count"""
     if len(items) < min_count:
-        print(f"Error: {name} requires at least {min_count} items (got {len(items)})")
-        print(f"  Provided: {', '.join(items)}")
+        log(f"Error: {name} requires at least {min_count} items (got {len(items)})")
+        log(f"  Provided: {', '.join(items)}")
         return False
     return True
 
@@ -132,7 +132,7 @@ def write_error_yaml(filepath, meta, error_message, category):
             f.write('\n'.join(lines))
         return True
     except (IOError, OSError, PermissionError) as e:
-        print(f"Error: Failed to write file: {filepath} - {e}")
+        log(f"Error: Failed to write file: {filepath} - {e}")
         return False
 
 
@@ -179,7 +179,7 @@ def write_entry_yaml(filepath, meta, entry, category):
             f.write('\n'.join(lines))
         return True
     except (IOError, OSError, PermissionError) as e:
-        print(f"Error: Failed to write file: {filepath} - {e}")
+        log(f"Error: Failed to write file: {filepath} - {e}")
         return False
 
 
@@ -194,48 +194,48 @@ def main():
     try:
         entry_file = validate_path_within_base(entry_file, project_root)
     except ValueError:
-        print(f"Error: Path traversal detected: {args.entry_file}")
+        log(f"Error: Path traversal detected: {args.entry_file}")
         return 1
 
     # File existence check
     if not entry_file.exists():
-        print(f"Error: Entry file not found: {entry_file}")
+        log(f"Error: Entry file not found: {entry_file}")
         return 1
 
     # Load existing file
     try:
         meta, _ = load_entry_file(entry_file)
     except IOError as e:
-        print(f"Error: {e}")
+        log(f"Error: {e}")
         return 1
 
     # _meta section check
     if not meta:
-        print(f"Error: Entry file missing _meta section: {entry_file}")
+        log(f"Error: Entry file missing _meta section: {entry_file}")
         return 1
 
     # source_file check
     if 'source_file' not in meta:
-        print(f"Error: Entry file missing _meta.source_file: {entry_file}")
+        log(f"Error: Entry file missing _meta.source_file: {entry_file}")
         return 1
 
     # Error mode: write error status and exit
     if args.error:
         if not args.error_message:
-            print("Error: --error-message is required with --error")
+            log("Error: --error-message is required with --error")
             return 2
         if not write_error_yaml(entry_file, meta, args.error_message, category):
             return 4
-        print(f"Entry error: {entry_file}")
-        print(f"  source_file: {meta['source_file']}")
-        print(f"  status: pending (error_message set)")
-        print(f"  error_message: {args.error_message}")
+        log(f"Entry error: {entry_file}")
+        log(f"  source_file: {meta['source_file']}")
+        log(f"  status: pending (error_message set)")
+        log(f"  error_message: {args.error_message}")
         return 0
 
     # completed status check
     if meta.get('status') == 'completed' and not args.force:
-        print(f"Error: Entry file already completed: {entry_file}")
-        print("  Use --force to overwrite")
+        log(f"Error: Entry file already completed: {entry_file}")
+        log("  Use --force to overwrite")
         return 1
 
     # Required fields check (normal mode)
@@ -244,7 +244,7 @@ def main():
         if getattr(args, field.replace('-', '_')) is None:
             missing.append(f'--{field.replace("_", "-")}')
     if missing:
-        print(f"Error: Required arguments in normal mode: {', '.join(missing)}")
+        log(f"Error: Required arguments in normal mode: {', '.join(missing)}")
         return 2
 
     # Parse arrays
@@ -284,10 +284,10 @@ def main():
         return 4
 
     # Success message
-    print(f"Entry completed: {entry_file}")
-    print(f"  source_file: {updated_meta['source_file']}")
-    print(f"  status: {updated_meta['status']}")
-    print(f"  updated_at: {updated_meta['updated_at']}")
+    log(f"Entry completed: {entry_file}")
+    log(f"  source_file: {updated_meta['source_file']}")
+    log(f"  status: {updated_meta['status']}")
+    log(f"  updated_at: {updated_meta['updated_at']}")
 
     return 0
 
