@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.28] - 2026-04-04
+
+### forge
+
+- **feat**: `merge_evals.py` を新規追加。evaluator 結果（eval_*.json）の plan.yaml 一括マージをスクリプト化し、インライン処理を廃止
+  - perspective → グローバル ID の動的マッピング（ハードコード排除）
+  - `not_auto_fixable` リストを出力に含め、対話モードへの切り替え判断を支援
+- **feat**: テスト 15 件追加（merge_evals: ユニット 11件 + E2E 4件）
+
 ## [0.1.3] - 2026-04-03
 
 ### doc-advisor
