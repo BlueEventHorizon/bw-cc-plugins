@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.29] - 2026-04-05
+
+### forge
+
+- **feat**: `/forge:start-uxui-design` スキルを新規追加。要件定義書の ASCII アートからデザイントークン（THEME-xxx）と UI コンポーネント視覚仕様（CMP-xxx）を創造する。Apple HIG / Don Norman / Dieter Rams / Nielsen / Gestalt の知識ベースに基づく UX 評価付き（iOS / macOS 対応）
+- **feat**: デザイン哲学の統合フレームワーク（3 層モデル: 認知の制約 / 構造の道具 / 美の方向性）を `design_philosophy.md` に構築
+- **feat**: `/forge:review uxui` レビュー種別を追加。HIG 準拠性・ユーザビリティ・ビジュアルシステムの 3 観点でデザイン文書をレビュー
+- **feat**: `update-forge-toc` ローカルスキルを作成。doc-advisor パイプラインを借用して forge 内蔵 `rules_toc.yaml` を自動生成
+- **refactor**: ワークフロー・レビュー基準の知識ベース参照を `/forge:query-forge-rules` 経由に統一（ハードコードパス廃止、フォールバック付き）
+
 ## [0.0.28] - 2026-04-04
 
 ### forge

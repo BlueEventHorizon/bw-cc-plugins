@@ -8,7 +8,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.0.28     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **forge**  | 0.0.29     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
 | **doc-advisor** | 0.1.3 | AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール                                                           |
@@ -27,6 +27,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | [**start-design**](docs/readme/README_forge_ja.md#start-design) | 要件定義書から設計書を作成 | `"設計書作成"` |
 | [**start-plan**](docs/readme/README_forge_ja.md#start-plan) | 設計書からタスクを抽出し計画書を作成・更新 | `"計画書作成"` |
 | [**start-implement**](docs/readme/README_forge_ja.md#start-implement) | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行 | `"実装開始"` |
+| [**start-uxui-design**](docs/readme/README_forge_ja.md#start-uxui-design) | 要件定義書からデザイントークン・コンポーネント視覚仕様を UX 評価付きで創造（iOS/macOS） | `"UXUIデザイン"` |
 | [**setup-version-config**](docs/readme/README_forge_ja.md#setup-version-config) | プロジェクトをスキャンし `.version-config.yaml` を生成・更新 | `"version config を作成"` |
 | [**update-version**](docs/readme/README_forge_ja.md#update-version) | バージョンを一括更新。patch/minor/major/直接指定対応 | `"バージョン更新"` |
 | [**clean-rules**](docs/readme/README_forge_ja.md#clean-rules) | rules/ を開発文書の分類学に基づいて分析・再構築 | `"rules を整理"` |
