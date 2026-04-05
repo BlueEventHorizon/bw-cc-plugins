@@ -1,818 +1,878 @@
 # plugins/forge/toc/rules_toc.yaml
 # forge 内蔵ドキュメントの検索インデックス（query-forge-rules 用）
-# /create-rules-toc で生成後、forge docs エントリのみ抽出してコピー
+# /update-forge-toc で自動生成 — 手動編集しない
 
 metadata:
-  name: Forge Built-in Document Search Index
-  generated_at: 2026-03-26T09:29:04Z
-  file_count: 27
+  name: Development Document Search Index
+  generated_at: 2026-04-05T10:25:00Z
+  file_count: 30
 
 docs:
   plugins/forge/docs/context_gathering_spec.md:
     doc_type: rule
     title: Context Gathering Specification
-    purpose: Specification for context collection agent that orchestrator skills pass to gather task-related information and write results to session directory refs folder
+    purpose: "Defines self-contained work instructions for the forge context-gathering agent: orchestrator parameters, per-task procedures, session refs YAML outputs, and fallbacks."
     content_details:
-      - Input parameters (session_dir, spec, tasks, feature, skill_type, target_description)
-      - Issue/Task confirmation (branch pattern matching, issue retrieval, task extraction)
-      - Specification document search (query-specs skill, doc_structure fallback, direct exploration)
-      - Implementation rule search (query-rules skill, doc_structure fallback, glob search)
-      - Similar PR search (gh CLI integration, keyword matching, file change analysis)
-      - Existing code investigation (source code search, test discovery, implementation pattern reference)
-      - Error handling (zero results handling, fallback activation, CLI availability checks)
+      - Orchestrator passes session_dir, spec path, tasks list, and optional feature, skill_type, target_description as search hints
+      - "Issue/Task confirmation: infer issue number from branch patterns (feature/N-xxx, fix/GH-N), gh issue view, read plan task when referenced"
+      - "Spec discovery: query-specs skill, else resolve_doc_structure.py --type specs, else glob docs/specs/** and specs/**; write specs.yaml with source, query, documents"
+      - "Rules discovery: query-rules, else resolve_doc_structure.py --type rules, else glob rules paths; write rules.yaml"
+      - "Similar PR search: gh which/auth; gh pr list merged --search, pr view and diff --name-only; write prs.yaml or skip entire task if gh unavailable"
+      - "Code exploration: Grep/Glob from keywords; classify files (same directory, importers, similar structure, tests); write code.yaml with optional line ranges"
+      - "Zero results and errors: empty documents in YAML; fallbacks when DocAdvisor skills unavailable; skip PR task without gh; report unexpected errors to orchestrator and skip task"
     applicable_tasks:
-      - Context gathering orchestration
-      - Information collection for task planning
-      - Keyword extraction from issue/task descriptions
-      - Documentation discovery in multilingual projects
-      - Code pattern reference gathering
+      - Forge orchestrator context-gathering agent implementation
+      - start-design and start-implement gathering pipeline maintenance
+      - Session refs YAML output schema updates
     keywords:
       - context gathering
-      - specification
-      - orchestrator
-      - agent directive
-      - session directory
-      - specification search
-      - rule discovery
-      - code investigation
+      - session_dir
+      - refs
+      - query-specs
+      - query-rules
+      - resolve_doc_structure
+      - gh pr
+      - specs.yaml
+      - rules.yaml
+      - code.yaml
   plugins/forge/docs/design_format.md:
     doc_type: rule
     title: Design Document Default Format
-    purpose: Defines the generic design document format used when project-specific design_format.md is unavailable, including naming conventions and template structure for design documents
+    purpose: Defines the generic design document template and filename pattern used when no project-specific design_format.md exists; references design_principles_spec and spec_design_boundary for creation rules and requirement-design scope.
     content_details:
-      - File naming convention with design ID prefix
-      - Overview section describing problem and approach
-      - Architecture overview section with component diagrams and layer structure
-      - Module design with list and class diagrams
-      - Use case design with sequence diagrams and flow descriptions
-      - Existing component dependencies
-      - Test design covering unit and integration tests
-      - Revision history tracking
+      - Filename pattern {DesignID}_{targetName}_design.md (e.g. DES-001_user_list_design.md)
+      - Points to design_principles_spec.md for creation principles and spec_design_boundary_spec.md for requirement vs design boundary
+      - "Metadata table template: design ID, related requirement IDs, creation date"
+      - Overview and architecture sections covering components, layers, and responsibilities
+      - Module design with module table and Mermaid class diagram
+      - Use case design with use case table, Mermaid sequence diagrams, preconditions, normal flow, and error flow
+      - Table listing reused existing components with file paths and usage
+      - Test design distinguishing unit-test targets from integration-test targets
+      - Revision history table
     applicable_tasks:
-      - Design document creation
-      - Design document review
-      - Design template standardization
-      - Architecture design documentation
+      - Creating design documents when project-specific design_format.md is absent
+      - Reviewing design document completeness against the default template
+      - Aligning forge start-design or plugin design docs with standard sections
     keywords:
-      - design format
-      - template
-      - naming convention
-      - architecture
-      - module design
-      - use case
-      - sequence diagram
+      - design_format
+      - design_principles_spec
+      - spec_design_boundary_spec
+      - Mermaid
+      - sequenceDiagram
+      - DES-
       - class diagram
+      - module design
   plugins/forge/docs/design_principles_spec.md:
     doc_type: rule
-    title: Design Principles Specification
-    purpose: Provides universal design document creation principles covering mandatory structure, content guidelines, and validation criteria when project-specific rules are not available
+    title: Design Document Authoring Principles
+    purpose: "Defines generic principles for authoring design documents when project rules are absent: How vs What boundary, mandatory diagrams and tables, inclusion/exclusion lists, split criteria, file naming, Mermaid rules, and mandatory revision history."
     content_details:
-      - Design scope definition (How vs What boundary)
-      - Mandatory structural elements (module list, component diagram, use case list, sequence diagram)
-      - Content guidelines (what to include and avoid)
-      - Decision criteria for design completeness
-      - Hierarchical structure guidelines for large designs
-      - File naming convention (ID_name_design.md)
-      - Mermaid diagram usage guidelines
-      - Change history section requirement
-      - Common failure patterns and mitigation strategies
+      - Design documents cover How; What belongs in requirements; boundary details reference spec_design_boundary_spec.md
+      - "Mandatory elements: module list table with responsibilities and dependencies, component or class diagram (Mermaid preferred), use case list table, sequence diagram (Mermaid preferred)"
+      - Must include implementation approach with class and method names, tech stack with adoption rationale, flows and algorithms, data flow between components, normal and abnormal test case design, concrete paths to existing components
+      - Must not include full source code except small 5–10 line examples, frameworks without rationale, or features not in requirements
+      - Implementability criterion with SearchService.search() and 300ms debounce examples
+      - "Hierarchical split for large specs: top-level architecture plus child module or screen docs; consider split above 500 lines; child metadata references parent design ID; top-level lists child documents"
+      - File naming pattern {design_id}_{subject}_design.md, snake_case, English, _design.md suffix (e.g. DES-001_user_list_design.md)
+      - Mermaid for flowchart, class, and sequence diagrams; lowercase end forbidden in flowcharts—use End or END
+      - "Mandatory final section titled ## 改定履歴 with YYYY-MM-DD dates at document end"
+      - "Anti-patterns: shallow asset search, ignoring constants and design tokens, skipping similar implementations, undocumented tech choices, large code dumps"
     applicable_tasks:
-      - Design document creation
-      - Design document review
-      - Design completeness validation
-      - Design structure verification
-      - Design pattern review
+      - Design document authoring
+      - Design document structure and completeness review
+      - Splitting large design specs into hierarchical documents
+      - Mermaid diagram authoring for design documentation
+      - Distinguishing design (How) from requirements (What)
     keywords:
-      - design principles
       - design document
+      - How vs What
       - Mermaid
-      - architecture
-      - component diagram
-      - sequence diagram
+      - sequenceDiagram
+      - classDiagram
       - module list
-      - naming convention
-      - change history
+      - spec_design_boundary_spec
+      - design ID
+      - revision history
+      - SearchService
   plugins/forge/docs/doc_structure_format.md:
     doc_type: rule
-    title: .doc_structure.yaml Format Specification
-    purpose: Defines the schema and configuration format for .doc_structure.yaml, which declares document placement and types for both forge and doc-advisor tools
+    title: doc_structure.yaml Format Specification
+    purpose: Defines the project-level .doc_structure.yaml schema for rules/specs (root_dirs, doc_types_map, patterns), doc-advisor config compatibility, forge usage, and version management.
     content_details:
-      - Config file placement at project root
-      - Unified schema for rules and specs categories
-      - root_dirs and doc_types_map configuration
-      - glob pattern support for dynamic directory matching
-      - exclude patterns for directory filtering
-      - Recommended doc_type names for specs and rules categories
-      - Version management via comment-based versioning
-      - Configuration examples for flat and feature-based structures
-      - Consumer API guidance for script integration
+      - Placement at project root; consumed by forge, Doc Advisor ToC, and resolve_doc_structure.py JSON output
+      - "rules/specs: root_dirs (relative paths, single-level glob *)"
+      - "doc_types_map: path or glob key to doc_type; recommended names for specs (requirement, design, plan, api, reference) and rules (rule, workflow, guide)"
+      - patterns.target_glob default **/*.md; patterns.exclude matches directory name substrings at any path depth
+      - doc_structure_version comment format X.Y (major vs minor semantics)
+      - Flat vs feature-based examples with glob root_dirs and optional exclude (archived, _template)
+      - "Consumer: resolve_doc_structure.py CLI (--type all, --features, --doc-type) and Python load_doc_structure/resolve_files"
+      - "Doc Advisor: treat file as config.yaml without import_doc_structure conversion"
     applicable_tasks:
-      - Setting up document structure in new projects
-      - Configuring forge document detection
-      - Updating doc-advisor configuration
-      - Resolving document paths programmatically
-      - Implementing feature-based project structures
+      - Creating or editing .doc_structure.yaml
+      - Scaffolding documentation directory layout for forge
+      - Configuring Doc Advisor ToC scan roots and doc_type mapping
+      - Calling resolve_doc_structure from skills or scripts
+      - Reviewing doc structure or glob/exclude behavior
     keywords:
       - doc_structure.yaml
-      - document configuration
-      - glob patterns
-      - doc_type mapping
-      - project root
-      - configuration format
+      - root_dirs
+      - doc_types_map
+      - patterns
+      - target_glob
+      - exclude
+      - resolve_doc_structure
+      - doc_type
+      - doc_structure_version
+      - config.yaml
   plugins/forge/docs/plan_format.md:
     doc_type: rule
-    title: Default Plan Format Specification
-    purpose: Defines the default plan document YAML schema, field definitions, and task lifecycle for projects without project-specific plan_format.md
+    title: Default Plan Document Format
+    purpose: Defines the generic fallback YAML schema and field rules for feature plan files when no project plan_format.md exists, including traceability and task lifecycle for start-implement.
     content_details:
-      - YAML schema structure with requirements traceability, design traceability, and task list
-      - Task field definitions (task_id, priority, status, dependencies, groups, build_check)
-      - Acceptance criteria and required reading specification
-      - Task status lifecycle (pending → in_progress → completed)
-      - Priority guidelines (high 70-99, medium 40-69, low 1-39)
-      - Revision history tracking
-      - FNC-005 format selection rationale (YAML vs Markdown)
+      - File name pattern {feature}_plan.yaml with sections requirements_traceability, design_traceability, tasks, and revision_history
+      - "requirements_traceability: requirement_id, title, design_id, status pending or completed"
+      - "design_traceability: design_id, title, requirement_ids, task_ids arrays"
+      - "tasks: task_id, priority 1-99 with bands 70-99 high 40-69 medium 1-39 low, status pending in_progress completed, design_id, depends_on, group_id, build_check per_task skip on_group_complete, description bullets, acceptance_criteria, required_reading paths"
+      - "revision_history: date YYYY-MM-DD and content strings"
+      - "FNC-005 rationale: YAML for plans for structured IDs priorities dependencies and machine updates; requirements and design documents remain Markdown for mermaid and freeform content"
+      - Task status transition pending to in_progress to completed and start-implement update semantics
     applicable_tasks:
-      - Plan document creation and generation
-      - Task structure definition review
-      - start-implement script integration and parsing
-      - Task dependency and group validation
-      - Plan document traceability verification
+      - Authoring implementation plan YAML files
+      - start-implement task selection dependency checks and completion updates
+      - Validating or migrating project plan documents against the default schema
     keywords:
-      - plan format
-      - YAML schema
-      - task management
-      - task status
-      - priority
-      - task dependencies
-      - traceability
+      - plan_format
+      - start-implement
+      - requirements_traceability
+      - design_traceability
+      - depends_on
       - build_check
-      - acceptance criteria
+      - FNC-005
+      - feature_plan.yaml
+      - group_id
+      - revision_history
   plugins/forge/docs/plan_principles_spec.md:
     doc_type: rule
-    title: Plan Creation Principles
-    purpose: Defines plan document structure, task granularity rules, and guidelines for creating executable task lists from requirements and design specifications
+    title: Plan Document Authoring Principles
+    purpose: Defines generic YAML plan structure, task granularity, required-reading paths, task grouping with build_check, dependencies, and parallel-task rules when no project-specific plan rules exist.
     content_details:
-      - Plan document YAML structure with four sections (requirements_traceability, design_traceability, tasks, revision_history)
-      - Task granularity criteria (agent execution unit, 5-10 items per task, build success on completion, 1-3 related files)
-      - Implementation detail restriction (reference design document sections without duplicating details)
-      - Required reading file specification format (relative project paths only, no globs or ambiguous names)
-      - Task grouping for multi-task dependencies with group_id and build_check fields
-      - Dependency management (no circular dependencies, parallel execution identification)
+      - Plan YAML must contain only requirements_traceability, design_traceability, tasks, revision_history; no other top-level keys; file name pattern {feature}_plan.yaml
+      - "Task scope: one agent run, 5–10 action items, green build/tests at completion, one file or 2–3 closely related files"
+      - Task text references design sections by location only—no copied property names, types, or method signatures to avoid design/plan duplication
+      - "Required-reading column: project-root-relative paths; no globs or ID-only refs; use '-' when none"
+      - "Task groups: use group_id and build_check (per_task, skip, on_group_complete) when intermediate steps break the build; aim for at most ~10 tasks per group"
+      - "Dependencies: order tasks by dependency, avoid cycles; dependency maps stay outside the plan body as working notes"
+      - "Parallel tasks: depends_on: [] and group_id: null identify parallelizable work"
     applicable_tasks:
-      - Plan document creation
-      - Task breakdown and definition
-      - Dependency relationship review
-      - Task priority determination
-      - Build failure recovery planning
+      - YAML implementation plan authoring
+      - Plan structure and task-granularity review
+      - Task grouping for phased builds
+      - Preparing plans for start-implement workflows
     keywords:
-      - plan
-      - task granularity
-      - traceability
-      - dependencies
-      - task grouping
+      - requirements_traceability
+      - design_traceability
+      - revision_history
+      - group_id
       - build_check
-      - YAML structure
+      - depends_on
+      - required reading
+      - task granularity
+      - feature_plan.yaml
+      - parallel execution
   plugins/forge/docs/requirement_format.md:
     doc_type: rule
-    title: Requirement Definition Document Default Format
-    purpose: Default format specification for requirement definition documents when project-specific format is not available
+    title: Default Requirement Specification Format
+    purpose: Defines the fallback markdown template for requirement documents when no project-specific spec_format.md exists.
     content_details:
-      - Overview section with purpose and target users
-      - Preconditions for feature availability
-      - Display requirements list
-      - Operation requirements with input and output constraints
-      - Error cases with conditions and error messages
-      - Undetermined items tracking with IDs and deadlines
-      - Change history tracking
+      - Title line pattern with requirement ID and feature name
+      - Overview section for purpose and target users in one to three sentences
+      - Prerequisites bullet list for conditions under which the feature is available
+      - "Requirement list: display items, operations with input constraints and output or navigation, error-case table"
+      - Open items (TBD) table with ID, content, and deadline columns
+      - Change history table with date, author, and change description
     applicable_tasks:
-      - Requirement document creation
-      - Requirement specification definition
-      - Feature requirement specification
-      - Requirement template setup
+      - Authoring requirement specifications when the project has no custom spec format
+      - start-requirements document scaffolding
+      - Reviewing requirement document section completeness
+      - Validating structure against the default template
     keywords:
-      - requirement definition
-      - format template
-      - display requirement
-      - operation requirement
-      - error case
-      - precondition
-      - undetermined item
+      - requirement specification
+      - spec_format
+      - TBD
+      - prerequisites
+      - error cases
+      - display requirements
+      - operation requirements
+      - markdown template
   plugins/forge/docs/session_format.md:
     doc_type: rule
     title: Session Directory Specification
-    purpose: Defines the session directory structure, lifecycle, and file schemas used by forge orchestrator skills for inter-phase data passing via files
+    purpose: "Defines the common temporary working-directory contract for forge orchestrator skills: path layout, session.yaml metadata, refs outputs, lifecycle, session_manager CLI, and review or start-implement skill-specific files."
     content_details:
-      - Session concept and design principles
-      - Directory structure and common layout
-      - session.yaml metadata schema
-      - Session lifecycle and resumption policy
-      - session_manager.py CLI commands
-      - refs/ context collection schema
-      - "review-specific files: refs.yaml, review.md, plan.yaml"
-      - start-implement executor result files
-      - Session YAML operation scripts
-      - inter-phase file communication patterns
+      - .claude/.temp/{skill_name}-{random6hex}/ under project root; .gitignore includes .claude/.temp/
+      - "Common layout: session.yaml; refs/ with specs.yaml, rules.yaml, code.yaml; skill extras (review: refs.yaml, review.md, plan.yaml; start-implement: exec_{task_id}.json)"
+      - "session.yaml shared fields skill, started_at, last_updated, status, resume_policy; per-skill fields (review: review_type, engine, auto_count, current_cycle; design/plan/requirements: feature, mode, output_dir; implement: task_id)"
+      - "Lifecycle: session_manager find then resume_policy branches; init creates dirs; normal completion rm -rf session_dir; interrupt leaves dir for rediscovery"
+      - session_manager.py init, find, cleanup with JSON; init maps CLI keys to session.yaml (hyphens to underscores); default resume-policy review resume, others none
+      - "refs/{category}.yaml schema: source, query, documents with path, reason, optional lines; parallel writers use separate files"
+      - "Review flat refs.yaml: target_files, reference_docs, perspectives (name regex ^[a-z0-9_-]+$), related_code; not the refs/ directory"
+      - review.md severity sections; plan.yaml items with recommendation, auto_fixable, status values pending through needs_review
+      - "start-implement exec_{task_id}.json: SUCCESS or FAILURE, files_modified, summary, error"
+      - "scripts/session: write_refs.py perspective validation, update_plan.py batch, read_session.py"
     applicable_tasks:
-      - Implementing orchestrator skill session management
-      - Designing inter-agent data passing architecture
-      - Setting up session resumption and recovery logic
-      - Creating YAML file schemas for skill data
-      - Understanding skill-to-skill communication patterns
-      - Extending session formats for new skills
+      - Implementing or changing forge orchestrator session directories
+      - Modifying session_manager.py or session helper scripts
+      - Extending review session contracts (refs.yaml, plan.yaml, review.md)
+      - Implementing start-implement executor result files
     keywords:
-      - session directory
-      - orchestrator
-      - file-based communication
-      - session_manager.py
+      - session_manager
+      - session.yaml
+      - .claude/.temp
       - refs.yaml
       - plan.yaml
-      - session lifecycle
-      - phase data passing
-      - resume policy
-      - executor result
+      - resume_policy
+      - write_refs
+      - update_plan
+      - orchestrator
+      - start-implement
   plugins/forge/docs/spec_design_boundary_spec.md:
     doc_type: rule
     title: Requirements and Design Document Boundary Guide
-    purpose: Clarifies the boundary between requirements (What) and design (How), providing decision criteria and guidelines for documentation placement
+    purpose: Clarifies the boundary between requirements (What, user-facing, technology-neutral) and design (How, developer-facing, implementation-specific), with criteria and examples for placement decisions.
     content_details:
-      - Basic principles for requirements vs design
-      - Decision criteria and flowchart for content placement
-      - Category-specific guidelines (data, state, processing, business rules, testing)
-      - Good and bad documentation examples
-      - Gray zone handling (data model types, diagrams)
-      - Summary and best practices
+      - "Primary placement test: content suitable for a user manual goes to requirements; otherwise refine with further checks"
+      - "Supplementary checks: stable under implementation changes, tech-specific terms, answers to how, class or method names"
+      - Mermaid flowchart from user-manual question through tech-specific and stability branches to requirements vs design
+      - Category matrices for data, state, processing, business rules, and tests marking requirements vs design columns
+      - Good and bad examples for data flow, state management, and business rules including anti-patterns with API and class names in requirements
+      - "Gray zone: primitive types like String or Int acceptable at conceptual requirements level; detailed type design belongs in design"
+      - "Gray zone: user-facing navigation and use-case style diagrams in requirements; sequence, class, and internal data-flow diagrams in design"
+      - "Closing guidance: requirements as user manual, design as implementation guide, human review when still ambiguous"
     applicable_tasks:
-      - Requirements document creation
-      - Design document creation
-      - Documentation review and validation
-      - Content placement decisions
-      - Documentation structure planning
+      - Authoring or restructuring requirements versus design documents
+      - Reviewing specifications for What versus How boundary violations
+      - Resolving ambiguous content placement during requirements or design work
     keywords:
-      - requirements
-      - design
-      - boundary
-      - what vs how
-      - documentation
+      - requirements specification
+      - design specification
+      - What How boundary
+      - user manual criterion
+      - technology-neutral
+      - ViewModel
       - data flow
-      - state management
-      - business rules
-      - content placement
-      - decision criteria
+      - ViewState
+      - mermaid flowchart
   plugins/forge/docs/spec_format.md:
     doc_type: rule
     title: ID Classification Catalog
-    purpose: Provides a reference catalog of specification format IDs (Feature, requirements, design, task, priority) for use when project-specific spec_format.md is not available
+    purpose: Fallback reference when no project-specific spec_format.md exists; defines Feature as development unit, ID prefix catalogs for requirements/design/tasks, priority bands, and naming patterns for forge-aligned specs.
     content_details:
-      - Feature definition and usage patterns
-      - Requirement ID catalog (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG)
-      - Design ID catalog (DES)
-      - Task ID catalog (TASK)
-      - Priority ranges (70-99 high, 40-69 medium, 1-39 low)
-      - File naming conventions for requirements, design, and plan documents
+      - Feature groups spec fragments; forge skills (start-requirements, start-design, start-plan, start-implement) select one Feature or prompt when multiple or undefined
+      - "Per-feature layout under specs/{feature}: requirements, design, plan (actual paths from .doc_structure.yaml)"
+      - Requirement ID prefixes APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG with target scopes in table
+      - Design prefix DES-xxx; task prefix TASK-xxx with optional layer-specific prefixes per architecture
+      - Priority bands 70-99 high/core, 40-69 medium, 1-39 low/auxiliary
+      - "File naming: {REQ-ID}_{name}_spec.md, {DES-ID}_{name}_design.md, {feature}_plan.yaml"
     applicable_tasks:
-      - Specification format definition
-      - ID scheme setup
-      - Document structure planning
-      - Project specification initialization
+      - Creating requirements and design documents with consistent IDs
+      - Configuring forge Feature scope for start-requirements, start-design, start-plan, or start-implement
+      - Establishing spec ID and naming conventions for new projects
+      - Reviewing spec document structure against .doc_structure.yaml
     keywords:
-      - spec format
-      - ID classification
+      - spec_format
       - Feature
-      - requirement
-      - design
-      - task
+      - APP-
+      - SCR-
+      - DES-
+      - TASK-
+      - requirement ID
+      - plan.yaml
+      - forge
       - priority
-      - naming convention
   plugins/forge/docs/task_execution_spec.md:
     doc_type: rule
-    title: Task Execution Guide (for Executor Agent)
-    purpose: Provides self-contained work instructions for the task-executor agent that orchestrate task implementation within the start-implement workflow, defining a single-task execution cycle
+    title: Task Execution Guide (Executor Agent)
+    purpose: "Defines self-contained workflow for the task-executor agent under start-implement: one task per run, mandatory full reading of orchestrator-supplied documents, implementation and verification per spec, and structured SUCCESS or FAILURE reporting."
     content_details:
-      - Single task execution per run, no multi-task handling
-      - Mandatory principles and prohibited actions
-      - "Four-step workflow: task reception, preparation, implementation, validation, and completion"
-      - Task information reception including task ID, name, priority, implementation content, required documents, and validation requirements
-      - Pre-implementation preparation with full document reading and existing code confirmation
-      - Implementation with file creation, structure building, and error handling
-      - Validation with build confirmation and test execution
-      - Completion reporting format with SUCCESS or FAILURE status
-      - Troubleshooting for unmet dependencies and validation failures
-      - Re-attempt limit of one retry for build and test failures
+      - "Single-task-per-run rule; forbidden: chaining tasks, editing plan YAML, launching subagents, or invoking skills and slash commands"
+      - "Orchestrator-supplied payload: task ID, title, priority, implementation checklist, required-reading list, implementation instructions, verification requirements (build/test directives)"
+      - "Five-step workflow: receive task, prepare (read documents in priority order and survey code with Grep/Glob/Read), implement, verify, report and exit without starting another task"
+      - "Mandatory reading priority: design document, requirements, rules, then reference code; full-document read, not skimming"
+      - "Implementation: execute checklist items; TDD when specified; report FAILURE if critical specification is absent from requirements because the executor cannot escalate to humans"
+      - "Verification: apply only orchestrator-specified build/test rules; on failure analyze, fix, and retry once (two attempts maximum); otherwise report FAILURE"
+      - "Report format: SUCCESS or FAILURE with task ID, implemented items, changed files, verification outcomes, and notes"
     applicable_tasks:
-      - Feature implementation with task execution
-      - Task execution planning and orchestration
-      - Implementation requirement verification
-      - Build validation and test execution
-      - Code review and completion reporting
+      - Implementing a single task from an implementation plan via start-implement
+      - Authoring or updating task-executor agent instructions
+      - Auditing executor versus orchestrator responsibilities for forge automation
     keywords:
-      - executor
-      - task execution
-      - implementation workflow
-      - validation
-      - build confirmation
-      - testing
-      - reporting
-      - single-task execution
-      - agent instructions
-      - orchestration
+      - task_execution_spec
+      - task-executor
+      - start-implement
+      - verification requirements
+      - FAILURE
+      - required documents
+      - Grep
+      - plan yaml
   plugins/forge/docs/version_migration_spec.md:
     doc_type: rule
     title: Version Migration Implementation Specification
-    purpose: Defines patterns and principles for implementing staged version migration for data formats, including pipeline principles, migration function conventions, error handling, and version detection strategies
+    purpose: "Defines implementation rules for staged versioned-data migration aligned with COMMON-REQ-001: chained pipeline, migration registry and apply loop, function contracts, error handling, version detection, new-version steps, and mandatory tests."
     content_details:
-      - Pipeline principle for sequential migration through intermediate versions
-      - Migration function conventions (single input/output, idempotency, no side effects, non-destructive)
-      - Error handling strategy for migration failures and version detection
-      - Core migration logic with registry pattern (CURRENT_VERSION and MIGRATIONS dictionary)
-      - Migration function examples for data transformation and text content
-      - Version detection mechanisms (YAML comments, YAML fields, JSON fields)
-      - New version addition procedure following Open-Closed principle
-      - Test requirements for version migration validation
+      - "Chained pipeline: each migration consumes the previous step output; skipping versions runs intermediate steps (e.g. v1 to v3 via v2)"
+      - "Migration contract: fn(data)->data, idempotent, no I/O or side effects, mutate only on copied data"
+      - "Error policy: return original data on failure; skip when detected_version >= CURRENT_VERSION; version detection failure treats data as v1"
+      - MIGRATIONS registry keyed by target version; apply ascending keys where detected < v <= CURRENT_VERSION
+      - Text migrations as fn(str)->str when YAML/JSON comments must be preserved
+      - Self-describing version via YAML comment, YAML field, or JSON field; detect_version example defaults to oldest version
+      - "Adding a version: implement migrate_N_to_N+1, register, bump CURRENT_VERSION without changing older migrators (open-closed)"
+      - "Mandatory tests: single-hop, multi-hop, idempotency, rollback on error, future-version skip, detection-failure-as-v1"
     applicable_tasks:
-      - Version migration implementation for data format changes
-      - .doc_structure.yaml version management
-      - Migration function testing and validation
-      - Data schema upgrade implementation
-      - Version detection and compatibility handling
+      - Implementing versioned on-disk or in-memory format migration
+      - Adding a new schema version step to an existing migration chain
+      - Reviewing migration pipeline and rollback behavior
+      - Writing migration unit tests per mandatory matrix
     keywords:
-      - version migration
+      - apply_migrations
+      - MIGRATIONS
+      - CURRENT_VERSION
+      - detect_version
+      - idempotent migration
       - staged migration
-      - pipeline pattern
-      - idempotency
-      - data transformation
-      - MIGRATIONS registry
-      - version detection
-      - error handling
-      - rollback
+      - COMMON-REQ-001
+      - migrate_doc_structure
+      - non-destructive copy
+      - Open-Closed
+  plugins/forge/skills/clean-rules/docs/taxonomy.md:
+    doc_type: rule
+    title: Development Document Taxonomy
+    purpose: "Defines classification dimensions for clean-rules: six content types (Constraint through Reference), disambiguation priority, authority sources, scope, forge vs project responsibilities, and reconstruction principles."
+    content_details:
+      - "Six content types with roles: Constraint (MUST/MUST NOT, violations as bugs), Convention (SHOULD, team-changeable), Format (artifact templates), Process (step workflows), Decision (ADR-style rationale), Reference (catalogs and glossaries)"
+      - "Section-type disambiguation priority: [MANDATORY] to Constraint; template structure to Format; procedures to Process; rationale to Decision; lists or catalogs to Reference; otherwise Convention"
+      - "Authority sources: Tool-provided (forge built-in docs), Project-defined (team agreements), External standard (RFC, ISO, language specifications)"
+      - "Scope: Universal (common to all forge-using projects) vs Project-specific (project name, domain, or proprietary technology)"
+      - Forge vs project responsibility matrix by content type (what forge supplies vs what the project must define, e.g. review perspectives vs project security rules)
+      - "Reconstruction principles: one file one concern by splitting mixed content types; expose forge knowledge in rules/ without tracking comments; preserve project-specific text when overlapping forge sections"
+    applicable_tasks:
+      - clean-rules skill execution and rule consolidation
+      - Classifying and splitting rule documents by content type
+      - Resolving duplicates using forge vs project ownership
+      - Restructuring rules/ for single-concern files
+    keywords:
+      - taxonomy
+      - clean-rules
+      - Constraint
+      - Convention
+      - Format
+      - Process
+      - Decision
+      - Reference
+      - Tool-provided
+      - Universal
   plugins/forge/skills/review/docs/review_criteria_code.md:
     doc_type: rule
-    title: Code Review Perspectives
-    purpose: Defines default code review perspectives and criteria for detecting logic errors, security vulnerabilities, and maintainability issues when DocAdvisor is not available
+    title: Code Review Criteria (Code)
+    purpose: Defines plugin-default code review perspectives (logic, resilience, maintainability) with severity tiers and false-positive guidance; DocAdvisor can add project rules as extra perspectives.
     content_details:
-      - "Logic errors: condition branch mistakes, loop termination errors, operator misuse"
-      - "Edge cases and boundary value handling: null, empty arrays, division by zero, index access protection"
-      - "Data loss risks: unprotected updates, insufficient WHERE conditions, transaction safety"
-      - "Security vulnerabilities: injection attacks, authentication gaps, hardcoded credentials, unsanitized input"
-      - "Error handling and resilience: missing error processing, resource leaks, unset timeouts, insufficient logging"
-      - "Maintainability issues: code duplication, readability problems, testability constraints, performance inefficiencies"
-      - "Testing requirements: test coverage for branching logic, mock-injectable dependencies"
+      - "Logic perspective: logic bugs vs intent, data-loss risk without backup or transactions, mismatches with design docs (interfaces, flows, retries), unhandled null/empty/bounds/zero-division"
+      - "Logic quality: unsafe casts and forced unwraps, races on shared state, swallowed errors; green-tier suggestions for assertions, edge-case tests, explicit types"
+      - "Resilience fatal: injection and hardcoded secrets, missing authz on protected endpoints, resource leaks on exception paths without close or defer"
+      - "Resilience quality: weak handling for I/O and APIs, insufficient input validation on external data, sparse error context in logs, missing client and DB timeouts; defensive validation, structured logging, retries"
+      - "Maintainability fatal: constructors that instantiate concrete dependencies blocking mocks and tests"
+      - "Maintainability quality: naming and style drift vs conventions, duplicated logic in three or more places, deep nesting and magic numbers, N+1 queries and per-iteration resource churn, missing unit tests for branching logic"
+      - "False-positive rules: trust ORM or parameterized queries for SQL injection checks; tone down performance on small or rare workloads; do not attack naming when conventions are unspecified; confirm tests elsewhere before missing-test claims"
     applicable_tasks:
-      - Code review for new implementations
-      - Security vulnerability detection
-      - Design specification compliance verification
-      - Test coverage evaluation
-      - Performance analysis
+      - Forge /forge:review code execution
+      - Reviewer agent perspective setup for code reviews
+      - Default criteria when no project-specific review rules exist
     keywords:
-      - code review
-      - logic errors
-      - security
+      - review_criteria_code
+      - logic
       - resilience
       - maintainability
-      - testing
-      - DI
-      - error handling
+      - perspective
+      - injection
+      - race condition
+      - dependency injection
+      - N+1 query
+      - DocAdvisor
   plugins/forge/skills/review/docs/review_criteria_design.md:
     doc_type: rule
-    title: Design Review Perspectives
-    purpose: Defines default review perspectives for design document reviews, covering alignment with requirements, architectural structure, and system resilience across multiple severity levels
+    title: Design Document Review Criteria
+    purpose: Defines default forge review perspectives for design documents when project-specific rules are absent; DocAdvisor may add perspectives.
     content_details:
-      - "Alignment perspective: requirements alignment, data flow consistency, external interface compatibility"
-      - "Architecture perspective: architectural principle compliance, circular dependencies, component responsibility separation"
-      - "Resilience perspective: security, error handling, observability and data integrity"
-      - Critical, warning, and improvement suggestion severity levels for each criterion
-      - False positive guidance for contextual interpretation
+      - "Requirement-to-design alignment: missing requirement IDs, contradictory behavior (e.g. polling vs real-time) unless alternatives are explained in-doc"
+      - "Data flow gaps: output/input type or format mismatches between components, missing transformations"
+      - "External interface mismatches: API, protocol, or payload vs integration targets"
+      - "Architecture violations: layer rule breaks in layered/Clean Architecture, circular A→B→C→A dependencies"
+      - "Component cohesion: unrelated domains in one component vs intentional facade"
+      - "Security: unencrypted sensitive paths, unintended auth bypass unless explicitly public"
+      - "SPOF: single critical node without redundancy or failover when availability matters"
+      - "Abnormal flows: missing retries, timeouts, fallbacks; weak transaction/concurrency boundaries"
+      - "Observability: insufficient logging, metrics, or tracing for incident diagnosis"
+      - "Improvements: ADRs, requirement-to-design traceability, documenting rejected alternatives"
     applicable_tasks:
-      - Design document review
-      - Architecture quality assessment
-      - Design specification validation
-      - System design verification
+      - Design document review (forge design type)
+      - Requirements-to-design consistency verification
+      - Architecture and dependency review
+      - Security and resilience design review
+      - Reviewer/evaluator perspective setup for design reviews
     keywords:
-      - design review
-      - architecture
-      - resilience
-      - alignment
-      - component dependency
-      - error handling
-      - security
+      - requirement traceability
+      - data flow
+      - Clean Architecture
+      - circular dependency
+      - SPOF
       - observability
+      - resilience
+      - external interface
+      - alignment
+      - ADR
   plugins/forge/skills/review/docs/review_criteria_generic.md:
     doc_type: rule
-    title: Generic Document Review Perspectives
-    purpose: Defines default review perspectives for plugin when project-specific perspectives are unavailable
+    title: Generic Document Review Criteria
+    purpose: Defines forge default generic-document review criteria when project-specific rules are absent; single-agent batch application without Perspective sections; DocAdvisor may append project perspectives when available.
     content_details:
-      - Fatal issues category
-      - Factual errors and inconsistencies
-      - Reference validity
-      - Missing essential information
-      - Quality issues category
-      - Logical consistency and flow
-      - Term consistency
-      - Content duplication
-      - Green suggestions category
-      - Clarity improvements and restructuring
+      - "Fatal: verifiable factual errors (specs, versions, APIs, dates); stale-but-once-correct info treated as needs update not false fact"
+      - "Fatal: contradictory statements within the same document"
+      - "Fatal: broken links, missing paths, non-runnable commands; explicit TODO/future paths allowed"
+      - "Fatal: missing information required for the document stated purpose"
+      - "Quality: weak logical flow (section order, undefined jargon, abrupt conclusions)"
+      - "Quality: mixed terms for one concept; first-use definition then shorthand counts as consistent"
+      - "Quality: duplicated content increasing maintenance within or across related docs"
+      - "Quality: verbosity and off-purpose bulk content"
+      - "Improvement suggestions: clarity, structure, examples, diagrams"
     applicable_tasks:
-      - Document review
-      - Review perspective application
-      - Code review
-      - Requirement validation
-      - Design document review
+      - forge generic-type document review
+      - forge review skill criteria maintenance
+      - Documentation QA when project rules index is unavailable
     keywords:
-      - review
-      - perspective
-      - generic
-      - quality
+      - review_criteria_generic
       - factual error
-      - contradiction
-      - reference
-      - consistency
+      - broken reference
+      - logical contradiction
+      - terminology consistency
+      - redundancy
+      - forge review
+      - DocAdvisor
+      - generic review
   plugins/forge/skills/review/docs/review_criteria_plan.md:
     doc_type: rule
-    title: Plan Document Review Criteria
-    purpose: Defines default review perspectives for plan documents in the forge plugin, including alignment with requirements/design and feasibility assessment
+    title: Plan Document Review Perspectives
+    purpose: Defines plugin-default forge review criteria for plan documents (alignment and feasibility perspectives) when project-specific rules are absent; DocAdvisor may add project perspectives.
     content_details:
-      - Requirements and design alignment detection
-      - Essential task coverage verification
-      - Task dependency relationship validation
-      - Task granularity uniformity assessment
-      - Bottleneck and critical path identification
-      - Risk mitigation sufficiency evaluation
-      - Acceptance criteria clarity verification
-      - Priority appropriateness assessment
+      - "Alignment: detect contradiction with requirements/design, missing tasks for mandatory features, and dependency order vs stated depends-on conflicts"
+      - Implicit dependencies; incomplete requirement-ID coverage without exclusion rationale; missing test or verification tasks for major implementation work
+      - "Feasibility: tasks infeasible under known technical constraints; tasks with missing or empty acceptance criteria"
+      - Uneven task granularity; identified risks without mitigation; unidentified bottleneck impact on critical path; priority misaligned with business value or risk
+      - Acceptance criteria too subjective or unmeasurable for objective verification
+      - "Improvement: explicit traceability to requirement IDs and design elements; dependency visualization; milestone checkpoints"
+      - "Improvement: split oversized tasks; add buffer for high-risk work; rewrite acceptance criteria with measurable outcomes"
+      - Default perspectives when no project-specific review rules exist; false-positive note for post-design plan drift
+      - "Severity tiers: fatal issues, quality issues, and improvement suggestions"
     applicable_tasks:
       - Plan document review
-      - Task dependency validation
-      - Acceptance criteria verification
-      - Risk assessment for plan execution
+      - forge review with plan type
+      - Implementation planning quality check
+      - Task dependency and ordering validation
+      - Pre-execution plan gate review
     keywords:
-      - plan
-      - review criteria
+      - plan review
       - alignment
       - feasibility
-      - task dependencies
       - acceptance criteria
-      - risk management
+      - task dependency
+      - traceability
+      - requirement coverage
+      - risk mitigation
+      - critical path
+      - DocAdvisor
   plugins/forge/skills/review/docs/review_criteria_requirement.md:
     doc_type: rule
-    title: Requirement Definition Review Perspectives
-    purpose: Defines review perspectives for requirement definition documents, including completeness, consistency, and verifiability checks
+    title: Requirement Document Review Criteria
+    purpose: Defines plugin-default review perspectives (completeness, consistency, verifiability) for requirement documents when project rules are absent; DocAdvisor may add project-specific perspectives.
     content_details:
-      - Completeness perspective with mandatory requirement coverage, non-functional requirement assessment, and exception handling checks
-      - Consistency perspective checking requirement conflicts, business goal alignment, and terminology consistency
-      - Verifiability perspective ensuring acceptance criteria clarity, technical constraint compliance, and priority definition
-      - "Three severity levels for findings: critical, quality issues, and improvement suggestions"
-      - False positive warnings provided for each perspective
+      - Mandatory requirement coverage vs user stories and business goals; critical NFR categories missing entirely; exception and abnormal flows undefined
+      - NFRs lacking quantified targets and measurement; undefined limits and concurrency; thin backup, monitoring, logging, and migration requirements
+      - Conflicting requirements on the same feature or data; requirements misaligned with business goals or untraceable via traceability matrix
+      - Inconsistent terminology for the same concept; weak cross-requirement references; priority ordering inconsistent with dependencies
+      - Acceptance criteria too subjective to pass or fail objectively; requirements contradicting platform, API, or license constraints
+      - Vague phrasing in core requirements; unclear in-scope vs out-of-scope; missing priorities or all equal priority
+      - Severity tiers with criteria, examples, and false-positive notes for indirect coverage and conditional branches
+      - "Green-tier suggestions: glossaries, traceability matrices, diagrams, explicit assumptions, and test scenario outlines"
     applicable_tasks:
-      - Requirement definition review
-      - Review perspective configuration for projects
-      - Acceptance criteria validation and verification
-      - Non-functional requirement assessment
+      - /forge:review requirement-type document review
+      - Requirement specification completeness and gap analysis
+      - Requirement consistency, terminology, and traceability review
+      - Acceptance criteria clarity and verifiability review
+      - Forge reviewer perspective configuration for requirements
     keywords:
-      - requirement
       - completeness
       - consistency
       - verifiability
-      - business goal
       - traceability
       - acceptance criteria
       - non-functional requirements
+      - user story
+      - business goal
       - perspective
-      - review
-  plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
-    doc_type: rule
-    title: APP Overview Requirements Definition Writing Standard
-    purpose: Defines standard writing guidelines and required sections for APP-001 application overview requirement definition documents
-    content_details:
-      - Document positioning and purpose
-      - 17 required and recommended content items with guidelines
-      - Overview, background, and problem statement
-      - Project objectives and success criteria
-      - Scope definition with out-of-scope items
-      - Target users and platform requirements
-      - Prerequisites and environmental configuration
-      - Usage scenarios and feature list
-      - External dependencies, constraints, and risks
-      - Terminology definitions and related documents
-    applicable_tasks:
-      - Creating application overview requirement document
-      - Structuring requirement specifications
-      - Defining project scope and success criteria
-      - Reviewing requirement documents for completeness
-    keywords:
-      - APP-001
-      - requirement definition
-      - scope
-      - success criteria
-      - project objectives
-      - usage scenario
-      - environmental configuration
-  plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md:
-    doc_type: rule
-    title: Figma Requirements Definition Workflow
-    purpose: Defines workflow for extracting requirements from Figma design files, including design system construction, requirement specification, and asset management
-    content_details:
-      - Figma MCP validation
-      - Design system two-layer structure (design tokens and themes)
-      - Reusable component identification
-      - Screen requirement extraction with ASCII layout diagrams
-      - UI component identification and state management
-      - Feature requirement extraction beyond design visuals
-      - Design-invisible requirement completion (error handling, loading, empty states, accessibility, performance)
-      - Glossary creation
-      - Static asset management and naming conventions
-      - Quality validation checklist for design tokens and requirements
-      - AI review and specs ToC update process
-    applicable_tasks:
-      - Requirements definition from Figma design
-      - Design system setup
-      - Component library extraction
-      - Feature requirement identification
-      - Quality assurance of design specifications
-      - Asset management strategy definition
-    keywords:
-      - Figma
-      - MCP
-      - design system
-      - design tokens
-      - theme
-      - component
-      - requirements
-      - workflow
-      - asset management
-      - glossary
-  plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
-    doc_type: rule
-    title: Interactive Requirements Definition Workflow
-    purpose: Document describes the workflow for clarifying requirements through user dialogue when design files do not exist, supporting both new app development and feature additions.
-    content_details:
-      - "Phase 0: Pre-confirmation for new vs. addition assessment"
-      - "Phase 0.5: Obtaining development rules and existing specifications"
-      - "Phase 1: Vision and value clarification for applications"
-      - "Phase 2: User experience flow and interface structure definition"
-      - "Phase 3: Detailed requirements specification with glossary and sequences"
-      - "Phase 4: Integration and quality assurance with AI review"
-      - Dialogue principles including choice-first approach and visual confirmation
-      - Anti-patterns and mitigation strategies for requirements elicitation
-      - Question templates for each phase and task type
-      - Special rules for ambiguity management and TBD tracking
-    applicable_tasks:
-      - Interactive requirements definition creation
-      - New feature requirement specification
-      - Existing application feature addition planning
-      - Requirements document creation for new applications
-      - Scope definition and management
-      - User dialogue facilitation for requirements
-      - Design phase preparation and input
-    keywords:
-      - requirements
-      - interactive
-      - dialogue
-      - workflow
-      - specification
-      - scope
-      - vision
-      - user experience
-      - glossary
-      - TBD
-  plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
-    doc_type: rule
-    title: Requirements Definition Workflow - Reverse Engineering from Existing Applications
-    purpose: Defines the workflow for extracting requirements from existing application source code and creating a requirements definition document
-    content_details:
-      - "Phase 1: Pre-preparation and user confirmation"
-      - "Phase 2: Source code analysis and architecture understanding"
-      - "Phase 3: Requirements extraction with priority ordering"
-      - "Phase 4: Requirements definition document creation"
-      - "Phase 5: Quality verification and completion processing"
-      - "Feature extraction practices: user actions, conditional logic, data persistence, error handling"
-      - ID classification catalog and requirement format reference
-      - Requirement/design boundary specification and What/How judgment criteria
-    applicable_tasks:
-      - Reverse engineering requirements from existing applications
-      - Legacy application reconstruction with new architecture
-      - Requirements extraction from existing source code
-      - Requirements definition document creation
-      - Application feature analysis and documentation
-    keywords:
-      - requirements
-      - reverse engineering
-      - source code analysis
-      - workflow
-      - architecture
-      - feature extraction
-      - legacy application
-      - design renewal
-      - ID classification
-      - What/How boundary
-  plugins/forge/skills/start-uxui-design/docs/design_philosophy.md:
-    doc_type: rule
-    title: Design Philosophy - Integrated Principles of Beautiful Design
-    purpose: Provides a unified framework (3-layer model) integrating cognitive science, structural design tools, and philosophical aesthetics for making design decisions with theoretical rationale
-    content_details:
-      - Aesthetic-usability effect (Kurosu & Kashimura 1995) establishing beauty as functional
-      - 3-layer integration model (cognitive constraints, structural tools, aesthetic direction)
-      - "Layer 1 cognitive laws: Fitts's law, Hick's law, Miller's law, contrast ratio thresholds"
-      - "Layer 2 structural tools: modular scale, color harmony models, 60-30-10 rule, 8pt grid, composition principles, curve psychology"
-      - "Layer 3 aesthetic directions: Dieter Rams, Don Norman emotional design, Edward Tufte, Wabi-sabi"
-      - Direction selection guide mapping app personality to philosophical stance
-      - Integrated quality checklist across all 3 layers
-    applicable_tasks:
-      - UX/UI design creation from requirements
-      - Design token creation and validation
-      - UI component visual specification
-      - Design direction selection
-      - Design quality evaluation
-      - Design review with theoretical rationale
-    keywords:
-      - design philosophy
-      - aesthetics
-      - Fitts law
-      - Hick law
-      - Miller law
-      - golden ratio
-      - modular scale
-      - color harmony
-      - 60-30-10
-      - Dieter Rams
-      - Don Norman
-      - Tufte
-      - wabi-sabi
-      - visual hierarchy
-      - 8pt grid
-  plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
-    doc_type: rule
-    title: Apple Design Principles and UX Evaluation Framework
-    purpose: Comprehensive reference for Apple HIG 4 principles, Liquid Glass design language, SF font system, Nielsen 10 usability heuristics, and Gestalt principles with evaluation checklists
-    content_details:
-      - "Apple HIG 4 principles: Clarity, Deference, Depth, Consistency with evaluation criteria"
-      - Liquid Glass design language specifications
-      - SF font family system and semantic color system
-      - "Nielsen 10 heuristics: system status visibility, real-world match, user control, consistency, error prevention, recognition over recall, flexibility, minimalist design, error recovery, help"
-      - "Gestalt principles: proximity, similarity, figure-ground, continuity, closure, common region, symmetry"
-      - Accessibility requirements (WCAG, VoiceOver, Dynamic Type, Reduce Motion)
-      - Design evaluation checklist
-    applicable_tasks:
-      - UX/UI design evaluation against HIG
-      - Design token validation for Apple platform compliance
-      - Component design with HIG standard patterns
-      - Accessibility audit
-      - Design review for HIG compliance
-      - Usability heuristic evaluation
-    keywords:
-      - Apple HIG
-      - Clarity
-      - Deference
-      - Depth
-      - Consistency
-      - Liquid Glass
-      - SF Pro
-      - Nielsen heuristics
-      - Gestalt
-      - accessibility
-      - WCAG
-      - VoiceOver
-      - Dynamic Type
-  plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md:
-    doc_type: rule
-    title: iOS Platform Design Guide
-    purpose: iOS-specific design guidelines covering touch input model, navigation patterns, layout system, standard components, and platform-specific UX patterns
-    content_details:
-      - Touch input model with 44x44pt minimum target size
-      - Gesture patterns (tap, swipe, long press, pinch)
-      - "Navigation patterns: TabBar, NavigationBar, Modal"
-      - "Layout: Safe Area, screen sizes, spacing standards"
-      - iOS standard component catalog
-      - "UX patterns: pull-to-refresh, swipe actions, context menu, haptic feedback"
-      - iOS-specific evaluation checklist
-    applicable_tasks:
-      - iOS app UI component design
-      - iOS navigation structure design
-      - iOS layout and spacing specification
-      - iOS design review and validation
-      - Touch target size verification
-    keywords:
-      - iOS
-      - iPhone
-      - iPad
-      - touch target
-      - TabBar
-      - NavigationBar
-      - Safe Area
-      - haptic feedback
-      - swipe actions
-      - pull-to-refresh
-  plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md:
-    doc_type: rule
-    title: macOS Platform Design Guide
-    purpose: macOS-specific design guidelines covering pointer and keyboard input, menu bar, toolbars, sidebars, window management, and desktop-specific UX patterns
-    content_details:
-      - Pointer and keyboard input model with cursor states
-      - Keyboard shortcuts and modifier key conventions
-      - "Menu bar, toolbars, sidebars architecture"
-      - Window management (resize, full screen, split view)
-      - macOS standard component catalog
-      - "UX patterns: Spotlight/Dock integration, drag and drop, multi-selection, Undo/Redo"
-      - macOS-specific evaluation checklist
-    applicable_tasks:
-      - macOS app UI component design
-      - macOS menu and toolbar design
-      - macOS window management specification
-      - macOS design review and validation
-      - Keyboard shortcut design
-    keywords:
-      - macOS
-      - Mac
-      - menu bar
-      - toolbar
-      - sidebar
-      - window management
-      - keyboard shortcuts
-      - drag and drop
-      - Spotlight
-      - NSOutlineView
-  plugins/forge/skills/start-uxui-design/docs/design_token_template.md:
-    doc_type: rule
-    title: Design Token Output Template
-    purpose: Template format for generating THEME-xxx design token documents including color palettes, typography scales, spacing systems, and light/dark mode variants
-    content_details:
-      - Document metadata and feature information
-      - Base color palette with HEX values
-      - Status colors (success, warning, error, info)
-      - Semantic color definitions for buttons, text, surfaces
-      - Contrast ratio validation table
-      - Typography style definitions
-      - Spacing scale based on 8pt grid
-      - Border radius and shadow definitions
-      - UX evaluation notes section
-    applicable_tasks:
-      - Design token document generation
-      - Color palette specification
-      - Typography system definition
-      - Spacing system definition
-      - Design token review
-    keywords:
-      - design token
-      - THEME
-      - color palette
-      - typography
-      - spacing
-      - light mode
-      - dark mode
-      - contrast ratio
-      - semantic color
-  plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md:
-    doc_type: rule
-    title: UI Component Catalog Output Template
-    purpose: Template format for generating CMP-xxx UI component catalog documents including component definitions, states, design token references, and UX evaluation notes
-    content_details:
-      - Component summary table (standard vs custom)
-      - Navigation structure with Mermaid diagram
-      - Detailed component definitions (basic info, elements, states, tokens, layout)
-      - Platform-specific state definitions (iOS vs macOS)
-      - ASCII art layout representation
-      - UX notes per component with HIG references
-      - Component relationship diagram
-      - Overall UX evaluation section
-    applicable_tasks:
-      - UI component catalog generation
-      - Component visual specification
-      - Component state definition
-      - Component relationship documentation
-      - Component design review
-    keywords:
-      - component catalog
-      - CMP
-      - UI component
-      - component states
-      - design token reference
-      - navigation structure
-      - layout specification
-      - HIG mapping
+      - requirement ID
   plugins/forge/skills/review/docs/review_criteria_uxui.md:
     doc_type: rule
     title: UX/UI Design Review Criteria
-    purpose: Review perspectives for UX/UI design documents (THEME-xxx, CMP-xxx, SCR-xxx, UXEVAL-xxx) based on Apple HIG, Don Norman, Dieter Rams, Nielsen heuristics, and Gestalt principles
+    purpose: Defines UX/UI review criteria for THEME, CMP, SCR, and UXEVAL artifacts and UI specs using Apple HIG, Nielsen heuristics, Gestalt, Norman, and Rams; mandates query-forge-rules before review.
     content_details:
-      - "Perspective hig_compliance: HIG 4 principles compliance, platform-specific violations, semantic color requirements"
-      - "Perspective usability: Nielsen 10 heuristics violations, system status visibility, user control, error prevention"
-      - "Perspective visual_system: Gestalt principles, 8pt grid compliance, typography hierarchy, color system, 60-30-10 rule, design rationale"
-      - Three severity levels (critical, quality, improvement)
-      - Mandatory knowledge base loading instructions
+      - "Pre-review: run query-forge-rules with UX/UI task text and read all returned files; fallback to start-uxui-design docs (design philosophy, Apple principles, iOS/macOS platform guides) when the skill is unavailable."
+      - "Perspective hig_compliance: validate Apple HIG Clarity, Deference, Depth, and Consistency; flag critical mandatory-pattern violations, missing Light/Dark semantic colors, and unclear hierarchy; include iOS and macOS specific checks (TabBar, touch targets, menu bar, hover, shortcuts)."
+      - "Perspective usability: apply Nielsen heuristics with critical focus on H3 user control for destructive actions and H1 visible system state; cover H2 through H9 quality issues with concrete criteria and examples."
+      - "Perspective visual_system: enforce WCAG 4.5:1 contrast, minimum touch and click targets, 8pt grid spacing, typography scale, Gestalt proximity and similarity, THEME token references instead of raw HEX, 60-30-10 color balance, concrete CMP naming, and documented rationale for token choices."
+      - Severity tiers red, yellow, and green with allowance for documented intentional HIG deviations.
+      - Green-tier suggestions include Liquid Glass, SF Symbols, haptic feedback, Dark mode variants, spacing normalization, and component state matrices.
     applicable_tasks:
-      - UX/UI design document review
-      - Design token quality review
-      - Component specification review
-      - HIG compliance verification
-      - Accessibility audit
-      - Visual system consistency check
+      - UX/UI design and specification review
+      - Design token and component specification review
+      - forge uxui-type code or document review
+      - HIG and accessibility compliance review for documented UI
     keywords:
-      - UX review
-      - UI review
-      - HIG compliance
-      - usability
-      - visual system
-      - design token review
-      - component review
+      - Apple HIG
       - Nielsen heuristics
       - Gestalt
+      - THEME
+      - CMP
+      - SCR
+      - UXEVAL
+      - query-forge-rules
+      - WCAG contrast
+      - semantic color
+  plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
+    doc_type: rule
+    title: Application Overview Requirements Writing Standard (APP-001)
+    purpose: Defines required sections, purposes, and writing guidelines for APP-001 (application overview requirements), project-agnostic, with mandatory vs recommended items and FNC-ID traceability for goals.
+    content_details:
+      - "APP-001 as project compass: why build, scope, users, usage, success, constraints, and risks"
+      - "Overview: one-paragraph summary of what, whom, and value without technical detail"
+      - Background, motivation, and concrete problems (focus on What, not How); goals linked to FNC-IDs with verifiable success criteria per goal
+      - "Scope: explicit in-scope vs out-of-scope to prevent scope creep"
+      - Target users with assumptions, supported platforms and versions, prerequisites vs platform, conceptual environment topology (diagrams/tables)
+      - Usage scenarios (setup, daily, incident); main feature list as FNC-xxx index only
+      - External dependencies with failure impact; constraints; known risks with severity and mitigation; terminology glossary; related document links
+      - "Writing discipline: What not How, user-manual inclusion test, defer detail to FNC/DM/BL, maintain change history"
+    applicable_tasks:
+      - Drafting APP-001 application overview requirements
+      - Reviewing requirements document structure and completeness
+      - Aligning start-requirements outputs with APP-001
+      - Verifying goal-to-FNC-ID traceability
+    keywords:
+      - APP-001
+      - FNC-ID
+      - application overview
+      - scope
+      - success criteria
+      - prerequisites
+      - usage scenarios
+      - stakeholders
+      - environment topology
+  plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md:
+    doc_type: rule
+    title: Figma Requirements Document Creation Workflow
+    purpose: Defines a phased workflow to extract requirements and design tokens from Figma via MCP, build a two-layer design system, author SCR/CMP/FNC IDs, manage static assets, and complete with review, specs ToC, and commit.
+    content_details:
+      - "Mandatory reads: spec_format.md (ID catalog), requirement_format.md template, spec_design_boundary_spec.md (What/How boundary)"
+      - "Phase 1: Verify Figma MCP; AskUserQuestion checklist; query-rules and query-specs with Glob fallback"
+      - "Phase 2: Atomic tokens (colors HEX, typography, spacing, radius, shadows) and semantic theme (status, button, text, surface, typography roles, layout)"
+      - "Reusable components: Button, Card, Input, Navigation, Dialog, Loading variants"
+      - "SCR-xxx: screen-specific part names, ASCII layout diagrams, interaction specs"
+      - CMP-xxx/FNC-xxx extraction; mandatory glossary; supplement non-design requirements (errors, loading, empty, a11y, performance, persistence, integrations)
+      - "Phase 4: Static asset inventory; snake_case naming for custom assets"
+      - "Phase 5: Validation checklists; /forge:review requirement --auto; create-specs-toc; /anvil:commit; session directory cleanup"
+    applicable_tasks:
+      - Authoring requirements from Figma designs
+      - start-requirements from-figma mode
+      - Design token extraction and design system documentation
+      - Requirements extraction with SCR, CMP, and FNC IDs
+    keywords:
+      - Figma MCP
+      - SCR-xxx
+      - CMP-xxx
+      - FNC-xxx
+      - design tokens
+      - AskUserQuestion
+      - spec_format
+      - requirement_format
+      - spec_design_boundary_spec
+      - query-rules
+  plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
+    doc_type: rule
+    title: Interactive Requirements Definition Workflow
+    purpose: Defines the phased interactive workflow for eliciting and documenting requirements without Figma or screen designs, with mandatory forge references and dialogue principles.
+    content_details:
+      - "Mandatory reads: spec_format.md (ID catalog), requirement_format.md (template), spec_design_boundary_spec.md (What/How boundary)"
+      - "Phase 0: Branch new app vs feature add; scope memo; for adds require query-specs, design read, and code search for impact"
+      - "Phase 0.5: query-rules and query-specs (or Glob fallback) to list rules and existing specs; optional WebSearch; report skill failures to user"
+      - "Phases 1–2: APP-001 vision/value; scenarios; draft screen/interface table and Mermaid navigation"
+      - "Phase 3: Glossary and rough sequences before SCR/FNC/BL/DM and other IDs from spec_format"
+      - "Phase 4: Shape per requirement_format; quality checklist; TBD table; /forge:review requirement --auto; create-specs-toc; anvil:commit; remove session dir; next-step start-design"
+      - "Dialogue principles: choice-first prompts, diagrams, incremental approval from APP-001; must/nice/future scope tiers"
+      - "Anti-patterns: question fatigue, vague agreement, How leakage, ignoring existing assets on adds, scope creep"
+      - "Interactive-specific rules: vague wording replaced by TBD section; review severity for ambiguity vs How mix"
+      - Phase question templates for structured elicitation
+    applicable_tasks:
+      - Interactive requirements definition with start-requirements
+      - Requirements work without Figma or formal UI specs
+      - Feature-add requirements aligned with existing specs and code
+      - Drafting APP-001 and SCR/FNC/BL/DM requirement IDs
+      - Phase-by-phase user confirmation and completion handoff
+    keywords:
+      - requirements_interactive_workflow
+      - start-requirements
+      - spec_format
+      - requirement_format
+      - APP-001
+      - query-rules
+      - query-specs
+      - SCR-
+      - FNC-
+      - glossary
+  plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
+    doc_type: rule
+    title: Requirements Definition Workflow (Reverse Engineering from Existing App)
+    purpose: "Defines the phased workflow for extracting requirements from existing application source and authoring requirement documents: mandatory format references, user and design-policy confirmation, DocAdvisor queries, parallel context agents, structured analysis, ID-priority extraction, What-not-How authoring, and closure with review and ToC."
+    content_details:
+      - "Mandatory plugin reads: spec_format.md (requirement ID catalog), requirement_format.md template, spec_design_boundary_spec.md (What vs How boundary)"
+      - "Phase 1: AskUserQuestion for design refresh vs preserve and source paths; /doc-advisor:query-rules and query-specs with Glob fallback; parallel rules and code agents driven by context_gathering_spec.md writing to session_dir/refs"
+      - "Phase 2: Analyze refs/code.yaml for project structure, enumerate screens and navigation maps; refresh mode ignores visuals for functional-only reqs, preserve mode may author THEME-xxx from captures"
+      - "Phase 3: Extraction order APP-001, SCR, FNC, BL, DM, then CMP/NAV/API/NFR/SEC/ERR as needed; map user actions, branching as What (not How), persistence, and error strings from code to requirements"
+      - Per-screen checklist covers actions, UI, data CRUD, transitions, business rules, and external integrations
+      - "Phase 4: Author APP-001 then SCR then other IDs; mandatory glossary; requirements state What only, no implementation How"
+      - "Phase 5: Completeness checks for APP-001, all SCR, major FNC; /forge:review requirement --auto on diffs; create-specs-toc when available; /anvil:commit; rm -rf session_dir"
+    applicable_tasks:
+      - Reverse-engineering requirements from an existing codebase
+      - Executing start-requirements reverse-engineering mode
+      - Authoring requirement documents from source-code analysis
+      - Mapping screens and navigation from legacy code
+    keywords:
+      - reverse engineering
+      - APP-001
+      - SCR-
+      - context_gathering_spec
+      - refs/code.yaml
+      - query-rules
+      - What not How
+      - requirement_format
+      - session_dir
+      - spec_design_boundary
+  plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
+    doc_type: rule
+    title: Apple Design Principles & UX/UI Philosophy Knowledge Base
+    purpose: "Reference for AI-led Apple UX/UI analysis: HIG four principles, Liquid Glass, SF typography, semantic colors, Nielsen heuristics, Gestalt laws, accessibility, 8pt grid, and evaluation checklists."
+    content_details:
+      - HIG principles (Clarity, Deference, Depth, Consistency) with concrete evaluation cues such as 3-second purpose comprehension and content-versus-chrome balance
+      - "Liquid Glass: glass-like translucency, blur, adaptation to background, unified cross-platform look aligned with Deference"
+      - SF font families (Display, Text, Rounded, Mono, New York) and text style ladder from Large Title to Caption
+      - Semantic color system (Label, Fill, Background, Separator, System accents) and light/dark rules including 4.5:1 contrast and avoiding pure white/black
+      - Nielsen H1–H10 usability heuristics with stated violation examples for feedback, language, undo, consistency, prevention, recognition, shortcuts, minimalism, error recovery, and help
+      - Gestalt laws (proximity, similarity, figure/ground, continuity, closure, common region, symmetry) tied to layout and grouping decisions
+      - "Apple accessibility: contrast thresholds, non-color information, Dynamic Type, VoiceOver labels, focus order, Reduce Motion, WCAG 2.1 AA alignment"
+      - 8pt grid rhythm with allowed spacing scale for margins, padding, and component sizing
+      - Consolidated design evaluation checklist covering HIG, heuristics, Gestalt, and accessibility for structured UX notes
+    applicable_tasks:
+      - Apple platform UX/UI design analysis and critique
+      - Design review against HIG, heuristics, and Gestalt
+      - Specifying typography, color tokens, and spacing for SwiftUI or UIKit
+      - Accessibility review for iOS, macOS, and related Apple targets
+    keywords:
+      - Human Interface Guidelines
+      - Liquid Glass
+      - SF Pro
+      - semantic color
+      - Nielsen heuristics
+      - Gestalt
+      - VoiceOver
+      - 8pt grid
+      - Dynamic Type
+      - WCAG
+  plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md:
+    doc_type: rule
+    title: UI Component Catalog Template
+    purpose: Defines a markdown template for feature UI component catalogs with HIG alignment, navigation diagrams, per-component states, design tokens, and structured UX evaluation.
+    content_details:
+      - CMP-001 document pattern with metadata table (ID, feature, platform, related tokens, creation date, input source)
+      - Standard vs custom component summary tables mapping screen names to HIG bases and one-line purposes
+      - Navigation section with Mermaid screen-flow diagram and navigation pattern table with HIG rationale in UX notes
+      - "Per-component blocks: basic info, composition elements table (type, required, description), and component category"
+      - Platform-specific state matrices for iOS and macOS (Default, Pressed, Disabled, Selected, Loading; macOS adds Hover and Focused) with visual changes and token references
+      - Per-component design token table (background, text, typography, radius, padding) and ASCII internal layout sketch
+      - "Per-component UX notes table: HIG compliance level, Nielsen heuristics, Gestalt principles, accessibility, and improvement suggestions"
+      - Cross-component dependency Mermaid diagram and shared pattern table linking multiple component IDs
+      - Overall UX evaluation rubric (standard usage, consistency, reusability, accessibility) with 3-5 prioritized improvement proposals
+    applicable_tasks:
+      - Creating UI component catalog documents for a feature
+      - Documenting iOS and macOS UI inventories with HIG and token references
+      - Producing UX/UI specs from Figma, screenshots, or manual descriptions
+      - Reviewing component specifications for accessibility and heuristic alignment
+    keywords:
+      - component catalog
+      - CMP-001
+      - HIG
+      - design tokens
+      - UX notes
+      - Mermaid
+      - navigation pattern
+      - Nielsen heuristics
       - accessibility
+      - Gestalt
+  plugins/forge/skills/start-uxui-design/docs/design_philosophy.md:
+    doc_type: rule
+    title: Design Philosophy — Integrated Principles of Beautiful Design
+    purpose: "Defines a three-layer UX/UI framework: inviolable cognitive constraints (Fitts, Hick, Miller, contrast), structural tools (modular scale, color harmony, grid, composition), then a chosen aesthetic stance (Rams, Norman, Tufte, wabi-sabi) with app-type guidance and an integrated checklist."
+    content_details:
+      - "Three-layer model: cognitive constraints are non-negotiable; upper layers cannot override lower; apply bottom-up"
+      - "Layer 1: Fitts (touch target sizes e.g. iOS 44pt), Hick (5-7 choices, progressive disclosure), Miller (5-9 items per group), WCAG 4.5:1 contrast for body text"
+      - "Layer 2: modular scale ratios by density; complementary/analogous/triad/split-complementary harmony; 60-30-10 color distribution; 8pt grid and geometric spacing scale; composition principles and border-radius bands by app personality"
+      - "Layer 3: Rams minimalism, Norman three emotional levels, Tufte data-ink, wabi-sabi (Kanso, Fukinsei, Ma) with tradeoffs per direction"
+      - Direction selection table by app type (productivity, SNS, EC, finance, creative) and consistency across design phases
+      - Integrated quality checklist covering all three layers (targets, choices, contrast, scale, palette, grid, corners, philosophical alignment)
+    applicable_tasks:
+      - UX/UI screen and component design
+      - Design system typography, spacing, and radius decisions
+      - Color palette and visual hierarchy planning
+      - Design philosophy and consistency review
+    keywords:
+      - Fitts law
+      - Hick law
+      - Miller law
+      - modular scale
+      - 8pt grid
+      - 60-30-10
+      - WCAG contrast
+      - Dieter Rams
+      - Don Norman
+      - wabi-sabi
+  plugins/forge/skills/start-uxui-design/docs/design_token_template.md:
+    doc_type: rule
+    title: Design Token Template
+    purpose: "Defines a Markdown template for structured design token documents: metadata, layered colors (base, status, semantic), contrast verification, typography, spacing, radius, shadows, and UX evaluation with improvement notes."
+    content_details:
+      - "Metadata table: theme ID (THEME-001), feature name, platform, creation date, input source; disclaimer that HEX values from image analysis are estimates"
+      - Base atomic color tokens with Light/Dark HEX, usage, and UX rationale (HIG/Nielsen references)
+      - Status color tokens with contrast ratio column for success, warning, error, and info
+      - Semantic second-layer mappings (primary/secondary/destructive buttons, card, overlay, separator) referencing base tokens
+      - Pairwise contrast verification matrix against 4.5:1 baseline with pass/fail judgment
+      - "Typography: font family roles and text style tokens from largeTitle through caption with size, weight, line height, and UX notes"
+      - Spacing scale (xxs–xxl) with 8pt grid alignment plus layout.screenMargin, cardPadding, and sectionGap
+      - Border radius tokens (sm through full) and shadow tokens (sm/md/lg) with offset, blur, color, and use cases
+      - "UX evaluation rubric: HIG compliance, palette complexity, spacing consistency, type hierarchy, light/dark support, accessibility; plus prioritized improvement suggestions"
+    applicable_tasks:
+      - Authoring design token Markdown from Figma, images, URLs, or manual notes
+      - iOS or macOS theme documentation and engineering handoff
+      - Design system accessibility review using contrast tables
+      - Implementing UI styles aligned to named semantic tokens
+    keywords:
+      - design_token_template
+      - THEME-001
+      - semantic color
+      - typography tokens
+      - 8pt grid
       - contrast ratio
+      - HIG
+      - Light Dark
+      - UX evaluation
+  plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md:
+    doc_type: rule
+    title: iOS Platform Guide
+    purpose: "Defines iOS-specific UX/UI rules aligned with Apple HIG: touch targets, gestures, reachability, Tab Bar and navigation, Safe Area, device widths, spacing, standard components, common iOS patterns, and an evaluation checklist."
+    content_details:
+      - Minimum interactive target 44×44 pt (recommended 48×48 pt); expand hit areas to at least 44pt when visuals are smaller
+      - "Gesture-to-use table: tap, long press, horizontal/vertical swipe, pinch, 3D Touch/Haptic Touch matched to HIG-typical roles"
+      - "Reachability: thumb-friendly lower third; primary actions on Tab Bar/FAB at bottom; titles and status at top"
+      - "Tab Bar: fixed bottom, at most five tabs (overflow as More), icon plus label, SF Symbols, accent for selection"
+      - "Navigation Bar: back, title, actions; Large Title on lists; edge swipe back; modals as sheet or full screen with swipe and Done/Close dismiss"
+      - "Safe Area: status bar, Dynamic Island/notch, home indicator; landscape side insets; keep interactive content inside safe zone"
+      - "Logical widths: iPhone SE 375pt minimum density, 390–393pt baseline, Pro Max 430pt one-handed limits, iPad multi-column"
+      - "Spacing: 16/20pt margins by width class, 8–12pt related gaps, 24–32pt between sections, 44pt minimum list row height"
+      - "HIG component mapping: Button/Toggle/Slider/Picker/TextField/SearchBar; List/Grid/Card/Alert/ActionSheet/ProgressView/Badge; TabBar/NavigationBar/Toolbar/SegmentedControl"
+      - "iOS patterns: pull-to-refresh, list swipe actions by color and direction, context menus with preview, haptic Impact/Selection/Notification; checklist covers touch, navigation, layout, Dynamic Type, VoiceOver, Reduce Motion"
+    applicable_tasks:
+      - iOS screen and navigation UX design
+      - SwiftUI or UIKit layout implementation to HIG
+      - Touch target and gesture compliance review
+      - Tab bar and navigation bar specification
+      - Safe Area and responsive layout for iPhone and iPad
+      - Mapping UI to standard HIG components during design analysis
+      - iOS UX evaluation using the embedded checklist
+    keywords:
+      - iOS
+      - HIG
+      - Safe Area
+      - Tab Bar
+      - Navigation Bar
+      - SF Symbols
+      - Dynamic Island
+      - Reachability
+      - 44pt
+      - VoiceOver
+  plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md:
+    doc_type: rule
+    title: macOS Platform Guide
+    purpose: "Defines macOS-specific UX/UI rules from Apple HIG: pointer- and keyboard-first input, menu bar and navigation patterns, window management, layout density and spacing, standard controls, system integration, and evaluation checklists."
+    content_details:
+      - "Pointer model: 20x20pt minimum targets, hover feedback, context menus, cross-window drag-and-drop"
+      - "Keyboard as first-class input: standard Cmd shortcuts and Cmd/Cmd+Shift/Cmd+Option patterns for custom actions"
+      - "Menu bar: all actions reachable; standard File/Edit/View/Window/Help; gray out disabled items; shortcuts on items"
+      - "Navigation: customizable toolbar, left sidebar source list, right inspector, document and segment tabs"
+      - "Windows: multi-window, resizable with minimum size, restore geometry; styles (standard, HUD, sheet, popover, alert); Split View and Stage Manager"
+      - "Layout: higher density than iOS; 20pt margins, 24–28pt table rows, 13pt body vs iOS 17pt"
+      - "HIG components: Push Button, Pop-up, Checkbox, Radio, Combo Box; Table/Outline/Collection View, Split View"
+      - "System integration: Spotlight, Dock quick actions, Shortcuts, notifications, Share extensions"
+      - Multi-select (Cmd/Shift-click); multi-step Undo/Redo expectations
+      - "Evaluation checklist: pointer, keyboard, menu bar, windows, density, accessibility (VoiceOver, Reduce Motion, contrast)"
+    applicable_tasks:
+      - macOS UI/UX design and HIG compliance review
+      - Menu bar and keyboard shortcut specification
+      - SwiftUI or AppKit macOS layout implementation
+      - Cross-platform iOS vs macOS UX differentiation
+      - Window, toolbar, sidebar, and inspector pattern design
+    keywords:
+      - macOS
+      - Apple HIG
+      - menu bar
+      - keyboard shortcuts
+      - drag and drop
+      - toolbar
+      - sidebar
+      - inspector
+      - window restoration
+      - split view
+  plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md:
+    doc_type: rule
+    title: UX/UI Design Creation Workflow
+    purpose: Defines the six-phase start-uxui-design workflow from requirements intake through design direction, token creation, component visual specs, UX self-evaluation, and generated THEME/CMP/UXEVAL documents with review and ToC steps.
+    content_details:
+      - Pipeline slot between start-requirements and start-design; outputs THEME-xxx design tokens, CMP-xxx component visuals, and UXEVAL-xxx evaluations; Figma path defers to from-figma requirements.
+      - "Mandatory context: keep design_philosophy.md resident; fetch phase-specific knowledge via /forge:query-forge-rules (no subagents); fallback Glob under start-uxui-design/docs if query-forge-rules unavailable."
+      - "Phase 1: resolve requirements with .doc_structure.yaml Glob; collect SCR/CMP/FNC/THEME IDs and ASCII layouts; optional reference image/URL analysis; load project rules via query-rules or docs/rules."
+      - "Phase 2: derive app personality; propose Minimal Clean / Soft Depth / Bold Contrast; 60-30-10 color direction; confirm summary (style, radius, font, 8pt grid) before tokens."
+      - "Phase 3: invent semantic color roles (status, button, text, surface), paired Light/Dark values with stated rationale; typography scale; 8pt spacing xs–xxl; radius/shadow; mandatory token checklist including 4.5:1 contrast and semantic naming."
+      - "Phase 4: map ASCII art to HIG components and token application; concrete visual specs; iOS/macOS state tables; UX notes citing HIG and design philosophy with good/bad examples."
+      - "Phase 5: Norman three-layer, Rams, and HIG/Nielsen/Gestalt checks on created design; mandatory UX self-evaluation summary template."
+      - "Phase 6: emit files from design_token_template and component_catalog_template to session output_dir; /forge:review uxui --auto; optional create-specs-toc; /anvil:commit; remove session directory."
+      - "Dialogue rules: choice-first AskUserQuestion, visual tables/ASCII, explicit rationale for every decision, phased confirmations."
+      - "Documented anti-patterns: rationale-free choices, trend-only styling, platform mixing, vague component names, colors without HEX, Light-only token sets."
+    applicable_tasks:
+      - Executing /forge:start-uxui-design and phase-by-phase UX/UI creation
+      - Authoring THEME design token documents and semantic color systems
+      - Authoring CMP component visual specification documents from requirement ASCII art
+      - Running uxui-type review and self-evaluation against HIG and design philosophy
+      - Integrating query-forge-rules and query-rules context for design decisions
+    keywords:
+      - query-forge-rules
+      - design_philosophy
+      - THEME-001
+      - CMP-001
+      - UXEVAL-001
+      - 60-30-10
+      - HIG
+      - SCR-xxx
+      - ASCII art
+      - Norman
