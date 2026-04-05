@@ -22,12 +22,13 @@ AskUserQuestion でスキルを選択する:
 どの forge スキルのヘルプを表示しますか？
 
 選択肢:
-- review             : コード・文書のレビュー（オーケストレーター）
-- start-requirements: 要件定義書の作成
-- start-design      : 設計書の作成
-- start-plan        : 計画書の作成
-- start-implement    : 計画書からタスクを選択して実装を実行する
-- setup              : .doc_structure.yaml の作成・更新
+- review              : コード・文書のレビュー（オーケストレーター）
+- start-uxui-design   : デザインからトークン・コンポーネントを抽出（UX評価付き）
+- start-requirements  : 要件定義書の作成
+- start-design        : 設計書の作成
+- start-plan          : 計画書の作成
+- start-implement     : 計画書からタスクを選択して実装を実行する
+- setup               : .doc_structure.yaml の作成・更新
 ```
 
 ---
@@ -46,6 +47,7 @@ AskUserQuestion でスキルを選択する:
 - requirement : 要件定義書
 - design      : 設計書
 - plan        : 計画書
+- uxui        : UX/UI デザイン（デザイントークン・コンポーネント）
 - generic     : 任意の文書（README等）
 ```
 
@@ -86,6 +88,34 @@ AskUserQuestion でスキルを選択する:
 
 ```
 サイクル数を入力してください（例: 3）:
+```
+
+---
+
+### start-uxui-design
+
+#### 2-1. Feature 名
+
+```
+対象の Feature 名を入力してください（省略時はインタラクティブに決定）:
+```
+
+#### 2-2. プラットフォーム
+
+```
+対象プラットフォームを選択してください:
+- ios     : iPhone / iPad アプリのデザイン分析
+- macos   : Mac アプリのデザイン分析
+```
+
+#### 2-3. 入力ソース
+
+```
+デザインの入力方法を選択してください:
+- 画像ファイル   : スクリーンショットや画像ファイルのパスを指定
+- Figma          : Figma MCP 経由でデザインデータを取得（Figma MCP 必須）
+- URL            : Web ページやデザインギャラリーの URL を指定
+- 手動記述       : デザインの特徴を言葉で説明する
 ```
 
 ---
