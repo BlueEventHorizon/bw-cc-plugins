@@ -5,7 +5,7 @@
 metadata:
   name: Forge Built-in Document Search Index
   generated_at: 2026-03-26T09:29:04Z
-  file_count: 21
+  file_count: 27
 
 docs:
   plugins/forge/docs/context_gathering_spec.md:
@@ -603,3 +603,216 @@ docs:
       - design renewal
       - ID classification
       - What/How boundary
+  plugins/forge/skills/start-uxui-design/docs/design_philosophy.md:
+    doc_type: rule
+    title: Design Philosophy - Integrated Principles of Beautiful Design
+    purpose: Provides a unified framework (3-layer model) integrating cognitive science, structural design tools, and philosophical aesthetics for making design decisions with theoretical rationale
+    content_details:
+      - Aesthetic-usability effect (Kurosu & Kashimura 1995) establishing beauty as functional
+      - 3-layer integration model (cognitive constraints, structural tools, aesthetic direction)
+      - "Layer 1 cognitive laws: Fitts's law, Hick's law, Miller's law, contrast ratio thresholds"
+      - "Layer 2 structural tools: modular scale, color harmony models, 60-30-10 rule, 8pt grid, composition principles, curve psychology"
+      - "Layer 3 aesthetic directions: Dieter Rams, Don Norman emotional design, Edward Tufte, Wabi-sabi"
+      - Direction selection guide mapping app personality to philosophical stance
+      - Integrated quality checklist across all 3 layers
+    applicable_tasks:
+      - UX/UI design creation from requirements
+      - Design token creation and validation
+      - UI component visual specification
+      - Design direction selection
+      - Design quality evaluation
+      - Design review with theoretical rationale
+    keywords:
+      - design philosophy
+      - aesthetics
+      - Fitts law
+      - Hick law
+      - Miller law
+      - golden ratio
+      - modular scale
+      - color harmony
+      - 60-30-10
+      - Dieter Rams
+      - Don Norman
+      - Tufte
+      - wabi-sabi
+      - visual hierarchy
+      - 8pt grid
+  plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
+    doc_type: rule
+    title: Apple Design Principles and UX Evaluation Framework
+    purpose: Comprehensive reference for Apple HIG 4 principles, Liquid Glass design language, SF font system, Nielsen 10 usability heuristics, and Gestalt principles with evaluation checklists
+    content_details:
+      - "Apple HIG 4 principles: Clarity, Deference, Depth, Consistency with evaluation criteria"
+      - Liquid Glass design language specifications
+      - SF font family system and semantic color system
+      - "Nielsen 10 heuristics: system status visibility, real-world match, user control, consistency, error prevention, recognition over recall, flexibility, minimalist design, error recovery, help"
+      - "Gestalt principles: proximity, similarity, figure-ground, continuity, closure, common region, symmetry"
+      - Accessibility requirements (WCAG, VoiceOver, Dynamic Type, Reduce Motion)
+      - Design evaluation checklist
+    applicable_tasks:
+      - UX/UI design evaluation against HIG
+      - Design token validation for Apple platform compliance
+      - Component design with HIG standard patterns
+      - Accessibility audit
+      - Design review for HIG compliance
+      - Usability heuristic evaluation
+    keywords:
+      - Apple HIG
+      - Clarity
+      - Deference
+      - Depth
+      - Consistency
+      - Liquid Glass
+      - SF Pro
+      - Nielsen heuristics
+      - Gestalt
+      - accessibility
+      - WCAG
+      - VoiceOver
+      - Dynamic Type
+  plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md:
+    doc_type: rule
+    title: iOS Platform Design Guide
+    purpose: iOS-specific design guidelines covering touch input model, navigation patterns, layout system, standard components, and platform-specific UX patterns
+    content_details:
+      - Touch input model with 44x44pt minimum target size
+      - Gesture patterns (tap, swipe, long press, pinch)
+      - "Navigation patterns: TabBar, NavigationBar, Modal"
+      - "Layout: Safe Area, screen sizes, spacing standards"
+      - iOS standard component catalog
+      - "UX patterns: pull-to-refresh, swipe actions, context menu, haptic feedback"
+      - iOS-specific evaluation checklist
+    applicable_tasks:
+      - iOS app UI component design
+      - iOS navigation structure design
+      - iOS layout and spacing specification
+      - iOS design review and validation
+      - Touch target size verification
+    keywords:
+      - iOS
+      - iPhone
+      - iPad
+      - touch target
+      - TabBar
+      - NavigationBar
+      - Safe Area
+      - haptic feedback
+      - swipe actions
+      - pull-to-refresh
+  plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md:
+    doc_type: rule
+    title: macOS Platform Design Guide
+    purpose: macOS-specific design guidelines covering pointer and keyboard input, menu bar, toolbars, sidebars, window management, and desktop-specific UX patterns
+    content_details:
+      - Pointer and keyboard input model with cursor states
+      - Keyboard shortcuts and modifier key conventions
+      - "Menu bar, toolbars, sidebars architecture"
+      - Window management (resize, full screen, split view)
+      - macOS standard component catalog
+      - "UX patterns: Spotlight/Dock integration, drag and drop, multi-selection, Undo/Redo"
+      - macOS-specific evaluation checklist
+    applicable_tasks:
+      - macOS app UI component design
+      - macOS menu and toolbar design
+      - macOS window management specification
+      - macOS design review and validation
+      - Keyboard shortcut design
+    keywords:
+      - macOS
+      - Mac
+      - menu bar
+      - toolbar
+      - sidebar
+      - window management
+      - keyboard shortcuts
+      - drag and drop
+      - Spotlight
+      - NSOutlineView
+  plugins/forge/skills/start-uxui-design/docs/design_token_template.md:
+    doc_type: rule
+    title: Design Token Output Template
+    purpose: Template format for generating THEME-xxx design token documents including color palettes, typography scales, spacing systems, and light/dark mode variants
+    content_details:
+      - Document metadata and feature information
+      - Base color palette with HEX values
+      - Status colors (success, warning, error, info)
+      - Semantic color definitions for buttons, text, surfaces
+      - Contrast ratio validation table
+      - Typography style definitions
+      - Spacing scale based on 8pt grid
+      - Border radius and shadow definitions
+      - UX evaluation notes section
+    applicable_tasks:
+      - Design token document generation
+      - Color palette specification
+      - Typography system definition
+      - Spacing system definition
+      - Design token review
+    keywords:
+      - design token
+      - THEME
+      - color palette
+      - typography
+      - spacing
+      - light mode
+      - dark mode
+      - contrast ratio
+      - semantic color
+  plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md:
+    doc_type: rule
+    title: UI Component Catalog Output Template
+    purpose: Template format for generating CMP-xxx UI component catalog documents including component definitions, states, design token references, and UX evaluation notes
+    content_details:
+      - Component summary table (standard vs custom)
+      - Navigation structure with Mermaid diagram
+      - Detailed component definitions (basic info, elements, states, tokens, layout)
+      - Platform-specific state definitions (iOS vs macOS)
+      - ASCII art layout representation
+      - UX notes per component with HIG references
+      - Component relationship diagram
+      - Overall UX evaluation section
+    applicable_tasks:
+      - UI component catalog generation
+      - Component visual specification
+      - Component state definition
+      - Component relationship documentation
+      - Component design review
+    keywords:
+      - component catalog
+      - CMP
+      - UI component
+      - component states
+      - design token reference
+      - navigation structure
+      - layout specification
+      - HIG mapping
+  plugins/forge/skills/review/docs/review_criteria_uxui.md:
+    doc_type: rule
+    title: UX/UI Design Review Criteria
+    purpose: Review perspectives for UX/UI design documents (THEME-xxx, CMP-xxx, SCR-xxx, UXEVAL-xxx) based on Apple HIG, Don Norman, Dieter Rams, Nielsen heuristics, and Gestalt principles
+    content_details:
+      - "Perspective hig_compliance: HIG 4 principles compliance, platform-specific violations, semantic color requirements"
+      - "Perspective usability: Nielsen 10 heuristics violations, system status visibility, user control, error prevention"
+      - "Perspective visual_system: Gestalt principles, 8pt grid compliance, typography hierarchy, color system, 60-30-10 rule, design rationale"
+      - Three severity levels (critical, quality, improvement)
+      - Mandatory knowledge base loading instructions
+    applicable_tasks:
+      - UX/UI design document review
+      - Design token quality review
+      - Component specification review
+      - HIG compliance verification
+      - Accessibility audit
+      - Visual system consistency check
+    keywords:
+      - UX review
+      - UI review
+      - HIG compliance
+      - usability
+      - visual system
+      - design token review
+      - component review
+      - Nielsen heuristics
+      - Gestalt
+      - accessibility
+      - contrast ratio

@@ -23,7 +23,7 @@ AskUserQuestion でスキルを選択する:
 
 選択肢:
 - review              : コード・文書のレビュー（オーケストレーター）
-- start-uxui-design   : デザインからトークン・コンポーネントを抽出（UX評価付き）
+- start-uxui-design   : 要件定義書からデザイントークン・コンポーネント視覚仕様を創造
 - start-requirements  : 要件定義書の作成
 - start-design        : 設計書の作成
 - start-plan          : 計画書の作成
@@ -104,18 +104,8 @@ AskUserQuestion でスキルを選択する:
 
 ```
 対象プラットフォームを選択してください:
-- ios     : iPhone / iPad アプリのデザイン分析
-- macos   : Mac アプリのデザイン分析
-```
-
-#### 2-3. 入力ソース
-
-```
-デザインの入力方法を選択してください:
-- 画像ファイル   : スクリーンショットや画像ファイルのパスを指定
-- Figma          : Figma MCP 経由でデザインデータを取得（Figma MCP 必須）
-- URL            : Web ページやデザインギャラリーの URL を指定
-- 手動記述       : デザインの特徴を言葉で説明する
+- ios     : iPhone / iPad アプリのデザイン
+- macos   : Mac アプリのデザイン
 ```
 
 ---
