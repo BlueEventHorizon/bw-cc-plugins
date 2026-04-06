@@ -22,6 +22,7 @@ import argparse
 import hashlib
 
 from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, load_checksums, write_checksums_yaml, ConfigNotReadyError, log
+from toc_utils import get_all_md_files as _toc_get_all_md_files
 
 # Global configuration (initialized in init_config())
 CONFIG = None
@@ -194,22 +195,17 @@ def has_substantive_content(filepath, min_content_lines=1):
 
 
 def get_all_md_files():
-    """Get list of target .md files across all root_dirs (symlink-aware)"""
-    md_files = []
-    file_root_map = {}  # filepath -> (root_dir, root_dir_name)
+    """Get list of target .md files across all root_dirs (symlink-aware).
 
-    for root_dir, root_dir_name in ROOT_DIRS:
-        if not root_dir.exists():
-            log(f"Warning: {root_dir} does not exist, skipping")
-            continue
-        for filepath in rglob_follow_symlinks(root_dir, TARGET_GLOB):
-            if should_exclude(filepath, root_dir, EXCLUDE_PATTERNS):
-                continue
-            md_files.append(filepath)
-            file_root_map[filepath] = (root_dir, root_dir_name)
-
-    md_files.sort()
-    return md_files, file_root_map
+    toc_utils.get_all_md_files() のラッパー。グローバル変数 ROOT_DIRS,
+    TARGET_GLOB, EXCLUDE_PATTERNS を common_config 形式に変換して委譲する。
+    """
+    common_config = {
+        'root_dirs': ROOT_DIRS,
+        'target_glob': TARGET_GLOB,
+        'exclude_patterns': EXCLUDE_PATTERNS,
+    }
+    return _toc_get_all_md_files(common_config)
 
 
 def get_source_file_path(md_file, root_dir, root_dir_name):
