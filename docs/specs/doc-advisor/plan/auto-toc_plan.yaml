@@ -144,7 +144,7 @@ tasks:
   - task_id: TASK-006
     title: REQ-005 要件定義書の更新（フック種別の整合性確保）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-009
     depends_on: []
     group_id: null

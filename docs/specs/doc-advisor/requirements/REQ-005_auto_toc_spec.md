@@ -16,13 +16,13 @@ doc-advisor プラグインに、Claude Code セッション終了時に ToC（T
 
 - `.doc_structure.yaml` がプロジェクトルートに存在し、rules/specs ディレクトリが設定済みであること
 - doc-advisor プラグインがインストールされていること
-- `plugin.json` が Stop フックの定義に対応していること（TBD-003 参照）
+- `plugin.json` が SessionEnd フックの定義に対応していること（DES-009 で採用決定済み）
 
 ## 機能要件 [MANDATORY]
 
-### FNC-001: Stop フック自動トリガー（優先度: Must）
+### FNC-001: SessionEnd フック自動トリガー（優先度: Must）
 
-- セッション終了時（Stop フック）に自動的に ToC 更新処理が起動する
+- セッション終了時（SessionEnd フック）に自動的に ToC 更新処理が起動する
 - ユーザーによる手動操作は不要
 
 ### FNC-002: 差分検知（優先度: Must）
@@ -49,7 +49,7 @@ doc-advisor プラグインに、Claude Code セッション終了時に ToC（T
 
 ### FNC-006: プラグインフック統合（優先度: Must）
 
-- `plugin.json` の `hooks` フィールドで定義し、プラグインインストール後から自動適用される
+- `plugin.json` の `hooks` フィールド（SessionEnd フック）で定義し、プラグインインストール後から自動適用される
 - ユーザーによる `settings.json` の手動設定は不要
 
 ### FNC-007: エラーハンドリング（優先度: Must）
@@ -83,7 +83,7 @@ doc-advisor プラグインに、Claude Code セッション終了時に ToC（T
 | ------- | ---------------------------------------------------------------------------------------- | ---------- |
 | TBD-001 | スクリプトのみで keywords / applicable_tasks 等の AI メタデータ品質を維持する方法         | 設計開始前 |
 | TBD-002 | `create-rules/specs-toc` との統合インターフェース（オプション名・スキル改修方針）         | 設計開始前 |
-| TBD-003 | `plugin.json` の Stop フック定義のサポート状況確認（公式ドキュメントでの裏付け）          | 設計開始前 |
+| ~~TBD-003~~ | ~~`plugin.json` の SessionEnd フック定義のサポート状況確認~~ → DES-009 で SessionEnd フック採用を決定。解決済み | ~~設計開始前~~ |
 
 ## 変更履歴
 
@@ -91,3 +91,4 @@ doc-advisor プラグインに、Claude Code セッション終了時に ToC（T
 | ---------- | ------- | -------------------------------------- |
 | 2026-04-04 | k2moons | 初版作成                               |
 | 2026-04-04 | k2moons | レビュー指摘対応（エラー処理・整合性） |
+| 2026-04-06 | k2moons | DES-009 に基づき「Stop フック」→「SessionEnd フック」に統一、TBD-003 解決済み |
