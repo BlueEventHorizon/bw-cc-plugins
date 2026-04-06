@@ -31,7 +31,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --check
 
 1. Run semantic search:
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search_docs.py --category specs --query "{task description}"
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search_docs.py --category specs --skip-stale-check --query "{task description}"
    ```
 2. Review the results. If the query contains proper nouns or identifiers, run full-text search to supplement:
    ```bash

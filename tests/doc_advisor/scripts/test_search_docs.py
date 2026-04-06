@@ -535,15 +535,14 @@ specs:
         self.assertEqual(result.returncode, 1)
         output = json.loads(result.stdout)
         self.assertEqual(output["status"], "error")
-        self.assertIn("--query", output["error"])
+        self.assertIn("empty", output["error"])
 
     def test_no_query_arg_error(self):
-        """--query 引数なしでエラー JSON が返される"""
+        """--query 引数なしで argparse がエラーを返す（exit code 2）"""
         result = self._run_search()
 
-        self.assertEqual(result.returncode, 1)
-        output = json.loads(result.stdout)
-        self.assertEqual(output["status"], "error")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--query", result.stderr)
 
     def test_index_not_found_error(self):
         """インデックスが存在しない場合のエラー JSON"""

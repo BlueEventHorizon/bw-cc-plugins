@@ -34,6 +34,7 @@ from toc_utils import (
     get_all_md_files,
     init_common_config,
     load_checksums,
+    log,
     normalize_path,
     write_checksums_yaml,
 )
@@ -238,7 +239,7 @@ def call_embedding_api(texts, api_key):
             if e.code == 429:
                 # レート制限: 待機してリトライ
                 if attempt < API_RETRY_COUNT:
-                    print(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
+                    log(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
                     time.sleep(RATE_LIMIT_WAIT_SECONDS)
                     last_error = e
                     continue
@@ -249,14 +250,14 @@ def call_embedding_api(texts, api_key):
                 ) from e
             else:
                 if attempt < API_RETRY_COUNT:
-                    print(f"  API エラー ({e.code})。リトライします...")
+                    log(f"  API エラー ({e.code})。リトライします...")
                     last_error = e
                     continue
                 last_error = e
 
         except urllib.error.URLError as e:
             if attempt < API_RETRY_COUNT:
-                print(f"  ネットワークエラー。リトライします: {e}")
+                log(f"  ネットワークエラー。リトライします: {e}")
                 last_error = e
                 continue
             last_error = e
@@ -365,7 +366,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
 
     # 全対象ファイルを取得
     all_files, file_root_map = get_all_md_files(common)
-    print(f"対象ファイル数: {len(all_files)}")
+    log(f"対象ファイル数: {len(all_files)}")
 
     # 現在のファイル一覧（プロジェクト相対パス → 絶対パス）
     current_files = {}
@@ -379,7 +380,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         target_files = list(current_files.items())
         deleted_files = []
         existing_index = {"entries": {}}
-        print(f"全体モード: {len(target_files)} ファイルを処理します")
+        log(f"全体モード: {len(target_files)} ファイルを処理します")
     else:
         # 差分モード: 変更・新規ファイルのみ処理
         old_checksums = load_checksums(checksums_file)
@@ -388,7 +389,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         try:
             existing_index = load_index(index_path)
         except ValueError as e:
-            print(f"警告: {e} — 全体再構築にフォールバックします")
+            log(f"警告: {e} — 全体再構築にフォールバックします")
             existing_index = {"entries": {}}
             full_mode = True
             old_checksums = {}
@@ -403,23 +404,23 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
                 continue
             old_hash = old_checksums.get(source_file)
             if old_hash is None:
-                print(f"  [新規] {source_file}")
+                log(f"  [新規] {source_file}")
                 target_files.append((source_file, full_path))
             elif current_hash != old_hash:
-                print(f"  [変更] {source_file}")
+                log(f"  [変更] {source_file}")
                 target_files.append((source_file, full_path))
 
         # 削除ファイルの検出
         deleted_files = [sf for sf in old_checksums if sf not in current_files]
         for sf in deleted_files:
-            print(f"  [削除] {sf}")
+            log(f"  [削除] {sf}")
 
         if not target_files and not deleted_files:
-            print("変更なし — インデックスは最新です")
+            log("変更なし — インデックスは最新です")
             print(json.dumps({"status": "ok", "message": "インデックスは最新です。", "file_count": len(all_files)}))
             return 0
 
-        print(f"差分モード: {len(target_files)} 件の変更, {len(deleted_files)} 件の削除")
+        log(f"差分モード: {len(target_files)} 件の変更, {len(deleted_files)} 件の削除")
 
     # 削除ファイルをインデックスから除去
     entries = existing_index.get("entries", {})
@@ -441,7 +442,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
 
     # バッチ処理で Embedding API を呼び出す
     success_count = 0
-    failed_sources = []
+    failed_sources = set()
     batch_failed = False
 
     for batch_start in range(0, len(texts_to_embed), EMBEDDING_BATCH_SIZE):
@@ -449,20 +450,18 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         batch_texts = texts_to_embed[batch_start:batch_end]
         batch_paths = paths_to_embed[batch_start:batch_end]
 
-        print(f"  Embedding API: {batch_start + 1}〜{batch_end} 件目")
+        log(f"  Embedding API: {batch_start + 1}〜{batch_end} 件目")
 
         try:
             embeddings = call_embedding_api(batch_texts, api_key)
         except RuntimeError as e:
-            print(f"  エラー: バッチ {batch_start + 1}〜{batch_end} の処理に失敗しました: {e}")
-            # 部分失敗: このバッチおよび残りバッチをスキップし、処理済み分を保存する
+            log(f"  エラー: バッチ {batch_start + 1}〜{batch_end} の処理に失敗しました: {e}")
             for source_file, _, _ in batch_paths:
-                failed_sources.append(source_file)
-            # 残りバッチのファイルも failed_sources に追加（次回差分更新で再処理される）
+                failed_sources.add(source_file)
             for remaining_start in range(batch_end, len(texts_to_embed), EMBEDDING_BATCH_SIZE):
                 remaining_end = min(remaining_start + EMBEDDING_BATCH_SIZE, len(texts_to_embed))
                 for source_file, _, _ in paths_to_embed[remaining_start:remaining_end]:
-                    failed_sources.append(source_file)
+                    failed_sources.add(source_file)
             batch_failed = True
             break
 
@@ -489,7 +488,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         "entries": entries,
     }
     save_index(index_data, index_path)
-    print(f"インデックスを保存しました: {index_path} ({len(entries)} 件)")
+    log(f"インデックスを保存しました: {index_path} ({len(entries)} 件)")
 
     # チェックサムを更新（処理成功ファイルのみ）
     current_checksums = {}
@@ -508,10 +507,10 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
         checksums_file_path,
         header_comment=f"Embedding index checksums for {category}",
     )
-    print(f"チェックサムを更新しました: {len(current_checksums)} 件")
+    log(f"チェックサムを更新しました: {len(current_checksums)} 件")
 
     if batch_failed and failed_sources:
-        print(f"警告: {len(failed_sources)} 件の処理に失敗しました。次回の差分更新で自動的に再処理されます。")
+        log(f"警告: {len(failed_sources)} 件の処理に失敗しました。次回の差分更新で自動的に再処理されます。")
         print(json.dumps({
             "status": "partial",
             "message": f"{success_count} 件処理成功、{len(failed_sources)} 件失敗（次回差分更新で再処理されます）",
@@ -569,7 +568,7 @@ def main():
     # インデックスが存在しない場合は自動的に全体モードに切り替え
     if not index_path.exists():
         if not full_mode:
-            print(f"インデックスが存在しません。全体モードで構築します。")
+            log("インデックスが存在しません。全体モードで構築します。")
         full_mode = True
 
     return build_index(category, common, index_path, checksums_file, full_mode, api_key)

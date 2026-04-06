@@ -47,6 +47,7 @@ from toc_utils import (
     ConfigNotReadyError,
     get_all_md_files,
     init_common_config,
+    log,
     normalize_path,
 )
 
@@ -95,7 +96,7 @@ def search_files(keyword, common_config):
                 content = f.read()
         except (IOError, OSError, PermissionError) as e:
             # 読み取り不可ファイルはスキップ（警告を stderr に出力）
-            print(f"Warning: skipping unreadable file {filepath}: {e}", file=sys.stderr)
+            log(f"Warning: skipping unreadable file {filepath}: {e}")
             continue
 
         if keyword_lower in content.lower():

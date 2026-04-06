@@ -40,6 +40,7 @@ except ImportError:
 # toc_utils のインポート（設定読み込み・パス正規化）
 from toc_utils import (
     ConfigNotReadyError,
+    calculate_file_hash,
     get_all_md_files,
     init_common_config,
     normalize_path,
@@ -59,8 +60,7 @@ def parse_args():
     )
     parser.add_argument(
         "--query",
-        required=False,
-        default="",
+        required=True,
         help="検索クエリ（必須）",
     )
     parser.add_argument(
@@ -68,6 +68,11 @@ def parse_args():
         type=float,
         default=0.3,
         help="類似度スコアの下限閾値（デフォルト: 0.3）",
+    )
+    parser.add_argument(
+        "--skip-stale-check",
+        action="store_true",
+        help="staleness チェックをスキップする（SKILL 側で事前チェック済みの場合に使用）",
     )
     return parser.parse_args()
 
@@ -147,8 +152,6 @@ def check_staleness(index, common_config):
     Returns:
         bool: stale であれば True、新鮮であれば False
     """
-    from toc_utils import calculate_file_hash
-
     project_root = common_config["project_root"]
     entries = index.get("entries", {})
 
@@ -281,11 +284,10 @@ def main():
     """メインエントリーポイント"""
     args = parse_args()
 
-    # --query が空文字または未指定の場合はエラー
-    if not args.query or not args.query.strip():
+    if not args.query.strip():
         print(json.dumps({
             "status": "error",
-            "error": "--query is required and must not be empty.",
+            "error": "--query must not be empty.",
         }))
         sys.exit(1)
 
@@ -325,8 +327,8 @@ def main():
         print(json.dumps({"status": "error", "error": model_error}))
         sys.exit(1)
 
-    # Staleness チェック（FNC-002: stale 時は検索を実行せずエラーを返す）
-    if check_staleness(index, common_config):
+    # Staleness チェック（SKILL 側で embed_docs.py --check 済みなら --skip-stale-check で省略可）
+    if not args.skip_stale_check and check_staleness(index, common_config):
         print(json.dumps({
             "status": "error",
             "error": "Index is stale. Run embed_docs.py to update.",
