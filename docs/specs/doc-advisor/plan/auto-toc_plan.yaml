@@ -25,7 +25,7 @@ tasks:
   - task_id: TASK-001
     title: 既存スクリプトのリファクタリング（パラメータ追加による外部 import 対応）
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-009
     depends_on: []
     group_id: null

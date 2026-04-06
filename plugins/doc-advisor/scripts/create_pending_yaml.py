@@ -116,11 +116,20 @@ def init_config(category):
     return True
 
 
-def determine_doc_type(root_dir_name):
-    """Determine doc_type from root_dir path using .doc_structure.yaml doc_types_map"""
-    if DOC_TYPES_MAP:
+def determine_doc_type(root_dir_name, *, doc_types_map=None, category=None):
+    """Determine doc_type from root_dir path using .doc_structure.yaml doc_types_map
+
+    Args:
+        root_dir_name: ルートディレクトリ名
+        doc_types_map: パス→doc_type のマッピング辞書（省略時はグローバル変数 DOC_TYPES_MAP にフォールバック）
+        category: カテゴリ名（省略時はグローバル変数 CATEGORY にフォールバック）
+    """
+    _doc_types_map = doc_types_map if doc_types_map is not None else DOC_TYPES_MAP
+    _category = category if category is not None else CATEGORY
+
+    if _doc_types_map:
         normalized = root_dir_name.rstrip('/')
-        for path, doc_type in DOC_TYPES_MAP.items():
+        for path, doc_type in _doc_types_map.items():
             if path.rstrip('/') == normalized:
                 return doc_type
     # Fallback: infer from directory name
@@ -128,7 +137,7 @@ def determine_doc_type(root_dir_name):
     if dir_lower in DOC_TYPE_KEYWORDS:
         return DOC_TYPE_KEYWORDS[dir_lower]
     # Default by category
-    return CATEGORY.rstrip('s') if CATEGORY else 'unknown'
+    return _category.rstrip('s') if _category else 'unknown'
 
 
 def get_pending_template():
