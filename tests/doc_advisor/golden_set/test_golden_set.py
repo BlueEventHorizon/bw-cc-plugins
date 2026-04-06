@@ -126,7 +126,7 @@ def _check_index_exists(category):
     if project_root is None:
         return False
     index_path = (
-        project_root / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
+        project_root / ".claude" / "doc-advisor" / "index" / category / f"{category}_index.json"
     )
     return index_path.exists()
 

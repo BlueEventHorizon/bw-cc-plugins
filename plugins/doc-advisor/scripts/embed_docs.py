@@ -85,9 +85,9 @@ def parse_args():
 def get_index_path(category, project_root):
     """インデックス JSON のパスを返す。
 
-    保存先: .claude/doc-advisor/toc/{category}/{category}_index.json
+    保存先: .claude/doc-advisor/index/{category}/{category}_index.json
     """
-    return project_root / ".claude" / "doc-advisor" / "toc" / category / f"{category}_index.json"
+    return project_root / ".claude" / "doc-advisor" / "index" / category / f"{category}_index.json"
 
 
 def load_index(index_path):

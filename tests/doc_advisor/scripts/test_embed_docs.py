@@ -176,14 +176,14 @@ class TestGetIndexPath(unittest.TestCase):
         """specs カテゴリのインデックスパス"""
         root = Path("/project")
         result = get_index_path("specs", root)
-        expected = Path("/project/.claude/doc-advisor/toc/specs/specs_index.json")
+        expected = Path("/project/.claude/doc-advisor/index/specs/specs_index.json")
         self.assertEqual(result, expected)
 
     def test_rules_path(self):
         """rules カテゴリのインデックスパス"""
         root = Path("/project")
         result = get_index_path("rules", root)
-        expected = Path("/project/.claude/doc-advisor/toc/rules/rules_index.json")
+        expected = Path("/project/.claude/doc-advisor/index/rules/rules_index.json")
         self.assertEqual(result, expected)
 
 
@@ -388,11 +388,11 @@ specs:
         with open(os.path.join(self.project_root, '.doc_structure.yaml'), 'w') as f:
             f.write(doc_structure)
 
-        # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
-            self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
+        # インデックスディレクトリ作成
+        self.index_dir = os.path.join(
+            self.project_root, '.claude', 'doc-advisor', 'index', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -435,7 +435,7 @@ specs:
         self._create_rule_file('rules/test.md')
 
         # インデックスだけ作成（チェックサムなし）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -451,7 +451,7 @@ specs:
         file_path = self._create_rule_file('rules/test.md')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -462,7 +462,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/test.md: {file_hash}\n")
 
@@ -478,7 +478,7 @@ specs:
         self._create_rule_file('rules/new_file.md')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
@@ -490,7 +490,7 @@ specs:
             sha256.update(f.read())
         file_hash = sha256.hexdigest()
 
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write(f"checksums:\n  rules/existing.md: {file_hash}\n")
 
@@ -506,12 +506,12 @@ specs:
         self._create_rule_file('rules/test.md', content='# Original\n\nOriginal content.\n')
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 古いチェックサム（不一致なハッシュ）
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/test.md: old_hash_value\n")
 
@@ -528,12 +528,12 @@ specs:
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
         # インデックス作成
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         with open(index_path, 'w') as f:
             json.dump({"metadata": {}, "entries": {}}, f)
 
         # 存在しないファイルのチェックサムを登録
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/deleted.md: some_hash\n")
 
@@ -587,11 +587,11 @@ specs:
         # rules/ ディレクトリ作成
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
-        # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
-            self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
+        # インデックスディレクトリ作成
+        self.index_dir = os.path.join(
+            self.project_root, '.claude', 'doc-advisor', 'index', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -688,7 +688,7 @@ specs:
         self._create_rule_file('rules/new_file.md', content='# New\n\nNew content.\n')
 
         # 既存インデックスを作成（existing.md と deleted.md がある状態）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         existing_index = {
             "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 2},
             "entries": {
@@ -700,7 +700,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（existing.md は古いハッシュ、deleted.md も登録）
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/existing.md: old_hash\n  rules/deleted.md: deleted_hash\n")
 
@@ -740,7 +740,7 @@ specs:
         self._create_rule_file('rules/kept.md', content='# Kept\n\nKept content.\n')
 
         # 既存インデックス（kept.md と removed.md）
-        index_path = os.path.join(self.toc_dir, 'rules_index.json')
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
         existing_index = {
             "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 2},
             "entries": {
@@ -752,7 +752,7 @@ specs:
             json.dump(existing_index, f)
 
         # チェックサム（kept.md と removed.md が登録済み）
-        checksums_path = os.path.join(self.toc_dir, '.embedding_checksums.yaml')
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
         with open(checksums_path, 'w') as f:
             f.write("checksums:\n  rules/kept.md: old_hash\n  rules/removed.md: removed_hash\n")
 

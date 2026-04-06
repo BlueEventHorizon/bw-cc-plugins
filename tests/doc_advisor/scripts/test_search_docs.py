@@ -492,11 +492,11 @@ specs:
         # rules ディレクトリ作成
         os.makedirs(os.path.join(self.project_root, 'rules'), exist_ok=True)
 
-        # ToC ディレクトリ作成
-        self.toc_dir = os.path.join(
-            self.project_root, '.claude', 'doc-advisor', 'toc', 'rules'
+        # インデックスディレクトリ作成
+        self.index_dir = os.path.join(
+            self.project_root, '.claude', 'doc-advisor', 'index', 'rules'
         )
-        os.makedirs(self.toc_dir, exist_ok=True)
+        os.makedirs(self.index_dir, exist_ok=True)
 
         # 環境変数を保存
         self._orig_env = {}
@@ -563,7 +563,7 @@ specs:
             "metadata": {"model": "text-embedding-3-large"},
             "entries": {},
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -595,7 +595,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -629,7 +629,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
@@ -660,7 +660,7 @@ specs:
                 },
             },
         }
-        index_path = os.path.join(self.toc_dir, "rules_index.json")
+        index_path = os.path.join(self.index_dir, "rules_index.json")
         with open(index_path, "w") as f:
             json.dump(index_data, f)
 
