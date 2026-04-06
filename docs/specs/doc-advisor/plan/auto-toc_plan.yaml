@@ -47,7 +47,7 @@ tasks:
   - task_id: TASK-002
     title: auto_create_toc.py メタデータ抽出モジュール実装
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-009
     depends_on:
       - TASK-001
