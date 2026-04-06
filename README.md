@@ -2,6 +2,8 @@
 
 A Claude Code plugin marketplace for AI-powered code & document review and project document structure management.
 
+**Marketplace version: 0.1.0**
+
 [Japanese README (README_ja.md)](README_ja.md)
 
 ## Plugins

@@ -2,6 +2,8 @@
 
 AI によるドキュメントライフサイクル管理のための Claude Code プラグインマーケットプレイス。
 
+**マーケットプレイスバージョン: 0.1.0**
+
 [English README (README.md)](README.md)
 
 ## プラグイン一覧

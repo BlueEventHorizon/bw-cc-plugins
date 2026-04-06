@@ -1,6 +1,10 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "bw-cc-plugins",
+  "metadata": {
+    "description": "Document lifecycle management, GitHub operations, Xcode build/test, and AI-searchable document indexing",
+    "version": "0.1.0"
+  },
   "owner": {
     "name": "moons"
   },
