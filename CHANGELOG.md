@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-04-07
+
+### doc-advisor
+
+- **refactor**: `create-code-index` / `query-code` スキルを無効化。`plugin.json` の skills リストから除外し、ユーザー・AI ともに呼び出し不可に（ファイルは保持）
+
+## [marketplace 0.1.0] - 2026-04-07
+
+### marketplace
+
+- **feat**: マーケットプレイスバージョン管理を導入。`metadata.version` を `marketplace.json` に追加（公式スキーマ準拠）
+- **feat**: `.version-config.yaml` に marketplace ターゲットを追加。`/forge:update-version` でリポジトリ全体のバージョンも一括管理可能に
+
 ## [0.0.29] - 2026-04-05
 
 ### forge
