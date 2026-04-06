@@ -1,6 +1,18 @@
 # version_config_version: 1.0
 
 targets:
+  - name: marketplace
+    version_file: .claude-plugin/marketplace.json
+    version_path: metadata.version
+    sync_files:
+      - path: README.md
+        pattern: '**Marketplace version: {version}**'
+        filter: '**Marketplace version:'
+      - path: README_ja.md
+        pattern: '**マーケットプレイスバージョン: {version}**'
+        filter: '**マーケットプレイスバージョン:'
+        optional: true
+
   - name: forge
     version_file: plugins/forge/.claude-plugin/plugin.json
     version_path: version

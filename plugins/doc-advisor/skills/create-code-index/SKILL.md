@@ -3,7 +3,7 @@ name: create-code-index
 description: |
   コードインデックスを作成・更新する。ソースファイルの構造（imports/exports/sections）を抽出しインデックスに登録する。
   トリガー: "コードインデックス更新", "create code index", "インデックス構築"
-user-invocable: true
+user-invocable: false
 argument-hint: "[--full]"
 ---
 

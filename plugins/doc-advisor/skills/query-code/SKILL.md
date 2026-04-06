@@ -7,7 +7,7 @@ description: |
   - "関連するソースコードは？"
   - "このタスクに関係するファイルを探して"
   - タスク実装前のコード調査
-user-invocable: true
+user-invocable: false
 argument-hint: "<タスク説明 or キーワード>"
 context: fork
 agent: general-purpose
