@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-04-04T07:36:10Z
-file_count: 30
+generated_at: 2026-04-06T10:14:59Z
+file_count: 31
 checksums:
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: efb584be874fa55804860ab97e1534c0f0edafd9f4edf596d6b9afa24cb58449
@@ -10,6 +10,7 @@ checksums:
   docs/specs/doc-advisor/design/DES-004_document_model.md: cac4758107519baaae5ebc8614ee4e016c6d509e00d42b7330a1beb5e8298d7e
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: 23cf674a93e111f5c0c82965245cdb09ec1ec86e2385a62c6ff18b7b37a6ebc4
   docs/specs/doc-advisor/design/DES-007_code_index_design.md: 39b9bf1d4d90a5a78b509eb3e337255aa84a45568ccc5cfd97d3c376a79398a5
+  docs/specs/doc-advisor/design/DES-009_auto_toc_design.md: 17d778802a8ed3e30a224645d6983ef37895f5f50dbae86c5247b492df1d4b45
   docs/specs/doc-advisor/requirements/REQ-001_doc_advisor.md: b159f59da4f67126d46c21ccb7201d4e510d3926c75c1533529a24ac5f030555
   docs/specs/doc-advisor/requirements/REQ-002_upgrade_v2_to_v3.md: 182b62a58f8aefba316f81ccd194ef984c73f0288a7df7884724769bf2ecc49a
   docs/specs/doc-advisor/requirements/REQ-003_versioned_migration.md: 86952b9ecd656eecf2b8b47020d19c3e2ee274af39e92f995ba55b2ca030e3ad
