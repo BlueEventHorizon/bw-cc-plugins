@@ -6,15 +6,33 @@ auto-create-toc メインスクリプト（doc-advisor プラグイン）
 セッション終了時に ToC を自動更新する。
 Markdown ファイルからスクリプトのみでメタデータを抽出し、
 validate_toc.py の検査を通過するエントリを生成する。
-
-TASK-002: MetadataExtractor クラスとヘルパー関数の実装。
-main() やコアロジック（detect_changed_files, update_toc 等）は TASK-003 で実装する。
 """
 
+import argparse
+import json
+import os
 import re
+import shutil
+import sys
 from pathlib import Path
 
-from create_pending_yaml import determine_doc_type
+from create_pending_yaml import determine_doc_type, has_substantive_content
+from toc_utils import (
+    init_common_config,
+    load_checksums,
+    calculate_file_hash,
+    should_exclude,
+    rglob_follow_symlinks,
+    load_existing_toc,
+    write_checksums_yaml,
+    backup_existing_file,
+    normalize_path,
+    resolve_config_path,
+    ConfigNotReadyError,
+    log,
+)
+from merge_toc import write_yaml_output
+from validate_toc import validate_toc
 
 
 # doc_type → 汎用タスクのマッピング
@@ -93,9 +111,11 @@ def _parse_frontmatter(content):
         if match:
             key = match.group(1).strip()
             value = match.group(2).strip()
-            # クォートの除去
-            if (value.startswith('"') and value.endswith('"')) or \
-               (value.startswith("'") and value.endswith("'")):
+            # クォートの除去（1文字のクォート文字自体を誤って空文字にしないよう len チェック）
+            if len(value) >= 2 and (
+                (value.startswith('"') and value.endswith('"')) or
+                (value.startswith("'") and value.endswith("'"))
+            ):
                 value = value[1:-1]
             # マルチライン指示子（|, >, |-, >-）の場合は後続インデント行を連結
             if value in ('|', '>', '|-', '>-'):
@@ -103,8 +123,8 @@ def _parse_frontmatter(content):
                 j = i + 1
                 while j < len(fm_lines):
                     next_line = fm_lines[j]
-                    # 2スペース以上のインデントがある行を連結対象とする
-                    if re.match(r'^  +\S', next_line):
+                    # 1スペース以上のインデントがある行を連結対象とする
+                    if re.match(r'^ +\S', next_line):
                         multiline_parts.append(next_line.strip())
                         j += 1
                     else:
@@ -580,3 +600,404 @@ class MetadataExtractor:
             'keywords': self.extract_keywords(),
             'applicable_tasks': self.extract_applicable_tasks(),
         }
+
+
+# ---------------------------------------------------------------------------
+# コアロジック（TASK-003）
+# ---------------------------------------------------------------------------
+
+
+def _resolve_config_paths(category, common_config):
+    """init_common_config() の戻り値から ToC 関連パスと出力設定を解決する。
+
+    merge_toc.py の init_config() と同じパターンで resolve_config_path() を使用する。
+
+    Args:
+        category: 'rules' または 'specs'
+        common_config: init_common_config() の戻り値辞書
+
+    Returns:
+        dict: toc_file, checksums_file, output_config を含む辞書
+    """
+    config = common_config['config']
+    project_root = common_config['project_root']
+    first_dir = common_config['first_dir']
+
+    toc_file = resolve_config_path(
+        config.get('toc_file', f'{category}_toc.yaml'), first_dir, project_root
+    )
+    checksums_file = resolve_config_path(
+        config.get('checksums_file', '.toc_checksums.yaml'), first_dir, project_root
+    )
+    output_config = config.get('output', {})
+
+    return {
+        'toc_file': toc_file,
+        'checksums_file': checksums_file,
+        'output_config': output_config,
+    }
+
+
+def parse_args():
+    """コマンドライン引数を解析し、動作モードを決定する。
+
+    - --category があればスキルモード
+    - 引数なしならフックモード（stdin から JSON を読み込む）
+
+    Returns:
+        dict: {mode, category, cwd} を含む辞書
+            mode: 'skill' または 'hook'
+            category: 'rules' | 'specs' | None（フックモード時）
+            cwd: 作業ディレクトリ（フックモードで stdin から取得、なければ None）
+    """
+    # --category があるかチェック
+    if '--category' in sys.argv:
+        parser = argparse.ArgumentParser(
+            description='auto-create-toc: ToC 自動更新スクリプト'
+        )
+        parser.add_argument(
+            '--category', required=True, choices=['rules', 'specs'],
+            help='対象カテゴリ: rules または specs'
+        )
+        args = parser.parse_args()
+        return {'mode': 'skill', 'category': args.category, 'cwd': None}
+
+    # フックモード: stdin から JSON を読み込む
+    cwd = None
+    try:
+        if not sys.stdin.isatty():
+            raw = sys.stdin.read()
+            if raw.strip():
+                data = json.loads(raw)
+                cwd = data.get('cwd')
+    except (json.JSONDecodeError, IOError, OSError):
+        pass
+
+    return {'mode': 'hook', 'category': None, 'cwd': cwd}
+
+
+def detect_changed_files(category, config):
+    """SHA-256 ハッシュベースで変更（追加・変更・削除）ファイルを検出する。
+
+    load_checksums() で前回のハッシュを取得し、root_dirs 配下の .md ファイルを
+    走査して現在のハッシュと比較する。
+
+    Args:
+        category: 'rules' または 'specs'
+        config: _resolve_config_paths() の戻り値と common_config をマージした辞書
+            必須キー: checksums_file, root_dirs, target_glob, exclude_patterns,
+                      project_root
+
+    Returns:
+        dict: {added: [str], modified: [str], deleted: [str], new_checksums: dict}
+            パスは "root_dir_name/relative/path.md" 形式
+    """
+    checksums_file = config['checksums_file']
+    root_dirs = config['root_dirs']
+    target_glob = config['target_glob']
+    exclude_patterns = config['exclude_patterns']
+    project_root = config['project_root']
+
+    # 旧チェックサム読み込み（失敗時は空 dict = 全ファイル added 扱い）
+    old_checksums = load_checksums(checksums_file)
+
+    new_checksums = {}
+    added = []
+    modified = []
+
+    for root_dir, root_dir_name in root_dirs:
+        if not root_dir.exists():
+            continue
+        for filepath in rglob_follow_symlinks(root_dir, target_glob):
+            # 除外判定
+            if should_exclude(filepath, root_dir, exclude_patterns):
+                continue
+
+            # NFC 正規化された相対パス
+            rel_path = normalize_path(filepath.relative_to(root_dir))
+            prefixed_path = f"{root_dir_name}/{rel_path}"
+
+            # 空ファイル除外（filepath を直接使用して変数を統一）
+            if not has_substantive_content(filepath):
+                continue
+
+            # SHA-256 ハッシュ計算
+            file_hash = calculate_file_hash(filepath)
+            if file_hash is None:
+                # ハッシュ計算失敗: スキップ（警告は calculate_file_hash 内の log で担保）
+                continue
+
+            new_checksums[prefixed_path] = file_hash
+
+            old_hash = old_checksums.get(prefixed_path)
+            if old_hash is None:
+                added.append(prefixed_path)
+            elif old_hash != file_hash:
+                modified.append(prefixed_path)
+
+    # 削除検出: 旧チェックサムにあるが新規走査で見つからなかったファイル
+    deleted = [p for p in old_checksums if p not in new_checksums]
+
+    return {
+        'added': added,
+        'modified': modified,
+        'deleted': deleted,
+        'new_checksums': new_checksums,
+    }
+
+
+def update_toc(category, changed_files, config):
+    """既存 ToC を読み込み、変更を反映して書き出す。
+
+    _auto_generated マーカーのライフサイクル管理:
+    - entry に _auto_generated: true あり → スクリプト生成 → 全メタデータ再抽出、マーカー維持
+    - _auto_generated なし → AI 生成済み → メタデータ保持、title のみ再抽出
+    - 新規 → extract_metadata() + _auto_generated: true 付与
+
+    バリデーション失敗時はバックアップから復元する。
+
+    Args:
+        category: 'rules' または 'specs'
+        changed_files: detect_changed_files() の戻り値
+        config: 設定辞書（toc_file, checksums_file, output_config, project_root,
+                doc_types_map を含む）
+
+    Returns:
+        tuple: (success, updated_count, deleted_count, skipped_count)
+    """
+    toc_file = config['toc_file']
+    checksums_file = config['checksums_file']
+    output_config = config['output_config']
+    project_root = config['project_root']
+    doc_types_map = config.get('doc_types_map', {})
+
+    added = changed_files['added']
+    modified = changed_files['modified']
+    deleted = changed_files['deleted']
+    new_checksums = changed_files['new_checksums']
+
+    # バックアップ作成
+    backup_existing_file(toc_file)
+
+    # 既存 ToC 読み込み
+    docs = load_existing_toc(toc_file)
+
+    updated_count = 0
+    skipped_count = 0
+
+    # --- 新規ファイル処理 ---
+    for filepath in added:
+        full_path = project_root / filepath
+        extractor = MetadataExtractor(str(full_path), doc_types_map, category)
+        metadata = extractor.extract_metadata()
+        if metadata is None:
+            skipped_count += 1
+            log(f"[auto-create-toc] Skipped: {filepath} (read error)", file=sys.stderr)
+            continue
+        metadata['_auto_generated'] = 'true'
+        docs[filepath] = metadata
+        updated_count += 1
+
+    # --- 変更ファイル処理 ---
+    for filepath in modified:
+        existing_entry = docs.get(filepath)
+        if existing_entry and existing_entry.get('_auto_generated') == 'true':
+            # スクリプト生成エントリ → 全メタデータ再抽出
+            full_path = project_root / filepath
+            extractor = MetadataExtractor(str(full_path), doc_types_map, category)
+            metadata = extractor.extract_metadata()
+            if metadata is None:
+                skipped_count += 1
+                log(f"[auto-create-toc] Skipped: {filepath} (read error)", file=sys.stderr)
+                continue
+            metadata['_auto_generated'] = 'true'
+            docs[filepath] = metadata
+            updated_count += 1
+        elif existing_entry:
+            # AI 生成済みエントリ → メタデータ保持、title のみ再抽出
+            full_path = project_root / filepath
+            extractor = MetadataExtractor(str(full_path), doc_types_map, category)
+            new_title = extractor.extract_title()
+            if not extractor.parse_error:
+                existing_entry['title'] = new_title
+                # _auto_generated は付与しない（AI 品質のメタデータを保持）
+                updated_count += 1
+            else:
+                skipped_count += 1
+                log(f"[auto-create-toc] Skipped: {filepath} (read error)", file=sys.stderr)
+        else:
+            # ToC にエントリがない（新規扱い）
+            full_path = project_root / filepath
+            extractor = MetadataExtractor(str(full_path), doc_types_map, category)
+            metadata = extractor.extract_metadata()
+            if metadata is None:
+                skipped_count += 1
+                log(f"[auto-create-toc] Skipped: {filepath} (read error)", file=sys.stderr)
+                continue
+            metadata['_auto_generated'] = 'true'
+            docs[filepath] = metadata
+            updated_count += 1
+
+    # --- 削除ファイル処理 ---
+    deleted_count = 0
+    for filepath in deleted:
+        if filepath in docs:
+            del docs[filepath]
+            deleted_count += 1
+
+    # --- 書き出し ---
+    if not write_yaml_output(docs, toc_file, category=category, output_config=output_config):
+        log(f"[auto-create-toc] Error: Failed to write {toc_file.name}", file=sys.stderr)
+        # バックアップから復元
+        _restore_backup(toc_file)
+        return (False, 0, 0, skipped_count)
+
+    # --- バリデーション ---
+    if not validate_toc(toc_file, category=category, project_root=project_root):
+        log(f"[auto-create-toc] Error: Validation failed for {toc_file.name}", file=sys.stderr)
+        # バックアップから復元
+        _restore_backup(toc_file)
+        return (False, 0, 0, skipped_count)
+
+    # --- チェックサム更新 ---
+    if not write_checksums_yaml(new_checksums, checksums_file):
+        log(f"[auto-create-toc] Error: Failed to write checksums", file=sys.stderr)
+        # チェックサム書き込み失敗時は ToC もバックアップから復元（安全側）
+        _restore_backup(toc_file)
+        return (False, 0, 0, skipped_count)
+
+    return (True, updated_count, deleted_count, skipped_count)
+
+
+def _restore_backup(toc_file):
+    """バックアップファイル（.bak）から ToC を復元する。
+
+    Args:
+        toc_file: 復元先の ToC ファイルパス
+    """
+    backup_path = toc_file.with_suffix('.yaml.bak')
+    if backup_path.exists():
+        try:
+            shutil.copy(backup_path, toc_file)
+            log(f"[auto-create-toc] Restored from backup: {backup_path}")
+        except (IOError, OSError, PermissionError) as e:
+            log(f"[auto-create-toc] Error: Failed to restore backup: {e}", file=sys.stderr)
+
+
+def run_category(category, common_config):
+    """カテゴリ単位の ToC 更新オーケストレーション。
+
+    detect_changed_files() → update_toc() → stdout 通知の一連を実行する。
+
+    Args:
+        category: 'rules' または 'specs'
+        common_config: init_common_config() の戻り値辞書
+    """
+    # パス解決
+    paths = _resolve_config_paths(category, common_config)
+
+    # 設定をマージ
+    config = {
+        'toc_file': paths['toc_file'],
+        'checksums_file': paths['checksums_file'],
+        'output_config': paths['output_config'],
+        'root_dirs': common_config['root_dirs'],
+        'target_glob': common_config['target_glob'],
+        'exclude_patterns': common_config['exclude_patterns'],
+        'project_root': common_config['project_root'],
+        'doc_types_map': common_config.get('doc_types_map', {}),
+    }
+
+    # 変更検知
+    changed_files = detect_changed_files(category, config)
+
+    # 変更なしならスキップ（無出力）
+    if not changed_files['added'] and not changed_files['modified'] and not changed_files['deleted']:
+        return
+
+    # ToC 更新
+    success, updated_count, deleted_count, skipped_count = update_toc(
+        category, changed_files, config
+    )
+
+    if not success:
+        return
+
+    # 通知出力（stdout）
+    parts = []
+    if updated_count > 0:
+        parts.append(f"{updated_count} updated")
+    if deleted_count > 0:
+        parts.append(f"{deleted_count} deleted")
+
+    if parts:
+        msg = f"[auto-create-toc] {category}: {', '.join(parts)}"
+        print(msg)
+
+    # スキップは updated/deleted に関わらず通知する（read error 等の問題を検知可能にするため）
+    if skipped_count > 0:
+        print(f"[auto-create-toc] {category}: {skipped_count} skipped")
+
+
+def main():
+    """メインエントリポイント。
+
+    .doc_structure.yaml の存在確認 → parse_args() → カテゴリ別処理を実行する。
+    全エラーで exit 0 を返し、セッション終了を妨げない。
+    """
+    try:
+        # .doc_structure.yaml 存在確認
+        from toc_utils import find_config_file
+        try:
+            find_config_file()
+        except FileNotFoundError:
+            # .doc_structure.yaml なし → 無出力で終了
+            sys.exit(0)
+
+        # 引数解析
+        args = parse_args()
+
+        # cwd の設定（フックモードで stdin から取得した場合）
+        if args.get('cwd'):
+            try:
+                os.chdir(args['cwd'])
+            except (OSError, FileNotFoundError) as e:
+                print(f"[auto-create-toc] Warning: Failed to change directory to {args['cwd']}: {e}", file=sys.stderr)
+
+        # カテゴリリスト決定
+        if args['mode'] == 'skill':
+            categories = [args['category']]
+        else:
+            # フックモード: 両カテゴリを処理
+            categories = ['rules', 'specs']
+
+        # カテゴリ別処理
+        for category in categories:
+            try:
+                common_config = init_common_config(category)
+            except ConfigNotReadyError:
+                # カテゴリ未設定 → スキップ（無出力）
+                continue
+            except (RuntimeError, FileNotFoundError):
+                continue
+
+            # ToC ファイル存在確認
+            paths = _resolve_config_paths(category, common_config)
+            if not paths['toc_file'].exists():
+                # ToC 未作成 → スキップ（初回作成は create-*-toc の責務）
+                continue
+
+            run_category(category, common_config)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        # 全例外を catch → stderr + exit 0
+        print(f"[auto-create-toc] Error: {e}", file=sys.stderr)
+        sys.exit(0)
+
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

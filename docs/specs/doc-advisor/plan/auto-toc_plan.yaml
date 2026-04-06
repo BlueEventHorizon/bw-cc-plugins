@@ -71,7 +71,7 @@ tasks:
   - task_id: TASK-003
     title: auto_create_toc.py コアロジック実装（変更検知・ToC 更新・メインエントリポイント）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-009
     depends_on:
       - TASK-001
