@@ -13,7 +13,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | **forge**  | 0.0.29     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
-| **doc-advisor** | 0.1.3 | AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール                                                           |
+| **doc-advisor** | 0.1.4 | AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール                                                           |
 
 ## スキル一覧
 
@@ -68,9 +68,6 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | 仕様文書の ToC を検索し、タスクに関連する仕様文書を特定する | `"What specs apply?"` `"仕様確認"` |
 | [**create-rules-toc**](docs/readme/README_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"Rebuild the rules ToC"` |
 | [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
-| [**create-code-index**](docs/readme/README_doc-advisor_ja.md#create-code-index) | ソースファイルの構造（imports/exports/sections）を抽出してコードインデックスを作成・更新する | `/doc-advisor:create-code-index` |
-| [**query-code**](docs/readme/README_doc-advisor_ja.md#query-code) | 2段階検索（キーワード絞り込み + AI 評価）でタスクに関連するソースファイルを特定する | `/doc-advisor:query-code` |
-| *swift* | Swift-Selena MCP で Swift ソース構造を抽出する。AI 専用、create-code-index から呼び出し | — |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 

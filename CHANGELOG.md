@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-04-07
+
+### doc-advisor
+
+- **refactor**: `create-code-index` / `query-code` スキルを無効化。`plugin.json` の skills リストから除外し、ユーザー・AI ともに呼び出し不可に（ファイルは保持）
+
 ## [marketplace 0.1.0] - 2026-04-07
 
 ### marketplace
