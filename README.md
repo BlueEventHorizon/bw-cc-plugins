@@ -2,7 +2,7 @@
 
 A Claude Code plugin marketplace for AI-powered code & document review and project document structure management.
 
-**Marketplace version: 0.1.0**
+**Marketplace version: 0.1.1**
 
 [Japanese README (README_ja.md)](README_ja.md)
 
@@ -13,7 +13,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | **forge** | 0.0.29  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.1.4 | AI-searchable document index (ToC) generator for Claude Code |
+| **doc-advisor** | 0.1.5 | AI-searchable document index (ToC) generator for Claude Code |
 
 ## Skills
 

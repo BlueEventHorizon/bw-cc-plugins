@@ -68,6 +68,29 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 現在のバージョン (forge): 0.0.18
 ```
 
+### Step 3.5: main ブランチとのバージョン比較
+
+`get_version_status.py` でベースブランチ（デフォルト: main）と現在のバージョンを比較する:
+
+```bash
+python3 ${CLAUDE_PROJECT_DIR}/plugins/forge/scripts/get_version_status.py
+```
+
+出力 JSON の `targets` から対象 target のエントリを探す。
+
+- **`changed: true`（current > main）**: 既にこのブランチでバンプ済みであることをユーザーに伝える。AskUserQuestion を使用して、さらにバンプするか確認する:
+  ```
+  {target_name} は既に main より新しいバージョンです（main: {base} / current: {current}）。
+  さらにバンプしますか？
+  ```
+  ユーザーが「しない」と回答した場合は処理を終了する。
+
+- **`changed: false`（current == main）**: 通常フロー。何もせず Step 4 へ進む。
+
+- **スクリプトが失敗・バージョン取得不可**: 警告のみ表示し、Step 4 へ進む（ブロックしない）。
+
+- **`base` が取得できない（main に存在しないファイル）**: 新規 target の可能性があるため注意のみ表示し、Step 4 へ進む。
+
 ### Step 4: 新バージョンを決定する
 
 スクリプトで新バージョンを計算する:
@@ -164,6 +187,30 @@ stderr の JSON で `status: "error"` の場合はエラー内容を報告して
 | {sync_file_1} | {current_version} → {new_version} |
 | ...      |      |
 ```
+
+### Step 6.5: marketplace バンプ提案
+
+対象 target が `marketplace` 以外の場合のみ実行する。
+
+`get_version_status.py` を再実行し、`summary.marketplace_needs_bump` を確認する:
+
+```bash
+python3 ${CLAUDE_PROJECT_DIR}/plugins/forge/scripts/get_version_status.py
+```
+
+`marketplace_needs_bump: true`（marketplace が main と同じバージョンのまま、かつプラグインが更新済み）の場合、AskUserQuestion を使用して確認する:
+
+```
+以下のプラグインが main より新しいバージョンになっています:
+  {変更済みプラグイン一覧（name: base → current）}
+
+marketplace はまだ main と同じバージョン（{marketplace_base}）です。
+marketplace もバンプしますか？（patch 推奨）
+```
+
+ユーザーが「はい」と回答した場合、`/forge:update-version marketplace {version_spec}` を自分自身で呼び出してワークフローを再実行する（target: marketplace）。
+
+`marketplace_needs_bump: false` または スクリプト失敗の場合は何もせず Step 7 へ進む。
 
 ### Step 7: CHANGELOG の挿入
 
