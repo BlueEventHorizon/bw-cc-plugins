@@ -75,6 +75,9 @@ targets:
         pattern: '| **doc-advisor** | {version} |'
         filter: '| **doc-advisor**'
         optional: true
+      - path: CLAUDE.md
+        pattern: '**doc-advisor** (v{version})'
+        filter: '**doc-advisor** (v'
 
 changelog:
   file: CHANGELOG.md
