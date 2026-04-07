@@ -1,10 +1,23 @@
 # bw-cc-plugins
 
-A Claude Code plugin marketplace for AI-powered code & document review and project document structure management.
+A Claude Code plugin marketplace for Spec-Driven Development — from requirements and design through implementation, review, and delivery.
 
 **Marketplace version: 0.1.1**
 
 [Japanese README (README_ja.md)](README_ja.md)
+
+## Workflow
+
+```mermaid
+flowchart LR
+    subgraph forge
+        R([Requirements]) --> D([Design]) --> P([Plan]) --> I([Implement]) --> RF([Review / Fix])
+    end
+    RF --> DL([Delivery])
+    DA[doc-advisor] -. find context .-> forge
+    AV[anvil] -- commit & PR --> DL
+    XC[xcode] -. build & test .-> RF
+```
 
 ## Plugins
 
@@ -13,7 +26,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | **forge** | 0.0.29  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.1.5 | AI-searchable document index (ToC) generator for Claude Code |
+| **doc-advisor** | 0.1.5 | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
 
 ## Skills
 
@@ -84,9 +97,12 @@ Inside a Claude Code session:
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install forge@bw-cc-plugins
+/plugin install anvil@bw-cc-plugins
+/plugin install doc-advisor@bw-cc-plugins
+/plugin install xcode@bw-cc-plugins
 ```
 
-If you already installed, from your terminal:
+To re-enable a disabled plugin, from your terminal:
 
 ```bash
 claude plugin enable forge@bw-cc-plugins
@@ -113,47 +129,19 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## Document Structure (.doc_structure.yaml)
 
-`/forge:setup-doc-structure` scans project directories for markdown files, classifies them interactively, and generates `.doc_structure.yaml`. forge reads this file to collect reference documents during review and fix operations.
-
-See [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) for the full schema specification.
-
-```yaml
-# doc_structure_version: 3.0
-
-rules:
-  root_dirs:
-    - docs/rules/
-  doc_types_map:
-    docs/rules/: rule
-
-specs:
-  root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/requirement/"
-  doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/requirement/": requirement
-```
+`/forge:setup-doc-structure` scans your project and generates `.doc_structure.yaml`, which forge uses to locate reference documents during review and fix operations.
+→ [Schema reference](docs/specs/forge/design/doc_structure_format.md)
 
 ## Git Information Cache (.git_information.yaml)
 
-On first run, `/anvil:create-pr` detects GitHub owner/repo from `git remote` and offers to save `.git_information.yaml`:
-
-```yaml
-version: "1.0"
-github:
-  owner: "<org-or-user>"
-  repo: "<repo-name>"
-  remote_url: "<url>"
-  default_base_branch: main
-  pr_template: .github/PULL_REQUEST_TEMPLATE.md
-```
+On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and offers to save the settings to `.git_information.yaml` for future use.
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
+- OpenAI API key (for doc-advisor embedding features; set `OPENAI_API_KEY`)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 - Xcode with `xcodebuild` (for xcode plugin)
 

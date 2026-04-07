@@ -1,10 +1,23 @@
 # bw-cc-plugins
 
-AI によるドキュメントライフサイクル管理のための Claude Code プラグインマーケットプレイス。
+仕様駆動開発（Spec-Driven Development）を支援する Claude Code プラグインマーケットプレイス。要件定義・設計・計画・実装・レビューを AI と共に一貫して進める。
 
 **マーケットプレイスバージョン: 0.1.1**
 
 [English README (README.md)](README.md)
+
+## ワークフロー
+
+```mermaid
+flowchart LR
+    subgraph forge
+        R([要件定義]) --> D([設計]) --> P([計画]) --> I([実装]) --> RF([レビュー / 修正])
+    end
+    RF --> DL([成果物])
+    DA[doc-advisor] -. コンテキスト収集 .-> forge
+    AV[anvil] -- コミット & PR --> DL
+    XC[xcode] -. ビルド & テスト .-> RF
+```
 
 ## プラグイン一覧
 
@@ -13,7 +26,7 @@ AI によるドキュメントライフサイクル管理のための Claude Cod
 | **forge**  | 0.0.29     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
-| **doc-advisor** | 0.1.5 | AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール                                                           |
+| **doc-advisor** | 0.1.5 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
 
 ## スキル一覧
 
@@ -84,9 +97,12 @@ Claude Code セッション内で:
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install forge@bw-cc-plugins
+/plugin install anvil@bw-cc-plugins
+/plugin install doc-advisor@bw-cc-plugins
+/plugin install xcode@bw-cc-plugins
 ```
 
-すでにinstall済みの場合は、ターミナルから:
+無効化したプラグインを再有効化するには、ターミナルから:
 
 ```bash
 claude plugin enable forge@bw-cc-plugins
@@ -113,47 +129,19 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## 文書構造管理 (.doc_structure.yaml)
 
-`/forge:setup-doc-structure` でプロジェクトのディレクトリをスキャンし、Markdown ファイルを対話的に分類して `.doc_structure.yaml` を生成します。forge はこのファイルを読み込んで、レビュー・修正時の参考文書を収集します。
-
-完全なスキーマ仕様は [docs/specs/forge/design/doc_structure_format.md](docs/specs/forge/design/doc_structure_format.md) を参照してください。
-
-```yaml
-# doc_structure_version: 3.0
-
-rules:
-  root_dirs:
-    - docs/rules/
-  doc_types_map:
-    docs/rules/: rule
-
-specs:
-  root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/requirement/"
-  doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/requirement/": requirement
-```
+`/forge:setup-doc-structure` でプロジェクトをスキャンして `.doc_structure.yaml` を生成します。forge はこのファイルを参照してレビュー・修正時の関連文書を収集します。
+→ [スキーマ仕様](docs/specs/forge/design/doc_structure_format.md)
 
 ## Git 情報キャッシュ (.git_information.yaml)
 
-`/anvil:create-pr` の初回実行時、`git remote` から GitHub の owner/repo を検出し、`.git_information.yaml` への保存を提案します:
-
-```yaml
-version: "1.0"
-github:
-  owner: "<org-or-user>"
-  repo: "<repo-name>"
-  remote_url: "<url>"
-  default_base_branch: main
-  pr_template: .github/PULL_REQUEST_TEMPLATE.md
-```
+`/anvil:create-pr` の初回実行時に `git remote` から GitHub リポジトリを検出し、`.git_information.yaml` への設定保存を提案します。
 
 ## 動作要件
 
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
+- OpenAI API キー（doc-advisor の embedding 機能使用時。`OPENAI_API_KEY` 環境変数に設定）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 - Xcode / `xcodebuild`（xcode プラグイン用）
 
