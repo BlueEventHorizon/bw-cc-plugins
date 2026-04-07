@@ -21,9 +21,14 @@ OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings"
 
 EMBEDDING_BATCH_SIZE = 100
 
-API_RETRY_COUNT = 1
+# リトライ回数（初回 + リトライ n 回 = 最大 n+1 回試行）
+API_MAX_RETRIES = 1
 
+# 429 の Retry-After ヘッダーがない場合のデフォルト待機秒数
 RATE_LIMIT_WAIT_SECONDS = 60
+
+# 5xx / ネットワークエラー時のリトライ前待機秒数
+RETRY_WAIT_SECONDS = 2
 
 
 def _log(*args, **kwargs):
@@ -61,7 +66,7 @@ def call_embedding_api(texts, api_key):
     )
 
     last_error = None
-    for attempt in range(API_RETRY_COUNT + 1):
+    for attempt in range(API_MAX_RETRIES + 1):
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
@@ -70,9 +75,16 @@ def call_embedding_api(texts, api_key):
 
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                if attempt < API_RETRY_COUNT:
-                    _log(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
-                    time.sleep(RATE_LIMIT_WAIT_SECONDS)
+                if attempt < API_MAX_RETRIES:
+                    # Retry-After ヘッダーがあればその値を優先する
+                    retry_after = RATE_LIMIT_WAIT_SECONDS
+                    if e.headers and e.headers.get("Retry-After"):
+                        try:
+                            retry_after = int(e.headers["Retry-After"])
+                        except ValueError:
+                            pass
+                    _log(f"  レート制限 (429)。{retry_after}秒待機してリトライします...")
+                    time.sleep(retry_after)
                     last_error = e
                     continue
                 last_error = e
@@ -81,15 +93,17 @@ def call_embedding_api(texts, api_key):
                     "API 認証エラー (401)。OPENAI_API_KEY が正しいか確認してください。"
                 ) from e
             else:
-                if attempt < API_RETRY_COUNT:
-                    _log(f"  API エラー ({e.code})。リトライします...")
+                if attempt < API_MAX_RETRIES:
+                    _log(f"  API エラー ({e.code})。{RETRY_WAIT_SECONDS}秒後にリトライします...")
+                    time.sleep(RETRY_WAIT_SECONDS)
                     last_error = e
                     continue
                 last_error = e
 
         except urllib.error.URLError as e:
-            if attempt < API_RETRY_COUNT:
-                _log(f"  ネットワークエラー。リトライします: {e}")
+            if attempt < API_MAX_RETRIES:
+                _log(f"  ネットワークエラー。{RETRY_WAIT_SECONDS}秒後にリトライします: {e}")
+                time.sleep(RETRY_WAIT_SECONDS)
                 last_error = e
                 continue
             last_error = e

@@ -30,6 +30,9 @@ if SCRIPTS_DIR not in sys.path:
 
 EMBED_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'embed_docs.py')
 
+# テスト用一時ディレクトリのベースパス（/tmp 不可環境でも動作するようプロジェクト内に配置）
+_TEST_TEMP_BASE = Path(__file__).parent / ".temp"
+
 import embed_docs
 from embed_docs import (
     build_index,
@@ -55,7 +58,8 @@ class TestReadFileContent(unittest.TestCase):
     """read_file_content() の単体テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -181,7 +185,8 @@ class TestLoadSaveIndex(unittest.TestCase):
     """インデックス JSON の読み書きラウンドトリップテスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -256,7 +261,8 @@ class TestRunCheckMode(unittest.TestCase):
     """--check モードの stale/fresh 出力テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
         self.project_root = self.tmpdir
 
         # .git ディレクトリ作成
@@ -452,7 +458,8 @@ class TestEmbedDocsCli(unittest.TestCase):
     """embed_docs.py の CLI 統合テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
         self.project_root = self.tmpdir
 
         # .git ディレクトリ作成

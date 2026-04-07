@@ -24,6 +24,8 @@ if SCRIPTS_DIR not in sys.path:
 
 import embedding_api
 from embedding_api import (
+    API_MAX_RETRIES,
+    RATE_LIMIT_WAIT_SECONDS,
     call_embedding_api,
     call_embedding_api_single,
 )
@@ -88,8 +90,9 @@ class TestCallEmbeddingApi(unittest.TestCase):
             call_embedding_api(["テスト"], "invalid-key")
         self.assertIn("認証エラー", str(ctx.exception))
 
+    @patch("embedding_api.time.sleep")
     @patch("embedding_api.urllib.request.urlopen")
-    def test_network_error_retries_then_raises(self, mock_urlopen):
+    def test_network_error_retries_then_raises(self, mock_urlopen, mock_sleep):
         """ネットワークエラーでリトライ後に RuntimeError を発生させる"""
         import urllib.error
         mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
@@ -97,7 +100,8 @@ class TestCallEmbeddingApi(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             call_embedding_api(["テスト"], "fake-key")
         self.assertIn("API 呼び出し失敗", str(ctx.exception))
-        self.assertEqual(mock_urlopen.call_count, embedding_api.API_RETRY_COUNT + 1)
+        self.assertEqual(mock_urlopen.call_count, API_MAX_RETRIES + 1)
+        self.assertEqual(mock_sleep.call_count, API_MAX_RETRIES)
 
     @patch("embedding_api.time.sleep")
     @patch("embedding_api.urllib.request.urlopen")
@@ -110,11 +114,30 @@ class TestCallEmbeddingApi(unittest.TestCase):
         )
         with self.assertRaises(RuntimeError):
             call_embedding_api(["テスト"], "fake-key")
-        self.assertEqual(mock_urlopen.call_count, embedding_api.API_RETRY_COUNT + 1)
-        self.assertEqual(mock_sleep.call_count, embedding_api.API_RETRY_COUNT)
+        self.assertEqual(mock_urlopen.call_count, API_MAX_RETRIES + 1)
+        self.assertEqual(mock_sleep.call_count, API_MAX_RETRIES)
+        # デフォルト待機時間で sleep が呼ばれることを確認
+        mock_sleep.assert_called_with(RATE_LIMIT_WAIT_SECONDS)
 
+    @patch("embedding_api.time.sleep")
     @patch("embedding_api.urllib.request.urlopen")
-    def test_server_error_retries(self, mock_urlopen):
+    def test_rate_limit_respects_retry_after_header(self, mock_urlopen, mock_sleep):
+        """429 レスポンスの Retry-After ヘッダーが指定する秒数を待機する"""
+        import http.client
+        import urllib.error
+        headers = http.client.HTTPMessage()
+        headers["Retry-After"] = "30"
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="https://api.openai.com/v1/embeddings",
+            code=429, msg="Too Many Requests", hdrs=headers, fp=None,
+        )
+        with self.assertRaises(RuntimeError):
+            call_embedding_api(["テスト"], "fake-key")
+        mock_sleep.assert_called_with(30)
+
+    @patch("embedding_api.time.sleep")
+    @patch("embedding_api.urllib.request.urlopen")
+    def test_server_error_retries(self, mock_urlopen, mock_sleep):
         """500 等のサーバーエラーでリトライ後に RuntimeError を発生させる"""
         import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
@@ -123,7 +146,27 @@ class TestCallEmbeddingApi(unittest.TestCase):
         )
         with self.assertRaises(RuntimeError):
             call_embedding_api(["テスト"], "fake-key")
-        self.assertEqual(mock_urlopen.call_count, embedding_api.API_RETRY_COUNT + 1)
+        self.assertEqual(mock_urlopen.call_count, API_MAX_RETRIES + 1)
+
+    @patch("embedding_api.time.sleep")
+    @patch("embedding_api.urllib.request.urlopen")
+    def test_retry_succeeds_on_second_attempt(self, mock_urlopen, mock_sleep):
+        """1回目失敗・2回目成功のリトライシナリオ"""
+        import urllib.error
+        success_response = _mock_urlopen_response(
+            _make_api_response([FIXED_VECTOR])
+        )
+        mock_urlopen.side_effect = [
+            urllib.error.URLError("Connection refused"),
+            success_response,
+        ]
+
+        result = call_embedding_api(["テスト"], "fake-key")
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], FIXED_VECTOR)
+        self.assertEqual(mock_urlopen.call_count, 2)
+        self.assertEqual(mock_sleep.call_count, 1)
 
 
 class TestCallEmbeddingApiSingle(unittest.TestCase):

@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -100,7 +101,10 @@ def load_index(index_path):
 
 
 def save_index(index, index_path):
-    """インデックスデータを JSON ファイルに保存する。
+    """インデックスデータを JSON ファイルにアトミックに保存する。
+
+    一時ファイルに書き込んでからリネームすることで、書き込み中断による
+    JSON 破損を防止する。
 
     Args:
         index: 保存するインデックスデータ (dict)
@@ -108,8 +112,21 @@ def save_index(index, index_path):
     """
     index_path = Path(index_path)
     index_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, separators=(",", ":"))
+    # 一時ファイルに書き込んでからアトミックにリネーム
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=index_path.parent,
+        delete=False,
+        suffix=".tmp",
+    ) as tmp_f:
+        tmp_path = Path(tmp_f.name)
+        try:
+            json.dump(index, tmp_f, ensure_ascii=False, separators=(",", ":"))
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
+    tmp_path.replace(index_path)
 
 
 # text-embedding-3-small のトークン上限: 8,191
@@ -364,6 +381,7 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
     success_count = 0
     failed_sources = set()
     batch_failed = False
+    computed_checksums = {}  # バッチ処理で計算した checksum を保持（再計算を避ける）
 
     for batch_start in range(0, len(texts_to_embed), EMBEDDING_BATCH_SIZE):
         batch_end = min(batch_start + EMBEDDING_BATCH_SIZE, len(texts_to_embed))
@@ -374,6 +392,11 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
 
         try:
             embeddings = call_embedding_api(batch_texts, api_key)
+            if len(embeddings) != len(batch_texts):
+                raise RuntimeError(
+                    f"API が返した embedding 数 ({len(embeddings)}) が"
+                    f"リクエスト数 ({len(batch_texts)}) と一致しません"
+                )
         except RuntimeError as e:
             log(f"  エラー: バッチ {batch_start + 1}〜{batch_end} の処理に失敗しました: {e}")
             for source_file, _, _ in batch_paths:
@@ -385,9 +408,10 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
             batch_failed = True
             break
 
-        # 結果をインデックスに反映
+        # 結果をインデックスに反映（バッチ処理で計算した checksum を再利用）
         for i, (source_file, full_path, title) in enumerate(batch_paths):
             checksum = calculate_file_hash(full_path)
+            computed_checksums[source_file] = checksum
             entries[source_file] = {
                 "title": title,
                 "embedding": embeddings[i],
@@ -411,12 +435,13 @@ def build_index(category, common, index_path, checksums_file, full_mode, api_key
     log(f"インデックスを保存しました: {index_path} ({len(entries)} 件)")
 
     # チェックサムを更新（処理成功ファイルのみ）
+    # バッチ処理で計算済みの checksum を再利用し、未処理ファイルのみ新規計算
     current_checksums = {}
     for source_file, full_path in current_files.items():
         # 失敗したファイルはチェックサムを更新しない（次回の差分で再処理される）
         if source_file in failed_sources:
             continue
-        checksum = calculate_file_hash(full_path)
+        checksum = computed_checksums.get(source_file) or calculate_file_hash(full_path)
         if checksum is not None:
             current_checksums[source_file] = checksum
 

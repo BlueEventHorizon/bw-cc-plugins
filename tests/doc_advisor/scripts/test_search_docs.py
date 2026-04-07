@@ -31,6 +31,9 @@ if SCRIPTS_DIR not in sys.path:
 
 SEARCH_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'search_docs.py')
 
+# テスト用一時ディレクトリのベースパス（/tmp 不可環境でも動作するようプロジェクト内に配置）
+_TEST_TEMP_BASE = Path(__file__).parent / ".temp"
+
 from search_docs import (
     check_model_mismatch,
     check_staleness,
@@ -113,7 +116,8 @@ class TestLoadIndex(unittest.TestCase):
     """load_index() の単体テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -190,7 +194,8 @@ class TestCheckStaleness(unittest.TestCase):
     """check_staleness() の単体テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
         self.project_root = Path(self.tmpdir)
 
     def tearDown(self):
@@ -444,7 +449,8 @@ class TestSearchDocsCli(unittest.TestCase):
     """search_docs.py の CLI 統合テスト。"""
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
         self.project_root = self.tmpdir
 
         # .git ディレクトリ作成（get_project_root() が認識するため）
