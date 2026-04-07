@@ -223,6 +223,22 @@ class TestCLI(unittest.TestCase):
         result = self._run(content, "999.88.7", "999.88.8")
         self.assertEqual(result.returncode, 1)
 
+    def test_optional_pattern_not_found_cli(self):
+        """--optional でパターン未マッチ時に exit 0 + status: skipped"""
+        content = '| **anvil** | 888.77.6 | desc |'
+        result = self._run(content, "999.88.7", "999.88.8", "--filter", "**forge**", "--optional")
+        self.assertEqual(result.returncode, 0)
+        # stdout は空（Write すべき内容がない）
+        self.assertEqual(result.stdout, "")
+        status = json.loads(result.stderr)
+        self.assertEqual(status["status"], "skipped")
+
+    def test_optional_not_set_pattern_not_found_cli(self):
+        """--optional なしでパターン未マッチ時は従来通り exit 1"""
+        content = '| **anvil** | 888.77.6 | desc |'
+        result = self._run(content, "999.88.7", "999.88.8", "--filter", "**forge**")
+        self.assertEqual(result.returncode, 1)
+
     def test_file_not_found_cli(self):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / 'update_version_files.py'),

@@ -4,69 +4,65 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-02T09:44:37Z
-  file_count: 24
+  generated_at: 2026-04-06T22:21:36Z
+  file_count: 29
 
 docs:
-  docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md:
+  docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
-    title: "COMMON-REQ-001: Staged Version Migration Specification"
-    purpose: Defines framework for backward-compatible staged migration of versioned data formats, enabling applications to convert legacy data to current versions
+    title: "COMMON-REQ-001: Phased Versioned Data Migration Requirements"
+    purpose: Defines a phased migration framework for major-versioned data formats so legacy serialized data converts to the current format while preserving backward compatibility.
     content_details:
-      - Version detection from data
-      - Staged step-by-step migration (v1→v2→v3)
-      - Migration function registry pattern
-      - Pure function requirements (idempotent, no side effects)
-      - Error handling for unknown future versions
-      - Extensibility through new migration registration
-      - Design pattern implementation with CURRENT_VERSION and MIGRATIONS dictionary
-      - New version addition procedure (3 steps)
+      - Major-version integers; missing or undetectable version treated as oldest (v1)
+      - One-step migrations only (vN to vN+1); registry maps target version to function; no direct multi-version jumps
+      - Apply ascending chain for detected_version < v <= current_version; each step consumes prior output
+      - Idempotent pure transforms only; no file I/O, network, or other side effects
+      - Exceptions propagate; no silent catch-all fallback; data newer than current_version passes through unchanged
+      - In-memory transforms without rewriting source blobs; migration core must not depend on external libraries
+      - "Extensibility: add one migrator entry and bump CURRENT_VERSION; existing migrators stay unchanged (open-closed)"
+      - "Reference: doc_structure_version comment in .doc_structure.yaml and migrate_doc_structure.py"
     applicable_tasks:
-      - Data format versioning implementation
-      - Migration framework design
-      - Backward compatibility verification
-      - Version detection implementation
-      - Staged transformation testing
+      - Implementing versioned persisted-data migrations
+      - Adding new schema versions for serialized formats
+      - Reviewing backward compatibility for stored data
+      - doc_structure migration implementation
     keywords:
-      - migration
-      - version
-      - staged
-      - backward compatibility
-      - data format
-      - registry
-      - pure function
+      - phased migration
+      - MIGRATIONS registry
+      - CURRENT_VERSION
       - idempotent
-      - transformation
-      - framework
-  docs/specs/common/requirement/COMMON-REQ-002_error_handling_policy.md:
-    doc_type: requirement
-    title: "COMMON-REQ-002: Error Handling Policy"
-    purpose: Defines error handling requirements to prevent bug concealment, mandate explicit exception catching, and ensure early problem detection
-    content_details:
-      - External vs internal error distinction and terminology
-      - Exception catching limited to specific external error types only
-      - Prohibition of broad exception catching and silent fallback patterns
-      - "Permitted exception types: IO, network, type conversion errors"
-      - Error reporting requirements using JSON format and stderr output
-      - Pure function exception handling - exceptions must propagate as code bugs
-      - Design patterns with correct vs prohibited examples
-      - Decision flowchart for exception handling
-      - "Applied versions: v0.0.25 and v0.0.26 with affected file paths"
-    applicable_tasks:
-      - Error handling implementation
-      - Exception handling code review
-      - Bug identification from error patterns
-      - Script and skill requirement validation
-      - Error handling refactoring
-    keywords:
-      - error handling
-      - exception catching
-      - bug concealment
-      - silent fallback
-      - external error
-      - internal bug
       - pure function
-      - exception propagation
+      - doc_structure_version
+      - backward compatibility
+      - major version
+      - migrate_doc_structure
+  docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md:
+    doc_type: requirement
+    title: "COMMON-REQ-002: Error Handling Policy Requirements"
+    purpose: Defines error-handling policy forbidding silent fallback and broad catches, allowing only external-factor exceptions with explicit reporting, and requiring pure functions to propagate internal bugs.
+    content_details:
+      - Applies to all Python scripts and SKILL.md project-wide
+      - "FR-01: catch only external-factor errors; prohibit except Exception and bare except; propagate internal bugs (TypeError, KeyError, IndexError, AttributeError)"
+      - "FR-02: allow file I/O, network, and narrow ValueError for conversion-only try blocks; HTTP server broad catch only as framework pattern with proper error handling"
+      - "FR-03: on catch, return error to caller or stderr; JSON scripts return status and message fields; warnings and errors via sys.stderr not stdout"
+      - "FR-04: pure functions must not mask bugs via rollback or returning prior state; validate with tests not defensive runtime catch"
+      - Defines external-factor error, internal bug, and silent fallback
+      - "Worked examples: load_config with parse_config outside try; migrations must propagate exceptions"
+    applicable_tasks:
+      - Python exception handling refactoring and compliance
+      - SKILL.md and CLI script error-handling review
+      - JSON CLI error response implementation
+      - Pure function and parser code review for bug masking
+    keywords:
+      - silent fallback
+      - except Exception
+      - external-factor error
+      - sys.stderr
+      - pure function
+      - FileNotFoundError
+      - ValueError
+      - COMMON-REQ-002
+      - JSON error status
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md:
     doc_type: design
     title: DES-001 DocAdvisor Plugin Migration Design
@@ -222,6 +218,127 @@ docs:
       - symbol
       - import dependency
       - differential update
+  docs/specs/doc-advisor/requirements/REQ-001_doc_advisor.md:
+    doc_type: requirement
+    title: "REQ-001: Doc Advisor Requirements Specification"
+    purpose: "Specifies Doc Advisor functional and non-functional requirements: two-category document management, YAML ToC with incremental updates, SHA-256 checksums, parallel processing, query skills, setup flows, and runtime .doc_structure.yaml validation."
+    content_details:
+      - rule/spec categories with multiple root_dirs, glob and exclude patterns, doc_type from doc_types_map (seven built-in types plus custom)
+      - ToC scans .md files, extracts metadata to YAML, supports incremental diff-only processing
+      - Change detection via SHA-256 and .toc_checksums.yaml for file add, update, and delete
+      - Up to five parallel document workers with checkpointing for resume after interrupt
+      - /query-rules and /query-specs search the ToC; skills use isolated fork context; slash or description-triggered invocation
+      - setup.sh warns when .doc_structure.yaml is missing, guides /setup-doc-structure, copies check_doc_structure.sh template without AI classification
+      - /setup-doc-structure uses classify_dirs.py and AI per classification_rules.md; writes .doc_structure.yaml after user confirmation
+      - Skills run check_doc_structure.sh at start; warn if category root_dirs unset; downstream may assume validity after pass
+      - Runtime combines .doc_structure.yaml with toc_utils.py code defaults; internal paths not stored in yaml
+      - doc_structure_version 3.0 header comment for format compatibility checks
+    applicable_tasks:
+      - Doc Advisor feature implementation
+      - ToC generation and checksum pipeline design
+      - .doc_structure.yaml schema and validation behavior
+      - query-rules and query-specs skill implementation
+      - setup-doc-structure and classify_dirs integration
+      - Parallel toc worker and resumable processing design
+    keywords:
+      - doc_types_map
+      - toc_checksums
+      - query-rules
+      - query-specs
+      - classify_dirs
+      - check_doc_structure
+      - toc_utils
+      - doc_structure_version
+      - fork context
+      - .doc_structure.yaml
+  docs/specs/doc-advisor/requirements/REQ-002_upgrade_v2_to_v3.md:
+    doc_type: requirement
+    title: "REQ-002: Upgrade Requirements (v2.0 to v4.x)"
+    purpose: "Defines upgrade requirements from Doc Advisor v2.0 to v4.x: version deltas, identifier-based managed-file rules, user asset and config protection, legacy detection, and advisor-to-query-skill migration."
+    content_details:
+      - "v2.0 vs v3.x structural deltas: command files to skills, slash names, ToC under doc-advisor/toc/{rules,specs}, advisor agents to /query-rules and /query-specs, root_dir to root_dirs with target_glob"
+      - "Identifier-based lifecycle using doc-advisor-version-xK9XmQ: current managed files are kept, old marked files may be removed, unmarked legacy files detected by path and name"
+      - "User asset and config principles: do not delete user commands or non-doc-advisor agents; do not overwrite customized config without explicit user confirmation"
+      - "REQ-002-01: Detect legacy create-*_toc commands and old .claude/doc-advisor layout; guide removal; no silent automatic deletion in the user workspace"
+      - "REQ-002-02: Preserve .claude/commands and user agents; retain runtime outputs under toc/rules and toc/specs including ToC YAML and checksums"
+      - "REQ-002-03: On plugin update, do not overwrite .doc_structure.yaml; preserve customized root_dirs and doc_types_map"
+      - "REQ-002-04: Detect rules-advisor.md and specs-advisor.md; migration target is plugin-provided /query-rules and /query-specs skills with acceptance tests for availability"
+      - "NF: Keep existing rules_toc.yaml and specs_toc.yaml; v2 ToC lived under doc-advisor/rules without toc segment—manual move or full regeneration with --full recommended"
+      - "NF: Identifier presence drives keep/delete decisions; v2 artifacts lack the marker so filename-based legacy detection remains required"
+    applicable_tasks:
+      - Implementing or verifying Doc Advisor upgrade from v2.0 to v3.x or v4.x
+      - Building legacy file detection and user-facing migration guidance
+      - Ensuring plugin updates preserve .doc_structure.yaml and user ToC assets
+      - Testing replacement of rules-advisor and specs-advisor with query skills
+    keywords:
+      - doc-advisor-version-xK9XmQ
+      - rules-advisor
+      - specs-advisor
+      - query-rules
+      - query-specs
+      - root_dirs
+      - doc_types_map
+      - create-rules-toc
+      - legacy migration
+      - ToC path
+  docs/specs/doc-advisor/requirements/REQ-003_versioned_migration.md:
+    doc_type: requirement
+    title: "REQ-003: Phased Version Migration Requirements"
+    purpose: Defines a phased migration framework for versioned data formats, ensuring backward compatibility by converting legacy data to the current format.
+    content_details:
+      - Major-version detection from data; missing identifier treated as v1; integer major versions only
+      - One-step migrations only (v1→v2→v3); registry keyed by target version; chain for detected_version < v <= current_version ascending
+      - Each step maps previous output to target format; idempotent; no side effects (no I/O or network)
+      - On error return pre-migration state; skip migration when detected_version > current_version; detection failure falls back to oldest version
+      - Add new version by registering one function and updating current_version; do not modify existing migrations (Open-Closed)
+      - "NFR: in-memory transform only without rewriting source data; stdlib-only (no external libs)"
+      - "Reference pattern: CURRENT_VERSION, MIGRATIONS dict, apply_migrations with rollback"
+      - "Example scope: .doc_structure.yaml doc_structure_version via toc_utils load_config()"
+    applicable_tasks:
+      - Implementing phased migrations for versioned config or persisted data
+      - Adding a new schema version and migration step
+      - Reviewing backward compatibility of stored data formats
+    keywords:
+      - phased migration
+      - MIGRATIONS
+      - CURRENT_VERSION
+      - idempotent
+      - backward compatibility
+      - major version
+      - apply_migrations
+      - doc_structure_version
+      - migration registry
+      - Open-Closed
+  docs/specs/doc-advisor/requirements/REQ-004_code_index.md:
+    doc_type: requirement
+    title: "REQ-004: Code Index Requirements Specification"
+    purpose: Specifies requirements for extracting source structure via language plugins and MCP, persisting a code index, import-graph queries, and two-stage mechanical-plus-AI search for large projects.
+    content_details:
+      - Recursive source scan with default exclude dirs and extension-based language dispatch; unsupported extensions indexed with path and line count only
+      - "Language plugin model: per-language MCP extraction, core dispatches by extension; new languages add plugins without core changes"
+      - "Metadata: path, language, lines; MCP supplies imports, documented exports, protocol conformances, sections; missing MCP returns an error with setup guidance"
+      - Swift plugin requires Swift-Selena MCP (analyze_imports, list_symbols, list_protocol_conformances, list_extensions) and handles connection failures
+      - Import graph with internal vs external distinction; dependents, dependencies, and N-hop impact expansion
+      - "Two-stage search: Stage 1 keyword match without AI; Stage 2 AI on candidates with ~30KB metadata cap; impact search via the graph"
+      - Incremental updates using SHA-256 hashes; diff default, full rebuild mode; JSON index and checksum paths under .claude/doc-advisor/code/
+      - CLI for index build and keyword or affected-by search with JSON status output
+      - "NFR: core uses Python stdlib only; performance targets for rebuild and Stage 1 latency"
+    applicable_tasks:
+      - Implementing or extending the doc-advisor code index
+      - Integrating Swift-Selena MCP for Swift symbol and import extraction
+      - Building incremental index updates and checksum persistence
+      - Implementing two-stage code search and impact-range queries
+    keywords:
+      - code_index.json
+      - Swift-Selena
+      - analyze_imports
+      - list_symbols
+      - two-stage search
+      - import graph
+      - build_code_index
+      - language plugin
+      - REQ-004
+      - toc_utils
   docs/specs/forge/design/clean_rules_design.md:
     doc_type: design
     title: clean-rules Skill Design
@@ -656,61 +773,90 @@ docs:
       - implementation
       - design
       - requirement
-  docs/specs/forge/requirement/orchestrator_pattern.md:
+  docs/specs/forge/requirements/orchestrator_pattern.md:
     doc_type: requirement
-    title: Orchestrator Pattern Requirement
-    purpose: Specifies orchestrator design pattern requirements for forge plugin skills to decompose God-Skill problems through delegation and session-based communication
+    title: Orchestrator Pattern Requirements
+    purpose: "Defines the forge orchestrator pattern: orchestrators delegate to subagents; session dir and session.yaml; self-contained docs; parallel steps; YAML vs Markdown by use case; review/ToC/commit after docs; no CLI parsers for natural-language args."
     content_details:
-      - God-Skill problems (context consumption, instruction tracking, parallelization)
-      - FNC-001 Orchestrator design pattern with delegation
-      - FNC-002 Session directory communication protocol
-      - FNC-003 Self-contained reference documents
-      - FNC-004 Parallelizable independent work phases
-      - FNC-005 Document format selection criteria (YAML for structured, Markdown for expressive)
-      - FNC-006 Common completion flow (review, ToC, commit)
-      - FNC-007 AI-driven user input interpretation
-      - Orchestrator vs agent responsibilities and separation of concerns
-      - Session directory initialization and data exchange patterns
+      - "User-invocable forge skills act as orchestrators: they manage flow and delegate search, review, and fixes to subagents; SKILL.md describes what to delegate, not low-level execution steps"
+      - Orchestrator creates a session directory and initializes session.yaml; agents exchange paths and read/write files there instead of large in-prompt payloads
+      - "Reference documents passed to agents must be self-contained under plugins/forge/docs/, with an exception for skill-local perspective docs in that skill's docs/"
+      - Independent investigations (specs, rules, PRs, code) are structured for parallel runs with separate output files to prevent conflicts
+      - YAML is used for machine-parseable, updatable artifacts such as plans with task IDs; Markdown for requirements and design including mermaid; format choice follows whether the primary consumer is code or humans
+      - Document orchestrators run /forge:review --auto, /create-specs-toc when available, and /anvil:commit; start-implement skips ToC and ends with review then commit
+      - No standalone finalize skill; each orchestrator invokes completion directly; human review remains inside the review workflow
+      - User command arguments are interpreted by the model, not rigid token parsers; argument-parsing scripts are forbidden; AskUserQuestion fills gaps; scripts are limited to structured YAML/JSON handling
+      - "Background: avoid God-Skill problems including context bloat, instruction drift, inability to parallelize, and loss under compression"
     applicable_tasks:
-      - Orchestrator skill design and implementation
-      - Agent skill creation with delegation
-      - Skill refactoring from monolithic to delegated patterns
-      - Document format standardization
-      - Session protocol implementation
-      - Parallel work phase design
+      - Forge skill orchestrator design and refactoring
+      - Session directory and session protocol implementation
+      - Designing parallel subagent workflows for forge
+      - Selecting YAML vs Markdown for forge-generated artifacts
+      - Implementing post-generation completion flows in document orchestrators
     keywords:
       - orchestrator
-      - God-Skill
-      - delegation
-      - session directory
-      - parallel execution
-      - YAML format
       - subagent
-      - FNC requirements
-  docs/specs/forge/requirement/skill_monitor_requirement.md:
+      - session.yaml
+      - forge
+      - parallel execution
+      - AskUserQuestion
+      - plugins/forge/docs
+      - start-implement
+      - God-Skill
+  docs/specs/forge/requirements/skill_monitor_requirement.md:
     doc_type: requirement
-    title: skill_monitor requirement specification
-    purpose: Defines requirements for a real-time session data browser display feature that works across all orchestrators without requiring additional skill code
+    title: skill_monitor Requirements
+    purpose: Specifies functional and non-functional requirements for real-time browser display of forge orchestrator session YAML via SSE, Claude Code PostToolUse hooks, and an independent SSE server without extra skill-side code.
     content_details:
-      - Session data browser display for YAML files
-      - Real-time updates via PostToolUse hook
-      - Context-free architecture with independent SSE server
-      - SSE server endpoints POST /notify, GET /sse, GET /session, GET /history
-      - Claude Code hook for Write and Edit tool detection
-      - Browser UI with schema-based rendering
-      - Display targets from session_format.md (session.yaml, refs.yaml, review.md, plan.yaml, refs/*.yaml)
+      - Browser displays session YAML files per session_format.md schema; reads YAML directly without generating intermediate files such as display.json
+      - Real-time updates via PostToolUse hook on Write/Edit under the session directory; SSE pushes change notifications to the browser
+      - "Context isolation: skills only update existing session YAML; hooks run as shell scripts outside Claude context; SSE server runs as a separate process"
+      - Works for all orchestrators (review, start-design, start-plan, start-requirements, start-implement); generic rendering driven by session file schema, not per-skill UI logic
+      - SSE server exposes POST /notify, GET /sse, GET /session (YAML aggregated as JSON), GET /history; implemented with Python standard library only
+      - Hooks register PostToolUse for Write/Edit; notify only when targets lie under .claude/.temp/ session paths; hooks in .claude/hooks/ via settings.json; hook failures must not affect skills (exit 0)
+      - Browser UI loads initial state via GET /session; listens on SSE for file updates; static HTML and JavaScript without build tooling
+      - "NFRs: stdlib-only SSE server, hook completes within 100ms, localhost-only listener, single-session display scope (multi-session deferred)"
+      - Display targets include session.yaml, refs.yaml, review.md, plan.yaml, and refs/*.yaml when present; missing files are skipped
     applicable_tasks:
-      - Implementation of skill_monitor SSE server
-      - Hook setup and configuration
-      - Browser UI development
-      - Integration with orchestrator pattern
-      - Session file schema validation
+      - skill_monitor SSE server and hook implementation
+      - Session monitor browser UI implementation
+      - PostToolUse hook integration for session directory file changes
+      - Forge orchestrator session visualization requirements review
     keywords:
       - skill_monitor
       - SSE
-      - session data
-      - real-time display
-      - PostToolUse hook
+      - PostToolUse
+      - session_format
+      - display_notify
+      - skill_monitor.py
       - orchestrator
       - session.yaml
-      - browser UI
+      - plan.yaml
+  docs/specs/xcode/requirements/REQ-001_doc_comments.md:
+    doc_type: requirement
+    title: "REQ-001: Swift Documentation Comment Generation Requirements"
+    purpose: "Specifies requirements for DocC triple-slash documentation comments on Swift public APIs in the xcode plugin: detection rules, modes (--full, --force), parallel processing, CLI, safety (no code edits), and Quick Help quality."
+    content_details:
+      - Targets public/open and selected internal types; skips private/fileprivate, test and mock files, and declarations that already have /// or block doc comments
+      - DocC structure with Parameter, Returns, and Throws for functions; AI writes intent-based summaries and may use tests as reference; optional broader coverage (e.g., properties) via flags
+      - "Modes: default uncommitted files via git status, --full for entire tree, --force to overwrite existing ///, plus file or glob path selection"
+      - "Safety: preserve // comments and non-comment code; default does not modify existing documentation comments or copyright headers"
+      - "Parallel execution: one agent per Swift file, 5-10 concurrent workers, continue after per-file failures"
+      - "CLI: /xcode:doc-comments with --full, --force, and path patterns; reports file count, generated count, skips, and errors"
+      - Auto-invocation after Swift file create or edit with the same exclusion rules; processes touched files without multi-agent orchestration for that trigger
+      - "NFR: valid Quick Help rendering; comment language matches project Japanese or English; independent from legacy create-code-headers file-header skill"
+    applicable_tasks:
+      - Implement or extend the xcode doc-comments skill and CLI
+      - Review Swift API documentation comment generation scope and safety constraints
+      - Plan doc-advisor code index alignment with triple-slash documentation coverage
+    keywords:
+      - DocC
+      - Swift
+      - Quick Help
+      - xcode:doc-comments
+      - git status
+      - parallel agents
+      - documentation comment
+      - REQ-001
+      - test exclusion
+      - create-code-headers

@@ -139,17 +139,19 @@ stderr の JSON で `status: "error"` の場合はエラー内容を報告して
 
 1. `optional: true` でファイルが存在しない場合 → スキップ（警告なし）
    `optional: false`（デフォルト）でファイルが存在しない場合 → 警告を表示
-2. スクリプトで置換を実行:
+2. スクリプトで置換を実行。`optional: true` のエントリには `--optional` フラグを付加する:
    - `filter` なし:
      ```bash
-     python3 ${CLAUDE_SKILL_DIR}/scripts/update_version_files.py {path} {current_version} {new_version}
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_version_files.py {path} {current_version} {new_version} [--optional]
      ```
    - `filter` あり:
      ```bash
-     python3 ${CLAUDE_SKILL_DIR}/scripts/update_version_files.py {path} {current_version} {new_version} --filter "{filter}"
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_version_files.py {path} {current_version} {new_version} --filter "{filter}" [--optional]
      ```
+   `--optional` 付きでパターン未マッチ時はスクリプトが `{"status": "skipped"}` を返して exit 0 で終了する。この場合は Write をスキップする。
 3. stdout に更新後の内容が出力される。Write でファイルに書き出す。
    stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
+   stderr の JSON で `status: "skipped"` の場合は Write をスキップする（optional のパターン未マッチ）。
 
 #### 6-3. 更新完了メッセージ
 
