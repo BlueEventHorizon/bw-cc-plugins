@@ -22,12 +22,14 @@ import argparse
 import json
 import os
 import sys
-import time
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from embedding_api import (
+    EMBEDDING_BATCH_SIZE,
+    EMBEDDING_MODEL,
+    call_embedding_api,
+)
 from toc_utils import (
     ConfigNotReadyError,
     calculate_file_hash,
@@ -38,21 +40,6 @@ from toc_utils import (
     normalize_path,
     write_checksums_yaml,
 )
-
-# Embedding モデル定数（他スクリプトから from embed_docs import EMBEDDING_MODEL でインポート可能）
-EMBEDDING_MODEL = "text-embedding-3-small"
-
-# Embedding API バッチ上限
-EMBEDDING_BATCH_SIZE = 100
-
-# OpenAI Embedding API エンドポイント
-OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings"
-
-# API エラー時のリトライ回数
-API_RETRY_COUNT = 1
-
-# レート制限（429）時の待機秒数
-RATE_LIMIT_WAIT_SECONDS = 60
 
 # Embedding 専用チェックサムファイル名（ToC の .toc_checksums.yaml とは独立）
 EMBEDDING_CHECKSUMS_FILENAME = ".embedding_checksums.yaml"
@@ -196,73 +183,6 @@ def truncate_to_token_limit(text, max_chars=EMBEDDING_MAX_CHARS):
     if len(text) <= max_chars:
         return text
     return text[:max_chars]
-
-
-def call_embedding_api(texts, api_key):
-    """OpenAI Embedding API をバッチ呼び出しする。
-
-    Args:
-        texts: Embedding するテキストリスト
-        api_key: OpenAI API キー
-
-    Returns:
-        list[list[float]]: テキストに対応する Embedding ベクトルのリスト
-
-    Raises:
-        RuntimeError: API 呼び出し失敗（リトライ後も失敗）
-    """
-    payload = json.dumps({
-        "model": EMBEDDING_MODEL,
-        "input": texts,
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        OPENAI_EMBEDDINGS_URL,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
-
-    last_error = None
-    for attempt in range(API_RETRY_COUNT + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
-                # data は入力順にソート済みのはず。index でソートして安全に取得する
-                embeddings = sorted(result["data"], key=lambda x: x["index"])
-                return [e["embedding"] for e in embeddings]
-
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                # レート制限: 待機してリトライ
-                if attempt < API_RETRY_COUNT:
-                    log(f"  レート制限 (429)。{RATE_LIMIT_WAIT_SECONDS}秒待機してリトライします...")
-                    time.sleep(RATE_LIMIT_WAIT_SECONDS)
-                    last_error = e
-                    continue
-                last_error = e
-            elif e.code == 401:
-                raise RuntimeError(
-                    f"API 認証エラー (401)。OPENAI_API_KEY が正しいか確認してください。"
-                ) from e
-            else:
-                if attempt < API_RETRY_COUNT:
-                    log(f"  API エラー ({e.code})。リトライします...")
-                    last_error = e
-                    continue
-                last_error = e
-
-        except urllib.error.URLError as e:
-            if attempt < API_RETRY_COUNT:
-                log(f"  ネットワークエラー。リトライします: {e}")
-                last_error = e
-                continue
-            last_error = e
-
-    raise RuntimeError(f"API 呼び出し失敗: {last_error}") from last_error
 
 
 def get_source_file_path(md_file, root_dir, root_dir_name):

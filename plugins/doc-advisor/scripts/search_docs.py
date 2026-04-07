@@ -22,22 +22,9 @@ import json
 import math
 import os
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 
-# embed_docs.py が存在する場合は EMBEDDING_MODEL をインポートしてモデルを一元管理する。
-# embed_docs.py が未実装の場合はローカルの定数を使用する。
-try:
-    # sys.path に scripts ディレクトリを追加して同ディレクトリからインポート
-    _scripts_dir = str(Path(__file__).parent)
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
-    from embed_docs import EMBEDDING_MODEL
-except ImportError:
-    EMBEDDING_MODEL = "text-embedding-3-small"
-
-# toc_utils のインポート（設定読み込み・パス正規化）
+from embedding_api import EMBEDDING_MODEL, call_embedding_api_single
 from toc_utils import (
     ConfigNotReadyError,
     calculate_file_hash,
@@ -199,53 +186,6 @@ def cosine_similarity(vec_a, vec_b):
     return dot / (norm_a * norm_b)
 
 
-def call_embedding_api(text, api_key):
-    """
-    OpenAI Embedding API を呼び出し、テキストのベクトルを返す。
-
-    Args:
-        text: Embedding するテキスト
-        api_key: OpenAI API キー
-
-    Returns:
-        list[float]: Embedding ベクトル
-
-    Raises:
-        RuntimeError: API 呼び出し失敗時
-    """
-    url = "https://api.openai.com/v1/embeddings"
-    payload = json.dumps({"model": EMBEDDING_MODEL, "input": [text]}).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data["data"][0]["embedding"]
-    except urllib.error.HTTPError as e:
-        body = ""
-        try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            pass
-        raise RuntimeError(f"HTTP {e.code}: {body}") from e
-    except urllib.error.URLError as e:
-        # ネットワークエラー: 1 回リトライ
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["data"][0]["embedding"]
-        except Exception as retry_err:
-            raise RuntimeError(f"Network error: {retry_err}") from retry_err
-
-
 def search(query, index, api_key, threshold):
     """
     インデックス内の全エントリとコサイン類似度を計算し、閾値以上の候補を返す。
@@ -259,7 +199,7 @@ def search(query, index, api_key, threshold):
     Returns:
         list[dict]: score 降順でソートされた {"path": ..., "title": ..., "score": ...} のリスト
     """
-    query_vec = call_embedding_api(query, api_key)
+    query_vec = call_embedding_api_single(query, api_key)
 
     entries = index.get("entries", {})
     results = []

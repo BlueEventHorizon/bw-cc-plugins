@@ -19,7 +19,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # テスト対象モジュールの import
 SCRIPTS_DIR = os.path.abspath(os.path.join(
@@ -33,7 +33,6 @@ EMBED_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'embed_docs.py')
 import embed_docs
 from embed_docs import (
     build_index,
-    call_embedding_api,
     extract_title,
     get_index_path,
     load_index,
@@ -46,19 +45,6 @@ from embed_docs import (
 # 固定テストベクトル（1536 次元）
 FIXED_VECTOR = [1.0] + [0.0] * 1535
 FIXED_VECTOR_2 = [0.0] + [1.0] + [0.0] * 1534
-
-
-def _make_api_response(vectors):
-    """OpenAI Embedding API のレスポンス JSON を生成する。
-
-    Args:
-        vectors: list[list[float]] — ベクトルのリスト
-
-    Returns:
-        bytes: JSON レスポンスバイト列
-    """
-    data = [{"index": i, "embedding": v} for i, v in enumerate(vectors)]
-    return json.dumps({"data": data}).encode("utf-8")
 
 
 # ===========================================================================
@@ -260,93 +246,6 @@ class TestLoadSaveIndex(unittest.TestCase):
         self.assertEqual(len(loaded["entries"]), 2)
         self.assertEqual(loaded["entries"]["docs/a.md"]["embedding"][0], 1.0)
         self.assertEqual(loaded["entries"]["docs/b.md"]["embedding"][1], 1.0)
-
-
-# ===========================================================================
-# call_embedding_api() テスト（urllib.request.urlopen をモック）
-# ===========================================================================
-
-class TestCallEmbeddingApi(unittest.TestCase):
-    """call_embedding_api() の API モックテスト。"""
-
-    @patch("embed_docs.urllib.request.urlopen")
-    def test_single_text(self, mock_urlopen):
-        """単一テキストの Embedding 取得"""
-        response_data = _make_api_response([FIXED_VECTOR])
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_data
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        result = call_embedding_api(["テストテキスト"], "fake-api-key")
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(len(result[0]), 1536)
-        self.assertEqual(result[0][0], 1.0)
-
-    @patch("embed_docs.urllib.request.urlopen")
-    def test_batch_texts(self, mock_urlopen):
-        """バッチテキスト（複数テキスト）の Embedding 取得"""
-        response_data = _make_api_response([FIXED_VECTOR, FIXED_VECTOR_2])
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_data
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        result = call_embedding_api(["テキスト1", "テキスト2"], "fake-api-key")
-
-        self.assertEqual(len(result), 2)
-        # index 順にソートされて返る
-        self.assertEqual(result[0][0], 1.0)
-        self.assertEqual(result[1][1], 1.0)
-
-    @patch("embed_docs.urllib.request.urlopen")
-    def test_api_auth_error_raises(self, mock_urlopen):
-        """401 エラーで RuntimeError を発生させる"""
-        import urllib.error
-        mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
-            code=401,
-            msg="Unauthorized",
-            hdrs={},
-            fp=None,
-        )
-        with self.assertRaises(RuntimeError) as ctx:
-            call_embedding_api(["テスト"], "invalid-key")
-        self.assertIn("認証エラー", str(ctx.exception))
-
-    @patch("embed_docs.urllib.request.urlopen")
-    def test_network_error_retries_then_raises(self, mock_urlopen):
-        """ネットワークエラーでリトライ後に RuntimeError を発生させる"""
-        import urllib.error
-        mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
-
-        with self.assertRaises(RuntimeError) as ctx:
-            call_embedding_api(["テスト"], "fake-key")
-        self.assertIn("API 呼び出し失敗", str(ctx.exception))
-        # リトライ回数 + 初回 = API_RETRY_COUNT + 1 回呼ばれる
-        self.assertEqual(mock_urlopen.call_count, embed_docs.API_RETRY_COUNT + 1)
-
-    @patch("embed_docs.time.sleep")  # sleep をスキップ
-    @patch("embed_docs.urllib.request.urlopen")
-    def test_rate_limit_retries(self, mock_urlopen, mock_sleep):
-        """429 レート制限でリトライする"""
-        import urllib.error
-        mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
-            code=429,
-            msg="Too Many Requests",
-            hdrs={},
-            fp=None,
-        )
-        with self.assertRaises(RuntimeError):
-            call_embedding_api(["テスト"], "fake-key")
-        # リトライ回数 + 初回 = API_RETRY_COUNT + 1 回呼ばれる
-        self.assertEqual(mock_urlopen.call_count, embed_docs.API_RETRY_COUNT + 1)
-        # sleep が API_RETRY_COUNT 回呼ばれている
-        self.assertEqual(mock_sleep.call_count, embed_docs.API_RETRY_COUNT)
 
 
 # ===========================================================================

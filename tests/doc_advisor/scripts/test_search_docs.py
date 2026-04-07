@@ -20,7 +20,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # テスト対象モジュールの import
 SCRIPTS_DIR = os.path.abspath(os.path.join(
@@ -31,7 +31,6 @@ if SCRIPTS_DIR not in sys.path:
 
 SEARCH_DOCS_SCRIPT = os.path.join(SCRIPTS_DIR, 'search_docs.py')
 
-import search_docs
 from search_docs import (
     check_model_mismatch,
     check_staleness,
@@ -47,19 +46,6 @@ E1 = [1.0] + [0.0] * 1535
 E2 = [0.0, 1.0] + [0.0] * 1534
 # 45度: e1 と e2 の中間方向（正規化前）
 E_45 = [0.707, 0.707] + [0.0] * 1534
-
-
-def _make_api_response(vector):
-    """OpenAI Embedding API のレスポンス JSON を生成する。
-
-    Args:
-        vector: list[float] — 単一ベクトル
-
-    Returns:
-        bytes: JSON レスポンスバイト列
-    """
-    data = [{"index": 0, "embedding": vector}]
-    return json.dumps({"data": data}).encode("utf-8")
 
 
 # ===========================================================================
@@ -327,7 +313,7 @@ class TestSearch(unittest.TestCase):
             "entries": entries,
         }
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_threshold_filtering(self, mock_api):
         """閾値以上のエントリのみが返される"""
         # クエリベクトルは e1 方向
@@ -345,7 +331,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(results[0]["path"], "docs/match.md")
         self.assertAlmostEqual(results[0]["score"], 1.0, places=4)
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_results_sorted_by_score_descending(self, mock_api):
         """結果はスコア降順でソートされる"""
         mock_api.return_value = E1
@@ -362,7 +348,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(results[1]["path"], "docs/low.md")
         self.assertGreater(results[0]["score"], results[1]["score"])
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_result_fields(self, mock_api):
         """各結果に path, title, score フィールドが含まれる"""
         mock_api.return_value = E1
@@ -380,7 +366,7 @@ class TestSearch(unittest.TestCase):
         self.assertIn("score", result)
         self.assertEqual(result["title"], "Test Title")
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_no_top_k_limit(self, mock_api):
         """件数上限なし: 50 件すべてが返される（FNC-002 対応）"""
         mock_api.return_value = E1
@@ -399,7 +385,7 @@ class TestSearch(unittest.TestCase):
 
         self.assertEqual(len(results), 50)
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_empty_embedding_skipped(self, mock_api):
         """embedding が空のエントリはスキップされる"""
         mock_api.return_value = E1
@@ -418,7 +404,7 @@ class TestSearch(unittest.TestCase):
         self.assertNotIn("docs/no_embed.md", paths)
         self.assertNotIn("docs/null_embed.md", paths)
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_threshold_zero_returns_all(self, mock_api):
         """閾値 0.0 では全エントリが返される（スコア 0.0 のものも含む）"""
         mock_api.return_value = E1
@@ -432,7 +418,7 @@ class TestSearch(unittest.TestCase):
 
         self.assertEqual(len(results), 2)
 
-    @patch("search_docs.call_embedding_api")
+    @patch("search_docs.call_embedding_api_single")
     def test_score_rounded_to_6_places(self, mock_api):
         """スコアが小数点以下 6 桁に丸められる"""
         mock_api.return_value = E_45
@@ -667,7 +653,7 @@ specs:
         # subprocess ではなくモジュールを直接テスト（API をモック）
         # CLI 統合テストでは API モックが困難なため、出力形式の検証は
         # search() 関数の結果を JSON 化して確認する
-        with patch("search_docs.call_embedding_api", return_value=E1):
+        with patch("search_docs.call_embedding_api_single", return_value=E1):
             results = search("test query", index_data, "fake-key", threshold=0.0)
 
         # JSON 出力形式の検証
@@ -686,57 +672,6 @@ specs:
             self.assertIn("path", r)
             self.assertIn("title", r)
             self.assertIn("score", r)
-
-
-# ===========================================================================
-# call_embedding_api() テスト
-# ===========================================================================
-
-class TestCallEmbeddingApi(unittest.TestCase):
-    """call_embedding_api() の API モックテスト。"""
-
-    @patch("search_docs.urllib.request.urlopen")
-    def test_success_returns_embedding(self, mock_urlopen):
-        """正常系: モックレスポンスから embedding ベクトルが返される"""
-        response_bytes = _make_api_response(E1)
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_bytes
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        result = search_docs.call_embedding_api("テストクエリ", "fake-api-key")
-
-        self.assertEqual(len(result), len(E1))
-        self.assertAlmostEqual(result[0], 1.0, places=6)
-
-    @patch("search_docs.urllib.request.urlopen")
-    def test_rate_limit_raises_runtime_error(self, mock_urlopen):
-        """429 レート制限で RuntimeError が発生する"""
-        import urllib.error
-        mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
-            code=429,
-            msg="Too Many Requests",
-            hdrs={},
-            fp=None,
-        )
-
-        with self.assertRaises(RuntimeError) as ctx:
-            search_docs.call_embedding_api("テスト", "fake-key")
-        self.assertIn("429", str(ctx.exception))
-
-    @patch("search_docs.urllib.request.urlopen")
-    def test_network_error_raises_runtime_error(self, mock_urlopen):
-        """ネットワークエラー（URLError）でリトライ後に RuntimeError が発生する"""
-        import urllib.error
-        mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
-
-        with self.assertRaises(RuntimeError) as ctx:
-            search_docs.call_embedding_api("テスト", "fake-key")
-        self.assertIn("Network error", str(ctx.exception))
-        # 初回 + リトライ 1 回 = 合計 2 回呼ばれる
-        self.assertEqual(mock_urlopen.call_count, 2)
 
 
 if __name__ == '__main__':
