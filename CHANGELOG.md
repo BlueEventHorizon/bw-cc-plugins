@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.1] - 2026-04-07
+
+### marketplace
+
+- **feat**: doc-advisor を 0.1.5 に更新。セマンティック検索機能（OpenAI Embedding API）の追加に対応
+
+## [0.1.5] - 2026-04-07
+
+### doc-advisor
+
+- **feat**: セマンティック検索機能を実装。OpenAI Embedding API (`text-embedding-3-small`) でドキュメントをベクトル化し、コサイン類似度検索を可能に
+  - `embed_docs.py`: 差分更新・全体再構築・staleness check の3モード対応インデックス構築（チェックサムによる差分管理）
+  - `search_docs.py`: クエリのベクトル化とコサイン類似度計算による検索（純粋 Python 実装、件数上限なし）
+  - `embedding_api.py`: OpenAI API 通信の共有モジュール（バッチ100件、リトライ、レート制限対応）
+  - `create-rules-index` / `create-specs-index` スキル: インデックス構築オーケストレーター
+  - `query-rules-index` / `query-specs-index` スキル: セマンティック検索 + grep 補完の2段階検索
+- **fix**: インデックス書き込みをアトミック化（一時ファイル経由の `os.replace`）し、書き込み中断による JSON 破損を防止
+- **fix**: API レスポンスの embedding 数検証を追加（件数不一致時に RuntimeError）
+- **fix**: API リトライに `Retry-After` ヘッダー対応と 5xx/URLError バックオフ（2秒）を追加。`API_RETRY_COUNT` を `API_MAX_RETRIES` にリネーム
+
 ## [0.1.4] - 2026-04-07
 
 ### doc-advisor

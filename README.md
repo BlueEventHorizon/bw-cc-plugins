@@ -2,7 +2,7 @@
 
 A Claude Code plugin marketplace for AI-powered code & document review and project document structure management.
 
-**Marketplace version: 0.1.0**
+**Marketplace version: 0.1.1**
 
 [Japanese README (README_ja.md)](README_ja.md)
 
@@ -13,7 +13,7 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | **forge** | 0.0.29  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.1.4 | AI-searchable document index (ToC) generator for Claude Code |
+| **doc-advisor** | 0.1.5 | AI-searchable document index (ToC) generator for Claude Code |
 
 ## Skills
 
@@ -68,6 +68,10 @@ A Claude Code plugin marketplace for AI-powered code & document review and proje
 | [**query-specs**](docs/readme/README_doc-advisor.md#query-specs) | Search the pre-analyzed specs document index (ToC) to identify relevant specification documents | `"What specs apply?"` `"仕様確認"` |
 | [**create-rules-toc**](docs/readme/README_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
 | [**create-specs-toc**](docs/readme/README_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+| [**query-rules-index**](docs/readme/README_doc-advisor.md#query-rules-index) | Semantic search for rules using Embedding index | `"Semantic search for rules"` |
+| [**query-specs-index**](docs/readme/README_doc-advisor.md#query-specs-index) | Semantic search for specs using Embedding index | `"Semantic search for specs"` |
+| [**create-rules-index**](docs/readme/README_doc-advisor.md#create-rules-index) | Build/update the rules Embedding index for semantic search | `"Rebuild the rules embedding index"` |
+| [**create-specs-index**](docs/readme/README_doc-advisor.md#create-specs-index) | Build/update the specs Embedding index for semantic search | `"Rebuild the specs embedding index"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 
