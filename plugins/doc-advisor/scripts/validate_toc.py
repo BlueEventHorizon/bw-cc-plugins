@@ -74,16 +74,28 @@ def init_config(category):
     return True
 
 
-def validate_toc(toc_path):
+def validate_toc(toc_path, *, category=None, project_root=None):
     """
     生成された toc ファイルを検査する
     - YAML構文検査
     - 必須フィールド検査
     - ファイル参照検査
     - 重複パス検査
+
+    Args:
+        toc_path: 検査対象の ToC ファイルパス
+        category: カテゴリ名（省略時はグローバル変数 CATEGORY にフォールバック）
+        project_root: プロジェクトルートパス（省略時はグローバル変数 PROJECT_ROOT にフォールバック）
     """
+    _category = category if category is not None else CATEGORY
+    _project_root = project_root if project_root is not None else PROJECT_ROOT
+
+    if _project_root is None:
+        print("Error: project_root が未設定です。init_config() を先に実行するか、project_root パラメータを指定してください。", file=sys.stderr)
+        return False
+
     log("=" * 50)
-    log(f"{CATEGORY}_toc.yaml 検査")
+    log(f"{_category}_toc.yaml 検査")
     log("=" * 50)
     log(f"対象: {toc_path}")
     log()
@@ -95,7 +107,7 @@ def validate_toc(toc_path):
         with open(toc_path, 'r', encoding='utf-8') as f:
             f.read()
         log("✓ ファイル読み込み検査: OK（ファイル読み込み成功）")
-    except Exception as e:
+    except (FileNotFoundError, IOError, OSError, PermissionError, UnicodeDecodeError) as e:
         errors.append(f"ファイル読み込み検査: ファイル読み込み失敗 - {e}")
         log(f"\n❌ 検査失敗: {len(errors)} 件のエラー")
         for err in errors:
@@ -146,7 +158,7 @@ def validate_toc(toc_path):
     file_errors = []
     for file_path in docs.keys():
         try:
-            full_path = validate_path_within_base(file_path, PROJECT_ROOT)
+            full_path = validate_path_within_base(file_path, _project_root)
         except ValueError:
             file_errors.append(f"不正なパス: '{file_path}' はプロジェクト外を参照しています")
             continue

@@ -253,5 +253,91 @@ class TestChecksumsInvalidArgs(TestCreateChecksumsBase):
         self.assertNotEqual(proc.returncode, 0)
 
 
+# ===========================================================================
+# --promote-pending テスト
+# ===========================================================================
+
+class TestPromotePending(TestCreateChecksumsBase):
+    """--promote-pending フラグのテスト。"""
+
+    def _run_promote(self, category):
+        """--promote-pending を subprocess で実行する。"""
+        cmd = [sys.executable, CHECKSUMS_SCRIPT, '--category', category, '--promote-pending']
+        return subprocess.run(
+            cmd, capture_output=True, text=True, cwd=self.tmpdir,
+            env={**os.environ, 'PYTHONPATH': SCRIPTS_DIR}
+        )
+
+    def test_promote_copies_pending_to_checksums(self):
+        """pending checksums が active checksums にコピーされる"""
+        # .toc_work/ に pending ファイルを作成
+        work_dir = os.path.join(
+            self.tmpdir, '.claude', 'doc-advisor', 'toc', 'rules', '.toc_work'
+        )
+        os.makedirs(work_dir, exist_ok=True)
+        pending_content = "# pending checksums\nchecksums:\n  rules/test.md: abc123\n"
+        with open(os.path.join(work_dir, '.toc_checksums_pending.yaml'), 'w') as f:
+            f.write(pending_content)
+
+        proc = self._run_promote('rules')
+        self.assertEqual(proc.returncode, 0, f'stderr: {proc.stderr}')
+
+        # active checksums ファイルに pending の内容がコピーされていること
+        checksums_path = self._get_checksums_path('rules')
+        self.assertTrue(os.path.exists(checksums_path))
+        with open(checksums_path, 'r') as f:
+            content = f.read()
+        self.assertIn('abc123', content)
+
+    def test_promote_fails_when_no_pending(self):
+        """pending ファイルが存在しない場合はエラー終了"""
+        proc = self._run_promote('rules')
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn('Pending checksums not found', proc.stderr)
+
+
+# ===========================================================================
+# --clean-work-dir テスト
+# ===========================================================================
+
+class TestCleanWorkDir(TestCreateChecksumsBase):
+    """--clean-work-dir フラグのテスト。"""
+
+    def _run_clean(self, category):
+        """--clean-work-dir を subprocess で実行する。"""
+        cmd = [sys.executable, CHECKSUMS_SCRIPT, '--category', category, '--clean-work-dir']
+        return subprocess.run(
+            cmd, capture_output=True, text=True, cwd=self.tmpdir,
+            env={**os.environ, 'PYTHONPATH': SCRIPTS_DIR}
+        )
+
+    def test_clean_removes_work_dir(self):
+        """work directory が削除される"""
+        work_dir = os.path.join(
+            self.tmpdir, '.claude', 'doc-advisor', 'toc', 'rules', '.toc_work'
+        )
+        os.makedirs(work_dir, exist_ok=True)
+        # ダミーファイルを作成
+        with open(os.path.join(work_dir, 'dummy.yaml'), 'w') as f:
+            f.write('dummy')
+
+        proc = self._run_clean('rules')
+        self.assertEqual(proc.returncode, 0, f'stderr: {proc.stderr}')
+        self.assertFalse(os.path.exists(work_dir))
+
+    def test_clean_succeeds_when_no_work_dir(self):
+        """work directory が不在時はスキップして正常終了"""
+        work_dir = os.path.join(
+            self.tmpdir, '.claude', 'doc-advisor', 'toc', 'rules', '.toc_work'
+        )
+        # work_dir が存在しないことを確認
+        if os.path.exists(work_dir):
+            shutil.rmtree(work_dir)
+
+        proc = self._run_clean('rules')
+        self.assertEqual(proc.returncode, 0, f'stderr: {proc.stderr}')
+        self.assertIn('not found (skip)', proc.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

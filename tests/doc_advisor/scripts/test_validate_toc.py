@@ -242,5 +242,117 @@ specs:
                          f"validate_toc.py が例外でクラッシュした: {combined_output}")
 
 
+# ===========================================================================
+# validate_toc() パラメータ経由テスト（TASK-001: グローバル変数依存排除）
+# ===========================================================================
+
+class TestValidateTocWithParams(unittest.TestCase):
+    """validate_toc() を category / project_root パラメータ経由で呼び出すテスト。
+    グローバル変数に依存せず、パラメータ経由で設定を渡して正常動作することを確認する。
+    """
+
+    def setUp(self):
+        if SCRIPTS_DIR not in sys.path:
+            sys.path.insert(0, SCRIPTS_DIR)
+        self.tmpdir = tempfile.mkdtemp()
+        self.project_root = Path(self.tmpdir)
+        # rules ディレクトリとファイルを作成
+        rules_dir = self.project_root / 'rules'
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        (rules_dir / 'test.md').write_text('# Test Rule\n\nContent.\n', encoding='utf-8')
+        # ToC ディレクトリ作成
+        toc_dir = self.project_root / '.claude' / 'doc-advisor' / 'toc' / 'rules'
+        toc_dir.mkdir(parents=True, exist_ok=True)
+        self.toc_dir = toc_dir
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write_toc(self, content, filename='rules_toc.yaml'):
+        toc_path = self.toc_dir / filename
+        toc_path.write_text(content, encoding='utf-8')
+        return toc_path
+
+    def test_valid_toc_with_params(self):
+        """パラメータ経由で正常な ToC の検査が成功する"""
+        from validate_toc import validate_toc
+        toc_content = """\
+docs:
+  rules/test.md:
+    title: "Test Rule"
+    purpose: "A test rule document"
+    doc_type: "rule"
+    content_details:
+      - "contains test rules"
+    applicable_tasks:
+      - "testing"
+    keywords:
+      - "test"
+      - "rule"
+"""
+        toc_path = self._write_toc(toc_content)
+        result = validate_toc(toc_path, category='rules', project_root=self.project_root)
+        self.assertTrue(result)
+
+    def test_missing_fields_with_params(self):
+        """パラメータ経由で必須フィールド欠損を検出する"""
+        from validate_toc import validate_toc
+        toc_content = """\
+docs:
+  rules/test.md:
+    purpose: "A test rule document"
+    content_details:
+      - "detail"
+    applicable_tasks:
+      - "task"
+"""
+        toc_path = self._write_toc(toc_content)
+        # title と doc_type が欠損 → False
+        result = validate_toc(toc_path, category='rules', project_root=self.project_root)
+        self.assertFalse(result)
+
+    def test_nonexistent_file_with_params(self):
+        """パラメータ経由で存在しないファイル参照を検出する"""
+        from validate_toc import validate_toc
+        toc_content = """\
+docs:
+  rules/nonexistent.md:
+    title: "Ghost"
+    purpose: "Does not exist"
+    doc_type: "rule"
+    content_details:
+      - "detail"
+    applicable_tasks:
+      - "task"
+    keywords:
+      - "ghost"
+"""
+        toc_path = self._write_toc(toc_content)
+        result = validate_toc(toc_path, category='rules', project_root=self.project_root)
+        self.assertFalse(result)
+
+    def test_custom_category_param(self):
+        """カスタムカテゴリパラメータで正常動作すること"""
+        from validate_toc import validate_toc
+        toc_content = """\
+docs:
+  rules/test.md:
+    title: "Test"
+    purpose: "Test"
+    doc_type: "rule"
+    content_details:
+      - "d"
+    applicable_tasks:
+      - "t"
+    keywords:
+      - "k"
+"""
+        toc_path = self._write_toc(toc_content)
+        # カスタムカテゴリ名でもエラーなく動作する
+        result = validate_toc(toc_path, category='mycategory', project_root=self.project_root)
+        self.assertTrue(result)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -256,10 +256,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_toc.py --category {category}
 # 3. Update checksums (only on validation success)
 #    Use Phase 1 snapshot instead of recalculating current hashes.
 #    This ensures files modified during Phase 2 will be re-processed next time.
-cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_checksums.py --category {category} --promote-pending
 
 # 4. Cleanup
-rm -rf .claude/doc-advisor/toc/{category}/.toc_work
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_checksums.py --category {category} --clean-work-dir
 ```
 
 ### Incremental Mode
@@ -274,10 +274,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_toc.py --category {category}
 # → exit 1: Validation failed, restore from backup and abort
 
 # 3. Update checksums (only on validation success)
-cp .claude/doc-advisor/toc/{category}/.toc_work/.toc_checksums_pending.yaml .claude/doc-advisor/toc/{category}/.toc_checksums.yaml
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_checksums.py --category {category} --promote-pending
 
 # 4. Cleanup
-rm -rf .claude/doc-advisor/toc/{category}/.toc_work
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_checksums.py --category {category} --clean-work-dir
 ```
 
 ### Delete-only Mode (N=0 and M>0)

@@ -607,5 +607,116 @@ class TestExpandDocTypesMap(unittest.TestCase):
             self.assertEqual(doc_type, 'module')
 
 
+# ===========================================================================
+# _expand_output_dir テスト
+# ===========================================================================
+
+class TestExpandOutputDir(unittest.TestCase):
+    """_expand_output_dir() のテスト。"""
+
+    def test_derives_four_fields(self):
+        """output_dir から4フィールドが正しく導出される"""
+        section = {'output_dir': 'custom/output/'}
+        toc_utils._expand_output_dir(section, 'rules')
+        self.assertEqual(section['toc_file'], 'custom/output/toc/rules/rules_toc.yaml')
+        self.assertEqual(section['checksums_file'], 'custom/output/toc/rules/.toc_checksums.yaml')
+        self.assertEqual(section['work_dir'], 'custom/output/toc/rules/.toc_work/')
+        self.assertEqual(section['index_file'], 'custom/output/index/rules/rules_index.json')
+
+    def test_specs_category(self):
+        """specs カテゴリの導出パスが正しい"""
+        section = {'output_dir': 'my/base/'}
+        toc_utils._expand_output_dir(section, 'specs')
+        self.assertEqual(section['toc_file'], 'my/base/toc/specs/specs_toc.yaml')
+        self.assertEqual(section['index_file'], 'my/base/index/specs/specs_index.json')
+
+    def test_no_output_dir_does_nothing(self):
+        """output_dir 未設定時は何もしない"""
+        section = {'root_dirs': ['rules/']}
+        toc_utils._expand_output_dir(section, 'rules')
+        self.assertNotIn('toc_file', section)
+        self.assertNotIn('index_file', section)
+
+    def test_does_not_overwrite_explicit_fields(self):
+        """明示的に設定された個別フィールドは上書きしない"""
+        section = {
+            'output_dir': 'custom/output/',
+            'toc_file': 'my/explicit/toc.yaml',
+        }
+        toc_utils._expand_output_dir(section, 'rules')
+        # toc_file は明示値のまま
+        self.assertEqual(section['toc_file'], 'my/explicit/toc.yaml')
+        # 他は導出される
+        self.assertEqual(section['checksums_file'], 'custom/output/toc/rules/.toc_checksums.yaml')
+        self.assertEqual(section['work_dir'], 'custom/output/toc/rules/.toc_work/')
+        self.assertEqual(section['index_file'], 'custom/output/index/rules/rules_index.json')
+
+    def test_trailing_slash_stripped(self):
+        """末尾スラッシュが正しく処理される"""
+        section = {'output_dir': 'path/with/slash/'}
+        toc_utils._expand_output_dir(section, 'rules')
+        self.assertTrue(section['toc_file'].startswith('path/with/slash/'))
+        # 二重スラッシュが入らないことを確認
+        self.assertNotIn('//', section['toc_file'])
+
+
+class TestLoadConfigOutputDir(unittest.TestCase):
+    """load_config() で output_dir が正しく展開されるテスト。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.original_env = {}
+        for key in ('CLAUDE_PROJECT_DIR', 'CLAUDE_PLUGIN_ROOT'):
+            self.original_env[key] = os.environ.get(key)
+        os.environ['CLAUDE_PROJECT_DIR'] = self.tmpdir
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        for key, val in self.original_env.items():
+            if val is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = val
+
+    def test_output_dir_derives_paths_in_config(self):
+        """output_dir 設定時に導出パスが deep merge 後の config に反映"""
+        doc_structure = """\
+# doc_structure_version: 3.0
+
+rules:
+  output_dir: plugins/forge/doc-advisor/
+  root_dirs:
+    - plugins/forge/docs/
+  doc_types_map:
+    plugins/forge/docs/: rule
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+"""
+        with open(os.path.join(self.tmpdir, '.doc_structure.yaml'), 'w') as f:
+            f.write(doc_structure)
+
+        config = toc_utils.load_config(category='rules')
+        self.assertEqual(config['toc_file'],
+                         'plugins/forge/doc-advisor/toc/rules/rules_toc.yaml')
+        self.assertEqual(config['checksums_file'],
+                         'plugins/forge/doc-advisor/toc/rules/.toc_checksums.yaml')
+        self.assertEqual(config['work_dir'],
+                         'plugins/forge/doc-advisor/toc/rules/.toc_work/')
+        self.assertEqual(config['index_file'],
+                         'plugins/forge/doc-advisor/index/rules/rules_index.json')
+
+    def test_default_config_has_index_file(self):
+        """デフォルト config に index_file が含まれる"""
+        # .doc_structure.yaml なし → デフォルトにフォールバック
+        config = toc_utils.load_config(category='rules')
+        self.assertIn('index_file', config)
+        self.assertIn('rules_index.json', config['index_file'])
+
+        config_specs = toc_utils.load_config(category='specs')
+        self.assertIn('index_file', config_specs)
+        self.assertIn('specs_index.json', config_specs['index_file'])
+
+
 if __name__ == '__main__':
     unittest.main()

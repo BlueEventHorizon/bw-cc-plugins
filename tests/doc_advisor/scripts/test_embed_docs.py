@@ -162,18 +162,57 @@ class TestTruncateToTokenLimit(unittest.TestCase):
 class TestGetIndexPath(unittest.TestCase):
     """get_index_path() のパス生成テスト。"""
 
-    def test_specs_path(self):
-        """specs カテゴリのインデックスパス"""
-        root = Path("/project")
+    def setUp(self):
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = tempfile.mkdtemp(dir=_TEST_TEMP_BASE)
+        self.original_env = {}
+        for key in ('CLAUDE_PROJECT_DIR',):
+            self.original_env[key] = os.environ.get(key)
+        os.environ['CLAUDE_PROJECT_DIR'] = self.tmpdir
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        for key, val in self.original_env.items():
+            if val is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = val
+
+    def test_specs_path_default(self):
+        """specs カテゴリのデフォルトインデックスパス"""
+        root = Path(self.tmpdir)
         result = get_index_path("specs", root)
-        expected = Path("/project/.claude/doc-advisor/index/specs/specs_index.json")
+        expected = root / ".claude/doc-advisor/index/specs/specs_index.json"
         self.assertEqual(result, expected)
 
-    def test_rules_path(self):
-        """rules カテゴリのインデックスパス"""
-        root = Path("/project")
+    def test_rules_path_default(self):
+        """rules カテゴリのデフォルトインデックスパス"""
+        root = Path(self.tmpdir)
         result = get_index_path("rules", root)
-        expected = Path("/project/.claude/doc-advisor/index/rules/rules_index.json")
+        expected = root / ".claude/doc-advisor/index/rules/rules_index.json"
+        self.assertEqual(result, expected)
+
+    def test_custom_output_dir(self):
+        """output_dir 設定時にカスタムパスが返る"""
+        doc_structure = """\
+# doc_structure_version: 3.0
+
+rules:
+  output_dir: custom/base/
+  root_dirs:
+    - rules/
+  doc_types_map:
+    rules/: rule
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+"""
+        with open(os.path.join(self.tmpdir, '.doc_structure.yaml'), 'w') as f:
+            f.write(doc_structure)
+
+        root = Path(self.tmpdir)
+        result = get_index_path("rules", root)
+        expected = root / "custom/base/index/rules/rules_index.json"
         self.assertEqual(result, expected)
 
 

@@ -1,0 +1,166 @@
+# auto-toc 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: REQ-005
+    title: auto-toc 要件定義書（SessionEnd フック自動トリガー、差分検知、カテゴリ別更新、スクリプトベース処理、エラーハンドリング）
+    design_id: DES-009
+    status: pending
+
+design_traceability:
+  - design_id: DES-009
+    title: auto-create-toc 設計書
+    requirement_ids:
+      - REQ-005
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+
+# === タスク一覧 ===
+tasks:
+  - task_id: TASK-001
+    title: 既存スクリプトのリファクタリング（パラメータ追加による外部 import 対応）
+    priority: 90
+    status: completed
+    design_id: DES-009
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - "merge_toc.py: write_yaml_output() に category, output_config オプショナルパラメータを追加（設計書 8.1 節の変更例に従う）"
+      - "validate_toc.py: validate_toc() に category, project_root オプショナルパラメータを追加"
+      - "create_pending_yaml.py: determine_doc_type() に doc_types_map, category オプショナルパラメータを追加"
+      - 各関数内で引数がある場合はそちらを優先、None の場合は既存グローバル変数にフォールバック
+      - 既存テストが全件パスすることを確認（後方互換性保証）
+      - リファクタリング対象関数に対する新パラメータ経由の単体テストを追加
+    acceptance_criteria: 既存テストが全件パスし、かつ新パラメータ経由でも各関数が正常動作すること
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+      - plugins/doc-advisor/scripts/merge_toc.py
+      - plugins/doc-advisor/scripts/validate_toc.py
+      - plugins/doc-advisor/scripts/create_pending_yaml.py
+
+  - task_id: TASK-002
+    title: auto_create_toc.py メタデータ抽出モジュール実装
+    priority: 85
+    status: completed
+    design_id: DES-009
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-001 (1/2)"
+    build_check: skip
+    description:
+      - "MetadataExtractor クラスの実装（設計書 3.2 節のクラス図に従う）"
+      - "extract_title(): H1 見出し抽出、H1 なしの場合はファイル名から生成"
+      - "extract_purpose(): frontmatter description/purpose → 概要セクション → first_para の優先順で決定"
+      - "extract_content_details(): H2/H3 見出しから最大10件、0件の場合は first_para から1項目生成"
+      - "keywords 抽出: title・headings・metadata_table の単語から重複除去、最大10語"
+      - "applicable_tasks: doc_type ベースの汎用タスク1件以上生成"
+      - "resolve_doc_type(): doc_types_map の最長一致 → determine_doc_type() フォールバック"
+      - "セクション見出しのマッチングルール: 番号プレフィックス除去後のテキストで判定（設計書 5.2 節）"
+      - "全メタデータフィールドの非空保証（validate_toc.py 互換、設計書 5.4 節）"
+      - "全処理を Python 標準ライブラリのみで実装（外部依存禁止）"
+    acceptance_criteria: 全メタデータフィールドが非空で生成され、validate_toc.py の検査を通過するエントリを出力できること。H1 なし・frontmatter なし・見出しなしのケースでもフォールバックが正常動作すること
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+
+  - task_id: TASK-003
+    title: auto_create_toc.py コアロジック実装（変更検知・ToC 更新・メインエントリポイント）
+    priority: 85
+    status: completed
+    design_id: DES-009
+    depends_on:
+      - TASK-001
+      - TASK-002
+    group_id: "GROUP-001 (2/2)"
+    build_check: on_group_complete
+    description:
+      - "parse_args(): フックモード（引数なし、stdin JSON）とスキルモード（--category {rules|specs}）の判定"
+      - "detect_changed_files(): SHA-256 ハッシュベース差分検知（toc_utils の load_checksums/calculate_file_hash を使用）"
+      - "detect_changed_files() で .doc_structure.yaml の patterns.exclude に基づく除外判定を実装（toc_utils の should_exclude() を使用）"
+      - "update_toc(): 既存 ToC 読み込み → 新規/変更/削除の反映 → write_yaml_output → validate_toc → チェックサム更新"
+      - "変更ファイルの AI メタデータ保持ロジック: _auto_generated なし → AI メタデータ保持・title のみ再抽出"
+      - "_auto_generated マーカーのライフサイクル管理（設計書 5.3 節）"
+      - "run_category(): カテゴリ単位のオーケストレーション"
+      - "main(): 両モード対応のエントリポイント、カテゴリ別処理ディスパッチ"
+      - "エラーハンドリング: 全エラーで exit 0、stderr 出力、既存 ToC 非破壊（設計書 9 節）"
+      - "通知出力: カテゴリ・件数を1行で stdout（設計書 10 節）"
+    acceptance_criteria: フックモード・スキルモード両方で正常動作すること。異常系（.doc_structure.yaml 不在、ToC 不在、チェックサム不在）で exit 0 を返しセッション終了を妨げないこと。変更なし時は無出力であること。除外パターンに該当するファイルが処理対象から除外されること
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+      - plugins/doc-advisor/scripts/toc_utils.py
+
+  - task_id: TASK-004
+    title: plugin.json hooks 定義と既存スキル統合（--auto オプション）
+    priority: 80
+    status: pending
+    design_id: DES-009
+    depends_on:
+      - TASK-003
+    group_id: null
+    build_check: per_task
+    description:
+      - "plugin.json に SessionEnd フック追加（設計書 6.1 節の JSON 定義に従う）"
+      - "timeout: 30000（30秒）を設定"
+      - "$CLAUDE_PLUGIN_ROOT 環境変数によるパス解決"
+      - "create-rules-toc/SKILL.md に --auto オプションを追加（設計書 7.2 節）"
+      - "create-specs-toc/SKILL.md に --auto オプションを追加"
+      - "--auto 指定時は auto_create_toc.py --category {category} を実行し Phase 2 をスキップ"
+    acceptance_criteria: plugin.json が有効な JSON であり SessionEnd フックが定義されていること。--auto オプション経由で auto_create_toc.py --category {category} が実行され ToC が更新されること
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+      - plugins/doc-advisor/.claude-plugin/plugin.json
+      - plugins/doc-advisor/skills/create-rules-toc/SKILL.md
+      - plugins/doc-advisor/skills/create-specs-toc/SKILL.md
+
+  - task_id: TASK-005
+    title: テスト実装（単体テスト・統合テスト・異常系テスト）
+    priority: 75
+    status: pending
+    design_id: DES-009
+    depends_on:
+      - TASK-003
+      - TASK-004
+    group_id: null
+    build_check: per_task
+    description:
+      - "テストファイル: tests/doc_advisor/scripts/test_auto_create_toc.py"
+      - "単体テスト: extract_metadata()（H1 抽出、frontmatter、H2/H3 収集、空ファイル）"
+      - "単体テスト: detect_changed_files()（新規・変更・削除・変更なし、チェックサム不在時のフォールバック、除外パターン動作）"
+      - "単体テスト: update_toc()（新規追加、AI メタデータ保持、削除除去、_auto_generated マーカー）"
+      - "統合テスト: フックモード end-to-end（テスト用ディレクトリでファイル変更→実行→ToC 更新確認）"
+      - "統合テスト: スキルモード end-to-end（--category rules でハッシュベース差分→ToC 更新確認）"
+      - "統合テスト: 互換性確認（auto-create-toc 更新後の ToC で query-rules / query-specs が正常にパースできること）"
+      - "異常系テスト: .doc_structure.yaml 不在、ToC 不在、チェックサム不在、書き込み権限なし、バリデーション失敗"
+      - Python 標準ライブラリのみ使用（unittest, tempfile, pathlib 等）
+    acceptance_criteria: 全テストがパスし、設計書 11 節のテスト項目（単体・統合・異常系・互換性）を網羅していること
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+
+  - task_id: TASK-006
+    title: REQ-005 要件定義書の更新（フック種別の整合性確保）
+    priority: 85
+    status: completed
+    design_id: DES-009
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - "REQ-005 の FNC-001 を「Stop フック」から「SessionEnd フック」に更新（設計書 DES-009 §1.1 の注記に基づく）"
+      - "前提条件セクションの TBD-003 を解決済みに更新"
+      - "FNC-006 の記述を SessionEnd フックに合わせて修正"
+    acceptance_criteria: REQ-005 内の「Stop フック」参照が全て「SessionEnd フック」に更新され、DES-009 との整合性が確保されていること
+    required_reading:
+      - docs/specs/doc-advisor/requirements/REQ-005_auto_toc_spec.md
+      - docs/specs/doc-advisor/design/DES-009_auto_toc_design.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-04-06"
+    content: 初版作成
+  - date: "2026-04-06"
+    content: "レビュー指摘対応: TASK-006 追加（REQ-005 フック種別更新）、TASK-002 に depends_on TASK-001 追加、TASK-002 の acceptance_criteria 追加、TASK-003 に除外パターン実装記述追加・異常系の受け入れ基準追加、TASK-004 の priority を 80 に引き上げ・受け入れ基準を機能検証レベルに強化、TASK-005 に TASK-004 依存追加・互換性テスト項目追加・除外テスト追加、標準ライブラリ制約の明示"
