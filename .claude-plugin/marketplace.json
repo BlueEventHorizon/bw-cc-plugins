@@ -3,7 +3,7 @@
   "name": "bw-cc-plugins",
   "metadata": {
     "description": "Document lifecycle management, GitHub operations, Xcode build/test, and AI-searchable document indexing",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "owner": {
     "name": "moons"
@@ -42,7 +42,7 @@
     {
       "name": "doc-advisor",
       "description": "AI-searchable document index (ToC) generator for Claude Code",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "author": {
         "name": "moons"
       },
