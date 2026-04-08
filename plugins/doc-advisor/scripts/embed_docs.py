@@ -35,10 +35,13 @@ from toc_utils import (
     ConfigNotReadyError,
     calculate_file_hash,
     get_all_md_files,
+    get_project_root,
     init_common_config,
     load_checksums,
+    load_config,
     log,
     normalize_path,
+    resolve_config_path,
     write_checksums_yaml,
 )
 
@@ -71,11 +74,15 @@ def parse_args():
 
 
 def get_index_path(category, project_root):
-    """インデックス JSON のパスを返す。
+    """インデックス JSON のパスを返す（config の index_file を参照）。
 
-    保存先: .claude/doc-advisor/index/{category}/{category}_index.json
+    config に index_file が設定されていればそのパスを使用し、
+    未設定の場合はデフォルトパスにフォールバックする。
     """
-    return project_root / ".claude" / "doc-advisor" / "index" / category / f"{category}_index.json"
+    config = load_config(category)
+    default = f'.claude/doc-advisor/index/{category}/{category}_index.json'
+    index_file = config.get('index_file', default)
+    return resolve_config_path(index_file, project_root, project_root)
 
 
 def load_index(index_path):

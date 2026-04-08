@@ -7,7 +7,7 @@ Usage:
     python3 .claude/skills/update-forge-toc/scripts/swap_doc_config.py --restore
 
 --store:
-    1. Back up project .doc_structure.yaml and doc-advisor ToC/checksums
+    1. Back up project .doc_structure.yaml
     2. Copy forge_doc_structure.yaml to project root as .doc_structure.yaml
 
 --restore:
@@ -31,8 +31,6 @@ FORGE_DOC_STRUCTURE = SKILL_DIR / "forge_doc_structure.yaml"
 
 BACKUP_TARGETS = [
     ".doc_structure.yaml",
-    ".claude/doc-advisor/toc/rules/rules_toc.yaml",
-    ".claude/doc-advisor/toc/rules/.toc_checksums.yaml",
 ]
 
 

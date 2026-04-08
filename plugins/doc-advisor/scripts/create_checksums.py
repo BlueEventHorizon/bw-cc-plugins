@@ -16,6 +16,8 @@ import sys
 import argparse
 from pathlib import Path
 
+import shutil
+
 from toc_utils import init_common_config, should_exclude, resolve_config_path, rglob_follow_symlinks, normalize_path, calculate_file_hash, write_checksums_yaml, ConfigNotReadyError, log
 
 # Global configuration (initialized in init_config())
@@ -23,6 +25,7 @@ CATEGORY = None  # 'rules' or 'specs'
 CONFIG = None
 PROJECT_ROOT = None
 ROOT_DIRS = None  # list of (root_dir_path, root_dir_name)
+FIRST_DIR = None  # 最初の root_dir（パス解決用）
 CHECKSUMS_FILE = None
 PATTERNS_CONFIG = None
 TARGET_GLOB = None
@@ -36,6 +39,10 @@ def parse_args():
     )
     parser.add_argument('--category', required=True, choices=['rules', 'specs'],
                         help='Document category: rules or specs')
+    parser.add_argument('--promote-pending', action='store_true',
+                        help='Promote pending checksums to active checksums file')
+    parser.add_argument('--clean-work-dir', action='store_true',
+                        help='Clean up work directory')
     return parser.parse_args()
 
 
@@ -49,7 +56,7 @@ def init_config(category):
     Returns:
         bool: True on success, False on failure
     """
-    global CATEGORY, CONFIG, PROJECT_ROOT, ROOT_DIRS, CHECKSUMS_FILE
+    global CATEGORY, CONFIG, PROJECT_ROOT, ROOT_DIRS, FIRST_DIR, CHECKSUMS_FILE
     global PATTERNS_CONFIG, TARGET_GLOB, EXCLUDE_PATTERNS
 
     CATEGORY = category
@@ -70,9 +77,47 @@ def init_config(category):
     TARGET_GLOB = common['target_glob']
     EXCLUDE_PATTERNS = common['exclude_patterns']
 
-    first_dir = common['first_dir']
+    FIRST_DIR = common['first_dir']
     CHECKSUMS_FILE = resolve_config_path(CONFIG.get('checksums_file', '.toc_checksums.yaml'),
-                                          first_dir, PROJECT_ROOT)
+                                          FIRST_DIR, PROJECT_ROOT)
+    return True
+
+
+def promote_pending():
+    """pending checksums を active checksums ファイルに昇格する。
+
+    toc_orchestrator Phase 3 で使用。
+    {work_dir}/.toc_checksums_pending.yaml → {checksums_file} にコピーする。
+
+    Returns:
+        bool: True on success, False on failure
+    """
+    work_dir = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), FIRST_DIR, PROJECT_ROOT)
+    pending = work_dir / '.toc_checksums_pending.yaml'
+    if not pending.exists():
+        log(f"Error: Pending checksums not found: {pending}")
+        return False
+    CHECKSUMS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(pending), str(CHECKSUMS_FILE))
+    log(f"Promoted: {pending} -> {CHECKSUMS_FILE}")
+    return True
+
+
+def clean_work_dir():
+    """work directory を削除する。
+
+    toc_orchestrator Phase 3 で使用。
+    config の work_dir から解決したパスを削除する。
+
+    Returns:
+        bool: True on success (不在時もスキップして True)
+    """
+    work_dir = resolve_config_path(CONFIG.get('work_dir', '.toc_work'), FIRST_DIR, PROJECT_ROOT)
+    if not work_dir.exists():
+        log(f"Work directory not found (skip): {work_dir}")
+        return True
+    shutil.rmtree(str(work_dir))
+    log(f"Cleaned: {work_dir}")
     return True
 
 
@@ -91,6 +136,14 @@ def main():
     # Initialize configuration
     if not init_config(args.category):
         return 1
+
+    # --promote-pending: pending checksums を昇格
+    if args.promote_pending:
+        return 0 if promote_pending() else 1
+
+    # --clean-work-dir: work directory を削除
+    if args.clean_work_dir:
+        return 0 if clean_work_dir() else 1
 
     log("=" * 50)
     log(f".toc_checksums.yaml 生成スクリプト（{CATEGORY}）")
