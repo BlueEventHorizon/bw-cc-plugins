@@ -365,5 +365,89 @@ class TestDetermineDocType(unittest.TestCase):
         self.assertEqual(result, 'unknown')
 
 
+# ===========================================================================
+# determine_doc_type() パラメータ経由テスト（TASK-001: グローバル変数依存排除）
+# ===========================================================================
+
+class TestDetermineDocTypeWithParams(unittest.TestCase):
+    """determine_doc_type() を doc_types_map / category パラメータ経由で呼び出すテスト。
+    グローバル変数に依存せず、パラメータ経由で設定を渡して正常動作することを確認する。
+    """
+
+    def setUp(self):
+        if SCRIPTS_DIR not in sys.path:
+            sys.path.insert(0, SCRIPTS_DIR)
+
+    def test_direct_match_via_param(self):
+        """doc_types_map パラメータ経由で直接マッチする"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'docs/design/',
+            doc_types_map={'docs/design/': 'design'},
+            category='specs',
+        )
+        self.assertEqual(result, 'design')
+
+    def test_trailing_slash_normalization_via_param(self):
+        """パラメータ経由でもトレイリングスラッシュが正規化される"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'specs/api/',
+            doc_types_map={'specs/api': 'api'},
+            category='specs',
+        )
+        self.assertEqual(result, 'api')
+
+    def test_keyword_fallback_via_param(self):
+        """doc_types_map が空辞書の場合、キーワードフォールバックが動作する"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'some/path/requirements',
+            doc_types_map={},
+            category='specs',
+        )
+        self.assertEqual(result, 'requirement')
+
+    def test_category_default_via_param(self):
+        """マッチしない場合に category パラメータからデフォルト値が生成される"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'some/unknown/dir',
+            doc_types_map={},
+            category='rules',
+        )
+        self.assertEqual(result, 'rule')
+
+    def test_category_none_via_param(self):
+        """category=None の場合は 'unknown' が返る"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'no/match',
+            doc_types_map={},
+            category=None,
+        )
+        self.assertEqual(result, 'unknown')
+
+    def test_empty_doc_types_map_via_param(self):
+        """空辞書のパラメータでもエラーにならない"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'project/Design/',
+            doc_types_map={},
+            category='specs',
+        )
+        self.assertEqual(result, 'design')
+
+    def test_doc_types_map_priority_via_param(self):
+        """doc_types_map パラメータがキーワードフォールバックより優先される"""
+        from create_pending_yaml import determine_doc_type
+        result = determine_doc_type(
+            'rules/',
+            doc_types_map={'rules/': 'custom-type'},
+            category='rules',
+        )
+        self.assertEqual(result, 'custom-type')
+
+
 if __name__ == '__main__':
     unittest.main()

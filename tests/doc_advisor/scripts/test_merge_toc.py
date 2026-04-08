@@ -309,5 +309,97 @@ class TestMergeTocErrors(TestMergeTocBase):
         self.assertNotEqual(proc.returncode, 0)
 
 
+# ===========================================================================
+# write_yaml_output() パラメータ経由テスト（TASK-001: グローバル変数依存排除）
+# ===========================================================================
+
+class TestWriteYamlOutputWithParams(unittest.TestCase):
+    """write_yaml_output() を category / output_config パラメータ経由で呼び出すテスト。
+    グローバル変数に依存せず、パラメータ経由で設定を渡して正常動作することを確認する。
+    """
+
+    def setUp(self):
+        if SCRIPTS_DIR not in sys.path:
+            sys.path.insert(0, SCRIPTS_DIR)
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_category_param_used_in_output(self):
+        """category パラメータが ToC ヘッダーに反映される"""
+        from merge_toc import write_yaml_output
+        output_path = Path(os.path.join(self.tmpdir, 'test_toc.yaml'))
+        docs = {
+            'rules/test.md': {
+                'title': 'Test',
+                'purpose': 'Test purpose',
+                'doc_type': 'rule',
+                'content_details': ['detail1'],
+                'applicable_tasks': ['task1'],
+                'keywords': ['kw1'],
+            }
+        }
+        output_config = {
+            'header_comment': 'Custom Header',
+            'metadata_name': 'Custom Index',
+        }
+        result = write_yaml_output(docs, output_path, category='myrules', output_config=output_config)
+        self.assertTrue(result)
+        content = output_path.read_text(encoding='utf-8')
+        # category がパスとコメントに反映されている
+        self.assertIn('myrules_toc.yaml', content)
+        self.assertIn('Custom Header', content)
+        self.assertIn('Custom Index', content)
+        self.assertIn('create-myrules-toc', content)
+
+    def test_output_config_param_overrides_global(self):
+        """output_config パラメータがグローバル変数より優先される"""
+        from merge_toc import write_yaml_output
+        output_path = Path(os.path.join(self.tmpdir, 'test_toc.yaml'))
+        docs = {
+            'specs/api.md': {
+                'title': 'API Spec',
+                'purpose': 'API specification',
+                'doc_type': 'spec',
+                'content_details': ['api detail'],
+                'applicable_tasks': ['api task'],
+                'keywords': ['api'],
+            }
+        }
+        output_config = {
+            'header_comment': 'Overridden Header Comment',
+            'metadata_name': 'Overridden Metadata Name',
+        }
+        result = write_yaml_output(docs, output_path, category='specs', output_config=output_config)
+        self.assertTrue(result)
+        content = output_path.read_text(encoding='utf-8')
+        self.assertIn('Overridden Header Comment', content)
+        self.assertIn('Overridden Metadata Name', content)
+
+    def test_docs_content_written_correctly(self):
+        """パラメータ経由でもドキュメントエントリが正しく書き出される"""
+        from merge_toc import write_yaml_output
+        output_path = Path(os.path.join(self.tmpdir, 'test_toc.yaml'))
+        docs = {
+            'rules/coding.md': {
+                'title': 'Coding Standards',
+                'purpose': 'Define coding practices',
+                'doc_type': 'rule',
+                'content_details': ['detail A', 'detail B'],
+                'applicable_tasks': ['coding review'],
+                'keywords': ['coding', 'standards'],
+            }
+        }
+        output_config = {'header_comment': 'Test', 'metadata_name': 'Test Index'}
+        result = write_yaml_output(docs, output_path, category='rules', output_config=output_config)
+        self.assertTrue(result)
+        content = output_path.read_text(encoding='utf-8')
+        self.assertIn('rules/coding.md', content)
+        self.assertIn('doc_type: rule', content)
+        self.assertIn('Coding Standards', content)
+        self.assertIn('file_count: 1', content)
+
+
 if __name__ == '__main__':
     unittest.main()

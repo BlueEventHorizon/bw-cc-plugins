@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.2] - 2026-04-08
+
+### marketplace
+
+- **feat**: doc-advisor を 0.1.6 に更新。output_dir による ToC/Index 出力パスの動的切り替えをサポート
+
+## [0.1.6] - 2026-04-08
+
+### doc-advisor
+
+- **feat**: output_dir フィールドによる ToC/Index 出力パスの動的切り替えをサポート
+- **feat**: create_checksums.py に --promote-pending / --clean-work-dir フラグを追加し、Phase 3 のハードコードパスを排除
+- **feat**: get_index_path() を config 参照に変更（embed_docs.py / search_docs.py）
+- **fix**: golden_set テストの stale チェックスキップと config ベースのインデックスパス統一
+
 ## [marketplace 0.1.1] - 2026-04-07
 
 ### marketplace

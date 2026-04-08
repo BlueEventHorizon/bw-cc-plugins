@@ -22,6 +22,10 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "plugins" / "doc-advisor" / "scripts"
 SEARCH_DOCS_SCRIPT = SCRIPTS_DIR / "search_docs.py"
 
+# search_docs.py の get_index_path() を使用するため
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 # ゴールデンセット YAML のパス
 GOLDEN_SET_DIR = Path(__file__).resolve().parent
 QUERIES_YAML = GOLDEN_SET_DIR / "queries.yaml"
@@ -116,6 +120,8 @@ def load_queries_yaml(yaml_path):
 def _check_index_exists(category):
     """指定カテゴリのインデックスが存在するか確認する。
 
+    search_docs.py の get_index_path() を使い、config 設定に従ったパスを参照する。
+
     Args:
         category: "specs" または "rules"
 
@@ -125,9 +131,8 @@ def _check_index_exists(category):
     project_root = _get_project_root()
     if project_root is None:
         return False
-    index_path = (
-        project_root / ".claude" / "doc-advisor" / "index" / category / f"{category}_index.json"
-    )
+    from search_docs import get_index_path
+    index_path = get_index_path(category, project_root)
     return index_path.exists()
 
 
@@ -172,6 +177,7 @@ def _run_search(category, query, project_root):
         str(SEARCH_DOCS_SCRIPT),
         "--category", category,
         "--query", query,
+        "--skip-stale-check",
     ]
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(project_root)

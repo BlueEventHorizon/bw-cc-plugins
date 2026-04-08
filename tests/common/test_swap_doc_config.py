@@ -105,8 +105,8 @@ class TestSwapDocConfig(unittest.TestCase):
         backup_dir = self.skill_dir / ".backup"
         self.assertTrue(backup_dir.exists())
         self.assertTrue((backup_dir / ".doc_structure.yaml").exists())
-        self.assertTrue((backup_dir / ".claude" / "doc-advisor" / "toc" / "rules" / "rules_toc.yaml").exists())
-        self.assertTrue((backup_dir / ".claude" / "doc-advisor" / "toc" / "rules" / ".toc_checksums.yaml").exists())
+        # output_dir 導入により ToC/checksums はバックアップ対象外
+        # （forge config の output_dir でプロジェクトパスに干渉しないため）
 
         replaced = self.doc_structure.read_text(encoding="utf-8")
         self.assertIn("plugins/forge/docs/", replaced)
@@ -151,29 +151,19 @@ class TestSwapDocConfig(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertIn("No backup found", result["message"])
 
-    def test_store_handles_missing_optional_files(self):
-        (self.project_root / ".claude" / "doc-advisor" / "toc" / "rules" / ".toc_checksums.yaml").unlink()
-
+    def test_store_only_backs_up_doc_structure(self):
+        """BACKUP_TARGETS が .doc_structure.yaml のみであること"""
         code, result = _run_swap(["--store"], self.project_root, self.skill_dir)
         self.assertEqual(code, 0)
-        self.assertNotIn(".claude/doc-advisor/toc/rules/.toc_checksums.yaml", result["backed_up"])
+        self.assertEqual(result["backed_up"], [".doc_structure.yaml"])
 
-    def test_roundtrip_preserves_all_files(self):
-        toc_path = self.project_root / ".claude" / "doc-advisor" / "toc" / "rules" / "rules_toc.yaml"
-        checksum_path = self.project_root / ".claude" / "doc-advisor" / "toc" / "rules" / ".toc_checksums.yaml"
-
-        originals = {
-            ".doc_structure.yaml": self.doc_structure.read_text(encoding="utf-8"),
-            "rules_toc.yaml": toc_path.read_text(encoding="utf-8"),
-            ".toc_checksums.yaml": checksum_path.read_text(encoding="utf-8"),
-        }
+    def test_roundtrip_preserves_doc_structure(self):
+        original_content = self.doc_structure.read_text(encoding="utf-8")
 
         _run_swap(["--store"], self.project_root, self.skill_dir)
         _run_swap(["--restore"], self.project_root, self.skill_dir)
 
-        self.assertEqual(self.doc_structure.read_text(encoding="utf-8"), originals[".doc_structure.yaml"])
-        self.assertEqual(toc_path.read_text(encoding="utf-8"), originals["rules_toc.yaml"])
-        self.assertEqual(checksum_path.read_text(encoding="utf-8"), originals[".toc_checksums.yaml"])
+        self.assertEqual(self.doc_structure.read_text(encoding="utf-8"), original_content)
 
 
 if __name__ == "__main__":

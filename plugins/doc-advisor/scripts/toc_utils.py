@@ -168,6 +168,34 @@ def find_config_file():
     )
 
 
+def _expand_output_dir(section_config, category):
+    """output_dir から個別パスフィールドを導出する。
+
+    output_dir が設定されている場合、固定 convention に従い
+    toc_file, checksums_file, work_dir, index_file を導出する。
+    明示的に設定された個別フィールドは上書きしない。
+
+    Note: output_dir は .doc_structure.yaml v3.0 の公式フィールドではない。
+    forge や品質テストなど内部用途向けの便利機能。
+
+    Args:
+        section_config: rules または specs セクションの設定辞書
+        category: 'rules' or 'specs'
+    """
+    output_dir = section_config.get('output_dir')
+    if not output_dir:
+        return
+    base = output_dir.rstrip('/')
+    derived = {
+        'toc_file': f'{base}/toc/{category}/{category}_toc.yaml',
+        'checksums_file': f'{base}/toc/{category}/.toc_checksums.yaml',
+        'work_dir': f'{base}/toc/{category}/.toc_work/',
+        'index_file': f'{base}/index/{category}/{category}_index.json',
+    }
+    for key, value in derived.items():
+        section_config.setdefault(key, value)
+
+
 def load_config(category=None):
     """
     Load .doc_structure.yaml and merge with internal defaults.
@@ -202,6 +230,11 @@ def load_config(category=None):
     # Versioned migration: detect version and apply staged migrations (REQ-003)
     detected_version = _detect_version(content)
     doc_structure = apply_migrations(doc_structure, detected_version)
+
+    # output_dir から個別パスを導出（deep merge 前）
+    for section in ('rules', 'specs'):
+        if section in doc_structure:
+            _expand_output_dir(doc_structure[section], section)
 
     # Merge: doc_structure values override defaults
     config = _deep_merge(defaults, doc_structure)
@@ -405,6 +438,7 @@ def _get_default_config():
             'toc_file': '.claude/doc-advisor/toc/rules/rules_toc.yaml',
             'checksums_file': '.claude/doc-advisor/toc/rules/.toc_checksums.yaml',
             'work_dir': '.claude/doc-advisor/toc/rules/.toc_work/',
+            'index_file': '.claude/doc-advisor/index/rules/rules_index.json',
             'patterns': {
                 'target_glob': '**/*.md',
                 'exclude': []  # User-defined only; system files excluded separately
@@ -419,6 +453,7 @@ def _get_default_config():
             'toc_file': '.claude/doc-advisor/toc/specs/specs_toc.yaml',
             'checksums_file': '.claude/doc-advisor/toc/specs/.toc_checksums.yaml',
             'work_dir': '.claude/doc-advisor/toc/specs/.toc_work/',
+            'index_file': '.claude/doc-advisor/index/specs/specs_index.json',
             'patterns': {
                 'target_glob': '**/*.md',
                 'exclude': []  # User-defined only; system files excluded separately
