@@ -950,6 +950,7 @@ def write_checksums_yaml(checksums, output_path, header_comment="Auto-generated 
         lines.append(f"  {rel_path}: {hash_value}")
 
     try:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines) + '\n')
         return True
