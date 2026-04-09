@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.3] - 2026-04-09
+
+### marketplace
+
+- **feat**: doc-advisor を 0.1.7 に更新。resolve_config_path バグ修正、auto_create_toc.py 削除（品質評価により排除）
+
+## [0.1.7] - 2026-04-09
+
+### doc-advisor
+
+- **fix**: `resolve_config_path()` のパス解決バグを修正。`output_dir` 由来のマルチコンポーネントパスが `project_root` ではなく `FIRST_DIR` 基準で解決され、二重パスが生成される問題を解消
+- **feat**: `write_yaml_output()` / `write_checksums_yaml()` で出力先ディレクトリを自動作成（`output_dir` で新規ディレクトリへの初回書き出しに対応）
+- **refactor**: `auto_create_toc.py` を削除。品質評価の結果（ゴールデンセット検索精度 41% vs embedding 95%）、メタデータ抽出品質が実用水準に達しないため排除。`_auto_generated` マーカー処理も併せて削除
+
 ## [marketplace 0.1.2] - 2026-04-08
 
 ### marketplace
