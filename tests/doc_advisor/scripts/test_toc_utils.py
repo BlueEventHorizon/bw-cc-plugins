@@ -718,5 +718,75 @@ rules:
         self.assertIn('specs_index.json', config_specs['index_file'])
 
 
+class TestResolveConfigPath(unittest.TestCase):
+    """resolve_config_path() のパス解決ルールのテスト。
+
+    ルール:
+    - '/' を含むパス → project_root 基準
+    - '/' を含まない単純名 → default_base 基準
+    """
+
+    def setUp(self):
+        self.project_root = Path('/project')
+        self.default_base = Path('/project/rules/core')
+
+    def test_simple_name_resolves_to_default_base(self):
+        """'/' を含まない単純名は default_base 基準で解決"""
+        result = toc_utils.resolve_config_path(
+            '.toc_work', self.default_base, self.project_root)
+        self.assertEqual(result, Path('/project/rules/core/.toc_work'))
+
+    def test_simple_filename_resolves_to_default_base(self):
+        """単純ファイル名も default_base 基準"""
+        result = toc_utils.resolve_config_path(
+            '.toc_checksums.yaml', self.default_base, self.project_root)
+        self.assertEqual(result, Path('/project/rules/core/.toc_checksums.yaml'))
+
+    def test_claude_prefix_resolves_to_project_root(self):
+        """.claude/ プレフィックスは project_root 基準"""
+        result = toc_utils.resolve_config_path(
+            '.claude/doc-advisor/toc/rules/rules_toc.yaml',
+            self.default_base, self.project_root)
+        self.assertEqual(
+            result,
+            Path('/project/.claude/doc-advisor/toc/rules/rules_toc.yaml'))
+
+    def test_multi_component_path_resolves_to_project_root(self):
+        """'/' を含む非 .claude/ パスも project_root 基準（output_dir 由来）"""
+        result = toc_utils.resolve_config_path(
+            'plugins/forge/doc-advisor/toc/rules/.toc_work/',
+            self.default_base, self.project_root)
+        self.assertEqual(
+            result,
+            Path('/project/plugins/forge/doc-advisor/toc/rules/.toc_work'))
+
+    def test_output_dir_derived_toc_file(self):
+        """output_dir 由来の toc_file パスが project_root 基準"""
+        result = toc_utils.resolve_config_path(
+            'plugins/forge/doc-advisor/toc/rules/rules_toc.yaml',
+            self.default_base, self.project_root)
+        self.assertEqual(
+            result,
+            Path('/project/plugins/forge/doc-advisor/toc/rules/rules_toc.yaml'))
+
+    def test_output_dir_derived_checksums_file(self):
+        """output_dir 由来の checksums_file パスが project_root 基準"""
+        result = toc_utils.resolve_config_path(
+            'plugins/forge/doc-advisor/toc/rules/.toc_checksums.yaml',
+            self.default_base, self.project_root)
+        self.assertEqual(
+            result,
+            Path('/project/plugins/forge/doc-advisor/toc/rules/.toc_checksums.yaml'))
+
+    def test_trailing_slash_stripped(self):
+        """末尾スラッシュが除去される"""
+        result = toc_utils.resolve_config_path(
+            '.claude/doc-advisor/toc/rules/.toc_work/',
+            self.default_base, self.project_root)
+        self.assertEqual(
+            result,
+            Path('/project/.claude/doc-advisor/toc/rules/.toc_work'))
+
+
 if __name__ == '__main__':
     unittest.main()

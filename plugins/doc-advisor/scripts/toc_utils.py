@@ -130,8 +130,13 @@ def resolve_config_path(config_value, default_base, project_root):
     """
     Resolve configuration path value.
 
-    If the path starts with '.claude/', it is resolved relative to project_root.
-    Otherwise, it is resolved relative to default_base.
+    Multi-component paths (containing '/') are resolved relative to project_root.
+    Simple names (no '/') are resolved relative to default_base.
+
+    This supports both default paths (.claude/doc-advisor/...) and
+    output_dir-derived paths (plugins/forge/doc-advisor/...) as project-relative,
+    while keeping simple fallback names (.toc_work, .toc_checksums.yaml) as
+    default_base-relative.
 
     Args:
         config_value: Path string from configuration
@@ -142,7 +147,7 @@ def resolve_config_path(config_value, default_base, project_root):
         Path: Resolved absolute path
     """
     path_str = str(config_value).rstrip('/')
-    if path_str.startswith('.claude/'):
+    if '/' in path_str:
         return project_root / path_str
     return default_base / path_str
 

@@ -35,7 +35,7 @@ JSON 出力の `status` を確認:
 
 `/doc-advisor:create-rules-toc --full` を実行する。
 
-forge_doc_structure.yaml の `output_dir` 設定により、ToC は `plugins/forge/doc-advisor/toc/rules/` に直接出力される。コピー不要。
+forge_doc_structure.yaml の `output_dir` 設定により、ToC は `plugins/forge/toc/rules/rules_toc.yaml` に直接出力される。コピー不要。
 
 **エラー時**: Step 2 の結果に関わらず **必ず** Step 3 以降を実行する。
 
@@ -55,6 +55,6 @@ JSON 出力の `status` を確認:
 forge rules_toc.yaml を更新しました
 
 - 生成元: plugins/forge/docs/, plugins/forge/skills/*/docs/
-- 出力先: plugins/forge/doc-advisor/toc/rules/rules_toc.yaml
+- 出力先: plugins/forge/toc/rules/rules_toc.yaml (output_dir convention)
 - .doc_structure.yaml: 復元済み
 ```
