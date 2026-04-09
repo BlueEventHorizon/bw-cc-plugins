@@ -148,7 +148,6 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 - `meta/test_docs/{doc_set}/` — 実文書セット（rules/specs）+ クエリ期待値（queries.yaml）
 - `meta/test_docs/run_search_test.py` — embedding 検索の精度テストランナー
-- auto_create_toc の品質テスト — 自動生成 ToC で `query-rules`/`query-specs` の検索精度が AI 手書き ToC と同等かを同フレームワークで測定する
 
 ## Conventions
 

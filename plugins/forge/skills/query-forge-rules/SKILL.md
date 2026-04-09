@@ -15,7 +15,7 @@ user-invocable: false
 
 ## Procedure
 
-1. `${CLAUDE_PLUGIN_ROOT}/toc/rules_toc.yaml` を Read で全文読み込む
+1. `${CLAUDE_PLUGIN_ROOT}/toc/rules/rules_toc.yaml` を Read で全文読み込む
    - **見つからない場合**: 「forge ToC が見つかりません」とエラー報告して終了
 2. 全エントリを理解し、タスク内容と各エントリの `applicable_tasks` / `keywords` を照合する
 3. 関連の可能性があればファイル実体を Read して確認する（false negative 禁止）

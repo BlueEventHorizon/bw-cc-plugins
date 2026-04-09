@@ -173,13 +173,10 @@ def write_yaml_output(docs, output_path, *, category=None, output_config=None):
                 for item in entry[key]:
                     lines.append(f"      - {yaml_escape(item)}")
 
-        # _auto_generated マーカー（auto_create_toc.py が付与）
-        if entry.get('_auto_generated') == 'true':
-            lines.append("    _auto_generated: true")
-
     # 一時ファイルに書き込んでから rename する（書き込み途中の異常でファイルが壊れるのを防止）
     try:
         output_dir = output_path.parent
+        output_dir.mkdir(parents=True, exist_ok=True)
         fd, tmp_path = tempfile.mkstemp(dir=str(output_dir), suffix='.tmp', prefix='.toc_')
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
