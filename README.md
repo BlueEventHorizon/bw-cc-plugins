@@ -1,10 +1,23 @@
 # bw-cc-plugins
 
-A Claude Code plugin marketplace for Spec-Driven Development — from requirements and design through implementation, review, and delivery.
+Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
 **Marketplace version: 0.1.5**
 
 [Japanese README (README_ja.md)](README_ja.md)
+
+## What is Spec-Driven Development?
+
+Spec-Driven Development is a workflow where every code change traces back to a written specification. **forge** guides you through five stages — requirements, design, plan, implement, and review — so that AI always works from explicit, reviewable intent rather than ad-hoc instructions. Each stage produces a document; each document feeds the next stage. The result is traceable, auditable delivery: you can always answer *why* a piece of code exists.
+
+## The Role of doc-advisor
+
+Large projects accumulate rules, standards, and design documents that AI cannot use if it cannot find them. **doc-advisor** indexes these documents (via ToC keyword search and OpenAI Embedding semantic search) and automatically supplies the relevant ones to forge at the moments that matter:
+
+- **During implementation** — project-specific coding rules and related specs are collected before a single line is written.
+- **During review** — applicable rules are added as review perspectives, so reviews check against your actual standards, not generic best practices.
+
+This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
 
 ## Workflow
 
