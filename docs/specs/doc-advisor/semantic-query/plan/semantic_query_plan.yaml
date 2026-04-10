@@ -27,8 +27,8 @@ requirements_traceability:
   - requirement_id: NFR-002
     title: YAML ToC 廃止（Phase 3 後）
     design_id: DES-006
-    status: pending
-    note: 廃止タスク（create_pending_yaml.py 等の削除）は Phase 3 で対応予定。本計画の範囲外
+    status: frozen
+    note: v0.2.0 の品質テストで ToC > Embedding の精度が確認されたため凍結。ToC を主軸、Index を補完とするハイブリッド方式を正式採用（DES-006 v2.0）
 
   - requirement_id: NFR-003
     title: 標準ライブラリ優先（pip install 不要）
@@ -226,7 +226,7 @@ tasks:
       - tests/doc_advisor/scripts/test_create_pending.py
 
   - task_id: TASK-008
-    title: query-specs / query-rules SKILL.md を新検索方式に更新
+    title: query-specs / query-rules SKILL.md を 3 モードハイブリッド検索に統合
     priority: 80
     status: completed
     design_id: DES-006
@@ -237,21 +237,23 @@ tasks:
     group_id: "phase-2-skills"
     build_check: per_task
     description:
-      - Staleness Check を embed_docs.py --check に変更（DES-006 §6.1 参照）
-      - Procedure を search_docs.py + grep_docs.py の 4 ステップフローに置き換え
-      - Critical Rule から ToC YAML 全量読み込み禁止ルールを削除し、stale 時検索禁止ルールに置き換え
-      - Error Handling に search_docs.py エラー JSON パターンを追加
+      - query-xxx を 3 モードスイッチャー（--toc / --index / auto）に書き換え（DES-006 §6.1 参照）
+      - ワークフロー文書（query_toc_workflow.md / query_index_workflow.md）を新設
+      - auto モードで Index → ToC の順に両方実行し、候補を union して AI が最終判定
+      - query-xxx-index スキルを廃止（ディレクトリ削除）
+      - plugin.json から query-xxx-index を削除
       - query-specs と query-rules の両方を更新
     acceptance_criteria: |
-      両 SKILL.md が search_docs.py + grep_docs.py ワークフローに更新され、
-      ToC YAML 全量読み込み手順が削除されている
+      両 SKILL.md が 3 モードスイッチャーとして動作し、
+      query-xxx-index ディレクトリが削除されていること
+    note: "実装結果: 当初設計（Embedding のみに置換）から変更。品質テストで ToC の優位性が確認されたため、ToC を維持しハイブリッド方式を採用"
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - plugins/doc-advisor/skills/query-specs/SKILL.md
       - plugins/doc-advisor/skills/query-rules/SKILL.md
 
   - task_id: TASK-009
-    title: create-specs-toc / create-rules-toc SKILL.md をインデックス生成方式に更新
+    title: create-specs-toc / create-rules-toc SKILL.md に Index 構築ステップを追加
     priority: 80
     status: completed
     design_id: DES-006
@@ -262,13 +264,12 @@ tasks:
     group_id: "phase-2-skills"
     build_check: per_task
     description:
-      - toc_orchestrator.md 参照の 3 フェーズパイプラインを削除（DES-006 §6.2 参照）
-      - embed_docs.py --category {category} [--full] の単一コマンドに置き換え
-      - allowed-tools から Task を削除（toc-updater agent 不要になるため）
-      - 移行期間中の注記（ToC YAML が維持される旨）を追加
+      - 既存の 3 フェーズ ToC パイプラインは維持（品質テストで ToC の優位性が確認されたため）
+      - Phase 4 として embed_docs.py --category {category} を追加（ToC 生成後に Index も構築）
       - create-specs-toc と create-rules-toc の両方を更新
     acceptance_criteria: |
-      両 SKILL.md が embed_docs.py 単一コマンドのフローに更新されている
+      両 SKILL.md が ToC パイプライン + Index 構築の 4 フェーズ構成であること
+    note: "実装結果: 当初設計（embed_docs.py 単一コマンドに置換）から変更。ToC パイプラインを維持し Index を追加ステップとして実行"
     required_reading:
       - docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md
       - plugins/doc-advisor/skills/create-specs-toc/SKILL.md
@@ -306,3 +307,5 @@ revision_history:
     content: 初版作成
   - date: "2026-03-30"
     content: レビュー指摘反映（depends_on 補完、acceptance_criteria 強化、group_id 付与、NFR-002 注記追加）
+  - date: "2026-04-11"
+    content: "v0.2.0 ハイブリッドアーキテクチャ反映: NFR-002 を frozen に変更、TASK-008/009 の description を実装結果に合わせて更新"
