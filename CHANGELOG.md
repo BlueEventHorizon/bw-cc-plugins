@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.4] - 2026-04-11
+
+### marketplace
+
+- **feat**: doc-advisor を 0.2.0 に更新。query-rules/query-specs を統合し、ToC/Index/ハイブリッドの3モード対応に
+
+## [0.2.0] - 2026-04-11
+
+### doc-advisor
+
+- **feat**: query-rules/query-specs を統合し、`--toc`（キーワード）/ `--index`（セマンティック）/ ハイブリッド（デフォルト）の3モード検索に対応。両方の検索結果を union して AI が最終判定する
+- **refactor**: create-rules-index/create-specs-index を query に統合。query 時に Index を自動ビルド（差分更新）するため、手動インデックス構築が不要に
+- **refactor**: query-rules-index/query-specs-index スキルを廃止し、query-rules/query-specs に統合。検索手順を workflow 文書（`query_toc_workflow.md`, `query_index_workflow.md`）に分離
+
 ## [marketplace 0.1.3] - 2026-04-09
 
 ### marketplace
