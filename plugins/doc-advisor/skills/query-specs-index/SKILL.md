@@ -6,7 +6,7 @@ description: |
   for high-accuracy discovery beyond keyword matching.
   Trigger:
   - "Semantic search for specs"
-  - Before starting implementation work (when embedding index is available)
+  - Before starting implementation work
 context: fork
 agent: general-purpose
 model: sonnet
@@ -18,14 +18,15 @@ argument-hint: "[task description]"
 
 Analyze task content and return a list of required specification document paths using semantic search.
 
-## Staleness Check
+## Auto-update
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --check
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs
 ```
 
-- `{"status": "fresh"}` → Proceed to Procedure
-- `{"status": "stale", ...}` → Warn the user that the index is stale, recommend running `/doc-advisor:create-specs-index` to rebuild. **Do NOT proceed with search while stale**
+- `{"status": "ok", ...}` → Proceed to Procedure
+- `{"status": "partial", ...}` → Warn the user about partial failure, then proceed to Procedure
+- `{"status": "error", ...}` → Go to Error Handling
 
 ## Procedure
 
@@ -42,7 +43,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --check
 
 ## Critical Rule
 
-- ❌ PROHIBITED: Searching while the index is stale (staleness check returned `"stale"`)
 - ✅ REQUIRED: Read each candidate document returned by search to confirm relevance before including it
 - False negatives are strictly prohibited. When in doubt, include it
 
@@ -67,8 +67,6 @@ If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to
   - No → abort
 
 If `search_docs.py` outputs `{"status": "error", ...}`, handle based on the error message:
-- **"Index not found"** → Inform user to run `/doc-advisor:create-specs-index` first
-- **"Model mismatch"** → Inform user to run `/doc-advisor:create-specs-index` with `--full` to rebuild
-- **"Index is stale"** → Inform user to run `/doc-advisor:create-specs-index` to update
+- **"Model mismatch"** → Re-run with `--full`: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category specs --full`, then retry search
 - **"API error"** → Report the error details to the user
 - **"OPENAI_API_KEY not set"** → Ask user to set the `OPENAI_API_KEY` environment variable

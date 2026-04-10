@@ -83,8 +83,6 @@ flowchart LR
 | [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
 | [**query-rules-index**](docs/readme/README_doc-advisor_ja.md#query-rules-index) | Embedding インデックスでルール文書をセマンティック検索する | `"Semantic search for rules"` |
 | [**query-specs-index**](docs/readme/README_doc-advisor_ja.md#query-specs-index) | Embedding インデックスで仕様文書をセマンティック検索する | `"Semantic search for specs"` |
-| [**create-rules-index**](docs/readme/README_doc-advisor_ja.md#create-rules-index) | ルール文書の Embedding インデックスを構築・更新する | `"Rebuild the rules embedding index"` |
-| [**create-specs-index**](docs/readme/README_doc-advisor_ja.md#create-specs-index) | 仕様文書の Embedding インデックスを構築・更新する | `"Rebuild the specs embedding index"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 

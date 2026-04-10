@@ -83,8 +83,6 @@ flowchart LR
 | [**create-specs-toc**](docs/readme/README_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
 | [**query-rules-index**](docs/readme/README_doc-advisor.md#query-rules-index) | Semantic search for rules using Embedding index | `"Semantic search for rules"` |
 | [**query-specs-index**](docs/readme/README_doc-advisor.md#query-specs-index) | Semantic search for specs using Embedding index | `"Semantic search for specs"` |
-| [**create-rules-index**](docs/readme/README_doc-advisor.md#create-rules-index) | Build/update the rules Embedding index for semantic search | `"Rebuild the rules embedding index"` |
-| [**create-specs-index**](docs/readme/README_doc-advisor.md#create-specs-index) | Build/update the specs Embedding index for semantic search | `"Rebuild the specs embedding index"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 
