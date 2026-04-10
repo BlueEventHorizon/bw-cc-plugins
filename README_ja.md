@@ -2,7 +2,7 @@
 
 仕様駆動開発（Spec-Driven Development）を支援する Claude Code プラグインマーケットプレイス。要件定義・設計・計画・実装・レビューを AI と共に一貫して進める。
 
-**マーケットプレイスバージョン: 0.1.3**
+**マーケットプレイスバージョン: 0.1.4**
 
 [English README (README.md)](README.md)
 
@@ -26,7 +26,7 @@ flowchart LR
 | **forge**  | 0.0.29     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
-| **doc-advisor** | 0.1.7 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
+| **doc-advisor** | 0.2.0 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
 
 ## スキル一覧
 
@@ -77,14 +77,10 @@ flowchart LR
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ルール文書の ToC を検索し、タスクに関連するルール文書を特定する | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | 仕様文書の ToC を検索し、タスクに関連する仕様文書を特定する | `"What specs apply?"` `"仕様確認"` |
+| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"What specs apply?"` `"仕様確認"` |
 | [**create-rules-toc**](docs/readme/README_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"Rebuild the rules ToC"` |
 | [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
-| [**query-rules-index**](docs/readme/README_doc-advisor_ja.md#query-rules-index) | Embedding インデックスでルール文書をセマンティック検索する | `"Semantic search for rules"` |
-| [**query-specs-index**](docs/readme/README_doc-advisor_ja.md#query-specs-index) | Embedding インデックスで仕様文書をセマンティック検索する | `"Semantic search for specs"` |
-| [**create-rules-index**](docs/readme/README_doc-advisor_ja.md#create-rules-index) | ルール文書の Embedding インデックスを構築・更新する | `"Rebuild the rules embedding index"` |
-| [**create-specs-index**](docs/readme/README_doc-advisor_ja.md#create-specs-index) | 仕様文書の Embedding インデックスを構築・更新する | `"Rebuild the specs embedding index"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 

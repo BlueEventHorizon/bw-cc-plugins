@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode / doc-advisor の4プラグインを格納・配布する。
 
 - **forge** (v0.0.29) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
-- **doc-advisor** (v0.1.7) — AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール。文書から AI がメタデータを抽出し、タスクに関連する rules/specs 文書を自動発見する
+- **doc-advisor** (v0.2.0) — AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール。文書から AI がメタデータを抽出し、タスクに関連する rules/specs 文書を自動発見する
 
 ## Development
 
@@ -144,10 +144,10 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 ### doc-advisor 品質テスト
 
-`tests/` のユニットテストはバグがないことを保証する。**機能の品質**（検索精度・メタデータ抽出精度）は別途 `meta/test_docs/` で測定する。
+`tests/` のユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
 
-- `meta/test_docs/{doc_set}/` — 実文書セット（rules/specs）+ クエリ期待値（queries.yaml）
-- `meta/test_docs/run_search_test.py` — embedding 検索の精度テストランナー
+- Embedding / ToC / Index の3方式を同一ゴールデンセットで比較評価
+- 詳細・実行手順は `meta/test_docs/README.md` を参照
 
 ## Conventions
 
