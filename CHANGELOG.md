@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.5] - 2026-04-11
+
+### marketplace
+
+- **fix**: doc-advisor を 0.2.1 に更新。ToC 検索ワークフローの output_dir 未対応バグを修正
+
+## [0.2.1] - 2026-04-11
+
+### doc-advisor
+
+- **fix**: `query_toc_workflow.md` が `.doc_structure.yaml` の `output_dir` を参照せず固定パス（`.claude/doc-advisor/toc/`）を使用していたバグを修正。`output_dir` 設定時に正しい ToC パスを導出するように変更
+
 ## [marketplace 0.1.4] - 2026-04-11
 
 ### marketplace
