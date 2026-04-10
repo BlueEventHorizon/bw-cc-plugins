@@ -7,16 +7,21 @@
 | 設計ID   | DES-006                                  |
 | 関連要件 | FNC-001, FNC-002, FNC-003, NFR-001, NFR-002, NFR-003 |
 | 作成日   | 2026-03-30                               |
+| 改定日   | 2026-04-11                               |
 
 ## 1. 概要
 
-doc-advisor の文書検索（query-specs / query-rules）を、AI が ToC YAML を全量読み込む方式から、**Embedding ベースのセマンティック検索 + 全文検索スクリプト** に置き換える。
+doc-advisor の文書検索（query-specs / query-rules）に、既存の ToC（キーワード検索）を維持したまま **Embedding ベースのセマンティック検索（Index）** を追加し、**3モードのハイブリッド検索アーキテクチャ** を構築する。
+
+> **設計方針の変遷**: 初版（v1.0）では ToC を Embedding で完全置換する 3 フェーズ移行を計画した。しかし品質テスト（v0.2.0）で **ToC の検索精度が Index を上回る** ことが判明したため、ToC を主軸として維持し Index を補完に使う方針に転換した。Phase 3（ToC 廃止）は凍結。詳細は §10 参照。
 
 採用アプローチ:
-- **OpenAI Embedding API** で文書メタデータをベクトル化し、JSON ファイルに保存
-- 検索時はコサイン類似度で候補を絞り込み、AI には候補パスリストのみ渡す
-- 固有名詞・識別子の検索は全文検索スクリプトで補完（AI が判断して呼び出す）
-- 外部依存は **OpenAI API キーのみ**（pip install 不要）
+- **OpenAI Embedding API** で文書メタデータをベクトル化し、JSON ファイルに保存（Index）
+- **既存 ToC YAML** は AI によるキーワードマッチングで高精度検索を提供（ToC）
+- **3モード検索**: `--toc`（ToC のみ）、`--index`（Index のみ）、`auto`（ハイブリッド、デフォルト）
+- auto モードでは Index と ToC の候補を union し、AI がファイルを Read して最終判定
+- 固有名詞・識別子の検索は全文検索スクリプトで補完（Index モードで AI が判断して呼び出す）
+- 外部依存は **OpenAI API キーのみ**（pip install 不要。ToC モードは外部依存なし）
 
 ## 2. アーキテクチャ概要
 
@@ -58,11 +63,59 @@ flowchart TB
 
 | レイヤー | 責務 | 担当 |
 | -------- | ---- | ---- |
-| インデックス構築 | 文書メタデータの Embedding 化と永続化 | `embed_docs.py` |
+| ToC 生成 | AI による文書メタデータ抽出と YAML ToC 構築 | `create_pending_yaml.py` + toc-updater agent + `merge_toc.py` |
+| Index 構築 | 文書メタデータの Embedding 化と JSON 永続化 | `embed_docs.py` |
+| ToC 検索 | ToC YAML の全量読み込みとキーワードマッチング | AI（`query_toc_workflow.md` の手順に従う） |
 | セマンティック検索 | クエリとインデックスのコサイン類似度計算 | `search_docs.py` |
 | 全文検索 | 固有名詞・識別子のテキストマッチング | `grep_docs.py` |
-| 検索統合 | 候補の統合、本文確認、最終判断 | AI（query-specs / query-rules SKILL.md） |
-| 設定・差分検出 | .doc_structure.yaml の読み込み、チェックサム管理、ファイル列挙 | `toc_utils.py`（既存・再利用。`get_all_md_files()` は `create_pending_yaml.py` から移動が必要 — 前提作業） |
+| 検索統合・モード切替 | 3モードの切り替え、候補の union、本文確認、最終判断 | AI（query-specs / query-rules SKILL.md） |
+| ワークフロー定義 | ToC / Index 各検索手順の文書化 | `query_toc_workflow.md` / `query_index_workflow.md` |
+| 設定・差分検出 | .doc_structure.yaml の読み込み、チェックサム管理、ファイル列挙 | `toc_utils.py`（既存・再利用） |
+
+### 2.3 3モード検索アーキテクチャ
+
+query-rules / query-specs は以下の 3 モードを提供する:
+
+```mermaid
+flowchart TB
+    subgraph "query-rules / query-specs SKILL.md"
+        A["引数パース"] --> B{モード判定}
+        B -->|"--toc"| C["ToC 検索のみ"]
+        B -->|"--index"| D["Index 検索のみ"]
+        B -->|"auto (デフォルト)"| E["Index + ToC 両方実行"]
+        
+        C --> F["query_toc_workflow.md"]
+        D --> G["query_index_workflow.md"]
+        E --> G2["query_index_workflow.md"]
+        E --> F2["query_toc_workflow.md"]
+        G2 --> H["union(Index候補, ToC候補)"]
+        F2 --> H
+        
+        F --> I["候補ファイルを Read → 最終判定"]
+        G --> I
+        H --> I
+        I --> J["Required documents 出力"]
+    end
+```
+
+| モード | フラグ | 動作 | フォールバック |
+| ------ | ------ | ---- | ------------- |
+| ToC | `--toc` | ToC YAML を全量 Read しキーワードマッチング | なし（ToC 不在時はエラー通知） |
+| Index | `--index` | `search_docs.py` + `grep_docs.py` でセマンティック検索 | なし（API エラー時はエラー通知） |
+| auto | フラグなし | Index → ToC の順で両方実行し、候補を union | 片方失敗時はもう片方の結果を使用 |
+
+**設計判断**: auto モードでは **Index を先に実行** する。`embed_docs.py` の auto-build で最新化を行うため。
+
+### 2.4 ワークフロー文書アーキテクチャ
+
+検索手順を SKILL.md から分離し、再利用可能なワークフロー文書として定義する:
+
+| ワークフロー文書 | 責務 | パラメータ |
+| --------------- | ---- | --------- |
+| `docs/query_toc_workflow.md` | ToC YAML の読み込みとキーワードマッチング手順 | `{category}` |
+| `docs/query_index_workflow.md` | Index の auto-update + セマンティック検索手順 | `{category}` |
+
+ワークフロー文書は **候補パスの生成まで** が責務。ファイル Read・最終判定は SKILL.md 側で行う。
 
 ## 3. モジュール設計
 
@@ -172,10 +225,9 @@ sequenceDiagram
 
 #### メタデータの取得元
 
-**既存 ToC YAML からメタデータを読み込む**（ToC 廃止前の移行期間中）。
-ToC 廃止後は、文書本文から直接メタデータを抽出する方式に移行する（詳細は NFR-002 の移行設計で定義）。
+**既存 ToC YAML からメタデータを読み込む**。ToC は廃止せず維持する方針のため（§10.2 参照）、ToC YAML は Embedding インデックスのメタデータソースとしても継続利用する。
 
-**抽象化レイヤー**: メタデータ取得は `toc_utils.py` に `load_metadata(category, file_path)` 関数を設け、`embed_docs.py` はこの関数経由でメタデータを取得する。Phase 3 での ToC 廃止時は `load_metadata()` の内部実装のみを変更すればよく、`embed_docs.py` への影響を局所化できる。
+**抽象化レイヤー**: メタデータ取得は `toc_utils.py` の `load_metadata(category, file_path)` 関数経由で行う。`embed_docs.py` はこの関数を呼び出すため、将来メタデータ取得方式を変更する場合も `embed_docs.py` への影響を局所化できる。
 
 #### インデックス JSON スキーマ
 
@@ -428,40 +480,59 @@ sequenceDiagram
 
 ### 6.1 query-specs / query-rules SKILL.md
 
-現行のワークフローを以下に置き換える:
+旧 query-xxx（ToC 専用）と query-xxx-index（Index 専用）を **単一の query-xxx スキル** に統合し、3モードスイッチャーとして再設計する。
 
 ```
-[現行]
-1. staleness check
-2. Read: {category}_toc.yaml（全量読み込み）
-3. AI がメタデータを解析して候補を特定
-4. 候補文書を Read
+[旧構成]
+  query-rules (SKILL) — ToC 検索のみ
+  query-specs (SKILL) — ToC 検索のみ
+  query-rules-index (SKILL) — Index 検索のみ
+  query-specs-index (SKILL) — Index 検索のみ
 
-[新方式]
-1. python3 search_docs.py --category {category} --query "{タスク説明}"
-2. AI が結果を確認し、固有名詞があれば grep_docs.py で補完
-3. 候補文書を Read して最終確認
+[新構成（v0.2.0〜）]
+  query-rules (SKILL) — 3モードスイッチャー: auto / --toc / --index
+  query-specs (SKILL) — 3モードスイッチャー: auto / --toc / --index
+  docs/query_toc_workflow.md — ToC 候補生成手順（ワークフロー文書）
+  docs/query_index_workflow.md — Index 候補生成手順（ワークフロー文書）
 ```
 
-staleness check は `embed_docs.py --check` モード（インデックスの新鮮さを確認）に置き換える。
+#### 実行フロー
+
+```
+引数パース: --toc / --index / (なし = auto)
+
+--toc:
+  Read query_toc_workflow.md → 手順に従い ToC 候補パス取得
+  ToC なし → ユーザに通知（create-toc を案内）。Index にフォールバックしない
+  候補あり → Read して確認 → 出力
+
+--index:
+  Read query_index_workflow.md → 手順に従い Index 候補パス取得
+  Index 構築失敗（API key 等）→ ユーザに通知。ToC にフォールバックしない
+  候補あり → Read して確認 → 出力
+
+auto（デフォルト）:
+  Step 1: Read query_index_workflow.md → Index 候補パス取得（失敗時 = 空）
+  Step 2: Read query_toc_workflow.md → ToC 候補パス取得（不在時 = 空）
+  Step 3: union(Index候補, ToC候補) で重複排除
+  Step 4: 全候補ファイルを Read して関連性を最終判断 → 出力
+```
+
+query-xxx-index スキルは廃止し、ディレクトリごと削除する。
 
 ### 6.2 create-specs-toc / create-rules-toc SKILL.md
 
-現行の 3 フェーズパイプライン（pending YAML → toc-updater agent × N → merge）を以下に置き換える:
+**ToC 生成パイプラインは維持する**。Embedding インデックスの構築は create-xxx-toc 実行時に **追加で** 実行される:
 
 ```
-[現行]
+[現行（v0.2.0〜）]
 Phase 1: create_pending_yaml.py → pending YAML テンプレート生成
 Phase 2: toc-updater agent × N（並列 AI 解析）
 Phase 3: merge_toc.py → validate_toc.py → checksums
-
-[新方式]
-python3 embed_docs.py --category {category} [--full]
+Phase 4（追加）: embed_docs.py --category {category}（Index 構築・差分更新）
 ```
 
-単一スクリプトの実行で完了。AI による並列解析が不要になるため、大幅に高速化される。
-
-ただし **メタデータの取得元が必要**。移行期間中は既存 ToC YAML のメタデータを使用する。ToC 廃止後のメタデータ取得方式は NFR-002 の移行設計で別途定義する。
+> **初版（v1.0）からの変更**: 初版では create-xxx-toc を `embed_docs.py` 単一コマンドに置換する計画だったが、品質テストで ToC の優位性が確認されたため、ToC パイプラインを維持し Index を追加ステップとして実行する方針に変更した。
 
 ## 7. データフロー設計
 
@@ -538,37 +609,46 @@ Embedding テキスト生成
 
 ### 10.1 移行フェーズ
 
-| Phase | 内容 | ToC YAML | Embedding インデックス |
-| ----- | ---- | -------- | --------------------- |
-| **Phase 1** | Embedding インデックス構築。既存 ToC からメタデータ取得 | **維持** | 構築 |
-| **Phase 2** | query-* SKILL.md を新方式に切り替え。精度検証 | **維持**（フォールバック用） | 運用 |
-| **Phase 3** | 精度検証完了後、ToC YAML と生成パイプラインを廃止 | **廃止** | 運用 |
+| Phase | 内容 | ToC YAML | Embedding Index | ステータス |
+| ----- | ---- | -------- | --------------- | --------- |
+| **Phase 1** | Embedding インデックス構築スクリプト実装 | **維持** | 構築 | **完了** |
+| **Phase 2** | query-xxx を 3 モードハイブリッドに統合。品質テスト実施 | **維持（主軸）** | 運用（補完） | **完了**（v0.2.0） |
+| ~~Phase 3~~ | ~~精度検証完了後、ToC YAML と生成パイプラインを廃止~~ | ~~廃止~~ | ~~単独運用~~ | **凍結** |
 
-### 10.2 Phase 3 での廃止対象
+### 10.2 Phase 3 凍結の経緯と根拠
 
-NFR-002 に定義された以下を廃止:
-- `{category}_toc.yaml`
-- `create_pending_yaml.py`（差分検出ロジックは `toc_utils.py` に残す）
-- `write_pending.py`
-- `merge_toc.py`
-- `validate_toc.py`
-- `toc-updater.md`（エージェント定義）
-- `.toc_work/` ディレクトリ機構
-- 上記廃止対象に対応するテストファイル（`test_create_pending.py`, `test_write_pending.py`, `test_merge_toc.py`, `test_validate_toc.py` 等）
+v0.2.0 の品質テスト（ゴールデンセット 43 クエリ × 3 モード比較）で以下が判明:
 
-### 10.3 Phase 3 でのメタデータ取得
+| 検索モード | 精度傾向 | 特徴 |
+| ---------- | -------- | ---- |
+| ToC（`--toc`） | **最高** | AI が YAML メタデータ（keywords, applicable_tasks）を全量読みしてマッチング。false negative が最も少ない |
+| Index（`--index`） | 良好 | コサイン類似度ベースで高速。ただし ToC メタデータが古い文書で ToC が見落とすケースを補完できる |
+| auto（ハイブリッド） | **最良の網羅性** | 両方の候補を union し、AI が Read して最終判定。false negative を最小化 |
 
-ToC YAML 廃止後、Embedding テキストの元となるメタデータは **文書本文から直接抽出** する。
-抽出方法の選択肢:
+**結論**: ToC は Embedding より高い精度を示し、廃止の前提条件（NFR-002「Embedding が ToC と同等以上」）を満たさない。ToC を主軸として維持し、Index を補完に使うハイブリッド方式を正式アーキテクチャとする。
 
-1. **Front Matter から抽出**: 文書に YAML Front Matter（title, keywords 等）が記述されている場合
-2. **AI による抽出**: toc-updater agent と同等のメタデータ抽出を embed_docs.py 内で実行（ただし AI 呼び出しコスト増）
-3. **文書本文の先頭 N 文字を直接 Embedding**: メタデータ抽出をスキップし、本文をそのままベクトル化
+NFR-002（YAML ToC 廃止要件）は **凍結** とする。将来 Embedding の精度が ToC を上回ることが確認された場合に再検討する。
 
-選択肢 3 が最もシンプルだが、精度への影響を Phase 2 の検証で確認する。
+### 10.3 Phase 2 で実施した変更
+
+Phase 2 の実装（v0.2.0）で以下を変更:
+
+1. **query-xxx-index スキルの廃止**: query-rules-index / query-specs-index ディレクトリを削除
+2. **query-xxx の 3 モード化**: query-rules / query-specs を `--toc` / `--index` / `auto` の 3 モードスイッチャーに書き換え
+3. **ワークフロー文書の新設**: `docs/query_toc_workflow.md` / `docs/query_index_workflow.md` を作成し、検索手順を SKILL.md から分離
+4. **plugin.json の更新**: skills リストから query-xxx-index を削除（4 スキル構成に）
+
+### 10.4 現行アーキテクチャの安定性
+
+ToC + Index のハイブリッド構成は以下の理由で安定的に運用可能:
+
+- **ToC は単独で十分な精度**: Index なし（OPENAI_API_KEY 未設定）環境でも `--toc` モードで高品質な検索を提供
+- **Index は任意追加**: OPENAI_API_KEY が設定されていれば auto モードで自動的に Index も活用
+- **相互独立性**: ToC 障害時は Index のみ、Index 障害時は ToC のみで検索を継続可能
 
 ## 改定履歴
 
 | 日付 | バージョン | 内容 |
 | ---- | ---------- | ---- |
 | 2026-03-30 | 1.0 | 初版作成 |
+| 2026-04-11 | 2.0 | ハイブリッドアーキテクチャに改定。§1 概要を ToC+Index 共存方針に変更、§2.3/2.4 に 3 モード検索・ワークフロー文書を追加、§6 を実装に合わせて書き換え、§10 Phase 3 凍結 |
