@@ -8,10 +8,6 @@
     "./skills/create-rules-toc",
     "./skills/create-specs-toc",
     "./skills/query-rules",
-    "./skills/query-specs",
-    "./skills/create-rules-index",
-    "./skills/create-specs-index",
-    "./skills/query-rules-index",
-    "./skills/query-specs-index"
+    "./skills/query-specs"
   ]
 }

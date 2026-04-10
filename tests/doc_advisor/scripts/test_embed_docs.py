@@ -728,6 +728,93 @@ specs:
         self.assertNotIn("rules/removed.md", checksums_content)
         self.assertIn("rules/kept.md", checksums_content)
 
+    def test_diff_mode_auto_full_when_no_index(self):
+        """インデックス未作成時に差分モード（--full なし）で呼ぶと自動フルビルドされること"""
+        self._create_rule_file('rules/test.md', content='# Auto Full\n\nAuto full build test.\n')
+
+        # インデックスファイルが存在しないことを確認
+        index_path_file = os.path.join(self.index_dir, 'rules_index.json')
+        self.assertFalse(os.path.exists(index_path_file))
+
+        with patch("embed_docs.call_embedding_api") as mock_api:
+            mock_api.return_value = [FIXED_VECTOR]
+
+            original_env = os.environ.get('CLAUDE_PROJECT_DIR')
+            os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
+
+            try:
+                from toc_utils import init_common_config as toc_init
+                common = toc_init('rules')
+                project_root = common['project_root']
+                idx_path = get_index_path('rules', project_root)
+                checksums_file = idx_path.parent / embed_docs.EMBEDDING_CHECKSUMS_FILENAME
+
+                # --full なし（False）で呼び出し
+                exit_code = embed_docs.build_index('rules', common, idx_path, checksums_file, False, 'fake-key')
+            finally:
+                if original_env is None:
+                    os.environ.pop('CLAUDE_PROJECT_DIR', None)
+                else:
+                    os.environ['CLAUDE_PROJECT_DIR'] = original_env
+
+        self.assertEqual(exit_code, 0)
+        # インデックスが作成されたことを確認
+        self.assertTrue(idx_path.exists())
+        with open(idx_path, 'r') as f:
+            index = json.load(f)
+        self.assertIn("rules/test.md", index["entries"])
+        self.assertEqual(len(index["entries"]["rules/test.md"]["embedding"]), 1536)
+        # API が呼ばれたことを確認
+        mock_api.assert_called_once()
+
+    def test_diff_mode_no_changes_skips_api(self):
+        """変更なしの場合は API を呼ばずにスキップすること"""
+        file_path = self._create_rule_file('rules/test.md', content='# No Change\n\nNo change test.\n')
+
+        # 既存インデックスを作成
+        index_path = os.path.join(self.index_dir, 'rules_index.json')
+        existing_index = {
+            "metadata": {"category": "rules", "model": "text-embedding-3-small", "dimensions": 1536, "file_count": 1},
+            "entries": {
+                "rules/test.md": {"title": "No Change", "embedding": FIXED_VECTOR, "checksum": "dummy"},
+            },
+        }
+        with open(index_path, 'w') as f:
+            json.dump(existing_index, f)
+
+        # 現在のファイルハッシュでチェックサムを作成
+        import hashlib
+        sha256 = hashlib.sha256()
+        with open(file_path, 'rb') as f:
+            sha256.update(f.read())
+        file_hash = sha256.hexdigest()
+
+        checksums_path = os.path.join(self.index_dir, '.embedding_checksums.yaml')
+        with open(checksums_path, 'w') as f:
+            f.write(f"checksums:\n  rules/test.md: {file_hash}\n")
+
+        with patch("embed_docs.call_embedding_api") as mock_api:
+            original_env = os.environ.get('CLAUDE_PROJECT_DIR')
+            os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
+
+            try:
+                from toc_utils import init_common_config as toc_init
+                common = toc_init('rules')
+                project_root = common['project_root']
+                idx_path = get_index_path('rules', project_root)
+                checksums_file = idx_path.parent / embed_docs.EMBEDDING_CHECKSUMS_FILENAME
+
+                exit_code = embed_docs.build_index('rules', common, idx_path, checksums_file, False, 'fake-key')
+            finally:
+                if original_env is None:
+                    os.environ.pop('CLAUDE_PROJECT_DIR', None)
+                else:
+                    os.environ['CLAUDE_PROJECT_DIR'] = original_env
+
+        self.assertEqual(exit_code, 0)
+        # API が呼ばれていないことを確認
+        mock_api.assert_not_called()
+
     def test_config_not_ready_error(self):
         """doc_structure.yaml が未設定の場合にエラー JSON を返す"""
         # .doc_structure.yaml を削除し、デフォルト rules/ ディレクトリも削除

@@ -77,14 +77,10 @@ flowchart LR
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ルール文書の ToC を検索し、タスクに関連するルール文書を特定する | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | 仕様文書の ToC を検索し、タスクに関連する仕様文書を特定する | `"What specs apply?"` `"仕様確認"` |
+| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"What rules apply?"` `"ルール確認"` |
+| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"What specs apply?"` `"仕様確認"` |
 | [**create-rules-toc**](docs/readme/README_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"Rebuild the rules ToC"` |
 | [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
-| [**query-rules-index**](docs/readme/README_doc-advisor_ja.md#query-rules-index) | Embedding インデックスでルール文書をセマンティック検索する | `"Semantic search for rules"` |
-| [**query-specs-index**](docs/readme/README_doc-advisor_ja.md#query-specs-index) | Embedding インデックスで仕様文書をセマンティック検索する | `"Semantic search for specs"` |
-| [**create-rules-index**](docs/readme/README_doc-advisor_ja.md#create-rules-index) | ルール文書の Embedding インデックスを構築・更新する | `"Rebuild the rules embedding index"` |
-| [**create-specs-index**](docs/readme/README_doc-advisor_ja.md#create-specs-index) | 仕様文書の Embedding インデックスを構築・更新する | `"Rebuild the specs embedding index"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 
