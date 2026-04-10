@@ -144,10 +144,10 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 ### doc-advisor 品質テスト
 
-`tests/` のユニットテストはバグがないことを保証する。**機能の品質**（検索精度・メタデータ抽出精度）は別途 `meta/test_docs/` で測定する。
+`tests/` のユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
 
-- `meta/test_docs/{doc_set}/` — 実文書セット（rules/specs）+ クエリ期待値（queries.yaml）
-- `meta/test_docs/run_search_test.py` — embedding 検索の精度テストランナー
+- Embedding / ToC / Index の3方式を同一ゴールデンセットで比較評価
+- 詳細・実行手順は `meta/test_docs/README.md` を参照
 
 ## Conventions
 
