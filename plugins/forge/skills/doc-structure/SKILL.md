@@ -148,21 +148,23 @@ rules:
 
 specs:
   root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/plan/"
-    - "docs/specs/*/requirement/"
+    - "docs/specs/**/design/"
+    - "docs/specs/**/plan/"
+    - "docs/specs/**/requirement/"
   doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/plan/": plan
-    "docs/specs/*/requirement/": requirement
+    "docs/specs/**/design/": design
+    "docs/specs/**/plan/": plan
+    "docs/specs/**/requirement/": requirement
   # ... doc-advisor 固有フィールド（forge では無視）
 ```
+
+`*` は1階層のみ、`**` は任意の深さにマッチする。サブ Feature（`forge/review-PR/design/` 等）がある場合は `**` を使用する。
 
 ### forge が使用するフィールド
 
 | フィールド | 用途 |
 |-----------|------|
-| `{category}.root_dirs` | ドキュメントディレクトリの一覧（glob パターン対応） |
+| `{category}.root_dirs` | ドキュメントディレクトリの一覧（glob パターン `*`, `**` 対応） |
 | `{category}.doc_types_map` | パス → doc_type のマッピング |
 | `{category}.patterns.exclude` | 除外パターン |
 
