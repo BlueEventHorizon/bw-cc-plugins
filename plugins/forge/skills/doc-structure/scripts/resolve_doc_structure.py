@@ -437,7 +437,8 @@ def match_path_to_doc_type(file_path, doc_types_map, project_root):
 def detect_features(config, project_root):
     """root_dirs の glob パターンから Feature 名を抽出する。
 
-    `docs/specs/*/design/` の `*` にマッチするディレクトリ名を Feature とみなす。
+    `docs/specs/*/design/` の `*` や `docs/specs/**/design/` の `**` が
+    キャプチャしたディレクトリ名を Feature とみなす。
     rules カテゴリは Feature 検出の対象外。
 
     Args:
@@ -483,20 +484,52 @@ def detect_features(config, project_root):
 def _extract_feature_from_match(pattern, matched_path):
     """glob パターンとマッチ結果から Feature 名を抽出する。
 
-    例: pattern='docs/specs/*/design', matched='docs/specs/forge/design'
-    → Feature名 = 'forge'
+    単一 * パターン:
+        'docs/specs/*/design' + 'docs/specs/forge/design' → 'forge'
+
+    ** パターン（再帰 glob）:
+        'docs/specs/**/design' + 'docs/specs/forge/design' → 'forge'
+        'docs/specs/**/design' + 'docs/specs/forge/review-PR/design' → 'forge'
     """
     pattern_parts = pattern.split('/')
     matched_parts = matched_path.split('/')
 
-    if len(pattern_parts) != len(matched_parts):
+    if '**' not in pattern_parts:
+        # 従来ロジック（後方互換）
+        if len(pattern_parts) != len(matched_parts):
+            return None
+        for pp, mp in zip(pattern_parts, matched_parts):
+            if pp == '*':
+                return mp
         return None
 
-    for pp, mp in zip(pattern_parts, matched_parts):
-        if pp == '*':
-            return mp
+    # 複数 ** は未対応
+    if pattern_parts.count('**') > 1:
+        return None
 
-    return None
+    # prefix / ** / suffix に分割
+    ds_idx = pattern_parts.index('**')
+    prefix = pattern_parts[:ds_idx]
+    suffix = pattern_parts[ds_idx + 1:]
+
+    # ** が少なくとも1セグメントをキャプチャしているか確認
+    captured_count = len(matched_parts) - len(prefix) - len(suffix)
+    if captured_count < 1:
+        return None
+
+    # prefix 内に * があればそちらを優先
+    for i, pp in enumerate(prefix):
+        if pp == '*':
+            return matched_parts[i]
+
+    # suffix 内に * があれば対応するセグメントを返す
+    for j, sp in enumerate(suffix):
+        if sp == '*':
+            matched_idx = len(matched_parts) - len(suffix) + j
+            return matched_parts[matched_idx]
+
+    # ** がキャプチャした最初のセグメント = Feature
+    return matched_parts[ds_idx]
 
 
 # ---------------------------------------------------------------------------

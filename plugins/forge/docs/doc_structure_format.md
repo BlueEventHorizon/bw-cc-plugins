@@ -47,7 +47,7 @@ specs:
 
 | フィールド | 必須 | 型 | 説明 |
 |-----------|------|------|------|
-| `{category}.root_dirs` | Yes | array[string] | ドキュメントディレクトリ。glob パターン（`*`）対応 |
+| `{category}.root_dirs` | Yes | array[string] | ドキュメントディレクトリ。glob パターン（`*`, `**`）対応 |
 | `{category}.doc_types_map` | Yes | object | パス → doc_type のマッピング。glob パターン対応 |
 | `{category}.patterns.exclude` | No | array[string] | 除外するディレクトリ名 |
 | `{category}.patterns.target_glob` | No | string | ファイル検索 glob パターン（デフォルト: `**/*.md`） |
@@ -58,13 +58,13 @@ specs:
 
 - パスはプロジェクトルートからの相対パス
 - 末尾 `/` 推奨
-- glob パターン `*` で1レベルのディレクトリマッチが可能
+- glob パターン `*` で1レベル、`**` で任意の深さのディレクトリマッチが可能
 
 ```yaml
 root_dirs:
   - docs/rules/                       # リテラルパス
-  - "docs/specs/*/design/"            # glob パターン（全 Feature の design）
-  - "docs/specs/*/plan/"              # glob パターン（全 Feature の plan）
+  - "docs/specs/*/design/"            # glob パターン（1階層の全 Feature）
+  - "docs/specs/**/design/"           # 再帰 glob パターン（任意の深さの全 Feature）
 ```
 
 ## doc_types_map
@@ -191,6 +191,30 @@ specs:
 
 この形式では Feature 追加時に `.doc_structure.yaml` の変更は不要。
 `docs/specs/payment/design/` ディレクトリを作成するだけで自動的に検出される。
+
+### Nested Feature-Based Structure（サブ Feature あり）
+
+Feature 内にサブ Feature（例: `forge/review-PR/`）がある場合、`**` で任意の深さを一括指定できる。
+
+```yaml
+# doc_structure_version: 3.0
+
+specs:
+  root_dirs:
+    - "docs/specs/**/design/"
+    - "docs/specs/**/plan/"
+    - "docs/specs/**/requirements/"
+  doc_types_map:
+    "docs/specs/**/design/": design
+    "docs/specs/**/plan/": plan
+    "docs/specs/**/requirements/": requirement
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+```
+
+`docs/specs/forge/design/` と `docs/specs/forge/review-PR/design/` の両方が自動検出される。
+Feature 名は `**` がキャプチャした最初のセグメント（この例では `forge`）になる。
 
 ### Feature-Based with Exclude
 

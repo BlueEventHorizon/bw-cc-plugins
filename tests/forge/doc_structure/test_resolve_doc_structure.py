@@ -88,6 +88,44 @@ rules:
     exclude: []
 """
 
+DOUBLESTAR_GLOB_CONFIG = """\
+# doc_structure_version: 3.0
+
+specs:
+  root_dirs:
+    - "docs/specs/**/design/"
+    - "docs/specs/**/plan/"
+    - "docs/specs/**/requirements/"
+  doc_types_map:
+    "docs/specs/**/design/": design
+    "docs/specs/**/plan/": plan
+    "docs/specs/**/requirements/": requirement
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+
+rules:
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+"""
+
+DOUBLESTAR_EXCLUDE_CONFIG = """\
+specs:
+  root_dirs:
+    - "docs/specs/**/design/"
+  doc_types_map:
+    "docs/specs/**/design/": design
+  patterns:
+    target_glob: "**/*.md"
+    exclude:
+      - archived
+"""
+
 EXCLUDE_CONFIG = """\
 specs:
   root_dirs:
@@ -500,6 +538,44 @@ class TestDetectFeatures(unittest.TestCase):
             features = rds.detect_features(config, tmpdir)
             self.assertEqual(features, [])
 
+    def test_doublestar_mixed_depth(self):
+        """** パターンで1階層と2階層の混在から全 Feature を検出"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [
+                'docs/specs/forge/design/',
+                'docs/specs/forge/review-PR/design/',
+                'docs/specs/doc-advisor/design/',
+                'docs/specs/doc-advisor/semantic-query/design/',
+            ])
+            config = rds.parse_config(DOUBLESTAR_GLOB_CONFIG)
+            features = rds.detect_features(config, tmpdir)
+            self.assertEqual(features, ['doc-advisor', 'forge'])
+
+    def test_doublestar_dedup(self):
+        """同一 Feature が複数深さに存在しても重複しない"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [
+                'docs/specs/forge/design/',
+                'docs/specs/forge/plan/',
+                'docs/specs/forge/review-PR/design/',
+                'docs/specs/forge/review-PR/plan/',
+            ])
+            config = rds.parse_config(DOUBLESTAR_GLOB_CONFIG)
+            features = rds.detect_features(config, tmpdir)
+            self.assertEqual(features, ['forge'])
+
+    def test_doublestar_exclude(self):
+        """** パターンでも exclude が機能する"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [
+                'docs/specs/auth/design/',
+                'docs/specs/archived/design/',
+                'docs/specs/auth/sub/design/',
+            ])
+            config = rds.parse_config(DOUBLESTAR_EXCLUDE_CONFIG)
+            features = rds.detect_features(config, tmpdir)
+            self.assertEqual(features, ['auth'])
+
 
 class TestExtractFeatureFromMatch(unittest.TestCase):
     """Feature 名抽出のテスト"""
@@ -513,6 +589,69 @@ class TestExtractFeatureFromMatch(unittest.TestCase):
     def test_mismatch_length(self):
         result = rds._extract_feature_from_match(
             'docs/specs/*/design', 'docs/specs/forge/design/sub'
+        )
+        self.assertIsNone(result)
+
+    def test_doublestar_single_depth(self):
+        """** パターンで1階層マッチ"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/**/design', 'docs/specs/forge/design'
+        )
+        self.assertEqual(result, 'forge')
+
+    def test_doublestar_two_depth(self):
+        """** パターンで2階層マッチ — 最初のセグメントが Feature"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/**/design', 'docs/specs/forge/review-PR/design'
+        )
+        self.assertEqual(result, 'forge')
+
+    def test_doublestar_two_depth_another(self):
+        """** パターンで別の Feature の2階層マッチ"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/**/design', 'docs/specs/doc-advisor/semantic-query/design'
+        )
+        self.assertEqual(result, 'doc-advisor')
+
+    def test_doublestar_zero_capture(self):
+        """** が0セグメントをキャプチャした場合は None"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/**/design', 'docs/specs/design'
+        )
+        self.assertIsNone(result)
+
+    def test_doublestar_multiple_rejected(self):
+        """複数 ** を含むパターンは未対応で None"""
+        result = rds._extract_feature_from_match(
+            'docs/**/specs/**/design', 'docs/a/specs/b/design'
+        )
+        self.assertIsNone(result)
+
+    def test_doublestar_prefix_star_priority(self):
+        """prefix 内の * は ** より優先される"""
+        result = rds._extract_feature_from_match(
+            'docs/*/specs/**/design', 'docs/myproject/specs/forge/design'
+        )
+        self.assertEqual(result, 'myproject')
+
+    def test_doublestar_suffix_star(self):
+        """suffix 内の * が正しくマッチする"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/**/*/design', 'docs/specs/forge/review-PR/design'
+        )
+        self.assertEqual(result, 'review-PR')
+
+    def test_backward_compat_single_star(self):
+        """従来の * パターンが変わらず動作する"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/*/design', 'docs/specs/auth/design'
+        )
+        self.assertEqual(result, 'auth')
+
+    def test_no_wildcard(self):
+        """ワイルドカードなしのパターンは None"""
+        result = rds._extract_feature_from_match(
+            'docs/specs/design', 'docs/specs/design'
         )
         self.assertIsNone(result)
 
