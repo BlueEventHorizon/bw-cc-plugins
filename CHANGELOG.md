@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.6] - 2026-04-11
+
+### marketplace
+
+- **feat**: forge を 0.0.30 に更新。`.doc_structure.yaml` の `**` 再帰 glob パターン対応
+
+## [0.0.30] - 2026-04-11
+
+### forge
+
+- **feat**: `.doc_structure.yaml` で `**`（再帰 glob）パターンをサポート。`docs/specs/**/design/` のように1行で任意の深さの Feature ディレクトリを指定可能に
+- **refactor**: `_extract_feature_from_match()` を `**` 対応に改修。prefix/suffix 分割アルゴリズムで可変長マッチから Feature 名を抽出
+- **docs**: doc_structure_format.md, SKILL.md 等の関連文書を `**` パターン対応に更新
+
 ## [marketplace 0.1.5] - 2026-04-11
 
 ### marketplace
