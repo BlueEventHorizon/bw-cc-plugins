@@ -94,7 +94,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/classify_dirs.py
   1. ✅ docs/rules/                       — rule
   2. ✅ docs/specs/login/design/          — design
   3. ✅ docs/specs/login/requirements/    — requirement
-     → glob パターン: docs/specs/*/design/, docs/specs/*/requirements/
+     → glob パターン: docs/specs/**/design/, docs/specs/**/requirements/
 
 未検出（推奨）:
   4. ☐ docs/specs/**/plan/               — 計画書
@@ -160,7 +160,7 @@ AskUserQuestion を使用して修正内容を確認する:
 #### Feature の扱い
 
 - 既存 Feature（`docs/specs/login/`, `docs/specs/auth/` 等）はスキャンで自動検出する
-- AI が glob パターン（`docs/specs/*/design/`）を推定し、.doc_structure.yaml に設定する
+- AI が glob パターン（`docs/specs/**/design/` 等）を推定し、.doc_structure.yaml に設定する
 - ユーザーが「Other」で新しい Feature パスを指定した場合 → 存在しなければ作成を提案
 - Feature 名を引数として受け取らない（Feature はテンポラリーであり、スキャンで検出するもの）
 
@@ -252,19 +252,19 @@ rules:
 
 specs:
   root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/plan/"
-    - "docs/specs/*/requirement/"
+    - "docs/specs/**/design/"
+    - "docs/specs/**/plan/"
+    - "docs/specs/**/requirement/"
   doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/plan/": plan
-    "docs/specs/*/requirement/": requirement
+    "docs/specs/**/design/": design
+    "docs/specs/**/plan/": plan
+    "docs/specs/**/requirement/": requirement
   patterns:
     target_glob: "**/*.md"
     exclude: []
 ```
 
-glob パターン（`*`）を使う場合、root_dirs と doc_types_map の両方に同じパターンを記述する。
+glob パターン（`*` または `**`）を使う場合、root_dirs と doc_types_map の両方に同じパターンを記述する。`*` は1階層のみ、`**` は任意の深さにマッチする。サブ Feature がある場合は `**` を推奨。
 
 ### doc_type 定義（固定。全プロジェクト・全プラグインで共通）
 

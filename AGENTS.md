@@ -1,12 +1,12 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-Claude Code プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode / doc-advisor の4プラグインを格納・配布する。
+Codex プラグインのマーケットプレイスリポジトリ。forge / anvil / xcode / doc-advisor の4プラグインを格納・配布する。
 
-- **forge** (v0.0.30) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
+- **forge** (v0.0.29) — AI を活用したドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応
 - **doc-advisor** (v0.2.1) — AI 検索可能なドキュメントインデックス（ToC）生成・検索ツール。文書から AI がメタデータを抽出し、タスクに関連する rules/specs 文書を自動発見する
 
 ## Development
@@ -17,7 +17,7 @@ Claude Code プラグインのマーケットプレイスリポジトリ。forge
 
 ```bash
 # セッション限定でプラグインをロード
-claude --plugin-dir ./plugins/forge
+Codex --plugin-dir ./plugins/forge
 
 # マーケットプレイス経由
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
@@ -38,7 +38,7 @@ python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクト
 
 ### マーケットプレイス構造
 
-`.claude-plugin/marketplace.json` がルートに配置され、`plugins/` 配下の各プラグインを参照する。各プラグインは独自の `.claude-plugin/plugin.json` マニフェストを持つ。
+`.Codex-plugin/marketplace.json` がルートに配置され、`plugins/` 配下の各プラグインを参照する。各プラグインは独自の `.Codex-plugin/plugin.json` マニフェストを持つ。
 
 ### forge プラグインのスキル連鎖
 
@@ -121,7 +121,7 @@ forge は `.doc_structure.yaml` を直接読み込んでパスを解決し、参
 ## Testing [MANDATORY]
 
 `plugins/` 配下の Python スクリプトにはテストが必須。SKILL.md はテスト困難なため例外とする。
-`.claude/` 配下のローカルスキル・スクリプトはテスト対象外。
+`.Codex/` 配下のローカルスキル・スクリプトはテスト対象外。
 
 ### テストの配置
 
@@ -153,5 +153,5 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 - **タスク開始時に `/query-rules` を実行する**: 新しいタスクに取り掛かる前に `/query-rules` でプロジェクトルールを確認すること
 - 詳細なルールは `docs/rules/` に配置し、DocAdvisor（`/query-rules`）経由で参照する
-- CLAUDE.md にルールを直接書かない。コンテキスト肥大化を防ぐため `docs/rules/` で管理する
+- AGENTS.md にルールを直接書かない。コンテキスト肥大化を防ぐため `docs/rules/` で管理する
 - **設計文書の保存**: plan モードで作成した重要な設計文書は `docs/specs/forge/design/` に保存すること

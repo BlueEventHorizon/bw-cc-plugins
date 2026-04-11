@@ -1,12 +1,12 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-04-09T00:12:28Z
+generated_at: 2026-04-11T00:22:35Z
 file_count: 30
 checksums:
   plugins/forge/docs/context_gathering_spec.md: 7880dcbd6c3ad9e0914f388b31578c334e582bc49a11ba9007ee41005651aec3
   plugins/forge/docs/design_format.md: a581c9009a2bb7dedb78353935b0d6b7b7d87dadefe1fc493f7eaa9d10e6a967
   plugins/forge/docs/design_principles_spec.md: 50e84dfbe37fa5d3396fee766d7254f7d6f7e2a1ce91d08fd597bb6aab1de4ff
-  plugins/forge/docs/doc_structure_format.md: bc30040cb0ecbacf507da278d17090e4e1c466ef9ff3b149db3f00d91542c987
+  plugins/forge/docs/doc_structure_format.md: 10916e310145361637d3395e6f34521713bdb19c1b4b871b752fec08c5728a2e
   plugins/forge/docs/plan_format.md: f56902b373e5bfab942812e808777556c97af4c7c5d103ee6fb942421ed6fcf6
   plugins/forge/docs/plan_principles_spec.md: 95b5e8dcacddc67a64b3ff8d80d2c945cb42fce0c90fb92386fab652a30fb330
   plugins/forge/docs/requirement_format.md: cdce65cdd4cd4134e2d0a889707e8f2dbe9c354288803c27745e00c75d9c337f
