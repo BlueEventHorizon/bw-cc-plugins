@@ -1,8 +1,9 @@
 ---
 name: setup-doc-structure
 description: |
-  ドキュメントディレクトリを検出・作成し、forge が文書を参照できるようにする。
-  トリガー: "forge の初期設定", "doc structure を作成", "ドキュメント構成", "scaffold docs"
+  プロジェクトのディレクトリをスキャン・分類し .doc_structure.yaml を対話的に生成する。
+  forge・doc-advisor が文書を参照するための必須初期設定。
+  トリガー: "forge の初期設定", "doc structure を作成", "ドキュメント構成", "setup"
 user-invocable: true
 argument-hint: ""
 ---

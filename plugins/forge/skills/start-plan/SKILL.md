@@ -1,8 +1,8 @@
 ---
 name: start-plan
 description: |
-  設計書から実装タスクを抽出し、計画書を作成・更新できる。
-  トリガー: "計画書作成", "計画開始", "start planning"
+  設計書から実装タスクを抽出し、YAML 計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
+  トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature>"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion

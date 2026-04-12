@@ -1,8 +1,8 @@
 ---
 name: help
 description: |
-  forge スキルのヘルプ。引数を UI で選択できるのでスキルを使いやすくなる。
-  トリガー: "forge help", "使い方", "ヘルプ"
+  forge スキル一覧を表示し、選択したスキルの引数をガイド付きで構成してそのまま実行できる。
+  トリガー: "forge help", "forge の使い方", "ヘルプ", "どのスキルを使えばいい"
 user-invocable: true
 argument-hint: ""
 allowed-tools: AskUserQuestion

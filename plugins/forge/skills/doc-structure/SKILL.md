@@ -2,8 +2,8 @@
 name: doc-structure
 user-invocable: false
 description: |
-  .doc_structure.yaml のパース・パス解決ユーティリティ。
-  他スキルおよび doc-advisor から呼び出される。
+  .doc_structure.yaml を読み込み、Feature 名から specs/rules ディレクトリの実パスを解決する。
+  他スキルおよび doc-advisor がドキュメントパスを特定する際に呼び出す内部ユーティリティ。
 argument-hint: ""
 ---
 
