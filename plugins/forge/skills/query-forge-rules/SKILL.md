@@ -1,8 +1,10 @@
 ---
 name: query-forge-rules
 description: |
-  forge 内蔵ドキュメントの ToC を検索し、タスクに関連する forge docs のパスを返す。
-  query-rules と同じパターンだが、対象は forge プラグイン内蔵の知識ベース。
+  forge 内蔵の知識ベースを ToC 検索し、タスクに関連するドキュメントのパスを返す。
+  対象: ID体系・仕様フォーマット・設計原則・レビュー基準・ワークフロー仕様・HIG/UXガイド等。
+  他スキルが forge の内部仕様や規約を参照する必要がある場面で使用する。
+  ※ プロジェクト文書には /doc-advisor:query-rules を使う。本スキルは forge 自体の docs が対象。
 context: fork
 agent: general-purpose
 model: haiku
