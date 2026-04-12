@@ -280,9 +280,22 @@ Phase 2 の主要シナリオを元に、ユーザーとシステムの相互作
 
 各要件定義書を `requirement_format.md` に従って整形:
 
-- 要件 ID の付与
+- 要件 ID の付与（**次の ID はスクリプトで取得する [MANDATORY]**）
 - メタデータの記載
 - 関連要件のリンク設定
+
+#### ID 採番 [MANDATORY]
+
+要件 ID を付与する際は、必ず以下のスクリプトで次の連番を取得する。手動での番号決定は禁止:
+
+```bash
+SCAN_SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+python3 "$SCAN_SCRIPT" SCR   # 画面要件の場合
+python3 "$SCAN_SCRIPT" FNC   # 機能要件の場合
+# 使用するプレフィックスごとに実行する
+```
+
+JSON 出力の `next_id` をファイル名・要件 ID として使用する。`duplicates` が空でない場合は警告を表示する。
 
 ### 4.2 品質チェック [MANDATORY]
 

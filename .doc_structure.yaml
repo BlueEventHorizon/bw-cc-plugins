@@ -24,4 +24,4 @@ specs:
     "docs/specs/**/requirements/": requirement
   patterns:
     target_glob: "**/*.md"
-    exclude: []
+    exclude: [plan]

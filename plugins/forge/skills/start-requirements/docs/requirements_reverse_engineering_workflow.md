@@ -192,19 +192,33 @@ graph LR
 
 ## Phase 4: 要件定義書作成
 
-### 4.1 作成順序 [MANDATORY]
+### 4.1 ID 採番 [MANDATORY]
+
+要件定義書の作成前に、使用するプレフィックスごとに次の連番を取得する。手動での番号決定は禁止:
+
+```bash
+SCAN_SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+python3 "$SCAN_SCRIPT" APP   # アプリ概要
+python3 "$SCAN_SCRIPT" SCR   # 画面要件
+python3 "$SCAN_SCRIPT" FNC   # 機能要件
+# 使用するプレフィックスごとに実行する
+```
+
+JSON 出力の `next_id` をファイル名・要件 ID として使用する。`duplicates` が空でない場合は警告を表示する。
+
+### 4.2 作成順序 [MANDATORY]
 
 1. **APP-001** — アプリ全体概要
 2. **画面要件（SCR-xxx）** — メイン画面から順に
 3. **その他の要件** — FNC, BL, DM, CMP 等
 
-### 4.2 記載原則 [MANDATORY]
+### 4.3 記載原則 [MANDATORY]
 
 - **What に集中**: 「何を実現するか」のみ記載
 - **How は記載しない**: 実装方法は設計書の責務
 - **判断基準**: 「ユーザーマニュアルに書くか？」→ Yes なら要件、No なら設計
 
-### 4.3 グロッサリー作成 [MANDATORY]
+### 4.4 グロッサリー作成 [MANDATORY]
 
 抽出した要件で使用する用語を定義・整理する。
 
