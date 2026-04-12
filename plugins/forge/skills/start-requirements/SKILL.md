@@ -1,8 +1,9 @@
 ---
 name: start-requirements
 description: |
-  対話・ソース解析・Figma で要件を収集し、構造化した要件定義書を作成する。
-  トリガー: "要件定義", "要件定義書作成", "start requirements"
+  要件定義書を作成する。3モード対応: 対話形式でゼロから/既存コード解析で逆算/Figma デザインから抽出。
+  完了後にレビュー+自動修正→ToC更新→commit の完了フローを実行する。
+  トリガー: "要件定義", "要件定義書作成", "ソースから要件抽出", "Figma から要件"
 user-invocable: true
 argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
 ---

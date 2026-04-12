@@ -1,7 +1,7 @@
 ---
 name: start-design
 description: |
-  要件定義書を入力に設計書を作成し、レビューまで一貫して行える。
+  要件定義書から設計書を作成する。コンテキスト収集→設計書執筆→レビュー+自動修正→commit を一貫実行。
   トリガー: "設計書作成", "設計開始", "start design"
 user-invocable: true
 argument-hint: "<feature>"
