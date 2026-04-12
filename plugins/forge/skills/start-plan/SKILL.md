@@ -209,7 +209,16 @@ skill_type: "計画書作成"
 
 **作成場所**: session.yaml の `output_dir`
 
-**タスクID採番**: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
+**タスクID採番** [MANDATORY]: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
+
+タスク ID を付与する際は、必ず以下のスクリプトで次の連番を取得する。手動での番号決定は禁止:
+
+```bash
+SCAN_SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+python3 "$SCAN_SCRIPT" TASK
+```
+
+JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空でない場合は警告を表示する。
 
 **優先度**: プロジェクトのフォーマットルールに従う。ルールがない場合は数値が大きいほど優先度が高い（例: 1〜99）。
 

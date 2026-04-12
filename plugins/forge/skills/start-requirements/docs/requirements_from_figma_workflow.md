@@ -115,6 +115,20 @@ graph TD
 
 ## Phase 3: 要件定義書作成
 
+### 3.0 ID 採番 [MANDATORY]
+
+要件定義書の作成前に、使用するプレフィックスごとに次の連番を取得する。手動での番号決定は禁止:
+
+```bash
+SCAN_SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+python3 "$SCAN_SCRIPT" SCR   # 画面要件
+python3 "$SCAN_SCRIPT" CMP   # UIコンポーネント
+python3 "$SCAN_SCRIPT" FNC   # 機能要件
+# 使用するプレフィックスごとに実行する
+```
+
+JSON 出力の `next_id` をファイル名・要件 ID として使用する。`duplicates` が空でない場合は警告を表示する。
+
 ### 3.1 画面要件（SCR-xxx）の抽出
 
 各画面に対して:
