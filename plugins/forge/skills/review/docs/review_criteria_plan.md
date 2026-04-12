@@ -3,6 +3,23 @@
 プロジェクト固有のレビュー観点がない場合に使用するプラグインデフォルト定義。
 DocAdvisor（`/doc-advisor:query-rules`）が利用可能な場合は、プロジェクト固有の観点が追加の perspective として加わる。
 
+## 必須参照: 知識ベース [MANDATORY]
+
+レビュー実行前に `/forge:query-forge-rules` で計画書に関連する知識ベースを取得し、**Read** して深く理解した上でレビューを実行すること。
+
+```
+/forge:query-forge-rules
+タスク内容: 計画書レビュー、YAML フォーマット準拠性検証、タスク構造・優先度体系の妥当性評価
+```
+
+返却されたファイルを全て Read する。
+
+**`/forge:query-forge-rules` が利用不可の場合のフォールバック**:
+
+1. `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`
+2. `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`
+3. `${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`
+
 ---
 
 ## Perspective: alignment — 整合性 (Alignment)

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.7] - 2026-04-12
+
+### marketplace
+
+- **feat**: forge を 0.0.31 に更新。仕様書 ID の全ブランチスキャン採番機能を追加
+
+## [0.0.31] - 2026-04-12
+
+### forge
+
+- **feat**: `next-spec-id` スキルを追加。全ブランチ（ローカル+リモート）をスキャンして仕様書 ID の次の連番を安全に取得する。`.doc_structure.yaml` から specs パスを動的に解決し、ブランチ間の ID 重複を防止
+- **refactor**: start-requirements / start-design / start-plan の各ワークフローに ID 採番スクリプト呼び出しを統合。手動番号決定を禁止し、スクリプトによる一貫した採番を必須化
+- **refactor**: SKILL.md の description / trigger を改善（複数スキル）
+- **feat**: レビュー基準に requirement / design / plan 用の追加 perspective を追加
+
 ## [marketplace 0.1.6] - 2026-04-11
 
 ### marketplace

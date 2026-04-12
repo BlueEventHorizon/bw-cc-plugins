@@ -1,8 +1,8 @@
 ---
 name: test
 description: |
-  Xcodeプロジェクトのテストを実行し、失敗を報告する。iOS/macOS を自動判定。
-  トリガー: "テスト", "test", "テストして"
+  Xcode プロジェクトのテストを実行し、失敗を構造化して報告する。iOS/macOS を scheme から自動判定。
+  トリガー: "テスト", "test", "テストして", "テスト実行", "ユニットテスト"
 user-invocable: true
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[scheme-name] [test-target]"

@@ -1,7 +1,8 @@
 ---
 name: setup-version-config
 description: |
-  プロジェクトをスキャンし、バージョンの一括更新を設定する（.version-config.yaml）。
+  プロジェクトをスキャンしバージョン管理対象を検出、.version-config.yaml を対話的に生成する。
+  update-version の前提条件。プロジェクト構造変更時にも再実行する。
   トリガー: "version config を作成", "バージョン設定", "setup version config"
 user-invocable: true
 argument-hint: ""
