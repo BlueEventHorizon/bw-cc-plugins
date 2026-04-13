@@ -16,20 +16,24 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 
 ## Step 1: スキル選択
 
-AskUserQuestion でスキルを選択する:
+以下のリストをテキストで出力してから AskUserQuestion を呼ぶ:
 
 ```
-どの forge スキルのヘルプを表示しますか？
+利用可能な forge スキル:
 
-選択肢:
-- review              : コード・文書のレビュー（オーケストレーター）
-- start-uxui-design   : 要件定義書からデザイントークン・コンポーネント視覚仕様を創造
-- start-requirements  : 要件定義書の作成
-- start-design        : 設計書の作成
-- start-plan          : 計画書の作成
-- start-implement     : 計画書からタスクを選択して実装を実行する
-- setup               : .doc_structure.yaml の作成・更新
+  1. review              : コード・文書のレビュー（オーケストレーター）
+  2. start-uxui-design   : 要件定義書からデザイントークン・コンポーネント視覚仕様を創造
+  3. start-requirements  : 要件定義書の作成
+  4. start-design        : 設計書の作成
+  5. start-plan          : 計画書の作成
+  6. start-implement     : 計画書からタスクを選択して実装を実行する
+  7. setup               : .doc_structure.yaml の作成・更新
 ```
+
+AskUserQuestion:
+- question: "スキル番号を入力してください（1〜7）"
+- options: ["1 (review)", "2 (start-uxui-design)", "3 (start-requirements)", "4 (start-design)"]
+- ※ 5〜7 は Other で入力する
 
 ---
 
@@ -41,15 +45,23 @@ AskUserQuestion でスキルを選択する:
 
 #### 2-1. 種別
 
+以下のリストをテキストで出力してから AskUserQuestion を呼ぶ:
+
 ```
-レビュー種別を選択してください:
-- code        : ソースコード
-- requirement : 要件定義書
-- design      : 設計書
-- plan        : 計画書
-- uxui        : UX/UI デザイン（デザイントークン・コンポーネント）
-- generic     : 任意の文書（README等）
+レビュー種別:
+
+  1. code        : ソースコード
+  2. requirement : 要件定義書
+  3. design      : 設計書
+  4. plan        : 計画書
+  5. uxui        : UX/UI デザイン（デザイントークン・コンポーネント）
+  6. generic     : 任意の文書（README 等）
 ```
+
+AskUserQuestion:
+- question: "種別番号を入力してください（1〜6）"
+- options: ["1 (code)", "2 (requirement)", "3 (design)", "4 (plan)"]
+- ※ 5〜6 は Other で入力する
 
 #### 2-2. 対象
 
