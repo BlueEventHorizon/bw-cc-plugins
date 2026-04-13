@@ -227,7 +227,7 @@ sequenceDiagram
 
 **既存 ToC YAML からメタデータを読み込む**。ToC は廃止せず維持する方針のため（§10.2 参照）、ToC YAML は Embedding インデックスのメタデータソースとしても継続利用する。
 
-**抽象化レイヤー**: メタデータ取得は `toc_utils.py` の `load_metadata(category, file_path)` 関数経由で行う。`embed_docs.py` はこの関数を呼び出すため、将来メタデータ取得方式を変更する場合も `embed_docs.py` への影響を局所化できる。
+**抽象化レイヤー**: メタデータ取得は `toc_utils.py` の `load_metadata(category, file_path)` 関数経由で行う。`embed_docs.py` はこの関数を呼び出すため、将来 ToC YAML 以外からメタデータを取得する方式に変更する場合も `embed_docs.py` への影響を局所化できる。
 
 #### インデックス JSON スキーマ
 
@@ -358,7 +358,7 @@ def cosine_similarity(vec_a, vec_b):
 | 条件 | 出力 |
 | ---- | ---- |
 | インデックスが存在しない | `{"status": "error", "error": "Index not found. Run embed_docs.py first."}` |
-| インデックスが古い（チェックサム不一致） | `{"status": "error", "error": "Index is stale. Run embed_docs.py to update."}` — 検索を実行せず再生成を案内する（FNC-002 対応） |
+| インデックスが古い（チェックサム不一致） | `{"status": "error", "error": "Index is stale. Run embed_docs.py to update."}` — 検索を実行せず再生成を案内する（FNC-002 対応）。検出方法: インデックス JSON の各エントリに記録された `checksum`（SHA-256）を、現在のファイルのハッシュ値と照合する |
 | Embedding モデル不一致 | `{"status": "error", "error": "Model mismatch: index uses {old_model}, current is {new_model}. Run embed_docs.py --full to rebuild."}` — インデックスの `metadata.model` と現在のモデル定数を比較し、不一致時は検索を実行せず `--full` 再構築を案内する |
 | API キー未設定 | `{"status": "error", "error": "OPENAI_API_KEY not set."}` |
 | API 呼び出し失敗 | `{"status": "error", "error": "API error: {詳細}"}` |
@@ -469,7 +469,7 @@ sequenceDiagram
 | `load_config()` | `plugins/doc-advisor/scripts/toc_utils.py` | `.doc_structure.yaml` の読み込み |
 | `init_common_config()` | 同上 | root_dirs, patterns, チェックサムパス等の初期化 |
 | `get_all_md_files()` | 同上（※現在は `create_pending_yaml.py` に存在。本設計の前提作業として `toc_utils.py` へ移動する） | 対象ファイルの列挙（glob パターン対応） |
-| `load_metadata()` | 同上（新規追加） | メタデータ取得の抽象化レイヤー（Phase 3 移行時の影響局所化） |
+| `load_metadata()` | 同上（新規追加） | メタデータ取得の抽象化レイヤー（将来のメタデータ取得方式変更時に embed_docs.py への影響を局所化） |
 | `calculate_file_hash()` | 同上 | SHA-256 ハッシュによる変更検出 |
 | `load_checksums()` | 同上 | 旧チェックサムの読み込み |
 | `write_checksums_yaml()` | 同上 | チェックサムの書き出し |
