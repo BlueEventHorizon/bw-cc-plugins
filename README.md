@@ -60,6 +60,7 @@ flowchart LR
 | [**update-version**](docs/readme/README_forge.md#update-version) | Bump version across files. patch/minor/major/direct | `"バージョン更新"` |
 | [**clean-rules**](docs/readme/README_forge.md#clean-rules) | Analyze and reorganize project rules/ | `"rules を整理"` |
 | [**help**](docs/readme/README_forge.md#help) | Interactive help wizard | `"forge help"` |
+| [**show-browser**](docs/readme/README_forge.md#show-browser) | Display session progress and review findings in browser via real-time SSE | `"ブラウザで表示"` `"show browser"` |
 | *reviewer* | Execute review for a single perspective. AI-only, called by review orchestrator | — |
 | *evaluator* | Scrutinize review findings and determine fix/skip/confirm. AI-only | — |
 | *fixer* | Fix issues based on review findings. AI-only | — |
