@@ -670,7 +670,3 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/read_session.py {session_dir} [--f
 ### `id` の整合性
 
 `review.md`（および `review_{perspective}.md`）の指摘事項 → `plan.yaml` の `id` は同一の連番で対応している。`extract_review_findings.py` が複数の `review_{perspective}.md` を統合して `plan.yaml` を生成する際に通し番号で採番する。`evaluator` の判定結果（`recommendation`, `auto_fixable`, `reason`）は `plan.yaml` の同一 `id` に直接記録する。
-
-### 通信フローの共通パターン
-
-データフロー図は設計書を参照: `docs/specs/forge/design/session_management_design.md` §4.3

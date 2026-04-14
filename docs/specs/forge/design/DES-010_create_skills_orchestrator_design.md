@@ -553,7 +553,7 @@ sequenceDiagram
 
 ## 6. セッションライフサイクル
 
-> セッション管理の詳細設計（ライフサイクルフロー、session_manager.py、resume_policy、SKILL.md における位置づけ）は **DES-011 `session_management_design.md`** を参照。
+> セッション管理の詳細設計（ライフサイクルフロー、session_manager.py、resume_policy、SKILL.md における位置づけ）は **DES-011 `DES-011_session_management_design.md`** を参照。
 
 本セクションでは create-* スキル固有の補足のみ記述する。
 

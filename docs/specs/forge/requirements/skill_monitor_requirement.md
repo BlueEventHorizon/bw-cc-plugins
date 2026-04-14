@@ -157,4 +157,4 @@ skill_monitor.py（SSE サーバー）
 |------|------|
 | `plugins/forge/docs/session_format.md` | セッションファイルスキーマ（表示対象の SSOT） |
 | `docs/specs/forge/requirement/orchestrator_pattern.md` | オーケストレータパターン要件（FNC-002: セッションディレクトリ通信） |
-| `meta/skill_monitor_design.md` | 設計メモ（本要件の背景と検討経緯） |
+| `docs/specs/forge/design/DES-012_show_browser_design.md` | 設計書（show-browser スキル詳細設計） |
