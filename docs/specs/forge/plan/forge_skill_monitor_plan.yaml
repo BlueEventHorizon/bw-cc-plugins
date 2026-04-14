@@ -203,7 +203,7 @@ tasks:
   - task_id: TASK-007
     title: "review SKILL.md: show-browser 統合"
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-012
     depends_on:
       - TASK-005
