@@ -1,10 +1,6 @@
 # バージョンマイグレーション実装仕様
 
 バージョン付きデータ形式の段階的マイグレーションを実装するための仕様書。
-COMMON-REQ-001（段階的バージョンマイグレーション要件）に準拠する。
-
-要件定義: `docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md`
-設計ルール: `docs/rules/version_migration_design.md`
 
 ---
 
@@ -173,4 +169,3 @@ def detect_version(content):
 forge プラグインの `.doc_structure.yaml` マイグレーション:
 
 - スクリプト: `${CLAUDE_PLUGIN_ROOT}/scripts/migrate_doc_structure.py`
-- 設計書: `docs/specs/forge/design/doc_structure_version_management_design.md`

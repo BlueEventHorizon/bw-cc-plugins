@@ -6,7 +6,7 @@
 | -------- | --------------------------------------------------------------- |
 | 設計ID   | DES-011                                                         |
 | 関連要件 | FNC-002 (orchestrator_pattern.md)                               |
-| 関連設計 | DES-010 (create_skills_orchestrator_design.md)                  |
+| 関連設計 | DES-010 (DES-010_create_skills_orchestrator_design.md)          |
 | 作成日   | 2026-03-13                                                      |
 | 対象     | 全オーケストレータースキル（review, start-design, start-plan, start-requirements, start-implement） |
 

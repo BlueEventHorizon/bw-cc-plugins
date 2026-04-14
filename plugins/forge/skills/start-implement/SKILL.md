@@ -266,8 +266,6 @@ Agent(subagent_type: general-purpose, prompt: {構築したパラメータ})
 
 ### 4.4 executor の結果受領 [MANDATORY]
 
-> 並列 agent の出力契約パターン（`docs/specs/forge/design/parallel_agent_output_contract_design.md` 参照）に従う。
-
 #### 単一タスク実行時
 
 executor は以下のステータスで報告する:

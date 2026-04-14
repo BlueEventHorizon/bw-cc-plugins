@@ -1,4 +1,13 @@
-# reviewer 観点別 agent 分割 設計書
+# DES-021 reviewer 観点別 agent 分割 設計書
+
+## メタデータ
+
+| 項目 | 値 |
+|------|-----|
+| 設計ID | DES-021 |
+| 作成日 | 2026-03-20 |
+
+---
 
 > 対象プラグイン: forge | スキル: `/forge:reviewer`
 
@@ -244,7 +253,7 @@ reviewer と同様に、evaluator も perspective ごとに並列起動する。
 
 #### 並列 agent の出力契約パターン [MANDATORY]
 
-> 詳細は [parallel_agent_output_contract_design.md](parallel_agent_output_contract_design.md) を参照。
+> 詳細は [DES-022_parallel_agent_output_contract_design.md](DES-022_parallel_agent_output_contract_design.md) を参照。
 
 並列実行される agent は共有リソース（plan.yaml 等）に直接書き込まない。代わりに以下のパターンに従う:
 
@@ -394,7 +403,7 @@ perspectives:
 | `test_write_refs.py` | 更新（perspectives 必須フィールド対応） |
 | `README.md`, `README_ja.md` | パス参照更新 |
 | `CLAUDE.md` | パス参照更新 |
-| `review_workflow_design.md` | データフロー図更新 |
+| `DES-015_review_workflow_design.md` | データフロー図更新 |
 
 ### 実装順序
 

@@ -1,4 +1,13 @@
-# .doc_structure.yaml バージョン管理設計
+# DES-016 .doc_structure.yaml バージョン管理設計
+
+## メタデータ
+
+| 項目 | 値 |
+|------|-----|
+| 設計ID | DES-016 |
+| 作成日 | 2026-03-14 |
+
+---
 
 > COMMON-REQ-001（段階的バージョンマイグレーション要件）の `.doc_structure.yaml` への適用設計
 
