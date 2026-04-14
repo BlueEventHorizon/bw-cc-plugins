@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>forge session status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    /* =====================================================================
+       基本レイアウト（ダーク・開発者ツール的審美性）
+       review_list.html と同一の CSS 変数・フォント・テーマを使用
+    ===================================================================== */
+    :root {
+      --bg:        #0d1117;
+      --bg-card:   #161b22;
+      --bg-hover:  #1c2128;
+      --border:    #30363d;
+      --text:      #c9d1d9;
+      --text-muted:#8b949e;
+      --text-head: #f0f6fc;
+
+      --critical:  #ff4d4d;
+      --major:     #ffab00;
+      --minor:     #52c41a;
+      --skipped:   #666;
+      --info:      #58a6ff;
+
+      --badge-fix:    #238636;
+      --badge-skip:   #444;
+      --badge-review: #9e6a03;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* =====================================================================
+       ヘッダー
+    ===================================================================== */
+    #header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    #header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-head);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--minor);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #status-dot.ended { background: var(--skipped); }
+    #status-dot.connecting { background: var(--major); }
+
+    #session-info {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =====================================================================
+       コンテンツ領域
+    ===================================================================== */
+    #content {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 960px;
+    }
+
+    /* =====================================================================
+       セクション共通
+    ===================================================================== */
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-head);
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-body {
+      padding: 12px 16px;
+    }
+
+    /* =====================================================================
+       メタデータテーブル
+    ===================================================================== */
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .meta-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .meta-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .meta-table th {
+      text-align: left;
+      padding: 6px 12px 6px 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      width: 140px;
+      vertical-align: top;
+    }
+
+    .meta-table td {
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      word-break: break-all;
+    }
+
+    /* ステータスバッジ */
+    .status-value {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .status-value.in_progress {
+      background: color-mix(in srgb, var(--info) 20%, transparent);
+      color: var(--info);
+    }
+    .status-value.completed {
+      background: color-mix(in srgb, var(--minor) 20%, transparent);
+      color: var(--minor);
+    }
+
+    /* =====================================================================
+       refs セクション（ドキュメントリスト）
+    ===================================================================== */
+    .refs-category {
+      margin-bottom: 12px;
+    }
+
+    .refs-category:last-child {
+      margin-bottom: 0;
+    }
+
+    .refs-category-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--info);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refs-count {
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--text-muted);
+      padding: 1px 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .refs-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding-left: 8px;
+    }
+
+    .doc-item {
+      padding: 6px 8px;
+      border-left: 2px solid var(--border);
+      margin-bottom: 4px;
+      transition: background 0.1s;
+    }
+    .doc-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .doc-path {
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .doc-reason {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .doc-source {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 4px;
+    }
+
+    /* =====================================================================
+       出力先ファイルセクション
+    ===================================================================== */
+    .file-status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .file-status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.1s;
+    }
+    .file-status-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .file-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .file-indicator.exists {
+      background: var(--minor);
+    }
+    .file-indicator.missing {
+      background: var(--skipped);
+    }
+
+    .file-name {
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .file-mtime {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    /* =====================================================================
+       空・終了・接続中メッセージ
+    ===================================================================== */
+    #empty-msg {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      display: none;
+    }
+
+    #session-end-banner {
+      margin: 16px 20px 0;
+      padding: 10px 16px;
+      background: color-mix(in srgb, var(--skipped) 15%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <span id="status-dot" class="connecting" title="SSE 接続中"></span>
+  <h1 id="header-title">forge session status</h1>
+  <span id="session-info">接続中...</span>
+</div>
+
+<div id="session-end-banner">セッションが終了しました</div>
+
+<div id="content">
+  <!-- メタデータカード -->
+  <div class="section" id="meta-section">
+    <div class="section-header">Session Metadata</div>
+    <div class="section-body">
+      <table class="meta-table" id="meta-table">
+        <tr>
+          <th>skill</th>
+          <td id="meta-skill">--</td>
+        </tr>
+        <tr>
+          <th>status</th>
+          <td id="meta-status">--</td>
+        </tr>
+        <tr>
+          <th>started_at</th>
+          <td id="meta-started">--</td>
+        </tr>
+        <tr>
+          <th>feature</th>
+          <td id="meta-feature">--</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- refs セクション -->
+  <div class="section" id="refs-section">
+    <div class="section-header">References</div>
+    <div class="section-body" id="refs-body">
+      <div class="refs-empty">参照情報はまだありません</div>
+    </div>
+  </div>
+
+  <!-- 出力先ファイルセクション -->
+  <div class="section" id="files-section">
+    <div class="section-header">Session Files</div>
+    <div class="section-body">
+      <div class="file-status-list" id="files-list">
+        <!-- JS で動的に生成 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="empty-msg">セッション情報がありません</div>
+
+<script>
+  // =====================================================================
+  // メタデータの表示更新
+  // =====================================================================
+  const renderMetadata = (sessionContent) => {
+    const skillEl = document.getElementById('meta-skill');
+    const statusEl = document.getElementById('meta-status');
+    const startedEl = document.getElementById('meta-started');
+    const featureEl = document.getElementById('meta-feature');
+
+    if (!sessionContent) {
+      skillEl.textContent = '--';
+      statusEl.innerHTML = '--';
+      startedEl.textContent = '--';
+      featureEl.textContent = '--';
+      return;
+    }
+
+    // スキル名
+    skillEl.textContent = sessionContent.skill || '--';
+
+    // ヘッダータイトルをスキル名で更新
+    const titleEl = document.getElementById('header-title');
+    titleEl.textContent = sessionContent.skill
+      ? 'forge ' + sessionContent.skill + ' — session status'
+      : 'forge session status';
+
+    // ステータス（バッジ表示）
+    const status = sessionContent.status || '--';
+    if (status === 'in_progress' || status === 'completed') {
+      statusEl.innerHTML = '<span class="status-value ' + status + '">' + status + '</span>';
+    } else {
+      statusEl.textContent = status;
+    }
+
+    // 開始時刻（ISO 8601 → ローカル表示）
+    if (sessionContent.started_at) {
+      try {
+        const dt = new Date(sessionContent.started_at);
+        startedEl.textContent = dt.toLocaleString('ja-JP');
+      } catch (e) {
+        startedEl.textContent = sessionContent.started_at;
+      }
+    } else {
+      startedEl.textContent = '--';
+    }
+
+    // Feature 名（start-design / start-plan / start-implement 等）
+    featureEl.textContent = sessionContent.feature || '--';
+  };
+
+  // =====================================================================
+  // refs セクションの表示更新
+  // =====================================================================
+  const REFS_CATEGORIES = [
+    { key: 'specs.yaml', label: 'specs.yaml' },
+    { key: 'rules.yaml', label: 'rules.yaml' },
+    { key: 'code.yaml',  label: 'code.yaml' },
+  ];
+
+  const renderRefs = (refsData) => {
+    const body = document.getElementById('refs-body');
+    body.innerHTML = '';
+
+    let hasAny = false;
+
+    REFS_CATEGORIES.forEach((cat) => {
+      const entry = refsData && refsData[cat.key];
+      if (!entry || !entry.exists || !entry.content) return;
+
+      const content = entry.content;
+      const documents = content.documents;
+      if (!Array.isArray(documents) || documents.length === 0) return;
+
+      hasAny = true;
+
+      const categoryDiv = document.createElement('div');
+      categoryDiv.className = 'refs-category';
+
+      // カテゴリ名ヘッダー
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'refs-category-name';
+      nameDiv.textContent = cat.label;
+
+      const countSpan = document.createElement('span');
+      countSpan.className = 'refs-count';
+      countSpan.textContent = documents.length;
+      nameDiv.appendChild(countSpan);
+
+      categoryDiv.appendChild(nameDiv);
+
+      // source / query 表示
+      if (content.source || content.query) {
+        const sourceDiv = document.createElement('div');
+        sourceDiv.className = 'doc-source';
+        const parts = [];
+        if (content.source) parts.push('source: ' + content.source);
+        if (content.query) parts.push('query: "' + content.query + '"');
+        sourceDiv.textContent = parts.join(' | ');
+        categoryDiv.appendChild(sourceDiv);
+      }
+
+      // ドキュメントリスト
+      documents.forEach((doc) => {
+        const item = document.createElement('div');
+        item.className = 'doc-item';
+
+        const pathDiv = document.createElement('div');
+        pathDiv.className = 'doc-path';
+        pathDiv.textContent = doc.path || '(unknown)';
+        item.appendChild(pathDiv);
+
+        if (doc.reason) {
+          const reasonDiv = document.createElement('div');
+          reasonDiv.className = 'doc-reason';
+          reasonDiv.textContent = doc.reason;
+          item.appendChild(reasonDiv);
+        }
+
+        categoryDiv.appendChild(item);
+      });
+
+      body.appendChild(categoryDiv);
+    });
+
+    if (!hasAny) {
+      const empty = document.createElement('div');
+      empty.className = 'refs-empty';
+      empty.textContent = '参照情報はまだありません';
+      body.appendChild(empty);
+    }
+  };
+
+  // =====================================================================
+  // 出力先ファイルセクションの表示更新
+  // =====================================================================
+  const SESSION_FILE_NAMES = ['session.yaml', 'plan.yaml', 'review.md'];
+  const REFS_FILE_NAMES = ['refs/specs.yaml', 'refs/rules.yaml', 'refs/code.yaml'];
+
+  const renderFiles = (filesData, refsData) => {
+    const list = document.getElementById('files-list');
+    list.innerHTML = '';
+
+    // セッション直下のファイル
+    SESSION_FILE_NAMES.forEach((name) => {
+      const entry = filesData && filesData[name];
+      const exists = entry && entry.exists;
+      appendFileItem(list, name, exists);
+    });
+
+    // refs/ 配下のファイル
+    REFS_FILE_NAMES.forEach((name) => {
+      const key = name.replace('refs/', '');
+      const entry = refsData && refsData[key];
+      const exists = entry && entry.exists;
+      appendFileItem(list, name, exists);
+    });
+  };
+
+  const appendFileItem = (container, name, exists) => {
+    const item = document.createElement('div');
+    item.className = 'file-status-item';
+
+    const indicator = document.createElement('span');
+    indicator.className = 'file-indicator ' + (exists ? 'exists' : 'missing');
+    item.appendChild(indicator);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'file-name';
+    nameSpan.textContent = name;
+    item.appendChild(nameSpan);
+
+    const mtimeSpan = document.createElement('span');
+    mtimeSpan.className = 'file-mtime';
+    mtimeSpan.textContent = exists ? 'exists' : 'not found';
+    item.appendChild(mtimeSpan);
+
+    container.appendChild(item);
+  };
+
+  // =====================================================================
+  // /session データ取得・レンダリング
+  // =====================================================================
+  const fetchAndRender = async () => {
+    try {
+      const res = await fetch('/session');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // session_dir 表示
+      const infoEl = document.getElementById('session-info');
+      infoEl.textContent = data.session_dir || '';
+
+      // empty メッセージ制御
+      const emptyMsg = document.getElementById('empty-msg');
+      const contentEl = document.getElementById('content');
+
+      const sessionFile = data.files && data.files['session.yaml'];
+      if (!sessionFile || !sessionFile.exists) {
+        emptyMsg.style.display = 'block';
+        contentEl.style.display = 'none';
+        return;
+      }
+
+      emptyMsg.style.display = 'none';
+      contentEl.style.display = 'flex';
+
+      // メタデータ
+      const sessionContent = sessionFile.content || {};
+      renderMetadata(sessionContent);
+
+      // refs
+      renderRefs(data.refs);
+
+      // ファイル状態
+      renderFiles(data.files, data.refs);
+    } catch (e) {
+      // ネットワークエラー時は無視
+    }
+  };
+
+  // =====================================================================
+  // SSE 接続（review_list.html と同一パターン）
+  // =====================================================================
+  const dot = document.getElementById('status-dot');
+
+  const connectSSE = () => {
+    const es = new EventSource('/sse');
+
+    es.onopen = () => {
+      dot.className = '';   // connecting クラス除去
+      // 再接続時も最新状態を取得
+      fetchAndRender();
+    };
+
+    es.addEventListener('update', () => {
+      fetchAndRender();
+    });
+
+    es.addEventListener('session_end', () => {
+      dot.classList.add('ended');
+      document.getElementById('session-end-banner').style.display = 'block';
+      es.close();
+    });
+
+    es.onerror = () => {
+      dot.classList.add('connecting');
+    };
+  };
+
+  // =====================================================================
+  // 初期化
+  // =====================================================================
+  fetchAndRender();
+  connectSSE();
+</script>
+</body>
+</html>

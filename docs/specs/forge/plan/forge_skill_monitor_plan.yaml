@@ -223,7 +223,7 @@ tasks:
   - task_id: TASK-008
     title: "汎用セッションステータステンプレート作成"
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-012
     depends_on:
       - TASK-002
