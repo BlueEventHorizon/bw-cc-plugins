@@ -370,7 +370,8 @@ rm -rf {session_dir}
 次タスクの判定:
 - 同一 Feature に未完了タスクがある → AskUserQuestion:「次のタスクに進みますか？」
   - **進む** → Phase 2 に戻る
-  - **終了** → 完了案内を表示
+  - **終了** → 「完了案内（未完了タスクあり）」を表示
+- 同一 Feature に未完了タスクがない → 「全タスク完了案内」を表示
 
 ### 6.5 エラー対応（FAILURE パス）
 
@@ -386,7 +387,7 @@ executor が FAILURE を報告した場合:
 
 ---
 
-## 完了案内
+## 完了案内（未完了タスクあり）
 
 ```
 タスク実行が完了しました:
@@ -399,4 +400,13 @@ executor が FAILURE を報告した場合:
   /forge:start-implement {feature}                              # 次のタスクを実行
   /forge:start-implement {feature} --task {TASK-ID}             # 特定タスクを実行
   /forge:start-implement {feature} --task {ID1},{ID2},{ID3}     # 複数タスクを並列実行
+```
+
+## 全タスク完了案内
+
+全タスク完了時は以下を表示する:
+
+```
+{feature} の全タスクが完了しました。
+  完了タスク: {完了タスク数} / {全タスク数}
 ```
