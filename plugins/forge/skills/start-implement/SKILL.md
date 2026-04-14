@@ -129,6 +129,21 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
 
 JSON 出力の `session_dir` をコンテキストに保持する。
 
+### ブラウザ表示の起動（非ブロッキング）
+
+セッション作成完了後、タスク実行の進捗をブラウザでリアルタイム表示するために show_browser.py を呼び出す。
+
+```bash
+timeout 6 python3 ${CLAUDE_PLUGIN_ROOT}/skills/show-browser/scripts/show_browser.py \
+  --template session_status \
+  --session-dir {session_dir}
+```
+
+- 出力（JSON）: `{"monitor_dir": "...", "port": 8765, "url": "..."}`
+- ブラウザが自動で開き、以降セッション状態の更新が SSE 経由でリアルタイム反映される
+- **起動失敗時（exit code が 0 以外）はタスク実行ワークフローを続行する**（ブラウザ表示は補助機能であり、失敗してもタスク実行自体には影響しない）
+- session_dir 削除時にサーバーは自動停止するため、完了処理での明示的な停止は不要
+
 ---
 
 ## Phase 3: コンテキスト収集 [MANDATORY]
@@ -370,7 +385,8 @@ rm -rf {session_dir}
 次タスクの判定:
 - 同一 Feature に未完了タスクがある → AskUserQuestion:「次のタスクに進みますか？」
   - **進む** → Phase 2 に戻る
-  - **終了** → 完了案内を表示
+  - **終了** → 「完了案内（未完了タスクあり）」を表示
+- 同一 Feature に未完了タスクがない → 「全タスク完了案内」を表示
 
 ### 6.5 エラー対応（FAILURE パス）
 
@@ -386,7 +402,7 @@ executor が FAILURE を報告した場合:
 
 ---
 
-## 完了案内
+## 完了案内（未完了タスクあり）
 
 ```
 タスク実行が完了しました:
@@ -399,4 +415,13 @@ executor が FAILURE を報告した場合:
   /forge:start-implement {feature}                              # 次のタスクを実行
   /forge:start-implement {feature} --task {TASK-ID}             # 特定タスクを実行
   /forge:start-implement {feature} --task {ID1},{ID2},{ID3}     # 複数タスクを並列実行
+```
+
+## 全タスク完了案内
+
+全タスク完了時は以下を表示する:
+
+```
+{feature} の全タスクが完了しました。
+  完了タスク: {完了タスク数} / {全タスク数}
 ```

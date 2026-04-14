@@ -311,6 +311,21 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill review
 - `.claude/.temp/{session_dir_name}`
 ```
 
+### ブラウザ表示の起動（非ブロッキング）
+
+セッション作成完了後、レビュー進捗をブラウザでリアルタイム表示するために show_browser.py を呼び出す。
+
+```bash
+timeout 6 python3 ${CLAUDE_PLUGIN_ROOT}/skills/show-browser/scripts/show_browser.py \
+  --template review_list \
+  --session-dir {session_dir}
+```
+
+- 出力（JSON）: `{"monitor_dir": "...", "port": 8765, "url": "..."}`
+- ブラウザが自動で開き、以降 plan.yaml の更新が SSE 経由でリアルタイム反映される
+- **起動失敗時（exit code が 0 以外）はレビューワークフローを続行する**（ブラウザ表示は補助機能であり、失敗してもレビュー自体には影響しない）
+- session_dir 削除時にサーバーは自動停止するため、完了処理での明示的な停止は不要
+
 ---
 
 ### Phase 3: perspectives 並列レビュー
