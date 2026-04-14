@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.8] - 2026-04-15
+
+### marketplace
+
+- **feat**: forge を 0.0.32 に更新。show-browser 機能の全オーケストレータ統合を完了
+
+## [0.0.32] - 2026-04-15
+
+### forge
+
+- **feat**: `show-browser` スキルを全オーケストレータに統合。review / start-design / start-plan / start-requirements / start-implement の各 SKILL.md にセッション作成直後の show_browser.py 呼び出しを追加し、ブラウザでセッション進捗をリアルタイム表示可能に
+- **feat**: `session_status.html` 汎用テンプレートを追加。session.yaml メタデータ（スキル名・ステータス・開始時刻・Feature名）、refs/ 配下の収集結果、出力先ファイルの存在状態を SSE 経由でリアルタイム表示
+- **fix**: start-implement SKILL.md の不具合修正
+
 ## [marketplace 0.1.7] - 2026-04-12
 
 ### marketplace

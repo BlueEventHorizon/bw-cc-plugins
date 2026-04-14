@@ -129,7 +129,6 @@ patterns:
 - フォーマット: `X.Y`（X = メジャー、Y = マイナー）
 - メジャーバージョン変更 = フォーマットの破壊的変更
 - マイナーバージョン変更 = 後方互換のオプショナルフィールド追加
-- 詳細は `docs/specs/forge/design/doc_structure_version_management_design.md` を参照
 
 ## サンプル
 

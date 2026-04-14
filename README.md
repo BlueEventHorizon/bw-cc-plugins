@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.7**
+**Marketplace version: 0.1.8**
 
 [Japanese README (README_ja.md)](README_ja.md)
 
@@ -36,7 +36,7 @@ flowchart LR
 
 | Plugin    | Version | Description                                                                                                   |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.31  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **forge** | 0.0.32  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 | **doc-advisor** | 0.2.1 | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
@@ -60,6 +60,7 @@ flowchart LR
 | [**update-version**](docs/readme/README_forge.md#update-version) | Bump version across files. patch/minor/major/direct | `"バージョン更新"` |
 | [**clean-rules**](docs/readme/README_forge.md#clean-rules) | Analyze and reorganize project rules/ | `"rules を整理"` |
 | [**help**](docs/readme/README_forge.md#help) | Interactive help wizard | `"forge help"` |
+| [**show-browser**](docs/readme/README_forge.md#show-browser) | Display session progress and review findings in browser via real-time SSE | `"ブラウザで表示"` `"show browser"` |
 | *reviewer* | Execute review for a single perspective. AI-only, called by review orchestrator | — |
 | *evaluator* | Scrutinize review findings and determine fix/skip/confirm. AI-only | — |
 | *fixer* | Fix issues based on review findings. AI-only | — |
