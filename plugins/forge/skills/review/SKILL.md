@@ -651,19 +651,76 @@ commit が完了した場合、AskUserQuestion を使用して push を確認す
 
 「はい」の場合 → `git push` を実行する。
 
-#### セッションディレクトリの削除
+#### 終了確認 [MANDATORY]
 
-`{session_dir}` を削除する:
+Phase 5 の他ステップ（テスト・設計書更新・変更差分レビュー・サマリー報告・ToC 更新・commit 確認・push 確認）がすべて完了した後、**レビューを終了できる状態か**を判定する。
+
+**終了条件**: 全指摘が `fixed`（修正済み）または `skipped`（対応しないと決定）で決着していること。`pending` / `needs_review` が残っている状態は「未決着」であり、そのままレビューを終わらせない。
+
+##### Step 1: 未処理指摘の集計
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/summarize_plan.py {session_dir}
+```
+
+出力 JSON の `unprocessed_total` で分岐する。
+
+##### Step 2a: 未処理 0 件 → 終了
+
+全指摘が決着済み。session_dir を削除して終了する:
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
-削除完了後、以下を出力する:
+以下を出力する:
 
 ```
+レビューを終了しました（全 X 件を決着: 修正 Y 件 / 対応しない Z 件）
 セッションディレクトリを削除しました: {session_dir}
 ```
+
+##### Step 2b: 未処理 1 件以上 → 決着が必要
+
+未処理を可視化する（6件以上は先頭3件 + `... 他N件` に省略）:
+
+```
+### 未処理の指摘（X 件）
+
+| 重大度 | 件数 |
+|--------|------|
+| 🔴 致命的 | X件 |
+| 🟡 品質問題 | X件 |
+| 🟢 改善提案 | X件 |
+
+**内訳（status 別）**
+- pending (fixer 失敗 / 未着手): X件
+- needs_review (要確認): X件
+
+**指摘（先頭10件）**
+- `{title 1}`
+- `{title 2}`
+- ...
+```
+
+`AskUserQuestion` で決着方法を確認する（**「残す」という選択肢は提示しない**。既定は「個別に判定する」）:
+
+- 質問: 「未処理の X 件を決着させてレビューを終了します。どうしますか？」
+- 選択肢:
+  - **「個別に判定する」**（既定・推奨）
+    → `/forge:present-findings {session_dir}` を呼び出し、1 件ずつユーザー判断で決着させる。完了後に **Step 1 に戻る**（再度未処理を集計し、0 件になれば Step 2a で終了）
+  - **「全件『対応しない』として終了」**
+    → 未処理を一括で `skipped` に更新してから Step 2a で終了する:
+
+      ```bash
+      # summarize_plan.py の unprocessed_ids を使って updates を組み立てる
+      echo '{"updates": [{"id": <id1>, "status": "skipped", "skip_reason": "ユーザー判断: 全件対応しない"}, {"id": <id2>, "status": "skipped", "skip_reason": "ユーザー判断: 全件対応しない"}, ...]}' \
+        | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --batch
+
+      python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
+      ```
+
+> **なぜ「残す」を選択肢に入れないか**: 終了条件を満たさないまま意図的に session を残すと、「終わったのか終わっていないのか」が曖昧になる。クラッシュ等で未完のまま残った session は、次回 `/forge:review` 起動時の残存セッション検出（上記「残存セッション検出」セクション）で「再開 / 破棄」される。これが「中断された session」の正規処理経路であり、Phase 5 では意図的な放置を許さない。
 
 ---
 
