@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.9] - 2026-04-15
+
+### marketplace
+
+- **feat**: forge を 0.0.33 に更新。レビューパイプラインのデータ破壊バグ修正 + show-browser のセキュリティ強化
+
+## [0.0.33] - 2026-04-15
+
+### forge
+
+- **fix**: evaluator 結果マージの ID 衝突バグを修正。`review` SKILL.md Phase 4 Step 1.5 / 自動修正モード Step 1 を `merge_evals.py` 経由に変更し、perspective ローカル ID → plan.yaml グローバル ID の変換を保証。`update_items_batch` に重複 ID 検出ガードを追加して誤用を即エラー化（2026-04-15 インシデント対応）
+- **fix**: `review` Phase 5 に終了確認ステップを追加。未処理指摘（pending / needs_review）が残った状態でセッションディレクトリが無条件削除される問題を修正。全件が `fixed` または `skipped` で決着するまで終了しない構造に改修
+- **fix**: `show-browser` のパス / コンテンツ経由の攻撃への耐性を強化
+
 ## [marketplace 0.1.8] - 2026-04-15
 
 ### marketplace

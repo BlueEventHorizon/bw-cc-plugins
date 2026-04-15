@@ -386,7 +386,7 @@
 
     if (!sessionContent) {
       skillEl.textContent = '--';
-      statusEl.innerHTML = '--';
+      statusEl.textContent = '--';
       startedEl.textContent = '--';
       featureEl.textContent = '--';
       return;
@@ -401,10 +401,14 @@
       ? 'forge ' + sessionContent.skill + ' — session status'
       : 'forge session status';
 
-    // ステータス（バッジ表示）
+    // ステータス（バッジ表示 — XSS 防止のため createElement + textContent で構築）
     const status = sessionContent.status || '--';
+    statusEl.textContent = '';
     if (status === 'in_progress' || status === 'completed') {
-      statusEl.innerHTML = '<span class="status-value ' + status + '">' + status + '</span>';
+      const badge = document.createElement('span');
+      badge.className = 'status-value ' + status;
+      badge.textContent = status;
+      statusEl.appendChild(badge);
     } else {
       statusEl.textContent = status;
     }

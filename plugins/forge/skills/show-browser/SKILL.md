@@ -5,7 +5,7 @@ description: |
   monitor ディレクトリを作成し、SSE サーバーをバックグラウンド起動してブラウザを開く。
   トリガー: "ブラウザで表示", "show browser", "show-browser", "モニター起動"
 user-invocable: true
-argument-hint: "--template review_list --session-dir <セッションディレクトリ>"
+argument-hint: "--session-dir <セッションディレクトリ> [--template <テンプレート名>]"
 ---
 
 # /forge:show-browser Skill
@@ -35,6 +35,7 @@ SSE 経由でブラウザに Push する。
 | テンプレート | 用途 | 参照先 |
 |------------|------|--------|
 | `review_list` | レビュー指摘一覧 | `plan.yaml` の items |
+| `session_status` | セッション進捗状況 | `session.yaml` / `refs/` |
 
 ## フェーズ
 

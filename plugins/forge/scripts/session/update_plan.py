@@ -115,13 +115,27 @@ def update_items_batch(items, updates_list):
         list[int]: 更新した id のリスト
 
     Raises:
-        ValueError: 不正なデータ
+        ValueError: 不正なデータ / 同一 ID の重複
     """
+    # ID 重複検出（perspective ローカル ID を直接流す誤用の早期検出）。
+    # 途中で失敗すると部分更新が残るため事前チェック方式にする。
+    # 2026-04-15 ID 衝突インシデントの再発防止。
+    seen = set()
+    for upd in updates_list:
+        uid = upd.get("id")
+        if uid is None:
+            raise ValueError("バッチ更新の各要素には id が必須です")
+        if uid in seen:
+            raise ValueError(
+                f"id={uid} が updates 配列内で重複しています。"
+                f"perspective ローカル ID をそのまま渡していませんか？ "
+                f"evaluator 結果のマージは merge_evals.py を経由してください。"
+            )
+        seen.add(uid)
+
     updated_ids = []
     for upd in updates_list:
-        item_id = upd.get("id")
-        if item_id is None:
-            raise ValueError("バッチ更新の各要素には id が必須です")
+        item_id = upd["id"]
         if update_item(items, item_id, upd):
             updated_ids.append(item_id)
     return updated_ids

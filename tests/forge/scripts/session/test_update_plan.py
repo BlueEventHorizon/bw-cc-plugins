@@ -168,6 +168,34 @@ class TestUpdateItemsBatch(unittest.TestCase):
         ])
         self.assertEqual(updated, [1])
 
+    def test_duplicate_id_raises(self):
+        """updates 配列に同一 ID が複数回含まれる場合は ValueError。
+
+        evaluator の local ID を直接流す典型的な誤用パターン
+        （2026-04-15 ID 衝突インシデントの再発防止）。
+        """
+        items = _sample_items()
+        with self.assertRaises(ValueError) as ctx:
+            update_items_batch(items, [
+                {"id": 1, "status": "pending", "recommendation": "fix"},
+                {"id": 2, "status": "pending", "recommendation": "fix"},
+                {"id": 1, "status": "skipped", "recommendation": "skip"},  # 重複
+            ])
+        # エラーメッセージに merge_evals.py への誘導が含まれていることを確認
+        self.assertIn("merge_evals.py", str(ctx.exception))
+
+    def test_duplicate_id_does_not_partially_update(self):
+        """重複検出時は部分更新が残らない（事前チェック方式の保証）。"""
+        items = _sample_items()
+        original_status_1 = items[0]["status"]
+        with self.assertRaises(ValueError):
+            update_items_batch(items, [
+                {"id": 1, "status": "fixed"},
+                {"id": 1, "status": "skipped"},
+            ])
+        # id=1 は変更されていない
+        self.assertEqual(items[0]["status"], original_status_1)
+
 
 class TestReadWritePlan(_FsTestCase):
     """read_plan / write_plan のラウンドトリップ。"""
@@ -358,6 +386,26 @@ class TestCLI(_FsTestCase):
         error = json.loads(proc.stderr)
         self.assertEqual(error["status"], "error")
         self.assertIn("recommendation", error["error"])
+
+    def test_batch_duplicate_id_cli_fails(self):
+        """CLI で stdin JSON に重複 ID が含まれる場合は exit 1 + stderr JSON。
+
+        2026-04-15 ID 衝突インシデントの再発防止。
+        """
+        self._write_plan(_sample_items())
+        batch = {"updates": [
+            {"id": 1, "status": "fixed"},
+            {"id": 1, "status": "skipped"},
+        ]}
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir), "--batch"],
+            input=json.dumps(batch),
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1)
+        err = json.loads(proc.stderr)
+        self.assertEqual(err["status"], "error")
+        self.assertIn("merge_evals.py", err["error"])
 
     def test_batch_update_with_recommendation(self):
         self._write_plan(_sample_items())
