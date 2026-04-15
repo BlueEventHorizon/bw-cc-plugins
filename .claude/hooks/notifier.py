@@ -19,7 +19,8 @@ def main():
     """フックのメイン処理。"""
     try:
         input_data = json.loads(sys.stdin.read())
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"notifier: stdin JSON パース失敗: {e}", file=sys.stderr)
         return
 
     # Write / Edit 以外は無視
@@ -52,8 +53,11 @@ def main():
             continue
 
         # session_dir 配下のファイル更新のみ通知（設計書 5.7）
-        session_dir = os.path.abspath(config.get("session_dir", ""))
-        if not session_dir or not abs_path.startswith(session_dir):
+        raw_session_dir = config.get("session_dir", "")
+        if not raw_session_dir:
+            continue
+        session_dir = os.path.abspath(raw_session_dir)
+        if not (abs_path == session_dir or abs_path.startswith(session_dir + os.sep)):
             continue
 
         port = config.get("port", 8765)

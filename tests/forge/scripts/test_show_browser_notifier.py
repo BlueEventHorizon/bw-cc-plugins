@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -146,7 +147,7 @@ class TestNotifierSessionDirFilter(unittest.TestCase):
 
         with _MockServer(self.port) as srv:
             _run_notifier("Write", file_in_session, {"CLAUDE_PROJECT_DIR": self.project_root})
-            import time; time.sleep(0.2)
+            time.sleep(0.2)
 
         self.assertEqual(len(srv.received), 1, "session_dir 配下のファイルは通知されるべき")
         self.assertEqual(srv.received[0].get("file"), "plan.yaml")
@@ -159,7 +160,7 @@ class TestNotifierSessionDirFilter(unittest.TestCase):
 
         with _MockServer(self.port) as srv:
             _run_notifier("Write", file_outside, {"CLAUDE_PROJECT_DIR": self.project_root})
-            import time; time.sleep(0.2)
+            time.sleep(0.2)
 
         self.assertEqual(len(srv.received), 0, "session_dir 外のファイルは通知しないべき")
 
@@ -170,7 +171,7 @@ class TestNotifierSessionDirFilter(unittest.TestCase):
 
         with _MockServer(self.port) as srv:
             _run_notifier("Read", file_in_session, {"CLAUDE_PROJECT_DIR": self.project_root})
-            import time; time.sleep(0.2)
+            time.sleep(0.2)
 
         self.assertEqual(len(srv.received), 0, "Read ツールは通知しないべき")
 
@@ -198,7 +199,7 @@ class TestNotifierSessionDirFilter(unittest.TestCase):
 
         with _MockServer(self.port) as srv:
             _run_notifier("Write", file_in_session, {"CLAUDE_PROJECT_DIR": self.project_root})
-            import time; time.sleep(0.2)
+            time.sleep(0.2)
 
         self.assertEqual(len(srv.received), 0, "server.pid がない monitor はスキップするべき")
 

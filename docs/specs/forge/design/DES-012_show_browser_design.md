@@ -7,8 +7,8 @@
 | 設計ID | DES-012 |
 | 関連要件 | FNC-001〜FNC-007, NFR-001〜NFR-004（skill_monitor_requirement.md） |
 | 作成日 | 2026-03-15 |
-| 更新日 | 2026-04-14 |
-| バージョン | 2.0 |
+| 更新日 | 2026-04-15 |
+| バージョン | 2.1 |
 
 ## 1. 概要
 
@@ -273,22 +273,30 @@ python3 server.py \
 
 **セキュリティ**: `127.0.0.1` のみでリッスン。ローカル開発専用のため認証不要。
 
+**入力バリデーション**:
+
+- `GET /` のテンプレート名は `os.path.basename(template) == template` で検証し、パス区切り文字を含む値は拒否する（パストラバーサル防御）
+- `POST /notify` の `Content-Length` は上限 `MAX_CONTENT_LENGTH = 65536` バイトで制限し、超過時は `413 Request Entity Too Large` を返す（DoS 防御）
+- `main()` は `json.JSONDecodeError` / `OSError` を個別に捕捉し、`config.json` 破損時にスタックトレースを露出せず終了する
+
 ### 5.4 `/session` レスポンス形式
 
 ```json
 {
   "session_dir": ".claude/.temp/review-abc123",
   "files": {
-    "session.yaml":    {"exists": true,  "content": {"skill": "review", "status": "in_progress"}},
-    "plan.yaml":       {"exists": true,  "content": {"items": [...]}},
-    "review.md":       {"exists": true,  "content": "## AIレビュー結果\n..."},
-    "evaluation.yaml": {"exists": false, "content": null}
+    "session.yaml": {"exists": true, "content": {"skill": "review", "status": "in_progress"}},
+    "plan.yaml":    {"exists": true, "content": {"items": [...]}},
+    "review.md":    {"exists": true, "content": "## AIレビュー結果\n..."}
   },
-  "refs_yaml": {"exists": true, "content": {...}}
+  "refs_yaml": {"exists": true, "content": {...}},
+  "refs": {"exists": true, "files": {"rules.yaml": {...}, "code.yaml": {...}}}
 }
 ```
 
-**参照情報の優先度**: `refs.yaml`（フラット）と `refs/`（ディレクトリ）が両方存在する場合は両方を返す。
+**参照情報の優先度**: `refs.yaml`（フラット）と `refs/`（ディレクトリ）が両方存在する場合は両方を返す。両方を `refs_yaml` / `refs` の別フィールドとして返すことで、テンプレート側が状況に応じて参照できる。
+
+**注**: `evaluation.yaml` は以前の設計で独立していたが、現行実装では `plan.yaml` の各 item に `recommendation` / `reason` フィールドとして統合されているため、`/session` のレスポンスには含まれない（session_format.md 参照）。
 
 ### 5.5 SSE イベント形式
 
@@ -360,8 +368,12 @@ def main():
             config = json.load(f)
 
         # session_dir 配下のファイル更新のみ通知
-        session_dir = os.path.abspath(config.get("session_dir", ""))
-        if not abs_path.startswith(session_dir):
+        session_dir_raw = config.get("session_dir", "")
+        if not session_dir_raw:
+            continue  # 空文字は CWD を指してしまうため弾く
+        session_dir = os.path.abspath(session_dir_raw)
+        # ディレクトリ境界を区切り文字で判定（startswith プレフィックス誤マッチ防止）
+        if abs_path != session_dir and not abs_path.startswith(session_dir + os.sep):
             continue
 
         port = config.get("port", 8765)
