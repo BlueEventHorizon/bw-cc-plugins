@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-14T11:06:32Z
+  generated_at: 2026-04-15T09:24:02Z
   file_count: 38
 
 docs:
@@ -634,40 +634,38 @@ docs:
       - parallel agents
   docs/specs/forge/design/DES-012_show_browser_design.md:
     doc_type: design
-    title: DES-012 show-browser Design Specification
-    purpose: Defines the architecture, module design, use cases, and detailed specifications for the forge:show-browser skill, which displays session progress and review results in a browser with real-time SSE updates
+    title: show-browser Skill Design (DES-012)
+    purpose: Defines the real-time browser monitoring architecture for displaying session progress and review results using PostToolUse hooks and Server-Sent Events (SSE)
     content_details:
-      - PostToolUse hook + SSE server architecture
-      - Four-component responsibility separation (SKILL, show_browser.py, notifier.py, server.py, HTML templates)
-      - Five main use cases including initialization, real-time updates, reconnection, session cleanup, multiple monitors
-      - API endpoints (GET /, GET /session, GET /sse, POST /notify) with JSON/SSE response formats
-      - Lifecycle management including orphaned monitor cleanup, heartbeat monitoring, automatic server shutdown
-      - review_list.html template with severity color-coding, filter tabs, AI recommendation badges
-      - Environmental setup with PostToolUse hook registration in .claude/settings.json
-      - Unit and integration test design covering YAML reading, SSE notifications, session lifecycle
-      - Future template extension design (activity_log, doc_list)
+      - PostToolUse hook + SSE push notification architecture
+      - Multiple monitor support with template switching
+      - SSE server implementation using Python http.server
+      - Session directory monitoring and automatic cleanup
+      - Browser reconnection and session lifecycle management
+      - HTML template system for review_list and future templates
+      - "API endpoints: GET / (HTML), GET /session (JSON), GET /sse (SSE), POST /notify"
+      - Error handling and input validation (path traversal, DoS protection)
+      - Session YAML to JSON transformation and real-time updates
+      - Orphaned monitor directory cleanup on server startup
     applicable_tasks:
       - show-browser skill implementation
-      - Real-time display feature development
-      - Monitor directory and process lifecycle management
-      - SSE server implementation
-      - HTML template creation for different display formats
-      - PostToolUse hook integration
-      - Server error handling and recovery
-      - Session file monitoring and update propagation
+      - Session monitoring and real-time UI updates
+      - Server-Sent Events integration
+      - PostToolUse hook configuration
+      - HTML template development for review display
+      - Error handling and server lifecycle management
+      - Browser session reconnection handling
+      - Multiple concurrent monitor support
     keywords:
       - show-browser
       - SSE
       - PostToolUse
-      - real-time
-      - session
-      - monitor
-      - template
       - server.py
       - notifier.py
-      - SkillMonitorServer
+      - monitor directory
       - EventSource
-      - localhost
+      - template switching
+      - session lifecycle
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     doc_type: design
     title: DES-013 Context Gathering Task Specification

@@ -1,6 +1,6 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-04-14T11:03:51Z
+generated_at: 2026-04-15T09:23:34Z
 file_count: 38
 checksums:
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
@@ -25,7 +25,7 @@ checksums:
   docs/specs/doc-advisor/requirements/technical_research_report.md: 9b6fdada319b5c196493abc0cf25a7a1744a0919fbd3d7f9a3156092c54a84e2
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: f40432615f06899a10b73cbe4b3514837d6981d56a43b4dc96b7c103077cf364
   docs/specs/forge/design/DES-011_session_management_design.md: b18fe2ccf9ef0c77fa72e99f98e9d71d4dc6c9594458f4f3497d312b6bf1ad3b
-  docs/specs/forge/design/DES-012_show_browser_design.md: 99392937a794d6491c12ad24f3fa37467fc8b89ef4ad6cd304017227ff7116c2
+  docs/specs/forge/design/DES-012_show_browser_design.md: 09489632afd751da75b373541effbd91617226f3268c41356529461e236568dc
   docs/specs/forge/design/DES-013_context_gathering_design.md: 4fdc6caa9ac2edfa82a2f0a8fa092f5e2e27d7b34c0cf16f0aceed5f879a45a4
   docs/specs/forge/design/DES-014_orchestrator_session_protocol_design.md: fc38c16864801476f92f6fb6029c4a799fb8658cd1ad4d363fdfb19da3dbb2b0
   docs/specs/forge/design/DES-015_review_workflow_design.md: 2d031f1b5d8c45eb5c364c3e8e023ab10c37789e5bb13ac1411ace341f0edb17

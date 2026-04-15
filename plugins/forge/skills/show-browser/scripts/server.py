@@ -15,9 +15,9 @@ monitor ディレクトリ（config.json）を読み込み、
 import argparse
 import json
 import os
+import shutil
 import sys
 import threading
-import webbrowser
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -186,6 +186,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         """GET / — templates/{template}.html を返す。ファイルが存在しない場合は 404。"""
         server = self.server
         template = server.template
+
+        # パストラバーサル防御: テンプレート名にパス区切り文字を含まないことを検証
+        if os.path.basename(template) != template or ".." in template:
+            self._send_error(400, "Invalid template name")
+            return
+
         templates_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..",
@@ -235,6 +241,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if self.wfile in server.sse_clients:
                     server.sse_clients.remove(self.wfile)
 
+    # /notify ペイロードの最大サイズ（64KB）
+    MAX_CONTENT_LENGTH = 65536
+
     def _handle_notify(self):
         """POST /notify — notifier.py からの更新通知を受信する。
 
@@ -244,6 +253,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         server = self.server
 
         content_length = int(self.headers.get("Content-Length", 0))
+        if content_length > self.MAX_CONTENT_LENGTH:
+            self._send_json({"error": "payload_too_large"}, status=413)
+            return
         body = self.rfile.read(content_length)
         try:
             payload = json.loads(body) if body else {}
@@ -319,6 +331,10 @@ class _ThreadingHTTPServer(HTTPServer):
             self.shutdown_request(request)
 
 
+# ハートビート間隔のデフォルト値（秒）— 設計書 DES-012 §5.9
+DEFAULT_HEARTBEAT_INTERVAL = 30.0
+
+
 class SkillMonitorServer(_ThreadingHTTPServer):
     """セッション進捗のリアルタイム表示 SSE サーバー。
 
@@ -333,7 +349,7 @@ class SkillMonitorServer(_ThreadingHTTPServer):
         heartbeat_interval: ハートビート間隔（秒）
     """
 
-    def __init__(self, monitor_dir, port, heartbeat_interval=30.0):
+    def __init__(self, monitor_dir, port, heartbeat_interval=DEFAULT_HEARTBEAT_INTERVAL):
         # config.json を読み込む
         config_path = os.path.join(monitor_dir, "config.json")
         with open(config_path, encoding="utf-8") as f:
@@ -348,6 +364,7 @@ class SkillMonitorServer(_ThreadingHTTPServer):
         self.sse_clients = []
         self.sse_lock = threading.Lock()
         self.shutdown_event = threading.Event()
+        self._session_end_sent = False
         self._heartbeat_thread = None
 
         # localhost のみバインド（設計書 5.3 セキュリティ）
@@ -389,7 +406,6 @@ class SkillMonitorServer(_ThreadingHTTPServer):
 
         設計書 5.9: 正常停止時は server.py が自身で削除する。
         """
-        import shutil
         try:
             if os.path.isdir(self.monitor_dir):
                 shutil.rmtree(self.monitor_dir)
@@ -421,7 +437,12 @@ class SkillMonitorServer(_ThreadingHTTPServer):
         """session_end イベントを送信し、サーバー停止をスケジュールする。
 
         RequestHandler._handle_notify() と _heartbeat_loop() から呼ばれる。
+        二重呼び出しをガードフラグでスレッドセーフに防止する。
         """
+        with self.sse_lock:
+            if self._session_end_sent:
+                return
+            self._session_end_sent = True
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         self.broadcast_sse("session_end", {"type": "session_end", "timestamp": timestamp})
         self.schedule_shutdown()
@@ -481,6 +502,15 @@ def main():
 
     try:
         server = SkillMonitorServer(monitor_dir, port=args.port)
+    except json.JSONDecodeError as e:
+        # config.json の JSON パースエラー
+        error = {
+            "error": "config_invalid_json",
+            "config_path": config_path,
+            "message": str(e),
+        }
+        print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
+        sys.exit(1)
     except OSError as e:
         # ポートバインド失敗（設計書 5.2）
         error = {
