@@ -461,15 +461,19 @@ perspectives の数だけ Agent ツール（general-purpose）で並列起動す
 
 ##### Step 1.5: evaluator 結果の一括マージ [MANDATORY]
 
-全 evaluator 完了後、orchestrator が `eval_*.json` を収集し plan.yaml を1回だけ更新する:
+全 evaluator 完了後、orchestrator が `merge_evals.py` を1回だけ呼び出して plan.yaml を更新する:
 
-1. `{session_dir}/eval_*.json` を glob で収集する
-2. 全ファイルの `updates` 配列を結合する
-3. `update_plan.py --batch` を1回だけ呼び出す:
-   ```bash
-   echo '<combined_updates>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --batch
-   ```
-4. `should_continue` を判定する: `recommendation: fix` が1件以上 → `true`
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
+```
+
+このスクリプトは `eval_*.json` を収集し、**perspective ごとのローカル ID を plan.yaml のグローバル ID に変換**した上で一括更新を行う。戻り値 JSON から以下を取得する:
+
+- `should_continue`: `recommendation: fix` が1件以上なら `true`
+- `fix_count` / `skip_count` / `needs_review_count`: 統計
+- `not_auto_fixable`: `auto_fixable=false` かつ `recommendation=fix` のグローバル ID リスト
+
+> **`update_plan.py --batch` を直接呼ばないこと**: `eval_*.json` の `id` は perspective ローカル連番であり、そのまま global ID として扱うと必ず ID 衝突が発生する（2026-04-15 インシデント）。必ず `merge_evals.py` を経由する。`update_plan.py --batch` 側にも重複 ID 検出ガードが入っており、誤用すると即エラーになる。
 
 evaluator 完了後、以下を出力する:
 
@@ -509,7 +513,13 @@ perspectives の数だけ Agent ツール（general-purpose）で並列起動す
 
 各 evaluator は自分の担当 `review_{perspective}.md` を読み、指摘を個別吟味して `{session_dir}/eval_{perspective_name}.json` に結果を Write する。
 
-全 evaluator 完了後、orchestrator が `eval_*.json` を収集し `update_plan.py --batch` を1回だけ呼び出して plan.yaml を更新する（Step 1.5 と同じ手順）。
+全 evaluator 完了後、orchestrator が `merge_evals.py` を1回だけ呼び出して plan.yaml を更新する（対話モードの Step 1.5 と同じ手順）:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
+```
+
+`update_plan.py --batch` を直接呼ぶと local ID → global ID 変換が行われず ID 衝突が発生するため、必ず `merge_evals.py` を経由する。
 
 evaluator が返すもの:
 
