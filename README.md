@@ -45,57 +45,100 @@ flowchart LR
 
 ### forge
 
-> [Detailed Guide](docs/readme/README_forge.md) — Usage, examples, review types, severity levels, review criteria
+> For Feature management and document structure details, see the [Document Structure Guide](docs/readme/guide_doc_structure.md).
+
+#### Pipeline
+
+```mermaid
+flowchart LR
+    REQ["start-requirements<br/>(what to build)"]
+    UXUI["start-uxui-design<br/>(how it looks)"]
+    DES["start-design<br/>(how to build)"]
+    PLAN["start-plan<br/>(when)"]
+    IMPL["start-implement<br/>(build)"]
+
+    REQ --> UXUI -.->|optional| DES --> PLAN --> IMPL
+
+    REV["review<br/>(available at every stage)"]
+    REQ & DES & PLAN & IMPL -.->|anytime| REV
+```
+
+| Stage | Skill | Input | Output |
+|-------|-------|-------|--------|
+| Requirements | start-requirements | Dialog / source code / Figma | Requirements docs (Markdown) |
+| UXUI Design | start-uxui-design | ASCII art from requirements | Design tokens + UI specs |
+| Design | start-design | Requirements docs | Design docs (Markdown) |
+| Plan | start-plan | Design docs | Plan (YAML) |
+| Implementation | start-implement | Plan | Code + progress updates |
+| Review | review | Code / documents | Findings + fixes |
+
+#### Getting Started
+
+```bash
+# 1. Project setup (first time only)
+/forge:setup-doc-structure
+
+# 2. Requirements through implementation
+/forge:start-requirements my-feature --mode interactive --new
+/forge:start-design my-feature
+/forge:start-plan my-feature
+/forge:start-implement my-feature
+
+# 3. Review (anytime)
+/forge:review code src/ --auto
+```
+
+#### Skills
 
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**review**](docs/readme/README_forge.md#review) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`. 5 types | `"レビュー"` `"review"` |
-| [**setup-doc-structure**](docs/readme/README_forge.md#setup-doc-structure) | Generate `.doc_structure.yaml` + scaffold missing doc directories | `"forge の初期設定"` |
-| [**start-requirements**](docs/readme/README_forge.md#start-requirements) | Create requirements docs via dialog, reverse-engineering, or Figma | `/forge:start-requirements` |
-| [**start-design**](docs/readme/README_forge.md#start-design) | Create design documents from requirements | `"設計書作成"` |
-| [**start-plan**](docs/readme/README_forge.md#start-plan) | Create or update implementation plan from design documents | `"計画書作成"` |
-| [**start-implement**](docs/readme/README_forge.md#start-implement) | Select tasks from a plan, implement, review, and update | `"実装開始"` |
-| [**start-uxui-design**](docs/readme/README_forge.md#start-uxui-design) | Create design tokens & component specs from requirements with UX evaluation (iOS/macOS) | `"UXUIデザイン"` |
-| [**setup-version-config**](docs/readme/README_forge.md#setup-version-config) | Scan project and generate `.version-config.yaml` | `"version config を作成"` |
-| [**update-version**](docs/readme/README_forge.md#update-version) | Bump version across files. patch/minor/major/direct | `"バージョン更新"` |
-| [**clean-rules**](docs/readme/README_forge.md#clean-rules) | Analyze and reorganize project rules/ | `"rules を整理"` |
-| [**help**](docs/readme/README_forge.md#help) | Interactive help wizard | `"forge help"` |
-| [**show-browser**](docs/readme/README_forge.md#show-browser) | Display session progress and review findings in browser via real-time SSE | `"ブラウザで表示"` `"show browser"` |
-| *reviewer* | Execute review for a single perspective. AI-only, called by review orchestrator | — |
-| *evaluator* | Scrutinize review findings and determine fix/skip/confirm. AI-only | — |
-| *fixer* | Fix issues based on review findings. AI-only | — |
-| *present-findings* | Present review findings interactively, one item at a time. AI-only | — |
-| *doc-structure* | Parse and resolve paths from `.doc_structure.yaml`. AI-only utility | — |
-| *next-spec-id* | Scan all branches for spec IDs and return the next available number. AI-only utility | — |
+| [**review**](docs/readme/forge/guide_review.md) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N` | `"review"` |
+| [**show-browser**](docs/readme/forge/guide_review.md#show-browser) | Display review/implementation progress in browser in real time | `"show browser"` |
+| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements) | Create requirements via dialog, reverse-engineering, or Figma | `"requirements"` |
+| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design) | Create design docs from requirements. Prioritizes asset reuse | `"start design"` |
+| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan) | Extract tasks from design docs into a YAML plan | `"start plan"` |
+| [**start-implement**](docs/readme/forge/guide_implement.md) | Select tasks from plan, implement, review, and update | `"start implement"` |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md) | Create design tokens & UI specs with UX evaluation | `"UXUI design"` |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories | `"setup"` |
+| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config) | Generate/update `.version-config.yaml` | `"version config"` |
+| [**update-version**](docs/readme/forge/guide_setup.md#update-version) | Bump version across files. patch/minor/major/direct | `"version bump"` |
+| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules) | Analyze and reorganize rules/ based on taxonomy | `"clean rules"` |
+| [**help**](docs/readme/forge/guide_setup.md#help) | Interactive help wizard | `"help"` |
+| [*reviewer*](docs/readme/forge/guide_review.md#execution-flow) | Execute review for a single perspective | ※ Called by review |
+| [*evaluator*](docs/readme/forge/guide_review.md#execution-flow) | Scrutinize review findings and determine fix/skip/confirm | ※ Called by review |
+| [*fixer*](docs/readme/forge/guide_review.md#execution-flow) | Fix issues based on review findings | ※ Called by review |
+| [*present-findings*](docs/readme/forge/guide_review.md#execution-flow) | Present review findings interactively, one item at a time | ※ Called by review |
+| [*doc-structure*](docs/readme/guide_doc_structure.md) | Parse and resolve paths from `.doc_structure.yaml` | ※ Called by orchestrators |
+| [*next-spec-id*](docs/readme/forge/guide_create_docs.md) | Scan all branches for spec IDs and return the next available number | ※ Called by start-requirements |
 
 ### anvil
 
-> [Detailed Guide](docs/readme/README_anvil.md) — Usage and examples
+> [Detailed Guide](docs/readme/guide_anvil.md) — Usage and examples
 
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**commit**](docs/readme/README_anvil.md#commit) | Generate commit message from changes, commit & push | `"コミットして"` `"commit して"` |
-| [**create-pr**](docs/readme/README_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body | `"PR を作成"` `"create-pr"` |
+| [**commit**](docs/readme/guide_anvil.md#commit) | Generate commit message from changes, commit & push | `"commit"` |
+| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body | `"create-pr"` |
 
 ### xcode
 
-> [Detailed Guide](docs/readme/README_xcode.md) — Usage and examples
+> [Detailed Guide](docs/readme/guide_xcode.md) — Usage and examples
 
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**build**](docs/readme/README_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"ビルド"` `"build"` |
-| [**test**](docs/readme/README_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"テスト"` `"test"` |
+| [**build**](docs/readme/guide_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"build"` |
+| [**test**](docs/readme/guide_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"test"` |
 
 ### doc-advisor
 
-> [Detailed Guide](docs/readme/README_doc-advisor.md) — Usage and examples
+> [Detailed Guide](docs/readme/guide_doc-advisor.md) — Usage and examples
 
 | Skill | Description | Trigger |
 |-------|-------------|---------|
-| [**query-rules**](docs/readme/README_doc-advisor.md#query-rules) | Search rules with ToC (keyword), Index (semantic), or hybrid mode | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](docs/readme/README_doc-advisor.md#query-specs) | Search specs with ToC (keyword), Index (semantic), or hybrid mode | `"What specs apply?"` `"仕様確認"` |
-| [**create-rules-toc**](docs/readme/README_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"Rebuild the rules ToC"` |
-| [**create-specs-toc**](docs/readme/README_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"Rebuild the specs ToC"` |
+| [**query-rules**](docs/readme/guide_doc-advisor.md#query-rules) | Search rules with ToC (keyword), Index (semantic), or hybrid mode | `"query rules"` |
+| [**query-specs**](docs/readme/guide_doc-advisor.md#query-specs) | Search specs with ToC (keyword), Index (semantic), or hybrid mode | `"query specs"` |
+| [**create-rules-toc**](docs/readme/guide_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"rebuild rules ToC"` |
+| [**create-specs-toc**](docs/readme/guide_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"rebuild specs ToC"` |
 
 > **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
 
@@ -140,8 +183,8 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## Document Structure (.doc_structure.yaml)
 
-`/forge:setup-doc-structure` scans your project and generates `.doc_structure.yaml`, which forge uses to locate reference documents during review and fix operations.
-→ [Schema reference](docs/specs/forge/design/doc_structure_format.md)
+`.doc_structure.yaml` declares where documents live and what types they are. Both forge and doc-advisor reference this file. Generate it with `/forge:setup-doc-structure`.
+→ [Document Structure Guide](docs/readme/guide_doc_structure.md) | [Schema reference](plugins/forge/docs/doc_structure_format.md)
 
 ## Git Information Cache (.git_information.yaml)
 
