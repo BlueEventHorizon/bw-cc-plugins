@@ -45,56 +45,100 @@ flowchart LR
 
 ### forge
 
-> [詳細ガイド](docs/readme/README_forge_ja.md) — 使い方、使用例、レビュー種別、重大度レベル、レビュー観点
+> Feature と文書構造管理の詳細は [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) を参照。
+
+#### パイプライン
+
+```mermaid
+flowchart LR
+    REQ["start-requirements<br/>(何を作るか)"]
+    UXUI["start-uxui-design<br/>(どう見せるか)"]
+    DES["start-design<br/>(どう作るか)"]
+    PLAN["start-plan<br/>(いつ作るか)"]
+    IMPL["start-implement<br/>(作る)"]
+
+    REQ --> UXUI -.->|optional| DES --> PLAN --> IMPL
+
+    REV["review<br/>(全ステージで利用可)"]
+    REQ & DES & PLAN & IMPL -.->|随時| REV
+```
+
+| 段階 | スキル | 入力 | 出力 |
+|------|--------|------|------|
+| 要件定義 | start-requirements | 対話 / ソースコード / Figma | 要件定義書（Markdown） |
+| UXUI デザイン | start-uxui-design | 要件定義書の ASCII アート | デザイントークン + UI 仕様 |
+| 設計 | start-design | 要件定義書 | 設計書（Markdown） |
+| 計画 | start-plan | 設計書 | 計画書（YAML） |
+| 実装 | start-implement | 計画書 | コード + 進捗更新 |
+| レビュー | review | コード / 文書 | 指摘 + 修正 |
+
+#### はじめかた
+
+```bash
+# 1. プロジェクト設定（初回のみ）
+/forge:setup-doc-structure
+
+# 2. 要件定義から実装まで
+/forge:start-requirements my-feature --mode interactive --new
+/forge:start-design my-feature
+/forge:start-plan my-feature
+/forge:start-implement my-feature
+
+# 3. レビュー（随時）
+/forge:review code src/ --auto
+```
+
+#### スキル一覧
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**review**](docs/readme/README_forge_ja.md#review) | コード・文書を🔴🟡🟢重大度付きでレビュー。`--auto N` で自動修正。5種別対応 | `"レビュー"` `"review"` |
-| [**setup-doc-structure**](docs/readme/README_forge_ja.md#setup-doc-structure) | `.doc_structure.yaml` 生成 + 不足ディレクトリの scaffold 作成 | `"forge の初期設定"` |
-| [**start-requirements**](docs/readme/README_forge_ja.md#start-requirements) | 対話・ソース解析・Figma の3モードで要件定義書を作成 | `/forge:start-requirements` |
-| [**start-design**](docs/readme/README_forge_ja.md#start-design) | 要件定義書から設計書を作成 | `"設計書作成"` |
-| [**start-plan**](docs/readme/README_forge_ja.md#start-plan) | 設計書からタスクを抽出し計画書を作成・更新 | `"計画書作成"` |
-| [**start-implement**](docs/readme/README_forge_ja.md#start-implement) | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行 | `"実装開始"` |
-| [**start-uxui-design**](docs/readme/README_forge_ja.md#start-uxui-design) | 要件定義書からデザイントークン・コンポーネント視覚仕様を UX 評価付きで創造（iOS/macOS） | `"UXUIデザイン"` |
-| [**setup-version-config**](docs/readme/README_forge_ja.md#setup-version-config) | プロジェクトをスキャンし `.version-config.yaml` を生成・更新 | `"version config を作成"` |
-| [**update-version**](docs/readme/README_forge_ja.md#update-version) | バージョンを一括更新。patch/minor/major/直接指定対応 | `"バージョン更新"` |
-| [**clean-rules**](docs/readme/README_forge_ja.md#clean-rules) | rules/ を開発文書の分類学に基づいて分析・再構築 | `"rules を整理"` |
-| [**help**](docs/readme/README_forge_ja.md#help) | インタラクティブヘルプ | `"forge help"` |
-| *reviewer* | 1 perspective のレビューを実行。AI 専用、review オーケストレーターから呼出 | — |
-| *evaluator* | レビュー指摘を吟味し修正/スキップ/要確認を判定。AI 専用 | — |
-| *fixer* | レビュー指摘に基づきコード・文書を修正。AI 専用 | — |
-| *present-findings* | レビュー結果を対話的に1件ずつ提示。AI 専用 | — |
-| *doc-structure* | `.doc_structure.yaml` のパース・パス解決ユーティリティ。AI 専用 | — |
-| *next-spec-id* | 全ブランチをスキャンして仕様書 ID の次の連番を取得。AI 専用 | — |
+| [**review**](docs/readme/forge/guide_review_ja.md) | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正 | `"レビューして"` |
+| [**show-browser**](docs/readme/forge/guide_review_ja.md#show-browser) | レビュー・実装の進捗をブラウザでリアルタイム表示 | `"ブラウザで表示"` |
+| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements) | 対話・ソース解析・Figma の 3 モードで要件定義書を作成 | `"要件定義"` |
+| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design) | 要件定義書から設計書を作成。既存資産の再利用を重視 | `"設計書作成"` |
+| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan) | 設計書からタスクを抽出し YAML 計画書を作成 | `"計画書作成"` |
+| [**start-implement**](docs/readme/forge/guide_implement_ja.md) | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行 | `"実装開始"` |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md) | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造 | `"UXUIデザイン"` |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold | `"初期設定"` |
+| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config) | `.version-config.yaml` 生成・更新 | `"バージョン設定"` |
+| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version) | バージョン一括更新。patch/minor/major/直接指定 | `"バージョン更新"` |
+| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules) | rules/ を分類学に基づいて分析・再構築 | `"rules を整理"` |
+| [**help**](docs/readme/forge/guide_setup_ja.md#help) | インタラクティブヘルプ | `"ヘルプ"` |
+| [*reviewer*](docs/readme/forge/guide_review_ja.md#実行フロー) | 1 perspective のレビューを実行 | ※ review が委譲 |
+| [*evaluator*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘を吟味し修正/スキップ/要確認を判定 | ※ review が委譲 |
+| [*fixer*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘に基づきコード・文書を修正 | ※ review が委譲 |
+| [*present-findings*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー結果を対話的に1件ずつ提示 | ※ review が委譲 |
+| [*doc-structure*](docs/readme/guide_doc_structure_ja.md) | `.doc_structure.yaml` のパース・パス解決 | ※ 各オーケストレーターが呼び出し |
+| [*next-spec-id*](docs/readme/forge/guide_create_docs_ja.md) | 全ブランチをスキャンして仕様書 ID の次番を取得 | ※ start-requirements が呼び出し |
 
 ### anvil
 
-> [詳細ガイド](docs/readme/README_anvil_ja.md) — 使い方、使用例
+> [詳細ガイド](docs/readme/guide_anvil_ja.md) — 使い方、使用例
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**commit**](docs/readme/README_anvil_ja.md#commit) | 変更内容からコミットメッセージを自動生成し commit & push | `"コミットして"` `"commit して"` |
-| [**create-pr**](docs/readme/README_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成 | `"PR を作成"` `"create-pr"` |
+| [**commit**](docs/readme/guide_anvil_ja.md#commit) | 変更内容からコミットメッセージを自動生成し commit & push | `"コミットして"` |
+| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成 | `"PR を作成"` |
 
 ### xcode
 
-> [詳細ガイド](docs/readme/README_xcode_ja.md) — 使い方、使用例
+> [詳細ガイド](docs/readme/guide_xcode_ja.md) — 使い方、使用例
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**build**](docs/readme/README_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` `"build"` |
-| [**test**](docs/readme/README_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` `"test"` |
+| [**build**](docs/readme/guide_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` |
+| [**test**](docs/readme/guide_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` |
 
 ### doc-advisor
 
-> [詳細ガイド](docs/readme/README_doc-advisor_ja.md) — 使い方、使用例
+> [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
 
 | スキル | 説明 | トリガー |
 |--------|------|----------|
-| [**query-rules**](docs/readme/README_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"What rules apply?"` `"ルール確認"` |
-| [**query-specs**](docs/readme/README_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"What specs apply?"` `"仕様確認"` |
-| [**create-rules-toc**](docs/readme/README_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"Rebuild the rules ToC"` |
-| [**create-specs-toc**](docs/readme/README_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"Rebuild the specs ToC"` |
+| [**query-rules**](docs/readme/guide_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"ルール確認"` |
+| [**query-specs**](docs/readme/guide_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"仕様確認"` |
+| [**create-rules-toc**](docs/readme/guide_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"rules ToC 更新"` |
+| [**create-specs-toc**](docs/readme/guide_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"specs ToC 更新"` |
 
 > **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 
@@ -139,8 +183,8 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## 文書構造管理 (.doc_structure.yaml)
 
-`/forge:setup-doc-structure` でプロジェクトをスキャンして `.doc_structure.yaml` を生成します。forge はこのファイルを参照してレビュー・修正時の関連文書を収集します。
-→ [スキーマ仕様](docs/specs/forge/design/doc_structure_format.md)
+`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge と doc-advisor の両方が参照する。`/forge:setup-doc-structure` で生成する。
+→ [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) | [スキーマ仕様](plugins/forge/docs/doc_structure_format.md)
 
 ## Git 情報キャッシュ (.git_information.yaml)
 
