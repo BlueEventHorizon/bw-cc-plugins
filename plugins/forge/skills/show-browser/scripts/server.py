@@ -382,9 +382,10 @@ class SkillMonitorServer(_ThreadingHTTPServer):
         self.serve_forever()
 
     def stop(self):
-        """サーバーを停止する。"""
+        """サーバーを停止する。monitor_dir も削除する。"""
         self.shutdown_event.set()
         self.shutdown()
+        self._cleanup_monitor_dir()
 
     def schedule_shutdown(self):
         """別スレッドからサーバー停止をスケジュールする。
@@ -398,7 +399,8 @@ class SkillMonitorServer(_ThreadingHTTPServer):
             self.shutdown()
             self._cleanup_monitor_dir()
 
-        t = threading.Thread(target=_do_shutdown, daemon=True)
+        # daemon=False: メインスレッド終了前に cleanup 完了を保証する
+        t = threading.Thread(target=_do_shutdown, daemon=False)
         t.start()
 
     def _cleanup_monitor_dir(self):
