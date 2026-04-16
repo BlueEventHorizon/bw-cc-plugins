@@ -390,5 +390,91 @@ class TestRequestHandlerUnknownPath(unittest.TestCase):
             conn.close()
 
 
+# ===========================================================================
+# monitor_dir クリーンアップのテスト
+# ===========================================================================
+
+class TestMonitorDirCleanup(unittest.TestCase):
+    """stop() / schedule_shutdown() による monitor_dir 削除のテスト。"""
+
+    def setUp(self):
+        self.session_dir = tempfile.mkdtemp(dir=_BASE_TMPDIR)
+        _write_file(self.session_dir, "session.yaml", "skill: review\nstatus: in_progress\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.session_dir, ignore_errors=True)
+
+    def test_stop_cleans_up_monitor_dir(self):
+        """stop() が monitor_dir を削除する。"""
+        port = _find_free_port()
+        tmpdir = tempfile.mkdtemp(dir=_BASE_TMPDIR)
+        monitor_dir = _make_monitor_dir(tmpdir, self.session_dir, port=port)
+        try:
+            server = SkillMonitorServer(monitor_dir, port=port)
+            t = threading.Thread(target=server.start, daemon=True)
+            t.start()
+            # サーバー起動待機
+            time.sleep(0.3)
+
+            server.stop()
+            t.join(timeout=3.0)
+
+            self.assertFalse(
+                os.path.isdir(monitor_dir),
+                f"stop() 後に monitor_dir が残存: {monitor_dir}",
+            )
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_schedule_shutdown_cleans_up_monitor_dir(self):
+        """schedule_shutdown() が monitor_dir を削除する（non-daemon スレッド）。"""
+        port = _find_free_port()
+        tmpdir = tempfile.mkdtemp(dir=_BASE_TMPDIR)
+        monitor_dir = _make_monitor_dir(tmpdir, self.session_dir, port=port)
+        try:
+            server = SkillMonitorServer(monitor_dir, port=port)
+            t = threading.Thread(target=server.start, daemon=True)
+            t.start()
+            # サーバー起動待機
+            time.sleep(0.3)
+
+            server.schedule_shutdown()
+            t.join(timeout=3.0)
+
+            # schedule_shutdown の non-daemon スレッドが完了するのを待つ
+            time.sleep(0.5)
+
+            self.assertFalse(
+                os.path.isdir(monitor_dir),
+                f"schedule_shutdown() 後に monitor_dir が残存: {monitor_dir}",
+            )
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_heartbeat_detects_session_dir_removal(self):
+        """session_dir 削除後にハートビートが monitor_dir を削除する。"""
+        port = _find_free_port()
+        tmpdir = tempfile.mkdtemp(dir=_BASE_TMPDIR)
+        monitor_dir = _make_monitor_dir(tmpdir, self.session_dir, port=port)
+        try:
+            server = SkillMonitorServer(
+                monitor_dir, port=port, heartbeat_interval=0.3,
+            )
+            t = threading.Thread(target=server.start, daemon=True)
+            t.start()
+            time.sleep(0.3)
+
+            # session_dir を削除してハートビート検知を待つ
+            shutil.rmtree(self.session_dir)
+            time.sleep(1.0)
+
+            self.assertFalse(
+                os.path.isdir(monitor_dir),
+                f"ハートビート検知後に monitor_dir が残存: {monitor_dir}",
+            )
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 if __name__ == "__main__":
     unittest.main()

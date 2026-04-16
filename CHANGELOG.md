@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.10] - 2026-04-16
+
+### marketplace
+
+- **feat**: forge を 0.0.34 に更新。README ドキュメント体系の再構築
+
+## [0.0.34] - 2026-04-16
+
+### forge
+
+- **docs**: README ドキュメント体系を再構築。全スキルの詳細ガイドファイルを作成し、ルート README からの2層ナビゲーションに整理
+- **docs**: スキルテーブルに Trigger 列を追加。ユーザートリガーは代表フレーズ1個、AI 専用は呼び出し元を「※」付きで表示。全4プラグインで統一
+- **docs**: ガイドファイルの命名を `README_*` から `guide_*` に統一。ルート README のみ README を維持
+- **docs**: AI 専用スキル（reviewer, evaluator, fixer 等）に関連ガイドへのリンクを追加
+- **docs**: Document Structure Guide を独立ファイルとして新設。Feature 概念・スキーマ概要・設定パターンを記載
+- **fix**: show-browser サーバーの monitor_dir クリーンアップ競合を修正
+
 ## [marketplace 0.1.9] - 2026-04-15
 
 ### marketplace
