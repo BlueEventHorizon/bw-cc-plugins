@@ -279,7 +279,7 @@
   <button class="tab" data-filter="skipped">❌ Skipped</button>
 </div>
 
-<div id="session-end-banner">セッションが終了しました</div>
+<div id="session-end-banner">セッションが終了しました。このタブは閉じて構いません</div>
 <div id="card-list"></div>
 <div id="empty-msg">指摘事項はまだありません</div>
 
@@ -458,9 +458,18 @@
       fetchAndRender();
     });
 
-    es.addEventListener('session_end', () => {
+    es.addEventListener('session_end', (ev) => {
       dot.classList.add('ended');
-      document.getElementById('session-end-banner').style.display = 'block';
+      const banner = document.getElementById('session-end-banner');
+      try {
+        const payload = JSON.parse(ev.data);
+        if (payload && typeof payload.message === 'string') {
+          banner.textContent = payload.message;
+        }
+      } catch (_) {
+        // パース失敗時はフォールバック文言のまま表示
+      }
+      banner.style.display = 'block';
       es.close();
     });
 
