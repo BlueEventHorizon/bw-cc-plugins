@@ -1,6 +1,6 @@
 # UXUI Design Guide
 
-Generate design tokens and UI component visual specs with UX evaluation from ASCII art screen layouts in requirements documents. Built for designer-absent development, producing theoretically grounded design systems based on Apple HIG, Don Norman, Dieter Rams, Nielsen heuristics, and Gestalt principles.
+Generate design tokens and UI component visual specs with UX evaluation from ASCII art screen layouts in requirements documents. Positioned as the **non-Figma complement to `/forge:start-requirements`**: used when you need to design UI from scratch without a Figma file or existing implementation. Design direction is acquired in Phase 2.0 (Design Intent) by reading the requirements document, inspecting existing code, or AI inference with user confirmation — no project-level mode config is involved.
 
 ## start-uxui-design
 
@@ -52,16 +52,33 @@ The foundation for all design decisions. Applied bottom-up; upper layers cannot 
 
 ---
 
-## 6-Phase Workflow
+## Workflow
 
 | Phase | What | Knowledge Base |
 |-------|------|---------------|
 | 1 | Requirements intake (ASCII art analysis) | — |
-| 2 | Design direction (philosophical stance selection) | design_philosophy.md |
-| 3 | Design token creation (color, typography, spacing) | apple_design_principles.md, platform guide |
+| 2.0 | **Design Intent acquisition** (requirements body → existing code → AI inference + AskUserQuestion) | design_philosophy.md |
+| 2 | Design direction (tension, reference culture, divergence — conditional on Design Intent) | design_philosophy.md |
+| 3 | Design token creation (color, typography, spacing, signature rules) | apple_design_principles.md, platform guide |
 | 4 | Component visual design (ASCII → HIG-compliant components) | Platform guide, templates |
-| 5 | UX self-evaluation (3-layer framework self-check) | design_philosophy.md |
+| 5 | UX self-evaluation (3-layer framework + distinctiveness / memorability, conditional) | design_philosophy.md |
 | 6 | Document generation & quality check (`/forge:review uxui --auto`) | review_criteria_uxui.md |
+
+### Design Intent-driven branching
+
+Phase 2.0 acquires a structured Design Intent (user experience, tension axis, distinctiveness importance, references, anti-goals, signature requirement). The values determine which Phases activate:
+
+| Design Intent | Branch |
+|---------------|--------|
+| `distinctiveness.importance: low` & `signature_required: none` | Skip Phase 2.2-2.5, 3.5, 4.5, 5.4 |
+| `distinctiveness.importance: medium` | Run Phase 2.2 and 2.5, simplified 2.3-2.4 |
+| `distinctiveness.importance: high` or `signature_required: required` | Run all phases fully |
+
+No mode abstraction (stable/bold) is introduced. Branching follows naturally from Design Intent content.
+
+### Reference images (optional)
+
+Competitor screenshots and mood-board images can be placed under `{specs_root}/{feature}/requirements/uxui_references/{competitors,inspirations}/`. If present, Phase 5.4 review adds image-based similarity and integrity checks. `.gitignore` excludes competitor/inspiration images by default (copyright safety).
 
 ### Output
 
@@ -74,13 +91,16 @@ The foundation for all design decisions. Applied bottom-up; upper layers cannot 
 
 ## UX Review
 
-Standalone review via `/forge:review uxui` is also available. Verifies against 3 perspectives:
+Standalone review via `/forge:review uxui` is also available. Verifies against 4 perspectives in this priority order (higher overrides lower when they conflict):
 
-| Perspective | Focus |
-|-------------|-------|
-| **hig_compliance** | Apple HIG 4 principles compliance |
-| **usability** | Nielsen heuristics, accessibility |
-| **visual_system** | Token consistency, Gestalt principles |
+| # | Perspective | Focus | Application |
+|---|-------------|-------|-------------|
+| 1 | **hig_compliance** | Apple HIG 4 principles compliance | Always |
+| 2 | **usability** | Nielsen heuristics, accessibility | Always |
+| 3 | **visual_system** | Token consistency, Gestalt principles | Always |
+| 4 | **distinctiveness** | Differentiation, memorability, signature elements, anti-goal adherence | Conditional on Design Intent (auto-demoted to 🟢 when not specified or when importance is low) |
+
+When `/forge:review uxui` runs without prior start-uxui-design output, Design Intent is inferred from the target document and shown as a prefix before findings. Distinctiveness criteria are AI-verifiable (no "5-second look" / "compare 5 competitors" style checks).
 
 ```bash
 # Review design tokens and component specs
