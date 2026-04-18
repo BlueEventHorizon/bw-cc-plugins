@@ -28,12 +28,14 @@ if ! command -v codex &> /dev/null; then
 fi
 
 # Codex 実行（-o で最終メッセージのみファイルに書き出し）
+# stdin を /dev/null に閉じる: PROMPT を引数で渡しても stdin が非 TTY（pipe/redirect/&）
+# だと codex が追加入力として stdin を読もうとして hang するため。
 codex exec \
   --full-auto \
   --sandbox read-only \
   --cd "$PROJECT_DIR" \
   -o "$OUTPUT_FILE" \
-  "$PROMPT"
+  "$PROMPT" < /dev/null
 
 # 出力ファイルの存在確認
 if [ ! -f "$OUTPUT_FILE" ]; then

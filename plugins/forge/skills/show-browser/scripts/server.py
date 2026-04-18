@@ -35,6 +35,13 @@ from session.yaml_utils import parse_yaml
 
 
 # ---------------------------------------------------------------------------
+# 定数
+# ---------------------------------------------------------------------------
+
+SESSION_END_MESSAGE = "セッションが終了しました。このタブは閉じて構いません"
+
+
+# ---------------------------------------------------------------------------
 # YamlReader — セッション YAML パーサー
 # ---------------------------------------------------------------------------
 
@@ -446,7 +453,14 @@ class SkillMonitorServer(_ThreadingHTTPServer):
                 return
             self._session_end_sent = True
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.broadcast_sse("session_end", {"type": "session_end", "timestamp": timestamp})
+        self.broadcast_sse(
+            "session_end",
+            {
+                "type": "session_end",
+                "timestamp": timestamp,
+                "message": SESSION_END_MESSAGE,
+            },
+        )
         self.schedule_shutdown()
 
     def _heartbeat_loop(self):
