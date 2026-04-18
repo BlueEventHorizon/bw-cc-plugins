@@ -124,6 +124,13 @@
     .tab:hover { background: var(--bg-hover); color: var(--text); }
     .tab.active { background: var(--info); border-color: var(--info); color: #fff; }
 
+    .filter-sep {
+      width: 1px;
+      align-self: stretch;
+      background: var(--border);
+      margin: 2px 4px;
+    }
+
     /* =====================================================================
        指摘カード
     ===================================================================== */
@@ -272,11 +279,12 @@
 </div>
 
 <div id="filters">
-  <button class="tab active" data-filter="all">All</button>
-  <button class="tab" data-filter="critical">🔴 Critical</button>
-  <button class="tab" data-filter="major">🟡 Major</button>
-  <button class="tab" data-filter="minor">🟢 Minor</button>
-  <button class="tab" data-filter="skipped">❌ Skipped</button>
+  <button class="tab sev-tab active" data-sev="critical">🔴 Critical</button>
+  <button class="tab sev-tab active" data-sev="major">🟡 Major</button>
+  <button class="tab sev-tab active" data-sev="minor">🟢 Minor</button>
+  <span class="filter-sep"></span>
+  <button class="tab status-tab" data-status="fixed">✅ 解決済み</button>
+  <button class="tab status-tab" data-status="skipped">❌ Skipped</button>
 </div>
 
 <div id="session-end-banner">セッションが終了しました。このタブは閉じて構いません</div>
@@ -287,17 +295,28 @@
   // =====================================================================
   // 状態
   // =====================================================================
-  let currentFilter = 'all';
-  let currentItems  = [];
+  let sevFilter   = { critical: true, major: true, minor: true };
+  let showFixed   = false;
+  let showSkipped = false;
+  let currentItems = [];
 
   // =====================================================================
   // フィルタータブ
   // =====================================================================
-  document.querySelectorAll('.tab').forEach(tab => {
+  document.querySelectorAll('.sev-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentFilter = tab.dataset.filter;
+      const sev = tab.dataset.sev;
+      sevFilter[sev] = !sevFilter[sev];
+      tab.classList.toggle('active', sevFilter[sev]);
+      renderCards(currentItems);
+    });
+  });
+
+  document.querySelectorAll('.status-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const key = tab.dataset.status;
+      if (key === 'fixed')   { showFixed   = !showFixed;   tab.classList.toggle('active', showFixed); }
+      if (key === 'skipped') { showSkipped = !showSkipped; tab.classList.toggle('active', showSkipped); }
       renderCards(currentItems);
     });
   });
@@ -386,12 +405,13 @@
     const emptyMsg = document.getElementById('empty-msg');
     list.innerHTML = '';
 
-    const filtered = currentFilter === 'all'
-      ? items
-      : items.filter(it => {
-          if (currentFilter === 'skipped') return it.status === 'skipped';
-          return it.severity === currentFilter;
-        });
+    const filtered = items.filter(it => {
+      const sev = it.severity || 'minor';
+      if (!sevFilter[sev]) return false;
+      if (it.status === 'skipped') return showSkipped;
+      if (it.status === 'fixed')   return showFixed;
+      return true;
+    });
 
     if (filtered.length === 0) {
       emptyMsg.style.display = 'block';
