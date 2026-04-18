@@ -1,152 +1,152 @@
 # bw-cc-plugins
 
-Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
+**仕様駆動開発（Spec-Driven Development）** のための Claude Code プラグイン — 仕様を先に書き、AI がフルコンテキストで実装・レビューする。
 
-**Marketplace version: 0.1.10**
+**マーケットプレイスバージョン: 0.1.10**
 
-[Japanese README (README_ja.md)](README_ja.md)
+[English README (README_en.md)](README_en.md)
 
-## What is Spec-Driven Development?
+## 仕様駆動開発とは
 
-Spec-Driven Development is a workflow where every code change traces back to a written specification. **forge** guides you through five stages — requirements, design, plan, implement, and review — so that AI always works from explicit, reviewable intent rather than ad-hoc instructions. Each stage produces a document; each document feeds the next stage. The result is traceable, auditable delivery: you can always answer *why* a piece of code exists.
+仕様駆動開発は、すべてのコード変更を書かれた仕様に遡れるワークフローである。**forge** が要件定義・設計・計画・実装・レビューの5段階を導き、AI が場当たり的な指示ではなく明文化された意図に基づいて作業する。各段階で文書が生まれ、次の段階の入力になる。結果として追跡可能で監査可能な成果物が得られる — コードがなぜ存在するかを常に説明できる。
 
-## The Role of doc-advisor
+## doc-advisor の役割
 
-Large projects accumulate rules, standards, and design documents that AI cannot use if it cannot find them. **doc-advisor** indexes these documents (via ToC keyword search and OpenAI Embedding semantic search) and automatically supplies the relevant ones to forge at the moments that matter:
+プロジェクトが大きくなると、ルール・規約・設計文書が蓄積される。AI がそれらを見つけられなければ活用できない。**doc-advisor** はこれらの文書をインデックス化し（ToC キーワード検索 + OpenAI Embedding セマンティック検索）、forge の重要な場面で自動的に提供する:
 
-- **During implementation** — project-specific coding rules and related specs are collected before a single line is written.
-- **During review** — applicable rules are added as review perspectives, so reviews check against your actual standards, not generic best practices.
+- **実装時** — コードを書く前にプロジェクト固有の実装ルールと関連仕様を収集する。
+- **レビュー時** — 適用すべきルールをレビュー観点として追加し、汎用的なベストプラクティスではなくプロジェクトの実際の基準で検査する。
 
-This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
+これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
 
-## Workflow
+## ワークフロー
 
 ```mermaid
 flowchart LR
     subgraph forge
-        R([Requirements]) --> D([Design]) --> P([Plan]) --> I([Implement]) --> RF([Review / Fix])
+        R([要件定義]) --> D([設計]) --> P([計画]) --> I([実装]) --> RF([レビュー / 修正])
     end
-    RF --> DL([Delivery])
-    DA[doc-advisor] -. find context .-> forge
-    AV[anvil] -- commit & PR --> DL
-    XC[xcode] -. build & test .-> RF
+    RF --> DL([成果物])
+    DA[doc-advisor] -. コンテキスト収集 .-> forge
+    AV[anvil] -- コミット & PR --> DL
+    XC[xcode] -. ビルド & テスト .-> RF
 ```
 
-## Plugins
+## プラグイン一覧
 
-| Plugin    | Version | Description                                                                                                   |
-| --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.34  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
-| **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
-| **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.2.1 | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
+| プラグイン | バージョン | 説明                                                                                                                    |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **forge**  | 0.0.34     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
+| **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
+| **doc-advisor** | 0.2.1 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
 
-## Skills
+## スキル一覧
 
 ### forge
 
-> For Feature management and document structure details, see the [Document Structure Guide](docs/readme/guide_doc_structure.md).
+> Feature と文書構造管理の詳細は [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) を参照。
 
-#### Pipeline
+#### パイプライン
 
 ```mermaid
 flowchart LR
-    REQ["start-requirements<br/>(what to build)"]
-    UXUI["start-uxui-design<br/>(how it looks)"]
-    DES["start-design<br/>(how to build)"]
-    PLAN["start-plan<br/>(when)"]
-    IMPL["start-implement<br/>(build)"]
+    REQ["start-requirements<br/>(何を作るか)"]
+    UXUI["start-uxui-design<br/>(どう見せるか)"]
+    DES["start-design<br/>(どう作るか)"]
+    PLAN["start-plan<br/>(いつ作るか)"]
+    IMPL["start-implement<br/>(作る)"]
 
     REQ --> UXUI -.->|optional| DES --> PLAN --> IMPL
 
-    REV["review<br/>(available at every stage)"]
-    REQ & DES & PLAN & IMPL -.->|anytime| REV
+    REV["review<br/>(全ステージで利用可)"]
+    REQ & DES & PLAN & IMPL -.->|随時| REV
 ```
 
-| Stage | Skill | Input | Output |
-|-------|-------|-------|--------|
-| Requirements | start-requirements | Dialog / source code / Figma | Requirements docs (Markdown) |
-| UXUI Design | start-uxui-design | ASCII art from requirements | Design tokens + UI specs |
-| Design | start-design | Requirements docs | Design docs (Markdown) |
-| Plan | start-plan | Design docs | Plan (YAML) |
-| Implementation | start-implement | Plan | Code + progress updates |
-| Review | review | Code / documents | Findings + fixes |
+| 段階 | スキル | 入力 | 出力 |
+|------|--------|------|------|
+| 要件定義 | start-requirements | 対話 / ソースコード / Figma | 要件定義書（Markdown） |
+| UXUI デザイン | start-uxui-design | 要件定義書の ASCII アート | デザイントークン + UI 仕様 |
+| 設計 | start-design | 要件定義書 | 設計書（Markdown） |
+| 計画 | start-plan | 設計書 | 計画書（YAML） |
+| 実装 | start-implement | 計画書 | コード + 進捗更新 |
+| レビュー | review | コード / 文書 | 指摘 + 修正 |
 
-#### Getting Started
+#### はじめかた
 
 ```bash
-# 1. Project setup (first time only)
+# 1. プロジェクト設定（初回のみ）
 /forge:setup-doc-structure
 
-# 2. Requirements through implementation
+# 2. 要件定義から実装まで
 /forge:start-requirements my-feature --mode interactive --new
 /forge:start-design my-feature
 /forge:start-plan my-feature
 /forge:start-implement my-feature
 
-# 3. Review (anytime)
+# 3. レビュー（随時）
 /forge:review code src/ --auto
 ```
 
-#### Skills
+#### スキル一覧
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**review**](docs/readme/forge/guide_review.md) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N` | `"review"` |
-| [**show-browser**](docs/readme/forge/guide_review.md#show-browser) | Display review/implementation progress in browser in real time | `"show browser"` |
-| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements) | Create requirements via dialog, reverse-engineering, or Figma | `"requirements"` |
-| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design) | Create design docs from requirements. Prioritizes asset reuse | `"start design"` |
-| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan) | Extract tasks from design docs into a YAML plan | `"start plan"` |
-| [**start-implement**](docs/readme/forge/guide_implement.md) | Select tasks from plan, implement, review, and update | `"start implement"` |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md) | Create design tokens & UI specs with UX evaluation | `"UXUI design"` |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories | `"setup"` |
-| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config) | Generate/update `.version-config.yaml` | `"version config"` |
-| [**update-version**](docs/readme/forge/guide_setup.md#update-version) | Bump version across files. patch/minor/major/direct | `"version bump"` |
-| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules) | Analyze and reorganize rules/ based on taxonomy | `"clean rules"` |
-| [**help**](docs/readme/forge/guide_setup.md#help) | Interactive help wizard | `"help"` |
-| [*reviewer*](docs/readme/forge/guide_review.md#execution-flow) | Execute review for a single perspective | ※ Called by review |
-| [*evaluator*](docs/readme/forge/guide_review.md#execution-flow) | Scrutinize review findings and determine fix/skip/confirm | ※ Called by review |
-| [*fixer*](docs/readme/forge/guide_review.md#execution-flow) | Fix issues based on review findings | ※ Called by review |
-| [*present-findings*](docs/readme/forge/guide_review.md#execution-flow) | Present review findings interactively, one item at a time | ※ Called by review |
-| [*doc-structure*](docs/readme/guide_doc_structure.md) | Parse and resolve paths from `.doc_structure.yaml` | ※ Called by orchestrators |
-| [*next-spec-id*](docs/readme/forge/guide_create_docs.md) | Scan all branches for spec IDs and return the next available number | ※ Called by start-requirements |
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**review**](docs/readme/forge/guide_review_ja.md) | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正 | `"レビューして"` |
+| [**show-browser**](docs/readme/forge/guide_review_ja.md#show-browser) | レビュー・実装の進捗をブラウザでリアルタイム表示 | `"ブラウザで表示"` |
+| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements) | 対話・ソース解析・Figma の 3 モードで要件定義書を作成 | `"要件定義"` |
+| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design) | 要件定義書から設計書を作成。既存資産の再利用を重視 | `"設計書作成"` |
+| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan) | 設計書からタスクを抽出し YAML 計画書を作成 | `"計画書作成"` |
+| [**start-implement**](docs/readme/forge/guide_implement_ja.md) | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行 | `"実装開始"` |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md) | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造 | `"UXUIデザイン"` |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold | `"初期設定"` |
+| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config) | `.version-config.yaml` 生成・更新 | `"バージョン設定"` |
+| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version) | バージョン一括更新。patch/minor/major/直接指定 | `"バージョン更新"` |
+| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules) | rules/ を分類学に基づいて分析・再構築 | `"rules を整理"` |
+| [**help**](docs/readme/forge/guide_setup_ja.md#help) | インタラクティブヘルプ | `"ヘルプ"` |
+| [*reviewer*](docs/readme/forge/guide_review_ja.md#実行フロー) | 1 perspective のレビューを実行 | ※ review が委譲 |
+| [*evaluator*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘を吟味し修正/スキップ/要確認を判定 | ※ review が委譲 |
+| [*fixer*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘に基づきコード・文書を修正 | ※ review が委譲 |
+| [*present-findings*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー結果を対話的に1件ずつ提示 | ※ review が委譲 |
+| [*doc-structure*](docs/readme/guide_doc_structure_ja.md) | `.doc_structure.yaml` のパース・パス解決 | ※ 各オーケストレーターが呼び出し |
+| [*next-spec-id*](docs/readme/forge/guide_create_docs_ja.md) | 全ブランチをスキャンして仕様書 ID の次番を取得 | ※ start-requirements が呼び出し |
 
 ### anvil
 
-> [Detailed Guide](docs/readme/guide_anvil.md) — Usage and examples
+> [詳細ガイド](docs/readme/guide_anvil_ja.md) — 使い方、使用例
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**commit**](docs/readme/guide_anvil.md#commit) | Generate commit message from changes, commit & push | `"commit"` |
-| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body | `"create-pr"` |
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**commit**](docs/readme/guide_anvil_ja.md#commit) | 変更内容からコミットメッセージを自動生成し commit & push | `"コミットして"` |
+| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成 | `"PR を作成"` |
 
 ### xcode
 
-> [Detailed Guide](docs/readme/guide_xcode.md) — Usage and examples
+> [詳細ガイド](docs/readme/guide_xcode_ja.md) — 使い方、使用例
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**build**](docs/readme/guide_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"build"` |
-| [**test**](docs/readme/guide_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"test"` |
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**build**](docs/readme/guide_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` |
+| [**test**](docs/readme/guide_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` |
 
 ### doc-advisor
 
-> [Detailed Guide](docs/readme/guide_doc-advisor.md) — Usage and examples
+> [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**query-rules**](docs/readme/guide_doc-advisor.md#query-rules) | Search rules with ToC (keyword), Index (semantic), or hybrid mode | `"query rules"` |
-| [**query-specs**](docs/readme/guide_doc-advisor.md#query-specs) | Search specs with ToC (keyword), Index (semantic), or hybrid mode | `"query specs"` |
-| [**create-rules-toc**](docs/readme/guide_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"rebuild rules ToC"` |
-| [**create-specs-toc**](docs/readme/guide_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"rebuild specs ToC"` |
+| スキル | 説明 | トリガー |
+|--------|------|----------|
+| [**query-rules**](docs/readme/guide_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"ルール確認"` |
+| [**query-specs**](docs/readme/guide_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"仕様確認"` |
+| [**create-rules-toc**](docs/readme/guide_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"rules ToC 更新"` |
+| [**create-specs-toc**](docs/readme/guide_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"specs ToC 更新"` |
 
-> **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
+> **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
 
-## Installation
+## インストール
 
-### Option A: Marketplace (persistent)
+### 方法 A: マーケットプレイス経由（永続）
 
-Inside a Claude Code session:
+Claude Code セッション内で:
 
 ```
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
@@ -156,49 +156,49 @@ Inside a Claude Code session:
 /plugin install xcode@bw-cc-plugins
 ```
 
-To re-enable a disabled plugin, from your terminal:
+無効化したプラグインを再有効化するには、ターミナルから:
 
 ```bash
 claude plugin enable forge@bw-cc-plugins
 ```
 
-`marketplace add` registers the GitHub repo as a plugin source (once per user). Once installed, the plugin is always available.
+`marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。一度インストールすれば、常に利用可能です。
 
-### Option B: Local directory (per session)
+### 方法 B: ローカルディレクトリ（セッション限定）
 
 ```bash
 git clone https://github.com/BlueEventHorizon/bw-cc-plugins.git
 claude --plugin-dir ./bw-cc-plugins/plugins/forge
 ```
 
-> **Note**: `--plugin-dir` is session-only. You must specify it every time you start Claude Code. To unload, simply start without the flag.
+> **注意**: `--plugin-dir` はセッション限定です。Claude Code を起動するたびに指定が必要です。解除するには、フラグなしで起動するだけです。
 
-### Update
+### 更新
 
-From your terminal:
+ターミナルから:
 
 ```bash
 claude plugin update forge@bw-cc-plugins --scope local
 ```
 
-## Document Structure (.doc_structure.yaml)
+## 文書構造管理 (.doc_structure.yaml)
 
-`.doc_structure.yaml` declares where documents live and what types they are. Both forge and doc-advisor reference this file. Generate it with `/forge:setup-doc-structure`.
-→ [Document Structure Guide](docs/readme/guide_doc_structure.md) | [Schema reference](plugins/forge/docs/doc_structure_format.md)
+`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge と doc-advisor の両方が参照する。`/forge:setup-doc-structure` で生成する。
+→ [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) | [スキーマ仕様](plugins/forge/docs/doc_structure_format.md)
 
-## Git Information Cache (.git_information.yaml)
+## Git 情報キャッシュ (.git_information.yaml)
 
-On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and offers to save the settings to `.git_information.yaml` for future use.
+`/anvil:create-pr` の初回実行時に `git remote` から GitHub リポジトリを検出し、`.git_information.yaml` への設定保存を提案します。
 
-## Requirements
+## 動作要件
 
 - [Claude Code](https://claude.ai/code) CLI
-- Python 3 (for setup scan)
-- [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
-- OpenAI API key (for doc-advisor embedding features; set `OPENAI_API_KEY`)
-- [gh CLI](https://cli.github.com/) (for anvil, authenticated)
-- Xcode with `xcodebuild` (for xcode plugin)
+- Python 3（setup スキャン用）
+- [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
+- OpenAI API キー（doc-advisor の embedding 機能使用時。`OPENAI_API_KEY` 環境変数に設定）
+- [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
+- Xcode / `xcodebuild`（xcode プラグイン用）
 
-## License
+## ライセンス
 
 [MIT](LICENSE)

@@ -75,7 +75,7 @@ targets:
     sync_files:
       - path: README.md
         filter: '| **forge**'
-      - path: README_ja.md
+      - path: README_en.md
         filter: '| **forge**'
         optional: true
 """
@@ -85,7 +85,7 @@ targets:
         target = result["targets"][0]
         self.assertEqual(len(target["sync_files"]), 2)
         self.assertEqual(target["sync_files"][0]["path"], "README.md")
-        self.assertEqual(target["sync_files"][1]["path"], "README_ja.md")
+        self.assertEqual(target["sync_files"][1]["path"], "README_en.md")
         self.assertEqual(target["sync_files"][1]["optional"], "true")
 
     def test_parse_changelog_section(self):
