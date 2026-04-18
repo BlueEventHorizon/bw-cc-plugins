@@ -10,9 +10,15 @@ argument-hint: "[feature-name] [--platform ios|macos]"
 
 # /forge:start-uxui-design
 
-要件定義書（ASCII アート付きの画面仕様）を入力に、デザイントークンと UI コンポーネントの視覚仕様を創造する。Apple HIG・Don Norman の感情デザイン・Dieter Rams の 10 原則・Nielsen ヒューリスティクス・ゲシュタルト原則の知識ベースに基づき、「かっこいい」デザインを理論的根拠とともに設計する。
+要件定義書（ASCII アート付きの画面仕様）を入力に、デザイントークンと UI コンポーネントの視覚仕様を創造する。Apple HIG・Don Norman の感情デザイン・Dieter Rams の 10 原則・Nielsen ヒューリスティクス・ゲシュタルト原則の知識ベースに基づき、デザイン意図を理論的根拠とともに設計する。
 
-> **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
+## 位置づけ
+
+本スキルは `/forge:start-requirements` の **Figma なし時の補完** として位置づけられる。ゼロから UI を設計する必要があり、Figma デザインも既存 UI もない場合に使用する。
+
+デザイン方向性は Phase 2.0（Design Intent の取得）で要件本文・既存コードから読み取りまたは推定し、AskUserQuestion で確認する。プロジェクト全体に挙動モードを固定する設定ファイル（`.uxui-config.yaml` 等）は持たない。
+
+> **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。本スキルは不要。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
 
 ## フロー継続 [MANDATORY]
 
