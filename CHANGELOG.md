@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.11] - 2026-04-18
+
+### marketplace
+
+- **docs**: 日本語 README をデフォルトに変更（旧 README.md → README_en.md、旧 README_ja.md → README.md）。言語切替リンクと `.version-config.yaml` を追従
+- **chore**: 未使用の画像ファイル（install_kaizen.png, review.png）を削除
+
+## [0.0.35] - 2026-04-18
+
+### forge
+
+- **refactor**: start-uxui-design スキルを刷新。`design_token_template.md` / `component_catalog_template.md` を追加し、`uxui_analysis_workflow.md` を大幅拡張
+- **feat**: review スキルに UXUI 観点の `review_criteria_uxui.md` を追加
+- **docs**: setup-version-config / update-version SKILL.md の README 例示を `README_en.md` に合わせて更新
+
 ## [marketplace 0.1.10] - 2026-04-16
 
 ### marketplace

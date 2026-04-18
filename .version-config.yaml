@@ -6,11 +6,11 @@ targets:
     version_path: metadata.version
     sync_files:
       - path: README.md
-        pattern: '**Marketplace version: {version}**'
-        filter: '**Marketplace version:'
-      - path: README_ja.md
         pattern: '**マーケットプレイスバージョン: {version}**'
         filter: '**マーケットプレイスバージョン:'
+      - path: README_en.md
+        pattern: '**Marketplace version: {version}**'
+        filter: '**Marketplace version:'
         optional: true
 
   - name: forge
@@ -23,7 +23,7 @@ targets:
       - path: README.md
         pattern: '| **forge** | {version} |'
         filter: '| **forge**'
-      - path: README_ja.md
+      - path: README_en.md
         pattern: '| **forge** | {version} |'
         filter: '| **forge**'
         optional: true
@@ -41,7 +41,7 @@ targets:
       - path: README.md
         pattern: '| **anvil** | {version} |'
         filter: '| **anvil**'
-      - path: README_ja.md
+      - path: README_en.md
         pattern: '| **anvil** | {version} |'
         filter: '| **anvil**'
         optional: true
@@ -56,7 +56,7 @@ targets:
       - path: README.md
         pattern: '| **xcode** | {version} |'
         filter: '| **xcode**'
-      - path: README_ja.md
+      - path: README_en.md
         pattern: '| **xcode** | {version} |'
         filter: '| **xcode**'
         optional: true
@@ -71,7 +71,7 @@ targets:
       - path: README.md
         pattern: '| **doc-advisor** | {version} |'
         filter: '| **doc-advisor**'
-      - path: README_ja.md
+      - path: README_en.md
         pattern: '| **doc-advisor** | {version} |'
         filter: '| **doc-advisor**'
         optional: true

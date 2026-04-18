@@ -306,13 +306,13 @@ class TestScanReadmeFiles(_FsTestCase):
         result = scan_readme_files(str(self.tmpdir))
         self.assertIn('README.md', result)
 
-    def test_detect_readme_ja(self):
-        """README_ja.md も検出"""
-        self._write_file('README.md', '# Project')
-        self._write_file('README_ja.md', '# プロジェクト')
+    def test_detect_readme_en(self):
+        """README_en.md も検出"""
+        self._write_file('README.md', '# プロジェクト')
+        self._write_file('README_en.md', '# Project')
         result = scan_readme_files(str(self.tmpdir))
         self.assertIn('README.md', result)
-        self.assertIn('README_ja.md', result)
+        self.assertIn('README_en.md', result)
 
     def test_deep_readme_not_detected(self):
         """サブディレクトリの README は対象外"""
