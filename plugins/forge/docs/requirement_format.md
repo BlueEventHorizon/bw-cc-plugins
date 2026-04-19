@@ -20,6 +20,8 @@ notes:
 ---
 ```
 
+AI 向け詳細: [additive_development_spec.md](additive_development_spec.md) — 判定基準・矛盾時の優先度・merge 手順
+
 ---
 
 ## 本体フォーマット
