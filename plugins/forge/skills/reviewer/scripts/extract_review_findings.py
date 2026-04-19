@@ -40,13 +40,17 @@ SEVERITY_PRIORITY = {'critical': 3, 'major': 2, 'minor': 1}
 
 # 指摘事項の番号付きパターン
 # 例:
-#   "1. 🔴 **[問題名]**: 説明"  (行マーカー付き・推奨)
-#   "1. **[問題名]**: 説明"    (行マーカーなし・後方互換)
-# group(1): 行先頭の severity マーカー(🔴/🟡/🟢 or None)
-# group(2): タイトル
-# group(3): 説明
+#   "1. [critical] **[問題名]**: 説明"  (ASCII ラベル・推奨)
+#   "1. 🔴 **[問題名]**: 説明"          (絵文字マーカー・後方互換)
+#   "1. **[問題名]**: 説明"             (マーカーなし・セクション見出し fallback)
+# group(1): ASCII ラベル (critical|major|minor or None)
+# group(2): 絵文字マーカー (🔴/🟡/🟢 or None)
+# group(3): タイトル
+# group(4): 説明
 FINDING_PATTERN = re.compile(
-    r'^\d+\.\s+(🔴|🟡|🟢)?\s*\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)'
+    r'^\d+\.\s+'
+    r'(?:\[(critical|major|minor)\]|(🔴|🟡|🟢))?\s*'
+    r'\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)'
 )
 
 # 箇所行のパターン（例: "   - 箇所: path/to/file.py:42"）
@@ -84,21 +88,24 @@ def extract_findings(content):
             findings[-1]['body'] = '\n'.join(trimmed)
         findings[-1]['_body_closed'] = True
 
-    def resolve_severity(marker):
-        """行マーカー優先、なければセクション見出し、どちらもなければ major + warning。"""
+    def resolve_severity(label, marker):
+        """ASCII ラベル > 絵文字マーカー > セクション見出し > fallback の優先順位。"""
+        if label:
+            return label  # critical/major/minor をそのまま
         if marker:
             return SECTION_MARKERS[marker]
         if current_severity:
             return current_severity
         return None  # 呼び出し元で warning + major にフォールバック
 
-    def start_finding(title, line, marker=None):
+    def start_finding(title, line, label=None, marker=None):
         nonlocal finding_id, body_lines
         flush_body()
-        severity = resolve_severity(marker)
+        severity = resolve_severity(label, marker)
         if severity is None:
             print(
-                f"Warning: finding '{title}' has no severity marker and no "
+                f"Warning: finding '{title}' has no severity label "
+                f"([critical]/[major]/[minor]), no emoji marker, and no "
                 f"section heading; defaulting to 'major'",
                 file=sys.stderr,
             )
@@ -143,12 +150,13 @@ def extract_findings(content):
             heading_text = stripped.lstrip('#').strip()
             match = FINDING_PATTERN.match(heading_text)
             if match:
-                marker = match.group(1)
-                title = match.group(2).strip()
+                label = match.group(1)
+                marker = match.group(2)
+                title = match.group(3).strip()
                 # セクション見出しもマーカーも無い場合は finding として扱わない
                 # (見出しを finding と誤認するのを防ぐため)
-                if marker or current_severity:
-                    start_finding(title, line, marker=marker)
+                if label or marker or current_severity:
+                    start_finding(title, line, label=label, marker=marker)
             continue
 
         # 箇所行の検出（直前の finding に location を設定）
@@ -162,9 +170,10 @@ def extract_findings(content):
         # 指摘事項の検出
         match = FINDING_PATTERN.match(stripped)
         if match:
-            marker = match.group(1)
-            title = match.group(2).strip()
-            start_finding(title, line, marker=marker)
+            label = match.group(1)
+            marker = match.group(2)
+            title = match.group(3).strip()
+            start_finding(title, line, label=label, marker=marker)
             continue
 
         # 通常の本文行(現在の finding の body に蓄積)

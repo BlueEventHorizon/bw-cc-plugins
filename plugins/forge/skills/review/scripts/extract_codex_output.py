@@ -27,8 +27,13 @@ from pathlib import Path
 
 # Markdown レビュー本文の最低要件
 _HAS_HEADING = re.compile(r'^\s*#{2,3}\s', re.MULTILINE)
-_HAS_FINDING = re.compile(r'^\s*\d+\.\s+(?:🔴|🟡|🟢)?\s*\*\*', re.MULTILINE)
+_HAS_FINDING = re.compile(
+    r'^\s*\d+\.\s+(?:\[(?:critical|major|minor)\]|🔴|🟡|🟢)?\s*\*\*',
+    re.MULTILINE,
+)
 _SEVERITY_CHARS = ('🔴', '🟡', '🟢')
+# ASCII severity ラベル(行マーカー primary)
+_LABEL_PATTERN = re.compile(r'\[(?:critical|major|minor)\]')
 
 # codex のセッションメタ情報行。これらに当たったら遡及を打ち切る。
 _METADATA_PATTERNS = (
@@ -54,13 +59,16 @@ def looks_like_review_markdown(text):
     判定基準:
       - 空でない
       - `##` / `###` 見出しまたは番号付き finding(`1. **...**`)を含む
-      - または severity マーカー(🔴/🟡/🟢)を含む
+      - または ASCII ラベル `[critical]/[major]/[minor]` を含む
+      - または severity 絵文字マーカー(🔴/🟡/🟢)を含む(後方互換)
     """
     if not text or not text.strip():
         return False
     if _HAS_HEADING.search(text):
         return True
     if _HAS_FINDING.search(text):
+        return True
+    if _LABEL_PATTERN.search(text):
         return True
     if any(c in text for c in _SEVERITY_CHARS):
         return True
@@ -74,7 +82,8 @@ def extract_from_stdout(stdout_text):
     ツール呼び出しやメタ情報が混ざる。最終メッセージは概ね末尾側にあるため、
     以下のルールで本文範囲を決定する:
 
-      1. 最後に現れる severity マーカー行(🔴 / 🟡 / 🟢)または
+      1. 最後に現れる severity ラベル行(`[critical]` / `[major]` / `[minor]`)
+         または絵文字マーカー行(🔴 / 🟡 / 🟢)または
          番号付き finding(`1. **...**`)の行の位置を見つける
       2. そこから逆方向に `##`/`###` 見出しを辿り、本文の先頭を決定する
       3. 本文の末尾は `tokens used` 等のメタ情報行の直前まで
@@ -85,10 +94,13 @@ def extract_from_stdout(stdout_text):
     lines = stdout_text.split('\n')
     n = len(lines)
 
-    # Step 1: severity マーカー or finding 行の最後の出現位置を探す
+    # Step 1: severity ラベル or 絵文字マーカー or finding 行の最後の出現位置を探す
     anchor = -1
     for i in range(n - 1, -1, -1):
         line = lines[i]
+        if _LABEL_PATTERN.search(line):
+            anchor = i
+            break
         if any(c in line for c in _SEVERITY_CHARS):
             anchor = i
             break

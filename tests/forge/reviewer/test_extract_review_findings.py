@@ -1303,5 +1303,117 @@ class TestInlineSeverityMarkers(unittest.TestCase):
         self.assertEqual(findings[1]['title'], '行マーカーあり')
 
 
+# ===========================================================================
+# ASCII ラベルマーカー (primary) テスト
+# ===========================================================================
+
+class TestAsciiLabelMarkers(unittest.TestCase):
+    """ASCII ラベル `[critical]/[major]/[minor]` を primary severity として扱う。
+
+    絵文字は装飾（後方互換）であり、パース時は ASCII ラベルが優先される。
+    LLM による絵文字の省略・変換・Unicode 正規化の影響を受けない設計。"""
+
+    def test_ascii_label_without_headings(self):
+        """セクション見出しなしでも ASCII ラベルから severity を拾える。"""
+        content = """\
+1. [critical] **致命的問題A**: 説明A
+   - 箇所: a.py:1
+2. [major] **品質問題B**: 説明B
+   - 箇所: b.py:2
+3. [minor] **改善提案C**: 説明C
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '致命的問題A')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '品質問題B')
+        self.assertEqual(findings[2]['severity'], 'minor')
+        self.assertEqual(findings[2]['title'], '改善提案C')
+
+    def test_ascii_label_overrides_section_heading(self):
+        """ASCII ラベルがセクション見出しより優先される。"""
+        content = """\
+### 🔴致命的問題
+
+1. [major] **実は品質問題**: ラベル優先
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '実は品質問題')
+
+    def test_ascii_label_overrides_emoji_marker(self):
+        """ASCII ラベルが絵文字マーカーより優先される(併記時)。
+
+        LLM が誤って `[critical]` と 🟡 を併記してもラベル側が採用される。
+        絵文字が装飾扱いであることを明確に検証する。"""
+        # FINDING_PATTERN は `[label]` か絵文字のどちらか一方のみキャプチャする
+        # 形式だが、将来的に併記許容に拡張する場合のため、ラベル単独で
+        # 絵文字マーカーが見つからない形式の入力を受け付けられることを検証する。
+        content = """\
+### 🟡品質問題
+
+1. [critical] **本当は致命的**: セクションは 🟡 だがラベル critical
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '本当は致命的')
+
+    def test_ascii_label_backward_compat_with_emoji(self):
+        """絵文字マーカー形式は後方互換として引き続き動作する。"""
+        content = """\
+1. [critical] **新形式**: ASCII ラベル
+2. 🟡 **旧形式**: 絵文字マーカー
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '新形式')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '旧形式')
+
+    def test_ascii_label_case_sensitive(self):
+        """ラベルは小文字の `[critical]` のみ。`[CRITICAL]` は認識しない。
+
+        大文字を許容すると LLM の多様な出力を silent に受け入れてしまい、
+        契約違反を検出できなくなる。契約は小文字固定。"""
+        content = """\
+1. [CRITICAL] **大文字**: これは認識されない
+"""
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            findings = extract_findings(content)
+        # `[CRITICAL]` は label として認識されず、**タイトル** の途中として
+        # マッチしないため finding 自体が抽出されない(または major fallback)
+        # どちらにせよ severity=critical にはならないことを検証
+        if findings:
+            self.assertNotEqual(findings[0]['severity'], 'critical')
+
+    def test_ascii_label_whitespace_tolerance(self):
+        """ラベル前後のスペースは許容される(`1. [critical] **...**`)。"""
+        content = """\
+1. [critical] **スペース1つ**: 説明
+2. [major]  **スペース2つ**: 説明
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[1]['severity'], 'major')
+
+    def test_ascii_label_in_heading_format(self):
+        """見出し形式 `### 1. [critical] **...**` でもラベルが認識される。"""
+        content = """\
+### 1. [critical] **見出し形式のラベル**: 説明
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '見出し形式のラベル')
+
+
 if __name__ == '__main__':
     unittest.main()

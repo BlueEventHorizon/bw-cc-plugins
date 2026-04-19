@@ -64,6 +64,18 @@ class TestLooksLikeReviewMarkdown(unittest.TestCase):
             'レビュー完了しました 🔴 重大な問題が見つかりました'
         ))
 
+    def test_ascii_label_accepted(self):
+        # ASCII ラベル `[critical]/[major]/[minor]` があれば Markdown 扱い
+        self.assertTrue(looks_like_review_markdown(
+            '1. [critical] **問題**: 説明'
+        ))
+        self.assertTrue(looks_like_review_markdown(
+            '1. [major] **問題**: 説明'
+        ))
+        self.assertTrue(looks_like_review_markdown(
+            '1. [minor] **提案**: 説明'
+        ))
+
     def test_plain_short_message_rejected(self):
         self.assertFalse(looks_like_review_markdown('レビュー完了'))
 
@@ -88,6 +100,39 @@ user instructions:
 review this file
 """
         self.assertEqual(extract_from_stdout(stdout), '')
+
+    def test_stdout_with_ascii_labels_extracts_body(self):
+        """stdout に ASCII ラベル形式の Markdown 本文が混ざっていれば抽出される。
+
+        新方式(ラベル primary)の検証: 絵文字に依存しない anchor 検出。"""
+        stdout = """\
+[2024-01-01T12:00:00] OpenAI Codex v1.0.0
+workdir: /tmp/project
+model: gpt-4
+
+[2024-01-01T12:00:05] codex
+
+### Critical / 致命的問題
+
+1. [critical] **境界値エラー**: 配列範囲外アクセス
+   - 箇所: utils.py:42
+
+### Major / 品質問題
+
+（なし）
+
+### Minor / 改善提案
+
+1. [minor] **ドキュメント不足**: コメントを追加
+
+tokens used: 1234
+"""
+        body = extract_from_stdout(stdout)
+        self.assertIn('### Critical / 致命的問題', body)
+        self.assertIn('境界値エラー', body)
+        self.assertIn('[critical]', body)
+        self.assertIn('ドキュメント不足', body)
+        self.assertNotIn('tokens used: 1234', body)
 
     def test_stdout_with_markdown_extracts_body(self):
         """stdout に Markdown 本文が混ざっていれば抽出される。"""
@@ -190,6 +235,28 @@ tokens used: 500
         body = extract(str(stdout), str(lastmsg))
         self.assertIn('本体の指摘', body)
         self.assertIn('### 🔴致命的問題', body)
+
+    def test_lastmsg_with_ascii_labels_adopted_directly(self):
+        """lastmsg が ASCII ラベル形式の Markdown 本文を含む場合、直接採用される。"""
+        lastmsg = self._write('lastmsg.txt', """\
+### Critical / 致命的問題
+
+1. [critical] **問題A**: 説明
+   - 箇所: x.py:1
+
+### Major / 品質問題
+
+（なし）
+
+### Minor / 改善提案
+
+（なし）
+""")
+        stdout = self._write('stdout.log', 'session metadata only')
+
+        body = extract(str(stdout), str(lastmsg))
+        self.assertIn('[critical]', body)
+        self.assertIn('問題A', body)
 
     def test_neither_has_usable_content_returns_empty(self):
         """lastmsg も stdout も有効な Markdown を含まない場合は空を返す。"""
