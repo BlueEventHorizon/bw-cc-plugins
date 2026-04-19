@@ -127,6 +127,38 @@ class TestFlatYaml(_FsTestCase):
         result = read_yaml(path)
         self.assertEqual(result["title"], "hello: world")
 
+    def test_double_quote_roundtrip(self):
+        """ダブルクォートを含む文字列のラウンドトリップで \\\" が復元される。"""
+        data = {"title": 'key: "value"'}
+        path = self._path("dq.yaml")
+        write_flat_yaml(path, data)
+        result = read_yaml(path)
+        self.assertEqual(result["title"], 'key: "value"')
+
+    def test_backslash_roundtrip(self):
+        """バックスラッシュを含む文字列のラウンドトリップで \\\\ が復元される。"""
+        data = {"path": "C:\\Users\\test: file"}
+        path = self._path("bs.yaml")
+        write_flat_yaml(path, data)
+        result = read_yaml(path)
+        self.assertEqual(result["path"], "C:\\Users\\test: file")
+
+    def test_mixed_escape_roundtrip(self):
+        """バックスラッシュとダブルクォートが混在するラウンドトリップ。"""
+        data = {"msg": 'say: "hello" with\\path'}
+        path = self._path("mixed.yaml")
+        write_flat_yaml(path, data)
+        result = read_yaml(path)
+        self.assertEqual(result["msg"], 'say: "hello" with\\path')
+
+    def test_single_quote_roundtrip(self):
+        """シングルクォート内の `''` が `'` に復元される(手書き YAML 互換)。"""
+        from session.yaml_utils import parse_yaml
+        # yaml_scalar はダブルクォートで出力するが、手書き YAML を読む場合に備える
+        content = "greeting: 'it''s me'\n"
+        result = parse_yaml(content)
+        self.assertEqual(result["greeting"], "it's me")
+
 
 # ---------------------------------------------------------------------------
 # write_nested_yaml
@@ -267,6 +299,38 @@ class TestParseYaml(unittest.TestCase):
         result = parse_yaml(content)
         self.assertTrue(result["auto_fixable"])
         self.assertFalse(result["disabled"])
+
+    def test_list_with_many_leading_comments(self):
+        """子要素の先頭に 10 行超のコメント / 空行があっても正しくパースされる。
+
+        固定 10 行の先読み制限を削除したことの回帰テスト。
+        """
+        comment_lines = "\n".join(f"  # comment {i}" for i in range(15))
+        content = (
+            "items:\n"
+            + comment_lines + "\n"
+            + "  - id: 1\n"
+            + "    title: first\n"
+            + "  - id: 2\n"
+            + "    title: second\n"
+        )
+        result = parse_yaml(content)
+        self.assertEqual(len(result["items"]), 2)
+        self.assertEqual(result["items"][0]["id"], 1)
+        self.assertEqual(result["items"][1]["title"], "second")
+
+    def test_dict_block_with_many_leading_blank_lines(self):
+        """辞書ブロックの先頭に多数の空行があっても正しくパースされる。"""
+        blank_lines = "\n" * 12
+        content = (
+            "config:"
+            + blank_lines
+            + "  host: localhost\n"
+            + "  port: 8080\n"
+        )
+        result = parse_yaml(content)
+        self.assertEqual(result["config"]["host"], "localhost")
+        self.assertEqual(result["config"]["port"], 8080)
 
 
 # ---------------------------------------------------------------------------

@@ -120,6 +120,7 @@ perspective: {perspective_name}
 `${CLAUDE_SKILL_DIR}/templates/review.md` を Read し、そのフォーマットをコピーして指摘を埋めること。
 見出し形式（### 1. ...）ではなく、番号付きリスト（1. **[問題名]**: ...）で記述すること。
 該当なしのセクションはセクションごと削除すること。
+**各指摘は単体で人間が理解できる粒度で書くこと**（下流の evaluator が `review_{perspective}.md` を全面書き換えする前提でも、reviewer 原文 = `.raw.md` に保存される自己完結した記述が evaluator の整形品質の基盤となる）。
 
 確認や質問は不要です。具体的な指摘と修正案を出力してください。
 ```
