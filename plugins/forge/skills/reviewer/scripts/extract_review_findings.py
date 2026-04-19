@@ -38,8 +38,16 @@ SECTION_MARKERS = {
 # severity の優先順位（重複除去時に最高を採用）
 SEVERITY_PRIORITY = {'critical': 3, 'major': 2, 'minor': 1}
 
-# 指摘事項の番号付きパターン（例: "1. **[問題名]**: 説明" or "1. **問題名**: 説明"）
-FINDING_PATTERN = re.compile(r'^\d+\.\s+\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)')
+# 指摘事項の番号付きパターン
+# 例:
+#   "1. 🔴 **[問題名]**: 説明"  (行マーカー付き・推奨)
+#   "1. **[問題名]**: 説明"    (行マーカーなし・後方互換)
+# group(1): 行先頭の severity マーカー(🔴/🟡/🟢 or None)
+# group(2): タイトル
+# group(3): 説明
+FINDING_PATTERN = re.compile(
+    r'^\d+\.\s+(🔴|🟡|🟢)?\s*\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)'
+)
 
 # 箇所行のパターン（例: "   - 箇所: path/to/file.py:42"）
 LOCATION_PATTERN = re.compile(r'^\s+-\s+箇所\s*[:：]\s*(.*)')
@@ -76,13 +84,29 @@ def extract_findings(content):
             findings[-1]['body'] = '\n'.join(trimmed)
         findings[-1]['_body_closed'] = True
 
-    def start_finding(title, line):
+    def resolve_severity(marker):
+        """行マーカー優先、なければセクション見出し、どちらもなければ major + warning。"""
+        if marker:
+            return SECTION_MARKERS[marker]
+        if current_severity:
+            return current_severity
+        return None  # 呼び出し元で warning + major にフォールバック
+
+    def start_finding(title, line, marker=None):
         nonlocal finding_id, body_lines
         flush_body()
+        severity = resolve_severity(marker)
+        if severity is None:
+            print(
+                f"Warning: finding '{title}' has no severity marker and no "
+                f"section heading; defaulting to 'major'",
+                file=sys.stderr,
+            )
+            severity = 'major'
         finding_id += 1
         findings.append({
             'id': finding_id,
-            'severity': current_severity,
+            'severity': severity,
             'title': title,
             'location': '',
             'status': 'pending',
@@ -116,14 +140,15 @@ def extract_findings(content):
                         current_severity = None
 
             # # 行でも FINDING_PATTERN を試行（### 1. **問題名** 形式への対応）
-            if current_severity:
-                heading_text = stripped.lstrip('#').strip()
-                match = FINDING_PATTERN.match(heading_text)
-                if match:
-                    start_finding(match.group(1).strip(), line)
-            continue
-
-        if current_severity is None:
+            heading_text = stripped.lstrip('#').strip()
+            match = FINDING_PATTERN.match(heading_text)
+            if match:
+                marker = match.group(1)
+                title = match.group(2).strip()
+                # セクション見出しもマーカーも無い場合は finding として扱わない
+                # (見出しを finding と誤認するのを防ぐため)
+                if marker or current_severity:
+                    start_finding(title, line, marker=marker)
             continue
 
         # 箇所行の検出（直前の finding に location を設定）
@@ -137,7 +162,9 @@ def extract_findings(content):
         # 指摘事項の検出
         match = FINDING_PATTERN.match(stripped)
         if match:
-            start_finding(match.group(1).strip(), line)
+            marker = match.group(1)
+            title = match.group(2).strip()
+            start_finding(title, line, marker=marker)
             continue
 
         # 通常の本文行(現在の finding の body に蓄積)

@@ -1178,5 +1178,130 @@ class TestExtractFindingsSeverityBoundary(unittest.TestCase):
             self.assertNotIn('_body_closed', f)
 
 
+# ===========================================================================
+# 行マーカー(🔴/🟡/🟢)対応テスト
+# ===========================================================================
+
+import io
+from contextlib import redirect_stderr
+
+
+class TestInlineSeverityMarkers(unittest.TestCase):
+    """finding 行先頭の severity マーカー対応テスト。
+
+    新方式: reviewer は各 finding 行に `1. 🔴 **問題名**: ...` の形式で
+    severity マーカーを必須で付ける。セクション見出しが欠けても
+    行マーカーから severity を決定できる。"""
+
+    def test_finding_markers_without_headings(self):
+        """セクション見出しなしでも行マーカーから severity を拾える。"""
+        content = """\
+1. 🔴 **致命的問題A**: 説明A
+   - 箇所: a.py:1
+2. 🟡 **品質問題B**: 説明B
+   - 箇所: b.py:2
+3. 🟢 **改善提案C**: 説明C
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '致命的問題A')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '品質問題B')
+        self.assertEqual(findings[2]['severity'], 'minor')
+        self.assertEqual(findings[2]['title'], '改善提案C')
+
+    def test_finding_marker_overrides_section(self):
+        """行マーカーがセクション見出しより優先される。"""
+        content = """\
+### 🔴致命的問題
+
+1. 🟡 **実は品質問題**: 行マーカーが優先される
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '実は品質問題')
+
+    def test_missing_both_markers_warns_and_defaults_to_major(self):
+        """行マーカーもセクション見出しもない finding は warning + major fallback。"""
+        content = """\
+1. **見出しもマーカーもない**: 説明
+   - 箇所: x.py:1
+"""
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '見出しもマーカーもない')
+        stderr_text = buf.getvalue()
+        self.assertIn('Warning', stderr_text)
+        self.assertIn('見出しもマーカーもない', stderr_text)
+
+    def test_empty_section_with_none_text(self):
+        """`（なし）` と書かれたセクションは finding 0 として処理される。"""
+        content = """\
+### 🔴致命的問題
+
+（なし）
+
+### 🟡品質問題
+
+1. 🟡 **唯一の指摘**: 説明
+   - 箇所: y.py:2
+
+### 🟢改善提案
+
+（なし）
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '唯一の指摘')
+
+    def test_marker_with_and_without_space(self):
+        """行マーカー直後にスペースがあってもなくても拾える。"""
+        content = """\
+1. 🔴 **スペース付き**: 説明1
+2. 🔴**スペースなし**: 説明2
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], 'スペース付き')
+        self.assertEqual(findings[1]['severity'], 'critical')
+        self.assertEqual(findings[1]['title'], 'スペースなし')
+
+    def test_section_heading_still_works_without_row_markers(self):
+        """行マーカーなしでもセクション見出しから severity が決定される(後方互換)。"""
+        content = """\
+### 🔴致命的問題
+
+1. **行マーカーなし**: 説明
+   - 箇所: z.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '行マーカーなし')
+
+    def test_mixed_marker_and_no_marker_in_same_section(self):
+        """同一セクション内で行マーカーあり/なしが混在してもそれぞれ正しく処理される。"""
+        content = """\
+### 🔴致命的問題
+
+1. **行マーカーなし**: セクション見出しから critical
+2. 🟡 **行マーカーあり**: マーカーから major
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '行マーカーなし')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '行マーカーあり')
+
+
 if __name__ == '__main__':
     unittest.main()
