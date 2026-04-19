@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.13] - 2026-04-19
+
+### marketplace
+
+- **feat**: forge を 0.0.37 に更新。reviewer パイプラインの信頼性を大幅強化
+
+## [0.0.37] - 2026-04-19
+
+### forge
+
+- **fix(review)**: codex exec の `-o` 最終メッセージが reviewer 本体のレビュー内容を上書きする不具合を根絶。`-o` を `.codex_lastmsg.txt` に、stdout を `.stdout` に分離し、`extract_codex_output.py` で Markdown 本文を抽出する新設計に変更
+- **fix(review)**: `--full-auto` を削除し `--sandbox read-only` のみに。reviewer が `apply_patch` で誤書き込みする経路を塞ぐ二重防御
+- **fix(reviewer)**: `extract_review_findings.py` がセクション見出し欠落時に指摘事項を silent drop する不具合を修正。finding 行マーカー必須化 + 空セクション保持（`（なし）`）+ parser fallback の 3 層防御を導入（実セッションで 21 件中 12 件しか拾えなかった事故の対策）
+- **refactor(reviewer)**: severity 指定を絵文字 🔴/🟡/🟢 から ASCII ラベル `[critical]/[major]/[minor]` primary に移行。LLM による絵文字の省略・Unicode 正規化の揺れ・色覚アクセシビリティの不安定性を回避（絵文字は後方互換として装飾扱い）
+- **refactor(review)**: review skill の構造的リファクタリング
+
 ## [marketplace 0.1.12] - 2026-04-19
 
 ### marketplace
