@@ -4,10 +4,33 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-04-19T03:06:04Z
-  file_count: 30
+  generated_at: 2026-04-19T03:36:43Z
+  file_count: 31
 
 docs:
+  plugins/forge/docs/additive_development_spec.md:
+    doc_type: rule
+    title: Additive Development Workflow Specification
+    purpose: Defines criteria for identifying additive development, priority rules when conflicts arise with existing specifications, file separation strategy, and merge procedures
+    content_details:
+      - Applicability conditions for additive development
+      - Priority hierarchy when new requirements conflict with existing specifications
+      - File separation rules to preserve old specifications during implementation
+      - Merge timing and procedures to integrate temporary documents into existing specifications
+      - Related documents for boundary definition and design principles
+    applicable_tasks:
+      - Additive feature implementation planning
+      - New requirement definition for existing projects
+      - Merge planning after feature completion
+      - Requirements conflict resolution
+    keywords:
+      - additive development
+      - temporary feature requirement
+      - specification priority
+      - merge strategy
+      - feature implementation
+      - frontmatter type
+      - requirement definition
   plugins/forge/docs/context_gathering_spec.md:
     doc_type: rule
     title: Context Gathering Specification
@@ -188,27 +211,22 @@ docs:
   plugins/forge/docs/requirement_format.md:
     doc_type: rule
     title: Requirement Definition Document Default Format
-    purpose: Defines the default template and frontmatter rules for requirement definition documents in forge projects. Specifies format for new feature requirements with frontmatter metadata and standard body structure
+    purpose: Specifies the default format for requirement definition documents when project-specific spec_format.md is not available
     content_details:
-      - Frontmatter format with type and notes for temporary feature requirements
-      - Overview and purpose section
-      - Preconditions section
-      - Requirements list with display requirements, operation requirements, and error cases
-      - Undecided items tracking
-      - Change history table
+      - Frontmatter for additional features with type notes and metadata declarations
+      - "Required sections: Overview Prerequisites Requirements list"
+      - "Requirements subsections: Display requirements Operation requirements Error cases"
+      - Unresolved issues tracking table with ID content deadline
+      - Change history table with date author content
     applicable_tasks:
-      - Requirement document creation
-      - Feature implementation planning
-      - Specification updates
-      - Document validation
+      - Requirement definition document creation
+      - Feature requirement specification
+      - Additive feature implementation preparation
     keywords:
-      - requirement
-      - template
+      - requirement format
       - frontmatter
+      - feature requirement
       - specification
-      - feature
-      - format
-      - YAML
       - document structure
   plugins/forge/docs/session_format.md:
     doc_type: rule
