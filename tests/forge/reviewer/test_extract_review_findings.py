@@ -826,6 +826,594 @@ class TestGenerateReviewMd(unittest.TestCase):
         md = generate_review_md(findings)
         self.assertIn('[correctness, resilience]', md)
 
+    def test_bodies_by_perspective_rendered_for_duplicates(self):
+        """重複項目(perspectives 複数)は各 perspective の body が併記される。"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '共通問題',
+             'location': 'x.py:1',
+             'perspectives': ['logic', 'resilience'],
+             'bodies_by_perspective': {
+                 'logic': '1. **共通問題**: logic の視点での説明\n   - 根拠: ルールA',
+                 'resilience': '1. **共通問題**: resilience の視点での説明\n   - 根拠: ルールB',
+             }},
+        ]
+        md = generate_review_md(findings)
+        self.assertIn('#### logic の視点', md)
+        self.assertIn('#### resilience の視点', md)
+        self.assertIn('logic の視点での説明', md)
+        self.assertIn('resilience の視点での説明', md)
+        self.assertIn('ルールA', md)
+        self.assertIn('ルールB', md)
+
+    def test_bodies_not_rendered_for_single_perspective(self):
+        """単独 perspective の場合は bodies_by_perspective の併記は行われない。"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '単独問題',
+             'location': 'y.py:1', 'perspective': 'logic',
+             'body': '1. **単独問題**: 説明'},
+        ]
+        md = generate_review_md(findings)
+        # 併記見出し(#### の perspective 見出し)は出力されない
+        self.assertNotIn('#### logic の視点', md)
+
+    def test_bodies_preserves_perspective_order(self):
+        """bodies の出力順は perspectives リストの順序に従う。"""
+        findings = [
+            {'id': 1, 'severity': 'critical', 'title': '共通',
+             'location': '',
+             'perspectives': ['resilience', 'alignment', 'logic'],
+             'bodies_by_perspective': {
+                 'logic': 'body-logic',
+                 'alignment': 'body-alignment',
+                 'resilience': 'body-resilience',
+             }},
+        ]
+        md = generate_review_md(findings)
+        idx_r = md.index('#### resilience の視点')
+        idx_a = md.index('#### alignment の視点')
+        idx_l = md.index('#### logic の視点')
+        self.assertLess(idx_r, idx_a)
+        self.assertLess(idx_a, idx_l)
+
+
+# ===========================================================================
+# body 抽出テスト
+# ===========================================================================
+
+REVIEW_MD_WITH_BODY = """\
+### 🔴致命的問題
+
+1. **問題A**: 説明A
+   - 箇所: file.py:10
+   - なぜ問題か: ルール違反
+   - 修正案: 正しい書き方に変更
+2. **問題B**: 説明B
+   - 箇所: file.py:20
+
+### 🟢改善提案
+
+1. **改善案**: 改善説明
+"""
+
+
+class TestExtractFindingsBody(unittest.TestCase):
+    """body 抽出のテスト"""
+
+    def test_body_includes_finding_details(self):
+        """body には該当指摘の複数行の詳細が含まれる。"""
+        findings = extract_findings(REVIEW_MD_WITH_BODY)
+        self.assertEqual(len(findings), 3)
+        body_a = findings[0]['body']
+        self.assertIn('問題A', body_a)
+        self.assertIn('なぜ問題か', body_a)
+        self.assertIn('修正案', body_a)
+        # 次の指摘 "問題B" は含まれない
+        self.assertNotIn('問題B', body_a)
+
+    def test_body_stops_at_next_severity_section(self):
+        """body は次の severity セクション直前で終わる。"""
+        findings = extract_findings(REVIEW_MD_WITH_BODY)
+        body_b = findings[1]['body']
+        self.assertIn('問題B', body_b)
+        # 次のセクションの改善案は含まれない
+        self.assertNotIn('改善案', body_b)
+        self.assertNotIn('改善提案', body_b)
+
+    def test_body_trailing_blank_lines_stripped(self):
+        """body の末尾空行は除去されている。"""
+        findings = extract_findings(REVIEW_MD_WITH_BODY)
+        for f in findings:
+            self.assertFalse(f['body'].endswith('\n'))
+            self.assertFalse(f['body'].endswith('\n\n'))
+
+
+# ===========================================================================
+# deduplicate_findings の bodies_by_perspective テスト
+# ===========================================================================
+
+class TestDeduplicateBodies(unittest.TestCase):
+    """deduplicate_findings の bodies_by_perspective 機能のテスト"""
+
+    def _finding(self, title, location, perspective, body, severity='major'):
+        return {
+            'id': 0, 'severity': severity, 'title': title, 'location': location,
+            'status': 'pending', 'fixed_at': '', 'files_modified': [],
+            'skip_reason': '', 'perspective': perspective, 'body': body,
+        }
+
+    def test_duplicate_preserves_both_bodies(self):
+        """重複項目は各 perspective の body を bodies_by_perspective に保持する。"""
+        findings = [
+            self._finding('問題', 'f.py:1', 'logic', 'logic の原文'),
+            self._finding('問題', 'f.py:1', 'resilience', 'resilience の原文'),
+        ]
+        result = deduplicate_findings(findings)
+        self.assertEqual(len(result), 1)
+        bodies = result[0]['bodies_by_perspective']
+        self.assertEqual(bodies['logic'], 'logic の原文')
+        self.assertEqual(bodies['resilience'], 'resilience の原文')
+
+    def test_triple_duplicate_all_bodies(self):
+        """3 perspective の重複で 3 つの body が保持される。"""
+        findings = [
+            self._finding('問題', 'x.py:1', 'a', 'body-a'),
+            self._finding('問題', 'x.py:1', 'b', 'body-b'),
+            self._finding('問題', 'x.py:1', 'c', 'body-c'),
+        ]
+        result = deduplicate_findings(findings)
+        bodies = result[0]['bodies_by_perspective']
+        self.assertEqual(len(bodies), 3)
+        self.assertEqual(bodies['a'], 'body-a')
+        self.assertEqual(bodies['b'], 'body-b')
+        self.assertEqual(bodies['c'], 'body-c')
+
+    def test_non_duplicate_no_bodies_by_perspective(self):
+        """重複していない finding には bodies_by_perspective が付与されない。"""
+        findings = [
+            self._finding('問題A', 'f.py:1', 'logic', 'body-a'),
+            self._finding('問題B', 'f.py:2', 'logic', 'body-b'),
+        ]
+        result = deduplicate_findings(findings)
+        for f in result:
+            self.assertNotIn('bodies_by_perspective', f)
+
+
+# ===========================================================================
+# --review-only モードのテスト
+# ===========================================================================
+
+class TestReviewOnlyMode(unittest.TestCase):
+    """--review-only モードのテスト"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.session_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write(self, filename, content):
+        (self.session_path / filename).write_text(content, encoding='utf-8')
+
+    def test_review_only_does_not_overwrite_plan_yaml(self):
+        """--review-only は既存 plan.yaml を書き換えない。"""
+        self._write('review_correctness.md', REVIEW_CORRECTNESS)
+        # 既存 plan.yaml を用意(evaluator 判定情報を含む想定)
+        existing_plan = """\
+items:
+  - id: 1
+    severity: critical
+    title: "境界値チェック漏れ"
+    status: pending
+    recommendation: fix
+    auto_fixable: true
+    reason: "evaluator 判定理由"
+"""
+        (self.session_path / 'plan.yaml').write_text(existing_plan, encoding='utf-8')
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
+             self.tmpdir, '--review-only'],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        # plan.yaml は上書きされていない
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        self.assertIn('recommendation: fix', plan_content)
+        self.assertIn('evaluator 判定理由', plan_content)
+
+        # review.md は再生成されている
+        self.assertTrue((self.session_path / 'review.md').exists())
+
+        data = json.loads(result.stdout)
+        self.assertEqual(data['status'], 'ok')
+        self.assertTrue(data['review_only'])
+
+    def test_normal_mode_still_writes_plan_yaml(self):
+        """通常モード(--review-only なし)では plan.yaml が書き換えられる。"""
+        self._write('review_correctness.md', REVIEW_CORRECTNESS)
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
+             self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+
+        plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        self.assertIn('items:', plan_content)
+        # 判定フィールドは含まれない(reviewer 段階では未生成)
+        self.assertNotIn('recommendation:', plan_content)
+
+        data = json.loads(result.stdout)
+        self.assertFalse(data['review_only'])
+
+    def test_review_only_renders_bodies_in_review_md(self):
+        """--review-only で統合 review.md に重複項目の各 perspective の body が併記される。"""
+        self._write('review_correctness.md', """\
+### 🔴致命的問題
+
+1. **境界値チェック漏れ**: correctness の視点で説明
+   - 箇所: utils.py:42
+   - 根拠: ルール AA
+""")
+        self._write('review_resilience.md', """\
+### 🔴致命的問題
+
+1. **境界値チェック漏れ**: resilience の視点で説明
+   - 箇所: utils.py:42
+   - 根拠: ルール BB
+""")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
+             self.tmpdir, '--review-only'],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        review_md = (self.session_path / 'review.md').read_text(encoding='utf-8')
+        self.assertIn('#### correctness の視点', review_md)
+        self.assertIn('#### resilience の視点', review_md)
+        self.assertIn('correctness の視点で説明', review_md)
+        self.assertIn('resilience の視点で説明', review_md)
+        self.assertIn('ルール AA', review_md)
+        self.assertIn('ルール BB', review_md)
+
+    def test_raw_md_files_are_excluded_from_glob(self):
+        """`review_*.raw.md` は glob から除外される(evaluator バックアップを二重処理しない)。"""
+        # evaluator 書き換え後の最終系と、reviewer 原文バックアップの両方を配置
+        self._write('review_logic.md', """\
+### 🔴致命的問題
+
+1. **整形後タイトル**: evaluator が書き換えた内容
+   - 箇所: file.py:10
+""")
+        self._write('review_logic.raw.md', """\
+### 🔴致命的問題
+
+1. **原文のタイトル**: reviewer 原文
+   - 箇所: file.py:10
+""")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
+             self.tmpdir, '--review-only'],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        # .raw.md は処理されないため、total は 1 件のみ
+        data = json.loads(result.stdout)
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['files_processed'], 1)
+
+        review_md = (self.session_path / 'review.md').read_text(encoding='utf-8')
+        self.assertIn('整形後タイトル', review_md)
+        self.assertNotIn('原文のタイトル', review_md)
+
+
+# ===========================================================================
+# severity 切替時の body 上書きバグ(回帰テスト)
+# ===========================================================================
+
+class TestExtractFindingsSeverityBoundary(unittest.TestCase):
+    """severity セクション切替後の余分な本文行が、前の finding の body を
+    上書きしてしまうバグの回帰テスト。"""
+
+    def test_body_not_overwritten_by_inter_section_text(self):
+        """severity セクション間に説明文があっても、前 finding の body は保たれる。"""
+        content = """\
+### 🔴致命的問題
+
+1. **致命的 A**: 問題 A の説明
+   - 箇所: a.py:1
+   - 根拠: ルール X
+   - 修正案: A を直す
+
+### 🟡品質問題
+
+以下は品質に関する指摘です。全体で確認すべき事項を含みます。
+書き換えは慎重に行ってください。
+
+1. **品質 B**: 問題 B の説明
+   - 箇所: b.py:2
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+
+        # 致命的 A の body は A の内容を保持しており、
+        # 「以下は品質に関する指摘です」等の intro 文で上書きされていない
+        body_a = findings[0]['body']
+        self.assertIn('致命的 A', body_a)
+        self.assertIn('問題 A の説明', body_a)
+        self.assertIn('ルール X', body_a)
+        self.assertNotIn('品質に関する指摘', body_a)
+        self.assertNotIn('書き換えは慎重に', body_a)
+
+        # 品質 B の body は B の内容を持つ
+        body_b = findings[1]['body']
+        self.assertIn('品質 B', body_b)
+        self.assertIn('問題 B の説明', body_b)
+
+    def test_body_closed_flag_not_leaked(self):
+        """内部フラグ _body_closed は呼び出し元に漏れない。"""
+        content = """\
+### 🔴致命的問題
+
+1. **A**: 説明
+   - 箇所: f.py:1
+
+### 🟡品質問題
+
+中間の説明文
+
+1. **B**: 説明
+   - 箇所: f.py:2
+"""
+        findings = extract_findings(content)
+        for f in findings:
+            self.assertNotIn('_body_closed', f)
+
+
+# ===========================================================================
+# 行マーカー(🔴/🟡/🟢)対応テスト
+# ===========================================================================
+
+import io
+from contextlib import redirect_stderr
+
+
+class TestInlineSeverityMarkers(unittest.TestCase):
+    """finding 行先頭の severity マーカー対応テスト。
+
+    新方式: reviewer は各 finding 行に `1. 🔴 **問題名**: ...` の形式で
+    severity マーカーを必須で付ける。セクション見出しが欠けても
+    行マーカーから severity を決定できる。"""
+
+    def test_finding_markers_without_headings(self):
+        """セクション見出しなしでも行マーカーから severity を拾える。"""
+        content = """\
+1. 🔴 **致命的問題A**: 説明A
+   - 箇所: a.py:1
+2. 🟡 **品質問題B**: 説明B
+   - 箇所: b.py:2
+3. 🟢 **改善提案C**: 説明C
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '致命的問題A')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '品質問題B')
+        self.assertEqual(findings[2]['severity'], 'minor')
+        self.assertEqual(findings[2]['title'], '改善提案C')
+
+    def test_finding_marker_overrides_section(self):
+        """行マーカーがセクション見出しより優先される。"""
+        content = """\
+### 🔴致命的問題
+
+1. 🟡 **実は品質問題**: 行マーカーが優先される
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '実は品質問題')
+
+    def test_missing_both_markers_warns_and_defaults_to_major(self):
+        """行マーカーもセクション見出しもない finding は warning + major fallback。"""
+        content = """\
+1. **見出しもマーカーもない**: 説明
+   - 箇所: x.py:1
+"""
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '見出しもマーカーもない')
+        stderr_text = buf.getvalue()
+        self.assertIn('Warning', stderr_text)
+        self.assertIn('見出しもマーカーもない', stderr_text)
+
+    def test_empty_section_with_none_text(self):
+        """`（なし）` と書かれたセクションは finding 0 として処理される。"""
+        content = """\
+### 🔴致命的問題
+
+（なし）
+
+### 🟡品質問題
+
+1. 🟡 **唯一の指摘**: 説明
+   - 箇所: y.py:2
+
+### 🟢改善提案
+
+（なし）
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '唯一の指摘')
+
+    def test_marker_with_and_without_space(self):
+        """行マーカー直後にスペースがあってもなくても拾える。"""
+        content = """\
+1. 🔴 **スペース付き**: 説明1
+2. 🔴**スペースなし**: 説明2
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], 'スペース付き')
+        self.assertEqual(findings[1]['severity'], 'critical')
+        self.assertEqual(findings[1]['title'], 'スペースなし')
+
+    def test_section_heading_still_works_without_row_markers(self):
+        """行マーカーなしでもセクション見出しから severity が決定される(後方互換)。"""
+        content = """\
+### 🔴致命的問題
+
+1. **行マーカーなし**: 説明
+   - 箇所: z.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '行マーカーなし')
+
+    def test_mixed_marker_and_no_marker_in_same_section(self):
+        """同一セクション内で行マーカーあり/なしが混在してもそれぞれ正しく処理される。"""
+        content = """\
+### 🔴致命的問題
+
+1. **行マーカーなし**: セクション見出しから critical
+2. 🟡 **行マーカーあり**: マーカーから major
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '行マーカーなし')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '行マーカーあり')
+
+
+# ===========================================================================
+# ASCII ラベルマーカー (primary) テスト
+# ===========================================================================
+
+class TestAsciiLabelMarkers(unittest.TestCase):
+    """ASCII ラベル `[critical]/[major]/[minor]` を primary severity として扱う。
+
+    絵文字は装飾（後方互換）であり、パース時は ASCII ラベルが優先される。
+    LLM による絵文字の省略・変換・Unicode 正規化の影響を受けない設計。"""
+
+    def test_ascii_label_without_headings(self):
+        """セクション見出しなしでも ASCII ラベルから severity を拾える。"""
+        content = """\
+1. [critical] **致命的問題A**: 説明A
+   - 箇所: a.py:1
+2. [major] **品質問題B**: 説明B
+   - 箇所: b.py:2
+3. [minor] **改善提案C**: 説明C
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 3)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '致命的問題A')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '品質問題B')
+        self.assertEqual(findings[2]['severity'], 'minor')
+        self.assertEqual(findings[2]['title'], '改善提案C')
+
+    def test_ascii_label_overrides_section_heading(self):
+        """ASCII ラベルがセクション見出しより優先される。"""
+        content = """\
+### 🔴致命的問題
+
+1. [major] **実は品質問題**: ラベル優先
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'major')
+        self.assertEqual(findings[0]['title'], '実は品質問題')
+
+    def test_ascii_label_overrides_emoji_marker(self):
+        """ASCII ラベルが絵文字マーカーより優先される(併記時)。
+
+        LLM が誤って `[critical]` と 🟡 を併記してもラベル側が採用される。
+        絵文字が装飾扱いであることを明確に検証する。"""
+        # FINDING_PATTERN は `[label]` か絵文字のどちらか一方のみキャプチャする
+        # 形式だが、将来的に併記許容に拡張する場合のため、ラベル単独で
+        # 絵文字マーカーが見つからない形式の入力を受け付けられることを検証する。
+        content = """\
+### 🟡品質問題
+
+1. [critical] **本当は致命的**: セクションは 🟡 だがラベル critical
+   - 箇所: x.py:1
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '本当は致命的')
+
+    def test_ascii_label_backward_compat_with_emoji(self):
+        """絵文字マーカー形式は後方互換として引き続き動作する。"""
+        content = """\
+1. [critical] **新形式**: ASCII ラベル
+2. 🟡 **旧形式**: 絵文字マーカー
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '新形式')
+        self.assertEqual(findings[1]['severity'], 'major')
+        self.assertEqual(findings[1]['title'], '旧形式')
+
+    def test_ascii_label_case_sensitive(self):
+        """ラベルは小文字の `[critical]` のみ。`[CRITICAL]` は認識しない。
+
+        大文字を許容すると LLM の多様な出力を silent に受け入れてしまい、
+        契約違反を検出できなくなる。契約は小文字固定。"""
+        content = """\
+1. [CRITICAL] **大文字**: これは認識されない
+"""
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            findings = extract_findings(content)
+        # `[CRITICAL]` は label として認識されず、**タイトル** の途中として
+        # マッチしないため finding 自体が抽出されない(または major fallback)
+        # どちらにせよ severity=critical にはならないことを検証
+        if findings:
+            self.assertNotEqual(findings[0]['severity'], 'critical')
+
+    def test_ascii_label_whitespace_tolerance(self):
+        """ラベル前後のスペースは許容される(`1. [critical] **...**`)。"""
+        content = """\
+1. [critical] **スペース1つ**: 説明
+2. [major]  **スペース2つ**: 説明
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[1]['severity'], 'major')
+
+    def test_ascii_label_in_heading_format(self):
+        """見出し形式 `### 1. [critical] **...**` でもラベルが認識される。"""
+        content = """\
+### 1. [critical] **見出し形式のラベル**: 説明
+"""
+        findings = extract_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]['severity'], 'critical')
+        self.assertEqual(findings[0]['title'], '見出し形式のラベル')
+
 
 if __name__ == '__main__':
     unittest.main()

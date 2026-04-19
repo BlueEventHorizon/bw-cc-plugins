@@ -9,6 +9,11 @@ Usage:
         session_dir モード: review_*.md を glob で収集し統合
         出力: {session_dir}/plan.yaml + {session_dir}/review.md
 
+    python3 extract_review_findings.py <session_dir> --review-only
+        --review-only モード: plan.yaml を書き換えず review.md のみ再生成
+        evaluator が review_{perspective}.md を書き換えた後、
+        判定情報を保持したまま統合 review.md を再生成するのに使う
+
     python3 extract_review_findings.py <review_md_path> <output_plan_yaml_path>
         旧モード（後方互換）: 単一ファイルを処理
 
@@ -33,8 +38,20 @@ SECTION_MARKERS = {
 # severity の優先順位（重複除去時に最高を採用）
 SEVERITY_PRIORITY = {'critical': 3, 'major': 2, 'minor': 1}
 
-# 指摘事項の番号付きパターン（例: "1. **[問題名]**: 説明" or "1. **問題名**: 説明"）
-FINDING_PATTERN = re.compile(r'^\d+\.\s+\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)')
+# 指摘事項の番号付きパターン
+# 例:
+#   "1. [critical] **[問題名]**: 説明"  (ASCII ラベル・推奨)
+#   "1. 🔴 **[問題名]**: 説明"          (絵文字マーカー・後方互換)
+#   "1. **[問題名]**: 説明"             (マーカーなし・セクション見出し fallback)
+# group(1): ASCII ラベル (critical|major|minor or None)
+# group(2): 絵文字マーカー (🔴/🟡/🟢 or None)
+# group(3): タイトル
+# group(4): 説明
+FINDING_PATTERN = re.compile(
+    r'^\d+\.\s+'
+    r'(?:\[(critical|major|minor)\]|(🔴|🟡|🟢))?\s*'
+    r'\*\*(?:\[)?(.+?)(?:\])?\*\*\s*[:：]\s*(.*)'
+)
 
 # 箇所行のパターン（例: "   - 箇所: path/to/file.py:42"）
 LOCATION_PATTERN = re.compile(r'^\s+-\s+箇所\s*[:：]\s*(.*)')
@@ -43,54 +60,103 @@ LOCATION_PATTERN = re.compile(r'^\s+-\s+箇所\s*[:：]\s*(.*)')
 def extract_findings(content):
     """review.md から指摘事項を抽出する。
 
+    各 finding には `body` キーも含める。
+    body は「その指摘の開始行から次の指摘/セクション直前まで」の原文で、
+    重複項目の各 perspective 内容を併記する際に使う。
+
     Args:
         content: review.md の内容（文字列）
 
     Returns:
-        list[dict]: 指摘事項リスト。各要素は {id, severity, title, location, ...} を含む
+        list[dict]: 指摘事項リスト。各要素は {id, severity, title, location, body, ...} を含む
     """
     findings = []
     current_severity = None
     finding_id = 0
+    body_lines = []  # 現在の指摘事項の本文行(原文)
+
+    def flush_body():
+        # 同じ finding を 2 度閉じない(severity 切り替え後の余分な本文行が
+        # 前の finding の body を上書きするのを防ぐ)。
+        # 2 回目以降の flush は no-op。
+        if not findings or findings[-1].get('_body_closed'):
+            return
+        trimmed = list(body_lines)
+        while trimmed and trimmed[-1].strip() == '':
+            trimmed.pop()
+        if trimmed:
+            findings[-1]['body'] = '\n'.join(trimmed)
+        findings[-1]['_body_closed'] = True
+
+    def resolve_severity(label, marker):
+        """ASCII ラベル > 絵文字マーカー > セクション見出し > fallback の優先順位。"""
+        if label:
+            return label  # critical/major/minor をそのまま
+        if marker:
+            return SECTION_MARKERS[marker]
+        if current_severity:
+            return current_severity
+        return None  # 呼び出し元で warning + major にフォールバック
+
+    def start_finding(title, line, label=None, marker=None):
+        nonlocal finding_id, body_lines
+        flush_body()
+        severity = resolve_severity(label, marker)
+        if severity is None:
+            print(
+                f"Warning: finding '{title}' has no severity label "
+                f"([critical]/[major]/[minor]), no emoji marker, and no "
+                f"section heading; defaulting to 'major'",
+                file=sys.stderr,
+            )
+            severity = 'major'
+        finding_id += 1
+        findings.append({
+            'id': finding_id,
+            'severity': severity,
+            'title': title,
+            'location': '',
+            'status': 'pending',
+            'fixed_at': '',
+            'files_modified': [],
+            'skip_reason': '',
+            'body': '',
+        })
+        body_lines = [line]
 
     for line in content.split('\n'):
         stripped = line.strip()
 
         # セクション見出しの検出（### 🔴致命的問題 等）
         if stripped.startswith('#'):
+            severity_switched = False
             for marker, severity in SECTION_MARKERS.items():
                 if marker in stripped:
+                    flush_body()
+                    body_lines = []
                     current_severity = severity
+                    severity_switched = True
                     break
-            else:
-                # マーカーのないヘッダーは severity をリセットしない
-                # （サマリーセクション等）
+            if not severity_switched:
+                # マーカーのないヘッダー
                 if '### ' in stripped and current_severity:
-                    # サマリーセクションに入ったらリセット
                     lower = stripped.lower()
                     if 'サマリー' in lower or 'summary' in lower:
+                        flush_body()
+                        body_lines = []
                         current_severity = None
 
             # # 行でも FINDING_PATTERN を試行（### 1. **問題名** 形式への対応）
-            if current_severity:
-                heading_text = stripped.lstrip('#').strip()
-                match = FINDING_PATTERN.match(heading_text)
-                if match:
-                    finding_id += 1
-                    title = match.group(1).strip()
-                    findings.append({
-                        'id': finding_id,
-                        'severity': current_severity,
-                        'title': title,
-                        'location': '',
-                        'status': 'pending',
-                        'fixed_at': '',
-                        'files_modified': [],
-                        'skip_reason': '',
-                    })
-            continue
-
-        if current_severity is None:
+            heading_text = stripped.lstrip('#').strip()
+            match = FINDING_PATTERN.match(heading_text)
+            if match:
+                label = match.group(1)
+                marker = match.group(2)
+                title = match.group(3).strip()
+                # セクション見出しもマーカーも無い場合は finding として扱わない
+                # (見出しを finding と誤認するのを防ぐため)
+                if label or marker or current_severity:
+                    start_finding(title, line, label=label, marker=marker)
             continue
 
         # 箇所行の検出（直前の finding に location を設定）
@@ -98,24 +164,28 @@ def extract_findings(content):
         loc_match = LOCATION_PATTERN.match(line)
         if loc_match and findings:
             findings[-1]['location'] = loc_match.group(1).strip()
+            body_lines.append(line)
             continue
 
         # 指摘事項の検出
         match = FINDING_PATTERN.match(stripped)
         if match:
-            finding_id += 1
-            title = match.group(1).strip()
-            findings.append({
-                'id': finding_id,
-                'severity': current_severity,
-                'title': title,
-                'location': '',
-                'status': 'pending',
-                'fixed_at': '',
-                'files_modified': [],
-                'skip_reason': '',
-            })
+            label = match.group(1)
+            marker = match.group(2)
+            title = match.group(3).strip()
+            start_finding(title, line, label=label, marker=marker)
+            continue
 
+        # 通常の本文行(現在の finding の body に蓄積)
+        # _body_closed 済みの finding には追加しない(severity 切替後の
+        # 余分行がぶら下がって上書きするのを防ぐ)。
+        if findings and not findings[-1].get('_body_closed'):
+            body_lines.append(line)
+
+    flush_body()
+    # 内部フラグを除去(呼び出し元には見せない)
+    for f in findings:
+        f.pop('_body_closed', None)
     return findings
 
 
@@ -141,6 +211,8 @@ def deduplicate_findings(findings):
     統合ルール:
         - severity: 最高を採用（critical > major > minor）
         - perspectives: 統合元の perspective 名を全て記録
+        - bodies_by_perspective: 重複項目は各 perspective の原文本文を保持
+          (Claude が両 perspective の指摘内容を並列で確認できるよう残す)
 
     Args:
         findings: perspective 付きの指摘事項リスト
@@ -169,6 +241,19 @@ def deduplicate_findings(findings):
                     existing['perspectives'] = [existing_persp] if existing_persp else []
                 if new_persp not in existing['perspectives']:
                     existing['perspectives'].append(new_persp)
+            # bodies_by_perspective: 各 perspective の原文本文を保持
+            if 'bodies_by_perspective' not in existing:
+                existing['bodies_by_perspective'] = {}
+                # 既存 finding の body を初回統合時に登録
+                first_persp = (
+                    existing['perspectives'][0]
+                    if existing.get('perspectives')
+                    else existing.get('perspective', '')
+                )
+                if first_persp and existing.get('body'):
+                    existing['bodies_by_perspective'][first_persp] = existing['body']
+            if new_persp and f.get('body'):
+                existing['bodies_by_perspective'][new_persp] = f['body']
         else:
             seen[key] = len(result)
             result.append(dict(f))  # コピーして追加
@@ -259,6 +344,19 @@ def generate_review_md(findings):
             lines.append(f'{i}. **{f["title"]}**{persp_info}')
             if f.get('location'):
                 lines.append(f'   - 箇所: {f["location"]}')
+
+            # 重複項目の各 perspective 内容併記
+            bodies = f.get('bodies_by_perspective')
+            if bodies and len(bodies) > 1:
+                lines.append('')
+                for persp in f.get('perspectives', []):
+                    body = bodies.get(persp)
+                    if not body:
+                        continue
+                    lines.append(f'#### {persp} の視点')
+                    lines.append('')
+                    lines.append(body)
+                    lines.append('')
             lines.append('')
 
     # サマリー
@@ -288,11 +386,12 @@ def summarize(findings):
     }
 
 
-def run_session_dir_mode(session_dir):
+def run_session_dir_mode(session_dir, review_only=False):
     """session_dir モード: review_*.md を glob で収集し統合する。
 
     Args:
         session_dir: セッションディレクトリのパス
+        review_only: True のとき plan.yaml を書き換えず review.md のみ再生成
 
     Returns:
         int: 終了コード
@@ -304,7 +403,14 @@ def run_session_dir_mode(session_dir):
         return 1
 
     # review_*.md を glob で収集（アルファベット順ソート）
-    review_files = sorted(glob.glob(str(session_path / 'review_*.md')))
+    # .raw.md（reviewer 原文バックアップ）は除外する。
+    # `review_*.md` パターンは shell glob として `review_logic.raw.md` にも
+    # マッチするため、明示的に除外しないと evaluator 書き換え後の Phase 4
+    # Step 1.5 で原文と最終系の両方が二重処理される。
+    review_files = sorted(
+        f for f in glob.glob(str(session_path / 'review_*.md'))
+        if not Path(f).name.endswith('.raw.md')
+    )
 
     if not review_files:
         error = {"status": "error", "error": f"No review_*.md files found in: {session_dir}"}
@@ -354,9 +460,10 @@ def run_session_dir_mode(session_dir):
     # ベストエフォート重複除去
     deduplicated = deduplicate_findings(all_findings)
 
-    # plan.yaml を生成・書き出し
-    plan_yaml = generate_plan_yaml(deduplicated)
-    (session_path / 'plan.yaml').write_text(plan_yaml, encoding='utf-8')
+    # plan.yaml を生成・書き出し（--review-only のときは判定情報を保護するためスキップ）
+    if not review_only:
+        plan_yaml = generate_plan_yaml(deduplicated)
+        (session_path / 'plan.yaml').write_text(plan_yaml, encoding='utf-8')
 
     # review.md を生成・書き出し
     review_md = generate_review_md(deduplicated)
@@ -368,6 +475,7 @@ def run_session_dir_mode(session_dir):
     result["files_processed"] = len(processed_files)
     result["files_failed"] = len(failed_files)
     result["duplicates_removed"] = len(all_findings) - len(deduplicated)
+    result["review_only"] = review_only
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
@@ -403,15 +511,22 @@ def run_legacy_mode(review_md_path, output_path):
 
 
 def main():
-    if len(sys.argv) == 2:
+    args = sys.argv[1:]
+    review_only = False
+    if '--review-only' in args:
+        review_only = True
+        args = [a for a in args if a != '--review-only']
+
+    if len(args) == 1:
         # session_dir モード
-        sys.exit(run_session_dir_mode(sys.argv[1]))
-    elif len(sys.argv) == 3:
+        sys.exit(run_session_dir_mode(args[0], review_only=review_only))
+    elif len(args) == 2 and not review_only:
         # 旧モード（後方互換）
-        sys.exit(run_legacy_mode(sys.argv[1], sys.argv[2]))
+        sys.exit(run_legacy_mode(args[0], args[1]))
     else:
         print("Usage:", file=sys.stderr)
         print("  extract_review_findings.py <session_dir>                        # session_dir モード", file=sys.stderr)
+        print("  extract_review_findings.py <session_dir> --review-only          # review.md のみ再生成", file=sys.stderr)
         print("  extract_review_findings.py <review_md_path> <output_plan_yaml>  # 旧モード", file=sys.stderr)
         sys.exit(1)
 

@@ -22,12 +22,12 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 ## 入力・やりかた・Agent・出力
 
-| 観点         | 内容                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **入力**     | ① 修正対象の指摘事項（テキスト） ② 対象ファイルパス ③ レビュー種別 ④ 参考文書パス一覧（任意） ⑤ 修正方針（任意）                                             |
-| **やりかた** | 参考文書取得（渡されたパスを使用。未提供なら DocAdvisor Skill or `.doc_structure.yaml` パスで Glob）+ 関連コード参照 → general-purpose subagent に修正を委譲 |
-| **Agent**    | DocAdvisor Skill 呼び出し: メインコンテキスト / 修正実行: general-purpose subagent                                                                           |
-| **出力**     | 修正サマリー（修正ファイル・修正内容・影響範囲）                                                                                                             |
+| 観点         | 内容                                                                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **入力**     | ① session_dir ② レビュー種別 ③ モード（--single / --batch）④ 対象項目の id（--single 必須）⑤ 修正方針（任意）                                                              |
+| **やりかた** | plan.yaml（判定の真実）を自力 Read して `recommendation: fix` にフィルタ → `review_{perspective}.md`（最終系）から該当項目を抜粋 → refs.yaml の参考文書・関連コードと合わせて general-purpose subagent に修正を委譲 |
+| **Agent**    | plan.yaml / refs.yaml / review_{perspective}.md Read: メインコンテキスト / 修正実行: general-purpose subagent                                                              |
+| **出力**     | 修正サマリー（修正ファイル・修正内容・影響範囲）                                                                                                                           |
 
 ---
 
@@ -46,13 +46,15 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 | 項目                       | 必須 | 説明                                                                                  |
 | -------------------------- | ---- | ------------------------------------------------------------------------------------- |
-| 指摘事項の詳細             | 必須 | 問題の説明・箇所（ファイル:行）・修正案を含むテキスト                                 |
-| 対象ファイルパス           | 必須 | 修正対象のファイルパス一覧                                                            |
+| session_dir                | 必須 | セッションワーキングディレクトリのパス。fixer が plan.yaml / refs.yaml / review_{perspective}.md を自力 Read する |
 | レビュー種別               | 必須 | `code` / `requirement` / `design` / `plan` / `generic`                                |
-| session_dir                | 必須 | セッションワーキングディレクトリのパス。refs.yaml から参考文書を取得                 |
-| 参考文書パス一覧           | 推奨 | /forge:reviewer が収集した参考文書パス。未提供の場合は自前で収集する                  |
-| related_code               | 推奨 | 関連コードのパスと関連性の説明。修正時の実装パターン参照に使用                        |
-| ユーザーが選択した修正方針 | 任意 | AskUserQuestion の回答（A案/B案等）がある場合                                         |
+| モード                     | 必須 | `--single` または `--batch`                                                           |
+| 対象項目の id              | 必須（--single）/ 任意（--batch） | --single: 処理対象の id 1 件 / --batch: 絞り込み用 id リスト（省略時は plan.yaml 全体からフィルタ） |
+| ユーザーが選択した修正方針 | 任意 | AskUserQuestion の回答（A案/B案等）がある場合。通常 --single のみ                    |
+
+> **指摘事項の詳細・対象ファイル・参考文書は呼び出し元からは渡さない**。
+> fixer が session_dir から plan.yaml / refs.yaml / review_{perspective}.md を Read して自力で取得する。
+> これにより親コンテキスト消費を抑え、plan.yaml の判定（recommendation）を fixer が直接尊重できる。
 
 ---
 
@@ -67,9 +69,43 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 入力が不足している場合は呼び出し元にエラーを返す（ユーザーに直接質問しない）。
 
-### Step 2: 参考文書の準備 [MANDATORY]
+### Step 2: 参考文書と plan.yaml の読み込み [MANDATORY]
 
-`{session_dir}/refs.yaml` を Read して `reference_docs` / `related_code` を取得する。取得したパスをそのまま使用する。再収集は不要。
+1. **`{session_dir}/refs.yaml` を Read** して `reference_docs` / `related_code` を取得する。取得したパスをそのまま使用する。再収集は不要。
+
+2. **`{session_dir}/plan.yaml` を Read** して各項目の `id` / `recommendation` / `auto_fixable` / `status` / `perspective` / `perspectives` を取得する。
+
+3. **モードに応じて処理対象をフィルタする**:
+
+   #### `--batch` モード
+
+   以下の条件を **AND** で満たす項目のみ処理する:
+
+   - `recommendation: fix`
+   - `status ∈ {pending, in_progress}`
+   - 呼び出し元が id リストを渡した場合はそれと AND 条件で絞り込む
+
+   **処理対象外**:
+
+   - `recommendation: skip`（evaluator またはユーザーが却下した項目）
+   - `recommendation: needs_review`（Claude の最終判断が必要な項目）
+   - `status ∈ {fixed, skipped}`（処理済み）
+
+   > evaluator / present-findings（ユーザー対話）の判定を**完全に尊重する**。
+   > plan.yaml の recommendation を無視して修正するのは契約違反。
+
+   #### `--single` モード
+
+   - 呼び出し元から渡された `id` 1 件のみ処理
+   - `status: in_progress` であることを確認（present-findings が修正選択時に更新済みの想定）
+   - `recommendation: fix` でない id が渡された場合は呼び出し元にエラーを返す
+
+4. **`{session_dir}/review_{perspective_name}.md`（最終系 = evaluator 整形済み）を Read** して、フィルタ後の id に対応する項目の詳細（箇所・該当コード・なぜ問題か・修正案）を抜粋する:
+
+   - evaluator が**常に**書き換えている前提のため、parse 分岐は不要
+   - 対象項目の perspective が `perspectives: [A, B]` の場合は両 perspective の `review_{perspective}.md` を参照し、より詳細な方を採用（または両方を subagent プロンプトに含める）
+   - **`.raw.md`（reviewer 原文）は読まない**（定常フローでは最終系のみ対象）
+   - ユーザー対話後に更新された最新の内容を反映するため、ここで Read するタイミングを遅延させない
 
 ### Step 3: subagent 起動 [MANDATORY]
 
@@ -109,8 +145,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
 ```
 以下の指摘事項に基づいて修正を実行してください。
 
-## 修正対象の指摘事項
-[指摘事項の詳細テキスト]
+## 修正対象の指摘事項（id: {id}）
+[`review_{perspective}.md`（最終系 = evaluator 整形済み）から該当項目を抜粋した詳細テキスト]
+[該当箇所・該当コード・なぜ問題か・修正案を含む]
 
 ## ユーザーが選択した修正方針
 [修正方針がある場合のみ記載。ない場合はこのセクションを省略]
@@ -152,9 +189,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
 複数の指摘事項があります。全て修正してください。
 
 ## 修正対象の指摘事項
-[指摘事項1の詳細テキスト]
+（plan.yaml で `recommendation: fix` AND `status ∈ {pending, in_progress}` にフィルタ後、
+`review_{perspective}.md`（最終系）から該当項目を抜粋）
 
-[指摘事項2の詳細テキスト]
+[指摘事項1の詳細テキスト（id: X）]
+
+[指摘事項2の詳細テキスト（id: Y）]
 
 ...
 
@@ -192,12 +232,14 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
 
 ## エラーハンドリング
 
-| エラー                                     | 対応                                                       |
-| ------------------------------------------ | ---------------------------------------------------------- |
-| 入力不足（指摘事項なし・対象ファイルなし・session_dir なし） | 呼び出し元にエラーを返す。ユーザーに直接質問しない         |
-| refs.yaml が存在しない・読み込み失敗       | エラー内容を呼び出し元に返す                               |
-| subagent 起動失敗                          | エラー内容を呼び出し元に返す                               |
-| subagent が修正失敗を報告                  | エラー内容を呼び出し元に返す。呼び出し元がユーザーに報告   |
-| subagent が指摘事項と無関係な変更を報告    | 呼び出し元がサマリーを確認し、ユーザーに報告して判断を仰ぐ |
-| plan.yaml の更新失敗                       | エラーを呼び出し元に報告するが、修正自体は成功扱いとする   |
+| エラー                                     | 対応                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| 入力不足（session_dir なし・--single で id なし）        | 呼び出し元にエラーを返す。ユーザーに直接質問しない                     |
+| refs.yaml / plan.yaml / review_{perspective}.md が存在しない・読み込み失敗 | エラー内容を呼び出し元に返す                                             |
+| `--single` で渡された id が plan.yaml に存在しない / `recommendation ≠ fix` | エラー内容を呼び出し元に返す（skip / needs_review 項目の誤修正を防ぐ）  |
+| `--batch` でフィルタ結果が 0 件                          | 正常終了扱いで「修正対象なし」を呼び出し元に返す                       |
+| subagent 起動失敗                          | エラー内容を呼び出し元に返す                                                         |
+| subagent が修正失敗を報告                  | エラー内容を呼び出し元に返す。呼び出し元がユーザーに報告                             |
+| subagent が指摘事項と無関係な変更を報告    | 呼び出し元がサマリーを確認し、ユーザーに報告して判断を仰ぐ                           |
+| plan.yaml の更新失敗                       | エラーを呼び出し元に報告するが、修正自体は成功扱いとする                             |
 

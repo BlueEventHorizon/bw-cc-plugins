@@ -88,7 +88,9 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh {session_d
 | 2 | Codex が見つからない | Claude フォールバックへ |
 | 1 | Codex 実行エラー | エラー報告 |
 
-スクリプトは `codex exec -o` で最終メッセージのみをファイルに書き出す（stdout リダイレクトではセッション全体が混入するため）。
+スクリプトは `codex exec -o` の出力先を中間ファイル (`{output}.codex_lastmsg.txt`) に分離し、stdout 経由で受け取った会話全体から `extract_codex_output.py` が Markdown 本文を抽出して `output_path` に書き出す。この分離により「codex が終了時に最終メッセージで `output_path` を上書きする」事故を根絶している（reviewer が `apply_patch` で `output_path` に書き込んでも codex 終了時に上書きされていた既知バグの対策）。
+
+**reviewer は `apply_patch` を使わない**。`--sandbox read-only` で書き込み系 tool は無効化されている。レビュー本文は assistant の最終メッセージとして Markdown で返すこと。
 
 #### Claude の場合（Codex 不在時のフォールバック含む）
 
@@ -118,8 +120,14 @@ perspective: {perspective_name}
 
 ## 出力形式
 `${CLAUDE_SKILL_DIR}/templates/review.md` を Read し、そのフォーマットをコピーして指摘を埋めること。
-見出し形式（### 1. ...）ではなく、番号付きリスト（1. **[問題名]**: ...）で記述すること。
-該当なしのセクションはセクションごと削除すること。
+以下の規約に厳密に従うこと（下流パーサの安定動作のために必須）:
+
+1. **番号付きリスト形式で書く**: 見出し形式（### 1. ...）ではなく `1. [critical] **[問題名]**: ...` の番号付きリストで記述する
+2. **各 finding 行の先頭に ASCII severity ラベルを必須で付ける**: `1. [critical] **問題名**: ...` / `1. [major] **問題名**: ...` / `1. [minor] **提案名**: ...` のように `[critical]` / `[major]` / `[minor]` のいずれかを必ず付ける。**ラベルは ASCII 固定** — 翻訳・省略・絵文字への置換は禁止（下流パーサがセクション見出し・絵文字・フォントに依存しない設計のため）
+3. **絵文字 🔴/🟡/🟢 は装飾（任意・後方互換）**: セクション見出しには併記してよい（例: `### 🔴 Critical / 致命的問題`）が、finding 行の severity 判定は ASCII ラベルが primary。絵文字だけで severity を示すのは非推奨
+4. **該当なしのセクションは削除せず `（なし）` と書く**: セクション見出し（`### 🔴 Critical / 致命的問題` 等）は常に保持し、本文に `（なし）` と書く
+5. **ファイルへの書き込みは禁止**: `apply_patch` / `Write` 等でファイルを変更しない。レビュー本文は assistant の最終メッセージとして Markdown で返す
+6. **各指摘は単体で人間が理解できる粒度で書く**: 下流の evaluator が `review_{perspective}.md` を全面書き換えする前提でも、reviewer 原文 = `.raw.md` に保存される自己完結した記述が evaluator の整形品質の基盤となる
 
 確認や質問は不要です。具体的な指摘と修正案を出力してください。
 ```
@@ -127,9 +135,9 @@ perspective: {perspective_name}
 **フォールバック観点**（criteria_path にセクションがない場合、プロンプトに埋め込む）:
 
 ```
-🔴致命的: 事実の誤り、論理矛盾、参照切れ、必須情報の欠落
-🟡品質: 構成の一貫性、用語の不統一、責務の曖昧さ、記述の重複
-🟢改善: 表現の明確化、構成改善、不足情報の補完
+[critical]: 事実の誤り、論理矛盾、参照切れ、必須情報の欠落
+[major]:    構成の一貫性、用語の不統一、責務の曖昧さ、記述の重複
+[minor]:    表現の明確化、構成改善、不足情報の補完
 ```
 
 ---
