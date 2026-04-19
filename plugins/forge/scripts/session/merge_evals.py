@@ -31,18 +31,31 @@ from session.update_plan import read_plan, update_items_batch, write_plan
 def build_perspective_id_map(items):
     """plan.yaml の items から perspective → [global_id, ...] のマッピングを構築する。
 
+    - `perspective` フィールド (単一) はそのマッピングに追加
+    - `perspectives` フィールド (複数) は各 perspective 両方のマッピングに追加
+      (同一 item が複数 perspective の eval 結果からローカル ID で参照されるため)
+
     Args:
         items: plan.yaml の items リスト
 
     Returns:
-        dict[str, list[int]]: perspective 名 → グローバル ID リスト（出現順）
+        dict[str, list[int]]: perspective 名 → グローバル ID リスト(出現順)
     """
     mapping = {}
     for item in items:
+        perspectives = item.get("perspectives")
+        if isinstance(perspectives, list) and perspectives:
+            for p in perspectives:
+                if not p:
+                    continue
+                mapping.setdefault(p, []).append(item["id"])
+            continue
         p = item.get("perspective", "")
-        if p not in mapping:
-            mapping[p] = []
-        mapping[p].append(item["id"])
+        if not p:
+            # perspective 未指定の item はマッピングに登録しない
+            # (空文字キーで登録すると perspective="" の eval と誤マッチする)
+            continue
+        mapping.setdefault(p, []).append(item["id"])
     return mapping
 
 
@@ -62,64 +75,146 @@ def collect_eval_files(session_dir):
     return evals
 
 
+def _build_entry(global_id, update, perspective):
+    """eval の update 1件を combined エントリに変換する。"""
+    entry = {
+        "id": global_id,
+        "status": update.get("status", "pending"),
+        "_perspective": perspective,
+    }
+    for key in ("recommendation", "auto_fixable", "skip_reason", "reason"):
+        if key in update:
+            entry[key] = update[key]
+    return entry
+
+
+def _reconcile_entries(entries):
+    """同一 global_id への複数 entries を1つに統合する。
+
+    - 全 entry の recommendation が一致 → 最後の entry をベースに reason を連結
+    - 不一致 → recommendation: needs_review / status: needs_review に
+      エスカレーションし、reason に各 perspective の判定を記録
+    """
+    if len(entries) == 1:
+        merged = dict(entries[0])
+        merged.pop("_perspective", None)
+        return merged
+
+    recs = {e.get("recommendation") for e in entries if "recommendation" in e}
+    recs.discard(None)
+
+    if len(recs) <= 1:
+        base = dict(entries[-1])
+        base.pop("_perspective", None)
+        return base
+
+    parts = []
+    for e in entries:
+        p = e.get("_perspective") or "?"
+        rec = e.get("recommendation", "(未指定)")
+        parts.append(f"{p}={rec}")
+    merged = {
+        "id": entries[0]["id"],
+        "status": "needs_review",
+        "recommendation": "needs_review",
+        "reason": "perspective 間で判定不一致: " + " / ".join(parts),
+    }
+    return merged
+
+
 def merge_eval_updates(evals, perspective_id_map):
     """eval JSON のローカル ID を plan.yaml のグローバル ID に変換して統合する。
+
+    同一 global_id に対する複数 perspective の判定は次のルールで統合する:
+      - 全 perspective の recommendation が一致 → 最後の eval を採用
+      - 不一致 → recommendation: needs_review にエスカレーション
 
     Args:
         evals: eval_*.json のパース結果リスト
         perspective_id_map: perspective → [global_id, ...] のマッピング
 
     Returns:
-        tuple: (combined_updates, not_auto_fixable_ids)
-            combined_updates: plan.yaml 更新用の dict リスト
+        tuple: (combined_updates, not_auto_fixable_ids, dropped)
+            combined_updates: plan.yaml 更新用の dict リスト(global_id の重複なし)
             not_auto_fixable_ids: auto_fixable=false かつ recommendation=fix の
                                   グローバル ID リスト
+            dropped: ID 変換に失敗したエントリの一覧
+                {"perspective", "local_id", "reason"} の dict リスト
+                (呼び出し元が診断情報として出力するために使用)
     """
-    combined = []
-    not_auto_fixable = []
+    buckets = {}  # global_id -> [entry, ...]
+    order = []  # 出現順を保持
+    dropped = []  # ID 変換失敗の診断情報
 
     for eval_data in evals:
         perspective = eval_data.get("perspective", "")
         global_ids = perspective_id_map.get(perspective, [])
         updates = eval_data.get("updates", [])
 
+        if not global_ids and updates:
+            # perspective が plan.yaml に存在しない(evaluator 側のバグ or 設定不整合)
+            for u in updates:
+                dropped.append({
+                    "perspective": perspective,
+                    "local_id": u.get("id"),
+                    "reason": "perspective が plan.yaml に存在しない",
+                })
+            continue
+
         for u in updates:
             local_id = u.get("id")
             if local_id is None or local_id < 1:
+                dropped.append({
+                    "perspective": perspective,
+                    "local_id": local_id,
+                    "reason": "local_id が未指定または 1 未満",
+                })
                 continue
             idx = local_id - 1  # 0-based
             if idx >= len(global_ids):
+                dropped.append({
+                    "perspective": perspective,
+                    "local_id": local_id,
+                    "reason": (
+                        f"local_id が範囲外: plan.yaml の {perspective} は "
+                        f"{len(global_ids)} 件"
+                    ),
+                })
                 continue
 
             global_id = global_ids[idx]
-            entry = {
-                "id": global_id,
-                "status": u.get("status", "pending"),
-            }
-            if "recommendation" in u:
-                entry["recommendation"] = u["recommendation"]
-            if "auto_fixable" in u:
-                entry["auto_fixable"] = u["auto_fixable"]
-            if "skip_reason" in u:
-                entry["skip_reason"] = u["skip_reason"]
-            if "reason" in u:
-                entry["reason"] = u["reason"]
-            combined.append(entry)
+            if global_id not in buckets:
+                buckets[global_id] = []
+                order.append(global_id)
+            buckets[global_id].append(_build_entry(global_id, u, perspective))
 
-            # auto_fixable=false かつ fix 推奨の項目を記録
-            if u.get("recommendation") == "fix" and u.get("auto_fixable") is False:
-                not_auto_fixable.append(global_id)
+    combined = []
+    not_auto_fixable = []
+    for global_id in order:
+        entries = buckets[global_id]
+        merged = _reconcile_entries(entries)
+        combined.append(merged)
 
-    return combined, not_auto_fixable
+        if (
+            merged.get("recommendation") == "fix"
+            and merged.get("auto_fixable") is False
+        ):
+            not_auto_fixable.append(global_id)
+
+    return combined, not_auto_fixable, dropped
+
+
+def _emit_error(error, **extra):
+    """エラー JSON を stderr に出力する(update_plan.py / write_interpretation.py と統一)。"""
+    payload = {"status": "error", "error": error}
+    payload.update(extra)
+    json.dump(payload, sys.stderr, ensure_ascii=False)
+    sys.stderr.write("\n")
 
 
 def main():
     if len(sys.argv) < 2:
-        json.dump(
-            {"status": "error", "error": "Usage: merge_evals.py <session_dir>"},
-            sys.stdout, ensure_ascii=False,
-        )
-        print()
+        _emit_error("Usage: merge_evals.py <session_dir>")
         sys.exit(1)
 
     session_dir = sys.argv[1]
@@ -128,8 +223,7 @@ def main():
     try:
         plan_data = read_plan(session_dir)
     except FileNotFoundError as e:
-        json.dump({"status": "error", "error": str(e)}, sys.stdout, ensure_ascii=False)
-        print()
+        _emit_error(str(e))
         sys.exit(1)
 
     items = plan_data.get("items", [])
@@ -140,33 +234,34 @@ def main():
     # eval_*.json 収集
     evals = collect_eval_files(session_dir)
     if not evals:
-        json.dump(
-            {"status": "error", "error": "eval_*.json が見つかりません"},
-            sys.stdout, ensure_ascii=False,
-        )
-        print()
+        _emit_error("eval_*.json が見つかりません")
         sys.exit(1)
 
     # ローカル ID → グローバル ID 変換・統合
-    combined, not_auto_fixable = merge_eval_updates(evals, perspective_id_map)
-    if not combined:
-        json.dump(
-            {"status": "error", "error": "更新対象がありません"},
-            sys.stdout, ensure_ascii=False,
+    combined, not_auto_fixable, dropped = merge_eval_updates(evals, perspective_id_map)
+
+    # 空 combined の扱い:
+    #   - dropped あり → ID 変換失敗(evaluator のローカル ID 順序契約違反 / 設定不整合)。hard error
+    #   - dropped なし → 全 eval の updates が空(findings 0 件)。success 扱い (fix_count=0)
+    if not combined and dropped:
+        _emit_error(
+            "eval の更新を plan.yaml にマップできませんでした",
+            dropped=dropped,
         )
-        print()
         sys.exit(1)
 
     # plan.yaml 一括更新
-    try:
-        updated_ids = update_items_batch(items, combined)
-    except ValueError as e:
-        json.dump({"status": "error", "error": str(e)}, sys.stdout, ensure_ascii=False)
-        print()
-        sys.exit(1)
+    if combined:
+        try:
+            updated_ids = update_items_batch(items, combined)
+        except ValueError as e:
+            _emit_error(str(e))
+            sys.exit(1)
 
-    plan_data["items"] = items
-    write_plan(session_dir, plan_data)
+        plan_data["items"] = items
+        write_plan(session_dir, plan_data)
+    else:
+        updated_ids = []
 
     # 統計
     fix_count = sum(1 for u in combined if u.get("recommendation") == "fix")
@@ -176,18 +271,20 @@ def main():
     )
     should_continue = fix_count > 0
 
-    json.dump(
-        {
-            "status": "ok",
-            "updated": updated_ids,
-            "fix_count": fix_count,
-            "skip_count": skip_count,
-            "needs_review_count": needs_review_count,
-            "should_continue": should_continue,
-            "not_auto_fixable": not_auto_fixable,
-        },
-        sys.stdout, ensure_ascii=False,
-    )
+    response = {
+        "status": "ok",
+        "updated": updated_ids,
+        "fix_count": fix_count,
+        "skip_count": skip_count,
+        "needs_review_count": needs_review_count,
+        "should_continue": should_continue,
+        "not_auto_fixable": not_auto_fixable,
+    }
+    # dropped は部分成功の診断情報として含める(combined>0 + dropped>0 のケース)
+    if dropped:
+        response["dropped"] = dropped
+
+    json.dump(response, sys.stdout, ensure_ascii=False)
     print()
 
 

@@ -133,17 +133,22 @@ def _append_string_list(lines, items):
 
 
 def _append_object_list(lines, items):
-    """オブジェクトリストを ``  - key: val`` 形式で追加する。"""
+    """オブジェクトリストを ``  - key: val`` 形式で追加する。
+
+    dict 内の値が list の場合はインライン配列 ``[a, b, c]`` として出力する。
+    """
     for item in items:
         first = True
         for k, v in item.items():
             if v is None or (isinstance(v, (list, str)) and not v):
                 continue
-            if first:
-                lines.append(f"  - {k}: {yaml_scalar(v)}")
-                first = False
+            prefix = "  - " if first else "    "
+            if isinstance(v, list):
+                inline = "[" + ", ".join(yaml_scalar(x) for x in v) + "]"
+                lines.append(f"{prefix}{k}: {inline}")
             else:
-                lines.append(f"    {k}: {yaml_scalar(v)}")
+                lines.append(f"{prefix}{k}: {yaml_scalar(v)}")
+            first = False
 
 
 # ---------------------------------------------------------------------------
@@ -218,8 +223,14 @@ def parse_yaml(content):
 # ---------------------------------------------------------------------------
 
 def _parse_list_or_block(lines, start_idx, parent_indent):
-    """子要素がリストかブロックかを判定してパースする。"""
-    for j in range(start_idx, min(start_idx + 10, len(lines))):
+    """子要素がリストかブロックかを判定してパースする。
+
+    空行・コメント行は読み飛ばして最初の有意行を見る。
+    先読み範囲は子要素全体(ブロック終端まで)。固定の行数制限は設けない
+    — 大量のコメント / 空行が子要素の先頭にあっても誤って空リスト扱いに
+    しないため。
+    """
+    for j in range(start_idx, len(lines)):
         line = lines[j]
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
@@ -352,12 +363,20 @@ def _parse_inline_array(value):
 
 
 def _parse_scalar(value):
-    """スカラー値をパースする（文字列、数値、真偽値）。"""
+    """スカラー値をパースする（文字列、数値、真偽値）。
+
+    ダブルクォート文字列内のエスケープシーケンス (`\\\\` / `\\"`) は
+    復元する(`yaml_scalar` のエスケープ対応)。シングルクォート文字列は
+    YAML 規約の `''` → `'` のみ復元する。
+    """
     if not value:
         return ""
-    # クォート除去
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-        return value[1:-1]
+    # クォート除去 + エスケープ復元
+    if len(value) >= 2:
+        if value[0] == '"' and value[-1] == '"':
+            return _unescape_double_quoted(value[1:-1])
+        if value[0] == "'" and value[-1] == "'":
+            return value[1:-1].replace("''", "'")
     # 真偽値
     if value.lower() == "true":
         return True
@@ -367,6 +386,32 @@ def _parse_scalar(value):
     if value.lstrip("-").isdigit():
         return int(value)
     return value
+
+
+def _unescape_double_quoted(s):
+    """ダブルクォート内の `\\\\` / `\\"` を元の文字に復元する。
+
+    `yaml_scalar` が行う `\\` → `\\\\`, `"` → `\\"` の逆変換。
+    1 文字ずつ走査し、バックスラッシュ直後の文字を解釈する(途中で
+    現れる単独のバックスラッシュを別のエスケープと誤解しないため)。
+    """
+    result = []
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == "\\" and i + 1 < len(s):
+            nxt = s[i + 1]
+            if nxt == "\\":
+                result.append("\\")
+                i += 2
+                continue
+            if nxt == '"':
+                result.append('"')
+                i += 2
+                continue
+        result.append(ch)
+        i += 1
+    return "".join(result)
 
 
 def _is_quoted_value(text):
