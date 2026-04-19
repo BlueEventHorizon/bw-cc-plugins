@@ -4,7 +4,31 @@
 
 ---
 
+## 追加 feature 用 frontmatter
+
+**既存プロジェクトに追加 feature として要件定義書を新規作成するときに限り**、文書先頭に以下の YAML frontmatter を含めること。既存要件定義書の追記・更新時、および main の初期立ち上げ時は含めない。
+
+この要件定義書は feature 実装完了後、既存仕様書へ merge され削除される予定の一時文書である（恒久ルール化しない）。文書全体がこの性質を持つため、本文ブロックではなく frontmatter にメタ情報として宣言する。
+
+```yaml
+---
+type: temporary-feature-requirement
+notes:
+  - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
+  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
+  - 本 feature 実装完了後、この文書は旧仕様書へ merge され削除される予定。
+---
+```
+
+AI 向け詳細: [additive_development_spec.md](additive_development_spec.md) — 判定基準・矛盾時の優先度・merge 手順
+
+---
+
+## 本体フォーマット
+
 ```markdown
+<!-- 追加 feature の場合、ここに上記 frontmatter を挿入する -->
+
 # {要件ID} {機能名} 要件定義書
 
 ## 概要

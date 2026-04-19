@@ -160,8 +160,10 @@ def start_server(monitor_dir, port, timeout=5.0):
     )
     proc = subprocess.Popen(
         [sys.executable, server_script, "--dir", monitor_dir, "--port", str(port)],
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
     # server.pid が書き込まれるまで待機

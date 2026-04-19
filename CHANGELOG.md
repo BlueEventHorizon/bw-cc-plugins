@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.12] - 2026-04-19
+
+### marketplace
+
+- **feat**: forge を 0.0.36 に更新。SDD 解説書と追加開発ワークフロー仕様を追加、参照漏れを修正、show-browser / review の挙動を改善
+
+## [0.0.36] - 2026-04-19
+
+### forge
+
+- **feat(show-browser)**: severity を複数選択対応にし、解決済み/Skipped をトグル化
+- **feat(show-browser)**: `session_end` SSE payload に close-tab hint を追加
+- **fix(show-browser)**: サーバーを独立セッションで起動し、起動指示を簡素化
+- **fix(review)**: codex exec 実行時に stdin を close してハング発生を防止
+- **docs**: SDD 解説書 `docs/readme/guide_sdd_ja.md` を新規追加（哲学・5 段階の役割・追加開発ワークフローを解説）
+- **docs**: AI 向け追加開発ワークフロー仕様 `plugins/forge/docs/additive_development_spec.md` を新規追加（判定基準・矛盾時の優先度・merge 手順を定義）
+- **docs**: `requirement_format.md` に追加 feature 用 frontmatter（`type: temporary-feature-requirement`）ルールを追加
+- **fix**: start-requirements の `--add` モードで `additive_development_spec.md` / `requirement_format.md` を [MANDATORY] 参照するよう修正（参照漏れ対応）
+- **chore**: forge 内蔵 `rules_toc.yaml` を更新
+
 ## [marketplace 0.1.11] - 2026-04-18
 
 ### marketplace

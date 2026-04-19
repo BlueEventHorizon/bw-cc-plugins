@@ -22,7 +22,7 @@ SERVER_SCRIPTS_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SERVER_SCRIPTS_DIR))
 
-from server import YamlReader, SkillMonitorServer
+from server import SESSION_END_MESSAGE, YamlReader, SkillMonitorServer
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +369,79 @@ class TestRequestHandlerNotify(unittest.TestCase):
             done.wait(timeout=3.0)
 
         self.assertIn("update", received, "SSE update イベントが受信されなかった")
+
+    def test_session_end_sse_payload_contains_message(self):
+        """session_end SSE イベントの data に message フィールドが含まれる。"""
+        import socket as _socket
+
+        received = {}
+
+        def _listen_raw(port, done_event):
+            """生ソケットで SSE ストリームを受信し session_end イベントを拾う。"""
+            try:
+                sock = _socket.create_connection(("127.0.0.1", port), timeout=5)
+                sock.sendall(b"GET /sse HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: keep-alive\r\n\r\n")
+                buf = b""
+                while b"\r\n\r\n" not in buf:
+                    chunk = sock.recv(256)
+                    if not chunk:
+                        break
+                    buf += chunk
+                deadline = time.monotonic() + 5.0
+                while time.monotonic() < deadline and not done_event.is_set():
+                    try:
+                        sock.settimeout(0.5)
+                        chunk = sock.recv(512)
+                    except _socket.timeout:
+                        continue
+                    if not chunk:
+                        break
+                    buf += chunk
+                    if b"event: session_end" in buf:
+                        text = buf.decode("utf-8", errors="replace")
+                        # "event: session_end" 行の直後の "data: ..." 行を抽出
+                        lines = text.splitlines()
+                        for i, line in enumerate(lines):
+                            if line.strip() == "event: session_end":
+                                for next_line in lines[i + 1:]:
+                                    if next_line.startswith("data:"):
+                                        received["data"] = next_line[len("data:"):].strip()
+                                        break
+                                break
+                        done_event.set()
+                        break
+                sock.close()
+            except Exception:
+                done_event.set()
+
+        with _ServerContext(self.session_dir) as ctx:
+            done = threading.Event()
+            t = threading.Thread(target=_listen_raw, args=(ctx.port, done), daemon=True)
+            t.start()
+
+            # SSE 接続確立を待機
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline:
+                with ctx.server.sse_lock:
+                    if ctx.server.sse_clients:
+                        break
+                time.sleep(0.05)
+
+            # session_dir を削除してから /notify → send_session_end 経由で broadcast させる
+            shutil.rmtree(self.session_dir)
+            payload = json.dumps({"file": "plan.yaml"}).encode()
+            conn = HTTPConnection("127.0.0.1", ctx.port, timeout=3)
+            conn.request("POST", "/notify", body=payload,
+                         headers={"Content-Type": "application/json"})
+            conn.getresponse().read()
+            conn.close()
+
+            done.wait(timeout=3.0)
+
+        self.assertIn("data", received, "session_end イベントが受信されなかった")
+        parsed = json.loads(received["data"])
+        self.assertEqual(parsed.get("type"), "session_end")
+        self.assertEqual(parsed.get("message"), SESSION_END_MESSAGE)
 
 
 class TestRequestHandlerUnknownPath(unittest.TestCase):
