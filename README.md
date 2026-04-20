@@ -95,7 +95,6 @@ flowchart LR
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | [**review**](docs/readme/forge/guide_review_ja.md) | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正 | `"レビューして"` |
-| [**show-browser**](docs/readme/forge/guide_review_ja.md#show-browser) | レビュー・実装の進捗をブラウザでリアルタイム表示 | `"ブラウザで表示"` |
 | [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements) | 対話・ソース解析・Figma の 3 モードで要件定義書を作成 | `"要件定義"` |
 | [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design) | 要件定義書から設計書を作成。既存資産の再利用を重視 | `"設計書作成"` |
 | [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan) | 設計書からタスクを抽出し YAML 計画書を作成 | `"計画書作成"` |

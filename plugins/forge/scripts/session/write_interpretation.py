@@ -33,6 +33,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR.parent) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR.parent))
+
+from monitor.notify import notify_session_update  # noqa: E402
+
 
 def _atomic_write_text(target, content, encoding="utf-8"):
     """同一ディレクトリ内で tmp ファイル作成 → rename でアトミックに書き込む。
@@ -97,6 +103,7 @@ def write_interpretation(session_dir, perspective, content):
         backup_created = True
 
     _atomic_write_text(target, content)
+    notify_session_update(str(session_path), str(target))
 
     return {
         "path": str(target),

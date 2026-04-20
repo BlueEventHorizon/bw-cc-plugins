@@ -128,30 +128,28 @@ Automatically deleted on normal completion. On interruption, the directory remai
 
 ---
 
-## show-browser
+## Browser monitor module
 
-Display review and implementation progress in the browser in real time. Starts an SSE server that watches for YAML updates in the session directory and pushes changes automatically.
+`/forge:review` and the `/forge:start-*` skills automatically launch a **monitor module**
+(`plugins/forge/scripts/monitor/`) when a session is created. An SSE server watches the
+session directory and pushes updates to the browser in real time.
 
+- **No user action required**: `session_manager` forks the monitor asynchronously at the
+  end of `cmd_init()`.
+- **URL**: `http://localhost:8765/` (falls back to 8766–8775 if in use).
+- **Skill-specific templates**:
+  - `review` → Findings list (severity filters + progress bar)
+  - `start-requirements` / `start-design` / `start-plan` → Document preview
+  - `start-implement` → Task progress
+  - `start-uxui-design` → ASCII art + design tokens
+- **Notification paths**: Direct notifications from writer scripts + 30-second mtime
+  heartbeat fallback.
+- **Auto-stop**: The server shuts down when the session directory is deleted.
+
+Set `FORGE_SESSION_SKIP_MONITOR=1` / `FORGE_MONITOR_NO_OPEN=1` to skip launch or to
+suppress the browser open. Manual launch:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
+  --session-dir <session-directory> --skill <skill-name>
 ```
-/forge:show-browser --session-dir <session-directory> [--template <template>] [--port <port>] [--no-open]
-```
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--session-dir` | Directory to monitor (under `.claude/.temp/`) | (required) |
-| `--template` | Display template | `review_list` |
-| `--port` | Port number | 8765 (auto-detect) |
-| `--no-open` | Do not auto-open the browser | — |
-
-### Templates
-
-| Template | Content |
-|----------|---------|
-| `review_list` | Review findings list (real-time updates) |
-| `session_status` | Session progress status |
-
-### Behavior
-
-- Browser auto-opens to `http://localhost:{port}/` with a dashboard
-- `plan.yaml` updates are pushed via SSE in real time
-- Server auto-stops when the session directory is deleted
