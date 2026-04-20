@@ -96,61 +96,20 @@ class TestBuildPerspectiveIdMap(unittest.TestCase):
         mapping = build_perspective_id_map(items)
         self.assertEqual(mapping, {"logic": [10, 20]})
 
-    def test_perspectives_list_registers_both(self):
-        """perspectives: [A, B] 持ち item は両方の perspective のキーに登録される。"""
-        items = [
-            {"id": 1, "perspective": "logic"},
-            {"id": 2, "perspectives": ["logic", "resilience"]},
-            {"id": 3, "perspective": "resilience"},
-        ]
-        mapping = build_perspective_id_map(items)
-        self.assertEqual(mapping["logic"], [1, 2])
-        self.assertEqual(mapping["resilience"], [2, 3])
-
-    def test_perspectives_list_takes_precedence_over_perspective(self):
-        """perspectives(複数)フィールドが存在する場合、perspective(単数)は無視される。"""
-        items = [
-            {"id": 1, "perspective": "logic",
-             "perspectives": ["alignment", "architecture"]},
-        ]
-        mapping = build_perspective_id_map(items)
-        self.assertEqual(mapping.get("alignment"), [1])
-        self.assertEqual(mapping.get("architecture"), [1])
-        self.assertNotIn("logic", mapping)
-
-    def test_empty_perspectives_list_falls_back_to_perspective(self):
-        """perspectives が空リストなら perspective フィールドが使われる。"""
-        items = [
-            {"id": 1, "perspective": "logic", "perspectives": []},
-        ]
-        mapping = build_perspective_id_map(items)
-        self.assertEqual(mapping["logic"], [1])
-
     def test_missing_perspective_not_registered(self):
         """perspective 未指定 (空文字 or 欠落) の item はマッピングに登録されない。"""
         items = [
             {"id": 1, "perspective": "logic"},
             {"id": 2},  # perspective 欠落
             {"id": 3, "perspective": ""},  # 空文字
-            {"id": 4, "perspectives": []},  # 空リスト + perspective なし
         ]
         mapping = build_perspective_id_map(items)
         # 空文字キーで登録されていない
         self.assertNotIn("", mapping)
         self.assertEqual(mapping["logic"], [1])
-        # id=2,3,4 はどのキーにも登録されない
+        # id=2,3 はどのキーにも登録されない
         all_ids = [gid for ids in mapping.values() for gid in ids]
         self.assertEqual(sorted(all_ids), [1])
-
-    def test_empty_string_in_perspectives_list_ignored(self):
-        """perspectives: [A, ""] のような空文字要素は無視される。"""
-        items = [
-            {"id": 1, "perspectives": ["logic", "", "resilience"]},
-        ]
-        mapping = build_perspective_id_map(items)
-        self.assertNotIn("", mapping)
-        self.assertEqual(mapping["logic"], [1])
-        self.assertEqual(mapping["resilience"], [1])
 
 
 # ---------------------------------------------------------------------------
@@ -303,7 +262,8 @@ class TestMergeEvalUpdates(unittest.TestCase):
 
     def test_shared_item_consistent_recommendation(self):
         """同一 global_id に複数 perspective から一致判定が来た場合、最後の評価が採用される。"""
-        # perspectives: [logic, resilience] 持ち item(global_id=2)
+        # id_map 上で global_id=2 が両 perspective に登録されている防御的ケース
+        # (通常フローでは発生しないが merge_eval_updates は安全装置として統合を行う)
         id_map = {"logic": [1, 2], "resilience": [2, 3]}
         evals = [
             {"perspective": "logic", "updates": [
@@ -550,84 +510,6 @@ class TestMergeEvalsCli(_FsTestCase):
         output = json.loads(result.stdout)
         self.assertEqual(output["should_continue"], False)
         self.assertEqual(output["fix_count"], 0)
-
-    def test_perspectives_item_updated_e2e(self):
-        """perspectives: [A, B] 持ち item が判定一致なら plan.yaml に反映される。"""
-        items = [
-            {"id": 1, "severity": "major", "title": "logic 単独",
-             "status": "pending", "perspective": "logic"},
-            {"id": 2, "severity": "major", "title": "共通指摘",
-             "status": "pending", "perspectives": ["logic", "resilience"]},
-            {"id": 3, "severity": "major", "title": "resilience 単独",
-             "status": "pending", "perspective": "resilience"},
-        ]
-        self._write_plan(items)
-        # logic: local id 1=item1, 2=item2(共通)
-        self._write_eval("logic", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "logic-1"},
-            {"id": 2, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "logic: 共通問題"},
-        ])
-        # resilience: local id 1=item2(共通), 2=item3
-        self._write_eval("resilience", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "resilience: 共通問題"},
-            {"id": 2, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "resilience-3"},
-        ])
-
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        output = json.loads(result.stdout)
-        # updated は各 global_id が 1 回ずつ(重複なし)
-        self.assertEqual(sorted(output["updated"]), [1, 2, 3])
-        self.assertEqual(output["fix_count"], 3)
-
-        from session.yaml_utils import read_yaml
-        plan = read_yaml(str(self.session_dir / "plan.yaml"))
-        by_id = {i["id"]: i for i in plan["items"]}
-        # 共通指摘(id=2)は resilience 側(最後の eval)の理由が採用される
-        self.assertEqual(by_id[2]["recommendation"], "fix")
-        self.assertEqual(by_id[2]["reason"], "resilience: 共通問題")
-
-    def test_perspectives_item_conflict_escalates_e2e(self):
-        """perspectives 持ち item で判定不一致なら plan.yaml に needs_review が記録される。"""
-        items = [
-            {"id": 1, "severity": "major", "title": "共通指摘",
-             "status": "pending", "perspectives": ["logic", "resilience"]},
-        ]
-        self._write_plan(items)
-        self._write_eval("logic", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "logic: 修正が必要"},
-        ])
-        self._write_eval("resilience", [
-            {"id": 1, "status": "skipped", "recommendation": "skip",
-             "skip_reason": "resilience: 対象外"},
-        ])
-
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        output = json.loads(result.stdout)
-        self.assertEqual(output["needs_review_count"], 1)
-        self.assertEqual(output["fix_count"], 0)
-        self.assertEqual(output["skip_count"], 0)
-
-        from session.yaml_utils import read_yaml
-        plan = read_yaml(str(self.session_dir / "plan.yaml"))
-        item = plan["items"][0]
-        self.assertEqual(item["recommendation"], "needs_review")
-        self.assertEqual(item["status"], "needs_review")
-        self.assertIn("perspective 間で判定不一致", item["reason"])
-        self.assertIn("logic=fix", item["reason"])
-        self.assertIn("resilience=skip", item["reason"])
 
     def test_plan_updated(self):
         """plan.yaml が実際に更新されていることを確認。"""

@@ -176,6 +176,7 @@
         const sev = String(it.severity || "").toLowerCase();
         const status = String(it.status || "pending").toLowerCase();
         const reason = it.reason || it.description || "";
+        const skipReason = it.skip_reason || "";
         const file = it.file || (it.location && it.location.file) || "";
         const line = it.line || (it.location && it.location.line) || "";
         const recommendation = it.recommendation || "";
@@ -196,6 +197,9 @@
                 : `<span class="badge">${Forge.statusDot(status)} ${Forge.escapeHtml(status)}</span>`}
             </div>
             ${reason ? `<div class="finding__reason">${Forge.escapeHtml(reason)}</div>` : ""}
+            ${skipReason && status === "skipped"
+              ? `<div class="finding__reason"><b class="muted">skip:</b> ${Forge.escapeHtml(skipReason)}</div>`
+              : ""}
             ${recommendation
               ? `<div class="finding__reason"><b class="muted">→</b> ${Forge.escapeHtml(recommendation)}</div>`
               : ""}
