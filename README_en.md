@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.13**
+**Marketplace version: 0.1.14**
 
 [Japanese README (README.md)](README.md)
 
@@ -36,7 +36,7 @@ flowchart LR
 
 | Plugin    | Version | Description                                                                                                   |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.37  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **forge** | 0.0.38  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
 | **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
 | **doc-advisor** | 0.2.1 | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
@@ -93,7 +93,6 @@ flowchart LR
 | Skill | Description | Trigger |
 |-------|-------------|---------|
 | [**review**](docs/readme/forge/guide_review.md) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N` | `"review"` |
-| [**show-browser**](docs/readme/forge/guide_review.md#show-browser) | Display review/implementation progress in browser in real time | `"show browser"` |
 | [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements) | Create requirements via dialog, reverse-engineering, or Figma | `"requirements"` |
 | [**start-design**](docs/readme/forge/guide_create_docs.md#start-design) | Create design docs from requirements. Prioritizes asset reuse | `"start design"` |
 | [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan) | Extract tasks from design docs into a YAML plan | `"start plan"` |

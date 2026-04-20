@@ -28,15 +28,19 @@ import re
 import sys
 from pathlib import Path
 
+# plugins/forge/skills/reviewer/scripts/ → plugins/forge/scripts/
+_FORGE_SCRIPTS = Path(__file__).resolve().parents[3] / "scripts"
+if str(_FORGE_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_FORGE_SCRIPTS))
+
+from monitor.notify import notify_session_update  # noqa: E402
+
 # セクションマーカーと severity のマッピング
 SECTION_MARKERS = {
     '🔴': 'critical',
     '🟡': 'major',
     '🟢': 'minor',
 }
-
-# severity の優先順位（重複除去時に最高を採用）
-SEVERITY_PRIORITY = {'critical': 3, 'major': 2, 'minor': 1}
 
 # 指摘事項の番号付きパターン
 # 例:
@@ -61,8 +65,7 @@ def extract_findings(content):
     """review.md から指摘事項を抽出する。
 
     各 finding には `body` キーも含める。
-    body は「その指摘の開始行から次の指摘/セクション直前まで」の原文で、
-    重複項目の各 perspective 内容を併記する際に使う。
+    body は「その指摘の開始行から次の指摘/セクション直前まで」の原文。
 
     Args:
         content: review.md の内容（文字列）
@@ -204,67 +207,6 @@ def extract_perspective_from_filename(filename):
     return ''
 
 
-def deduplicate_findings(findings):
-    """ベストエフォートの重複除去を行う。
-
-    検出条件: タイトル文字列の完全一致 AND 箇所（location）文字列の完全一致
-    統合ルール:
-        - severity: 最高を採用（critical > major > minor）
-        - perspectives: 統合元の perspective 名を全て記録
-        - bodies_by_perspective: 重複項目は各 perspective の原文本文を保持
-          (Claude が両 perspective の指摘内容を並列で確認できるよう残す)
-
-    Args:
-        findings: perspective 付きの指摘事項リスト
-
-    Returns:
-        list[dict]: 重複除去済みの指摘事項リスト（ID は振り直し済み）
-    """
-    # (title, location) をキーにして重複を検出
-    seen = {}  # key -> index in result
-    result = []
-
-    for f in findings:
-        key = (f['title'], f.get('location', ''))
-        if key in seen:
-            # 重複: 既存の finding を統合
-            existing = result[seen[key]]
-            # severity: 最高を採用
-            if SEVERITY_PRIORITY.get(f['severity'], 0) > SEVERITY_PRIORITY.get(existing['severity'], 0):
-                existing['severity'] = f['severity']
-            # perspectives: 統合元を全て記録
-            new_persp = f.get('perspective', '')
-            if new_persp:
-                if 'perspectives' not in existing:
-                    # 初回統合: 既存の perspective を perspectives に変換
-                    existing_persp = existing.pop('perspective', '')
-                    existing['perspectives'] = [existing_persp] if existing_persp else []
-                if new_persp not in existing['perspectives']:
-                    existing['perspectives'].append(new_persp)
-            # bodies_by_perspective: 各 perspective の原文本文を保持
-            if 'bodies_by_perspective' not in existing:
-                existing['bodies_by_perspective'] = {}
-                # 既存 finding の body を初回統合時に登録
-                first_persp = (
-                    existing['perspectives'][0]
-                    if existing.get('perspectives')
-                    else existing.get('perspective', '')
-                )
-                if first_persp and existing.get('body'):
-                    existing['bodies_by_perspective'][first_persp] = existing['body']
-            if new_persp and f.get('body'):
-                existing['bodies_by_perspective'][new_persp] = f['body']
-        else:
-            seen[key] = len(result)
-            result.append(dict(f))  # コピーして追加
-
-    # ID を振り直し
-    for i, f in enumerate(result, 1):
-        f['id'] = i
-
-    return result
-
-
 def generate_plan_yaml(findings):
     """指摘事項リストから plan.yaml テキストを生成する。
 
@@ -292,11 +234,7 @@ def generate_plan_yaml(findings):
         lines.append(f'    fixed_at: ""')
         lines.append(f'    files_modified: []')
         lines.append(f'    skip_reason: ""')
-        # perspective / perspectives フィールド
-        if 'perspectives' in f:
-            persp_items = ', '.join(f['perspectives'])
-            lines.append(f'    perspectives: [{persp_items}]')
-        elif 'perspective' in f and f['perspective']:
+        if f.get('perspective'):
             lines.append(f'    perspective: {f["perspective"]}')
 
     return '\n'.join(lines) + '\n'
@@ -306,7 +244,7 @@ def generate_review_md(findings):
     """統合済みの review.md テキストを生成する。
 
     Args:
-        findings: 指摘事項リスト（重複除去済み）
+        findings: 指摘事項リスト
 
     Returns:
         str: review.md のテキスト
@@ -335,28 +273,11 @@ def generate_review_md(findings):
             lines.append('')
             continue
         for i, f in enumerate(items, 1):
-            # perspective 情報の表示
-            persp_info = ''
-            if 'perspectives' in f:
-                persp_info = f' [{", ".join(f["perspectives"])}]'
-            elif 'perspective' in f and f['perspective']:
-                persp_info = f' [{f["perspective"]}]'
+            persp = f.get('perspective', '')
+            persp_info = f' [{persp}]' if persp else ''
             lines.append(f'{i}. **{f["title"]}**{persp_info}')
             if f.get('location'):
                 lines.append(f'   - 箇所: {f["location"]}')
-
-            # 重複項目の各 perspective 内容併記
-            bodies = f.get('bodies_by_perspective')
-            if bodies and len(bodies) > 1:
-                lines.append('')
-                for persp in f.get('perspectives', []):
-                    body = bodies.get(persp)
-                    if not body:
-                        continue
-                    lines.append(f'#### {persp} の視点')
-                    lines.append('')
-                    lines.append(body)
-                    lines.append('')
             lines.append('')
 
     # サマリー
@@ -457,24 +378,24 @@ def run_session_dir_mode(session_dir, review_only=False):
         print(json.dumps(error, ensure_ascii=False, indent=2), file=sys.stderr)
         return 1
 
-    # ベストエフォート重複除去
-    deduplicated = deduplicate_findings(all_findings)
-
     # plan.yaml を生成・書き出し（--review-only のときは判定情報を保護するためスキップ）
     if not review_only:
-        plan_yaml = generate_plan_yaml(deduplicated)
-        (session_path / 'plan.yaml').write_text(plan_yaml, encoding='utf-8')
+        plan_yaml = generate_plan_yaml(all_findings)
+        plan_path = session_path / 'plan.yaml'
+        plan_path.write_text(plan_yaml, encoding='utf-8')
+        notify_session_update(str(session_path), str(plan_path))
 
     # review.md を生成・書き出し
-    review_md = generate_review_md(deduplicated)
-    (session_path / 'review.md').write_text(review_md, encoding='utf-8')
+    review_md = generate_review_md(all_findings)
+    review_path = session_path / 'review.md'
+    review_path.write_text(review_md, encoding='utf-8')
+    notify_session_update(str(session_path), str(review_path))
 
     # サマリーを stdout に出力
-    result = summarize(deduplicated)
+    result = summarize(all_findings)
     result["status"] = "ok"
     result["files_processed"] = len(processed_files)
     result["files_failed"] = len(failed_files)
-    result["duplicates_removed"] = len(all_findings) - len(deduplicated)
     result["review_only"] = review_only
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
@@ -501,7 +422,9 @@ def run_legacy_mode(review_md_path, output_path):
     plan_yaml = generate_plan_yaml(findings)
 
     # plan.yaml を書き出し
-    Path(output_path).write_text(plan_yaml, encoding='utf-8')
+    plan_path = Path(output_path)
+    plan_path.write_text(plan_yaml, encoding='utf-8')
+    notify_session_update(str(plan_path.parent), str(plan_path))
 
     # サマリーを stdout に出力
     result = summarize(findings)

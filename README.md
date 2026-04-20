@@ -2,7 +2,7 @@
 
 **仕様駆動開発（Spec-Driven Development）** のための Claude Code プラグイン — 仕様を先に書き、AI がフルコンテキストで実装・レビューする。
 
-**マーケットプレイスバージョン: 0.1.13**
+**マーケットプレイスバージョン: 0.1.14**
 
 [English README (README_en.md)](README_en.md)
 
@@ -38,7 +38,7 @@ flowchart LR
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.0.37     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **forge**  | 0.0.38     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 | **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
 | **doc-advisor** | 0.2.1 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
@@ -95,7 +95,6 @@ flowchart LR
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | [**review**](docs/readme/forge/guide_review_ja.md) | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正 | `"レビューして"` |
-| [**show-browser**](docs/readme/forge/guide_review_ja.md#show-browser) | レビュー・実装の進捗をブラウザでリアルタイム表示 | `"ブラウザで表示"` |
 | [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements) | 対話・ソース解析・Figma の 3 モードで要件定義書を作成 | `"要件定義"` |
 | [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design) | 要件定義書から設計書を作成。既存資産の再利用を重視 | `"設計書作成"` |
 | [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan) | 設計書からタスクを抽出し YAML 計画書を作成 | `"計画書作成"` |

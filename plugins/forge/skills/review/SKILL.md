@@ -311,21 +311,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill review
 - `.claude/.temp/{session_dir_name}`
 ```
 
-### ブラウザ表示の起動（非ブロッキング）
-
-セッション作成完了後、レビュー進捗をブラウザでリアルタイム表示するために show_browser.py を呼び出す。
-
-```bash
-timeout 6 python3 ${CLAUDE_PLUGIN_ROOT}/skills/show-browser/scripts/show_browser.py \
-  --template review_list \
-  --session-dir {session_dir}
-```
-
-- 出力（JSON）: `{"monitor_dir": "...", "port": 8765, "url": "..."}`
-- ブラウザが自動で開き、以降 plan.yaml の更新が SSE 経由でリアルタイム反映される
-- **起動失敗時（exit code が 0 以外）はレビューワークフローを続行する**（ブラウザ表示は補助機能であり、失敗してもレビュー自体には影響しない）
-- session_dir 削除時にサーバーは自動停止するため、完了処理での明示的な停止は不要
-
 ---
 
 ### Phase 3: perspectives 並列レビュー
@@ -416,7 +401,7 @@ perspectives の数だけ Agent ツール（`subagent_type` 指定なし = gener
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py {session_dir}
 ```
 
-このスクリプトは session_dir 内の `review_*.md` を glob で収集し、重複除去・統合を行い、`plan.yaml` と `review.md` を生成する。
+このスクリプトは session_dir 内の `review_*.md` を glob で収集し、統合した `plan.yaml` と `review.md` を生成する。同一指摘が複数 perspective で検出された場合も**統合せず個別項目として残す**（重複判定は意味的に困難なため機械的には行わない）。
 
 保存完了後、以下を出力する:
 
@@ -475,8 +460,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py
 ```
 
 `--review-only` モードは各 `review_{perspective}.md`（最終系 = evaluator 整形済み）を統合して `review.md` を再生成する。**plan.yaml は書き換えない**（次の Step 1.6 の merge_evals.py の判定情報を保護）。
-
-重複項目（`perspectives: [A, B]`）は各 perspective の該当項目を「#### {perspective} の視点」として並列表示するため、Claude が最終判断時に両方の evaluator 視点を確認できる。
 
 ##### Step 1.6: evaluator 結果の一括マージ [MANDATORY]
 

@@ -162,17 +162,6 @@
     ]
   },
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/notifier.py"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",

@@ -18,7 +18,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from extract_review_findings import (
     extract_findings, generate_plan_yaml, summarize,
-    extract_perspective_from_filename, deduplicate_findings,
+    extract_perspective_from_filename,
     generate_review_md, run_session_dir_mode,
 )
 
@@ -350,15 +350,6 @@ class TestGeneratePlanYaml(unittest.TestCase):
         yaml_text = generate_plan_yaml(findings)
         self.assertIn('perspective: correctness', yaml_text)
 
-    def test_perspectives_field(self):
-        """複数 perspectives フィールド（配列）が出力される"""
-        findings = [{'id': 1, 'severity': 'critical', 'title': '問題',
-                     'status': 'pending', 'fixed_at': '', 'files_modified': [],
-                     'skip_reason': '', 'perspectives': ['correctness', 'resilience']}]
-        yaml_text = generate_plan_yaml(findings)
-        self.assertIn('perspectives: [correctness, resilience]', yaml_text)
-        self.assertNotIn('perspective:', yaml_text.replace('perspectives:', ''))
-
     def test_no_perspective_field_when_empty(self):
         """perspective が空文字列の場合はフィールドが出力されない"""
         findings = [{'id': 1, 'severity': 'critical', 'title': '問題',
@@ -464,93 +455,6 @@ class TestExtractPerspectiveFromFilename(unittest.TestCase):
     def test_review_md_without_perspective(self):
         """review.md（perspective なし）"""
         self.assertEqual(extract_perspective_from_filename('review.md'), '')
-
-
-# ===========================================================================
-# deduplicate_findings テスト
-# ===========================================================================
-
-class TestDeduplicateFindings(unittest.TestCase):
-    """deduplicate_findings のテスト"""
-
-    def test_no_duplicates(self):
-        """重複なしの場合はそのまま返す"""
-        findings = [
-            {'id': 1, 'severity': 'critical', 'title': '問題A', 'location': 'file.py:10',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'correctness'},
-            {'id': 2, 'severity': 'major', 'title': '問題B', 'location': 'file.py:20',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'resilience'},
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]['perspective'], 'correctness')
-        self.assertEqual(result[1]['perspective'], 'resilience')
-
-    def test_duplicate_merged(self):
-        """同一タイトル+箇所の重複が統合される"""
-        findings = [
-            {'id': 1, 'severity': 'major', 'title': '問題A', 'location': 'file.py:10',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'correctness'},
-            {'id': 2, 'severity': 'critical', 'title': '問題A', 'location': 'file.py:10',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'resilience'},
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(len(result), 1)
-        # severity は最高を採用
-        self.assertEqual(result[0]['severity'], 'critical')
-        # perspectives に両方が記録される
-        self.assertIn('perspectives', result[0])
-        self.assertEqual(result[0]['perspectives'], ['correctness', 'resilience'])
-        # ID は振り直し
-        self.assertEqual(result[0]['id'], 1)
-
-    def test_different_location_not_merged(self):
-        """同一タイトルでも箇所が異なれば統合しない"""
-        findings = [
-            {'id': 1, 'severity': 'major', 'title': '問題A', 'location': 'file.py:10',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'correctness'},
-            {'id': 2, 'severity': 'major', 'title': '問題A', 'location': 'file.py:20',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'resilience'},
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(len(result), 2)
-
-    def test_severity_max_adopted(self):
-        """severity は最高を採用（minor < major < critical）"""
-        findings = [
-            {'id': 1, 'severity': 'minor', 'title': '問題', 'location': '',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'a'},
-            {'id': 2, 'severity': 'major', 'title': '問題', 'location': '',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'b'},
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(result[0]['severity'], 'major')
-
-    def test_triple_duplicate(self):
-        """3つの perspective から同一指摘がある場合"""
-        findings = [
-            {'id': 1, 'severity': 'minor', 'title': '問題', 'location': 'x.py:1',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'a'},
-            {'id': 2, 'severity': 'major', 'title': '問題', 'location': 'x.py:1',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'b'},
-            {'id': 3, 'severity': 'critical', 'title': '問題', 'location': 'x.py:1',
-             'status': 'pending', 'fixed_at': '', 'files_modified': [], 'skip_reason': '',
-             'perspective': 'c'},
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['severity'], 'critical')
-        self.assertEqual(result[0]['perspectives'], ['a', 'b', 'c'])
 
 
 # ===========================================================================
@@ -675,8 +579,8 @@ class TestSessionDirMode(unittest.TestCase):
         ids = [int(m) for m in re.findall(r'id: (\d+)', plan_content)]
         self.assertEqual(ids, list(range(1, len(ids) + 1)))
 
-    def test_deduplication(self):
-        """重複除去テスト: 同一タイトル+箇所の指摘が統合される"""
+    def test_same_title_and_location_kept_as_separate_items(self):
+        """同一タイトル+箇所でも統合せず両方の項目として残る（重複検出は行わない）"""
         self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
         self._write_review('review_resilience.md', REVIEW_RESILIENCE)
 
@@ -687,12 +591,16 @@ class TestSessionDirMode(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
 
         data = json.loads(result.stdout)
-        # 「境界値チェック漏れ」が両方に同一タイトル+同一箇所で存在 → 1つに統合
-        self.assertGreater(data['duplicates_removed'], 0)
+        # duplicates_removed フィールドは出力されない
+        self.assertNotIn('duplicates_removed', data)
 
         plan_content = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
-        # 統合された指摘には perspectives フィールドがある
-        self.assertIn('perspectives: [correctness, resilience]', plan_content)
+        # perspectives 配列は生成されない（単数 perspective のみ）
+        self.assertNotIn('perspectives:', plan_content)
+        # 「境界値チェック漏れ」が両方の perspective 分として個別項目で残る
+        self.assertEqual(plan_content.count('境界値チェック漏れ'), 2)
+        self.assertIn('perspective: correctness', plan_content)
+        self.assertIn('perspective: resilience', plan_content)
 
     def test_partial_failure(self):
         """partial-failure テスト: 一部ファイルが空でも他のファイルが正常処理される"""
@@ -817,65 +725,6 @@ class TestGenerateReviewMd(unittest.TestCase):
         md = generate_review_md([])
         self.assertIn('（なし）', md)
 
-    def test_perspectives_display(self):
-        """複数 perspectives の表示"""
-        findings = [
-            {'id': 1, 'severity': 'critical', 'title': '問題',
-             'location': '', 'perspectives': ['correctness', 'resilience']},
-        ]
-        md = generate_review_md(findings)
-        self.assertIn('[correctness, resilience]', md)
-
-    def test_bodies_by_perspective_rendered_for_duplicates(self):
-        """重複項目(perspectives 複数)は各 perspective の body が併記される。"""
-        findings = [
-            {'id': 1, 'severity': 'critical', 'title': '共通問題',
-             'location': 'x.py:1',
-             'perspectives': ['logic', 'resilience'],
-             'bodies_by_perspective': {
-                 'logic': '1. **共通問題**: logic の視点での説明\n   - 根拠: ルールA',
-                 'resilience': '1. **共通問題**: resilience の視点での説明\n   - 根拠: ルールB',
-             }},
-        ]
-        md = generate_review_md(findings)
-        self.assertIn('#### logic の視点', md)
-        self.assertIn('#### resilience の視点', md)
-        self.assertIn('logic の視点での説明', md)
-        self.assertIn('resilience の視点での説明', md)
-        self.assertIn('ルールA', md)
-        self.assertIn('ルールB', md)
-
-    def test_bodies_not_rendered_for_single_perspective(self):
-        """単独 perspective の場合は bodies_by_perspective の併記は行われない。"""
-        findings = [
-            {'id': 1, 'severity': 'critical', 'title': '単独問題',
-             'location': 'y.py:1', 'perspective': 'logic',
-             'body': '1. **単独問題**: 説明'},
-        ]
-        md = generate_review_md(findings)
-        # 併記見出し(#### の perspective 見出し)は出力されない
-        self.assertNotIn('#### logic の視点', md)
-
-    def test_bodies_preserves_perspective_order(self):
-        """bodies の出力順は perspectives リストの順序に従う。"""
-        findings = [
-            {'id': 1, 'severity': 'critical', 'title': '共通',
-             'location': '',
-             'perspectives': ['resilience', 'alignment', 'logic'],
-             'bodies_by_perspective': {
-                 'logic': 'body-logic',
-                 'alignment': 'body-alignment',
-                 'resilience': 'body-resilience',
-             }},
-        ]
-        md = generate_review_md(findings)
-        idx_r = md.index('#### resilience の視点')
-        idx_a = md.index('#### alignment の視点')
-        idx_l = md.index('#### logic の視点')
-        self.assertLess(idx_r, idx_a)
-        self.assertLess(idx_a, idx_l)
-
-
 # ===========================================================================
 # body 抽出テスト
 # ===========================================================================
@@ -925,57 +774,6 @@ class TestExtractFindingsBody(unittest.TestCase):
         for f in findings:
             self.assertFalse(f['body'].endswith('\n'))
             self.assertFalse(f['body'].endswith('\n\n'))
-
-
-# ===========================================================================
-# deduplicate_findings の bodies_by_perspective テスト
-# ===========================================================================
-
-class TestDeduplicateBodies(unittest.TestCase):
-    """deduplicate_findings の bodies_by_perspective 機能のテスト"""
-
-    def _finding(self, title, location, perspective, body, severity='major'):
-        return {
-            'id': 0, 'severity': severity, 'title': title, 'location': location,
-            'status': 'pending', 'fixed_at': '', 'files_modified': [],
-            'skip_reason': '', 'perspective': perspective, 'body': body,
-        }
-
-    def test_duplicate_preserves_both_bodies(self):
-        """重複項目は各 perspective の body を bodies_by_perspective に保持する。"""
-        findings = [
-            self._finding('問題', 'f.py:1', 'logic', 'logic の原文'),
-            self._finding('問題', 'f.py:1', 'resilience', 'resilience の原文'),
-        ]
-        result = deduplicate_findings(findings)
-        self.assertEqual(len(result), 1)
-        bodies = result[0]['bodies_by_perspective']
-        self.assertEqual(bodies['logic'], 'logic の原文')
-        self.assertEqual(bodies['resilience'], 'resilience の原文')
-
-    def test_triple_duplicate_all_bodies(self):
-        """3 perspective の重複で 3 つの body が保持される。"""
-        findings = [
-            self._finding('問題', 'x.py:1', 'a', 'body-a'),
-            self._finding('問題', 'x.py:1', 'b', 'body-b'),
-            self._finding('問題', 'x.py:1', 'c', 'body-c'),
-        ]
-        result = deduplicate_findings(findings)
-        bodies = result[0]['bodies_by_perspective']
-        self.assertEqual(len(bodies), 3)
-        self.assertEqual(bodies['a'], 'body-a')
-        self.assertEqual(bodies['b'], 'body-b')
-        self.assertEqual(bodies['c'], 'body-c')
-
-    def test_non_duplicate_no_bodies_by_perspective(self):
-        """重複していない finding には bodies_by_perspective が付与されない。"""
-        findings = [
-            self._finding('問題A', 'f.py:1', 'logic', 'body-a'),
-            self._finding('問題B', 'f.py:2', 'logic', 'body-b'),
-        ]
-        result = deduplicate_findings(findings)
-        for f in result:
-            self.assertNotIn('bodies_by_perspective', f)
 
 
 # ===========================================================================
@@ -1049,38 +847,6 @@ items:
 
         data = json.loads(result.stdout)
         self.assertFalse(data['review_only'])
-
-    def test_review_only_renders_bodies_in_review_md(self):
-        """--review-only で統合 review.md に重複項目の各 perspective の body が併記される。"""
-        self._write('review_correctness.md', """\
-### 🔴致命的問題
-
-1. **境界値チェック漏れ**: correctness の視点で説明
-   - 箇所: utils.py:42
-   - 根拠: ルール AA
-""")
-        self._write('review_resilience.md', """\
-### 🔴致命的問題
-
-1. **境界値チェック漏れ**: resilience の視点で説明
-   - 箇所: utils.py:42
-   - 根拠: ルール BB
-""")
-
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
-             self.tmpdir, '--review-only'],
-            capture_output=True, text=True, timeout=10,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-
-        review_md = (self.session_path / 'review.md').read_text(encoding='utf-8')
-        self.assertIn('#### correctness の視点', review_md)
-        self.assertIn('#### resilience の視点', review_md)
-        self.assertIn('correctness の視点で説明', review_md)
-        self.assertIn('resilience の視点で説明', review_md)
-        self.assertIn('ルール AA', review_md)
-        self.assertIn('ルール BB', review_md)
 
     def test_raw_md_files_are_excluded_from_glob(self):
         """`review_*.raw.md` は glob から除外される(evaluator バックアップを二重処理しない)。"""

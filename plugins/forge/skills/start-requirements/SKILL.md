@@ -114,17 +114,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
 
 JSON 出力の `session_dir` をコンテキストに保持する。
 
-### ブラウザ表示の起動
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/show-browser/scripts/show_browser.py \
-  --template session_status \
-  --session-dir {session_dir}
-```
-
-- 出力 JSON の `url` をユーザーに提示する
-- 失敗時は続行する
-
 ---
 
 ## ワークフローの実行 [MANDATORY]

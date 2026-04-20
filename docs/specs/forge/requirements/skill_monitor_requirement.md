@@ -157,4 +157,4 @@ skill_monitor.py（SSE サーバー）
 |------|------|
 | `plugins/forge/docs/session_format.md` | セッションファイルスキーマ（表示対象の SSOT） |
 | `docs/specs/forge/requirement/orchestrator_pattern.md` | オーケストレータパターン要件（FNC-002: セッションディレクトリ通信） |
-| `docs/specs/forge/design/DES-012_show_browser_design.md` | 設計書（show-browser スキル詳細設計） |
+| `docs/specs/forge/design/DES-012_show_browser_design.md` | 設計書（モニターモジュール詳細設計。v3.0 で SKILL を廃止し `plugins/forge/scripts/monitor/` に内部モジュール化） |

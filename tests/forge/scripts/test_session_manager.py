@@ -51,10 +51,17 @@ class _FsTestCase(unittest.TestCase):
         os.chdir(self.tmpdir)
         # .claude/.temp/ を作成
         (self.tmpdir / ".claude" / ".temp").mkdir(parents=True, exist_ok=True)
+        # 既存テストでは monitor 自動起動を抑止(別途 integration test で検証)
+        self._orig_skip_monitor = os.environ.get("FORGE_SESSION_SKIP_MONITOR")
+        os.environ["FORGE_SESSION_SKIP_MONITOR"] = "1"
 
     def tearDown(self):
         os.chdir(self.orig_cwd)
         shutil.rmtree(self.tmpdir, ignore_errors=True)
+        if self._orig_skip_monitor is None:
+            os.environ.pop("FORGE_SESSION_SKIP_MONITOR", None)
+        else:
+            os.environ["FORGE_SESSION_SKIP_MONITOR"] = self._orig_skip_monitor
 
     def _write_file(self, rel_path, content=''):
         p = self.tmpdir / rel_path

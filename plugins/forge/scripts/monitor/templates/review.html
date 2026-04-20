@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>forge monitor — review</title>
+  <link rel="stylesheet" href="/assets/tokens.css" />
+  <link rel="stylesheet" href="/assets/layout.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="topbar__title">forge review</h1>
+    <span class="topbar__subtitle" data-role="session-subtitle">session</span>
+    <span class="topbar__spacer"></span>
+    <span class="skill-tag" data-role="skill-tag">review</span>
+    <span class="sse-pulse" data-role="sse-pulse" data-state="connecting">connecting</span>
+  </header>
+
+  <main class="page">
+    <div class="layout">
+      <section data-role="main">
+        <div class="card">
+          <h2 class="card__title">findings</h2>
+          <div class="filters" data-role="filters"></div>
+          <div data-role="findings" class="empty">
+            <div class="empty__glyph">…</div>
+            <div>読み込み中…</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="card">
+          <h2 class="card__title">summary</h2>
+          <div class="summary-grid" data-role="summary"></div>
+          <div class="progress" data-role="progress"></div>
+        </div>
+        <div class="card">
+          <h2 class="card__title">session</h2>
+          <div class="card__body" data-role="meta">—</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/assets/monitor.js"></script>
+  <script>
+  (function () {
+    const SEV_ORDER = ["critical", "major", "minor"];
+    const STATUS_ORDER = [
+      "pending", "in_progress", "fixed", "skipped", "needs_review",
+    ];
+    const activeFilters = new Set();
+
+    function getItems(data) {
+      const plan = (data.files && data.files["plan.yaml"]) || {};
+      const content = plan.content;
+      if (!content) return [];
+      if (Array.isArray(content.items)) return content.items;
+      if (Array.isArray(content.findings)) return content.findings;
+      return [];
+    }
+
+    function countBy(items, key) {
+      const counts = {};
+      for (const it of items) {
+        const v = String((it && it[key]) || "").toLowerCase();
+        counts[v] = (counts[v] || 0) + 1;
+      }
+      return counts;
+    }
+
+    function renderSummary(items) {
+      const mount = document.querySelector("[data-role=summary]");
+      if (!mount) return;
+      const statusCounts = countBy(items, "status");
+      const cells = [
+        ["total", items.length],
+        ["pending", statusCounts.pending || 0],
+        ["fixed", statusCounts.fixed || 0],
+        ["skipped", statusCounts.skipped || 0],
+        ["review", statusCounts.needs_review || 0],
+      ];
+      mount.innerHTML = cells.map(([label, n]) => `
+        <div class="summary-stat">
+          <div class="summary-stat__num">${n}</div>
+          <div class="summary-stat__label">${Forge.escapeHtml(label)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderProgress(items) {
+      const mount = document.querySelector("[data-role=progress]");
+      if (!mount) return;
+      if (!items.length) {
+        mount.innerHTML = "";
+        return;
+      }
+      const counts = countBy(items, "status");
+      const total = items.length;
+      const segs = [];
+      for (const s of STATUS_ORDER) {
+        const n = counts[s] || 0;
+        if (!n) continue;
+        const pct = (n / total) * 100;
+        segs.push(
+          `<div class="progress__seg progress__seg--${s}"` +
+          ` style="width: ${pct.toFixed(2)}%" title="${s}: ${n}"></div>`
+        );
+      }
+      mount.innerHTML = segs.join("");
+    }
+
+    function renderFilters(items) {
+      const mount = document.querySelector("[data-role=filters]");
+      if (!mount) return;
+      const sevCounts = countBy(items, "severity");
+      const pills = ["all", ...SEV_ORDER].map((sev) => {
+        const active = (sev === "all" && activeFilters.size === 0)
+          || activeFilters.has(sev);
+        const n = sev === "all" ? items.length : (sevCounts[sev] || 0);
+        return `
+          <button class="filter-pill" type="button"
+            data-filter="${sev}" data-active="${active}">
+            ${sev === "all" ? "" : Forge.sevDot(sev)}
+            <span>${Forge.escapeHtml(sev)}</span>
+            <span class="filter-pill__count">${n}</span>
+          </button>
+        `;
+      });
+      mount.innerHTML = pills.join("");
+      mount.querySelectorAll(".filter-pill").forEach((el) => {
+        el.addEventListener("click", () => {
+          const sev = el.dataset.filter;
+          if (sev === "all") {
+            activeFilters.clear();
+          } else {
+            if (activeFilters.has(sev)) activeFilters.delete(sev);
+            else activeFilters.add(sev);
+          }
+          // 即時再描画(最後に取得した data を再利用)
+          if (Forge.data) Forge.render(Forge.data);
+        });
+      });
+    }
+
+    function renderFindings(items) {
+      const mount = document.querySelector("[data-role=findings]");
+      if (!mount) return;
+
+      const filtered = activeFilters.size
+        ? items.filter((it) =>
+            activeFilters.has(String(it.severity || "").toLowerCase()))
+        : items.slice();
+
+      if (!filtered.length) {
+        mount.className = "empty";
+        mount.innerHTML = `
+          <div class="empty__glyph">∅</div>
+          <div>該当する指摘はありません</div>
+        `;
+        return;
+      }
+
+      // severity 昇順(critical → major → minor → other)でソート
+      filtered.sort((a, b) => {
+        const ai = SEV_ORDER.indexOf(String(a.severity || "").toLowerCase());
+        const bi = SEV_ORDER.indexOf(String(b.severity || "").toLowerCase());
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+
+      mount.className = "";
+      mount.innerHTML = filtered.map((it) => {
+        const id = it.id || "";
+        const title = it.title || it.summary || "(no title)";
+        const sev = String(it.severity || "").toLowerCase();
+        const status = String(it.status || "pending").toLowerCase();
+        const reason = it.reason || it.description || "";
+        const skipReason = it.skip_reason || "";
+        const file = it.file || (it.location && it.location.file) || "";
+        const line = it.line || (it.location && it.location.line) || "";
+        const recommendation = it.recommendation || "";
+        const badgeVariant =
+          status === "fixed" ? "fix" :
+          status === "skipped" ? "skip" :
+          status === "needs_review" ? "review" : "";
+        return `
+          <article class="finding">
+            <div class="finding__head">
+              ${Forge.sevDot(sev)}
+              <span class="finding__title" title="${Forge.escapeHtml(title)}">
+                ${Forge.escapeHtml(title)}
+              </span>
+              <span class="finding__id">${Forge.escapeHtml(id)}</span>
+              ${badgeVariant
+                ? Forge.badge(status.replace("_", " "), badgeVariant)
+                : `<span class="badge">${Forge.statusDot(status)} ${Forge.escapeHtml(status)}</span>`}
+            </div>
+            ${reason ? `<div class="finding__reason">${Forge.escapeHtml(reason)}</div>` : ""}
+            ${skipReason && status === "skipped"
+              ? `<div class="finding__reason"><b class="muted">skip:</b> ${Forge.escapeHtml(skipReason)}</div>`
+              : ""}
+            ${recommendation
+              ? `<div class="finding__reason"><b class="muted">→</b> ${Forge.escapeHtml(recommendation)}</div>`
+              : ""}
+            <div class="finding__meta">
+              ${file ? `<span>${Forge.escapeHtml(file)}${line ? ":" + Forge.escapeHtml(String(line)) : ""}</span>` : ""}
+              ${sev ? `<span>${Forge.escapeHtml(sev)}</span>` : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderMeta(data) {
+      const mount = document.querySelector("[data-role=meta]");
+      if (!mount) return;
+      const session = (data.files && data.files["session.yaml"] || {}).content || {};
+      const lines = [];
+      if (session.feature) lines.push(["feature", session.feature]);
+      if (session.mode) lines.push(["mode", session.mode]);
+      if (session.skill) lines.push(["skill", session.skill]);
+      if (session.created_at) lines.push(["created", session.created_at]);
+      if (!lines.length) {
+        mount.innerHTML = `<span class="muted">—</span>`;
+        return;
+      }
+      mount.innerHTML = lines.map(([k, v]) => `
+        <div style="display:flex; gap:var(--space-2); font-size:12px; margin-bottom:var(--space-1)">
+          <span class="muted mono" style="min-width:72px">${Forge.escapeHtml(k)}</span>
+          <span class="mono">${Forge.escapeHtml(String(v))}</span>
+        </div>
+      `).join("");
+    }
+
+    Forge.render = function (data) {
+      const items = getItems(data);
+      renderSummary(items);
+      renderProgress(items);
+      renderFilters(items);
+      renderFindings(items);
+      renderMeta(data);
+    };
+  })();
+  </script>
+</body>
+</html>
