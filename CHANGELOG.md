@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.14] - 2026-04-20
+
+### marketplace
+
+- **feat**: forge を 0.0.38 に更新。monitor スキルへの再構築とレビュー重複統合ロジックの刷新を反映
+
+## [0.0.38] - 2026-04-20
+
+### forge
+
+- **refactor(show-browser → monitor)**: show-browser スキルを廃止し、`plugins/forge/scripts/monitor/` に集約。`launcher.py` / `server.py` / `notify.py` を分離し、review / implement / uxui / document / generic の各テンプレートを再構築。session_manager と統合して自動起動に対応
+- **refactor(reviewer)**: 機械的な重複除去を廃止し、present-findings 側で Claude が意味的に統合する方式に変更。`extract_review_findings.py` から `deduplicate_findings` / `perspectives` 複数フィールド / `bodies_by_perspective` を削除し、同一箇所の指摘は個別項目として残す。present-findings に Step 1.5「意味的重複の自動統合」を追加
+- **feat(monitor)**: `review.html` テンプレートに `skip_reason` 表示を追加。重複統合の理由を browser 上で確認可能に
+- **fix(session)**: `update_plan.py` / `write_interpretation.py` / `write_refs.py` の通知処理を整備
+
 ## [marketplace 0.1.13] - 2026-04-19
 
 ### marketplace

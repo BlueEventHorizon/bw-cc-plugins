@@ -3,7 +3,7 @@
   "name": "bw-cc-plugins",
   "metadata": {
     "description": "Document lifecycle management, GitHub operations, Xcode build/test, and AI-searchable document indexing",
-    "version": "0.1.13"
+    "version": "0.1.14"
   },
   "owner": {
     "name": "moons"
@@ -12,7 +12,7 @@
     {
       "name": "forge",
       "description": "AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.",
-      "version": "0.0.37",
+      "version": "0.0.38",
       "author": {
         "name": "moons"
       },
