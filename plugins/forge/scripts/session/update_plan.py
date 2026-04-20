@@ -27,6 +27,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 from session.yaml_utils import read_yaml, write_nested_yaml, now_iso
+from monitor.notify import notify_session_update
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
 VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
@@ -169,6 +170,7 @@ def write_plan(session_dir, plan_data):
     sections = [("items", ordered_items)]
     output_path = Path(session_dir) / "plan.yaml"
     write_nested_yaml(str(output_path), sections)
+    notify_session_update(session_dir, str(output_path))
     return str(output_path)
 
 

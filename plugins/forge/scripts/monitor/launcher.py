@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""show_browser.py — forge:show-browser スキルのエントリーポイント。
+"""launcher.py — forge monitor のエントリーポイント。
 
-monitor ディレクトリの作成・server.py の fork 起動・ブラウザ起動を担う。
-起動完了後に標準出力へ JSON を出力する。
+monitor ディレクトリ作成・server.py の fork 起動・ブラウザ起動を担う。
+session_manager.cmd_init() から自動呼び出しされることを想定する。
 
-設計書: DES-012 show-browser 設計書 v2.0（5.1 節 / 5.10 節）
+設計書: DES-012 show-browser 設計書 v3.0 (§5.1)
 """
 
 import argparse
@@ -20,16 +20,20 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-# デフォルトのポート検索開始番号
+# デフォルトのポート検索開始番号(8765 優先取得、空きなければ 8766〜8775)
 DEFAULT_PORT = 8765
+DEFAULT_PORT_ATTEMPTS = 11  # 8765〜8775
+
+# 環境変数: true/1/yes でブラウザ自動起動を抑制(CI/SSH リモート向け)
+NO_OPEN_ENV = "FORGE_MONITOR_NO_OPEN"
 
 
 # ---------------------------------------------------------------------------
 # ポート検出
 # ---------------------------------------------------------------------------
 
-def find_free_port(start=DEFAULT_PORT, attempts=100):
-    """8765 から順に空きポートを検索して返す。
+def find_free_port(start=DEFAULT_PORT, attempts=DEFAULT_PORT_ATTEMPTS):
+    """start から順に空きポートを検索して返す。
 
     Args:
         start: 検索開始ポート番号
@@ -49,7 +53,9 @@ def find_free_port(start=DEFAULT_PORT, attempts=100):
                 return port
             except OSError:
                 continue
-    raise RuntimeError(f"空きポートが見つかりません（{start}〜{start + attempts - 1}）")
+    raise RuntimeError(
+        f"空きポートが見つかりません({start}〜{start + attempts - 1})"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +63,7 @@ def find_free_port(start=DEFAULT_PORT, attempts=100):
 # ---------------------------------------------------------------------------
 
 def _is_process_alive(pid):
-    """PID が生存しているか確認する（POSIX 専用）。"""
+    """PID が生存しているか確認する(POSIX 専用)。"""
     try:
         os.kill(pid, 0)
         return True
@@ -68,18 +74,14 @@ def _is_process_alive(pid):
 def cleanup_orphan_monitors(project_root):
     """孤立した monitor ディレクトリを削除する。
 
-    孤立判定ルール（設計書 5.10）:
+    孤立判定ルール:
       - server.pid が存在しない → 孤立
-      - server.pid の PID が生きていない → 孤立（クラッシュ）
-
-    Args:
-        project_root: プロジェクトルートパス
+      - server.pid の PID が生きていない → 孤立(クラッシュ)
     """
     pattern = os.path.join(project_root, ".claude", ".temp", "*-monitor")
     for monitor_dir in glob.glob(pattern):
         pid_path = os.path.join(monitor_dir, "server.pid")
         if not os.path.exists(pid_path):
-            # server.pid なし → 孤立
             try:
                 shutil.rmtree(monitor_dir)
             except OSError:
@@ -94,7 +96,6 @@ def cleanup_orphan_monitors(project_root):
                 pass
             continue
         if not _is_process_alive(pid):
-            # プロセス死亡 → 孤立
             try:
                 shutil.rmtree(monitor_dir)
             except OSError:
@@ -105,27 +106,27 @@ def cleanup_orphan_monitors(project_root):
 # monitor ディレクトリ作成
 # ---------------------------------------------------------------------------
 
-def create_monitor_dir(project_root, template, session_dir, port):
+def create_monitor_dir(project_root, skill, session_dir, port):
     """monitor ディレクトリを作成し config.json を書き込む。
 
-    ディレクトリ名: .claude/.temp/{YYYYMMDD-HHmmss}-{template}-monitor/
+    ディレクトリ名: .claude/.temp/{YYYYMMDD-HHmmss}-{skill}-monitor/
 
     Args:
         project_root: プロジェクトルートパス
-        template: テンプレート名（例: "review_list"）
-        session_dir: 監視対象セッションディレクトリ（絶対パス）
+        skill: skill 名(例: "review" / "start-requirements")
+        session_dir: 監視対象セッションディレクトリ(絶対パス)
         port: 使用ポート番号
 
     Returns:
         str: 作成した monitor ディレクトリの絶対パス
     """
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    dirname = f"{ts}-{template}-monitor"
+    dirname = f"{ts}-{skill}-monitor"
     monitor_dir = os.path.join(project_root, ".claude", ".temp", dirname)
     os.makedirs(monitor_dir, exist_ok=True)
 
     config = {
-        "template": template,
+        "skill": skill,
         "session_dir": os.path.abspath(session_dir),
         "port": port,
     }
@@ -142,12 +143,12 @@ def create_monitor_dir(project_root, template, session_dir, port):
 # ---------------------------------------------------------------------------
 
 def start_server(monitor_dir, port, timeout=5.0):
-    """server.py を fork 起動し、起動完了を待つ。
+    """server.py を fork 起動し、起動完了(server.pid の書き込み)を待つ。
 
     Args:
         monitor_dir: monitor ディレクトリパス
         port: リッスンポート
-        timeout: 起動タイムアウト（秒）
+        timeout: 起動タイムアウト(秒)
 
     Returns:
         subprocess.Popen: 起動したサーバープロセス
@@ -166,7 +167,6 @@ def start_server(monitor_dir, port, timeout=5.0):
         start_new_session=True,
     )
 
-    # server.pid が書き込まれるまで待機
     pid_path = os.path.join(monitor_dir, "server.pid")
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -175,7 +175,36 @@ def start_server(monitor_dir, port, timeout=5.0):
         time.sleep(0.1)
 
     proc.terminate()
-    raise RuntimeError(f"server.py の起動がタイムアウトしました（{timeout}秒）")
+    raise RuntimeError(f"server.py の起動がタイムアウトしました({timeout}秒)")
+
+
+# ---------------------------------------------------------------------------
+# プロジェクトルート解決
+# ---------------------------------------------------------------------------
+
+def _resolve_project_root():
+    """CLAUDE_PROJECT_DIR 環境変数 → スクリプト相対パスの順で解決する。
+
+    monitor/launcher.py から 4 階層上がプロジェクトルート:
+      plugins/forge/scripts/monitor/launcher.py
+        → plugins/forge/scripts/monitor (../)
+        → plugins/forge/scripts      (../../)
+        → plugins/forge              (../../../)
+        → plugins                    (../../../../)
+        → <project_root>             (../../../../../) ← 計5階層上
+    """
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return os.path.abspath(env)
+    return os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), *([".."] * 4))
+    )
+
+
+def _should_skip_open():
+    """FORGE_MONITOR_NO_OPEN が有効値ならブラウザ起動をスキップ。"""
+    val = os.environ.get(NO_OPEN_ENV, "").strip().lower()
+    return val in ("1", "true", "yes", "on")
 
 
 # ---------------------------------------------------------------------------
@@ -185,19 +214,20 @@ def start_server(monitor_dir, port, timeout=5.0):
 def main():
     """CLI エントリーポイント。
 
-    設計書 5.1 節:
-      python3 show_browser.py --template review_list --session-dir <path> [--port N] [--no-open]
+    Usage:
+      python3 launcher.py --skill <name> --session-dir <path> [--port N] [--no-open]
 
-    標準出力（JSON）:
-      {"monitor_dir": "...", "port": 8765}
+    標準出力 (JSON):
+      {"monitor_dir": "...", "port": 8765, "url": "..."}
     """
     parser = argparse.ArgumentParser(
-        description="forge:show-browser — セッション進捗をブラウザでリアルタイム表示する"
+        description="forge monitor — セッション進捗をブラウザでリアルタイム表示する"
     )
     parser.add_argument(
-        "--template",
-        default="review_list",
-        help="テンプレート名（templates/ 配下の HTML ファイル名、拡張子なし）",
+        "--skill",
+        required=True,
+        help="skill 名(例: review / start-requirements / start-design / "
+             "start-plan / start-implement / start-uxui-design)",
     )
     parser.add_argument(
         "--session-dir",
@@ -209,12 +239,12 @@ def main():
         "--port",
         type=int,
         default=None,
-        help="ポート番号（省略時は 8765 から自動検出）",
+        help=f"ポート番号(省略時は {DEFAULT_PORT} から自動検出)",
     )
     parser.add_argument(
         "--no-open",
         action="store_true",
-        help="ブラウザを開かない",
+        help=f"ブラウザを開かない(環境変数 {NO_OPEN_ENV} でも指定可)",
     )
     args = parser.parse_args()
 
@@ -228,21 +258,19 @@ def main():
         print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
         sys.exit(1)
 
-    # プロジェクトルート: CLAUDE_PROJECT_DIR 環境変数を優先、未設定時は相対パスでフォールバック
-    project_root = os.environ.get("CLAUDE_PROJECT_DIR") or os.path.abspath(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), *([".."]*5))
-    )
+    project_root = _resolve_project_root()
 
-    # 孤立 monitor の掃除（設計書 5.10）
     cleanup_orphan_monitors(project_root)
 
-    # 空きポート検出
-    port = args.port if args.port is not None else find_free_port()
+    try:
+        port = args.port if args.port is not None else find_free_port()
+    except RuntimeError as e:
+        error = {"error": "port_unavailable", "message": str(e)}
+        print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
+        sys.exit(1)
 
-    # monitor ディレクトリ作成
-    monitor_dir = create_monitor_dir(project_root, args.template, session_dir, port)
+    monitor_dir = create_monitor_dir(project_root, args.skill, session_dir, port)
 
-    # server.py 起動
     try:
         start_server(monitor_dir, port)
     except RuntimeError as e:
@@ -251,23 +279,25 @@ def main():
             "message": str(e),
         }
         print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
-        # monitor_dir を後始末
         try:
             shutil.rmtree(monitor_dir)
         except OSError:
             pass
         sys.exit(1)
 
-    # ブラウザ起動
     url = f"http://localhost:{port}/"
-    if not args.no_open:
-        webbrowser.open(url)
+    if not args.no_open and not _should_skip_open():
+        try:
+            webbrowser.open(url)
+        except Exception:
+            # CI/SSH 環境等で webbrowser が例外を投げても起動は成功扱いにする
+            pass
 
-    # 結果を JSON で出力（設計書 5.1 節）
     result = {
         "monitor_dir": monitor_dir,
         "port": port,
         "url": url,
+        "skill": args.skill,
     }
     print(json.dumps(result, ensure_ascii=False))
 

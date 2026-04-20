@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>forge monitor — session</title>
+  <link rel="stylesheet" href="/assets/tokens.css" />
+  <link rel="stylesheet" href="/assets/layout.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="topbar__title">forge monitor</h1>
+    <span class="topbar__subtitle" data-role="session-subtitle">session</span>
+    <span class="topbar__spacer"></span>
+    <span class="skill-tag" data-role="skill-tag">session</span>
+    <span class="sse-pulse" data-role="sse-pulse" data-state="connecting">connecting</span>
+  </header>
+
+  <main class="page">
+    <div class="layout layout--single">
+      <section data-role="main"></section>
+    </div>
+  </main>
+
+  <script src="/assets/monitor.js"></script>
+  <script>
+    // generic テンプレートは monitor.js の fallbackRender を使用(上書きしない)。
+  </script>
+</body>
+</html>

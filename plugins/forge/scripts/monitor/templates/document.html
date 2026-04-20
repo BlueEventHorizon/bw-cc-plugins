@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>forge monitor — document</title>
+  <link rel="stylesheet" href="/assets/tokens.css" />
+  <link rel="stylesheet" href="/assets/layout.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="topbar__title">forge document</h1>
+    <span class="topbar__subtitle" data-role="session-subtitle">session</span>
+    <span class="topbar__spacer"></span>
+    <span class="skill-tag" data-role="skill-tag">document</span>
+    <span class="sse-pulse" data-role="sse-pulse" data-state="connecting">connecting</span>
+  </header>
+
+  <main class="page">
+    <div class="layout">
+      <section data-role="main">
+        <div class="card">
+          <h2 class="card__title" data-role="doc-title">document</h2>
+          <div class="markdown" data-role="doc">
+            <p class="muted">読み込み中…</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="card">
+          <h2 class="card__title">session</h2>
+          <div class="card__body" data-role="meta">—</div>
+        </div>
+        <div class="card">
+          <h2 class="card__title">references</h2>
+          <div class="card__body" data-role="refs">—</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/assets/monitor.js"></script>
+  <script>
+  (function () {
+    const DOC_CANDIDATES = ["requirements.md", "design.md", "plan.yaml"];
+
+    function pickDocument(data) {
+      const files = data.files || {};
+      for (const name of DOC_CANDIDATES) {
+        const entry = files[name];
+        if (entry && entry.exists && entry.content != null) {
+          return { name, content: entry.content };
+        }
+      }
+      return null;
+    }
+
+    function renderDocumentBody(doc) {
+      const titleEl = document.querySelector("[data-role=doc-title]");
+      const mount = document.querySelector("[data-role=doc]");
+      if (!mount) return;
+
+      if (!doc) {
+        if (titleEl) titleEl.textContent = "document";
+        mount.innerHTML = `
+          <div class="empty">
+            <div class="empty__glyph">∅</div>
+            <div>成果物はまだ作成されていません</div>
+          </div>
+        `;
+        return;
+      }
+
+      if (titleEl) titleEl.textContent = doc.name;
+
+      if (doc.name.endsWith(".yaml")) {
+        const text = typeof doc.content === "string"
+          ? doc.content
+          : JSON.stringify(doc.content, null, 2);
+        mount.innerHTML =
+          `<pre><code>${Forge.escapeHtml(text)}</code></pre>`;
+        return;
+      }
+
+      mount.innerHTML = Forge.renderMarkdown(doc.content);
+    }
+
+    function renderMeta(data) {
+      const mount = document.querySelector("[data-role=meta]");
+      if (!mount) return;
+      const session = (data.files && data.files["session.yaml"] || {}).content || {};
+      const rows = [];
+      for (const k of ["feature", "mode", "skill", "created_at"]) {
+        if (session[k]) rows.push([k, session[k]]);
+      }
+      if (!rows.length) {
+        mount.innerHTML = `<span class="muted">—</span>`;
+        return;
+      }
+      mount.innerHTML = rows.map(([k, v]) => `
+        <div style="display:flex; gap:var(--space-2); font-size:12px; margin-bottom:var(--space-1)">
+          <span class="muted mono" style="min-width:72px">${Forge.escapeHtml(k)}</span>
+          <span class="mono">${Forge.escapeHtml(String(v))}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderRefs(data) {
+      const mount = document.querySelector("[data-role=refs]");
+      if (!mount) return;
+
+      const refs = data.refs || {};
+      const sections = [];
+      for (const name of ["specs.yaml", "rules.yaml", "code.yaml"]) {
+        const entry = refs[name];
+        if (!entry || !entry.exists) continue;
+        const content = entry.content || {};
+        const items = Array.isArray(content.items) ? content.items
+          : Array.isArray(content.results) ? content.results
+          : Array.isArray(content) ? content
+          : [];
+        sections.push(renderRefSection(name, items));
+      }
+
+      if (!sections.length) {
+        mount.innerHTML = `<span class="muted">—</span>`;
+        return;
+      }
+      mount.innerHTML = sections.join("");
+    }
+
+    function renderRefSection(name, items) {
+      const label = name.replace(".yaml", "");
+      if (!items.length) {
+        return `
+          <div style="margin-bottom:var(--space-3)">
+            <div class="muted mono" style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em">${Forge.escapeHtml(label)}</div>
+            <div class="dim" style="font-size:12px">—</div>
+          </div>
+        `;
+      }
+      const rows = items.slice(0, 8).map((it) => {
+        const title = it.title || it.id || it.path || JSON.stringify(it);
+        const sub = it.path || it.id || "";
+        return `
+          <div style="font-size:12.5px; margin-bottom:var(--space-1)">
+            <div>${Forge.escapeHtml(String(title))}</div>
+            ${sub && sub !== title
+              ? `<div class="dim mono" style="font-size:11px">${Forge.escapeHtml(String(sub))}</div>`
+              : ""}
+          </div>
+        `;
+      });
+      const more = items.length > 8
+        ? `<div class="dim" style="font-size:11px">+ ${items.length - 8} more</div>`
+        : "";
+      return `
+        <div style="margin-bottom:var(--space-4)">
+          <div class="muted mono" style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:var(--space-2)">${Forge.escapeHtml(label)} (${items.length})</div>
+          ${rows.join("")}
+          ${more}
+        </div>
+      `;
+    }
+
+    Forge.render = function (data) {
+      renderDocumentBody(pickDocument(data));
+      renderMeta(data);
+      renderRefs(data);
+    };
+  })();
+  </script>
+</body>
+</html>

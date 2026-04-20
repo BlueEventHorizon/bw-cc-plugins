@@ -28,6 +28,13 @@ import re
 import sys
 from pathlib import Path
 
+# plugins/forge/skills/reviewer/scripts/ → plugins/forge/scripts/
+_FORGE_SCRIPTS = Path(__file__).resolve().parents[3] / "scripts"
+if str(_FORGE_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_FORGE_SCRIPTS))
+
+from monitor.notify import notify_session_update  # noqa: E402
+
 # セクションマーカーと severity のマッピング
 SECTION_MARKERS = {
     '🔴': 'critical',
@@ -463,11 +470,15 @@ def run_session_dir_mode(session_dir, review_only=False):
     # plan.yaml を生成・書き出し（--review-only のときは判定情報を保護するためスキップ）
     if not review_only:
         plan_yaml = generate_plan_yaml(deduplicated)
-        (session_path / 'plan.yaml').write_text(plan_yaml, encoding='utf-8')
+        plan_path = session_path / 'plan.yaml'
+        plan_path.write_text(plan_yaml, encoding='utf-8')
+        notify_session_update(str(session_path), str(plan_path))
 
     # review.md を生成・書き出し
     review_md = generate_review_md(deduplicated)
-    (session_path / 'review.md').write_text(review_md, encoding='utf-8')
+    review_path = session_path / 'review.md'
+    review_path.write_text(review_md, encoding='utf-8')
+    notify_session_update(str(session_path), str(review_path))
 
     # サマリーを stdout に出力
     result = summarize(deduplicated)
@@ -501,7 +512,9 @@ def run_legacy_mode(review_md_path, output_path):
     plan_yaml = generate_plan_yaml(findings)
 
     # plan.yaml を書き出し
-    Path(output_path).write_text(plan_yaml, encoding='utf-8')
+    plan_path = Path(output_path)
+    plan_path.write_text(plan_yaml, encoding='utf-8')
+    notify_session_update(str(plan_path.parent), str(plan_path))
 
     # サマリーを stdout に出力
     result = summarize(findings)

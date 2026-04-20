@@ -128,30 +128,23 @@ flowchart TD
 
 ---
 
-## show-browser
+## モニターモジュール（ブラウザ進捗表示）
 
-レビューや実装の進捗をブラウザでリアルタイム表示する。SSE サーバーを起動し、セッションディレクトリの YAML 更新を検知して自動反映する。
+`/forge:review` や `/forge:start-*` の各スキルは、セッション作成時に **モニターモジュール**（`plugins/forge/scripts/monitor/`）を自動起動する。SSE サーバーがセッションディレクトリの更新を検知し、ブラウザに自動反映する。
 
+- **ユーザーの操作は不要**: `session_manager` が `cmd_init()` の末尾で非同期 fork する
+- **URL**: `http://localhost:8765/`（使用中なら 8766〜8775 にフォールバック）
+- **skill 別テンプレート**:
+  - `review` → 指摘一覧（severity フィルタ + 進捗バー）
+  - `start-requirements` / `start-design` / `start-plan` → ドキュメントプレビュー
+  - `start-implement` → タスク進行状況
+  - `start-uxui-design` → ASCII アート + デザイントークン
+- **通知経路**: writer スクリプトからの直接通知 + 30 秒周期の mtime ハートビート
+- **自動停止**: セッションディレクトリ削除を検知するとサーバーも自動停止
+
+起動をスキップしたい場合は環境変数 `FORGE_SESSION_SKIP_MONITOR=1` / `FORGE_MONITOR_NO_OPEN=1` を使う。手動起動は以下:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
+  --session-dir <セッションディレクトリ> --skill <skill 名>
 ```
-/forge:show-browser --session-dir <セッションディレクトリ> [--template <テンプレート>] [--port <ポート>] [--no-open]
-```
-
-| 引数 | 説明 | デフォルト |
-|------|------|-----------|
-| `--session-dir` | 監視対象（`.claude/.temp/` 配下） | （必須） |
-| `--template` | 表示テンプレート | `review_list` |
-| `--port` | ポート番号 | 8765（自動検出） |
-| `--no-open` | ブラウザを自動で開かない | — |
-
-### テンプレート
-
-| テンプレート | 表示内容 |
-|-------------|---------|
-| `review_list` | レビュー指摘一覧（リアルタイム更新） |
-| `session_status` | セッション進捗状況 |
-
-### 動作
-
-- ブラウザが自動起動し `http://localhost:{port}/` でダッシュボードを表示
-- `plan.yaml` の更新を SSE 経由でリアルタイム反映
-- セッションディレクトリ削除時にサーバーも自動停止
