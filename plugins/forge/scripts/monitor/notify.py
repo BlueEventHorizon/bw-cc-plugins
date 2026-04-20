@@ -25,6 +25,22 @@ from urllib.request import Request, urlopen
 NOTIFY_TIMEOUT = 0.5
 
 
+def _log(msg):
+    """診断ログを stderr へ出す。`FORGE_NOTIFY_QUIET=1` で抑制できる。
+
+    通知失敗の原因(プロセス死亡・port ずれ・session_dir 不一致・
+    CLAUDE_PROJECT_DIR 未設定による monitor 未検出)は、握り潰すと browser に
+    更新が届かない現象として遅れて表面化する。書き込みスクリプトを止めない
+    fire-and-forget 原則を維持しつつ、原因追跡のため痕跡は必ず残す。
+    """
+    if os.environ.get("FORGE_NOTIFY_QUIET") == "1":
+        return
+    try:
+        print(f"[forge notify] {msg}", file=sys.stderr, flush=True)
+    except Exception:
+        pass
+
+
 def _project_root():
     """プロジェクトルートを解決する。
 
@@ -72,9 +88,14 @@ def notify_session_update(session_dir, file_path):
     abs_session = os.path.abspath(session_dir)
     abs_file = os.path.abspath(file_path)
     basename = os.path.basename(file_path)
+    project_root = _project_root()
 
     notified = 0
-    for config, _monitor_dir in _iter_monitors(_project_root()):
+    scanned = 0
+    matched = 0
+    mismatches = []
+    for config, _monitor_dir in _iter_monitors(project_root):
+        scanned += 1
         raw_session_dir = config.get("session_dir", "")
         if not raw_session_dir:
             continue
@@ -83,12 +104,17 @@ def notify_session_update(session_dir, file_path):
         # session_dir が完全一致する monitor のみ対象。
         # 呼び出し側が意図せず別セッションの monitor に通知するのを防ぐ。
         if abs_session != monitor_session:
+            mismatches.append(monitor_session)
             continue
 
         # 更新ファイルが session_dir 配下にあることを検証(防御的)。
         if not (abs_file == abs_session or abs_file.startswith(abs_session + os.sep)):
+            _log(
+                f"file outside session_dir: session={abs_session} file={abs_file}"
+            )
             continue
 
+        matched += 1
         port = config.get("port", 8765)
         payload = json.dumps({"file": basename, "path": file_path}).encode("utf-8")
         req = Request(
@@ -100,9 +126,26 @@ def notify_session_update(session_dir, file_path):
         try:
             urlopen(req, timeout=NOTIFY_TIMEOUT)
             notified += 1
-        except (URLError, OSError):
-            # サーバー未起動・タイムアウトは無視する。書き込み成功を優先する。
-            pass
+        except (URLError, OSError) as e:
+            _log(
+                f"POST /notify failed: port={port} session={abs_session} "
+                f"file={basename} error={e!r}"
+            )
+
+    # 通知 0 件のまま終わった原因を可視化する。
+    # ブラウザに更新が届かない問題を追跡できるようにするため、
+    # scanned=0(monitor 未検出) / matched=0(session_dir 不一致)を区別してログ化。
+    if notified == 0:
+        if scanned == 0:
+            _log(
+                f"no monitor found: project_root={project_root} "
+                f"session={abs_session}"
+            )
+        elif matched == 0 and mismatches:
+            _log(
+                f"no monitor matched session_dir={abs_session}: "
+                f"scanned={scanned} other_sessions={mismatches}"
+            )
 
     return notified
 
