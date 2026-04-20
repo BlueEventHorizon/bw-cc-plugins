@@ -401,7 +401,7 @@ perspectives の数だけ Agent ツール（`subagent_type` 指定なし = gener
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py {session_dir}
 ```
 
-このスクリプトは session_dir 内の `review_*.md` を glob で収集し、重複除去・統合を行い、`plan.yaml` と `review.md` を生成する。
+このスクリプトは session_dir 内の `review_*.md` を glob で収集し、統合した `plan.yaml` と `review.md` を生成する。同一指摘が複数 perspective で検出された場合も**統合せず個別項目として残す**（重複判定は意味的に困難なため機械的には行わない）。
 
 保存完了後、以下を出力する:
 
@@ -460,8 +460,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py
 ```
 
 `--review-only` モードは各 `review_{perspective}.md`（最終系 = evaluator 整形済み）を統合して `review.md` を再生成する。**plan.yaml は書き換えない**（次の Step 1.6 の merge_evals.py の判定情報を保護）。
-
-重複項目（`perspectives: [A, B]`）は各 perspective の該当項目を「#### {perspective} の視点」として並列表示するため、Claude が最終判断時に両方の evaluator 視点を確認できる。
 
 ##### Step 1.6: evaluator 結果の一括マージ [MANDATORY]
 

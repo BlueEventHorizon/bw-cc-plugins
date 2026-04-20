@@ -73,7 +73,7 @@ argument-hint: "<修正モード> (--single | --batch)"
 
 1. **`{session_dir}/refs.yaml` を Read** して `reference_docs` / `related_code` を取得する。取得したパスをそのまま使用する。再収集は不要。
 
-2. **`{session_dir}/plan.yaml` を Read** して各項目の `id` / `recommendation` / `auto_fixable` / `status` / `perspective` / `perspectives` を取得する。
+2. **`{session_dir}/plan.yaml` を Read** して各項目の `id` / `recommendation` / `auto_fixable` / `status` / `perspective` を取得する。
 
 3. **モードに応じて処理対象をフィルタする**:
 
@@ -103,7 +103,6 @@ argument-hint: "<修正モード> (--single | --batch)"
 4. **`{session_dir}/review_{perspective_name}.md`（最終系 = evaluator 整形済み）を Read** して、フィルタ後の id に対応する項目の詳細（箇所・該当コード・なぜ問題か・修正案）を抜粋する:
 
    - evaluator が**常に**書き換えている前提のため、parse 分岐は不要
-   - 対象項目の perspective が `perspectives: [A, B]` の場合は両 perspective の `review_{perspective}.md` を参照し、より詳細な方を採用（または両方を subagent プロンプトに含める）
    - **`.raw.md`（reviewer 原文）は読まない**（定常フローでは最終系のみ対象）
    - ユーザー対話後に更新された最新の内容を反映するため、ここで Read するタイミングを遅延させない
 

@@ -31,10 +31,6 @@ from session.update_plan import read_plan, update_items_batch, write_plan
 def build_perspective_id_map(items):
     """plan.yaml の items から perspective → [global_id, ...] のマッピングを構築する。
 
-    - `perspective` フィールド (単一) はそのマッピングに追加
-    - `perspectives` フィールド (複数) は各 perspective 両方のマッピングに追加
-      (同一 item が複数 perspective の eval 結果からローカル ID で参照されるため)
-
     Args:
         items: plan.yaml の items リスト
 
@@ -43,13 +39,6 @@ def build_perspective_id_map(items):
     """
     mapping = {}
     for item in items:
-        perspectives = item.get("perspectives")
-        if isinstance(perspectives, list) and perspectives:
-            for p in perspectives:
-                if not p:
-                    continue
-                mapping.setdefault(p, []).append(item["id"])
-            continue
         p = item.get("perspective", "")
         if not p:
             # perspective 未指定の item はマッピングに登録しない
