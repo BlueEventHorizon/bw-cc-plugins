@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-15T09:24:02Z
-  file_count: 38
+  generated_at: 2026-04-23T13:23:51Z
+  file_count: 41
 
 docs:
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
@@ -634,38 +634,35 @@ docs:
       - parallel agents
   docs/specs/forge/design/DES-012_show_browser_design.md:
     doc_type: design
-    title: show-browser Skill Design (DES-012)
-    purpose: Defines the real-time browser monitoring architecture for displaying session progress and review results using PostToolUse hooks and Server-Sent Events (SSE)
+    title: DES-012 show-browser Design Specification
+    purpose: Specifies the real-time browser monitoring system for forge skill execution, including monitor lifecycle, communication protocols, and template selection mechanism
     content_details:
-      - PostToolUse hook + SSE push notification architecture
-      - Multiple monitor support with template switching
-      - SSE server implementation using Python http.server
-      - Session directory monitoring and automatic cleanup
-      - Browser reconnection and session lifecycle management
-      - HTML template system for review_list and future templates
-      - "API endpoints: GET / (HTML), GET /session (JSON), GET /sse (SSE), POST /notify"
-      - Error handling and input validation (path traversal, DoS protection)
-      - Session YAML to JSON transformation and real-time updates
-      - Orphaned monitor directory cleanup on server startup
+      - Monitor module architecture and auto-startup via session_manager
+      - Skill-based template selection and asset sharing (tokens.css, layout.css, monitor.js)
+      - Real-time notification via direct notify POST and 30s mtime heartbeat
+      - Multi-monitor concurrent operation with port fallback (8765-8775)
+      - SSE server with session state tracking and mtime snapshot management
+      - API endpoints for index, session state, assets, and notify POST
+      - Template mapping for 6 skills (review, start-requirements, start-design, start-plan, start-implement, start-uxui-design)
+      - Orphan monitor cleanup and graceful shutdown with session_end detection
+      - Client-side rendering in window.Forge namespace with SSE reconnection handling
     applicable_tasks:
-      - show-browser skill implementation
-      - Session monitoring and real-time UI updates
-      - Server-Sent Events integration
-      - PostToolUse hook configuration
-      - HTML template development for review display
-      - Error handling and server lifecycle management
-      - Browser session reconnection handling
-      - Multiple concurrent monitor support
+      - Implement monitor module components (launcher, server, notify)
+      - Test multi-monitor concurrent operation and port conflict handling
+      - Design browser UI template rendering for different skill types
+      - Integrate monitor auto-startup into session_manager
+      - Review notification latency and heartbeat mtime snapshot consistency
     keywords:
       - show-browser
-      - SSE
-      - PostToolUse
-      - server.py
-      - notifier.py
-      - monitor directory
+      - monitor module
+      - SSE server
+      - skill-based template
+      - session manager
+      - port fallback
+      - mtime heartbeat
+      - window.Forge
+      - design tokens
       - EventSource
-      - template switching
-      - session lifecycle
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     doc_type: design
     title: DES-013 Context Gathering Task Specification
@@ -977,6 +974,92 @@ docs:
       - git tagging
       - CHANGELOG
       - update-version skill
+  docs/specs/forge/io_verb/design/DES-024_io_verb_design.md:
+    doc_type: design
+    title: "io_verb Design: Hiding Script Details from SKILL.md"
+    purpose: Defines the design for wrapper layer that hides low-level script complexity and CLI flag options from SKILL.md, achieving clean separation between AI instructions and implementation details
+    content_details:
+      - Wrapper layer types and common principles
+      - Single wrapper vs composite wrapper (exception layer) patterns
+      - Module structure with dependency direction (SKILL.md to wrapper to low-level script)
+      - "Wrapper placement for 6 skill groups: session manager find/init, resolve_doc_structure, update_plan, update_version_files"
+      - Implementation of 30 wrapper scripts across all skills
+      - SKILL.md simplification from flag-based calls to position-argument-only calls
+      - Error handling and stderr contract for composite wrappers
+      - "Architectural constraints (R7 MANDATORY: low-level changes prohibited, subprocess calls only)"
+    applicable_tasks:
+      - Implementation of wrapper layer across forge skills
+      - Review of script placement and dependency structure
+      - SKILL.md refactoring to remove internal flags
+      - Testing wrapper implementations with subprocess mocking
+      - Architecture validation during feature addition
+      - Script reorganization planning
+    keywords:
+      - wrapper
+      - script abstraction
+      - CLI flag hiding
+      - subprocess delegation
+      - io_verb
+      - SKILL.md refactoring
+      - script composition
+      - low-level API
+      - layer separation
+  docs/specs/forge/io_verb/requirements/inventory.md:
+    doc_type: requirement
+    title: "io_verb Inventory: Pain Points in SKILL.md"
+    purpose: Documents a comprehensive audit of script invocation patterns in forge SKILL.md files, identifying 28 pain points across flag exposure, multi-argument calls, and choice enumeration to guide wrapper script design
+    content_details:
+      - Audit of 16 SKILL.md files with script references
+      - Flag exposure patterns (7 occurrences of --doc-type, 6 of --skill, 5 of --batch/--id/--status, 3 of --version-path/--filter/--optional)
+      - Multi-argument invocations with 3-6 flags in session_manager.py init calls
+      - Choice enumeration where AI selects status values (in_progress, needs_review, skipped)
+      - Four affected low-level scripts (session_manager.py, resolve_doc_structure.py, update_plan.py, update_version_files.py)
+      - Total of 28 pain points requiring wrapper script solutions
+    applicable_tasks:
+      - Script abstraction layer design
+      - SKILL.md refactoring planning
+      - API wrapper implementation
+      - io_verb feature specification
+    keywords:
+      - io_verb
+      - SKILL.md
+      - script wrapping
+      - flag exposure
+      - session_manager
+      - resolve_doc_structure
+      - update_plan
+      - update_version_files
+      - refactoring
+      - abstraction
+  docs/specs/forge/io_verb/requirements/io_verb_requirements.md:
+    doc_type: requirement
+    title: "io_verb Requirements: Separating SKILL.md from Script Implementation Details"
+    purpose: Defines requirements for refactoring forge plugin to decouple SKILL.md from script-specific details through thin wrapper scripts, reducing AI context load and improving maintainability
+    content_details:
+      - Background and motivation
+      - Scope and inclusions/exclusions
+      - Requirements R1-R7 including clean state, argument minimization, and script placement guidelines
+      - "Wrapper script architecture with two classifications: low-level scripts and SKILL-specific wrappers"
+      - Exception layer for composite wrappers
+      - Success criteria using qualitative Yes/No assessment
+      - Constraints on Python stdlib usage and test requirements
+    applicable_tasks:
+      - forge plugin refactoring planning
+      - SKILL.md cleanup and consolidation
+      - wrapper script design and implementation
+      - script API minimization
+      - forge architecture review
+      - implementation guidelines enforcement
+    keywords:
+      - io_verb
+      - wrapper script
+      - SKILL.md
+      - argument minimization
+      - script placement
+      - low-level script
+      - context reduction
+      - CLI interface
+      - forge architecture
   docs/specs/forge/plan/forge_plan.md:
     doc_type: plan
     title: forge Implementation Plan
@@ -1039,31 +1122,32 @@ docs:
   docs/specs/forge/requirements/skill_monitor_requirement.md:
     doc_type: requirement
     title: skill_monitor Requirement Specification
-    purpose: Defines browser-based real-time session data monitoring feature for forge orchestrators, including SSE server, hook integration, and UI requirements
+    purpose: Defines requirements for real-time browser display of session data managed by forge orchestrators using SSE server and Claude Code hooks, without additional skill code
     content_details:
-      - Session data browser display (YAML files)
-      - Real-time updates via Claude Code PostToolUse hook
-      - SSE server endpoints (POST /notify, GET /sse, GET /session, GET /history)
-      - Hook script (.claude/hooks/) detecting Write/Edit operations
-      - Browser UI with static HTML and JavaScript
-      - Support for all orchestrators (review, start-design, start-plan, start-requirements, start-implement)
-      - Python standard library only implementation
+      - Session data browser display from YAML files (session.yaml, plan.yaml, refs.yaml)
+      - Real-time updates via Claude Code PostToolUse hook and SSE server
+      - Context non-pollution through independent hook and SSE server processes
+      - Universal support across all orchestrators (review, start-design, start-plan, start-requirements, start-implement)
+      - "SSE server endpoints: POST /notify, GET /sse, GET /session, GET /history"
+      - Claude Code hook deployment in .claude/hooks/ with .claude/settings.json registration
+      - Browser UI using static HTML and JavaScript with session_format.md schema-based rendering
+      - Python standard library implementation requirement for SSE server
+      - "Target files: session.yaml, refs.yaml, review.md, plan.yaml, refs/*.yaml with conditional rendering"
     applicable_tasks:
-      - skill_monitor SSE server implementation
-      - PostToolUse hook development
-      - Browser session monitoring UI
-      - SSE integration for orchestrators
-      - Session file schema validation
-      - Real-time update notification system
+      - SSE server implementation for forge orchestrators
+      - Claude Code hook development for session file monitoring
+      - Browser UI design and rendering for multi-file session display
+      - Integration testing across orchestrator types
+      - Session data schema validation and rendering
     keywords:
-      - skill_monitor
+      - skill-monitor
       - SSE
-      - PostToolUse hook
-      - session_format
-      - real-time monitoring
+      - real-time
+      - session-display
       - orchestrator
-      - browser UI
-      - YAML to JSON conversion
+      - PostToolUse-hook
+      - browser-UI
+      - session.yaml
   docs/specs/xcode/requirements/REQ-001_doc_comments.md:
     doc_type: requirement
     title: "REQ-001: Swift Documentation Comment Generation Requirements"
