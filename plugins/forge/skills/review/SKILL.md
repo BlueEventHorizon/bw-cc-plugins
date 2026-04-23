@@ -475,8 +475,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 - `fix_count` / `skip_count` / `needs_review_count`: 統計
 - `not_auto_fixable`: `auto_fixable=false` かつ `recommendation=fix` のグローバル ID リスト
 
-> **`update_plan.py --batch` を直接呼ばないこと**: `eval_*.json` の `id` は perspective ローカル連番であり、そのまま global ID として扱うと必ず ID 衝突が発生する（2026-04-15 インシデント）。必ず `merge_evals.py` を経由する。`update_plan.py --batch` 側にも重複 ID 検出ガードが入っており、誤用すると即エラーになる。
-
 evaluator 完了後、以下を出力する:
 
 ```
@@ -530,8 +528,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/extract_review_findings.py
 # 2. evaluator 判定を plan.yaml にマージ（perspective ローカル ID → global ID 変換）
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 ```
-
-`update_plan.py --batch` を直接呼ぶと local ID → global ID 変換が行われず ID 衝突が発生するため、必ず `merge_evals.py` を経由する。
 
 evaluator が返すもの:
 
