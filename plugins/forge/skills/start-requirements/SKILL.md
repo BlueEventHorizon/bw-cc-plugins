@@ -105,11 +105,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 セッション作成:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
-  --skill start-requirements \
-  --feature "{feature}" \
-  --mode "{interactive|reverse-engineering|from-figma}" \
-  --output-dir "{出力先ディレクトリ}"
+python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{interactive|reverse-engineering|from-figma}" "{出力先ディレクトリ}"
 ```
 
 JSON 出力の `session_dir` をコンテキストに保持する。

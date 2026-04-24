@@ -274,12 +274,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 
 1. セッションディレクトリを作成:
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
-     --skill review \
-     --review-type "{種別}" \
-     --engine "{エンジン}" \
-     --auto-count {auto_count} \
-     --current-cycle 0
+   python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{種別}" "{エンジン}" "{auto_count}"
    ```
    JSON 出力の `session_dir` をコンテキストに保持する。
 
