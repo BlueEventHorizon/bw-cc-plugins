@@ -1,0 +1,272 @@
+# io_verb 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: REQ-001
+    title: SKILL.md を script 詳細から解放する
+    design_id: DES-024
+    status: pending
+  - requirement_id: INV-001
+    title: io_verb 棚卸し（SKILL.md 上の痛点一覧）
+    design_id: DES-024
+    status: pending
+
+design_traceability:
+  - design_id: DES-024
+    title: io_verb 設計書（SKILL.md から script の詳細を隠す）
+    requirement_ids:
+      - REQ-001
+      - INV-001
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+      - TASK-009
+      - TASK-010
+
+# === タスク一覧 ===
+# NOTE（TASK-001/002/005/007 の粒度について / review id=7 needs_review）:
+#   これらのタスクは 1 task で複数 wrapper + test + SKILL.md 差し替えを束ねており、
+#   plan_principles_spec.md §タスクの粒度（1〜3ファイル）を超過する。
+#   分割方針（skill 単位か wrapper+test+SKILL.md 単位か、group_id 構造をどう組むか）は
+#   設計判断を伴うため、本サイクルでは機械修正せず needs_review として後段で確定する。
+tasks:
+  - task_id: TASK-001
+    title: find_session ラッパー追加（6 SKILL 分）
+    priority: 90
+    status: pending
+    design_id: DES-024
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.1 の配置表に従い start-plan / start-implement / start-requirements / start-design / start-uxui-design / review の各 skills/{skill}/scripts/ に find_session.py を新規作成
+      - 各ラッパーは subprocess で session_manager.py find を呼ぶだけの透過実装（DES-024 §2.1.1 共通原則に従う）
+      - skill 名のみ各ラッパーでハードコード
+      - tests/forge/{skill}/test_find_session.py を 6 本追加し、subprocess 引数と exit code 透過を検証
+      - 対象 6 SKILL.md の find 呼び出し行をラッパー呼び出しに差し替え（--skill flag を除去）
+    acceptance_criteria: grep で SKILL.md 側に `session_manager.py find --skill` が残らず、6 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/specs/forge/io_verb/requirements/io_verb_requirements.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-002
+    title: init_session ラッパー追加（6 SKILL 分）
+    priority: 90
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.2 の配置表に従い 6 SKILL に init_session.py を新規作成
+      - "各ラッパーの位置引数は DES-024 §3.2 配置表どおり（start-plan 系: feature/mode/output_dir、start-implement: feature/task_id、review: review_type/engine/auto_count）"
+      - review 用は --current-cycle 0 をラッパー内部でハードコード
+      - 各ラッパーに対応する単体テストを tests/forge/{skill}/ 配下に追加（subprocess 引数と exit code 透過）
+      - 対象 6 SKILL.md の init 呼び出し（多引数 flag 列）をラッパー呼び出しに差し替え
+    acceptance_criteria: grep で SKILL.md 側に `session_manager.py init` の flag 列が残らず、6 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-003
+    title: present-findings の update_plan 系ラッパー追加（mark_in_progress / mark_needs_review / mark_skipped / batch_update）
+    priority: 85
+    status: pending
+    design_id: DES-024
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.4 の対応表に従い skills/present-findings/scripts/ に mark_in_progress.py / mark_needs_review.py / mark_skipped.py / batch_update.py の 4 本を新規作成
+      - batch_update.py は stdin JSON を低レベル update_plan.py --batch にそのまま透過する（DES-024 §3.4 の透過ラッパー化根拠に従う）
+      - mark_*.py は位置引数 {session_dir} {id}（mark_skipped は {reason} 追加）で --status 値をハードコード
+      - 4 ラッパーの単体テストを tests/forge/present-findings/ 配下に追加（subprocess 引数の検証・exit code 透過）
+      - present-findings/SKILL.md の status 3 値選択肢列挙（DES-024 §2.3 で指摘された痛点）を削除し、場面ごとに 1 ラッパー呼び出しに置換
+      - present-findings/SKILL.md から update_plan.py --batch の直接呼び出しを除去し、batch_update.py に置換する
+    acceptance_criteria: present-findings/SKILL.md から `--status in_progress` / `--status needs_review` / `--status skipped --skip-reason` の直接呼び出しおよび `update_plan.py --batch` の直接呼び出しが消え（batch_update.py への置換を含む）、4 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-004
+    title: review の skip_all_unprocessed 複合ラッパー追加（DES-024 §2.1.0 例外層の唯一案件）
+    priority: 85
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-002
+      - TASK-003
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.4 後半に従い skills/review/scripts/skip_all_unprocessed.py を新規作成
+      - 内部処理は DES-024 §3.4 の 3 手順（summarize_plan.py 呼び出し → updates 配列組立 → update_plan.py --batch へ stdin JSON 流し込み）に限定
+      - DES-024 §3.4 stderr 契約（stage=summarize_plan / stage=json_build / stage=update_plan 識別子）を実装
+      - DES-024 §3.4 read-modify-write race の呼び出し元前提（review/SKILL.md Phase 5 Step 2b 直列実行）をコメントで明示
+      - 新規 JSON スキーマは定義せず低レベル既存スキーマを再利用することを確認
+      - 単体テストで各 stage の失敗時に正しい stderr 先頭行が出ることと、正常時の透過を検証
+      - review/SKILL.md Phase 5 Step 2b の updates 配列組立ロジックをラッパー呼び出しに置換
+    acceptance_criteria: review/SKILL.md の Phase 5 Step 2b から summarize_plan.py と update_plan.py --batch の直接呼び出し連鎖が消え、skip_all_unprocessed.py のテストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+      - docs/rules/cli_output_formatting.md
+
+  - task_id: TASK-005
+    title: resolve_doc ラッパー追加（start-* 系 5 SKILL）
+    priority: 80
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-002
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.3 の配置表に従い start-plan / start-implement / start-requirements / start-design / start-uxui-design の各 scripts/ に resolve_doc.py を新規作成（5 本）
+      - 各ラッパーで --doc-type 値（plan / plan / requirement / design / requirement）をハードコード
+      - 5 ラッパーの単体テストを tests/forge/{skill}/ 配下に追加
+      - 対応 5 SKILL.md の resolve_doc_structure.py --doc-type 呼び出しをラッパー呼び出しに差し替え
+    acceptance_criteria: 5 SKILL.md から `resolve_doc_structure.py --doc-type` が消え、5 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-006
+    title: resolve_rules / resolve_specs ラッパー追加（review 2 本 + clean-rules 1 本）
+    priority: 80
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-004
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.3 の配置表に従い skills/review/scripts/resolve_rules.py / resolve_specs.py と skills/clean-rules/scripts/resolve_rules.py を新規作成（計 3 本）
+      - 各ラッパーで --type 値（rules / specs / rules）をハードコード
+      - 3 ラッパーの単体テストを tests/forge/review/ および tests/forge/clean-rules/ 配下に追加
+      - review/SKILL.md と clean-rules/SKILL.md の `resolve_doc_structure.py --type` 呼び出しをラッパー呼び出しに差し替え
+    acceptance_criteria: review/SKILL.md・clean-rules/SKILL.md から `resolve_doc_structure.py --type` が消え、3 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-007
+    title: update-version の update_version_files 系ラッパー追加（5 本）
+    priority: 75
+    status: pending
+    design_id: DES-024
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §3.5 の対応表に従い skills/update-version/scripts/ に update_main_version.py / update_required_dependent.py / update_optional_dependent.py / update_required_filtered.py / update_optional_filtered.py の 5 本を新規作成
+      - 各ラッパーで --version-path / --filter / --optional のハードコード組合せを設計書対応表どおりに埋め込む（R3 解釈は DES-024 §3.5 注記に従う）
+      - 5 ラッパーの単体テストを tests/forge/update-version/ 配下に追加
+      - update-version/SKILL.md の update_version_files.py 呼び出しを「.version-config.yaml の entry スキーマに応じて 5 ラッパーのいずれか 1 本を呼ぶ」形に差し替え（AI 裁量ではなく YAML 値で決定論的に 1 本が定まること）
+    acceptance_criteria: update-version/SKILL.md から `update_version_files.py --version-path` / `--filter` / `--optional` の直接 flag 呼び出しが消え、5 ラッパーの単体テストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-008
+    title: extract_review_findings.py の配置是正（reviewer → review へ移動）
+    priority: 60
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §5 の配置是正に従い plugins/forge/skills/reviewer/scripts/extract_review_findings.py を plugins/forge/skills/review/scripts/extract_review_findings.py へ移動
+      - review/SKILL.md 内の extract_review_findings.py 参照パスを書き換え（1 箇所）
+      - tests/forge/reviewer/ 配下に対応テストがあれば tests/forge/review/ へ移動し import パスを更新
+      - git mv を使ってファイル履歴を保持する
+    acceptance_criteria: grep で skills/reviewer/scripts/extract_review_findings.py の参照が残らず、移動後のパスでテストが pass すること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-009
+    title: review パイプラインの結合テスト（1 サイクル完走 + resume シナリオ）
+    priority: 70
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-006
+      - TASK-008
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §7.3 と REQ-001 §5 の合否判定に従い、実際のプロジェクトファイルに対して /forge:review を 1 サイクル実行
+      - 対話モードと --auto モードの両方で完走することを確認
+      - skip_all_unprocessed.py が Phase 5 Step 2b で正しく呼ばれること、stderr 契約が破綻しないことを確認
+      - テスト実行中にエラー・ハング・セッション不整合がないこと
+      - REQ-001 §7 制約「既存セッション継続性」の検証として、session_dir を意図的に残存させた状態で /forge:review を再起動し、残存セッション検出 → 再開選択 → 完走までを確認
+      - 同様に残存セッション検出 → 破棄選択 → 新規作成経路の完走も確認
+    acceptance_criteria: >
+      review パイプラインが (1) 新規 1 サイクル、(2) 残存セッション再開、(3) 残存セッション破棄 → 新規作成
+      の 3 シナリオで対話・自動モード双方完走し、セッションが正常に後処理されること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/specs/forge/io_verb/requirements/io_verb_requirements.md
+
+  - task_id: TASK-010
+    title: start-* パイプラインの結合テスト（5 スキル完走）
+    priority: 65
+    status: pending
+    design_id: DES-024
+    depends_on:
+      - TASK-001
+      - TASK-002
+      - TASK-005
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-024 §7.3 と REQ-001 §5 の合否判定に従い、start-requirements / start-design / start-plan / start-implement / start-uxui-design をそれぞれ 1 サイクル実行して完走確認
+      - find_session / init_session / resolve_doc の新ラッパー経路が全て成功することを確認
+      - 実行中に SKILL.md から flag 露出や多引数 session_manager init 呼び出しが発生していないこと（grep 再確認）
+    acceptance_criteria: start-requirements / start-design / start-plan / start-implement / start-uxui-design が 5 スキル全てで完走し、SKILL.md の痛点（flag 露出・多引数 init）が 0 件であること
+    required_reading:
+      - docs/specs/forge/io_verb/design/DES-024_io_verb_design.md
+      - docs/specs/forge/io_verb/requirements/io_verb_requirements.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-04-23"
+    content: 初版作成（DES-024 設計書から 30 ラッパー + 配置是正 + 結合テストを 10 タスクに分解）
+  - date: "2026-04-23"
+    content: >
+      レビュー反映（session review-4a3ad9）:
+      (1) specs 参照を ID ベース化（設計書→DES-024 / 要件→REQ-001）、
+      (2) 暗黙依存を depends_on で明示（DES-024 §6 Step 順 + 同一 SKILL.md 書換の直列化）、
+      (3) テスト配置を tests/forge/{skill}/ へ統一（implementation_guidelines.md 準拠）、
+      (4) TASK-003 acceptance に batch_update.py 置換と --batch 直呼び除去を追加、
+      (5) TASK-004〜008 required_reading に skill_authoring_notes.md を追加、
+      (6) TASK-009 に残存セッション再開/破棄シナリオを追加（REQ-001 §7 制約）、
+      (7) TASK-010 に start-uxui-design を追加（DES-024 §4.1 カバレッジ）。
+      タスク粒度（TASK-001/002/005/007 の分割）は設計判断を伴うため needs_review として保留。
+  - date: "2026-04-23"
+    content: >
+      fixer --diff-fix レビュー反映（session review-4a3ad9）:
+      TASK-004.depends_on に TASK-002 を追加し、review/SKILL.md を書き換える
+      TASK-001 → TASK-002 → TASK-004 → TASK-006 → TASK-008 の直列化を明示的に担保。

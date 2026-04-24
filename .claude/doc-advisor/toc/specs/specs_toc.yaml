@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-23T13:23:51Z
+  generated_at: 2026-04-23T14:52:45Z
   file_count: 41
 
 docs:
@@ -977,33 +977,34 @@ docs:
   docs/specs/forge/io_verb/design/DES-024_io_verb_design.md:
     doc_type: design
     title: "io_verb Design: Hiding Script Details from SKILL.md"
-    purpose: Defines the design for wrapper layer that hides low-level script complexity and CLI flag options from SKILL.md, achieving clean separation between AI instructions and implementation details
+    purpose: Defines wrapper layer architecture for hiding script selection complexity from SKILL.md, establishing a single subprocess-calling abstraction per operation
     content_details:
-      - Wrapper layer types and common principles
-      - Single wrapper vs composite wrapper (exception layer) patterns
-      - Module structure with dependency direction (SKILL.md to wrapper to low-level script)
-      - "Wrapper placement for 6 skill groups: session manager find/init, resolve_doc_structure, update_plan, update_version_files"
-      - Implementation of 30 wrapper scripts across all skills
-      - SKILL.md simplification from flag-based calls to position-argument-only calls
-      - Error handling and stderr contract for composite wrappers
-      - "Architectural constraints (R7 MANDATORY: low-level changes prohibited, subprocess calls only)"
+      - Wrapper type classification (single vs composite)
+      - Common principles for all wrappers
+      - Shared wrapper avoidance policy
+      - Naming conventions
+      - session_manager.py find wrappers (6 scripts)
+      - session_manager.py init wrappers (6 scripts)
+      - resolve_doc_structure.py wrappers (8 scripts)
+      - update_plan.py wrappers (5 scripts)
+      - update_version_files.py wrappers (5 scripts)
+      - Error handling and stderr contracts
     applicable_tasks:
-      - Implementation of wrapper layer across forge skills
-      - Review of script placement and dependency structure
-      - SKILL.md refactoring to remove internal flags
-      - Testing wrapper implementations with subprocess mocking
-      - Architecture validation during feature addition
-      - Script reorganization planning
+      - SKILL script wrapper implementation
+      - SKILL.md refactoring to use wrappers
+      - Script abstraction layer design review
+      - Wrapper testing implementation
+      - Subprocess calling pattern implementation
     keywords:
       - wrapper
+      - subprocess
+      - SKILL.md
       - script abstraction
-      - CLI flag hiding
-      - subprocess delegation
       - io_verb
-      - SKILL.md refactoring
-      - script composition
-      - low-level API
-      - layer separation
+      - DES-024
+      - flag elimination
+      - single responsibility
+      - exception layer
   docs/specs/forge/io_verb/requirements/inventory.md:
     doc_type: requirement
     title: "io_verb Inventory: Pain Points in SKILL.md"
