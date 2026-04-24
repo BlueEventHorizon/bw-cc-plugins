@@ -183,6 +183,65 @@ class TestStageJsonBuild(unittest.TestCase):
         self.assertEqual(first_line, "stage=json_build exit=-1")
         self.assertIn("KeyError", err.getvalue())
 
+    def test_summary_is_not_dict_prefixes_stage_identifier(self):
+        """summary が dict でない（list 等）場合は TypeError で非 0 終了。
+
+        スキーマ不整合を `stage=json_build` で表面化し、下流 update_plan へ
+        不正な updates を流さないことを検証する（DES-024 §3.4）。
+        """
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            # JSON としては valid だが dict ではない
+            mock_run.return_value = _cp(0, stdout='[1, 2, 3]', stderr="")
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=json_build exit=-1")
+        self.assertIn("TypeError", err.getvalue())
+        # update_plan は呼ばれていない
+        self.assertEqual(mock_run.call_count, 1)
+
+    def test_unprocessed_ids_is_string_prefixes_stage_identifier(self):
+        """unprocessed_ids が文字列の場合、iterable だが list[int] ではないので拒否。
+
+        文字列 '12' は iterable だが for i in '12' で '1','2' が列挙されるため、
+        update_plan --batch に文字列 ID を流してしまう危険がある。
+        """
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.return_value = _cp(
+                0, stdout='{"unprocessed_ids": "12"}', stderr=""
+            )
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=json_build exit=-1")
+        self.assertIn("TypeError", err.getvalue())
+        # update_plan は呼ばれていない
+        self.assertEqual(mock_run.call_count, 1)
+
+    def test_unprocessed_ids_contains_non_int_prefixes_stage_identifier(self):
+        """unprocessed_ids の要素が int 以外（dict 等）の場合は拒否。"""
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.return_value = _cp(
+                0,
+                stdout='{"unprocessed_ids": [{"id": 1}]}',
+                stderr="",
+            )
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=json_build exit=-1")
+        self.assertIn("TypeError", err.getvalue())
+        self.assertEqual(mock_run.call_count, 1)
+
 
 class TestStageUpdatePlan(unittest.TestCase):
     """手順 3 失敗時の stderr 契約"""
@@ -208,8 +267,76 @@ class TestStageUpdatePlan(unittest.TestCase):
         self.assertIn("id=1 が見つかりません", err.getvalue())
 
 
-class TestStderrSilentOnSuccess(unittest.TestCase):
-    """正常時は stage 識別子を付けない（§2.1.1 共通原則）"""
+class TestChildProcessLaunchFailure(unittest.TestCase):
+    """subprocess.run が OSError / FileNotFoundError を送出した場合の stderr 契約
+
+    DES-024 §8.1 (c): 複合ラッパーは子 script 不在でも §3.4 契約（stage 識別子付与）
+    を維持する。COMMON-REQ-002 FR-02-1 で OSError のキャッチを明示的に許容。
+    """
+
+    def setUp(self):
+        self.wrapper = _load_wrapper()
+
+    def test_summarize_plan_filenotfound_prefixes_stage_identifier(self):
+        """手順 1 の子 script 起動失敗 → stage=summarize_plan exit=-1"""
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.side_effect = FileNotFoundError(2, "No such file", "summarize_plan.py")
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=summarize_plan exit=-1")
+        self.assertIn("FileNotFoundError", err.getvalue())
+        # update_plan は呼ばれていない
+        self.assertEqual(mock_run.call_count, 1)
+
+    def test_summarize_plan_oserror_prefixes_stage_identifier(self):
+        """手順 1 で OSError（permission 等）→ stage=summarize_plan exit=-1
+
+        OSError のサブクラス（PermissionError 等）もキャッチ対象。
+        """
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.side_effect = PermissionError(13, "Permission denied")
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=summarize_plan exit=-1")
+        self.assertIn("PermissionError", err.getvalue())
+        self.assertIn("Permission denied", err.getvalue())
+
+    def test_update_plan_filenotfound_prefixes_stage_identifier(self):
+        """手順 3 の子 script 起動失敗 → stage=update_plan exit=-1
+
+        手順 1 は成功する必要があるため side_effect を 2 段で渡す。
+        """
+        summary = {"unprocessed_ids": [1, 2]}
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.side_effect = [
+                _cp(0, stdout=json.dumps(summary), stderr=""),
+                FileNotFoundError(2, "No such file", "update_plan.py"),
+            ]
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertNotEqual(rc, 0)
+        first_line = err.getvalue().split("\n", 1)[0]
+        self.assertEqual(first_line, "stage=update_plan exit=-1")
+        self.assertIn("FileNotFoundError", err.getvalue())
+        self.assertEqual(mock_run.call_count, 2)
+
+
+class TestStderrPassthroughOnSuccess(unittest.TestCase):
+    """正常時は stage 識別子を付けず、child stderr は透過する（DES-024 §2.1.1 / §3.4）
+
+    実装（skip_all_unprocessed.py の最終 `sys.stderr.write(proc2.stderr)`）は
+    update_plan の stderr を成功時も親 stderr に透過する契約。
+    """
 
     def setUp(self):
         self.wrapper = _load_wrapper()
@@ -226,6 +353,24 @@ class TestStderrSilentOnSuccess(unittest.TestCase):
                 with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
                     rc = self.wrapper.main()
         self.assertEqual(rc, 0)
+        self.assertNotIn("stage=", err.getvalue())
+
+    def test_update_plan_stderr_passthrough_on_success(self):
+        """成功時に update_plan の stderr（警告等）は親 stderr に透過されること"""
+        summary = {"unprocessed_ids": [5]}
+        child_stderr = "info: updated 1 item\n"
+        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+            mock_run.side_effect = [
+                _cp(0, stdout=json.dumps(summary), stderr=""),
+                _cp(0, stdout='{"status":"ok","updated":[5]}\n', stderr=child_stderr),
+            ]
+            argv = ["skip_all_unprocessed.py", "/tmp/session"]
+            with mock.patch.object(sys, "argv", argv):
+                with mock.patch.object(sys, "stderr", new_callable=io.StringIO) as err:
+                    rc = self.wrapper.main()
+        self.assertEqual(rc, 0)
+        self.assertIn(child_stderr, err.getvalue())
+        # stage 識別子は付かない
         self.assertNotIn("stage=", err.getvalue())
 
 
