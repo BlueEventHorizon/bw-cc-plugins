@@ -121,7 +121,7 @@ tasks:
   - task_id: TASK-004
     title: review の skip_all_unprocessed 複合ラッパー追加（DES-024 §2.1.0 例外層の唯一案件）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-002
@@ -150,7 +150,7 @@ tasks:
   - task_id: TASK-005
     title: resolve_doc ラッパー追加（start-* 系 5 SKILL）
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-002
@@ -174,7 +174,7 @@ tasks:
   - task_id: TASK-006
     title: resolve_rules / resolve_specs ラッパー追加（review 2 本 + clean-rules 1 本）
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-004
@@ -197,7 +197,7 @@ tasks:
   - task_id: TASK-007
     title: update-version の update_version_files 系ラッパー追加（5 本）
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on: []
     group_id: null
@@ -219,7 +219,7 @@ tasks:
   - task_id: TASK-008
     title: extract_review_findings.py の配置是正（reviewer → review へ移動）
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-006
