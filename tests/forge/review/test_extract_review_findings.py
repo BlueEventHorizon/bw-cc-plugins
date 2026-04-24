@@ -3,7 +3,7 @@
 extract_review_findings.py のテスト
 
 実行:
-    python3 -m unittest tests.forge.reviewer.test_extract_review_findings -v
+    python3 -m unittest tests.forge.review.test_extract_review_findings -v
 """
 import json
 import subprocess
@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'reviewer' / 'scripts'
+SCRIPTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'review' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from extract_review_findings import (

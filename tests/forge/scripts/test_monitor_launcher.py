@@ -34,6 +34,25 @@ from launcher import (  # noqa: E402
 )
 
 
+_TEST_TMP_BASE = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "..",
+    ".claude", ".temp", "test_tmp",
+))
+
+
+def setUpModule():
+    # 前回の中断で残った残骸をクリーンスタート
+    if os.path.isdir(_TEST_TMP_BASE):
+        shutil.rmtree(_TEST_TMP_BASE)
+    os.makedirs(_TEST_TMP_BASE, exist_ok=True)
+
+
+def tearDownModule():
+    # 子テストの cleanup 漏れを巻き取る
+    if os.path.isdir(_TEST_TMP_BASE):
+        shutil.rmtree(_TEST_TMP_BASE)
+
+
 class TestFindFreePort(unittest.TestCase):
     """find_free_port() のテスト。"""
 
@@ -92,12 +111,7 @@ class TestCreateMonitorDir(unittest.TestCase):
     """create_monitor_dir() のテスト。config.json に skill キーが記録される。"""
 
     def setUp(self):
-        _base = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..",
-            ".claude", ".temp", "test_tmp",
-        )
-        os.makedirs(_base, exist_ok=True)
-        self.project_root = tempfile.mkdtemp(dir=_base)
+        self.project_root = tempfile.mkdtemp(dir=_TEST_TMP_BASE)
         self.session_dir = tempfile.mkdtemp(dir=self.project_root)
 
     def tearDown(self):
@@ -146,12 +160,7 @@ class TestCleanupOrphanMonitors(unittest.TestCase):
     """cleanup_orphan_monitors() のテスト。"""
 
     def setUp(self):
-        _base = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..",
-            ".claude", ".temp", "test_tmp",
-        )
-        os.makedirs(_base, exist_ok=True)
-        self.project_root = tempfile.mkdtemp(dir=_base)
+        self.project_root = tempfile.mkdtemp(dir=_TEST_TMP_BASE)
 
     def tearDown(self):
         shutil.rmtree(self.project_root, ignore_errors=True)

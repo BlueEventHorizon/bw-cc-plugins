@@ -36,11 +36,23 @@ from server import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # 共通テンポラリベース
 # ---------------------------------------------------------------------------
-_BASE_TMPDIR = os.path.join(
+_BASE_TMPDIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "..",
     ".claude", ".temp", "test_tmp",
-)
-os.makedirs(_BASE_TMPDIR, exist_ok=True)
+))
+
+
+def setUpModule():
+    # 前回の中断で残った残骸をクリーンスタート
+    if os.path.isdir(_BASE_TMPDIR):
+        shutil.rmtree(_BASE_TMPDIR)
+    os.makedirs(_BASE_TMPDIR, exist_ok=True)
+
+
+def tearDownModule():
+    # 子テストの cleanup 漏れ(ignore_errors=True で握り潰されたもの含む)を巻き取る
+    if os.path.isdir(_BASE_TMPDIR):
+        shutil.rmtree(_BASE_TMPDIR, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

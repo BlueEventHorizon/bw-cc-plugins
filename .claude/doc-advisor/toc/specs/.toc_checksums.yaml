@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-04-15T09:23:34Z
-file_count: 38
+generated_at: 2026-04-23T14:52:10Z
+file_count: 41
 checksums:
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: efb584be874fa55804860ab97e1534c0f0edafd9f4edf596d6b9afa24cb58449
@@ -25,7 +25,7 @@ checksums:
   docs/specs/doc-advisor/requirements/technical_research_report.md: 9b6fdada319b5c196493abc0cf25a7a1744a0919fbd3d7f9a3156092c54a84e2
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: f40432615f06899a10b73cbe4b3514837d6981d56a43b4dc96b7c103077cf364
   docs/specs/forge/design/DES-011_session_management_design.md: b18fe2ccf9ef0c77fa72e99f98e9d71d4dc6c9594458f4f3497d312b6bf1ad3b
-  docs/specs/forge/design/DES-012_show_browser_design.md: 09489632afd751da75b373541effbd91617226f3268c41356529461e236568dc
+  docs/specs/forge/design/DES-012_show_browser_design.md: 7a2a440bb4bf884a7266ca070e8ab5e13d97a72d7ac434fbb7504290f4528beb
   docs/specs/forge/design/DES-013_context_gathering_design.md: 4fdc6caa9ac2edfa82a2f0a8fa092f5e2e27d7b34c0cf16f0aceed5f879a45a4
   docs/specs/forge/design/DES-014_orchestrator_session_protocol_design.md: fc38c16864801476f92f6fb6029c4a799fb8658cd1ad4d363fdfb19da3dbb2b0
   docs/specs/forge/design/DES-015_review_workflow_design.md: 2d031f1b5d8c45eb5c364c3e8e023ab10c37789e5bb13ac1411ace341f0edb17
@@ -37,7 +37,10 @@ checksums:
   docs/specs/forge/design/DES-021_review_perspective_split_design.md: fe91c755a60aed09eb372e4cf50ad0787ac5640c4488afa355db1a3bd61c7baa
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md: dd30dfcd9958497fcdf36f1532c18701e17be9481bab344089a6d0dd7db214df
   docs/specs/forge/design/DES-023_version_management_workflow_design.md: 5e8cc6f7e2706439463c9c9cccc81ede7b5405f8e22b0e160cf6c1a1d896a950
+  docs/specs/forge/io_verb/design/DES-024_io_verb_design.md: 5ac1516c74d146f5f4614d9664179f614ca07de815ca4e1cc2c794d815ca091c
+  docs/specs/forge/io_verb/requirements/inventory.md: bacd42be09715f2a89f5c12997683ca0bf8018b6afc8970c841c2e168e80f673
+  docs/specs/forge/io_verb/requirements/io_verb_requirements.md: f0490ecaf1c2987801addb979163d268a0d763576440682e4cd1c0dcfce12734
   docs/specs/forge/plan/forge_plan.md: 2f54830c7f7327f8d962560eeffeea5c52126566ac0a284e19c3fdf501252cd3
   docs/specs/forge/requirements/orchestrator_pattern.md: d94ff48638f6ae74d63cbefac9509922dcb3c929927fec3d8d296ec6709b4328
-  docs/specs/forge/requirements/skill_monitor_requirement.md: 9b59c4be91dc2e4de063b3c196c162870eb73c0039c766b7640f8e53e55b548a
+  docs/specs/forge/requirements/skill_monitor_requirement.md: 47f78b1d81da1a6736cee1bf02f560f6088db837ce915528901f23a3ccd8e047
   docs/specs/xcode/requirements/REQ-001_doc_comments.md: e7d5dba8eebfb7311d51043c54d6154241a626d44dba547c248efb85e76620d2
