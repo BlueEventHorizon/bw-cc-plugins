@@ -110,7 +110,7 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 残存セッション検出:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-implement
+python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 ```
 
 - `status: "none"` → セッション作成へ

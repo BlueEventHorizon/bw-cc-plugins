@@ -83,7 +83,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structur
 残存セッション検出:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py find --skill start-uxui-design
+python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 ```
 
 - `status: "none"` → セッション作成へ

@@ -1,6 +1,6 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-04-23T14:00:29Z
+generated_at: 2026-04-24T01:15:47Z
 file_count: 41
 checksums:
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 12e7792008d6ce100281c8d81add0a2599a9af7b6295dbc621eb8a51c6d3100f
@@ -37,7 +37,7 @@ checksums:
   docs/specs/forge/design/DES-021_review_perspective_split_design.md: fe91c755a60aed09eb372e4cf50ad0787ac5640c4488afa355db1a3bd61c7baa
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md: dd30dfcd9958497fcdf36f1532c18701e17be9481bab344089a6d0dd7db214df
   docs/specs/forge/design/DES-023_version_management_workflow_design.md: 5e8cc6f7e2706439463c9c9cccc81ede7b5405f8e22b0e160cf6c1a1d896a950
-  docs/specs/forge/io_verb/design/DES-024_io_verb_design.md: 87bb0c8bffaf513d8d8e50e5129b69ef639497477f9089af5cb1581c65359710
+  docs/specs/forge/io_verb/design/DES-024_io_verb_design.md: 5ac1516c74d146f5f4614d9664179f614ca07de815ca4e1cc2c794d815ca091c
   docs/specs/forge/io_verb/requirements/inventory.md: bacd42be09715f2a89f5c12997683ca0bf8018b6afc8970c841c2e168e80f673
   docs/specs/forge/io_verb/requirements/io_verb_requirements.md: f0490ecaf1c2987801addb979163d268a0d763576440682e4cd1c0dcfce12734
   docs/specs/forge/plan/forge_plan.md: 2f54830c7f7327f8d962560eeffeea5c52126566ac0a284e19c3fdf501252cd3
