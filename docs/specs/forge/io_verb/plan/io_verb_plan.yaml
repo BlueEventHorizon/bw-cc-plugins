@@ -95,7 +95,7 @@ tasks:
   - task_id: TASK-003
     title: present-findings の update_plan 系ラッパー追加（mark_in_progress / mark_needs_review / mark_skipped / batch_update）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on: []
     group_id: null

@@ -221,13 +221,13 @@ reviewer は perspective ごとに独立実行されるため、同じ問題を*
 
 #### 統合実行
 
-検出された重複グループについて、代表以外の項目を **1 回の `update_plan.py --batch`** で一括更新する:
+検出された重複グループについて、代表以外の項目を **1 回の `batch_update.py`** で一括更新する:
 
 ```bash
 echo '{"updates": [
   {"id": 7, "status": "skipped", "recommendation": "skip",
    "skip_reason": "重複: id=3 に統合"}
-]}' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --batch
+]}' | python3 ${CLAUDE_SKILL_DIR}/scripts/batch_update.py {session_dir}
 ```
 
 - 代表項目は**変更しない**（元の recommendation: fix のまま）
@@ -320,10 +320,10 @@ AskUserQuestion で進め方を確認する:
 1. 項目を丁寧に説明する（提示の原則に従う）
 2. 「選択肢の提示方法」に従い AskUserQuestion で判断を仰ぐ
 3. ユーザーの選択に応じて:
-   - **修正を選択**（A案/B案）→ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status in_progress` で更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
-   - **このまま（対応しない）** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status needs_review` で更新
+   - **修正を選択**（A案/B案）→ `python3 ${CLAUDE_SKILL_DIR}/scripts/mark_in_progress.py {session_dir} {id}` で更新 → `/forge:fixer --single` を呼び出し、修正を委譲（後述「/forge:fixer 呼び出し時の責務」参照）
+   - **このまま（対応しない）** → `python3 ${CLAUDE_SKILL_DIR}/scripts/mark_needs_review.py {session_dir} {id}` で更新
    - **一覧に戻る** → Step 2 へ
-   - **スキップ** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} --id {id} --status skipped --skip-reason "理由"` で更新 → ステップ5へ
+   - **スキップ** → `python3 ${CLAUDE_SKILL_DIR}/scripts/mark_skipped.py {session_dir} {id} "理由"` で更新 → 次の項目へ進む
 
 #### 単独修正レビュー [MANDATORY]
 
@@ -474,7 +474,7 @@ EOF
 
 - `.raw.md`（reviewer 原文のバックアップ）は**保護される**（再作成しない）
 - `review_{perspective}.md` のみが stdin 内容で上書きされる
-- plan.yaml の `recommendation` / `status` などはユーザー判断に応じて `update_plan.py` で別途更新する
+- plan.yaml の `recommendation` / `status` などはユーザー判断に応じて `mark_* / batch_update` ラッパーで別途更新する
   （`write_interpretation.py` は plan.yaml を変更しない）
 
 **なぜ必要か:**
@@ -563,15 +563,18 @@ AskUserQuestion 呼び出し
 
 #### 対応判断が必要な項目の場合
 
-| # | 選択肢                 | 説明                                                 |
-| - | ---------------------- | ---------------------------------------------------- |
-| 1 | A案の内容              | 推奨する対応案。1番目に配置し `(Recommended)` を付加 |
-| 2 | B案の内容              | 代替案がある場合のみ追加                             |
-| 3 | 一覧に戻る             | サマリー一覧を再表示し、別の項目を選択可能にする     |
-| 4 | このまま（対応しない） | この項目をスキップして次へ進む                       |
+| # | 選択肢                 | 説明                                                    |
+| - | ---------------------- | ------------------------------------------------------- |
+| 1 | A案の内容              | 推奨する対応案。1番目に配置し `(Recommended)` を付加    |
+| 2 | B案の内容              | 代替案がある場合のみ追加                                |
+| 3 | 一覧に戻る             | サマリー一覧を再表示し、別の項目を選択可能にする        |
+| 4 | このまま（対応しない） | `needs_review` として記録し、次の項目へ進む             |
+| 5 | スキップ               | 選択後に別の AskUserQuestion で理由を入力させ、`skipped` として次の項目へ進む |
 
-- 代替案がない場合は A案 + 一覧に戻る + このまま の3択
-- 「Other」が自動提供されるため、質問・別案の提示はそこでカバーされる
+- 代替案がない場合は A案 + 一覧に戻る + このまま + スキップ の4択
+- 「Other」は追加質問・別案提示の入口として従来どおり扱う（スキップ理由の入力には使わない）
+- 「スキップ」を選んだ場合は、選択肢提示直後に別 AskUserQuestion で理由入力を求め、得た文字列を `mark_skipped.py {session_dir} {id} "理由"` に渡す
+- 「このまま」と「スキップ」は plan.yaml 上のセマンティクスが異なる（`needs_review` は後続レビューで再判断 / `skipped` は理由付きで却下）
 
 #### 情報確認のみの項目の場合
 
