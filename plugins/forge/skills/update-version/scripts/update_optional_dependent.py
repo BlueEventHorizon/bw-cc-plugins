@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""依存ファイル（オプション・filter なし）のバージョンを更新する薄いラッパー。
+
+update_version_files.py {file} {cur} {new} --optional を subprocess で呼び出し、
+exit code / stdout / stderr をそのまま透過する（DES-024 §2.1.1 共通原則）。
+
+位置引数: {file} {current_version} {new_version}
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+LOW_LEVEL = Path(__file__).resolve().parent / "update_version_files.py"
+
+
+def main() -> int:
+    file_, cur, new = sys.argv[1], sys.argv[2], sys.argv[3]
+    result = subprocess.run(
+        [sys.executable, str(LOW_LEVEL), file_, cur, new, "--optional"],
+        check=False,
+    )
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())
