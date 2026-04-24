@@ -14,7 +14,7 @@ SKILL = "start-plan"
 
 def main() -> int:
     result = subprocess.run(
-        [sys.executable, str(LOW_LEVEL), "find", "--skill", SKILL] + sys.argv[1:],
+        [sys.executable, str(LOW_LEVEL), "find", "--skill", SKILL],
         check=False,
     )
     return result.returncode

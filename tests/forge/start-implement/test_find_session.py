@@ -79,14 +79,19 @@ class TestFindSessionWrapper(unittest.TestCase):
                         rc = self.wrapper.main()
                 self.assertEqual(rc, code)
 
-    def test_extra_argv_passed_through(self):
+    def test_extra_argv_not_passed_through(self):
+        """no-arg 契約: 余分な引数を付けて呼び出しても低レベルには透過されない（DES-024 §3.1）"""
         with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
             with mock.patch.object(sys, "argv", ["find_session.py", "--extra", "v"]):
                 self.wrapper.main()
         cmd = mock_run.call_args.args[0]
-        self.assertIn("--extra", cmd)
-        self.assertIn("v", cmd)
+        self.assertEqual(
+            cmd,
+            [sys.executable, str(self.wrapper.LOW_LEVEL), "find", "--skill", EXPECTED_SKILL],
+        )
+        self.assertNotIn("--extra", cmd)
+        self.assertNotIn("v", cmd)
 
     def test_stdout_stderr_not_captured_by_wrapper(self):
         with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
