@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.15] - 2026-04-24
+
+### marketplace
+
+- **feat**: forge を 0.0.39 に更新。io_verb Feature（SKILL.md を script 詳細から解放する透過ラッパー30本）の完成と find_session no-arg 契約違反の是正を反映
+
+## [0.0.39] - 2026-04-24
+
+### forge
+
+- **refactor(io_verb)**: SKILL.md を低レベル script の引数詳細から解放する透過ラッパー導入を完了（TASK-001〜010）。`find_session` / `init_session` / `update_plan` / `skip_all_unprocessed` / `resolve_doc` / `resolve_rules` / `resolve_specs` / `update_version_files` 系の wrapper を各 SKILL 配下に配置し、`extract_review_findings.py` を reviewer から review skill へ移動
+- **fix(io_verb)**: `find_session.py` 6本の no-arg 契約違反を是正。`+ sys.argv[1:]` を削除し、対応する 6 テストを `test_extra_argv_not_passed_through` に反転。DES-024 §3.1 の「wrapper は skill 名を自前で知り、SKILL.md から no-arg 呼び出し」契約を実装に反映
+- **fix(review)**: `skip_all_unprocessed.py` の subprocess 呼び出し2箇所に `encoding="utf-8", errors="replace"` を明示し、非 UTF-8 ロケール下での UnicodeDecodeError リスクを排除
+- **docs(io_verb)**: io_verb 設計書（DES-024）と実装計画書を追加。要件・設計・計画・実装を一連で完結
+
 ## [marketplace 0.1.14] - 2026-04-20
 
 ### marketplace
