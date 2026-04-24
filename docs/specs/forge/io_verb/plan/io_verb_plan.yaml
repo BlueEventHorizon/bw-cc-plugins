@@ -5,11 +5,11 @@ requirements_traceability:
   - requirement_id: REQ-001
     title: SKILL.md を script 詳細から解放する
     design_id: DES-024
-    status: pending
+    status: completed
   - requirement_id: INV-001
     title: io_verb 棚卸し（SKILL.md 上の痛点一覧）
     design_id: DES-024
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: DES-024
@@ -242,7 +242,7 @@ tasks:
   - task_id: TASK-009
     title: review パイプラインの結合テスト（1 サイクル完走 + resume シナリオ）
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-001
@@ -270,7 +270,7 @@ tasks:
   - task_id: TASK-010
     title: start-* パイプラインの結合テスト（5 スキル完走）
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-024
     depends_on:
       - TASK-001
