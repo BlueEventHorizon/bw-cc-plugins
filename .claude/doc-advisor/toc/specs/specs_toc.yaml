@@ -4,10 +4,47 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-23T14:52:45Z
-  file_count: 41
+  generated_at: 2026-04-24T23:58:26Z
+  file_count: 42
 
 docs:
+  docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md:
+    doc_type: requirement
+    title: "Requirement REQ-005: Issue-Driven SDD Pipeline Integration"
+    purpose: Defines requirements for GitHub Issues as entry point to specification-driven development pipeline, establishing workflow integration from issue creation through PR completion
+    content_details:
+      - Issue creation with background and root cause documentation
+      - SDD orchestration sequencing requirements → design → plan → implementation
+      - Issue writeeback operations for artifact links and progress status
+      - Runtime type selection between UI and non-UI workflows
+      - Figma-derived information extraction for UI issues
+      - Dependency constraints and one-way anvil-to-forge dependency
+      - Issue indexing principle keeping artifacts in repository
+      - Error handling for prerequisites and external API failures
+      - Idempotent writeeback preventing issue body bloat
+      - Figma file and frame metadata validation layers
+    applicable_tasks:
+      - anvil plugin issue-driven flow implementation
+      - GitHub Issue creation workflow design
+      - SDD pipeline orchestration specification
+      - GitHub API integration
+      - Figma integration requirements
+      - Error handling strategy
+      - PR-issue linking mechanism
+      - Issue writeeback mechanism design
+      - Type selection interaction specification
+      - External API constraint handling
+    keywords:
+      - GitHub Issue
+      - SDD pipeline
+      - orchestration
+      - Figma integration
+      - issue writeeback
+      - requirement
+      - anvil
+      - external API
+      - error handling
+      - artifact linking
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
     title: "COMMON-REQ-001: Phased Versioned Data Migration Requirements"
