@@ -318,6 +318,20 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 
 ---
 
+### 並列起動の前提条件 [MANDATORY]
+
+Phase 3 の reviewer 並列起動および Phase 4 の evaluator 並列起動は、以下の前提が成立している場合のみ並列で実行してよい。成立しない場合は **順次実行に切り替えること**。
+
+| 前提                                                             | 説明                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **subagent SKILL の `allowed-tools` が pre-approved されている** | reviewer / evaluator SKILL.md frontmatter で必要ツール（Read / Write / Bash 等）を `allowed-tools` で明示している。明示しないと parent セッションで permission prompt が並列発火し、ユーザーが応答しきれず一部 subagent が拒否される（global CLAUDE.md「ユーザー承認が必要なツールは並列実行しない」と整合） |
+| **書き込みファイルが perspective 単位で独立**                    | 各 subagent が触るのは `review_{perspective}.md` / `eval_{perspective}.json` のみ。`plan.yaml` 等の共有ファイルは並列中は触らず、後段の `extract_review_findings.py` / `merge_evals.py` で一括集約する                                                                                                       |
+| **部分失敗時の合流が定義されている**                             | Phase 3 / Phase 4 ともに「成功した perspective の結果のみで続行する」「全失敗は hard fail」の合流ルールが本 SKILL に定義済み                                                                                                                                                                                 |
+
+> reviewer / evaluator SKILL.md には `allowed-tools: Read, Write, Bash` を frontmatter に明示している。これが欠落している場合は並列起動せず、各 perspective を順次起動すること。
+
+---
+
 ### Phase 3: perspectives 並列レビュー
 
 呼び出し前に以下を出力する:
@@ -438,6 +452,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ##### Step 1: evaluator を perspectives 並列起動（AI推奨判定 + review_{perspective}.md 全面書き換え）
 
+> **並列起動の前提条件は本 SKILL の「並列起動の前提条件」セクション参照。** evaluator SKILL.md frontmatter で `allowed-tools: Read, Write, Bash` が明示されていることが前提（permission prompt 並列発火を回避するため）。
+
 perspectives の数だけ Agent ツール（general-purpose）で並列起動する。各 subagent の prompt に `/forge:evaluator` の役割と以下の情報を渡す:
 
 - session_dir
@@ -509,6 +525,8 @@ present-findings が plan.yaml を読み、人間の判定を仲介する。
 ```
 
 ##### Step 1: evaluator を perspectives 並列起動
+
+> **並列起動の前提条件は本 SKILL の「並列起動の前提条件」セクション参照。** evaluator SKILL.md frontmatter で `allowed-tools: Read, Write, Bash` が明示されていることが前提。
 
 perspectives の数だけ Agent ツール（general-purpose）で並列起動する。各 subagent の prompt に `/forge:evaluator` の役割と以下の情報を渡す:
 
