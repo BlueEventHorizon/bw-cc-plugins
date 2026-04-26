@@ -36,12 +36,12 @@ flowchart LR
 
 ## プラグイン一覧
 
-| プラグイン | バージョン | 説明                                                                                                                    |
-| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.0.39     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
-| **anvil**  | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
-| **xcode**  | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                |
-| **doc-advisor** | 0.2.1 | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
+| プラグイン      | バージョン | 説明                                                                                                                                              |
+| --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **forge**       | 0.0.39     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応                           |
+| **anvil**       | 0.0.4      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                                                     |
+| **xcode**       | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                                          |
+| **doc-advisor** | 0.2.1      | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
 
 ## スキル一覧
 
@@ -65,14 +65,14 @@ flowchart LR
     REQ & DES & PLAN & IMPL -.->|随時| REV
 ```
 
-| 段階 | スキル | 入力 | 出力 |
-|------|--------|------|------|
-| 要件定義 | start-requirements | 対話 / ソースコード / Figma | 要件定義書（Markdown） |
-| UXUI デザイン | start-uxui-design | 要件定義書の ASCII アート | デザイントークン + UI 仕様 |
-| 設計 | start-design | 要件定義書 | 設計書（Markdown） |
-| 計画 | start-plan | 設計書 | 計画書（YAML） |
-| 実装 | start-implement | 計画書 | コード + 進捗更新 |
-| レビュー | review | コード / 文書 | 指摘 + 修正 |
+| 段階          | スキル             | 入力                        | 出力                       |
+| ------------- | ------------------ | --------------------------- | -------------------------- |
+| 要件定義      | start-requirements | 対話 / ソースコード / Figma | 要件定義書（Markdown）     |
+| UXUI デザイン | start-uxui-design  | 要件定義書の ASCII アート   | デザイントークン + UI 仕様 |
+| 設計          | start-design       | 要件定義書                  | 設計書（Markdown）         |
+| 計画          | start-plan         | 設計書                      | 計画書（YAML）             |
+| 実装          | start-implement    | 計画書                      | コード + 進捗更新          |
+| レビュー      | review             | コード / 文書               | 指摘 + 修正                |
 
 #### はじめかた
 
@@ -92,56 +92,57 @@ flowchart LR
 
 #### スキル一覧
 
-| スキル | 説明 | トリガー |
-|--------|------|----------|
-| [**review**](docs/readme/forge/guide_review_ja.md) | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正 | `"レビューして"` |
-| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements) | 対話・ソース解析・Figma の 3 モードで要件定義書を作成 | `"要件定義"` |
-| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design) | 要件定義書から設計書を作成。既存資産の再利用を重視 | `"設計書作成"` |
-| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan) | 設計書からタスクを抽出し YAML 計画書を作成 | `"計画書作成"` |
-| [**start-implement**](docs/readme/forge/guide_implement_ja.md) | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行 | `"実装開始"` |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md) | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造 | `"UXUIデザイン"` |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold | `"初期設定"` |
-| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config) | `.version-config.yaml` 生成・更新 | `"バージョン設定"` |
-| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version) | バージョン一括更新。patch/minor/major/直接指定 | `"バージョン更新"` |
-| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules) | rules/ を分類学に基づいて分析・再構築 | `"rules を整理"` |
-| [**help**](docs/readme/forge/guide_setup_ja.md#help) | インタラクティブヘルプ | `"ヘルプ"` |
-| [*reviewer*](docs/readme/forge/guide_review_ja.md#実行フロー) | 1 perspective のレビューを実行 | ※ review が委譲 |
-| [*evaluator*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘を吟味し修正/スキップ/要確認を判定 | ※ review が委譲 |
-| [*fixer*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー指摘に基づきコード・文書を修正 | ※ review が委譲 |
-| [*present-findings*](docs/readme/forge/guide_review_ja.md#実行フロー) | レビュー結果を対話的に1件ずつ提示 | ※ review が委譲 |
-| [*doc-structure*](docs/readme/guide_doc_structure_ja.md) | `.doc_structure.yaml` のパース・パス解決 | ※ 各オーケストレーターが呼び出し |
-| [*next-spec-id*](docs/readme/forge/guide_create_docs_ja.md) | 全ブランチをスキャンして仕様書 ID の次番を取得 | ※ start-requirements が呼び出し |
+| スキル                                                                                    | 説明                                                                     | トリガー                         |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------- |
+| [**review**](docs/readme/forge/guide_review_ja.md)                                        | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正        | `"レビューして"`                 |
+| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements)    | 対話・ソース解析・Figma の 3 モードで要件定義書を作成                    | `"要件定義"`                     |
+| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design)                | 要件定義書から設計書を作成。既存資産の再利用を重視                       | `"設計書作成"`                   |
+| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan)                    | 設計書からタスクを抽出し YAML 計画書を作成                               | `"計画書作成"`                   |
+| [**start-implement**](docs/readme/forge/guide_implement_ja.md)                            | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行           | `"実装開始"`                     |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md)                        | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造              | `"UXUIデザイン"`                 |
+| **create-feature-from-plan**                                                              | Claude plan mode の出力 markdown から要件定義書 → 設計書を一気通貫で作成 | `"plan から feature 作成"`       |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold                       | `"初期設定"`                     |
+| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config)      | `.version-config.yaml` 生成・更新                                        | `"バージョン設定"`               |
+| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                           | `"バージョン更新"`               |
+| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules)                        | rules/ を分類学に基づいて分析・再構築                                    | `"rules を整理"`                 |
+| [**help**](docs/readme/forge/guide_setup_ja.md#help)                                      | インタラクティブヘルプ                                                   | `"ヘルプ"`                       |
+| [_reviewer_](docs/readme/forge/guide_review_ja.md#実行フロー)                             | 1 perspective のレビューを実行                                           | ※ review が委譲                  |
+| [_evaluator_](docs/readme/forge/guide_review_ja.md#実行フロー)                            | レビュー指摘を吟味し修正/スキップ/要確認を判定                           | ※ review が委譲                  |
+| [_fixer_](docs/readme/forge/guide_review_ja.md#実行フロー)                                | レビュー指摘に基づきコード・文書を修正                                   | ※ review が委譲                  |
+| [_present-findings_](docs/readme/forge/guide_review_ja.md#実行フロー)                     | レビュー結果を対話的に1件ずつ提示                                        | ※ review が委譲                  |
+| [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                 | ※ 各オーケストレーターが呼び出し |
+| [_next-spec-id_](docs/readme/forge/guide_create_docs_ja.md)                               | 全ブランチをスキャンして仕様書 ID の次番を取得                           | ※ start-requirements が呼び出し  |
 
 ### anvil
 
 > [詳細ガイド](docs/readme/guide_anvil_ja.md) — 使い方、使用例
 
-| スキル | 説明 | トリガー |
-|--------|------|----------|
-| [**commit**](docs/readme/guide_anvil_ja.md#commit) | 変更内容からコミットメッセージを自動生成し commit & push | `"コミットして"` |
-| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成 | `"PR を作成"` |
+| スキル                                                   | 説明                                                              | トリガー         |
+| -------------------------------------------------------- | ----------------------------------------------------------------- | ---------------- |
+| [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push          | `"コミットして"` |
+| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成 | `"PR を作成"`    |
 
 ### xcode
 
 > [詳細ガイド](docs/readme/guide_xcode_ja.md) — 使い方、使用例
 
-| スキル | 説明 | トリガー |
-|--------|------|----------|
+| スキル                                           | 説明                                                           | トリガー   |
+| ------------------------------------------------ | -------------------------------------------------------------- | ---------- |
 | [**build**](docs/readme/guide_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` |
-| [**test**](docs/readme/guide_xcode_ja.md#test) | テストを実行し、失敗を報告。iOS/macOS 自動判定 | `"テスト"` |
+| [**test**](docs/readme/guide_xcode_ja.md#test)   | テストを実行し、失敗を報告。iOS/macOS 自動判定                 | `"テスト"` |
 
 ### doc-advisor
 
 > [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
 
-| スキル | 説明 | トリガー |
-|--------|------|----------|
-| [**query-rules**](docs/readme/guide_doc-advisor_ja.md#query-rules) | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"ルール確認"` |
-| [**query-specs**](docs/readme/guide_doc-advisor_ja.md#query-specs) | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する | `"仕様確認"` |
-| [**create-rules-toc**](docs/readme/guide_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する | `"rules ToC 更新"` |
-| [**create-specs-toc**](docs/readme/guide_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する | `"specs ToC 更新"` |
+| スキル                                                                       | 説明                                                                           | トリガー           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ |
+| [**query-rules**](docs/readme/guide_doc-advisor_ja.md#query-rules)           | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"ルール確認"`     |
+| [**query-specs**](docs/readme/guide_doc-advisor_ja.md#query-specs)           | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する   | `"仕様確認"`       |
+| [**create-rules-toc**](docs/readme/guide_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する                                      | `"rules ToC 更新"` |
+| [**create-specs-toc**](docs/readme/guide_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する                                        | `"specs ToC 更新"` |
 
-> **太字** = ユーザー起動可能、*斜体* = AI 専用（他スキルから内部的に呼び出される）
+> **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
 ## インストール
 
