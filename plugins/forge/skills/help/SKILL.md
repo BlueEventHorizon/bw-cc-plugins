@@ -31,6 +31,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 ```
 
 AskUserQuestion:
+
 - question: "スキル番号を入力してください（1〜7）"
 - options: ["1 (review)", "2 (start-uxui-design)", "3 (start-requirements)", "4 (start-design)"]
 - ※ 5〜7 は Other で入力する
@@ -59,6 +60,7 @@ AskUserQuestion:
 ```
 
 AskUserQuestion:
+
 - question: "種別番号を入力してください（1〜6）"
 - options: ["1 (code)", "2 (requirement)", "3 (design)", "4 (plan)"]
 - ※ 5〜6 は Other で入力する

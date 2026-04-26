@@ -2,13 +2,13 @@
 
 ## メタデータ
 
-| 項目       | 値                                                                |
-| ---------- | ----------------------------------------------------------------- |
-| 設計 ID    | DES-024                                                           |
-| feature ID | io_verb                                                           |
-| 種別       | 設計（How の決定。要件は REQ-001 を参照）                         |
-| 作成日     | 2026-04-23                                                        |
-| 関連要件   | REQ-001, INV-001                                                  |
+| 項目       | 値                                        |
+| ---------- | ----------------------------------------- |
+| 設計 ID    | DES-024                                   |
+| feature ID | io_verb                                   |
+| 種別       | 設計（How の決定。要件は REQ-001 を参照） |
+| 作成日     | 2026-04-23                                |
+| 関連要件   | REQ-001, INV-001                          |
 
 ---
 
@@ -110,13 +110,13 @@ design_principles_spec.md の必須構成要素（モジュール一覧・依存
 
 #### 2.5.1 モジュール一覧
 
-| 層                           | 配置                                                       | 役割                                                                                                       | 本要件での変更 |
-| ---------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------- |
-| SKILL.md                     | `plugins/forge/skills/{skill}/SKILL.md`                    | 1 行指示（呼ぶべき wrapper + 位置引数）                                                                    | 差し替えのみ   |
-| 単一ラッパー                 | `plugins/forge/skills/{skill}/scripts/{operation}.py`      | 低レベル CLI 1 本を subprocess で呼ぶ 5〜10 行の wrapper                                                   | 新規 29 本     |
-| 複合ラッパー（例外層）       | `plugins/forge/skills/{skill}/scripts/{operation}.py`      | 複数低レベル CLI を連鎖呼び出し（skip_all_unprocessed.py の 1 本のみ）。ビジネスロジック・新規スキーマなし | 新規 1 本      |
-| 低レベル script              | `plugins/forge/scripts/{domain}/{script}.py`               | 状態遷移・flag 合成・JSON スキーマを閉じ込める本体ロジック                                                 | 変更なし（R7 MANDATORY） |
-| 外部ファイル                 | `session/*` / `.doc_structure.yaml` / `.version-config.yaml` / plan.yaml / 設計書 Markdown 等 | 永続状態・設定・成果物                                                                                      | 変更なし       |
+| 層                     | 配置                                                                                          | 役割                                                                                                       | 本要件での変更           |
+| ---------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------ |
+| SKILL.md               | `plugins/forge/skills/{skill}/SKILL.md`                                                       | 1 行指示（呼ぶべき wrapper + 位置引数）                                                                    | 差し替えのみ             |
+| 単一ラッパー           | `plugins/forge/skills/{skill}/scripts/{operation}.py`                                         | 低レベル CLI 1 本を subprocess で呼ぶ 5〜10 行の wrapper                                                   | 新規 29 本               |
+| 複合ラッパー（例外層） | `plugins/forge/skills/{skill}/scripts/{operation}.py`                                         | 複数低レベル CLI を連鎖呼び出し（skip_all_unprocessed.py の 1 本のみ）。ビジネスロジック・新規スキーマなし | 新規 1 本                |
+| 低レベル script        | `plugins/forge/scripts/{domain}/{script}.py`                                                  | 状態遷移・flag 合成・JSON スキーマを閉じ込める本体ロジック                                                 | 変更なし（R7 MANDATORY） |
+| 外部ファイル           | `session/*` / `.doc_structure.yaml` / `.version-config.yaml` / plan.yaml / 設計書 Markdown 等 | 永続状態・設定・成果物                                                                                     | 変更なし                 |
 
 合計 wrapper 本数: **30 本**（単一 29 + 複合 1）。内訳は §4 末尾・§4.1 と一致。
 
@@ -205,14 +205,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 
 **ラッパー配置**:
 
-| SKILL                  | ファイル                                          | ハードコード値           |
-| ---------------------- | ------------------------------------------------- | ------------------------ |
-| start-plan             | `skills/start-plan/scripts/find_session.py`       | `--skill start-plan`     |
-| start-implement        | `skills/start-implement/scripts/find_session.py`  | `--skill start-implement`|
-| start-requirements     | `skills/start-requirements/scripts/find_session.py` | `--skill start-requirements` |
-| start-design           | `skills/start-design/scripts/find_session.py`     | `--skill start-design`   |
-| start-uxui-design      | `skills/start-uxui-design/scripts/find_session.py`| `--skill start-uxui-design` |
-| review                 | `skills/review/scripts/find_session.py`           | `--skill review`         |
+| SKILL              | ファイル                                            | ハードコード値               |
+| ------------------ | --------------------------------------------------- | ---------------------------- |
+| start-plan         | `skills/start-plan/scripts/find_session.py`         | `--skill start-plan`         |
+| start-implement    | `skills/start-implement/scripts/find_session.py`    | `--skill start-implement`    |
+| start-requirements | `skills/start-requirements/scripts/find_session.py` | `--skill start-requirements` |
+| start-design       | `skills/start-design/scripts/find_session.py`       | `--skill start-design`       |
+| start-uxui-design  | `skills/start-uxui-design/scripts/find_session.py`  | `--skill start-uxui-design`  |
+| review             | `skills/review/scripts/find_session.py`             | `--skill review`             |
 
 **実装（代表例）**:
 
@@ -256,14 +256,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/init_session.py "{feature}" "{mode}" "{outpu
 
 **ラッパー配置と引数**:
 
-| SKILL                  | ファイル                                            | 位置引数                              |
-| ---------------------- | --------------------------------------------------- | ------------------------------------- |
-| start-plan             | `skills/start-plan/scripts/init_session.py`         | `{feature} {mode} {output_dir}`       |
-| start-implement        | `skills/start-implement/scripts/init_session.py`    | `{feature} {task_id}`                 |
-| start-requirements     | `skills/start-requirements/scripts/init_session.py` | `{feature} {mode} {output_dir}`       |
-| start-design           | `skills/start-design/scripts/init_session.py`       | `{feature} {mode} {output_dir}`       |
-| start-uxui-design      | `skills/start-uxui-design/scripts/init_session.py`  | `{feature} {mode} {output_dir}`       |
-| review                 | `skills/review/scripts/init_session.py`             | `{review_type} {engine} {auto_count}` |
+| SKILL              | ファイル                                            | 位置引数                              |
+| ------------------ | --------------------------------------------------- | ------------------------------------- |
+| start-plan         | `skills/start-plan/scripts/init_session.py`         | `{feature} {mode} {output_dir}`       |
+| start-implement    | `skills/start-implement/scripts/init_session.py`    | `{feature} {task_id}`                 |
+| start-requirements | `skills/start-requirements/scripts/init_session.py` | `{feature} {mode} {output_dir}`       |
+| start-design       | `skills/start-design/scripts/init_session.py`       | `{feature} {mode} {output_dir}`       |
+| start-uxui-design  | `skills/start-uxui-design/scripts/init_session.py`  | `{feature} {mode} {output_dir}`       |
+| review             | `skills/review/scripts/init_session.py`             | `{review_type} {engine} {auto_count}` |
 
 **review 用の補足**: review は `--auto-count` に加え `--current-cycle` が必要だが、新規 init では常に 0 なのでラッパー内部にハードコード。
 
@@ -308,16 +308,16 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/resolve_doc.py
 
 **ラッパー配置**:
 
-| SKILL                  | ファイル                                               | ハードコード値            |
-| ---------------------- | ------------------------------------------------------ | ------------------------- |
-| start-plan             | `skills/start-plan/scripts/resolve_doc.py`             | `--doc-type plan`         |
-| start-implement        | `skills/start-implement/scripts/resolve_doc.py`        | `--doc-type plan`         |
-| start-requirements     | `skills/start-requirements/scripts/resolve_doc.py`     | `--doc-type requirement`  |
-| start-design           | `skills/start-design/scripts/resolve_doc.py`           | `--doc-type design`       |
-| start-uxui-design      | `skills/start-uxui-design/scripts/resolve_doc.py`      | `--doc-type requirement`  |
-| review                 | `skills/review/scripts/resolve_rules.py`               | `--type rules`            |
-| review                 | `skills/review/scripts/resolve_specs.py`               | `--type specs`            |
-| clean-rules            | `skills/clean-rules/scripts/resolve_rules.py`          | `--type rules`            |
+| SKILL              | ファイル                                           | ハードコード値           |
+| ------------------ | -------------------------------------------------- | ------------------------ |
+| start-plan         | `skills/start-plan/scripts/resolve_doc.py`         | `--doc-type plan`        |
+| start-implement    | `skills/start-implement/scripts/resolve_doc.py`    | `--doc-type plan`        |
+| start-requirements | `skills/start-requirements/scripts/resolve_doc.py` | `--doc-type requirement` |
+| start-design       | `skills/start-design/scripts/resolve_doc.py`       | `--doc-type design`      |
+| start-uxui-design  | `skills/start-uxui-design/scripts/resolve_doc.py`  | `--doc-type requirement` |
+| review             | `skills/review/scripts/resolve_rules.py`           | `--type rules`           |
+| review             | `skills/review/scripts/resolve_specs.py`           | `--type specs`           |
+| clean-rules        | `skills/clean-rules/scripts/resolve_rules.py`      | `--type rules`           |
 
 **命名補足**: review のみ 2 種類（rules / specs）必要なため、operation 名で区別（`resolve_rules.py` / `resolve_specs.py`）。他 SKILL は 1 種類のみなので単に `resolve_doc.py`。
 
@@ -329,28 +329,28 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/resolve_doc.py
 
 **Before / After（present-findings/SKILL.md の場合）**:
 
-| 場面                    | Before                                                                              | After                                              |
-| ----------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
-| 修正を選択              | `update_plan.py {dir} --id {id} --status in_progress`                               | `mark_in_progress.py {dir} {id}`                   |
-| 対応しない              | `update_plan.py {dir} --id {id} --status needs_review`                              | `mark_needs_review.py {dir} {id}`                  |
-| スキップ                | `update_plan.py {dir} --id {id} --status skipped --skip-reason "{理由}"`            | `mark_skipped.py {dir} {id} "{理由}"`              |
-| 重複統合（一括）        | `update_plan.py {dir} --batch` + stdin JSON                                         | `batch_update.py {dir}` + stdin JSON (透過)        |
+| 場面             | Before                                                                   | After                                       |
+| ---------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
+| 修正を選択       | `update_plan.py {dir} --id {id} --status in_progress`                    | `mark_in_progress.py {dir} {id}`            |
+| 対応しない       | `update_plan.py {dir} --id {id} --status needs_review`                   | `mark_needs_review.py {dir} {id}`           |
+| スキップ         | `update_plan.py {dir} --id {id} --status skipped --skip-reason "{理由}"` | `mark_skipped.py {dir} {id} "{理由}"`       |
+| 重複統合（一括） | `update_plan.py {dir} --batch` + stdin JSON                              | `batch_update.py {dir}` + stdin JSON (透過) |
 
 **review/SKILL.md の場合**:
 
-| 場面                          | Before                                                                                  | After                                           |
-| ----------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| 未処理を全件 skipped にする   | `summarize_plan.py` の出力から updates JSON を組み立てて `update_plan.py --batch` に流す | `skip_all_unprocessed.py {dir}`                |
+| 場面                        | Before                                                                                   | After                           |
+| --------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------- |
+| 未処理を全件 skipped にする | `summarize_plan.py` の出力から updates JSON を組み立てて `update_plan.py --batch` に流す | `skip_all_unprocessed.py {dir}` |
 
 **ラッパー配置**:
 
-| SKILL             | ファイル                                                 | 位置引数                 |
-| ----------------- | -------------------------------------------------------- | ------------------------ |
-| present-findings  | `skills/present-findings/scripts/mark_in_progress.py`    | `{session_dir} {id}`     |
-| present-findings  | `skills/present-findings/scripts/mark_needs_review.py`   | `{session_dir} {id}`     |
-| present-findings  | `skills/present-findings/scripts/mark_skipped.py`        | `{session_dir} {id} {reason}` |
-| present-findings  | `skills/present-findings/scripts/batch_update.py`        | `{session_dir}`（stdin JSON 透過）|
-| review            | `skills/review/scripts/skip_all_unprocessed.py`          | `{session_dir}`          |
+| SKILL            | ファイル                                               | 位置引数                           |
+| ---------------- | ------------------------------------------------------ | ---------------------------------- |
+| present-findings | `skills/present-findings/scripts/mark_in_progress.py`  | `{session_dir} {id}`               |
+| present-findings | `skills/present-findings/scripts/mark_needs_review.py` | `{session_dir} {id}`               |
+| present-findings | `skills/present-findings/scripts/mark_skipped.py`      | `{session_dir} {id} {reason}`      |
+| present-findings | `skills/present-findings/scripts/batch_update.py`      | `{session_dir}`（stdin JSON 透過） |
+| review           | `skills/review/scripts/skip_all_unprocessed.py`        | `{session_dir}`                    |
 
 **`batch_update.py` の透過ラッパー化に留めた理由**: 本ラッパーは低レベル `update_plan.py --batch` の stdin JSON スキーマ（`{"updates": [{"id": int, "status": str, ...}]}`）をそのまま透過する。JSON 組立責務を wrapper 側に引き上げない理由は以下:
 
@@ -416,23 +416,23 @@ update_version_files.py {path} {cur} {new} --filter "{filter}" --optional
 
 **After**:
 
-| SKILL.md 場面             | After                                                                      |
-| ------------------------- | -------------------------------------------------------------------------- |
-| 主要版                    | `update_main_version.py {file} {cur} {new} {version_path}`                 |
-| 依存（必須・filter なし） | `update_required_dependent.py {file} {cur} {new}`                          |
-| 依存（オプション）        | `update_optional_dependent.py {file} {cur} {new}`                          |
-| 依存（必須・filter あり） | `update_required_filtered.py {file} {cur} {new} "{filter}"`                |
-| 依存（オプション・filter）| `update_optional_filtered.py {file} {cur} {new} "{filter}"`                |
+| SKILL.md 場面              | After                                                       |
+| -------------------------- | ----------------------------------------------------------- |
+| 主要版                     | `update_main_version.py {file} {cur} {new} {version_path}`  |
+| 依存（必須・filter なし）  | `update_required_dependent.py {file} {cur} {new}`           |
+| 依存（オプション）         | `update_optional_dependent.py {file} {cur} {new}`           |
+| 依存（必須・filter あり）  | `update_required_filtered.py {file} {cur} {new} "{filter}"` |
+| 依存（オプション・filter） | `update_optional_filtered.py {file} {cur} {new} "{filter}"` |
 
 **ラッパー配置**:
 
-| SKILL          | ファイル                                                        |
-| -------------- | --------------------------------------------------------------- |
-| update-version | `skills/update-version/scripts/update_main_version.py`          |
-| update-version | `skills/update-version/scripts/update_required_dependent.py`    |
-| update-version | `skills/update-version/scripts/update_optional_dependent.py`    |
-| update-version | `skills/update-version/scripts/update_required_filtered.py`     |
-| update-version | `skills/update-version/scripts/update_optional_filtered.py`     |
+| SKILL          | ファイル                                                     |
+| -------------- | ------------------------------------------------------------ |
+| update-version | `skills/update-version/scripts/update_main_version.py`       |
+| update-version | `skills/update-version/scripts/update_required_dependent.py` |
+| update-version | `skills/update-version/scripts/update_optional_dependent.py` |
+| update-version | `skills/update-version/scripts/update_required_filtered.py`  |
+| update-version | `skills/update-version/scripts/update_optional_filtered.py`  |
 
 5 本。R3 に従い「flag で分岐する単一 script」ではなく「operation ごとに別 script」。
 
@@ -512,16 +512,16 @@ plugins/forge/
 
 inventory §2 の各痛点と、置換後 wrapper・対象 SKILL.md の対応:
 
-| inventory 痛点（§2）                                               | 件数 | 対応 wrapper                                                                                       | 対象 SKILL.md                                                                 |
-| ------------------------------------------------------------------ | ---: | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| §2.1-A `resolve_doc_structure.py --doc-type` / `--type`            |    8 | `resolve_doc.py` / `resolve_rules.py` / `resolve_specs.py`                                         | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review / clean-rules |
-| §2.1-B `session_manager.py find --skill`                           |    6 | `find_session.py`（各 SKILL 配下）                                                                 | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review |
-| §2.1-C `update_plan.py --batch` / `--id --status`                  |    5 | `mark_in_progress.py` / `mark_needs_review.py` / `mark_skipped.py` / `batch_update.py` / `skip_all_unprocessed.py` | present-findings / review                                                     |
-| §2.1-D `update_version_files.py --version-path` / `--filter` / `--optional` |    3 | `update_main_version.py` / `update_required_dependent.py` / `update_optional_dependent.py` / `update_required_filtered.py` / `update_optional_filtered.py` | update-version                                                                |
-| §2.2 多引数 `session_manager.py init`                              |    6 | `init_session.py`（各 SKILL 配下）                                                                 | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review |
-| §2.3 選択肢列挙（present-findings の status 3 値 + review の一括 skipped） |    3 | `mark_in_progress.py` / `mark_needs_review.py` / `mark_skipped.py`（+ `skip_all_unprocessed.py`）  | present-findings / review                                                     |
-| §2.4 禁止警告                                                       |    0 | 対応なし（本要件では追加も削除もしない）                                                            | —                                                                             |
-|                                                                    | **31** |                                                                                                    |                                                                               |
+| inventory 痛点（§2）                                                        |   件数 | 対応 wrapper                                                                                                                                               | 対象 SKILL.md                                                                                               |
+| --------------------------------------------------------------------------- | -----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| §2.1-A `resolve_doc_structure.py --doc-type` / `--type`                     |      8 | `resolve_doc.py` / `resolve_rules.py` / `resolve_specs.py`                                                                                                 | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review / clean-rules |
+| §2.1-B `session_manager.py find --skill`                                    |      6 | `find_session.py`（各 SKILL 配下）                                                                                                                         | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review               |
+| §2.1-C `update_plan.py --batch` / `--id --status`                           |      5 | `mark_in_progress.py` / `mark_needs_review.py` / `mark_skipped.py` / `batch_update.py` / `skip_all_unprocessed.py`                                         | present-findings / review                                                                                   |
+| §2.1-D `update_version_files.py --version-path` / `--filter` / `--optional` |      3 | `update_main_version.py` / `update_required_dependent.py` / `update_optional_dependent.py` / `update_required_filtered.py` / `update_optional_filtered.py` | update-version                                                                                              |
+| §2.2 多引数 `session_manager.py init`                                       |      6 | `init_session.py`（各 SKILL 配下）                                                                                                                         | start-plan / start-implement / start-requirements / start-design / start-uxui-design / review               |
+| §2.3 選択肢列挙（present-findings の status 3 値 + review の一括 skipped）  |      3 | `mark_in_progress.py` / `mark_needs_review.py` / `mark_skipped.py`（+ `skip_all_unprocessed.py`）                                                          | present-findings / review                                                                                   |
+| §2.4 禁止警告                                                               |      0 | 対応なし（本要件では追加も削除もしない）                                                                                                                   | —                                                                                                           |
+|                                                                             | **31** |                                                                                                                                                            |                                                                                                             |
 
 > 件数合計 31 は §1.3・inventory §1.2 と一致する。wrapper 本数 30 との差は、複数の痛点を 1 wrapper がカバーする場合（例: `mark_skipped.py` は §2.1-C と §2.3 を同時に解消）によるもの。
 
@@ -547,15 +547,15 @@ inventory §2 の各痛点と、置換後 wrapper・対象 SKILL.md の対応:
 
 痛点の多い領域から着手する。各ステップは独立して完結し、途中段階でも review パイプラインが完走可能（要件 R5）。
 
-| ステップ | 内容                                                              | ラッパー本数 | 影響 SKILL.md |
-| -------- | ----------------------------------------------------------------- | -----------: | ------------: |
-| Step 1   | `session_manager.py find` ラッパー（6 本）+ SKILL.md 差し替え     |            6 |             6 |
-| Step 2   | `session_manager.py init` ラッパー（6 本）+ SKILL.md 差し替え     |            6 |             6 |
-| Step 3   | `update_plan.py` ラッパー（present-findings 4 本）+ SKILL.md      |            4 |             1 |
-| Step 4   | `review/skip_all_unprocessed.py`（1 本）+ review SKILL.md         |            1 |             1 |
-| Step 5   | `resolve_doc_structure.py` ラッパー（8 本）+ SKILL.md             |            8 |             7 |
-| Step 6   | `update_version_files.py` ラッパー（5 本）+ SKILL.md              |            5 |             1 |
-|          | **合計**                                                          |       **30** |     **16 (重複除く)** |
+| ステップ | 内容                                                          | ラッパー本数 |     影響 SKILL.md |
+| -------- | ------------------------------------------------------------- | -----------: | ----------------: |
+| Step 1   | `session_manager.py find` ラッパー（6 本）+ SKILL.md 差し替え |            6 |                 6 |
+| Step 2   | `session_manager.py init` ラッパー（6 本）+ SKILL.md 差し替え |            6 |                 6 |
+| Step 3   | `update_plan.py` ラッパー（present-findings 4 本）+ SKILL.md  |            4 |                 1 |
+| Step 4   | `review/skip_all_unprocessed.py`（1 本）+ review SKILL.md     |            1 |                 1 |
+| Step 5   | `resolve_doc_structure.py` ラッパー（8 本）+ SKILL.md         |            8 |                 7 |
+| Step 6   | `update_version_files.py` ラッパー（5 本）+ SKILL.md          |            5 |                 1 |
+|          | **合計**                                                      |       **30** | **16 (重複除く)** |
 
 各ステップ後に:
 
@@ -599,24 +599,24 @@ tests/forge/
 
 ## 8. リスクと対処
 
-| リスク                                                      | 対処                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------- |
-| ラッパー数が 30 と多い                                      | 各ラッパー 5〜10 行の自明なコードであり、レビュー負荷は小さい       |
-| SKILL.md 差し替えで既存セッションが壊れる                   | 低レベル CLI を変更しないため、セッションファイル形式は完全に不変 |
+| リスク                                                                      | 対処                                                                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| ラッパー数が 30 と多い                                                      | 各ラッパー 5〜10 行の自明なコードであり、レビュー負荷は小さい                                                                         |
+| SKILL.md 差し替えで既存セッションが壊れる                                   | 低レベル CLI を変更しないため、セッションファイル形式は完全に不変                                                                     |
 | `skip_all_unprocessed.py`（複合ラッパー）が複数段の subprocess を呼ぶ複雑性 | 単体テストで stdin JSON 組立と subprocess の呼び出し順序を検証。実運用時の障害切り分けは §3.4 stderr 契約と §8.1 障害シナリオ表で対応 |
-| 並行する `refactor/script` ブランチとのコンフリクト         | 本設計は `refactor/scropt_simply` 上で完結。衝突時は本設計を優先する |
+| 並行する `refactor/script` ブランチとのコンフリクト                         | 本設計は `refactor/scropt_simply` 上で完結。衝突時は本設計を優先する                                                                  |
 
 ### 8.1 障害シナリオ表
 
 運用時に起こりうる異常系を列挙し、検知手段と期待挙動（終了コード・stderr）を固定する。すべて低レベル側の既存挙動に委ねる方針（§2.1.1 retry/timeout なし）で、ラッパー側は透過または §3.4 の stderr 契約に従う。
 
-| # | シナリオ                                          | 発生箇所                           | 検知手段                                          | 期待終了コード | stderr                                                                     |
-| - | ------------------------------------------------- | ---------------------------------- | ------------------------------------------------- | -------------- | -------------------------------------------------------------------------- |
-| a | `plan.yaml` 不在                                  | `skip_all_unprocessed.py` 段階 1   | `summarize_plan.py` が FileNotFoundError で非 0   | 非 0（低レベル透過） | `stage=summarize_plan exit={code}` + 低レベル stderr                       |
-| b | `summarize_plan.py` stdout の JSON 破損           | `skip_all_unprocessed.py` 段階 2   | ラッパー内で `json.loads` が失敗                  | 非 0           | `stage=json_build exit=-1` + `JSONDecodeError` の msg                      |
-| c | 子 script 不在（低レベル CLI のパス不正など）     | 全ラッパー                         | `subprocess.run` が FileNotFoundError / 非 0 で返す | 非 0（低レベル透過 / Python 例外は traceback） | 低レベル起動成功時は stderr を透過。ラッパー起動前の `FileNotFoundError` 時は Python traceback。複合ラッパーは §3.4 契約で stage 識別子付与 |
-| d | cwd ずれ（`resolve_doc_structure.py` 相対パス前提）| `resolve_doc.py` / `resolve_rules.py` / `resolve_specs.py` | 低レベルが設定ファイルを見つけられず非 0 で返す | 非 0（低レベル透過） | 低レベル stderr をそのまま透過                                             |
-| e | `--optional` 対象の skipped 透過                  | `update_optional_dependent.py` / `update_optional_filtered.py` | 低レベル `update_version_files.py --optional` が対象ファイル不在時に exit 0 + skipped 表示を返す | 0（低レベル透過）      | 低レベル stdout/stderr の skipped メッセージをそのまま透過。ラッパーは判断せず透過のみ |
+| # | シナリオ                                            | 発生箇所                                                       | 検知手段                                                                                         | 期待終了コード                                 | stderr                                                                                                                                      |
+| - | --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| a | `plan.yaml` 不在                                    | `skip_all_unprocessed.py` 段階 1                               | `summarize_plan.py` が FileNotFoundError で非 0                                                  | 非 0（低レベル透過）                           | `stage=summarize_plan exit={code}` + 低レベル stderr                                                                                        |
+| b | `summarize_plan.py` stdout の JSON 破損             | `skip_all_unprocessed.py` 段階 2                               | ラッパー内で `json.loads` が失敗                                                                 | 非 0                                           | `stage=json_build exit=-1` + `JSONDecodeError` の msg                                                                                       |
+| c | 子 script 不在（低レベル CLI のパス不正など）       | 全ラッパー                                                     | `subprocess.run` が FileNotFoundError / 非 0 で返す                                              | 非 0（低レベル透過 / Python 例外は traceback） | 低レベル起動成功時は stderr を透過。ラッパー起動前の `FileNotFoundError` 時は Python traceback。複合ラッパーは §3.4 契約で stage 識別子付与 |
+| d | cwd ずれ（`resolve_doc_structure.py` 相対パス前提） | `resolve_doc.py` / `resolve_rules.py` / `resolve_specs.py`     | 低レベルが設定ファイルを見つけられず非 0 で返す                                                  | 非 0（低レベル透過）                           | 低レベル stderr をそのまま透過                                                                                                              |
+| e | `--optional` 対象の skipped 透過                    | `update_optional_dependent.py` / `update_optional_filtered.py` | 低レベル `update_version_files.py --optional` が対象ファイル不在時に exit 0 + skipped 表示を返す | 0（低レベル透過）                              | 低レベル stdout/stderr の skipped メッセージをそのまま透過。ラッパーは判断せず透過のみ                                                      |
 
 > (a)(b) は `skip_all_unprocessed.py` 固有の複合ラッパー段階で発生し、§3.4 stderr 契約（stage 識別子付与）を適用する。(c) は発生箇所により扱いが変わる: 複合ラッパー内で発生すれば §3.4 契約、単一ラッパー内で発生すれば §2.1.1 の透過原則のみ。(d)(e) は単一ラッパー固有で、§2.1.1 の透過原則のみで扱う。
 
@@ -624,24 +624,24 @@ tests/forge/
 
 ## 9. 非採用案
 
-| 案                                                              | 不採用理由                                                   |
-| --------------------------------------------------------------- | ------------------------------------------------------------ |
-| `plugins/forge/scripts/` に共通ラッパー層を新設                 | 要件 R7 で明示的に禁止（共有ラッパー層は作らない）。なお本設計で認める「複合ラッパー（例外層）」は SKILL 配下に閉じた別物であり、共通ラッパー層とは配置・スコープが異なる（§2.1.0 参照） |
-| 低レベル script に use-case 関数 API を追加して SKILL から import| 要件 R7 [MANDATORY] で禁止（低レベル変更禁止）               |
-| `update_version_files.py` ラッパーを `--optional` flag 付き 1 本| 要件 R3（flag 分岐構造を避ける）に違反                       |
-| ラッパーに新規ガード / エラーメッセージ / help を実装           | 要件 R7（subprocess 呼び出しのみ）に違反                     |
+| 案                                                                | 不採用理由                                                                                                                                                                               |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins/forge/scripts/` に共通ラッパー層を新設                   | 要件 R7 で明示的に禁止（共有ラッパー層は作らない）。なお本設計で認める「複合ラッパー（例外層）」は SKILL 配下に閉じた別物であり、共通ラッパー層とは配置・スコープが異なる（§2.1.0 参照） |
+| 低レベル script に use-case 関数 API を追加して SKILL から import | 要件 R7 [MANDATORY] で禁止（低レベル変更禁止）                                                                                                                                           |
+| `update_version_files.py` ラッパーを `--optional` flag 付き 1 本  | 要件 R3（flag 分岐構造を避ける）に違反                                                                                                                                                   |
+| ラッパーに新規ガード / エラーメッセージ / help を実装             | 要件 R7（subprocess 呼び出しのみ）に違反                                                                                                                                                 |
 
 ---
 
 ## 10. 完了条件（要件 §5 との対応）
 
-| 要件 §5 判定項目                                             | 本設計での達成方法                                       |
-| ------------------------------------------------------------ | -------------------------------------------------------- |
-| SKILL.md から低レベル CLI への `--` internal flag 露出       | §3 各節の After で flag を排除                           |
-| SKILL.md 内「〜を直接呼ぶな」型警告                          | 現状 0 件（棚卸し §2.4）。新規追加もしない               |
-| SKILL.md から呼ぶ script の引数形状                          | §3 各節の After はすべて位置引数のみ                     |
-| 同一場面で AI が選択する script 候補                         | 1 operation = 1 ラッパーで確定（§2.1 / §3.4 で分解済み） |
-| script の `--help` のみで使い方が完結する（開発者視点）      | 判定対象は `plugins/forge/scripts/` 配下の**低レベル script のみ**。wrapper は AI（SKILL.md）からしか呼ばれないため `--help` は不要（開発者は低レベル script を直接叩いて検証する） |
-| 誤用時の script エラーメッセージ                             | 判定対象は**低レベル script のみ**。wrapper は subprocess 透過のため、誤用時は低レベル側のエラーメッセージがそのまま運用者に届く（R4 は低レベル側に閉じたスコープ） |
-| review パイプライン 1 サイクル完走                           | §7.3 結合テストで確認                                    |
-| start-* 完走                                                 | §7.3 結合テストで確認                                    |
+| 要件 §5 判定項目                                        | 本設計での達成方法                                                                                                                                                                  |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SKILL.md から低レベル CLI への `--` internal flag 露出  | §3 各節の After で flag を排除                                                                                                                                                      |
+| SKILL.md 内「〜を直接呼ぶな」型警告                     | 現状 0 件（棚卸し §2.4）。新規追加もしない                                                                                                                                          |
+| SKILL.md から呼ぶ script の引数形状                     | §3 各節の After はすべて位置引数のみ                                                                                                                                                |
+| 同一場面で AI が選択する script 候補                    | 1 operation = 1 ラッパーで確定（§2.1 / §3.4 で分解済み）                                                                                                                            |
+| script の `--help` のみで使い方が完結する（開発者視点） | 判定対象は `plugins/forge/scripts/` 配下の**低レベル script のみ**。wrapper は AI（SKILL.md）からしか呼ばれないため `--help` は不要（開発者は低レベル script を直接叩いて検証する） |
+| 誤用時の script エラーメッセージ                        | 判定対象は**低レベル script のみ**。wrapper は subprocess 透過のため、誤用時は低レベル側のエラーメッセージがそのまま運用者に届く（R4 は低レベル側に閉じたスコープ）                 |
+| review パイプライン 1 サイクル完走                      | §7.3 結合テストで確認                                                                                                                                                               |
+| start-* 完走                                            | §7.3 結合テストで確認                                                                                                                                                               |

@@ -28,6 +28,7 @@ python3 .claude/skills/update-forge-toc/scripts/swap_doc_config.py --store
 ```
 
 JSON 出力の `status` を確認:
+
 - `ok` → Step 2 へ
 - `error` → 中断（restore 不要）
 
@@ -46,6 +47,7 @@ python3 .claude/skills/update-forge-toc/scripts/swap_doc_config.py --restore
 ```
 
 JSON 出力の `status` を確認:
+
 - `ok` → Step 4 へ
 - `error` → ユーザーに手動復元を案内: `.claude/skills/update-forge-toc/.backup/` にバックアップがある
 

@@ -162,11 +162,11 @@ specs:
 
 ### forge が使用するフィールド
 
-| フィールド | 用途 |
-|-----------|------|
-| `{category}.root_dirs` | ドキュメントディレクトリの一覧（glob パターン `*`, `**` 対応） |
-| `{category}.doc_types_map` | パス → doc_type のマッピング |
-| `{category}.patterns.exclude` | 除外パターン |
+| フィールド                    | 用途                                                           |
+| ----------------------------- | -------------------------------------------------------------- |
+| `{category}.root_dirs`        | ドキュメントディレクトリの一覧（glob パターン `*`, `**` 対応） |
+| `{category}.doc_types_map`    | パス → doc_type のマッピング                                   |
+| `{category}.patterns.exclude` | 除外パターン                                                   |
 
 ### バージョン管理
 

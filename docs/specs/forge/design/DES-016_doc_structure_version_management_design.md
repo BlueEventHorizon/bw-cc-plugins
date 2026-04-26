@@ -2,9 +2,9 @@
 
 ## メタデータ
 
-| 項目 | 値 |
-|------|-----|
-| 設計ID | DES-016 |
+| 項目   | 値         |
+| ------ | ---------- |
+| 設計ID | DES-016    |
 | 作成日 | 2026-03-14 |
 
 ---
@@ -30,9 +30,9 @@ YAML コメント行でバージョンを記録する:
 
 ### バージョン番号の意味
 
-| 変更種別 | バージョン | 例 |
-|---------|-----------|-----|
-| 破壊的変更（フィールド削除、構造変更） | メジャー X を上げる | 2.0 → 3.0 |
+| 変更種別                                   | バージョン          | 例        |
+| ------------------------------------------ | ------------------- | --------- |
+| 破壊的変更（フィールド削除、構造変更）     | メジャー X を上げる | 2.0 → 3.0 |
 | 後方互換の追加（新オプショナルフィールド） | マイナー Y を上げる | 2.0 → 2.1 |
 
 ## マイグレーション方式
@@ -143,6 +143,7 @@ rules:
 ```
 
 特徴:
+
 - `version: "1.0"` — YAML フィールドとしてバージョンを記録（v2+ はコメント行）
 - `{category}.{doc_type}.paths` — doc_type がキー、paths が配列
 - `description` フィールドあり（v2+ では廃止）
@@ -150,6 +151,7 @@ rules:
 ### migrate_v1_to_v2 の変換仕様
 
 v1 → v2 変換:
+
 1. `version: "1.0"` 行を削除
 2. `# doc_structure_version: 2.0` コメント行を先頭に追加
 3. `{category}.{doc_type}.paths` → `{category}.root_dirs` + `{category}.doc_types_map` に変換
@@ -159,6 +161,7 @@ v1 → v2 変換:
 ### migrate_v2_to_v3 の変換仕様
 
 v2 → v3 変換:
+
 1. `# doc_structure_version: 2.0` → `# doc_structure_version: 3.0` に置換
 2. `toc_file`, `checksums_file`, `work_dir` 行を削除
 3. `output:` セクション（`header_comment`, `metadata_name`）を削除
@@ -192,11 +195,11 @@ python3 migrate_doc_structure.py <file_path> --check
 
 ### 出力仕様
 
-| モード | stdout | 終了コード |
-|--------|--------|-----------|
-| 通常 | マイグレーション後の YAML テキスト | 0: 成功, 1: エラー |
+| モード      | stdout                                 | 終了コード               |
+| ----------- | -------------------------------------- | ------------------------ |
+| 通常        | マイグレーション後の YAML テキスト     | 0: 成功, 1: エラー       |
 | `--dry-run` | 適用されるマイグレーション一覧（JSON） | 0: 変更あり, 2: 変更なし |
-| `--check` | バージョン情報（JSON） | 0 |
+| `--check`   | バージョン情報（JSON）                 | 0                        |
 
 ```bash
 # --check の出力例
@@ -241,12 +244,12 @@ NFR-01「元データを書き換えない」に従い、スクリプトは stdo
 
 マイグレーション時に以下のユーザー設定を保持する:
 
-| 設定 | 保持条件 |
-|------|---------|
-| `root_dirs` | 非空の場合 |
-| `doc_types_map` | 非空の場合 |
+| 設定                   | 保持条件   |
+| ---------------------- | ---------- |
+| `root_dirs`            | 非空の場合 |
+| `doc_types_map`        | 非空の場合 |
 | `patterns.target_glob` | 非空の場合 |
-| `patterns.exclude` | 非空の場合 |
+| `patterns.exclude`     | 非空の場合 |
 
 > **Note**: Doc Advisor v5.0 で `output.*`, `common.*`, `toc_file`, `checksums_file`, `work_dir` は `.doc_structure.yaml` から除去され、Doc Advisor のコードデフォルト（`toc_utils.py`）で管理される。マイグレーション時にこれらのフィールドが存在しても無視される（後方互換性あり）。
 
@@ -269,18 +272,18 @@ major = get_major_version(content)  # 3
 
 ## マイグレーション履歴
 
-| バージョン | 変更内容 |
-|-----------|---------|
-| 1.0 | 旧形式（doc_type-centric: `version: "1.0"` YAML フィールド） |
-| 2.0 | config.yaml 互換フォーマット採用。バージョンマーカーを `doc_structure_version:` コメント行に変更 |
-| 3.0 | Doc Advisor v5.0 対応。内部フィールド（toc_file, checksums_file, work_dir, output.*, common.*）を除去。文書構造フィールドのみに簡素化 |
+| バージョン | 変更内容                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0        | 旧形式（doc_type-centric: `version: "1.0"` YAML フィールド）                                                                          |
+| 2.0        | config.yaml 互換フォーマット採用。バージョンマーカーを `doc_structure_version:` コメント行に変更                                      |
+| 3.0        | Doc Advisor v5.0 対応。内部フィールド（toc_file, checksums_file, work_dir, output._, common._）を除去。文書構造フィールドのみに簡素化 |
 
 ## 関連ファイル
 
-| ファイル | 役割 |
-|---------|------|
-| `plugins/forge/scripts/migrate_doc_structure.py` | マイグレーションスクリプト（COMMON-REQ-001 準拠） |
+| ファイル                                                              | 役割                                                 |
+| --------------------------------------------------------------------- | ---------------------------------------------------- |
+| `plugins/forge/scripts/migrate_doc_structure.py`                      | マイグレーションスクリプト（COMMON-REQ-001 準拠）    |
 | `plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py` | バージョン検出（`get_version`, `get_major_version`） |
-| `plugins/forge/skills/setup-doc-structure/SKILL.md` | マイグレーション呼び出し元（Step 1） |
-| `plugins/forge/docs/doc_structure_format.md` | フォーマット仕様 |
-| `docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md` | マイグレーション要件定義 |
+| `plugins/forge/skills/setup-doc-structure/SKILL.md`                   | マイグレーション呼び出し元（Step 1）                 |
+| `plugins/forge/docs/doc_structure_format.md`                          | フォーマット仕様                                     |
+| `docs/specs/common/requirement/COMMON-REQ-001_versioned_migration.md` | マイグレーション要件定義                             |

@@ -13,11 +13,11 @@ start-requirements → start-design → start-plan → start-implement
 
 3 つのスキルは共通のコンテキスト収集パターンを採用する。文書作成前に、並列 Agent が以下を収集する:
 
-| Agent | 収集対象 | 出力 |
-|-------|---------|------|
+| Agent       | 収集対象                     | 出力              |
+| ----------- | ---------------------------- | ----------------- |
 | specs agent | 仕様書（要件定義書・設計書） | `refs/specs.yaml` |
-| rules agent | プロジェクトルール文書 | `refs/rules.yaml` |
-| code agent | 既存実装・参照コード | `refs/code.yaml` |
+| rules agent | プロジェクトルール文書       | `refs/rules.yaml` |
+| code agent  | 既存実装・参照コード         | `refs/code.yaml`  |
 
 ### 完了処理
 
@@ -37,20 +37,20 @@ start-requirements → start-design → start-plan → start-implement
 /forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
 ```
 
-| 引数 | 説明 |
-|------|------|
+| 引数      | 説明                             |
+| --------- | -------------------------------- |
 | `feature` | Feature 名（省略時は対話で確定） |
-| `--mode` | モード指定（省略時は選択肢提示） |
-| `--new` | 新規アプリ |
-| `--add` | 既存アプリへの機能追加 |
+| `--mode`  | モード指定（省略時は選択肢提示） |
+| `--new`   | 新規アプリ                       |
+| `--add`   | 既存アプリへの機能追加           |
 
 ### モード選択ガイド
 
-| モード | 入力源 | いつ使うか | 前提条件 |
-|--------|--------|-----------|---------|
-| `interactive` | ユーザーとの対話 | ゼロから要件を定義したいとき | `.doc_structure.yaml` |
-| `reverse-engineering` | 既存ソースコード | 既存コードを文書化したいとき | ソースコード |
-| `from-figma` | Figma デザインファイル | デザインから要件を抽出したいとき | Figma MCP 対応環境 |
+| モード                | 入力源                 | いつ使うか                       | 前提条件              |
+| --------------------- | ---------------------- | -------------------------------- | --------------------- |
+| `interactive`         | ユーザーとの対話       | ゼロから要件を定義したいとき     | `.doc_structure.yaml` |
+| `reverse-engineering` | 既存ソースコード       | 既存コードを文書化したいとき     | ソースコード          |
+| `from-figma`          | Figma デザインファイル | デザインから要件を抽出したいとき | Figma MCP 対応環境    |
 
 ### 使用例
 
@@ -77,12 +77,12 @@ start-requirements → start-design → start-plan → start-implement
 
 `specs/{feature}/requirements/` に要件定義書（Markdown）を生成。ID 体系:
 
-| プレフィックス | 種別 |
-|--------------|------|
-| APP-xxx | アプリ概要・全体方針 |
-| SCR-xxx | 画面仕様 |
-| FNC-xxx | 機能仕様 |
-| NFR-xxx | 非機能要件 |
+| プレフィックス | 種別                 |
+| -------------- | -------------------- |
+| APP-xxx        | アプリ概要・全体方針 |
+| SCR-xxx        | 画面仕様             |
+| FNC-xxx        | 機能仕様             |
+| NFR-xxx        | 非機能要件           |
 
 ### 参考ドキュメント
 
@@ -100,8 +100,8 @@ start-requirements → start-design → start-plan → start-implement
 /forge:start-design [feature]
 ```
 
-| 引数 | 説明 |
-|------|------|
+| 引数      | 説明                             |
+| --------- | -------------------------------- |
 | `feature` | Feature 名（省略時は対話で確定） |
 
 ### いつ使うか
@@ -146,8 +146,8 @@ start-requirements → start-design → start-plan → start-implement
 /forge:start-plan [feature]
 ```
 
-| 引数 | 説明 |
-|------|------|
+| 引数      | 説明                             |
+| --------- | -------------------------------- |
 | `feature` | Feature 名（省略時は対話で確定） |
 
 ### いつ使うか
@@ -167,11 +167,11 @@ start-requirements → start-design → start-plan → start-implement
 
 ### タスク粒度の基準
 
-| 基準 | 要件 |
-|------|------|
-| 実行単位 | 1 Agent が単独で実行・完結できる粒度 |
-| 内容量 | やるべき内容 5〜10 項目程度 |
-| 完結性 | タスク完了時にビルド・テスト成功が条件 |
+| 基準       | 要件                                       |
+| ---------- | ------------------------------------------ |
+| 実行単位   | 1 Agent が単独で実行・完結できる粒度       |
+| 内容量     | やるべき内容 5〜10 項目程度                |
+| 完結性     | タスク完了時にビルド・テスト成功が条件     |
 | ファイル数 | 1 ファイル or 密接に関連する 2〜3 ファイル |
 
 ### 計画書の主要フィールド
@@ -180,18 +180,18 @@ start-requirements → start-design → start-plan → start-implement
 tasks:
   - task_id: TASK-001
     title: タスク名
-    priority: 90              # 高:70-99, 中:40-69, 低:1-39
-    status: pending           # pending → in_progress → completed
+    priority: 90 # 高:70-99, 中:40-69, 低:1-39
+    status: pending # pending → in_progress → completed
     design_id: DES-001
-    depends_on: []            # 依存タスク ID
-    group_id: null            # グループ化（ビルド確認をまとめる）
+    depends_on: [] # 依存タスク ID
+    group_id: null # グループ化（ビルド確認をまとめる）
     description:
       - やるべきこと 1
       - やるべきこと 2
     required_reading:
       - path/to/design.md
 
-requirements_traceability:    # 要件 → 設計 → タスクの追跡
+requirements_traceability: # 要件 → 設計 → タスクの追跡
   - requirement_id: REQ-001
     design_id: DES-001
     status: pending

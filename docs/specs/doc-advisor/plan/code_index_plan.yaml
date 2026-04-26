@@ -29,7 +29,6 @@ design_traceability:
 # === タスク一覧 ===
 tasks:
   # --- 基盤（依存なし） ---
-
   - task_id: TASK-CI-001
     title: ImportGraph データ構造 (graph.py + テスト)
     priority: 99

@@ -10,11 +10,11 @@ AI-searchable document index (ToC) generator for Claude Code. Extracts AI metada
 /doc-advisor:query-rules [--toc|--index] task description
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `--toc` | Force ToC (keyword) search only |
-| `--index` | Force Embedding (semantic) search only |
-| (none) | Hybrid auto-select (default) |
+| Argument           | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `--toc`            | Force ToC (keyword) search only                             |
+| `--index`          | Force Embedding (semantic) search only                      |
+| (none)             | Hybrid auto-select (default)                                |
 | `task description` | Description of the task to find relevant rule documents for |
 
 Search document indexes to identify rule documents (coding standards, architecture rules, workflow guides) relevant to a task. Default hybrid mode combines ToC keyword search and Embedding semantic search, returning the union of both results.
@@ -25,11 +25,11 @@ Search document indexes to identify rule documents (coding standards, architectu
 /doc-advisor:query-specs [--toc|--index] task description
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `--toc` | Force ToC (keyword) search only |
-| `--index` | Force Embedding (semantic) search only |
-| (none) | Hybrid auto-select (default) |
+| Argument           | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `--toc`            | Force ToC (keyword) search only                             |
+| `--index`          | Force Embedding (semantic) search only                      |
+| (none)             | Hybrid auto-select (default)                                |
 | `task description` | Description of the task to find relevant spec documents for |
 
 Search document indexes to identify specification documents (requirements, design docs) relevant to a task. Default hybrid mode combines ToC keyword search and Embedding semantic search.
@@ -40,9 +40,9 @@ Search document indexes to identify specification documents (requirements, desig
 /doc-advisor:create-rules-toc [--full]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| (none) | Incremental update (hash-based) or resume processing |
+| Argument | Description                                           |
+| -------- | ----------------------------------------------------- |
+| (none)   | Incremental update (hash-based) or resume processing  |
 | `--full` | Full file scan (for initial creation or regeneration) |
 
 Update the rules search index (ToC) after modifying, creating, or deleting rule documents.
@@ -53,9 +53,9 @@ Update the rules search index (ToC) after modifying, creating, or deleting rule 
 /doc-advisor:create-specs-toc [--full]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| (none) | Incremental update (hash-based) or resume processing |
+| Argument | Description                                           |
+| -------- | ----------------------------------------------------- |
+| (none)   | Incremental update (hash-based) or resume processing  |
 | `--full` | Full file scan (for initial creation or regeneration) |
 
 Update the specs search index (ToC) after modifying, creating, or deleting spec documents.

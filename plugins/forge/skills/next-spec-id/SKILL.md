@@ -67,8 +67,14 @@ python3 "$SCRIPT" --doc-structure /path/to/.doc_structure.yaml SCR
   "branches_scanned": 7,
   "ids_found": 17,
   "duplicates": [
-    {"id": "SCR-013", "branches": ["feature/edit_pickup", "origin/feature/print_letter"]},
-    {"id": "SCR-014", "branches": ["feature/edit_pickup", "origin/feature/print_letter"]}
+    {
+      "id": "SCR-013",
+      "branches": ["feature/edit_pickup", "origin/feature/print_letter"]
+    },
+    {
+      "id": "SCR-014",
+      "branches": ["feature/edit_pickup", "origin/feature/print_letter"]
+    }
   ]
 }
 ```

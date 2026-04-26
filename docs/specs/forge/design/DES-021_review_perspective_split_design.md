@@ -2,9 +2,9 @@
 
 ## メタデータ
 
-| 項目 | 値 |
-|------|-----|
-| 設計ID | DES-021 |
+| 項目   | 値         |
+| ------ | ---------- |
+| 設計ID | DES-021    |
 | 作成日 | 2026-03-20 |
 
 ---
@@ -91,12 +91,12 @@ perspectives:
 
 #### perspectives オブジェクトのスキーマ
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `name` | string | Yes | perspective の一意識別子（例: `logic`, `resilience`） |
-| `criteria_path` | string | Yes | レビュー観点ファイルのパス（プラグインルートからの相対パス） |
-| `section` | string \| null | No | criteria ファイル内の対象セクション名。`null` の場合はファイル全体を使用する |
-| `output_path` | string | Yes | レビュー結果の出力先（session_dir からの相対パス） |
+| フィールド      | 型             | 必須 | 説明                                                                         |
+| --------------- | -------------- | ---- | ---------------------------------------------------------------------------- |
+| `name`          | string         | Yes  | perspective の一意識別子（例: `logic`, `resilience`）                        |
+| `criteria_path` | string         | Yes  | レビュー観点ファイルのパス（プラグインルートからの相対パス）                 |
+| `section`       | string \| null | No   | criteria ファイル内の対象セクション名。`null` の場合はファイル全体を使用する |
+| `output_path`   | string         | Yes  | レビュー結果の出力先（session_dir からの相対パス）                           |
 
 #### 検証要件
 
@@ -111,7 +111,7 @@ perspectives:
   - name: logic
     criteria_path: "review/docs/review_criteria_code.md"
     section: "正確性 (Logic)"
-    output_path: review_logic.md   # session_dir からの相対パス
+    output_path: review_logic.md # session_dir からの相対パス
   - name: resilience
     criteria_path: "review/docs/review_criteria_code.md"
     section: "堅牢性 (Resilience)"
@@ -128,16 +128,16 @@ review オーケストレーターが criteria ファイルを読み、`## Persp
 
 reviewer は1回の呼び出しで **1 perspective のみ処理する**。オーケストレーターが perspectives の数だけ reviewer を並列起動する。
 
-| 入力 | 現行 | 変更後 |
-|------|------|--------|
-| session_dir | ✅ | ✅ |
-| 種別 | ✅ | ✅ |
-| エンジン | ✅ | ✅ |
-| review_criteria_path | ✅ | ❌ 廃止 |
-| perspective_name | — | ✅ 新規（例: `logic`） |
-| criteria_path | — | ✅ 新規（例: `review/docs/review_criteria_code.md`） |
-| section | — | ✅ 新規（例: `正確性 (Logic)`） |
-| output_path | — | ✅ 新規（例: `review_logic.md`） |
+| 入力                 | 現行 | 変更後                                               |
+| -------------------- | ---- | ---------------------------------------------------- |
+| session_dir          | ✅   | ✅                                                   |
+| 種別                 | ✅   | ✅                                                   |
+| エンジン             | ✅   | ✅                                                   |
+| review_criteria_path | ✅   | ❌ 廃止                                              |
+| perspective_name     | —    | ✅ 新規（例: `logic`）                               |
+| criteria_path        | —    | ✅ 新規（例: `review/docs/review_criteria_code.md`） |
+| section              | —    | ✅ 新規（例: `正確性 (Logic)`）                      |
+| output_path          | —    | ✅ 新規（例: `review_logic.md`）                     |
 
 reviewer は `criteria_path` + `section` を読み、該当観点に従ってレビュー。結果は `{session_dir}/{output_path}` に Write する。
 
@@ -190,21 +190,21 @@ evaluation.yaml は廃止し、その内容（recommendation, auto_fixable, reas
 
 evaluation.yaml 廃止に伴い、`plan.yaml` の `items[]` に以下のフィールドを追加する:
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|------|------|------|
-| `recommendation` | string | 条件 | evaluator が付与。`fix` / `skip` / `needs_review`。evaluator 実行前は未設定 |
-| `auto_fixable` | boolean | 条件 | `recommendation: fix` の場合のみ。修正が一意・局所的・機械的か |
-| `reason` | string | 条件 | evaluator の判定理由。`recommendation` 設定時に必須 |
-| `perspective` | string | 任意 | 指摘元の perspective 名。extract_review_findings.py が付与 |
-| `perspectives` | string[] | 任意 | 重複統合時に複数 perspective が同一箇所を指摘した場合、統合元の perspective 名を全て記録 |
+| フィールド       | 型       | 必須 | 説明                                                                                     |
+| ---------------- | -------- | ---- | ---------------------------------------------------------------------------------------- |
+| `recommendation` | string   | 条件 | evaluator が付与。`fix` / `skip` / `needs_review`。evaluator 実行前は未設定              |
+| `auto_fixable`   | boolean  | 条件 | `recommendation: fix` の場合のみ。修正が一意・局所的・機械的か                           |
+| `reason`         | string   | 条件 | evaluator の判定理由。`recommendation` 設定時に必須                                      |
+| `perspective`    | string   | 任意 | 指摘元の perspective 名。extract_review_findings.py が付与                               |
+| `perspectives`   | string[] | 任意 | 重複統合時に複数 perspective が同一箇所を指摘した場合、統合元の perspective 名を全て記録 |
 
 **読み取り契約**:
 
-| スキル | 読み取るフィールド | 用途 |
-|--------|-------------------|------|
-| present-findings | `recommendation`, `auto_fixable`, `reason` | AI推奨の表示、✅マーク判定 |
-| fixer | `recommendation`, `auto_fixable` | 修正対象の判定（`fix` かつ `auto_fixable: true` → 自動修正対象） |
-| review オーケストレーター | `recommendation` | `should_continue` 判定（`fix` が0件なら終了） |
+| スキル                    | 読み取るフィールド                         | 用途                                                             |
+| ------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
+| present-findings          | `recommendation`, `auto_fixable`, `reason` | AI推奨の表示、✅マーク判定                                       |
+| fixer                     | `recommendation`, `auto_fixable`           | 修正対象の判定（`fix` かつ `auto_fixable: true` → 自動修正対象） |
+| review オーケストレーター | `recommendation`                           | `should_continue` 判定（`fix` が0件なら終了）                    |
 
 **移行**: session_format.md の plan.yaml スキーマにも同様のフィールドを追加する（実装順序 §7 参照）。
 
@@ -271,8 +271,20 @@ reviewer と同様に、evaluator も perspective ごとに並列起動する。
 {
   "perspective": "logic",
   "updates": [
-    {"id": 1, "status": "pending", "recommendation": "fix", "auto_fixable": true, "reason": "..."},
-    {"id": 2, "status": "skipped", "skip_reason": "...", "recommendation": "skip", "reason": "..."}
+    {
+      "id": 1,
+      "status": "pending",
+      "recommendation": "fix",
+      "auto_fixable": true,
+      "reason": "..."
+    },
+    {
+      "id": 2,
+      "status": "skipped",
+      "skip_reason": "...",
+      "recommendation": "skip",
+      "reason": "..."
+    }
   ]
 }
 ```
@@ -321,13 +333,13 @@ python3 extract_review_findings.py <session_dir>
 
 責務の分離:
 
-| コンポーネント | 責務 |
-|--------------|------|
-| review_criteria ファイル | `## Perspective:` セクションで観点の分割を宣言する |
-| review オーケストレーター | criteria ファイルを読み、perspectives 配列を構成し refs.yaml に書き出す |
-| reviewer | refs.yaml の perspectives を読み、指定された観点に従ってレビューを実行する |
-| evaluator | perspective ごとに並列起動。各 `review_{perspective}.md` の指摘を5観点で個別吟味する（現行と同じ責務、入力が perspective 単位に変わるのみ） |
-| extract_review_findings.py | 吟味済みの複数 `review_*.md` を統合し、重複除去・重大度差異フラグ・review.md + plan.yaml を生成する |
+| コンポーネント             | 責務                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| review_criteria ファイル   | `## Perspective:` セクションで観点の分割を宣言する                                                                                          |
+| review オーケストレーター  | criteria ファイルを読み、perspectives 配列を構成し refs.yaml に書き出す                                                                     |
+| reviewer                   | refs.yaml の perspectives を読み、指定された観点に従ってレビューを実行する                                                                  |
+| evaluator                  | perspective ごとに並列起動。各 `review_{perspective}.md` の指摘を5観点で個別吟味する（現行と同じ責務、入力が perspective 単位に変わるのみ） |
+| extract_review_findings.py | 吟味済みの複数 `review_*.md` を統合し、重複除去・重大度差異フラグ・review.md + plan.yaml を生成する                                         |
 
 ---
 
@@ -335,34 +347,34 @@ python3 extract_review_findings.py <session_dir>
 
 ### requirement（要件定義書）— 3 perspectives
 
-| Perspective | 観点 |
-|-------------|------|
-| **完全性 (Completeness)** | 必須要件の網羅性、非機能要件の不足（性能・運用・セキュリティ等）、例外系・異常系の考慮漏れ |
-| **整合性 (Consistency)** | 要件間の矛盾・競合、用語定義の不統一、ビジネスゴールとの追跡性（トレーサビリティ） |
-| **検証可能性 (Verifiability)** | 曖昧な表現の排除、定量的な受け入れ基準、技術的制約との矛盾、優先度・スコープの明確さ |
+| Perspective                    | 観点                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| **完全性 (Completeness)**      | 必須要件の網羅性、非機能要件の不足（性能・運用・セキュリティ等）、例外系・異常系の考慮漏れ |
+| **整合性 (Consistency)**       | 要件間の矛盾・競合、用語定義の不統一、ビジネスゴールとの追跡性（トレーサビリティ）         |
+| **検証可能性 (Verifiability)** | 曖昧な表現の排除、定量的な受け入れ基準、技術的制約との矛盾、優先度・スコープの明確さ       |
 
 ### design（設計書）— 3 perspectives
 
-| Perspective | 観点 |
-|-------------|------|
-| **整合性 (Alignment)** | 要件定義書との不整合、外部システム・既存コンポーネントとのインターフェース、データフローの矛盾・欠落、設計判断の根拠不足 |
-| **構造・品質 (Architecture)** | 責務分割（疎結合・高凝集）、アーキテクチャ原則の遵守、拡張性・保守性の問題 |
-| **堅牢性 (Resilience)** | セキュリティ上の問題、エラーハンドリングの不足、可観測性（ログ・監視・追跡可能性） |
+| Perspective                   | 観点                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **整合性 (Alignment)**        | 要件定義書との不整合、外部システム・既存コンポーネントとのインターフェース、データフローの矛盾・欠落、設計判断の根拠不足 |
+| **構造・品質 (Architecture)** | 責務分割（疎結合・高凝集）、アーキテクチャ原則の遵守、拡張性・保守性の問題                                               |
+| **堅牢性 (Resilience)**       | セキュリティ上の問題、エラーハンドリングの不足、可観測性（ログ・監視・追跡可能性）                                       |
 
 ### plan（計画書）— 2 perspectives
 
-| Perspective | 観点 |
-|-------------|------|
-| **整合性 (Alignment)** | 要件・設計との不整合、必須タスクの網羅、タスク間の依存関係の矛盾 |
+| Perspective                      | 観点                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| **整合性 (Alignment)**           | 要件・設計との不整合、必須タスクの網羅、タスク間の依存関係の矛盾                           |
 | **現実性・リスク (Feasibility)** | タスク粒度の妥当性、ボトルネックの特定、リスク対策の妥当性、受け入れ基準の明確さ、優先順位 |
 
 ### code（コード）— 3 perspectives
 
-| Perspective | 観点 |
-|-------------|------|
-| **正確性 (Logic)** | ロジックエラー、エッジケース、境界値、データ損失リスク、設計書・要件定義書との不整合 |
-| **堅牢性 (Resilience)** | セキュリティ脆弱性（インジェクション、認証不備等）、エラーハンドリングの不足、リソース管理、入力バリデーション |
-| **保守性 (Maintainability)** | コーディング規約遵守、可読性、テスト可能性（DI 等の構造）、テスト充足度、重複、パフォーマンス問題 |
+| Perspective                  | 観点                                                                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **正確性 (Logic)**           | ロジックエラー、エッジケース、境界値、データ損失リスク、設計書・要件定義書との不整合                           |
+| **堅牢性 (Resilience)**      | セキュリティ脆弱性（インジェクション、認証不備等）、エラーハンドリングの不足、リソース管理、入力バリデーション |
+| **保守性 (Maintainability)** | コーディング規約遵守、可読性、テスト可能性（DI 等の構造）、テスト充足度、重複、パフォーマンス問題              |
 
 ### generic（汎用文書）— perspectives 分割なし（単一 agent）
 
@@ -370,10 +382,10 @@ python3 extract_review_findings.py <session_dir>
 `review_criteria_generic.md` は `## Perspective:` セクションを持たず、全観点を一括記載する。
 refs.yaml の perspectives には単一要素を格納する: ファイル全体を観点とする perspective（`section: null`）を設定し、他の種別と同じスキーマを維持する。
 
-| 観点 |
-|------|
+| 観点                                                                             |
+| -------------------------------------------------------------------------------- |
 | 事実の誤り、論理矛盾、参照切れ（リンク・ファイルパス・コマンド）、必須情報の欠落 |
-| 論理構成の一貫性、用語の不統一、記述の重複、冗長性の排除 |
+| 論理構成の一貫性、用語の不統一、記述の重複、冗長性の排除                         |
 
 ```yaml
 # generic の perspectives 例
@@ -388,22 +400,22 @@ perspectives:
 
 ## 7. 影響範囲
 
-| ファイル | 変更内容 |
-|---------|---------|
-| `review/SKILL.md` | perspectives 収集・構成追加、`review_criteria_path` 廃止 |
-| `reviewer/SKILL.md` | `review_criteria_path` 廃止、perspectives 対応 |
-| `evaluator/SKILL.md` | `review_criteria_path` 廃止、perspective ごとの並列起動対応（入力が review_{perspective}.md に変更）、evaluation.yaml 廃止・plan.yaml への統合 |
-| `fixer/SKILL.md` | 単独呼び出し時の参考文書フォールバックパスを更新（通常フローでは影響なし） |
-| `session_format.md` | refs.yaml に perspectives 追加、`review_criteria_path` 削除、evaluation.yaml 廃止・plan.yaml に統合、plan.yaml items に perspective フィールド（任意）追加 |
-| `write_evaluation.py` | 廃止。evaluator は plan.yaml を直接更新する |
-| `extract_review_findings.py` | 複数 review_*.md のマージ対応 |
-| `write_refs.py` | `review_criteria_path` を廃止し `perspectives` を必須フィールドに変更 |
-| `test_write_evaluation.py` | 廃止（write_evaluation.py 廃止に伴い削除） |
-| `test_extract_review_findings.py` | 更新（multi-file merge / partial-failure / all-failure / generic 対応テスト追加） |
-| `test_write_refs.py` | 更新（perspectives 必須フィールド対応） |
-| `README.md`, `README_ja.md` | パス参照更新 |
-| `CLAUDE.md` | パス参照更新 |
-| `DES-015_review_workflow_design.md` | データフロー図更新 |
+| ファイル                            | 変更内容                                                                                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `review/SKILL.md`                   | perspectives 収集・構成追加、`review_criteria_path` 廃止                                                                                                   |
+| `reviewer/SKILL.md`                 | `review_criteria_path` 廃止、perspectives 対応                                                                                                             |
+| `evaluator/SKILL.md`                | `review_criteria_path` 廃止、perspective ごとの並列起動対応（入力が review_{perspective}.md に変更）、evaluation.yaml 廃止・plan.yaml への統合             |
+| `fixer/SKILL.md`                    | 単独呼び出し時の参考文書フォールバックパスを更新（通常フローでは影響なし）                                                                                 |
+| `session_format.md`                 | refs.yaml に perspectives 追加、`review_criteria_path` 削除、evaluation.yaml 廃止・plan.yaml に統合、plan.yaml items に perspective フィールド（任意）追加 |
+| `write_evaluation.py`               | 廃止。evaluator は plan.yaml を直接更新する                                                                                                                |
+| `extract_review_findings.py`        | 複数 review_*.md のマージ対応                                                                                                                              |
+| `write_refs.py`                     | `review_criteria_path` を廃止し `perspectives` を必須フィールドに変更                                                                                      |
+| `test_write_evaluation.py`          | 廃止（write_evaluation.py 廃止に伴い削除）                                                                                                                 |
+| `test_extract_review_findings.py`   | 更新（multi-file merge / partial-failure / all-failure / generic 対応テスト追加）                                                                          |
+| `test_write_refs.py`                | 更新（perspectives 必須フィールド対応）                                                                                                                    |
+| `README.md`, `README_ja.md`         | パス参照更新                                                                                                                                               |
+| `CLAUDE.md`                         | パス参照更新                                                                                                                                               |
+| `DES-015_review_workflow_design.md` | データフロー図更新                                                                                                                                         |
 
 ### 実装順序
 
@@ -414,4 +426,3 @@ perspectives:
 3. SKILL.md 群 — reviewer → evaluator → review → fixer → present-findings の順で更新
 4. スクリプト — `write_refs.py`（perspectives 対応）→ `extract_review_findings.py`（multi-file 対応）→ `write_evaluation.py` 廃止
 5. テスト — 新規追加 → 既存更新 → 廃止テスト削除
-

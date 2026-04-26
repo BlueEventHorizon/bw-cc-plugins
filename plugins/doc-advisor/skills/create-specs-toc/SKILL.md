@@ -38,6 +38,7 @@ Generate/update specs ToC (Table of Contents) for AI-searchable document index.
 ## Error Handling
 
 If a script outputs `{"status": "config_required", ...}`, use AskUserQuestion to ask the user:
+
 - "Document directories are not configured. Run /forge:setup-doc-structure to configure?"
   - Yes → invoke `/forge:setup-doc-structure`, then restart this skill
   - No → abort

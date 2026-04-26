@@ -8,10 +8,10 @@ Select tasks from a plan, then execute context gathering → implementation → 
 /forge:start-implement [feature] [--task TASK-ID[,TASK-ID,...]]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `feature` | Feature name (omit for interactive) |
-| `--task` | Task ID(s), comma-separated (omit for priority-based auto-selection) |
+| Argument  | Description                                                          |
+| --------- | -------------------------------------------------------------------- |
+| `feature` | Feature name (omit for interactive)                                  |
+| `--task`  | Task ID(s), comma-separated (omit for priority-based auto-selection) |
 
 ### Usage Examples
 
@@ -52,10 +52,10 @@ flowchart TD
 
 ### Phase 2: Task Selection
 
-| Method | Behavior |
-|--------|----------|
-| No `--task` | Auto-select 1 task from `pending` by priority |
-| `--task TASK-001` | Execute specified task only |
+| Method                     | Behavior                                                                 |
+| -------------------------- | ------------------------------------------------------------------------ |
+| No `--task`                | Auto-select 1 task from `pending` by priority                            |
+| `--task TASK-001`          | Execute specified task only                                              |
 | `--task TASK-001,TASK-003` | Execute all specified tasks in parallel (requires no inter-dependencies) |
 
 #### Dependency Check
@@ -68,12 +68,12 @@ flowchart TD
 
 Parallel agents collect information needed for implementation:
 
-| Target | Purpose |
-|--------|---------|
-| Design docs (by `design_id`) | What to implement |
-| Requirements (referenced by design) | Why this design |
+| Target                                | Purpose                      |
+| ------------------------------------- | ---------------------------- |
+| Design docs (by `design_id`)          | What to implement            |
+| Requirements (referenced by design)   | Why this design              |
 | Implementation rules (`/query-rules`) | Project-specific conventions |
-| Existing code | Reference implementations |
+| Existing code                         | Reference implementations    |
 
 ### Phase 4: Implementation
 
@@ -112,8 +112,8 @@ Runs `/forge:review code --auto` on the implementation diff. Fix-induced issues 
 
 ### Error Handling
 
-| Situation | Response |
-|-----------|----------|
-| Executor failure (build error, etc.) | Retry (max 1) → manual fix → skip |
-| Dependency not completed | Error. Complete the dependency first |
-| Plan not found | Suggest running `/forge:start-plan` |
+| Situation                            | Response                             |
+| ------------------------------------ | ------------------------------------ |
+| Executor failure (build error, etc.) | Retry (max 1) → manual fix → skip    |
+| Dependency not completed             | Error. Complete the dependency first |
+| Plan not found                       | Suggest running `/forge:start-plan`  |

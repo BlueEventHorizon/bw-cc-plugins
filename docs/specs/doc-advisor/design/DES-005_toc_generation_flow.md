@@ -17,9 +17,9 @@
 
 ### コンポーネント一覧
 
-| コンポーネント     | 役割                  | 実装                                                      |
-| ------------------ | --------------------- | --------------------------------------------------------- |
-| Orchestrator       | 全体フロー制御        | `skills/create-*-toc/SKILL.md`                            |
+| コンポーネント     | 役割                  | 実装                                                        |
+| ------------------ | --------------------- | ----------------------------------------------------------- |
+| Orchestrator       | 全体フロー制御        | `skills/create-*-toc/SKILL.md`                              |
 | Subagent           | 個別ファイル処理      | `agents/toc-updater.md`（`--category rules\|specs` で切替） |
 | Checksum Generator | ハッシュ計算          | `create_checksums.py --category rules\|specs`               |
 | Pending Generator  | pending YAML 生成     | `create_pending_yaml.py --category rules\|specs`            |
@@ -142,11 +142,11 @@ flowchart TD
 
 ### 現行からの変更点
 
-| 項目      | 現行                                        | 改善後                                                |
-| --------- | ------------------------------------------- | ----------------------------------------------------- |
-| Case 1    | `.doc_structure.yaml` 存在 + root_dirs あり | exit 0（設定 OK）                                     |
-| Case 2    | `.doc_structure.yaml` 存在 + root_dirs なし | 警告出力（/forge:setup-doc-structure の実行を促す）                |
-| Case 3    | `.doc_structure.yaml` 不存在                | 警告出力（/forge:setup-doc-structure の実行を促す）                |
+| 項目   | 現行                                        | 改善後                                              |
+| ------ | ------------------------------------------- | --------------------------------------------------- |
+| Case 1 | `.doc_structure.yaml` 存在 + root_dirs あり | exit 0（設定 OK）                                   |
+| Case 2 | `.doc_structure.yaml` 存在 + root_dirs なし | 警告出力（/forge:setup-doc-structure の実行を促す） |
+| Case 3 | `.doc_structure.yaml` 不存在                | 警告出力（/forge:setup-doc-structure の実行を促す） |
 
 ### 判定条件テーブル
 
@@ -570,10 +570,10 @@ flowchart TD
 
 ### コンポーネントの使い分け
 
-| コンポーネント                         | 種別                        | 根拠                                                                                                   |
-| -------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `query-rules`, `query-specs`           | **Skill** (`context: fork`) | ユーザー呼び出し (`/query-*`)、Claude 自動トリガー、隔離実行が必要                                     |
-| `create-rules-toc`, `create-specs-toc` | **Skill** (fork なし)       | ユーザー呼び出し (`/create-*-toc`) が必要。agent を並列起動するため fork 不可                          |
+| コンポーネント                         | 種別                        | 根拠                                                                                                     |
+| -------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `query-rules`, `query-specs`           | **Skill** (`context: fork`) | ユーザー呼び出し (`/query-*`)、Claude 自動トリガー、隔離実行が必要                                       |
+| `create-rules-toc`, `create-specs-toc` | **Skill** (fork なし)       | ユーザー呼び出し (`/create-*-toc`) が必要。agent を並列起動するため fork 不可                            |
 | `toc-updater`                          | **Agent**                   | ツール制限 (`Read, Bash` のみ)、並列起動、system prompt の確実性が必要。`--category rules\|specs` で分岐 |
 
 ### 重要な制約: fork と subagent の関係

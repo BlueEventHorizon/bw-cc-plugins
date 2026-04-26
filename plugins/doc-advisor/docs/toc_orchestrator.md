@@ -164,11 +164,11 @@ The script handles:
 
 ## Continue Mode Details
 
-| Condition                            | Action                                                                      |
-| ------------------------------------ | --------------------------------------------------------------------------- |
+| Condition                            | Action                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
 | `--full` + `.toc_work/` exists       | Bash: `rm -rf .claude/doc-advisor/toc/{category}/.toc_work` → Start full mode |
-| `.toc_work/` exists + pending remain | Resume from pending (to Phase 2)                                            |
-| `.toc_work/` exists + all completed  | Go directly to merge phase (Phase 3)                                        |
+| `.toc_work/` exists + pending remain | Resume from pending (to Phase 2)                                              |
+| `.toc_work/` exists + all completed  | Go directly to merge phase (Phase 3)                                          |
 
 ---
 

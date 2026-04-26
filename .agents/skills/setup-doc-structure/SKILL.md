@@ -23,9 +23,9 @@ Auto-detect and classify project document directories for Doc Advisor.
 /setup-doc-structure [--update]
 ```
 
-| Argument   | Description                                                   |
-| ---------- | ------------------------------------------------------------- |
-| (none)     | Full classification of all markdown directories               |
+| Argument   | Description                                                           |
+| ---------- | --------------------------------------------------------------------- |
+| (none)     | Full classification of all markdown directories                       |
 | `--update` | Only process directories not already in .doc_structure.yaml root_dirs |
 
 ## Prerequisite
