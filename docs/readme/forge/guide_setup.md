@@ -42,13 +42,13 @@ No arguments.
 
 ```yaml
 targets:
-  - name: forge                                    # Target name
-    version_file: plugins/forge/.claude-plugin/plugin.json  # Version file
-    version_path: version                          # JSON path
-    sync_files:                                    # Files to sync
+  - name: forge # Target name
+    version_file: plugins/forge/.claude-plugin/plugin.json # Version file
+    version_path: version # JSON path
+    sync_files: # Files to sync
       - path: README.md
-        pattern: '| **forge** | {version} |'
-        filter: '| **forge**'
+        pattern: "| **forge** | {version} |"
+        filter: "| **forge**"
 
 changelog:
   file: CHANGELOG.md
@@ -72,11 +72,11 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 /forge:update-version [target] <patch | minor | major | X.Y.Z>
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `target` | Target name (omit for first target) |
-| `patch` / `minor` / `major` | Bump type |
-| `X.Y.Z` | Direct version number |
+| Argument                    | Description                         |
+| --------------------------- | ----------------------------------- |
+| `target`                    | Target name (omit for first target) |
+| `patch` / `minor` / `major` | Bump type                           |
+| `X.Y.Z`                     | Direct version number               |
 
 ### Usage Examples
 
@@ -102,11 +102,11 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 
 ### Error Handling
 
-| Situation | Response |
-|-----------|----------|
-| `.version-config.yaml` missing | Suggest running `/forge:setup-version-config` |
-| Target not found | Show available targets |
-| Test failure | Version update complete. Fix tests, then commit |
+| Situation                      | Response                                        |
+| ------------------------------ | ----------------------------------------------- |
+| `.version-config.yaml` missing | Suggest running `/forge:setup-version-config`   |
+| Target not found               | Show available targets                          |
+| Test failure                   | Version update complete. Fix tests, then commit |
 
 ---
 

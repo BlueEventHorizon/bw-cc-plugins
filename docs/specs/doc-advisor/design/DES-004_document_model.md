@@ -173,8 +173,8 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 
 ### 設定ファイル
 
-| パス                              | 用途             |
-| --------------------------------- | ---------------- |
+| パス                                        | 用途                                               |
+| ------------------------------------------- | -------------------------------------------------- |
 | `.doc_structure.yaml`（プロジェクトルート） | 文書構造設定（root_dirs, doc_types_map, patterns） |
 
 > **Note**: Doc Advisor 内部設定（toc_file, checksums_file, work_dir, output, common）は `toc_utils.py` の `_get_default_config()` にコードデフォルトとして定義。`load_config()` が `.doc_structure.yaml` とマージして返す。
@@ -203,28 +203,29 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 
 #### フィールド定義
 
-| フィールド | 型 | 必須 | デフォルト | 説明 |
-|---|---|---|---|---|
-| `root_dirs` | string[] | 必須 | — | スキャン対象ディレクトリ。glob パターン対応（例: `specs/*/requirements/`） |
-| `doc_types_map` | object | 必須 | — | パス → doc_type の対応。キーは root_dirs のパスまたはそのサブパス |
-| `patterns.target_glob` | string | 任意 | `"**/*.md"` | スキャン対象ファイルのグロブパターン |
-| `patterns.exclude` | string[] | 任意 | `[]` | 除外パターン。`/` を含む場合はパス部分文字列、含まない場合はディレクトリ名として完全一致 |
+| フィールド             | 型       | 必須 | デフォルト  | 説明                                                                                     |
+| ---------------------- | -------- | ---- | ----------- | ---------------------------------------------------------------------------------------- |
+| `root_dirs`            | string[] | 必須 | —           | スキャン対象ディレクトリ。glob パターン対応（例: `specs/*/requirements/`）               |
+| `doc_types_map`        | object   | 必須 | —           | パス → doc_type の対応。キーは root_dirs のパスまたはそのサブパス                        |
+| `patterns.target_glob` | string   | 任意 | `"**/*.md"` | スキャン対象ファイルのグロブパターン                                                     |
+| `patterns.exclude`     | string[] | 任意 | `[]`        | 除外パターン。`/` を含む場合はパス部分文字列、含まない場合はディレクトリ名として完全一致 |
 
 #### doc_type 一覧
 
-| category | doc_type | 意味 |
-|---|---|---|
-| rules | rule | 開発プロセスのルール・規約・手順 |
-| specs | requirement | ゴール定義（機能要件、非機能要件） |
-| specs | design | 技術的構造（アーキテクチャ、DB スキーマ） |
-| specs | plan | 作業計画（タスク分割、マイルストーン） |
-| specs | api | 外部インターフェース契約 |
-| specs | reference | 補助文書（調査メモ、用語集） |
-| specs | spec | デフォルト（上記に該当しない仕様文書） |
+| category | doc_type    | 意味                                      |
+| -------- | ----------- | ----------------------------------------- |
+| rules    | rule        | 開発プロセスのルール・規約・手順          |
+| specs    | requirement | ゴール定義（機能要件、非機能要件）        |
+| specs    | design      | 技術的構造（アーキテクチャ、DB スキーマ） |
+| specs    | plan        | 作業計画（タスク分割、マイルストーン）    |
+| specs    | api         | 外部インターフェース契約                  |
+| specs    | reference   | 補助文書（調査メモ、用語集）              |
+| specs    | spec        | デフォルト（上記に該当しない仕様文書）    |
 
 > **Note**: 上記は組み込みタイプである。`doc_types_map` に任意の識別子文字列を指定することでカスタムタイプも使用可能（例: `adr`）。
 >
 > **カスタムタイプの仕様**:
+>
 > - `validate_toc.py` は `doc_type` を非空文字列としてのみ検証し、固定リストへの照合は行わない
 > - 検証ポリシー: フォーマット制約は設けない。タイポ検出はプロジェクトオーナーの責任とする
 > - 下流への影響: 検索スキル（`/query-rules`, `/query-specs`）は ToC 全件を AI が解釈する方式であり、カスタム doc_type の追加による動作影響はない
@@ -244,31 +245,31 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 
 #### rules セクション
 
-| 項目                    | 型     | 設定ソース / デフォルト                                            | 説明                                 |
-| ----------------------- | ------ | ------------------------------------------------------------------ | ------------------------------------ |
-| `root_dirs`             | array  | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | ルートディレクトリ群                 |
-| `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | パス → doc_type の対応。FR-01-6 参照 |
-| `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
-| `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
+| 項目                    | 型     | 設定ソース / デフォルト                                                                 | 説明                                 |
+| ----------------------- | ------ | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| `root_dirs`             | array  | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                            | ルートディレクトリ群                 |
+| `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                            | パス → doc_type の対応。FR-01-6 参照 |
+| `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                                           | スキャン対象パターン                 |
+| `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                                                | 除外パターン（ユーザー定義）         |
 | `toc_file`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/rules_toc.yaml`      | 出力 ToC ファイルパス                |
 | `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/.toc_checksums.yaml` | チェックサムファイルパス             |
 | `work_dir`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/rules/.toc_work/`          | 作業ディレクトリパス                 |
-| `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                 | ToC ヘッダーコメント                 |
-| `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                 | メタデータ名                         |
+| `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                                      | ToC ヘッダーコメント                 |
+| `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                                      | メタデータ名                         |
 
 #### specs セクション
 
-| 項目                    | 型     | 設定ソース / デフォルト                                            | 説明                                 |
-| ----------------------- | ------ | ------------------------------------------------------------------ | ------------------------------------ |
-| `root_dirs`             | array  | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | ルートディレクトリ群                 |
-| `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                    | パス → doc_type の対応。FR-01-6 参照 |
-| `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                      | スキャン対象パターン                 |
-| `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                           | 除外パターン（ユーザー定義）         |
+| 項目                    | 型     | 設定ソース / デフォルト                                                                 | 説明                                 |
+| ----------------------- | ------ | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| `root_dirs`             | array  | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                            | ルートディレクトリ群                 |
+| `doc_types_map`         | object | `.doc_structure.yaml`（`/forge:setup-doc-structure` で設定）                            | パス → doc_type の対応。FR-01-6 参照 |
+| `patterns.target_glob`  | string | `.doc_structure.yaml` / デフォルト: `**/*.md`                                           | スキャン対象パターン                 |
+| `patterns.exclude`      | array  | `.doc_structure.yaml` / デフォルト: `[]`                                                | 除外パターン（ユーザー定義）         |
 | `toc_file`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/specs_toc.yaml`      | 出力 ToC ファイルパス                |
 | `checksums_file`        | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/.toc_checksums.yaml` | チェックサムファイルパス             |
 | `work_dir`              | string | コードデフォルト（`toc_utils.py`）: `.claude/doc-advisor/toc/specs/.toc_work/`          | 作業ディレクトリパス                 |
-| `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                 | ToC ヘッダーコメント                 |
-| `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                 | メタデータ名                         |
+| `output.header_comment` | string | コードデフォルト（`toc_utils.py`）                                                      | ToC ヘッダーコメント                 |
+| `output.metadata_name`  | string | コードデフォルト（`toc_utils.py`）                                                      | メタデータ名                         |
 
 > **Note**: rules と specs の設定項目は完全に同一構造。
 
@@ -291,8 +292,8 @@ def should_exclude(filepath, exclude_patterns, root_dir):
 rules:
   root_dirs:
     - rules/
-  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml        # コードデフォルト
-  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml  # コードデフォルト
+  toc_file: .claude/doc-advisor/toc/rules/rules_toc.yaml # コードデフォルト
+  checksums_file: .claude/doc-advisor/toc/rules/.toc_checksums.yaml # コードデフォルト
   work_dir: .claude/doc-advisor/toc/rules/.toc_work/
 
   patterns:

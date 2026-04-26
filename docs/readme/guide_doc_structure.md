@@ -6,11 +6,11 @@
 
 forge can optionally manage documents per **Feature** — a grouped unit of related specifications for development. Features are not required; forge works without them.
 
-| Development Pattern | How Features are used |
-|--------------------|-----------------------|
+| Development Pattern     | How Features are used                                                        |
+| ----------------------- | ---------------------------------------------------------------------------- |
 | Incremental development | Separate new capabilities from the existing main spec as individual Features |
-| Agile development | Develop and deliver per Feature in each iteration |
-| Small projects | Treat the entire project as a single Feature |
+| Agile development       | Develop and deliver per Feature in each iteration                            |
+| Small projects          | Treat the entire project as a single Feature                                 |
 
 When using Features, each one shares a common directory structure:
 
@@ -42,13 +42,13 @@ Organized into two categories: `rules` and `specs`.
 # doc_structure_version: 3.0
 
 rules:
-  root_dirs:          # Directories to scan (glob supported)
+  root_dirs: # Directories to scan (glob supported)
     - docs/rules/
-  doc_types_map:      # Directory → doc_type mapping
+  doc_types_map: # Directory → doc_type mapping
     docs/rules/: rule
   patterns:
     target_glob: "**/*.md"
-    exclude: []       # Directory names to exclude
+    exclude: [] # Directory names to exclude
 
 specs:
   root_dirs:
@@ -64,12 +64,12 @@ specs:
     exclude: []
 ```
 
-| Field | Description |
-|-------|-------------|
-| `root_dirs` | Document directories. Supports `*` (one level) / `**` (any depth) glob patterns |
-| `doc_types_map` | Path → doc_type mapping. Recommended doc_types: `rule`, `requirement`, `design`, `plan`, `api`, `reference` |
-| `patterns.target_glob` | File search pattern (default: `**/*.md`) |
-| `patterns.exclude` | Directory names to exclude (matches at any depth in the path) |
+| Field                  | Description                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `root_dirs`            | Document directories. Supports `*` (one level) / `**` (any depth) glob patterns                             |
+| `doc_types_map`        | Path → doc_type mapping. Recommended doc_types: `rule`, `requirement`, `design`, `plan`, `api`, `reference` |
+| `patterns.target_glob` | File search pattern (default: `**/*.md`)                                                                    |
+| `patterns.exclude`     | Directory names to exclude (matches at any depth in the path)                                               |
 
 ### Configuration Examples
 

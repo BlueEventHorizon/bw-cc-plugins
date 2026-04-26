@@ -42,13 +42,13 @@
 
 ```yaml
 targets:
-  - name: forge                                    # ターゲット名
-    version_file: plugins/forge/.claude-plugin/plugin.json  # バージョンファイル
-    version_path: version                          # JSON パス
-    sync_files:                                    # 同期対象
+  - name: forge # ターゲット名
+    version_file: plugins/forge/.claude-plugin/plugin.json # バージョンファイル
+    version_path: version # JSON パス
+    sync_files: # 同期対象
       - path: README.md
-        pattern: '| **forge** | {version} |'
-        filter: '| **forge**'
+        pattern: "| **forge** | {version} |"
+        filter: "| **forge**"
 
 changelog:
   file: CHANGELOG.md
@@ -72,11 +72,11 @@ git:
 /forge:update-version [target] <patch | minor | major | X.Y.Z>
 ```
 
-| 引数 | 説明 |
-|------|------|
-| `target` | ターゲット名（省略時は先頭ターゲット） |
-| `patch` / `minor` / `major` | バンプ種別 |
-| `X.Y.Z` | バージョン番号を直接指定 |
+| 引数                        | 説明                                   |
+| --------------------------- | -------------------------------------- |
+| `target`                    | ターゲット名（省略時は先頭ターゲット） |
+| `patch` / `minor` / `major` | バンプ種別                             |
+| `X.Y.Z`                     | バージョン番号を直接指定               |
 
 ### 使用例
 
@@ -102,11 +102,11 @@ git:
 
 ### エラー時の対応
 
-| 状況 | 対応 |
-|------|------|
-| `.version-config.yaml` がない | `/forge:setup-version-config` の実行を案内 |
-| 指定ターゲットが存在しない | 利用可能なターゲット一覧を表示 |
-| テスト失敗 | バージョン更新は完了済み。テスト修正後に commit |
+| 状況                          | 対応                                            |
+| ----------------------------- | ----------------------------------------------- |
+| `.version-config.yaml` がない | `/forge:setup-version-config` の実行を案内      |
+| 指定ターゲットが存在しない    | 利用可能なターゲット一覧を表示                  |
+| テスト失敗                    | バージョン更新は完了済み。テスト修正後に commit |
 
 ---
 

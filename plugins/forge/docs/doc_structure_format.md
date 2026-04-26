@@ -45,12 +45,12 @@ specs:
 
 ### forge が使用するフィールド
 
-| フィールド | 必須 | 型 | 説明 |
-|-----------|------|------|------|
-| `{category}.root_dirs` | Yes | array[string] | ドキュメントディレクトリ。glob パターン（`*`, `**`）対応 |
-| `{category}.doc_types_map` | Yes | object | パス → doc_type のマッピング。glob パターン対応 |
-| `{category}.patterns.exclude` | No | array[string] | 除外するディレクトリ名 |
-| `{category}.patterns.target_glob` | No | string | ファイル検索 glob パターン（デフォルト: `**/*.md`） |
+| フィールド                        | 必須 | 型            | 説明                                                     |
+| --------------------------------- | ---- | ------------- | -------------------------------------------------------- |
+| `{category}.root_dirs`            | Yes  | array[string] | ドキュメントディレクトリ。glob パターン（`*`, `**`）対応 |
+| `{category}.doc_types_map`        | Yes  | object        | パス → doc_type のマッピング。glob パターン対応          |
+| `{category}.patterns.exclude`     | No   | array[string] | 除外するディレクトリ名                                   |
+| `{category}.patterns.target_glob` | No   | string        | ファイル検索 glob パターン（デフォルト: `**/*.md`）      |
 
 ## root_dirs
 
@@ -62,9 +62,9 @@ specs:
 
 ```yaml
 root_dirs:
-  - docs/rules/                       # リテラルパス
-  - "docs/specs/*/design/"            # glob パターン（1階層の全 Feature）
-  - "docs/specs/**/design/"           # 再帰 glob パターン（任意の深さの全 Feature）
+  - docs/rules/ # リテラルパス
+  - "docs/specs/*/design/" # glob パターン（1階層の全 Feature）
+  - "docs/specs/**/design/" # 再帰 glob パターン（任意の深さの全 Feature）
 ```
 
 ## doc_types_map
@@ -83,21 +83,21 @@ doc_types_map:
 
 #### specs カテゴリ
 
-| 名前 | 説明 |
-|------|------|
-| `requirement` | 機能・非機能要件 |
-| `design` | 技術設計書、アーキテクチャ仕様 |
-| `plan` | 実装計画、ロードマップ、タスク分割 |
-| `api` | API 仕様、エンドポイント定義 |
-| `reference` | 参考資料、データ辞書 |
+| 名前          | 説明                               |
+| ------------- | ---------------------------------- |
+| `requirement` | 機能・非機能要件                   |
+| `design`      | 技術設計書、アーキテクチャ仕様     |
+| `plan`        | 実装計画、ロードマップ、タスク分割 |
+| `api`         | API 仕様、エンドポイント定義       |
+| `reference`   | 参考資料、データ辞書               |
 
 #### rules カテゴリ
 
-| 名前 | 説明 |
-|------|------|
-| `rule` | 開発規約、コーディング標準 |
-| `workflow` | ワークフロー手順 |
-| `guide` | ベストプラクティス、ガイド |
+| 名前       | 説明                       |
+| ---------- | -------------------------- |
+| `rule`     | 開発規約、コーディング標準 |
+| `workflow` | ワークフロー手順           |
+| `guide`    | ベストプラクティス、ガイド |
 
 ## patterns.exclude
 

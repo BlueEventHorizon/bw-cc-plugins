@@ -20,6 +20,7 @@ argument-hint: "[--toc|--index] task description"
 ## 引数パース
 
 `$ARGUMENTS` を解析する:
+
 - `--toc` で始まる → `mode = toc`、残りを `{task}` とする
 - `--index` で始まる → `mode = index`、残りを `{task}` とする
 - フラグなし → `mode = auto`、全体を `{task}` とする
@@ -54,12 +55,12 @@ argument-hint: "[--toc|--index] task description"
 
 ### Step 3: 統合
 
-| Index | ToC | 動作 |
-|-------|-----|------|
-| あり | あり | union(Index候補, ToC候補) で重複排除 → Step: 最終判定 |
-| あり | なし | Index 候補をそのまま使用 → Step: 最終判定 |
-| なし | あり | ToC 候補をそのまま使用 → Step: 最終判定 |
-| なし | なし | AskUserQuestion で通知（`/doc-advisor:create-rules-toc` 実行 or `OPENAI_API_KEY` 設定を案内） |
+| Index | ToC  | 動作                                                                                          |
+| ----- | ---- | --------------------------------------------------------------------------------------------- |
+| あり  | あり | union(Index候補, ToC候補) で重複排除 → Step: 最終判定                                         |
+| あり  | なし | Index 候補をそのまま使用 → Step: 最終判定                                                     |
+| なし  | あり | ToC 候補をそのまま使用 → Step: 最終判定                                                       |
+| なし  | なし | AskUserQuestion で通知（`/doc-advisor:create-rules-toc` 実行 or `OPENAI_API_KEY` 設定を案内） |
 
 ---
 

@@ -20,9 +20,9 @@ Processes a single document (`.md` file) and completes the corresponding entry Y
 
 ## Parameters
 
-| Parameter    | Required | Description                                                                                          |
-| ------------ | -------- | ---------------------------------------------------------------------------------------------------- |
-| `category`   | Yes      | Target category: `rules` or `specs`                                                                  |
+| Parameter    | Required | Description                                                                                            |
+| ------------ | -------- | ------------------------------------------------------------------------------------------------------ |
+| `category`   | Yes      | Target category: `rules` or `specs`                                                                    |
 | `entry_file` | Yes      | Path to the entry YAML file to process (e.g., `.claude/doc-advisor/toc/{category}/.toc_work/xxx.yaml`) |
 | `format_doc` | No       | Path to format definition file (default: `${CLAUDE_PLUGIN_ROOT}/docs/toc_format.md`)                   |
 

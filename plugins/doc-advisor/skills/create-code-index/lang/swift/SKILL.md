@@ -31,6 +31,7 @@ initialize_project(path: <project_root>)
 **MCP 接続失敗時**:
 AskUserQuestion を使用して以下を報告:
 「Swift-Selena MCP が利用できません。MCP サーバーの接続を確認してください。」
+
 - 再試行
 - スキップ（エラーとしてオーケストレーターに返す）
 
@@ -54,6 +55,7 @@ list_symbols(file_path: <project_root>/<相対パス>)
 
 結果から公開シンボル（Class / Struct / Enum / Protocol / Function 等）を取得する。
 各シンボルから以下を抽出:
+
 - `name`: シンボル宣言名
 - `kind`: シンボル種別（Class / Struct / Enum / Protocol / Function 等）
 - `line`: 定義行番号（整数）
@@ -85,11 +87,13 @@ list_extensions(file_path: <project_root>/<相対パス>)
 `// MARK:` （ハイフンなし）も対象とする。
 
 例:
+
 ```swift
 // MARK: - Properties
 // MARK: - Initialization
 // MARK: Verification
 ```
+
 → `["Properties", "Initialization", "Verification"]`
 
 ### ステップ 4: 共通 JSON フォーマットへの変換
@@ -108,7 +112,7 @@ list_extensions(file_path: <project_root>/<相対パス>)
         "access": "public",
         "conforms_to": ["TokenVerifying", "Sendable"],
         "doc": "JWT 検証クラス",
-        "extensions": [{"file": "Sources/Auth/JwtVerifier+Logging.swift"}]
+        "extensions": [{ "file": "Sources/Auth/JwtVerifier+Logging.swift" }]
       }
     ],
     "sections": ["Properties", "Initialization", "Verification"]
@@ -117,6 +121,7 @@ list_extensions(file_path: <project_root>/<相対パス>)
 ```
 
 フィールド仕様:
+
 - `imports`: モジュール名の配列（空の場合は `[]`）
 - `exports`: シンボル情報の配列（空の場合は `[]`）
   - `name`: シンボル宣言名（必須）
@@ -134,11 +139,11 @@ list_extensions(file_path: <project_root>/<相対パス>)
 
 ## エラーハンドリング [MANDATORY]
 
-| エラー | 対応 |
-|--------|------|
-| Swift-Selena MCP 接続失敗 | AskUserQuestion で報告。再試行 or スキップを選択 |
-| 個別ファイルの MCP 呼び出し失敗 | 該当ファイルをスキップし、残りのファイルの処理を継続する。スキップしたファイルのパスを記録する |
-| ファイルが存在しない（Read 失敗） | 該当ファイルをスキップし、残りの処理を継続する |
+| エラー                            | 対応                                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Swift-Selena MCP 接続失敗         | AskUserQuestion で報告。再試行 or スキップを選択                                               |
+| 個別ファイルの MCP 呼び出し失敗   | 該当ファイルをスキップし、残りのファイルの処理を継続する。スキップしたファイルのパスを記録する |
+| ファイルが存在しない（Read 失敗） | 該当ファイルをスキップし、残りの処理を継続する                                                 |
 
 ## 重要事項
 

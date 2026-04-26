@@ -78,26 +78,26 @@ Apple プラットフォーム共通のタイポグラフィシステム。
 
 ### フォントファミリー
 
-| フォント | 用途 |
-|---------|------|
-| SF Pro Display | 20pt 以上の見出し |
-| SF Pro Text | 19pt 以下の本文 |
+| フォント       | 用途                             |
+| -------------- | -------------------------------- |
+| SF Pro Display | 20pt 以上の見出し                |
+| SF Pro Text    | 19pt 以下の本文                  |
 | SF Pro Rounded | 親しみやすい印象のバリエーション |
-| SF Mono | コード・等幅テキスト |
-| New York | セリフ体（長文読書向け） |
+| SF Mono        | コード・等幅テキスト             |
+| New York       | セリフ体（長文読書向け）         |
 
 ### テキストスタイル階層
 
-| スタイル | 役割 |
-|---------|------|
+| スタイル    | 役割                   |
+| ----------- | ---------------------- |
 | Large Title | 画面タイトル（最上位） |
-| Title 1-3 | セクション見出し |
-| Headline | 強調テキスト |
-| Body | 本文 |
-| Callout | 補足情報 |
-| Subhead | 小見出し |
-| Footnote | 注釈 |
-| Caption 1-2 | キャプション |
+| Title 1-3   | セクション見出し       |
+| Headline    | 強調テキスト           |
+| Body        | 本文                   |
+| Callout     | 補足情報               |
+| Subhead     | 小見出し               |
+| Footnote    | 注釈                   |
+| Caption 1-2 | キャプション           |
 
 **評価観点**: タイポグラフィ階層が明確で、2-3 段階以上のコントラストがあるか
 
@@ -109,13 +109,13 @@ Apple プラットフォーム共通のタイポグラフィシステム。
 
 ### カラーの役割
 
-| カテゴリ | 例 | 目的 |
-|---------|-----|------|
-| Label | primary / secondary / tertiary / quaternary | テキストの重要度を段階的に表現 |
-| Fill | primary / secondary / tertiary / quaternary | 塗りの視覚的重量を制御 |
-| Background | primary / secondary / tertiary / grouped | Surface のレイヤー区別 |
-| Separator | opaque / non-opaque | 要素間の境界 |
-| System | red / orange / yellow / green / blue / purple / pink / teal / indigo | 意味的アクセント |
+| カテゴリ   | 例                                                                   | 目的                           |
+| ---------- | -------------------------------------------------------------------- | ------------------------------ |
+| Label      | primary / secondary / tertiary / quaternary                          | テキストの重要度を段階的に表現 |
+| Fill       | primary / secondary / tertiary / quaternary                          | 塗りの視覚的重量を制御         |
+| Background | primary / secondary / tertiary / grouped                             | Surface のレイヤー区別         |
+| Separator  | opaque / non-opaque                                                  | 要素間の境界                   |
+| System     | red / orange / yellow / green / blue / purple / pink / teal / indigo | 意味的アクセント               |
 
 ### Light / Dark モード対応
 
