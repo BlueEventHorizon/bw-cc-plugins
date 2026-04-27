@@ -46,11 +46,21 @@ argument-hint: "[--toc|--index] task description"
 ### Step 1: Index 候補生成
 
 `${CLAUDE_PLUGIN_ROOT}/docs/query_index_workflow.md` を Read し、`category = specs` として手順に従う。
+このとき `search_docs.py` の `--threshold 0.2`（広め）で実行する。
 候補パスを内部保持する。失敗時は Index 候補 = 空。
 
 ### Step 2: ToC 候補生成
 
 `${CLAUDE_PLUGIN_ROOT}/docs/query_toc_workflow.md` を Read し、`category = specs` として手順に従う。
+
+ToC ファイルの `metadata.file_count` を確認し、サイズに応じて動作を切り替える:
+
+| ToC のエントリ数 | 動作                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| 100 件以下       | ToC を全量 Read してキーワードマッチング（最高精度を維持）                                         |
+| 100 件超         | Filter Procedure を使用。Step 1 の Index 候補を `{filter_paths}` として渡し、縮小 ToC を Read する |
+
+100 件超で Step 1 の Index 候補が空（API キー未設定等）の場合は ToC 全量 Read にフォールバックする。
 候補パスを内部保持する。ToC 不在時は ToC 候補 = 空。
 
 ### Step 3: 統合
