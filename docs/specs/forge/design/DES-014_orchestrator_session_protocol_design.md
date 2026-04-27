@@ -12,7 +12,7 @@
 > **実装先**: `plugins/forge/docs/session_format.md`
 
 > 対象: forge プラグイン全オーケストレータスキル
-> 要件: `docs/specs/forge/requirement/orchestrator_pattern.md`
+> 要件: `docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md`
 
 ---
 

@@ -1,7 +1,17 @@
-# skill_monitor 要件定義書
+# REQ-002 skill_monitor 要件定義書
 
-**作成日**: 2026-03-15
-**作成者**: k_terada
+## メタデータ
+
+| 項目       | 値                                                   |
+| ---------- | ---------------------------------------------------- |
+| 要件 ID    | REQ-002                                              |
+| プラグイン | forge                                                |
+| 種別       | 要件定義                                             |
+| 作成日     | 2026-03-15                                           |
+| 作成者     | k_terada                                             |
+| 対象       | forge オーケストレータ共通のセッションデータ表示機能 |
+
+---
 
 ## 概要
 
@@ -153,8 +163,8 @@ skill_monitor.py（SSE サーバー）
 
 ## 関連文書
 
-| 文書                                                     | 役割                                                                                                             |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `plugins/forge/docs/session_format.md`                   | セッションファイルスキーマ（表示対象の SSOT）                                                                    |
-| `docs/specs/forge/requirement/orchestrator_pattern.md`   | オーケストレータパターン要件（FNC-002: セッションディレクトリ通信）                                              |
-| `docs/specs/forge/design/DES-012_show_browser_design.md` | 設計書（モニターモジュール詳細設計。v3.0 で SKILL を廃止し `plugins/forge/scripts/monitor/` に内部モジュール化） |
+| 文書                                                            | 役割                                                                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `plugins/forge/docs/session_format.md`                          | セッションファイルスキーマ（表示対象の SSOT）                                                                    |
+| `docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md` | オーケストレータパターン要件（FNC-002: セッションディレクトリ通信）                                              |
+| `docs/specs/forge/design/DES-012_show_browser_design.md`        | 設計書（モニターモジュール詳細設計。v3.0 で SKILL を廃止し `plugins/forge/scripts/monitor/` に内部モジュール化） |
