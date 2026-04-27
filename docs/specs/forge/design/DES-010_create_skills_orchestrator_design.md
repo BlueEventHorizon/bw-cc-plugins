@@ -5,7 +5,7 @@
 | 項目     | 値                                                           |
 | -------- | ------------------------------------------------------------ |
 | 設計ID   | DES-010                                                      |
-| 関連要件 | FNC-001, FNC-002, FNC-003, FNC-004 (orchestrator_pattern.md) |
+| 関連要件 | REQ-001 FNC-001, FNC-002, FNC-003, FNC-004                   |
 | 関連設計 | `plugins/forge/docs/session_format.md`（セッションスキーマ） |
 | 作成日   | 2026-03-13                                                   |
 | 対象     | start-design, start-plan, start-requirements                 |
@@ -502,7 +502,7 @@ Phase: AIレビュー                  ← 新規（FNC-006 準拠）
 | code  | `reverse-engineering` 時のみ | ソースコード探索（要件抽出の起点）   |
 
 > **設計判断**: start-requirements の interactive モードではコンテキスト収集は最小限（rules のみ）。
-> 要件定義は「何を実現するか」を定義する工程であり、既存実装への過度な依存は避ける（orchestrator_pattern.md の設計原則「What に集中」に準拠）。
+> 要件定義は「何を実現するか」を定義する工程であり、既存実装への過度な依存は避ける（REQ-001 オーケストレータパターン要件の設計原則「What に集中」に準拠）。
 
 #### モード別コンテキスト収集シーケンス
 
