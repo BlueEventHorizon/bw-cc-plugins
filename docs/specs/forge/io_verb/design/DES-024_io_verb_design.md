@@ -81,6 +81,24 @@ if __name__ == "__main__":
 - **retry / timeout なし**: ラッパー側で retry は行わず、timeout も設けない（低レベル側の既存 timeout に委ねる）。方針の不在を意図として固定する
 - **複合ラッパーの stderr 契約**: 単一ラッパー（find_session / init_session / resolve_* / mark_* / batch_update / update_*）は透過のみで良い。一方、複合ラッパー（本設計では `skip_all_unprocessed.py` のみ）は、失敗時に `stage={識別子} exit={子プロセスの exit code}` を stderr 先頭行に付けてから非 0 終了し、どの段階で失敗したかを運用者が特定できるようにする（詳細は §3.4）
 
+#### 2.1.1.1 ラッパー化判断基準（作るべきか / 作らずに直接呼ぶか）
+
+§2.1.1 の共通原則を満たすラッパーは、以下のいずれかを満たすときのみ作る:
+
+1. **SKILL 固有値の hardcode** — `--skill {skill名}` / `--doc-type {type}` / `--status fixed` のように、SKILL が自明に知る値をラッパー内に埋め込む
+2. **複合操作** — 複数の低レベル script を pipeline で組み合わせる（§2.1.0 の複合ラッパー）
+3. **モード意味付け** — 低レベルの mode flag（`--batch` 等）に SKILL の意味的単位を与える
+
+逆に以下の場合はラッパーを作らず、SKILL.md から低レベル script を直接呼ぶ:
+
+- **単なる命名変換** — subcommand を script 名にするだけ（例: `session_manager.py cleanup` → `cleanup_session.py`）
+- **パス短縮** — 深いディレクトリ参照を浅くするだけ（例: `${CLAUDE_PLUGIN_ROOT}/scripts/session/write_refs.py` → `${CLAUDE_SKILL_DIR}/scripts/write_refs.py`）
+- **引数フォーマット変換のみ** — 位置引数 → flag 名前付け、hardcode 値なし（例: `--perspective {name}` を `{name}` 位置引数化するだけ）
+
+判断基準の根拠: 命名変換・パス短縮・引数フォーマット変換のみのラッパーは「複数 SKILL に同一実装が量産され DRY 違反」「ラッパー名と低レベル CLI 名が 1:1 対応で意味的差分が無く、間接層の意義が無い」「保守時に低レベル変更がラッパー全コピーに波及する」の 3 点で害が利を上回る。SKILL.md → wrapper → low-level の依存方向（§2.5.2）は、ラッパーが「SKILL 固有の意味」を持つときに価値があり、意味を持たない透過層に拡張すべきではない。
+
+本判断基準は §3.1〜§3.5 のすべての既存ラッパーが少なくとも 1 つを満たすことを再確認した上で、§3.6 follow-up wrapper の対象を絞り込むために用いる。
+
 ### 2.2 共有ラッパーを作らない方針の具体化
 
 同じ operation を複数 SKILL が呼ぶ場合でも、各 SKILL 配下に別コピーを置く。
@@ -118,7 +136,7 @@ design_principles_spec.md の必須構成要素（モジュール一覧・依存
 | 低レベル script        | `plugins/forge/scripts/{domain}/{script}.py`                                                  | 状態遷移・flag 合成・JSON スキーマを閉じ込める本体ロジック                                                 | 変更なし（R7 MANDATORY） |
 | 外部ファイル           | `session/*` / `.doc_structure.yaml` / `.version-config.yaml` / plan.yaml / 設計書 Markdown 等 | 永続状態・設定・成果物                                                                                     | 変更なし                 |
 
-合計 wrapper 本数: **30 本**（単一 29 + 複合 1）。内訳は §4 末尾・§4.1 と一致。
+合計 wrapper 本数: 本要件 base **30 本**（単一 29 + 複合 1）+ follow-up Issue #13 **1 本**（mark_fixed）= **31 本**。内訳は §4 末尾・§4.1 と一致。
 
 #### 2.5.2 依存方向
 
@@ -444,6 +462,49 @@ update_version_files.py {path} {cur} {new} --filter "{filter}" --optional
 > - YAML スキーマ変更時の影響範囲は、A 案でも B 案でも `.version-config.yaml` の読み手（SKILL.md もしくは wrapper）に集約される。分岐を SKILL.md 側に置いても保守性は低下しない
 > - AI が entry のどのキーを見るかの順序・解釈を誤る余地は、YAML スキーマと SKILL.md の対応表が 1:1 であれば発生しない（§3.5 After の対応表が 1:1 であることを担保する）
 
+### 3.6 follow-up wrapper（Issue #13）
+
+inventory.md §5（§1.2 補遺）で確定した SKILL.md → low-level 直叩き残務 14 箇所のうち、§2.1.1.1 「ラッパー化判断基準」に基づき **1 箇所のみ**ラッパー化する。残り 13 箇所は命名変換・パス短縮・引数フォーマット変換のみで SKILL 固有値の hardcode を伴わないため、判断基準の「対象外」分類に該当し、SKILL.md から低レベル script を直接呼ぶ運用で確定した（inventory.md §5.1 表参照）。
+
+#### 3.6.1 `mark_fixed.py`（fixer、1 ラッパー）
+
+`session/update_plan.py` の透過ラッパー（fixer 用）。`--status fixed` を SKILL（fixer）固有値としてハードコードし、`--files-modified` を可変長位置引数で受ける。present-findings の `mark_in_progress.py` / `mark_skipped.py`（§3.4）と同じパターン。
+
+判断基準 §2.1.1.1 ① 「SKILL 固有値の hardcode」に該当し、ラッパー化する。
+
+**Before（fixer/SKILL.md）**:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
+  --id {id} --status fixed --files-modified {file1} {file2} ...
+```
+
+**After**:
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/mark_fixed.py {session_dir} {id} {file1} {file2} ...
+```
+
+**ラッパー配置**: `skills/fixer/scripts/mark_fixed.py`。位置引数: `{session_dir} {id} [{file}...]`。hardcoded: `--status fixed`。`--files-modified` は可変長で受け、低レベル CLI へ展開する。`--fixed-at` は省略（低レベル側で自動生成）。
+
+#### 3.6.2 follow-up wrapper の合計
+
+1 本（mark_fixed 1）。本節追加分により本設計書のラッパー総数は 30 本（§4 末尾）+ 1 本 = **31 本**となる。
+
+#### 3.6.3 ラッパー化対象外と確定した 13 箇所
+
+inventory.md §5.1 の判定により、以下 5 種・計 13 箇所は §2.1.1.1 「対象外」分類に該当する。SKILL.md から低レベル script を直接呼ぶ運用で確定する:
+
+| 低レベル script                           | 件数 | 対象外と判定した理由                                                                       |
+| ----------------------------------------- | ---: | ------------------------------------------------------------------------------------------ |
+| `scripts/session_manager.py cleanup`      |    8 | 命名変換のみ（subcommand `cleanup` を script 名 `cleanup_session.py` にするだけ）          |
+| `scripts/session/write_refs.py`           |    1 | パス短縮のみ（`scripts/session/` → `${CLAUDE_SKILL_DIR}/scripts/`）                        |
+| `scripts/session/merge_evals.py`          |    2 | パス短縮のみ                                                                               |
+| `scripts/session/summarize_plan.py`       |    1 | パス短縮のみ                                                                               |
+| `scripts/session/write_interpretation.py` |    2 | 引数フォーマット変換のみ（`--perspective {name}` flag → `{name}` 位置引数、hardcode なし） |
+
+> なお `summarize_plan.py` は `skip_all_unprocessed.py`（§3.4 複合ラッパー）の内部で subprocess 経由で呼ばれる経路があるが、これは複合ラッパー（§2.1.0 例外層）が低レベル script を直接呼ぶ §2.5.2 依存方向と整合する経路であり、本 §3.6.3 の対象外議論とは独立している。
+
 ---
 
 ## 4. ディレクトリ配置と命名規則まとめ
@@ -506,9 +567,21 @@ plugins/forge/
             └── update_optional_filtered.py     # [new]
 ```
 
-**新規ラッパー合計: 30 本**（内訳: session find 6 / session init 6 / resolve 8 / update_plan 5（present-findings 4 + review `skip_all_unprocessed.py` 1）/ update_version 5）。以降 §1.3 の痛点件数（31 件）・§6 の合計（30 本）とあわせ、本節の「30 本」を本設計書内の一次情報とする。
+**本要件 base ラッパー合計: 30 本**（内訳: session find 6 / session init 6 / resolve 8 / update_plan 5（present-findings 4 + review `skip_all_unprocessed.py` 1）/ update_version 5）。これに follow-up Issue #13 の 1 本（mark_fixed）を加え、本設計書の総ラッパー本数は **31 本**となる（§3.6.2 / §4.1 / §6 合計と一致）。以降 §1.3 の痛点件数（31 件）・§2.5.1 合計と整合する。
 
-### 4.1 カバレッジ対応表
+### 4.1 follow-up wrapper のディレクトリ配置（Issue #13）
+
+§3.6 で追加する 1 本は以下のように既存配置に重ねる:
+
+```
+plugins/forge/skills/
+└── fixer/scripts/
+    └── mark_fixed.py                  # [follow-up]
+```
+
+本設計書のラッパー総数: 30 本（§4 当初）+ 1 本（§3.6 / §4.1 follow-up）= **31 本**。
+
+### 4.2 カバレッジ対応表
 
 inventory §2 の各痛点と、置換後 wrapper・対象 SKILL.md の対応:
 
@@ -547,15 +620,16 @@ inventory §2 の各痛点と、置換後 wrapper・対象 SKILL.md の対応:
 
 痛点の多い領域から着手する。各ステップは独立して完結し、途中段階でも review パイプラインが完走可能（要件 R5）。
 
-| ステップ | 内容                                                          | ラッパー本数 |     影響 SKILL.md |
-| -------- | ------------------------------------------------------------- | -----------: | ----------------: |
-| Step 1   | `session_manager.py find` ラッパー（6 本）+ SKILL.md 差し替え |            6 |                 6 |
-| Step 2   | `session_manager.py init` ラッパー（6 本）+ SKILL.md 差し替え |            6 |                 6 |
-| Step 3   | `update_plan.py` ラッパー（present-findings 4 本）+ SKILL.md  |            4 |                 1 |
-| Step 4   | `review/skip_all_unprocessed.py`（1 本）+ review SKILL.md     |            1 |                 1 |
-| Step 5   | `resolve_doc_structure.py` ラッパー（8 本）+ SKILL.md         |            8 |                 7 |
-| Step 6   | `update_version_files.py` ラッパー（5 本）+ SKILL.md          |            5 |                 1 |
-|          | **合計**                                                      |       **30** | **16 (重複除く)** |
+| ステップ | 内容                                                                                                                  | ラッパー本数 |     影響 SKILL.md |
+| -------- | --------------------------------------------------------------------------------------------------------------------- | -----------: | ----------------: |
+| Step 1   | `session_manager.py find` ラッパー（6 本）+ SKILL.md 差し替え                                                         |            6 |                 6 |
+| Step 2   | `session_manager.py init` ラッパー（6 本）+ SKILL.md 差し替え                                                         |            6 |                 6 |
+| Step 3   | `update_plan.py` ラッパー（present-findings 4 本）+ SKILL.md                                                          |            4 |                 1 |
+| Step 4   | `review/skip_all_unprocessed.py`（1 本）+ review SKILL.md                                                             |            1 |                 1 |
+| Step 5   | `resolve_doc_structure.py` ラッパー（8 本）+ SKILL.md                                                                 |            8 |                 7 |
+| Step 6   | `update_version_files.py` ラッパー（5 本）+ SKILL.md                                                                  |            5 |                 1 |
+| Step 7   | follow-up（§3.6）: mark_fixed 1 + SKILL.md（残り 13 箇所は §2.1.1.1 判断基準により対象外、SKILL.md 直叩き運用で確定） |            1 |                 1 |
+|          | **合計**                                                                                                              |       **31** | **16 (重複除く)** |
 
 各ステップ後に:
 
@@ -601,7 +675,7 @@ tests/forge/
 
 | リスク                                                                      | 対処                                                                                                                                  |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| ラッパー数が 30 と多い                                                      | 各ラッパー 5〜10 行の自明なコードであり、レビュー負荷は小さい                                                                         |
+| ラッパー数が 31 と多い                                                      | 各ラッパー 5〜10 行の自明なコードであり、レビュー負荷は小さい                                                                         |
 | SKILL.md 差し替えで既存セッションが壊れる                                   | 低レベル CLI を変更しないため、セッションファイル形式は完全に不変                                                                     |
 | `skip_all_unprocessed.py`（複合ラッパー）が複数段の subprocess を呼ぶ複雑性 | 単体テストで stdin JSON 組立と subprocess の呼び出し順序を検証。実運用時の障害切り分けは §3.4 stderr 契約と §8.1 障害シナリオ表で対応 |
 | 並行する `refactor/script` ブランチとのコンフリクト                         | 本設計は `refactor/scropt_simply` 上で完結。衝突時は本設計を優先する                                                                  |
