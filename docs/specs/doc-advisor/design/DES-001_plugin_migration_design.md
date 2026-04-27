@@ -57,7 +57,6 @@ plugins/doc-advisor/
 │   └── check_doc_structure.sh
 └── docs/
     ├── toc_format.md
-    ├── toc_format_compact.md
     ├── toc_orchestrator.md
     └── toc_update_workflow.md
 ```
@@ -120,7 +119,6 @@ flowchart TB
         end
         subgraph Docs["docs/"]
             TF[toc_format.md]
-            TFC[toc_format_compact.md]
             TO[toc_orchestrator.md]
             TUW[toc_update_workflow.md]
         end
@@ -454,7 +452,6 @@ forge:clean-rules  ──呼び出し──>  doc-advisor:create-rules-toc
 | `templates/doc-advisor/scripts/create_checksums.py`    | `scripts/create_checksums.py`                   | コピー + docstring 更新            |
 | `templates/doc-advisor/scripts/check_doc_structure.sh` | `scripts/check_doc_structure.sh`                | コピー（変更なし）                 |
 | `templates/doc-advisor/docs/toc_format.md`             | `docs/toc_format.md`                            | コピー（変更なし）                 |
-| `templates/doc-advisor/docs/toc_format_compact.md`     | `docs/toc_format_compact.md`                    | コピー（変更なし）                 |
 | `templates/doc-advisor/docs/toc_orchestrator.md`       | `docs/toc_orchestrator.md`                      | コピー + パス書き換え + 名前空間化 |
 | `templates/doc-advisor/docs/toc_update_workflow.md`    | `docs/toc_update_workflow.md`                   | コピー + 名前空間化                |
 | （新規作成）                                           | `.claude-plugin/plugin.json`                    | 新規                               |
