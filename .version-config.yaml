@@ -6,11 +6,11 @@ targets:
     version_path: metadata.version
     sync_files:
       - path: README.md
-        pattern: '**マーケットプレイスバージョン: {version}**'
-        filter: '**マーケットプレイスバージョン:'
+        pattern: "**マーケットプレイスバージョン: {version}**"
+        filter: "**マーケットプレイスバージョン:"
       - path: README_en.md
-        pattern: '**Marketplace version: {version}**'
-        filter: '**Marketplace version:'
+        pattern: "**Marketplace version: {version}**"
+        filter: "**Marketplace version:"
         optional: true
 
   - name: forge
@@ -21,15 +21,15 @@ targets:
         pattern: '"version": "{version}"'
         filter: '"name": "forge"'
       - path: README.md
-        pattern: '| **forge** | {version} |'
-        filter: '| **forge**'
+        pattern: "| **forge** | {version} |"
+        filter: "| **forge**"
       - path: README_en.md
-        pattern: '| **forge** | {version} |'
-        filter: '| **forge**'
+        pattern: "| **forge** | {version} |"
+        filter: "| **forge**"
         optional: true
       - path: CLAUDE.md
-        pattern: '**forge** (v{version})'
-        filter: '**forge** (v'
+        pattern: "**forge** (v{version})"
+        filter: "**forge** (v"
 
   - name: anvil
     version_file: plugins/anvil/.claude-plugin/plugin.json
@@ -39,11 +39,11 @@ targets:
         pattern: '"version": "{version}"'
         filter: '"name": "anvil"'
       - path: README.md
-        pattern: '| **anvil** | {version} |'
-        filter: '| **anvil**'
+        pattern: "| **anvil** | {version} |"
+        filter: "| **anvil**"
       - path: README_en.md
-        pattern: '| **anvil** | {version} |'
-        filter: '| **anvil**'
+        pattern: "| **anvil** | {version} |"
+        filter: "| **anvil**"
         optional: true
 
   - name: xcode
@@ -54,11 +54,11 @@ targets:
         pattern: '"version": "{version}"'
         filter: '"name": "xcode"'
       - path: README.md
-        pattern: '| **xcode** | {version} |'
-        filter: '| **xcode**'
+        pattern: "| **xcode** | {version} |"
+        filter: "| **xcode**"
       - path: README_en.md
-        pattern: '| **xcode** | {version} |'
-        filter: '| **xcode**'
+        pattern: "| **xcode** | {version} |"
+        filter: "| **xcode**"
         optional: true
 
   - name: doc-advisor
@@ -69,15 +69,15 @@ targets:
         pattern: '"version": "{version}"'
         filter: '"name": "doc-advisor"'
       - path: README.md
-        pattern: '| **doc-advisor** | {version} |'
-        filter: '| **doc-advisor**'
+        pattern: "| **doc-advisor** | {version} |"
+        filter: "| **doc-advisor**"
       - path: README_en.md
-        pattern: '| **doc-advisor** | {version} |'
-        filter: '| **doc-advisor**'
+        pattern: "| **doc-advisor** | {version} |"
+        filter: "| **doc-advisor**"
         optional: true
       - path: CLAUDE.md
-        pattern: '**doc-advisor** (v{version})'
-        filter: '**doc-advisor** (v'
+        pattern: "**doc-advisor** (v{version})"
+        filter: "**doc-advisor** (v"
 
 changelog:
   file: CHANGELOG.md
