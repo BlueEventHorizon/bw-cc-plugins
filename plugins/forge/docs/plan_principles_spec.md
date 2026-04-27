@@ -87,13 +87,13 @@
 
 タスクの `group_id` と `build_check` フィールドを使用する:
 
-| フィールド | 値 | 説明 |
-|-----------|-----|------|
-| `group_id` | `"GROUP-001 (1/3)"` | グループ ID と通し番号 |
-| `group_id` | `null` | 独立タスク |
-| `build_check` | `per_task` | 独立タスク（デフォルト） |
-| `build_check` | `skip` | グループ途中タスク |
-| `build_check` | `on_group_complete` | グループ最終タスク |
+| フィールド    | 値                  | 説明                     |
+| ------------- | ------------------- | ------------------------ |
+| `group_id`    | `"GROUP-001 (1/3)"` | グループ ID と通し番号   |
+| `group_id`    | `null`              | 独立タスク               |
+| `build_check` | `per_task`          | 独立タスク（デフォルト） |
+| `build_check` | `skip`              | グループ途中タスク       |
+| `build_check` | `on_group_complete` | グループ最終タスク       |
 
 ---
 

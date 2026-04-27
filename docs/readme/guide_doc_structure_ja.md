@@ -6,11 +6,11 @@
 
 forge は **Feature（フィーチャー）** 単位で文書を管理することもできる。Feature とは、関連する仕様をグループ化した開発単位。Feature なしでも動作する。
 
-| 開発パターン | Feature の使い方 |
-|-------------|-----------------|
+| 開発パターン                           | Feature の使い方                                                |
+| -------------------------------------- | --------------------------------------------------------------- |
 | [追加開発](guide_sdd_ja.md#6-追加開発) | 既存のメイン仕様に後から追加する機能群を Feature として分割する |
-| アジャイル開発 | イテレーションごとに Feature 単位で開発・デリバリーする |
-| 小規模プロジェクト | プロジェクト全体を1つの Feature として扱ってもよい |
+| アジャイル開発                         | イテレーションごとに Feature 単位で開発・デリバリーする         |
+| 小規模プロジェクト                     | プロジェクト全体を1つの Feature として扱ってもよい              |
 
 Feature を使う場合、各 Feature は共通のディレクトリ構造で管理する:
 
@@ -42,13 +42,13 @@ specs/
 # doc_structure_version: 3.0
 
 rules:
-  root_dirs:          # スキャン対象ディレクトリ（glob 対応）
+  root_dirs: # スキャン対象ディレクトリ（glob 対応）
     - docs/rules/
-  doc_types_map:      # ディレクトリ → doc_type のマッピング
+  doc_types_map: # ディレクトリ → doc_type のマッピング
     docs/rules/: rule
   patterns:
     target_glob: "**/*.md"
-    exclude: []       # 除外ディレクトリ名
+    exclude: [] # 除外ディレクトリ名
 
 specs:
   root_dirs:
@@ -64,12 +64,12 @@ specs:
     exclude: []
 ```
 
-| フィールド | 説明 |
-|-----------|------|
-| `root_dirs` | ドキュメントディレクトリ。`*`（1レベル）/ `**`（任意の深さ）の glob パターン対応 |
-| `doc_types_map` | パス → doc_type のマッピング。推奨 doc_type: `rule`, `requirement`, `design`, `plan`, `api`, `reference` |
-| `patterns.target_glob` | ファイル検索パターン（デフォルト: `**/*.md`） |
-| `patterns.exclude` | 除外するディレクトリ名（パス内の任意の深さでマッチ） |
+| フィールド             | 説明                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| `root_dirs`            | ドキュメントディレクトリ。`*`（1レベル）/ `**`（任意の深さ）の glob パターン対応                         |
+| `doc_types_map`        | パス → doc_type のマッピング。推奨 doc_type: `rule`, `requirement`, `design`, `plan`, `api`, `reference` |
+| `patterns.target_glob` | ファイル検索パターン（デフォルト: `**/*.md`）                                                            |
+| `patterns.exclude`     | 除外するディレクトリ名（パス内の任意の深さでマッチ）                                                     |
 
 ### 設定例
 

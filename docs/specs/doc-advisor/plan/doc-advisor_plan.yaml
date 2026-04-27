@@ -40,7 +40,6 @@ design_traceability:
 # === タスク一覧 ===
 tasks:
   # --- 事前調査（並列実行可） ---
-
   - task_id: TASK-001
     title: エージェント名前空間仕様調査
     priority: 99

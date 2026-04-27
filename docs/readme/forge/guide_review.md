@@ -8,13 +8,13 @@ AI reviews code and documents, scrutinizes findings, and fixes issues in a singl
 /forge:review <type> [target] [--codex|--claude] [--auto [N]] [--auto-critical]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `type` | `code` / `requirement` / `design` / `plan` / `uxui` / `generic` |
-| `target` | File path / directory / Feature name / omit for interactive |
+| Argument               | Description                                                            |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `type`                 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`        |
+| `target`               | File path / directory / Feature name / omit for interactive            |
 | `--codex` / `--claude` | Engine selection (default: Codex; falls back to Claude if unavailable) |
-| `--auto [N]` | Auto-fix 🔴 + 🟡 for N cycles (default N=1) |
-| `--auto-critical` | Auto-fix 🔴 only for 1 cycle |
+| `--auto [N]`           | Auto-fix 🔴 + 🟡 for N cycles (default N=1)                            |
+| `--auto-critical`      | Auto-fix 🔴 only for 1 cycle                                           |
 
 ### Usage Examples
 
@@ -30,12 +30,12 @@ AI reviews code and documents, scrutinizes findings, and fixes issues in a singl
 
 ### When to Use
 
-| Scenario | Recommended mode |
-|----------|-----------------|
-| Pre-PR final check | `--auto` for bulk fix, then review the diff |
-| Document quality review | Interactive for careful per-item judgment |
-| CI-style quality gate | `--auto-critical` for minimal safe fixes |
-| Completion step of other skills | start-design etc. call `--auto` internally |
+| Scenario                        | Recommended mode                            |
+| ------------------------------- | ------------------------------------------- |
+| Pre-PR final check              | `--auto` for bulk fix, then review the diff |
+| Document quality review         | Interactive for careful per-item judgment   |
+| CI-style quality gate           | `--auto-critical` for minimal safe fixes    |
+| Completion step of other skills | start-design etc. call `--auto` internally  |
 
 ### Execution Flow
 
@@ -76,53 +76,53 @@ flowchart TD
 
 ### Mode Comparison
 
-| Mode | Fix targets | Final judge | Use case |
-|------|------------|-------------|----------|
-| Interactive (default) | User-selected | Human | Careful quality control |
-| `--auto N` | 🔴 + 🟡 | AI | Bulk quality improvement |
-| `--auto-critical` | 🔴 only | AI | Minimal safe fixes |
+| Mode                  | Fix targets   | Final judge | Use case                 |
+| --------------------- | ------------- | ----------- | ------------------------ |
+| Interactive (default) | User-selected | Human       | Careful quality control  |
+| `--auto N`            | 🔴 + 🟡       | AI          | Bulk quality improvement |
+| `--auto-critical`     | 🔴 only       | AI          | Minimal safe fixes       |
 
 The core loop (reviewer → merge → evaluator → fixer → re-review) is identical across all modes. The only difference is whether human judgment is inserted before fixer.
 
 ### Review Types
 
-| Type | Target | Key perspectives |
-|------|--------|-----------------|
-| `code` | Source code | Correctness, resilience, maintainability |
-| `requirement` | Requirements docs | Completeness, consistency, testability |
-| `design` | Design docs | Architecture, requirement coverage, feasibility |
-| `plan` | Plans | Task granularity, dependencies, traceability |
-| `uxui` | Design tokens & UI specs | HIG compliance, usability, visual consistency |
-| `generic` | Any document | Structure, clarity, completeness |
+| Type          | Target                   | Key perspectives                                |
+| ------------- | ------------------------ | ----------------------------------------------- |
+| `code`        | Source code              | Correctness, resilience, maintainability        |
+| `requirement` | Requirements docs        | Completeness, consistency, testability          |
+| `design`      | Design docs              | Architecture, requirement coverage, feasibility |
+| `plan`        | Plans                    | Task granularity, dependencies, traceability    |
+| `uxui`        | Design tokens & UI specs | HIG compliance, usability, visual consistency   |
+| `generic`     | Any document             | Structure, clarity, completeness                |
 
 ### Severity Levels
 
-| Level | Meaning | Auto behavior |
-|-------|---------|--------------|
+| Level       | Meaning                                              | Auto behavior                                |
+| ----------- | ---------------------------------------------------- | -------------------------------------------- |
 | 🔴 Critical | Must fix. Bugs, security, data loss, spec violations | Fixed by both `--auto` and `--auto-critical` |
-| 🟡 Major | Should fix. Standards, error handling, performance | Fixed by `--auto` only |
-| 🟢 Minor | Nice to have. Readability, refactoring suggestions | Never auto-fixed |
+| 🟡 Major    | Should fix. Standards, error handling, performance   | Fixed by `--auto` only                       |
+| 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Never auto-fixed                             |
 
 ### Review Criteria (Perspectives)
 
 Perspectives are accumulated from multiple sources. Each perspective runs as an independent parallel reviewer.
 
-| Source | Content |
-|--------|---------|
+| Source             | Content                                                           |
+| ------------------ | ----------------------------------------------------------------- |
 | **Plugin default** | Auto-extracted from `review_criteria_{type}.md` (always included) |
-| **DocAdvisor** | Project-specific rules added via `/query-rules` when available |
+| **DocAdvisor**     | Project-specific rules added via `/query-rules` when available    |
 
 ### Session Management
 
 A session directory is created under `.claude/.temp/` during review.
 
-| File | Content |
-|------|---------|
-| `session.yaml` | Session metadata (type, engine, cycle count) |
-| `refs.yaml` | Reference files (targets, docs, perspectives) |
-| `review_*.md` | Per-perspective review results |
-| `review.md` | Merged & deduplicated results |
-| `plan.yaml` | Fix plan and progress state |
+| File           | Content                                       |
+| -------------- | --------------------------------------------- |
+| `session.yaml` | Session metadata (type, engine, cycle count)  |
+| `refs.yaml`    | Reference files (targets, docs, perspectives) |
+| `review_*.md`  | Per-perspective review results                |
+| `review.md`    | Merged & deduplicated results                 |
+| `plan.yaml`    | Fix plan and progress state                   |
 
 Automatically deleted on normal completion. On interruption, the directory remains and a resume is proposed on next launch.
 

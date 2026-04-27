@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.16] - 2026-04-26
+
+### marketplace
+
+- **feat**: forge を 0.0.40、anvil を 0.0.5 に更新。plan → 要件/設計の橋渡し（forge）と GitHub Issue 駆動開発フロー（anvil）を追加
+
+## [0.0.40] - 2026-04-26
+
+### forge
+
+- **feat(create-feature-from-plan)**: Claude Code plan mode の markdown を入口に、`forge:start-requirements` → `forge:start-design` を順次起動して要件定義書 → 設計書を一気通貫で作成する薄いオーケストレーション skill を追加。`~/.claude/plans/*.md` から直近候補を提示する `list_recent_plans.py` を同梱
+
+## [anvil 0.0.5] - 2026-04-26
+
+### anvil
+
+- **feat(create-issue)**: 問題・背景・原因を整理して GitHub Issue を作成する skill を追加（解決策は `impl-issue` が担当）。`gh issue create` を内部で呼び出す
+- **feat(impl-issue)**: GitHub Issue から実装計画策定 → ブランチ作成 → 実装 → PR 作成までを一貫実行する skill を追加。仕様書/ルール調査（doc-advisor 連携）、類似 PR 学習、Issue への解決内容追記、UI Issue の Figma デザイン仕様書作成・実装レビューまで 14 Phase でカバー
+
 ## [marketplace 0.1.15] - 2026-04-24
 
 ### marketplace

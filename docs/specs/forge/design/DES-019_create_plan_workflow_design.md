@@ -2,9 +2,9 @@
 
 ## メタデータ
 
-| 項目 | 値 |
-|------|-----|
-| 設計ID | DES-019 |
+| 項目   | 値         |
+| ------ | ---------- |
+| 設計ID | DES-019    |
 | 作成日 | 2026-03-14 |
 
 ---
@@ -68,59 +68,62 @@ flowchart TD
 
 ### 前提確認フェーズ [MANDATORY]
 
-| Step | 内容 | 実行者 |
-|------|------|--------|
-| 1 | `.doc_structure.yaml` の確認 | orchestrator |
-| 2 | Feature 名の確定（引数 or AskUserQuestion）| orchestrator |
-| 3 | モード判定（新規作成 / 更新）| orchestrator |
-| 4 | defaults 読み込み | orchestrator |
+| Step | 内容                                        | 実行者       |
+| ---- | ------------------------------------------- | ------------ |
+| 1    | `.doc_structure.yaml` の確認                | orchestrator |
+| 2    | Feature 名の確定（引数 or AskUserQuestion） | orchestrator |
+| 3    | モード判定（新規作成 / 更新）               | orchestrator |
+| 4    | defaults 読み込み                           | orchestrator |
 
 **読み込む defaults:**
+
 - `spec_format.md` — ID 分類カタログ
 - `plan_format.md` — 計画書テンプレート
 - `plan_principles_spec.md` — 計画書作成原則ガイド
 
 ### Phase 1: コンテキスト収集 [MANDATORY]
 
-| 収集対象 | 手段 | 出力 |
-|---------|------|------|
-| 要件定義書 | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml |
-| 設計書 | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml（同一ファイル）|
-| 実装ルール | `/query-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml |
+| 収集対象   | 手段                                         | 出力                            |
+| ---------- | -------------------------------------------- | ------------------------------- |
+| 要件定義書 | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml                 |
+| 設計書     | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml（同一ファイル） |
+| 実装ルール | `/query-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml                 |
 
 **設計書は必須入力。** 見つからない場合は AskUserQuestion でユーザーに手動指定またはスキップ確認（リスク理解のもと）。
 
 ### Phase 2: 計画書の作成・更新
 
-| Step | 内容 |
-|------|------|
-| 2.1 | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握）|
-| 2.2 | 設計書からタスク抽出・分割 |
-| 2.3 | フォーマット適用（`plan_format.md` に準拠）|
-| 2.4 | 完全性チェック [MANDATORY] |
+| Step | 内容                                                                   |
+| ---- | ---------------------------------------------------------------------- |
+| 2.1  | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握） |
+| 2.2  | 設計書からタスク抽出・分割                                             |
+| 2.3  | フォーマット適用（`plan_format.md` に準拠）                            |
+| 2.4  | 完全性チェック [MANDATORY]                                             |
 
 **タスク粒度 [MANDATORY]:**
+
 - 1 Agent が単独で実行・完結できる単位
 - 5〜10 項目程度
 - ビルド成功（コンパイル通過）が完了条件
 
 **完全性チェック項目:**
+
 - タスクID の一意性
 - 要件 → 設計 → タスクのトレーサビリティマトリクス
 - 優先度と依存関係の整合性
 
 ### Phase 3: AIレビュー
 
-| Step | 内容 | 実行者 |
-|------|------|--------|
-| 3.1 | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| Step | 内容                                                            | 実行者              |
+| ---- | --------------------------------------------------------------- | ------------------- |
+| 3.1  | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
 
 ### Phase 4: 完了処理
 
-| Step | 内容 |
-|------|------|
-| 4.1 | `/create-specs-toc` 実行（利用可能な場合）|
-| 4.2 | `/anvil:commit` による commit/push 確認 |
+| Step | 内容                                       |
+| ---- | ------------------------------------------ |
+| 4.1  | `/create-specs-toc` 実行（利用可能な場合） |
+| 4.2  | `/anvil:commit` による commit/push 確認    |
 
 ---
 
@@ -134,12 +137,14 @@ flowchart TD
 ### トレーサビリティの確保
 
 計画書内にトレーサビリティマトリクスを含める:
+
 - 要件ID → 設計ID → タスクID の対応表
 - 未対応の要件・設計がないことを検証
 
 ### 更新モードの既存資産確認
 
 更新時は既存計画書を Read し、以下を把握してから更新する:
+
 - 要件定義書・設計書への反映状況
 - 未着手タスクの有無
 - 完了済みタスクとの整合性
@@ -156,9 +161,9 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル | 説明 |
-|---------|------|
-| `plugins/forge/skills/start-plan/SKILL.md` | スキル仕様 |
-| `plugins/forge/docs/plan_format.md` | 計画書テンプレート |
+| ファイル                                     | 説明                 |
+| -------------------------------------------- | -------------------- |
+| `plugins/forge/skills/start-plan/SKILL.md`   | スキル仕様           |
+| `plugins/forge/docs/plan_format.md`          | 計画書テンプレート   |
 | `plugins/forge/docs/plan_principles_spec.md` | 計画書作成原則ガイド |
-| `plugins/forge/docs/spec_format.md` | ID分類カタログ |
+| `plugins/forge/docs/spec_format.md`          | ID分類カタログ       |

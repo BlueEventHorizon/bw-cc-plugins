@@ -2,9 +2,9 @@
 
 ## メタデータ
 
-| 項目 | 値 |
-|------|-----|
-| 設計ID | DES-014 |
+| 項目   | 値         |
+| ------ | ---------- |
+| 設計ID | DES-014    |
 | 作成日 | 2026-03-14 |
 
 ---
@@ -61,12 +61,12 @@ review 固有の設計（review.md, plan.yaml 等）は
 
 ### スキル固有ファイルの例
 
-| スキル | 追加ファイル |
-|--------|-------------|
-| review | `review.md`, `plan.yaml` |
-| create-design | `design_draft.md` |
-| create-plan | `plan_draft.md` |
-| create-requirements | `requirements_draft.md` |
+| スキル              | 追加ファイル             |
+| ------------------- | ------------------------ |
+| review              | `review.md`, `plan.yaml` |
+| create-design       | `design_draft.md`        |
+| create-plan         | `plan_draft.md`          |
+| create-requirements | `requirements_draft.md`  |
 
 スキル固有ファイルのスキーマは各スキルの設計書で定義する。
 
@@ -76,11 +76,11 @@ review 固有の設計（review.md, plan.yaml 等）は
 
 ```yaml
 # === 共通フィールド（全オーケストレータ必須）===
-skill: review                      # 起動スキル名
+skill: review # 起動スキル名
 started_at: "2026-03-12T18:30:00Z"
 last_updated: "2026-03-12T18:35:00Z"
-status: in_progress                # in_progress | completed
-resume_policy: resume              # resume（デフォルト）| none
+status: in_progress # in_progress | completed
+resume_policy: resume # resume（デフォルト）| none
 
 # === スキル固有フィールド（各スキルが自由に追加）===
 # 例: review の場合
@@ -92,21 +92,21 @@ current_cycle: 0
 
 ### 共通フィールド定義
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|------|------|------|
-| skill | string | ○ | 起動スキル名（review, create-design 等）|
-| started_at | datetime | ○ | セッション開始時刻（ISO 8601）|
-| last_updated | datetime | ○ | 最終更新時刻（ISO 8601）|
-| status | enum | ○ | `in_progress` / `completed` |
-| resume_policy | enum | - | `resume`（デフォルト）/ `none`。未指定時は `resume` として扱う |
+| フィールド    | 型       | 必須 | 説明                                                           |
+| ------------- | -------- | ---- | -------------------------------------------------------------- |
+| skill         | string   | ○    | 起動スキル名（review, create-design 等）                       |
+| started_at    | datetime | ○    | セッション開始時刻（ISO 8601）                                 |
+| last_updated  | datetime | ○    | 最終更新時刻（ISO 8601）                                       |
+| status        | enum     | ○    | `in_progress` / `completed`                                    |
+| resume_policy | enum     | -    | `resume`（デフォルト）/ `none`。未指定時は `resume` として扱う |
 
 ### ライフサイクル
 
-| タイミング | 操作 |
-|------------|------|
-| スキル開始時 | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
-| 正常完了時 | オーケストレータがディレクトリを削除 |
-| セッション中断 | ディレクトリが残存（次回起動時に検出）|
+| タイミング     | 操作                                                                    |
+| -------------- | ----------------------------------------------------------------------- |
+| スキル開始時   | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
+| 正常完了時     | オーケストレータがディレクトリを削除                                    |
+| セッション中断 | ディレクトリが残存（次回起動時に検出）                                  |
 
 ### 残存セッション検出フロー
 
@@ -145,39 +145,40 @@ current_cycle: 0
 全ての refs/{category}.yaml は同一スキーマに従う:
 
 ```yaml
-source: query-specs               # 取得手段の識別子
-query: "login feature design"     # 検索に使用したクエリ（デバッグ用）
+source: query-specs # 取得手段の識別子
+query: "login feature design" # 検索に使用したクエリ（デバッグ用）
 documents:
   - path: specs/requirements/app_overview.md
     reason: "アプリ全体の要件定義"
   - path: specs/design/login_screen_design.md
     reason: "ログイン画面の設計仕様"
-    lines: "10-50"                 # 関連する行範囲（任意）
+    lines: "10-50" # 関連する行範囲（任意）
 ```
 
 ### フィールド定義
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|------|------|------|
-| source | string | ○ | 取得手段（`query-specs`, `query-rules`, `gh-pr-search`, `code-exploration`, `doc_structure_fallback`）|
-| query | string | - | 検索クエリ（デバッグ・再現用）|
-| documents | array | ○ | 発見した参照文書のリスト |
-| documents[].path | string | ○ | プロジェクトルートからの相対パス |
-| documents[].reason | string | ○ | なぜこの文書が関連するか |
-| documents[].lines | string | - | 関連する行範囲（例: "10-50"）|
+| フィールド         | 型     | 必須 | 説明                                                                                                   |
+| ------------------ | ------ | ---- | ------------------------------------------------------------------------------------------------------ |
+| source             | string | ○    | 取得手段（`query-specs`, `query-rules`, `gh-pr-search`, `code-exploration`, `doc_structure_fallback`） |
+| query              | string | -    | 検索クエリ（デバッグ・再現用）                                                                         |
+| documents          | array  | ○    | 発見した参照文書のリスト                                                                               |
+| documents[].path   | string | ○    | プロジェクトルートからの相対パス                                                                       |
+| documents[].reason | string | ○    | なぜこの文書が関連するか                                                                               |
+| documents[].lines  | string | -    | 関連する行範囲（例: "10-50"）                                                                          |
 
 ### カテゴリ別ファイル
 
-| ファイル | 収集対象 | 主な取得手段 |
-|----------|---------|-------------|
-| `refs/specs.yaml` | 仕様書（要件・設計・計画）| `/query-specs` or `.doc_structure.yaml` |
-| `refs/rules.yaml` | 開発ルール・規約 | `/query-rules` or `.doc_structure.yaml` |
-| `refs/prs.yaml` | 類似PR | `gh pr list --search` |
-| `refs/code.yaml` | 関連ソースコード・テスト | Glob / Grep 探索 |
+| ファイル          | 収集対象                   | 主な取得手段                            |
+| ----------------- | -------------------------- | --------------------------------------- |
+| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/query-specs` or `.doc_structure.yaml` |
+| `refs/rules.yaml` | 開発ルール・規約           | `/query-rules` or `.doc_structure.yaml` |
+| `refs/prs.yaml`   | 類似PR                     | `gh pr list --search`                   |
+| `refs/code.yaml`  | 関連ソースコード・テスト   | Glob / Grep 探索                        |
 
 ### refs/ がない場合の扱い
 
 refs/ ディレクトリ自体が存在しない、または中身が空の場合:
+
 - コンテキスト収集フェーズがスキップされたことを意味する
 - 後続の agent は参照文書なしで動作する（最低限の品質でも実行可能）
 
@@ -227,13 +228,13 @@ tasks:
 
 ## 6. twinkling-popping-kahan.md との関係
 
-| 項目 | 本設計書 | twinkling-popping-kahan.md |
-|------|---------|---------------------------|
-| session.yaml | 共通フィールド定義 | review 固有フィールド定義 |
-| refs/ | 共通スキーマ定義 | — |
-| review.md | — | フォーマット定義 |
-| plan.yaml | — | スキーマ定義（evaluation.yaml は廃止され plan.yaml に統合済み） |
-| ライフサイクル | 共通パターン | review 固有のタイミング |
+| 項目           | 本設計書           | twinkling-popping-kahan.md                                      |
+| -------------- | ------------------ | --------------------------------------------------------------- |
+| session.yaml   | 共通フィールド定義 | review 固有フィールド定義                                       |
+| refs/          | 共通スキーマ定義   | —                                                               |
+| review.md      | —                  | フォーマット定義                                                |
+| plan.yaml      | —                  | スキーマ定義（evaluation.yaml は廃止され plan.yaml に統合済み） |
+| ライフサイクル | 共通パターン       | review 固有のタイミング                                         |
 
 twinkling-popping-kahan.md は本設計書の共通部分を参照し、
 review 固有の拡張のみを記述する形に将来的に更新する。

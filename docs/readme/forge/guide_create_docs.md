@@ -13,11 +13,11 @@ start-requirements → start-design → start-plan → start-implement
 
 All three skills share a common context-gathering pattern. Before document creation, parallel agents collect:
 
-| Agent | Target | Output |
-|-------|--------|--------|
+| Agent       | Target                                     | Output            |
+| ----------- | ------------------------------------------ | ----------------- |
 | specs agent | Specifications (requirements, design docs) | `refs/specs.yaml` |
-| rules agent | Project rule documents | `refs/rules.yaml` |
-| code agent | Existing implementations | `refs/code.yaml` |
+| rules agent | Project rule documents                     | `refs/rules.yaml` |
+| code agent  | Existing implementations                   | `refs/code.yaml`  |
 
 ### Completion Flow
 
@@ -37,20 +37,20 @@ Create requirements documents. Supports three modes with different input sources
 /forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument  | Description                         |
+| --------- | ----------------------------------- |
 | `feature` | Feature name (omit for interactive) |
-| `--mode` | Mode selection (omit for menu) |
-| `--new` | New app |
-| `--add` | Adding features to existing app |
+| `--mode`  | Mode selection (omit for menu)      |
+| `--new`   | New app                             |
+| `--add`   | Adding features to existing app     |
 
 ### Mode Selection Guide
 
-| Mode | Input source | When to use | Prerequisites |
-|------|-------------|-------------|---------------|
-| `interactive` | User dialog | Defining requirements from scratch | `.doc_structure.yaml` |
-| `reverse-engineering` | Existing source code | Documenting existing code | Source code |
-| `from-figma` | Figma design files | Extracting requirements from design | Figma MCP environment |
+| Mode                  | Input source         | When to use                         | Prerequisites         |
+| --------------------- | -------------------- | ----------------------------------- | --------------------- |
+| `interactive`         | User dialog          | Defining requirements from scratch  | `.doc_structure.yaml` |
+| `reverse-engineering` | Existing source code | Documenting existing code           | Source code           |
+| `from-figma`          | Figma design files   | Extracting requirements from design | Figma MCP environment |
 
 ### Usage Examples
 
@@ -77,11 +77,11 @@ Create requirements documents. Supports three modes with different input sources
 
 Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. ID scheme:
 
-| Prefix | Type |
-|--------|------|
-| APP-xxx | App overview & policies |
-| SCR-xxx | Screen specifications |
-| FNC-xxx | Functional specifications |
+| Prefix  | Type                        |
+| ------- | --------------------------- |
+| APP-xxx | App overview & policies     |
+| SCR-xxx | Screen specifications       |
+| FNC-xxx | Functional specifications   |
 | NFR-xxx | Non-functional requirements |
 
 ### Reference Documents
@@ -100,8 +100,8 @@ Create design documents from requirements. Emphasizes reuse of existing implemen
 /forge:start-design [feature]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument  | Description                         |
+| --------- | ----------------------------------- |
 | `feature` | Feature name (omit for interactive) |
 
 ### When to Use
@@ -146,8 +146,8 @@ Extract tasks from design documents and create a YAML plan.
 /forge:start-plan [feature]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument  | Description                         |
+| --------- | ----------------------------------- |
 | `feature` | Feature name (omit for interactive) |
 
 ### When to Use
@@ -167,12 +167,12 @@ Extract tasks from design documents and create a YAML plan.
 
 ### Task Granularity Criteria
 
-| Criterion | Requirement |
-|-----------|-------------|
-| Unit | A single agent can execute and complete it independently |
-| Volume | 5–10 actionable items per task |
-| Completeness | Build and test must pass at task completion |
-| File scope | 1 file or 2–3 closely related files |
+| Criterion    | Requirement                                              |
+| ------------ | -------------------------------------------------------- |
+| Unit         | A single agent can execute and complete it independently |
+| Volume       | 5–10 actionable items per task                           |
+| Completeness | Build and test must pass at task completion              |
+| File scope   | 1 file or 2–3 closely related files                      |
 
 ### Key Plan Fields
 
@@ -180,18 +180,18 @@ Extract tasks from design documents and create a YAML plan.
 tasks:
   - task_id: TASK-001
     title: Task name
-    priority: 90              # High:70-99, Mid:40-69, Low:1-39
-    status: pending           # pending → in_progress → completed
+    priority: 90 # High:70-99, Mid:40-69, Low:1-39
+    status: pending # pending → in_progress → completed
     design_id: DES-001
-    depends_on: []            # Dependency task IDs
-    group_id: null            # Group (batched build verification)
+    depends_on: [] # Dependency task IDs
+    group_id: null # Group (batched build verification)
     description:
       - Action item 1
       - Action item 2
     required_reading:
       - path/to/design.md
 
-requirements_traceability:    # Requirement → Design → Task tracking
+requirements_traceability: # Requirement → Design → Task tracking
   - requirement_id: REQ-001
     design_id: DES-001
     status: pending

@@ -74,10 +74,10 @@ test -d .claude/doc-advisor/toc/{category}/.toc_work && echo "EXISTS" || echo "N
 
 ### Step 1.2: Mode determination and branching
 
-| Condition                                                  | Processing                                      |
-| ---------------------------------------------------------- | ----------------------------------------------- |
-| `--full` option specified                                  | Delete .toc_work/ → New processing in full mode |
-| .toc_work/ exists                                          | Continue mode (process existing pending YAMLs)  |
+| Condition                                                    | Processing                                      |
+| ------------------------------------------------------------ | ----------------------------------------------- |
+| `--full` option specified                                    | Delete .toc_work/ → New processing in full mode |
+| .toc_work/ exists                                            | Continue mode (process existing pending YAMLs)  |
 | .toc_work/ doesn't exist + {category}_toc.yaml doesn't exist | New processing in full mode                     |
 | .toc_work/ doesn't exist + {category}_toc.yaml exists        | Incremental mode                                |
 

@@ -10,8 +10,8 @@ Xcode build and test toolkit. Auto-detects platform for iOS/macOS projects.
 /xcode:build [scheme-name]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument      | Description                                             |
+| ------------- | ------------------------------------------------------- |
 | `scheme-name` | Scheme name (omit for auto-detection from `.xcodeproj`) |
 
 ### test
@@ -20,9 +20,9 @@ Xcode build and test toolkit. Auto-detects platform for iOS/macOS projects.
 /xcode:test [scheme-name] [test-target]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `scheme-name` | Scheme name (omit for auto-detection) |
+| Argument      | Description                                                    |
+| ------------- | -------------------------------------------------------------- |
+| `scheme-name` | Scheme name (omit for auto-detection)                          |
 | `test-target` | Test target (e.g. `LibraryTests/FooTests`, omit for all tests) |
 
 ## Requirements

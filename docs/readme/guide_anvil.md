@@ -10,8 +10,8 @@ GitHub operations toolkit. Auto-generate commit messages and create draft PRs.
 /anvil:commit [message]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument  | Description                                            |
+| --------- | ------------------------------------------------------ |
 | `message` | Commit message (omit for auto-generation from changes) |
 
 ### create-pr
@@ -20,8 +20,8 @@ GitHub operations toolkit. Auto-generate commit messages and create draft PRs.
 /anvil:create-pr [base-branch]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument      | Description                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------- |
 | `base-branch` | Base branch (omit to auto-detect from `.git_information.yaml` > develop > main > master) |
 
 ## Requirements

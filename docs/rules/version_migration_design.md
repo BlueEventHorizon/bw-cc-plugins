@@ -11,12 +11,12 @@ Status: Stable
 アプリやツールが進化すると、設定ファイルやデータベースの**構造**が変わる。
 古いバージョンのデータを新しいバージョンのコードで読もうとすると、次のような問題が起きる。
 
-| 問題 | 例 |
-|------|-----|
-| キー名の変更 | `max_workers` → `concurrency` |
-| 構造の変更 | フラット → ネスト |
-| 型の変更 | 数値 → 文字列 |
-| キーの追加・削除 | 必須フィールドが増えた |
+| 問題             | 例                            |
+| ---------------- | ----------------------------- |
+| キー名の変更     | `max_workers` → `concurrency` |
+| 構造の変更       | フラット → ネスト             |
+| 型の変更         | 数値 → 文字列                 |
+| キーの追加・削除 | 必須フィールドが増えた        |
 
 これらを安全に変換するのが**マイグレーション**の役割。
 
@@ -146,6 +146,7 @@ def migrate_v5_to_v6(data: dict) -> dict:
 ```
 
 **ポイント:**
+
 - 各マイグレーション関数のシグネチャは `fn(data: dict) -> dict`（前バージョンの dict を受け取る）
 - 元データを変更しない（コピーして操作する）
 - `setdefault` で既存値を上書きしない
@@ -209,6 +210,7 @@ func migrateV5toV6(_ v5: SettingsV5) -> SettingsV6 {
 ```
 
 **ポイント:**
+
 - 各バージョンの struct を削除せずに保持する（過去バージョンのデコードに必要）
 - `switch` でバージョンごとに分岐し、段階的に変換する
 - CoreData を使う場合は NSMigrationPolicy と Mapping Model を使用する
@@ -218,6 +220,7 @@ func migrateV5toV6(_ v5: SettingsV5) -> SettingsV6 {
 マイグレーションファイルの連番管理パターン（Rails / Flyway / Alembic と同じ考え方）。
 
 **ディレクトリ構造:**
+
 ```
 migrations/
   005_rename_max_workers.sql
@@ -226,6 +229,7 @@ migrations/
 ```
 
 **各マイグレーションファイルの例:**
+
 ```sql
 -- migrations/005_rename_max_workers.sql
 -- 冪等性: すでにリネーム済みの場合は何もしない
@@ -239,6 +243,7 @@ END $$;
 ```
 
 **適用履歴テーブル（必須）:**
+
 ```sql
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version     INTEGER PRIMARY KEY,
@@ -247,6 +252,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 ```
 
 **マイグレーション実行ロジック:**
+
 ```python
 def apply_db_migrations(conn, current_version: int, target_version: int):
     """未適用のマイグレーションを昇順に適用する"""
@@ -261,6 +267,7 @@ def apply_db_migrations(conn, current_version: int, target_version: int):
 ```
 
 **ポイント:**
+
 - トランザクションで包む（失敗したらロールバック）
 - 各マイグレーションは冪等にする
 - 適用履歴テーブルに記録して再実行を防ぐ
@@ -313,7 +320,7 @@ targets = [5, 6]  (sorted, 4 < v <= 6)
 ### テスト確認
 
 - [ ] 直前バージョンからのマイグレーションテスト（v5 → v6）
-- [ ] **バージョンを飛ばした多段テスト（v4 → v6）**  ← 必須・見落としやすい
+- [ ] **バージョンを飛ばした多段テスト（v4 → v6）** ← 必須・見落としやすい
 - [ ] 冪等性テスト（同じマイグレーションを2回適用しても結果が変わらない）
 - [ ] 本番相当データでの動作確認
 

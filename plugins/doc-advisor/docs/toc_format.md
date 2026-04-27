@@ -95,7 +95,7 @@ keywords: []
 | `source_file`   | string        | Target document path (from project root)                                                                       |
 | `doc_type`      | string        | Document type derived from `.doc_structure.yaml` (e.g., rule, requirement, design, plan, api, reference, spec) |
 | `status`        | enum          | `pending` (unprocessed) or `completed` (done)                                                                  |
-| `error_message` | string/null   | Error details (set on failure; `status` remains `pending` for automatic retry), `null` otherwise                |
+| `error_message` | string/null   | Error details (set on failure; `status` remains `pending` for automatic retry), `null` otherwise               |
 | `updated_at`    | datetime/null | Completion time (ISO 8601 format), `null` if incomplete                                                        |
 
 ---

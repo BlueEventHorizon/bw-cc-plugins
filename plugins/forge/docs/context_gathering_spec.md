@@ -12,14 +12,14 @@ agent はこのファイルを読み、指定されたタスクを実行し、
 
 オーケストレータから agent に以下のパラメータが渡される:
 
-| パラメータ | 必須 | 説明 |
-|-----------|------|------|
-| `session_dir` | ○ | セッションディレクトリのパス |
-| `spec` | ○ | この仕様書のパス |
-| `tasks` | ○ | 実行するタスク名のリスト（YAML list 形式） |
-| `feature` | - | 対象 Feature 名（検索キーワードとして活用） |
-| `skill_type` | - | 作業種別（実装ルール調査の検索キーワード） |
-| `target_description` | - | feature がない場合の検索コンテキスト（タスク説明、対象ファイル等） |
+| パラメータ           | 必須 | 説明                                                               |
+| -------------------- | ---- | ------------------------------------------------------------------ |
+| `session_dir`        | ○    | セッションディレクトリのパス                                       |
+| `spec`               | ○    | この仕様書のパス                                                   |
+| `tasks`              | ○    | 実行するタスク名のリスト（YAML list 形式）                         |
+| `feature`            | -    | 対象 Feature 名（検索キーワードとして活用）                        |
+| `skill_type`         | -    | 作業種別（実装ルール調査の検索キーワード）                         |
+| `target_description` | -    | feature がない場合の検索コンテキスト（タスク説明、対象ファイル等） |
 
 ```yaml
 session_dir: .claude/.temp/start-design-a3f7b2
@@ -27,9 +27,9 @@ spec: plugins/forge/docs/context_gathering_spec.md
 tasks:
   - 仕様書調査
   - 実装ルール調査
-feature: "login"                     # 省略可能
-skill_type: "設計書作成"              # 省略可能
-target_description: "..."            # feature がない場合に使用
+feature: "login" # 省略可能
+skill_type: "設計書作成" # 省略可能
+target_description: "..." # feature がない場合に使用
 ```
 
 ## 前提
@@ -115,7 +115,7 @@ Glob: specs/**/*.md
 **出力**: `{session_dir}/refs/specs.yaml`
 
 ```yaml
-source: query-specs               # or doc_structure_fallback or direct_search
+source: query-specs # or doc_structure_fallback or direct_search
 query: "タスクの説明"
 documents:
   - path: specs/requirements/app_overview.md

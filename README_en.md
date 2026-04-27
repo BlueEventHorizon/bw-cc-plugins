@@ -2,13 +2,13 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.15**
+**Marketplace version: 0.1.16**
 
 [Japanese README (README.md)](README.md)
 
 ## What is Spec-Driven Development?
 
-Spec-Driven Development is a workflow where every code change traces back to a written specification. **forge** guides you through five stages — requirements, design, plan, implement, and review — so that AI always works from explicit, reviewable intent rather than ad-hoc instructions. Each stage produces a document; each document feeds the next stage. The result is traceable, auditable delivery: you can always answer *why* a piece of code exists.
+Spec-Driven Development is a workflow where every code change traces back to a written specification. **forge** guides you through five stages — requirements, design, plan, implement, and review — so that AI always works from explicit, reviewable intent rather than ad-hoc instructions. Each stage produces a document; each document feeds the next stage. The result is traceable, auditable delivery: you can always answer _why_ a piece of code exists.
 
 ## The Role of doc-advisor
 
@@ -34,12 +34,12 @@ flowchart LR
 
 ## Plugins
 
-| Plugin    | Version | Description                                                                                                   |
-| --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.0.39  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
-| **anvil** | 0.0.4   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                          |
-| **xcode** | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.            |
-| **doc-advisor** | 0.2.1 | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
+| Plugin          | Version | Description                                                                                                                                          |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **forge**       | 0.0.40  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
+| **anvil**       | 0.0.5   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                 |
+| **xcode**       | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.                                                   |
+| **doc-advisor** | 0.2.1   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
 
 ## Skills
 
@@ -63,14 +63,14 @@ flowchart LR
     REQ & DES & PLAN & IMPL -.->|anytime| REV
 ```
 
-| Stage | Skill | Input | Output |
-|-------|-------|-------|--------|
-| Requirements | start-requirements | Dialog / source code / Figma | Requirements docs (Markdown) |
-| UXUI Design | start-uxui-design | ASCII art from requirements | Design tokens + UI specs |
-| Design | start-design | Requirements docs | Design docs (Markdown) |
-| Plan | start-plan | Design docs | Plan (YAML) |
-| Implementation | start-implement | Plan | Code + progress updates |
-| Review | review | Code / documents | Findings + fixes |
+| Stage          | Skill              | Input                        | Output                       |
+| -------------- | ------------------ | ---------------------------- | ---------------------------- |
+| Requirements   | start-requirements | Dialog / source code / Figma | Requirements docs (Markdown) |
+| UXUI Design    | start-uxui-design  | ASCII art from requirements  | Design tokens + UI specs     |
+| Design         | start-design       | Requirements docs            | Design docs (Markdown)       |
+| Plan           | start-plan         | Design docs                  | Plan (YAML)                  |
+| Implementation | start-implement    | Plan                         | Code + progress updates      |
+| Review         | review             | Code / documents             | Findings + fixes             |
 
 #### Getting Started
 
@@ -90,56 +90,56 @@ flowchart LR
 
 #### Skills
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**review**](docs/readme/forge/guide_review.md) | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N` | `"review"` |
-| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements) | Create requirements via dialog, reverse-engineering, or Figma | `"requirements"` |
-| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design) | Create design docs from requirements. Prioritizes asset reuse | `"start design"` |
-| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan) | Extract tasks from design docs into a YAML plan | `"start plan"` |
-| [**start-implement**](docs/readme/forge/guide_implement.md) | Select tasks from plan, implement, review, and update | `"start implement"` |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md) | Create design tokens & UI specs with UX evaluation | `"UXUI design"` |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories | `"setup"` |
-| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config) | Generate/update `.version-config.yaml` | `"version config"` |
-| [**update-version**](docs/readme/forge/guide_setup.md#update-version) | Bump version across files. patch/minor/major/direct | `"version bump"` |
-| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules) | Analyze and reorganize rules/ based on taxonomy | `"clean rules"` |
-| [**help**](docs/readme/forge/guide_setup.md#help) | Interactive help wizard | `"help"` |
-| [*reviewer*](docs/readme/forge/guide_review.md#execution-flow) | Execute review for a single perspective | ※ Called by review |
-| [*evaluator*](docs/readme/forge/guide_review.md#execution-flow) | Scrutinize review findings and determine fix/skip/confirm | ※ Called by review |
-| [*fixer*](docs/readme/forge/guide_review.md#execution-flow) | Fix issues based on review findings | ※ Called by review |
-| [*present-findings*](docs/readme/forge/guide_review.md#execution-flow) | Present review findings interactively, one item at a time | ※ Called by review |
-| [*doc-structure*](docs/readme/guide_doc_structure.md) | Parse and resolve paths from `.doc_structure.yaml` | ※ Called by orchestrators |
-| [*next-spec-id*](docs/readme/forge/guide_create_docs.md) | Scan all branches for spec IDs and return the next available number | ※ Called by start-requirements |
+| Skill                                                                                  | Description                                                         | Trigger                        |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------ |
+| [**review**](docs/readme/forge/guide_review.md)                                        | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`   | `"review"`                     |
+| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements)    | Create requirements via dialog, reverse-engineering, or Figma       | `"requirements"`               |
+| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design)                | Create design docs from requirements. Prioritizes asset reuse       | `"start design"`               |
+| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan)                    | Extract tasks from design docs into a YAML plan                     | `"start plan"`                 |
+| [**start-implement**](docs/readme/forge/guide_implement.md)                            | Select tasks from plan, implement, review, and update               | `"start implement"`            |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md)                        | Create design tokens & UI specs with UX evaluation                  | `"UXUI design"`                |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories               | `"setup"`                      |
+| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config)      | Generate/update `.version-config.yaml`                              | `"version config"`             |
+| [**update-version**](docs/readme/forge/guide_setup.md#update-version)                  | Bump version across files. patch/minor/major/direct                 | `"version bump"`               |
+| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules)                        | Analyze and reorganize rules/ based on taxonomy                     | `"clean rules"`                |
+| [**help**](docs/readme/forge/guide_setup.md#help)                                      | Interactive help wizard                                             | `"help"`                       |
+| [_reviewer_](docs/readme/forge/guide_review.md#execution-flow)                         | Execute review for a single perspective                             | ※ Called by review             |
+| [_evaluator_](docs/readme/forge/guide_review.md#execution-flow)                        | Scrutinize review findings and determine fix/skip/confirm           | ※ Called by review             |
+| [_fixer_](docs/readme/forge/guide_review.md#execution-flow)                            | Fix issues based on review findings                                 | ※ Called by review             |
+| [_present-findings_](docs/readme/forge/guide_review.md#execution-flow)                 | Present review findings interactively, one item at a time           | ※ Called by review             |
+| [_doc-structure_](docs/readme/guide_doc_structure.md)                                  | Parse and resolve paths from `.doc_structure.yaml`                  | ※ Called by orchestrators      |
+| [_next-spec-id_](docs/readme/forge/guide_create_docs.md)                               | Scan all branches for spec IDs and return the next available number | ※ Called by start-requirements |
 
 ### anvil
 
 > [Detailed Guide](docs/readme/guide_anvil.md) — Usage and examples
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**commit**](docs/readme/guide_anvil.md#commit) | Generate commit message from changes, commit & push | `"commit"` |
+| Skill                                                 | Description                                             | Trigger       |
+| ----------------------------------------------------- | ------------------------------------------------------- | ------------- |
+| [**commit**](docs/readme/guide_anvil.md#commit)       | Generate commit message from changes, commit & push     | `"commit"`    |
 | [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body | `"create-pr"` |
 
 ### xcode
 
 > [Detailed Guide](docs/readme/guide_xcode.md) — Usage and examples
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
+| Skill                                         | Description                                                  | Trigger   |
+| --------------------------------------------- | ------------------------------------------------------------ | --------- |
 | [**build**](docs/readme/guide_xcode.md#build) | Build Xcode project with auto platform detection (iOS/macOS) | `"build"` |
-| [**test**](docs/readme/guide_xcode.md#test) | Run Xcode tests with simulator auto-detection for iOS | `"test"` |
+| [**test**](docs/readme/guide_xcode.md#test)   | Run Xcode tests with simulator auto-detection for iOS        | `"test"`  |
 
 ### doc-advisor
 
 > [Detailed Guide](docs/readme/guide_doc-advisor.md) — Usage and examples
 
-| Skill | Description | Trigger |
-|-------|-------------|---------|
-| [**query-rules**](docs/readme/guide_doc-advisor.md#query-rules) | Search rules with ToC (keyword), Index (semantic), or hybrid mode | `"query rules"` |
-| [**query-specs**](docs/readme/guide_doc-advisor.md#query-specs) | Search specs with ToC (keyword), Index (semantic), or hybrid mode | `"query specs"` |
+| Skill                                                                     | Description                                                        | Trigger               |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------- |
+| [**query-rules**](docs/readme/guide_doc-advisor.md#query-rules)           | Search rules with ToC (keyword), Index (semantic), or hybrid mode  | `"query rules"`       |
+| [**query-specs**](docs/readme/guide_doc-advisor.md#query-specs)           | Search specs with ToC (keyword), Index (semantic), or hybrid mode  | `"query specs"`       |
 | [**create-rules-toc**](docs/readme/guide_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"rebuild rules ToC"` |
 | [**create-specs-toc**](docs/readme/guide_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"rebuild specs ToC"` |
 
-> **Bold** = user-invocable, *Italic* = AI-only (called internally by other skills)
+> **Bold** = user-invocable, _Italic_ = AI-only (called internally by other skills)
 
 ## Installation
 
