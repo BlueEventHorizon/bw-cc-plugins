@@ -92,26 +92,27 @@ flowchart LR
 
 #### スキル一覧
 
-| スキル                                                                                    | 説明                                                                     | トリガー                         |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------- |
-| [**review**](docs/readme/forge/guide_review_ja.md)                                        | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正        | `"レビューして"`                 |
-| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements)    | 対話・ソース解析・Figma の 3 モードで要件定義書を作成                    | `"要件定義"`                     |
-| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design)                | 要件定義書から設計書を作成。既存資産の再利用を重視                       | `"設計書作成"`                   |
-| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan)                    | 設計書からタスクを抽出し YAML 計画書を作成                               | `"計画書作成"`                   |
-| [**start-implement**](docs/readme/forge/guide_implement_ja.md)                            | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行           | `"実装開始"`                     |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md)                        | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造              | `"UXUIデザイン"`                 |
-| **create-feature-from-plan**                                                              | Claude plan mode の出力 markdown から要件定義書 → 設計書を一気通貫で作成 | `"plan から feature 作成"`       |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold                       | `"初期設定"`                     |
-| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config)      | `.version-config.yaml` 生成・更新                                        | `"バージョン設定"`               |
-| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                           | `"バージョン更新"`               |
-| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules)                        | rules/ を分類学に基づいて分析・再構築                                    | `"rules を整理"`                 |
-| [**help**](docs/readme/forge/guide_setup_ja.md#help)                                      | インタラクティブヘルプ                                                   | `"ヘルプ"`                       |
-| [_reviewer_](docs/readme/forge/guide_review_ja.md#実行フロー)                             | 1 perspective のレビューを実行                                           | ※ review が委譲                  |
-| [_evaluator_](docs/readme/forge/guide_review_ja.md#実行フロー)                            | レビュー指摘を吟味し修正/スキップ/要確認を判定                           | ※ review が委譲                  |
-| [_fixer_](docs/readme/forge/guide_review_ja.md#実行フロー)                                | レビュー指摘に基づきコード・文書を修正                                   | ※ review が委譲                  |
-| [_present-findings_](docs/readme/forge/guide_review_ja.md#実行フロー)                     | レビュー結果を対話的に1件ずつ提示                                        | ※ review が委譲                  |
-| [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                 | ※ 各オーケストレーターが呼び出し |
-| [_next-spec-id_](docs/readme/forge/guide_create_docs_ja.md)                               | 全ブランチをスキャンして仕様書 ID の次番を取得                           | ※ start-requirements が呼び出し  |
+| スキル                                                                                    | 説明                                                                      | トリガー                         |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------- |
+| [**review**](docs/readme/forge/guide_review_ja.md)                                        | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正         | `"レビューして"`                 |
+| [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements)    | 対話・ソース解析・Figma の 3 モードで要件定義書を作成                     | `"要件定義"`                     |
+| [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design)                | 要件定義書から設計書を作成。既存資産の再利用を重視                        | `"設計書作成"`                   |
+| [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan)                    | 設計書からタスクを抽出し YAML 計画書を作成                                | `"計画書作成"`                   |
+| [**start-implement**](docs/readme/forge/guide_implement_ja.md)                            | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行            | `"実装開始"`                     |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md)                        | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造               | `"UXUIデザイン"`                 |
+| **create-feature-from-plan**                                                              | Claude plan mode の出力 markdown から要件定義書 → 設計書を一気通貫で作成  | `"plan から feature 作成"`       |
+| **merge-feature-specs**                                                                   | 完了 feature の仕様を main 仕様棚に統合（永続原則のみ抽出・作業履歴削除） | `"feature を仕様に統合"`         |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold                        | `"初期設定"`                     |
+| [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config)      | `.version-config.yaml` 生成・更新                                         | `"バージョン設定"`               |
+| [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                            | `"バージョン更新"`               |
+| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules)                        | rules/ を分類学に基づいて分析・再構築                                     | `"rules を整理"`                 |
+| [**help**](docs/readme/forge/guide_setup_ja.md#help)                                      | インタラクティブヘルプ                                                    | `"ヘルプ"`                       |
+| [_reviewer_](docs/readme/forge/guide_review_ja.md#実行フロー)                             | 1 perspective のレビューを実行                                            | ※ review が委譲                  |
+| [_evaluator_](docs/readme/forge/guide_review_ja.md#実行フロー)                            | レビュー指摘を吟味し修正/スキップ/要確認を判定                            | ※ review が委譲                  |
+| [_fixer_](docs/readme/forge/guide_review_ja.md#実行フロー)                                | レビュー指摘に基づきコード・文書を修正                                    | ※ review が委譲                  |
+| [_present-findings_](docs/readme/forge/guide_review_ja.md#実行フロー)                     | レビュー結果を対話的に1件ずつ提示                                         | ※ review が委譲                  |
+| [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                  | ※ 各オーケストレーターが呼び出し |
+| [_next-spec-id_](docs/readme/forge/guide_create_docs_ja.md)                               | 全ブランチをスキャンして仕様書 ID の次番を取得                            | ※ start-requirements が呼び出し  |
 
 ### anvil
 
