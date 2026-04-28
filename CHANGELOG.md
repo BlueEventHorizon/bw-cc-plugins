@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.17] - 2026-04-28
+
+### marketplace
+
+- **fix**: forge を 0.0.41、doc-advisor を 0.2.2 に更新。`context: fork` SKILL（query-rules / query-specs / query-code / query-forge-rules）が無限再帰でハーネスを詰まらせる重大バグを修正
+
+## [0.0.41] - 2026-04-28
+
+### forge
+
+- **fix(query-forge-rules)**: fork されたサブエージェントが SKILL.md 本文を「query-forge-rules を Skill で呼べ」と誤読し、`Skill(query-forge-rules)` を tool_use → 無限再帰でサブエージェントが大量並列起動しハーネスが応答停止する重大バグを修正。SKILL.md 冒頭に「これはあなた自身への実行指示書」「query-* を Skill で呼んではいけない」を明記
+
+## [doc-advisor 0.2.2] - 2026-04-28
+
+### doc-advisor
+
+- **fix(query-rules / query-specs / query-code)**: fork されたサブエージェントが SKILL.md 本文を「query-rules / query-specs / query-code を Skill で呼べ」と誤読し、`Skill(query-*)` を tool_use → 無限再帰でサブエージェントが 500+ 並列起動しハーネスが 30 分以上応答停止する重大バグを修正。SKILL.md 冒頭に「これはあなた自身への実行指示書」「query-* を Skill で呼んではいけない」を明記
+
 ## [marketplace 0.1.16] - 2026-04-26
 
 ### marketplace

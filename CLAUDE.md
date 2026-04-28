@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。4プラグインを格納・配布する。
 
-- **forge** (v0.0.40) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
-- **doc-advisor** (v0.2.1) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
+- **forge** (v0.0.41) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **doc-advisor** (v0.2.2) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 - **xcode** — Xcode ビルド / テスト実行（`/xcode:build`, `/xcode:test`）
 
