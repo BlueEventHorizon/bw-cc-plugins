@@ -262,7 +262,7 @@ tasks:
     acceptance_criteria: "全オーケストレータ実行時にブラウザが自動的に開き、セッション状態がリアルタイム表示されること"
     required_reading:
       - docs/specs/forge/design/DES-012_show_browser_design.md
-      - docs/specs/forge/requirements/skill_monitor_requirement.md
+      - docs/specs/forge/requirements/REQ-002_skill_monitor.md
 
 # === 改定履歴 ===
 revision_history:

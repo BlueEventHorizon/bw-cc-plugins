@@ -127,13 +127,10 @@ subagent の修正サマリーを呼び出し元に返す。呼び出し元（/f
 session_dir が提供されており、修正が成功した場合、スクリプトで更新する:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {session_dir} \
-  --id {修正した指摘事項のid} \
-  --status fixed \
-  --files-modified {修正したファイルパス一覧}
+python3 ${CLAUDE_SKILL_DIR}/scripts/mark_fixed.py {session_dir} {修正した指摘事項のid} {修正したファイルパス一覧}
 ```
 
-- `--fixed-at` は省略可能（省略時は現在時刻が自動設定される）
+- `fixed_at` は記録時の現在時刻が自動設定される
 
 ---
 
