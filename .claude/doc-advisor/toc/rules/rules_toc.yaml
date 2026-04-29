@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-04-07T12:29:43Z
+  generated_at: 2026-04-29T07:13:52Z
   file_count: 5
 
 docs:
@@ -66,91 +66,90 @@ docs:
   docs/rules/implementation_guidelines.md:
     doc_type: rule
     title: Implementation Guidelines
-    purpose: Defines rules for script language selection, testing requirements, and code organization for plugins and skills
+    purpose: Defines rules for plugin script selection, testing requirements, skill documentation practices, code cleanup, parsing approaches, and version management workflow
     content_details:
-      - Script language selection by task type
-      - Python standard library only constraint
-      - Test requirements for plugins and skills
-      - Test file organization in tests/ directory
-      - Prohibition of inline scripts in SKILL.md
-      - External script placement in plugins/{plugin}/skills or plugins/{plugin}/scripts
-      - Removal of unused code
-      - AI interpretation of user input without parsers
+      - Script language selection criteria (Python for data transformation, Bash for external commands)
+      - Mandatory test requirements for plugins/scripts
+      - No inline scripts in SKILL.md (use external script files)
+      - Unused code deletion policy
+      - Avoid rigid parsers for natural language input
+      - Version-related files editing prohibition and update-version workflow
+      - Script placement conventions (skill-specific vs plugin-wide)
     applicable_tasks:
-      - Script development
-      - Plugin implementation
-      - SKILL.md authoring
-      - Code review
-      - Test design
+      - Plugin script implementation
+      - SKILL documentation creation
+      - Code review (testing compliance)
+      - Script architecture review
+      - Version update management
+      - Test suite organization
     keywords:
-      - script language
+      - SKILL.md
       - Python
       - Bash
-      - testing
-      - SKILL.md
-      - inline scripts
-      - plugin structure
+      - test mandatory
+      - script placement
+      - version management
+      - CHANGELOG
+      - unittest
+      - no inline code
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
     title: SKILL.md Authoring Notes
-    purpose: Defines frontmatter configuration, skill invocation settings, code organization, and mandatory guidelines for Claude Code plugin skill development
+    purpose: Defines guidelines and best practices for creating and editing Claude Code plugin SKILL.md files, including frontmatter fields, argument handling, directory structure, and mandatory user interaction patterns
     content_details:
-      - frontmatter fields and their usage
-      - user-invocable vs disable-model-invocation settings
-      - description writing guidelines
-      - argument variables (, /bin/zsh, )
-      - available variables (CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
-      - inter-skill invocation patterns
-      - directory structure conventions
-      - SKILL.md splitting criteria
-      - AskUserQuestion mandatory requirement for user interaction
-      - project-specific coding conventions
+      - frontmatter fields (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
+      - description writing guidelines for auto-invocation triggering
+      - argument variables ($ARGUMENTS, $0, $1, $2)
+      - plugin variables (${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_SKILL_DIR}, ${CLAUDE_SESSION_ID})
+      - cross-skill invocation patterns
+      - directory structure and SKILL.md organization
+      - SKILL.md splitting criteria for external references
+      - AskUserQuestion tool requirement for user interaction
+      - project-specific conventions (Japanese comments, user-invocable rules, path references, MANDATORY markers)
     applicable_tasks:
-      - SKILL.md creation
-      - SKILL.md editing
-      - AI skill authoring
-      - Plugin scaffold setup
-      - Skill invocation decision review
-      - Code organization planning
+      - SKILL.md creation and editing
+      - plugin skill development
+      - skill parameter design
+      - user interaction implementation
+      - multi-skill workflow design
     keywords:
       - SKILL.md
       - frontmatter
+      - description
       - user-invocable
+      - disable-model-invocation
+      - argument
+      - variables
       - AskUserQuestion
-      - MANDATORY
-      - Claude plugin
-      - skill authoring
-      - argument variables
-      - plugin convention
   docs/rules/version_migration_design.md:
     doc_type: rule
-    title: Version Migration Design Rules
-    purpose: Defines version migration design principles, patterns, and implementation strategies for safely handling data transformations across version upgrades
+    title: Version Migration Design Rule
+    purpose: Defines pipeline design principle, idempotency, and version management best practices for safe multi-version data migration and schema evolution
     content_details:
       - Pipeline principle for multi-stage migrations
-      - "Anti-patterns: reading old data directly and fixed old_data in loops"
-      - Single Source of Truth for version numbers with self-describing data
-      - Idempotency principle for safe re-application
+      - Idempotency requirement for re-executable migrations
+      - Version number single source of truth management
       - Forward compatibility by preserving unknown keys
       - Migration history persistence
-      - YAML/JSON configuration migration patterns
-      - Swift Codable/PropertyList versioned struct pattern
-      - Database migration with schema_migrations tracking table
-      - Version skipping strategy for multi-stage jumps
+      - YAML/JSON configuration migration pattern
+      - Swift Codable versioned struct pattern
+      - Database migration file sequencing
+      - Multi-version skipping (e.g., v4 to v6)
+      - Release checklist with testing requirements
     applicable_tasks:
-      - Version upgrade planning
-      - Data migration implementation
-      - Schema design for version management
-      - Migration testing strategy
+      - Version upgrade implementation
+      - Database schema migration design
+      - Legacy data transformation
       - Backward compatibility design
-      - Database schema evolution
+      - Configuration file upgrade
+      - Multi-version data handling
+      - Migration testing and validation
     keywords:
       - migration
-      - version management
-      - pipeline principle
+      - pipeline
       - idempotency
-      - Single Source of Truth
+      - version management
+      - single source of truth
       - forward compatibility
       - schema evolution
-      - Codable
-      - PropertyList
+      - data transformation

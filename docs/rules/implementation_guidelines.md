@@ -111,3 +111,48 @@ SKILL.md からの参照には `${CLAUDE_SKILL_DIR}` または `${CLAUDE_PLUGIN_
 - スクリプトは構造化データ（YAML/JSON）の処理に限定する
 - 引数が不足・曖昧な場合は AskUserQuestion で補完する
 - コマンド構文は SKILL.md に記載し、AI がそれを参照して意図を汲み取る
+
+---
+
+## バージョン関連ファイルの編集禁止 [MANDATORY]
+
+feature PR / fix PR / refactor PR 等の通常の作業 PR で、バージョン関連ファイルを編集してはならない。
+バージョン更新の単一責任は `/forge:update-version` にあり、AI および開発者が個別 PR で先回りバンプしてはならない。
+
+### 編集禁止対象
+
+| 対象                                        | 内容                                              |
+| ------------------------------------------- | ------------------------------------------------- |
+| `plugins/*/.claude-plugin/plugin.json`      | 各プラグインの `version` フィールド               |
+| `.claude-plugin/marketplace.json`           | 各プラグインエントリの `version` フィールド       |
+| `README.md` / `README_ja.md` のバージョン表 | プラグインバージョン記載行（数値変更を伴う diff） |
+| `CHANGELOG.md` 等の変更履歴ファイル         | 全エントリ（追加・修正・削除いずれも禁止）        |
+| git tag（`v*` / `<plugin>-v*`）             | 作成・移動・削除いずれも禁止                      |
+
+### 例外
+
+以下に限り編集してよい:
+
+- 新規プラグイン追加時の初期値記述（`0.0.1` 等の新規エントリ作成。既存値の変更ではないため）
+- `/forge:update-version` を明示起動した場合（唯一の正規ルート）
+- 本ルール文書自体の改訂
+
+### 唯一の正規ルート
+
+バージョン更新は `/forge:update-version` のみが担う:
+
+- Step 3.5: `current > main` 検出時に二重バンプ確認 → **1 リリース = 1 バンプ**
+- Step 5: git log から CHANGELOG エントリを自動生成 → PR ごとの CHANGELOG 編集は二重作業 + 競合源
+
+詳細は `docs/specs/forge/design/DES-023_version_management_workflow_design.md` を参照。
+
+### 理由
+
+| 理由                           | 説明                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| リリース単位の一意性           | 誰がいつ何をまとめてリリースするかを `/forge:update-version` に集約する |
+| CHANGELOG 自動生成との衝突回避 | git log 由来の自動生成と手動編集が二重化すると整合性が崩れる            |
+| 並行 PR の merge conflict 回避 | 複数 PR が同時に同じ version 行を編集すると衝突が頻発する               |
+
+**NEVER** feat / fix / chore コミットの流れで AI が自発的にバージョンをバンプしてはならない。
+**MUST** バージョン更新が必要と判断したら、ユーザーに `/forge:update-version` の明示起動を提案する。
