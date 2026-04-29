@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.18] - 2026-04-29
+
+### marketplace
+
+- **feat**: forge を 0.0.42、anvil を 0.0.6 に更新。`merge-feature-specs` の汎用化（プロジェクト構造非依存）と `create-issue` SKILL の品質向上を反映
+
+## [0.0.42] - 2026-04-29
+
+### forge
+
+- **fix(merge-feature-specs)**: 任意プロジェクト構造で動作するよう汎用化。plugin 階層前提を廃し、`.doc_structure.yaml` と `feature_dir.parent` ベースで main 仕様棚を解決。`scan_feature.py` に `--main-specs-root` / `--id-digits` / `--id-separator` オプションを追加し、`requirement` 単数形と plugin 階層なし構造に対応
+- **fix(merge-feature-specs)**: 前提条件を明確化（PR #26 review 反映）。Phase 0 で `.doc_structure.yaml` と doc-advisor の必須検査を追加し、フォールバック推測を排除。必須（`.doc_structure.yaml` / doc-advisor）と任意（dprint / anvil）の区別を整理
+
+## [anvil 0.0.6] - 2026-04-29
+
+### anvil
+
+- **feat(create-issue)**: SKILL の品質を `create-pr` と同等に向上。Issue 構成・記述ガイドライン・テンプレートを大幅拡充（236 行追加）
+
 ## [marketplace 0.1.17] - 2026-04-28
 
 ### marketplace
