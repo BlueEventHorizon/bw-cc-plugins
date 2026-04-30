@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-29T17:52:42Z
-  file_count: 43
+  generated_at: 2026-04-30T02:48:54Z
+  file_count: 44
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -314,6 +314,42 @@ docs:
       - Swift-Selena
       - schema version management
       - dependency analysis
+  docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md:
+    doc_type: design
+    title: doc_type Filter Search Design (DES-026)
+    purpose: Defines query-specs doc_type filter implementation across ToC, Index, and auto search modes with unified doc_type resolution and ADR integration.
+    content_details:
+      - doc_type filter architecture with 5-layer design (display, control, utility, search, data)
+      - Argument normalization and doc_type validation via doc_type_utils
+      - Unified doc_type resolution using path prefix matching via toc_utils.determine_doc_type
+      - Subprocess call contracts for filter_toc, search_docs, and grep_docs with error handling
+      - 7 use case scenarios including auto mode, ToC mode, Index mode, and ADR search
+      - doc_type determination rules and API specifications with 3-path consistency (ToC generation, ToC search, Index/grep)
+      - Error handling and response schemas for success and failure cases
+      - ADR directory placement and ToC mapping strategy
+      - Integration with existing components and modifications to toc_utils, filter_toc, search_docs, grep_docs
+      - Additive development deployment strategy with staged implementation steps
+    applicable_tasks:
+      - query-specs doc_type filter implementation
+      - doc_type validation framework setup
+      - Path-based doc_type resolution system development
+      - Search layer (ToC/Index/grep) modification for doc_type filtering
+      - ADR integration into specs documentation structure
+      - Architectural review for unified doc_type resolution
+      - Error handling and response schema implementation
+      - Integration testing for 3-path consistency
+      - doc-advisor quality testing with golden datasets
+    keywords:
+      - doc_type
+      - filter
+      - search
+      - ADR
+      - ToC
+      - Index
+      - grep
+      - path resolution
+      - normalize
+      - orchestrator
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
     title: "FNC-001: Context External Search Specification"
