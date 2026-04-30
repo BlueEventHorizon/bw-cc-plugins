@@ -1,0 +1,177 @@
+---
+name: FNC-004_doc_type_filter_spec
+description: doc_type 絞り込み検索の要件定義（feature: add-adr）
+type: temporary-feature-requirement
+notes:
+  - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
+  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
+  - 本 feature 実装完了後、この文書は旧仕様書へ merge され削除される予定。
+---
+
+# FNC-004 doc_type 絞り込み検索 要件定義書（feature: add-adr）
+
+## 概要
+
+doc-advisor の `query-specs` SKILL に **文書タイプ（doc_type）による絞り込み検索** 機能を追加する。あわせて未指定時のデフォルト挙動を明示し、複数 doc_type を一度に指定できるようにする。さらに ADR（Architecture Decision Record）を doc-advisor の検索対象として正しく扱うため、ADR を ToC エントリに写し取る際の構造マッピング指針を doc-advisor の docs に追補する。
+
+本 feature の前提となる責務分離:
+
+- ADR の定義・フォーマット規約・必須要素・評価基準・テンプレ・ライフサイクルは **forge の責務**（本 feature の対象外）
+- 書かれた ADR を ToC 化し、`query-specs` で検索可能にする部分は **doc-advisor の責務**（本 feature のスコープ）
+
+## 前提条件
+
+- doc-advisor プラグイン v0.2.x 以降がインストール済み
+- `.doc_structure.yaml` が設定済みで、`specs.doc_types_map` で `doc_type` が定義されている
+- `query-specs` SKILL の 3 モード検索アーキテクチャ（`--toc` / `--index` / `auto`、DES-006 §2.3 / §10.5）が稼働している
+
+## 要件一覧
+
+### 機能要件 — doc_type 絞り込み
+
+- ユーザーは `query-specs` SKILL に `--doc-type` 引数を渡すことで、特定の文書タイプに絞った検索結果を得られる
+- 受け付ける構文: `query-specs [--toc|--index] [--doc-type TYPE[,TYPE...]] <task>`
+  - `--doc-type` と `--toc` / `--index` は出現順不問
+  - タスク説明は必須。`--doc-type` のみでタスク説明が無い場合はエラー
+- `--doc-type` で受け付ける**有効値**は `.doc_structure.yaml` の `specs.doc_types_map` の値から `specs.patterns.exclude` の対象を **除外した集合** とする
+  - 例: `doc_types_map = {design, plan, requirement}`、`exclude = [plan]` のとき、有効値は `{design, requirement}`
+  - exclude は SKILL 全体の母集合を定義し、`--doc-type` はその母集合内の追加フィルタとして働く（`exclude` を上書きしない）
+- 値の正規化ルール（旧 TBD-004 を本要件で確定）:
+  - 区切り: カンマ (`,`)
+  - 空白: 各要素の前後の空白は trim
+  - 空要素（例: `design,,requirement`、`design, ,requirement`）はエラー
+  - 重複（例: `design,design`）は一意化したうえで受理
+  - 大文字小文字: case-sensitive（`Design` は未定義値としてエラー）
+  - エイリアス（複数形・略称）は受け付けない
+- 多値指定（OR 結合）: 複数の doc_type をカンマ区切りで指定すると、いずれかに合致するエントリが結果に含まれる
+  - 例: `--doc-type design,requirement` → `design` または `requirement` の文書を返す
+- doc_type フィルタの**意味**（受理する有効値・OR 結合・正規化ルール・false negative 取り扱い）は `--toc` / `--index` / `auto` の **3 モードすべて** で同一とする
+- ただし**結果集合**は各モードの候補生成結果に対して同じフィルタを適用したものを返すため、モード固有の検索精度差（FNC-002 §品質テスト結果、DES-006 §10.2 参照）は維持される。「絞り込み前の集合」の差はそのまま結果に残るため、モード間で結果が一致することは要件としない
+
+### 機能要件 — 未指定時のデフォルト挙動
+
+- `--doc-type` を省略した場合のデフォルトは `design,requirement` とする
+  - 理由: 現状の `query-specs` は `.doc_structure.yaml` の `specs.patterns.exclude: [plan]` により実質 `design + requirement` のみを対象としている。これを暗黙挙動から仕様化する
+- デフォルト値はユーザーマニュアル相当の文書（SKILL の `argument-hint`、関連 docs）に明示される
+- 将来 ToC に新しい doc_type（例: `adr`）が追加されても、`--doc-type` を省略したユーザーの検索結果に当該タイプは紛れ込まない（後方互換維持）
+
+### 機能要件 — 検索網羅性の保証
+
+- `--doc-type` 指定時、対象 doc_type に該当しタスクに関連する文書は、ToC / Index のいずれかに存在する限り結果に必ず含まれる（false negative が増えない）
+- `--toc` / `--index` / `auto` のいずれのモードを使っても、同じ `--doc-type` 値に対して結果集合の意味（網羅性の基準）は同等である（モード固有の精度差は前項に従い維持される）
+- ユーザーから見ると、doc_type 指定によって対象 doc_type 内の網羅性は劣化しない
+
+> 内部処理フロー（経路選択順序・Index 候補との統合順序など）は設計書（DES-006）で規定する。本要件は結果としての網羅性のみを保証する。
+
+### 精度要件
+
+- doc_type フィルタ適用後、関連する文書を **1 件も見落とさない** こと（false negative ゼロ。FNC-002 の精度要件を doc_type 絞り込み込みで継承）
+- 「該当 doc_type かつタスクに関連する文書」が ToC または Index に存在すれば、それは結果に必ず含まれる
+- false negative ゼロは 3 モードすべてで維持する（達成手段は設計書の責務）
+
+### 再現性要件（非機能）
+
+再現性の対象はユーザー観測可能な範囲（候補生成・doc_type フィルタ・分岐選択の結果）に限定する。AI による最終関連性判定の揺らぎは対象外（FR-05-5 / DES-006 §6.1 に従う既存設計）。
+
+- 同一入力（タスク説明文 + `--doc-type` 値 + ToC / Index の状態）に対して `query-specs` が返す候補集合は常に同一であること
+- 「mode × Embedding 可否 × ToC サイズ × `--doc-type` 有無」で生じる分岐条件は明示され、同一入力に対して同一の経路が選択されること
+- AI の最終判定（候補 Read 後の関連性確認）はこの再現性要件の対象外とする
+
+> 分岐ロジックの責務配置（具体的な実装手段）は設計書で規定する。
+
+### 機能要件 — ADR の検索対象登録
+
+- ADR は specs カテゴリに `doc_type=adr` で同居させる。ADR の配置先は `.doc_structure.yaml` の `specs.root_dirs` および `specs.doc_types_map` で定義し、`doc_types_map` に `adr` を登録する
+- ToC 生成パイプラインは、当該パスに置かれた md ファイルに対して `doc_type: adr` を自動付与する
+- `--doc-type adr` が `doc_types_map` に未登録の状態で指定された場合は、エラーケース表に従い未定義値エラー（`doc_types_map` 定義値一覧の案内）を返す
+
+> ADR 配置パスの具体形（`docs/specs/**/adr/` の新設か `docs/specs/**/design/` 配下に同居か等）は設計書で確定する。要件としては「`.doc_structure.yaml` 経由で検索パイプラインから一意に特定でき、`doc_type: adr` が ToC に付与される」結果のみを保証する。
+
+### 機能要件 — Index/grep 経路の doc_type 判定
+
+- `--index` モードおよび `auto` モードの Index 候補に対しても `--doc-type` フィルタが同一の意味で適用される（前述の意味論に従う）
+- 結果返却前に doc_type フィルタが適用され、3 モード間で意味の差が出ないこと（具体方式は設計書で確定する。TBD-005）
+
+### 文書要件 — ADR ハンドリング指針追補
+
+- doc-advisor の docs に「ADR を ToC エントリに写し取るときの構造マッピング指針」を追補する
+- 追補は次の **両方** を満たすこと:
+  - [必須] ADR の主要構造要素（Status / Decision / Context / Considered Options / Consequences / Supersedes 関係）を既存 ToC エントリスキーマ（`doc_type / title / purpose / content_details / applicable_tasks / keywords`）へどうマップするかを各要素ごとに明示する。マッピング表の参考形（実際のフィールド配置は設計フェーズで微調整可）:
+
+    | ADR 要素           | マップ先                       |
+    | ------------------ | ------------------------------ |
+    | Decision           | purpose または content_details |
+    | Status             | keywords                       |
+    | Context            | content_details                |
+    | Considered Options | content_details                |
+    | Consequences       | content_details                |
+    | Supersedes         | content_details + keywords     |
+
+  - [制約] ToC エントリのスキーマ拡張は行わない（既存スキーマで吸収する）
+- ADR の書き方そのもの（フォーマット規約、必須要素、評価基準）は本 feature の対象外（forge 責務）
+
+### 性能・コスト要件（非機能）
+
+- 測定対象: doc_type 適用後の ToC 件数、Read 対象トークン数
+- 測定条件: FNC-002 のゴールデンセット + ADR を含む追加クエリで実行
+- 合格判定: NFR-001 のコンテキスト削減目標を満たすこと、かつ doc_type 適用後も false negative ゼロが維持されること
+
+### スコープ外
+
+以下は本 feature では扱わない:
+
+- `query-rules` SKILL への `--doc-type` 追加（ルールは常に全体の作業に及ぶため、doc_type 絞り込みは要件として成立しない）
+- ADR の定義、フォーマット規約（MADR / Nygard 等の選定）、必須要素、テンプレ、評価基準、ライフサイクル運用（forge 責務）
+- ADR 専用カテゴリ化（`query-adr` / `create-adr-toc` 新設）。既存 specs カテゴリに `doc_type=adr` で同居する前提
+- ToC エントリスキーマの拡張（`status` フィールド追加など）
+
+## エラーケース
+
+| 条件                                                                                                            | 動作                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `--doc-type` の値が `.doc_structure.yaml` の `doc_types_map` に未定義（exclude 適用後の有効値集合に含まれない） | エラーを通知する。有効値集合（`doc_types_map` から `exclude` 除外後）を一覧で案内する                       |
+| `--doc-type` の値が空文字列（`--doc-type ""`）                                                                  | エラーを通知する                                                                                            |
+| `--doc-type` の値内に空要素（例: `design,,requirement` / `design, ,requirement`）                               | エラーを通知する。該当位置を明示する                                                                        |
+| `--doc-type` の値が大文字小文字で正規化に失敗（例: `Design`）                                                   | 未定義値として扱いエラーを通知する。有効値集合を案内する                                                    |
+| `--doc-type` で指定した doc_type に該当する文書が ToC / Index 双方に 0 件                                       | 空のリストを返す（エラーにはしない）                                                                        |
+| `--doc-type` 多値指定で一部の値が未定義（例: `design,unknown`）                                                 | エラーを通知する。未定義の値を明示する                                                                      |
+| `--doc-type` 適用後に ToC が 0 件になり、かつ Index が利用不可（API キー未設定）                                | 空のリストを返し、API キー設定を案内する                                                                    |
+| `--doc-type` 指定のみでタスク説明が無い                                                                         | エラーを通知する。受理する構文 `query-specs [--toc\|--index] [--doc-type TYPE[,TYPE...]] <task>` を案内する |
+| ToC が存在しない（`create-specs-toc` 未実行） + `--doc-type` 指定                                               | 既存仕様に従いエラーを通知する（NFR-001 のエラー定義に従う）                                                |
+
+## 関連要件
+
+- FNC-001: コンテキスト外検索 — query-specs の 3 モード検索アーキテクチャ
+- FNC-002: 見落としゼロの検索精度 — doc_type フィルタ適用時もこの精度要件を満たす
+- FNC-003: インデックス生成の高速化 — Index 構築は本 feature の対象外（既存仕様維持）
+- NFR-001: コンテキストコスト削減 — doc_type フィルタ適用時もコスト削減目標を満たす
+- REQ-001: doc-advisor 全体要件 — `.doc_structure.yaml` の `doc_types_map` を本 feature が利用する
+- DES-006: セマンティック検索設計 — 3 モード検索アーキテクチャ・Index JSON スキーマが本 feature の前提
+
+## 優先度
+
+| 優先度 | 範囲                                                                                                          | 確定タイミング             |
+| ------ | ------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| P0     | doc_type 絞り込み動作 / default 値 / 入力文法と正規化 / exclude との合成 / 検索網羅性 / 再現性 / エラーケース | 要件段階（本文書）で確定   |
+| P1     | ADR の検索対象登録 / Index 経路 doc_type 判定 / ADR ハンドリング指針追補                                      | 設計開始前に確定           |
+| P2     | `--doc-type all` 等の拡張オプション                                                                           | 任意（設計フェーズで判断） |
+
+P0 は本文書で確定済み。`exclude` と `--doc-type` の合成順序および値の正規化は P0 として要件段階で確定したため、関連 TBD は解決済みに移した。
+
+## 未確定事項
+
+| ID          | 内容                                                                                               | 解決方法                                                                                                                 | 期限       |
+| ----------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| TBD-001     | `--doc-type all` のような全件指定オプションを設けるかどうか（P2 拡張）                             | 設計フェーズでユーザー確認                                                                                               | 設計開始前 |
+| ~~TBD-002~~ | ~~`.doc_structure.yaml` の `specs.patterns.exclude` と SKILL 側 `--doc-type` の合成順序~~          | 本文書 §機能要件 — doc_type 絞り込み で解決済み（exclude が母集合、`--doc-type` は母集合内フィルタ）                     | 解決済み   |
+| TBD-003     | ADR ハンドリング指針の追補先（`plugins/doc-advisor/docs/toc_format.md` に節追加 / 別ファイル新設） | 設計フェーズで決定                                                                                                       | 設計開始前 |
+| ~~TBD-004~~ | ~~doc_type 値の正規化ルール（大文字小文字の扱い、エイリアス可否）~~                                | 本文書 §機能要件 — doc_type 絞り込み で解決済み（case-sensitive、エイリアス不可、空白 trim、空要素エラー、重複は一意化） | 解決済み   |
+| TBD-005     | Index 経路の doc_type 判定方式                                                                     | 設計フェーズで確定                                                                                                       | 設計開始前 |
+
+## 変更履歴
+
+| 日付       | 変更者   | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-30 | k2moons  | 初版作成（feature: add-adr、plan `query-specs-doc-type-adr-moonlit-wilkes` から派生。退避ファイル `.claude/.temp/add-adr-issues.md` を起点）                                                                                                                                                                                                                                                                                                        |
+| 2026-04-30 | AI fixer | レビュー指摘 26 件の一括修正: frontmatter に name/description 追加、CLI 引数構文と正規化ルールを要件確定、exclude との合成順序を確定、検索網羅性節を What に集約（処理経路は DES-006 へ移譲）、ADR 検索対象登録要件と Index 経路 doc_type 判定要件を新設、ADR マッピングを AND 化、再現性スコープをユーザー観測ベースに限定、性能/コスト要件・優先度節を追加、関連要件に DES-006 追記、TBD-002/TBD-004 を解決済みへ、TBD-003 のパスをフルパスに修正 |
+| 2026-04-30 | AI fixer | 単独修正レビュー対応: 再現性節から script ファイル名を除去しユーザー観測ベースに統一、Index/grep 経路節の案 A/B を削除し TBD-005 へ移譲、テスト要件節を削除（spec_design_boundary §4.5 によりテストは設計書責務）、100 件閾値の処理経路言及を要件本文から除去（DES-006 へ委譲）、精度検証データ表と擬似コード式を削除                                                                                                                               |

@@ -4,123 +4,160 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-25T02:06:19Z
-  file_count: 42
+  generated_at: 2026-04-29T17:52:42Z
+  file_count: 43
 
 docs:
+  docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
+    doc_type: design
+    title: "DES-025 issue-driven-flow Design: SDD Pipeline Integration Starting from GitHub Issues"
+    purpose: Defines architecture, module design, data flow, state management, and error handling for issue-driven feature development workflow that connects GitHub Issues to SDD pipeline through forge and anvil plugins
+    content_details:
+      - Architecture overview with plugin dependencies and skill roles
+      - Module design (7 skills, common scripts, class diagrams)
+      - Use case design (Issue creation, SDD execution, progress updates, Figma design retrieval)
+      - Issue body structure with HTML comment markers for user-content/artifacts/status/errors sections
+      - Session management and state transitions (phase progress, runtime kind, Figma fetch, issue rewrite, error handling)
+      - Error handling patterns (ERR-01 prerequisites, TBD-003 phase failure, NFR-03 audit logging, rate limiting, credential masking)
+      - PR creation boundary and completion criteria
+    applicable_tasks:
+      - Issue-driven workflow implementation
+      - Anvil plugin skill orchestration design
+      - Integration with forge SDD pipeline
+      - GitHub Issue write-back mechanism design
+      - Error handling and state management for async operations
+    keywords:
+      - issue-driven-flow
+      - anvil
+      - forge
+      - SDD
+      - orchestration
+      - GitHub Issue
+      - Figma integration
+      - session management
+      - state transitions
+      - error handling
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md:
     doc_type: requirement
-    title: "REQ-005 issue-driven-flow requirement definition: GitHub Issue-driven SDD pipeline integration"
-    purpose: Establishes GitHub Issue as the entry point for development by enabling Issue-to-SDD pipeline orchestration, providing traceability from Issue through requirements, design, planning, and implementation phases
+    title: "REQ-005 issue-driven-flow requirements: SDD pipeline triggered by GitHub Issues"
+    purpose: Defines requirements for GitHub Issue-driven workflow to launch SDD pipeline (requirements definition → design → planning → implementation), enabling traceability from Issue to deliverables and progress status updates
     content_details:
-      - Issue creation with type-specific mandatory sections for Bug Report and Feature Request
-      - SDD pipeline orchestration triggered from Issue with variant paths for UI Issue and non-UI Issue
-      - Issue write-back operations reflecting artifact links and progress status without overwriting user input
-      - Runtime type selection mechanism for UI Issue / non-UI Issue branching
-      - Figma design information extraction for UI Issue path including frame identifiers, design details, design tokens, and screenshots
-      - Error handling and prerequisite validation including GitHub CLI authentication, git repository context, remote configuration, and Figma API access
-      - Cross-cutting invariants protecting Issue indexability, forge existing skill isolation, and user input preservation
+      - Issue creation operation with Bug Report and Feature Request templates and mandatory sections
+      - Issue-driven flow orchestration for sequential SDD phases with type-based routing (UI Issue vs non-UI Issue)
+      - Issue write-back operation to link deliverables and track progress status
+      - Runtime type selection (UI Issue / non-UI Issue) for SDD pathway branching
+      - Figma-derived information retrieval for UI Issue design phase
+      - Dependency constraints (anvil → forge one-directional, no forge modification)
+      - Issue indexing principle (reference-based, not content duplication)
+      - External API rate limit handling and audit logging requirements
+      - Prerequisite condition validation (gh CLI, git repository, remote repo, FIGMA_PAT for UI path)
+      - Error handling for failed SDD phases, PR creation, and Figma information retrieval
     applicable_tasks:
-      - Issue-driven feature implementation planning
-      - SDD pipeline orchestration design
-      - GitHub Issue and artifact integration implementation
-      - Error handling and prerequisite validation implementation
-      - Figma integration for UI design workflows
+      - GitHub Issue creation from problem or feature request description
+      - SDD pipeline orchestration triggered by Issue number
+      - Issue progress tracking and deliverable linking
+      - UI design phase integration with Figma
+      - PR creation workflow from Issue
     keywords:
-      - Issue-driven-flow
-      - GitHub Issue
+      - Issue-driven workflow
       - SDD pipeline
-      - orchestration
-      - artifact tracking
-      - Figma integration
-      - UI Issue
-      - Feature Request
+      - GitHub Issue
       - Bug Report
+      - Feature Request
+      - UI Issue
+      - non-UI Issue
+      - Figma
+      - orchestration
+      - deliverable tracking
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
-    title: "COMMON-REQ-001: Phased Versioned Data Migration Requirements"
-    purpose: Defines a phased migration framework for major-versioned data formats so legacy serialized data converts to the current format while preserving backward compatibility.
+    title: Versioned Data Migration Requirements
+    purpose: Defines a stepwise migration framework to ensure backward compatibility for versioned data formats, enabling applications to handle legacy data versions
     content_details:
-      - Major-version integers; missing or undetectable version treated as oldest (v1)
-      - One-step migrations only (vN to vN+1); registry maps target version to function; no direct multi-version jumps
-      - Apply ascending chain for detected_version < v <= current_version; each step consumes prior output
-      - Idempotent pure transforms only; no file I/O, network, or other side effects
-      - Exceptions propagate; no silent catch-all fallback; data newer than current_version passes through unchanged
-      - In-memory transforms without rewriting source blobs; migration core must not depend on external libraries
-      - "Extensibility: add one migrator entry and bump CURRENT_VERSION; existing migrators stay unchanged (open-closed)"
-      - "Reference: doc_structure_version comment in .doc_structure.yaml and migrate_doc_structure.py"
+      - Version detection mechanism
+      - Stepwise migration pattern (v1→v2→v3)
+      - Migration registry with target version as key
+      - Pure function requirements for migration functions
+      - Error handling for unknown versions
+      - Open-Closed principle for extensibility
+      - Memory-based transformation with no file I/O
+      - Schema change scenarios and applicability scope
     applicable_tasks:
-      - Implementing versioned persisted-data migrations
-      - Adding new schema versions for serialized formats
-      - Reviewing backward compatibility for stored data
-      - doc_structure migration implementation
+      - Version migration implementation
+      - Data format upgrade design
+      - Migration function implementation
+      - Backward compatibility verification
+      - Data transformation testing
     keywords:
-      - phased migration
-      - MIGRATIONS registry
-      - CURRENT_VERSION
-      - idempotent
-      - pure function
-      - doc_structure_version
+      - version migration
       - backward compatibility
-      - major version
-      - migrate_doc_structure
+      - stepwise transformation
+      - migration registry
+      - pure function
+      - data format
+      - versioning strategy
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md:
     doc_type: requirement
-    title: "COMMON-REQ-002: Error Handling Policy Requirements"
-    purpose: Defines error-handling policy forbidding silent fallback and broad catches, allowing only external-factor exceptions with explicit reporting, and requiring pure functions to propagate internal bugs.
+    title: Error Handling Policy Requirements
+    purpose: Defines error handling policy to prevent bug concealment, distinguishing between external and internal errors, and requiring transparent error propagation
     content_details:
-      - Applies to all Python scripts and SKILL.md project-wide
-      - "FR-01: catch only external-factor errors; prohibit except Exception and bare except; propagate internal bugs (TypeError, KeyError, IndexError, AttributeError)"
-      - "FR-02: allow file I/O, network, and narrow ValueError for conversion-only try blocks; HTTP server broad catch only as framework pattern with proper error handling"
-      - "FR-03: on catch, return error to caller or stderr; JSON scripts return status and message fields; warnings and errors via sys.stderr not stdout"
-      - "FR-04: pure functions must not mask bugs via rollback or returning prior state; validate with tests not defensive runtime catch"
-      - Defines external-factor error, internal bug, and silent fallback
-      - "Worked examples: load_config with parse_config outside try; migrations must propagate exceptions"
+      - Distinction between external errors (I/O, network, user input) and internal bugs
+      - Prohibition of silent fallback patterns (catching and concealing bugs)
+      - Specific exception types to catch vs. avoid (Exception and bare except forbidden)
+      - "Permitted exceptions: FileNotFoundError, IOError, OSError, UnicodeDecodeError, ConnectionError, TimeoutError, ValueError"
+      - Error reporting formats (JSON error status, stderr output)
+      - Pure function exception handling rules (no defensive catch, test-based validation)
+      - Judgment flowchart for determining when to catch exceptions
+      - Code examples of correct vs. incorrect patterns
     applicable_tasks:
-      - Python exception handling refactoring and compliance
-      - SKILL.md and CLI script error-handling review
-      - JSON CLI error response implementation
-      - Pure function and parser code review for bug masking
+      - Python script implementation review
+      - SKILL.md development
+      - Exception handling pattern validation
+      - Code refactoring for error handling compliance
+      - Bug concealment prevention
     keywords:
+      - error handling
+      - exception handling
+      - bug concealment
       - silent fallback
-      - except Exception
-      - external-factor error
-      - sys.stderr
-      - pure function
-      - FileNotFoundError
-      - ValueError
-      - COMMON-REQ-002
-      - JSON error status
+      - external errors
+      - internal bugs
+      - Python exceptions
+      - pure functions
+      - error propagation
+      - defensive programming
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md:
     doc_type: design
-    title: DES-001 DocAdvisor Plugin Migration Design
-    purpose: Defines the technical architecture and implementation details for migrating DocAdvisor from template-based installer to a Claude Code plugin, including directory structure, module design, use cases, and migration phases.
+    title: DocAdvisor Plugin Migration Design
+    purpose: Specifies architecture, module design, use cases, migration path, and test strategy for moving DocAdvisor from template-based installer to Claude Code plugin
     content_details:
-      - Plugin directory structure with scripts and skills
-      - Script dependencies and responsibilities (toc_utils, create_pending_yaml, write_pending, merge_toc, validate_toc, create_checksums)
-      - Component architecture and data flow
-      - "Four main use cases: full ToC generation, incremental updates, rule search, specification search"
-      - Seven migration phases with detailed phase mapping
-      - Python environment adaptations for plugin context
-      - YAML validation and schema definition
-      - Integration with forge review pipeline
+      - Plugin directory structure with flattened scripts layout
+      - Module design and responsibilities for 6 Python scripts and shell script
+      - "Use case sequences: full ToC generation, incremental updates, document search"
+      - "Path reference rewrites: plugin resources, project data references, skill namespacing"
+      - toc_utils.py environment adaptation with 3-stage project root fallback
+      - "External interfaces: plugin.json, marketplace.json entry, forge integration"
+      - File migration mapping from reference template to plugin directory
+      - "Testing strategy: bash to Python unittest migration with 8 test modules"
+      - Risk assessment and rollback procedures
     applicable_tasks:
       - DocAdvisor plugin migration implementation
       - Plugin architecture design review
-      - Python script porting to plugin environment
-      - Skill implementation for ToC generation
-      - Integration testing between DocAdvisor and forge
+      - Migration phase planning and execution
+      - Script environment adaptation for plugin context
+      - Test suite development for plugin components
+      - Integration testing with forge plugin
+      - Reference template sync and verification
     keywords:
       - DocAdvisor
       - plugin migration
-      - ToC generation
-      - toc_utils
-      - script dependencies
-      - YAML validation
-      - use cases
-      - phase mapping
-      - plugin.json
-      - query-rules
+      - architecture
+      - toc-updater agent
+      - project root detection
+      - .doc_structure.yaml
+      - CLAUDE_PLUGIN_ROOT
+      - Python unittest migration
+      - marketplace integration
   docs/specs/doc-advisor/design/DES-003_document_identifier.md:
     doc_type: design
     title: Document Identifier Design
@@ -152,568 +189,625 @@ docs:
       - schema design
   docs/specs/doc-advisor/design/DES-004_document_model.md:
     doc_type: design
-    title: Document Model Design Specification
-    purpose: Defines the overall structure, configuration items, and scanning specifications for the document model managed by Doc Advisor, including directory organization, scan patterns, and ToC generation
+    title: Document Model Design
+    purpose: Defines the document model structure, configuration items, and scan targets for documents managed by Doc Advisor
     content_details:
-      - Document categories (rules and specs)
-      - Directory structure and root directories
-      - Scan targets and exclusion patterns
-      - Configuration file specifications (.doc_structure.yaml)
-      - doc_type definitions and mapping
-      - ToC file generation and structure
-      - Checksum-based change detection
-      - Work directory management
+      - Document categories (rule and spec)
+      - Directory structure and root directories configuration
+      - Scan patterns and exclusion rules
+      - Configuration file schema (.doc_structure.yaml)
+      - Document type definitions (requirement, design, plan, api, reference, spec)
+      - ToC file structure and metadata
+      - Checksum file for change detection
+      - Work directory for pending YAML files
+      - System configuration defaults and runtime merging
     applicable_tasks:
-      - Document structure configuration
-      - Scan pattern and exclusion setup
-      - ToC generation initialization
-      - Configuration file creation and validation
-      - Project specification indexing
+      - Setting up document structure configuration
+      - Understanding document categorization and scanning behavior
+      - Configuring document root directories
+      - Defining document types mapping
+      - Understanding ToC generation output structure
     keywords:
       - document model
-      - directory structure
-      - scan pattern
-      - exclusion rules
+      - configuration
+      - document categories
+      - ToC generation
       - doc_structure.yaml
       - root_dirs
       - doc_types_map
-      - ToC generation
-      - configuration file
+      - scan patterns
+      - exclusion rules
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md:
     doc_type: design
-    title: ToC Generation Flow Design (DES-005)
-    purpose: Defines the overall ToC automatic generation system, change detection mechanism, parallel processing, and merge process for Doc Advisor
+    title: ToC Generation Flow Design
+    purpose: "Defines the complete flow for Doc Advisor's ToC auto-generation system, including change detection, parallel processing, merge logic, and error recovery"
     content_details:
-      - "System components: Orchestrator, Subagent, Checksum Generator, Pending Generator, Writer, Merger, Validator"
+      - "System components: Orchestrator, Subagent, checksum generator, pending generator, writer, merger, validator"
       - "Processing modes: full, incremental, continuation, delete-only"
-      - "Phase 0: Startup validation with .doc_structure.yaml"
-      - "Phase 1: Change detection using SHA-256 hash with checksums file"
-      - "Phase 2: Parallel processing with individual entry files (max 5 parallel)"
-      - "Phase 3: Merge processing combining work files into final ToC"
-      - "Phase 4: Validation with YAML syntax, required fields, entry fields, file existence"
-      - Error handling and recovery mechanisms
-      - Performance considerations with 80% time reduction in parallel processing
-      - Skill and Agent design rationale with fork constraints
+      - "Phase 0: startup validation flow for .doc_structure.yaml"
+      - "Phase 1: hash-based change detection algorithm"
+      - "Phase 2: parallel processing with individual entry file method"
+      - "Phase 3: merge flow for combining work files into final ToC"
+      - "Phase 4: validation checks including YAML syntax, required fields, file existence"
+      - Error handling and continuation recovery mechanisms
+      - "Performance: 80% time reduction with 5-parallel processing"
+      - Skill/Agent design rationale with fork constraints and component separation
     applicable_tasks:
-      - ToC generation implementation
-      - Change detection mechanism design
+      - ToC generation workflow design
+      - Change detection mechanism implementation
       - Parallel processing orchestration
-      - Merge process implementation
-      - Validation framework design
-      - Error recovery and continuation logic
-      - Performance optimization
+      - Merge and validation logic
+      - Error recovery and continuation handling
+      - Configuration management with .doc_structure.yaml
     keywords:
-      - ToC generation
+      - ToC
+      - generation
       - change detection
       - parallel processing
       - merge
       - validation
-      - checksum
-      - subagent
-      - SHA-256
-      - doc-advisor
-      - orchestrator
+      - hash-based
+      - incremental
+      - continuation
+      - configuration
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md:
     doc_type: design
-    title: Semantic Search Architecture Design
-    purpose: Specifies semantic search architecture combining embedding-based indexing and ToC keyword matching in hybrid 3-mode design for document discovery
+    title: DES-006 Semantic Search Design
+    purpose: Describes hybrid 3-mode search architecture combining ToC keyword matching with Embedding-based Index search. Maintains ToC as primary search method while Index provides semantic supplementation in auto mode
     content_details:
-      - Embedding-based index construction with OpenAI API
-      - Cosine similarity search implementation
-      - Full-text grep search for named entities
-      - 3-mode search architecture (ToC, Index, auto-hybrid)
-      - Staleness detection and auto-rebuild mechanism
-      - Workflow documentation for ToC and Index search procedures
-      - Integration with query-specs and query-rules SKILL.md
+      - Hybrid search architecture (ToC + Index + full-text)
+      - "3 search modes: --toc, --index, auto (default)"
+      - OpenAI Embedding API integration with JSON index storage
+      - Cosine similarity search with threshold-based filtering
+      - ToC size threshold (100 entries) with filter_toc.py for large collections
+      - "Module design: embed_docs.py, search_docs.py, grep_docs.py, filter_toc.py"
+      - Phase 3 frozen due to ToC precision superiority in quality tests
+      - "Error handling: API key management, index staleness detection, model mismatch recovery"
     applicable_tasks:
       - Semantic search feature implementation
-      - Document search quality optimization
-      - Index maintenance and staleness checking
-      - Search mode switching and fallback logic
-      - Test quality measurement with golden datasets
+      - Index construction and incremental updates
+      - Search mode switching and auto-fallback design
+      - Large project ToC optimization
+      - Hybrid search quality validation
     keywords:
       - semantic search
-      - embedding
+      - Embedding
       - OpenAI API
       - cosine similarity
-      - full-text search
       - hybrid search
+      - ToC
       - index
-      - staleness
-      - gradient descent
-      - query workflow
+      - filter_toc
+      - auto mode
+      - staleness check
   docs/specs/doc-advisor/design/DES-007_code_index_design.md:
     doc_type: design
-    title: Code Index Design
-    purpose: Specifies the design of a persistent code index that extracts structural information from source code files using two-stage search (machine learning plus AI inference) to enable high-speed accurate code symbol search across large projects
+    title: Code Index Design (DES-007)
+    purpose: Specifies architecture for persistent code indexing using AST extraction via MCP, with two-stage search (keyword matching and AI inference) for fast high-precision code discovery across large projects
     content_details:
-      - Responsibility division (scan, extraction, graph, search, persistence, AI inference)
-      - Module design and integration (core.py, graph.py, build_code_index.py, search_code.py, language subagents)
-      - Language subagent interface with common output format for multi-language support
-      - Swift subagent implementation using Swift-Selena MCP for AST-based metadata extraction
-      - Import graph design with module resolution and N-hop breadth-first traversal algorithm
-      - Stage 1 keyword search scoring by matched keyword count with 30KB output constraint
-      - Affected-range search via import graph dependency analysis with configurable hop distance
-      - Index schema version management for backward compatibility and differential updates
-      - Differential update workflow using SHA-256 file hash change detection to process only modified files
+      - Core module for scanning and index building
+      - ImportGraph class for import dependency graph construction and N-hop traversal
+      - Language subagent interface for language-specific metadata extraction via MCP servers
+      - Swift subagent for Swift-Selena MCP integration
+      - Common output format JSON schema for language-agnostic indexing
+      - Keyword search with scoring (Stage 1)
+      - Affected-by search using import graph
+      - Differential update via SHA-256 checksums
+      - Index schema with version management
+      - Error handling and recovery procedures
     applicable_tasks:
-      - Code index building and full reconstruction
-      - Code metadata extraction from Swift source files
-      - Code symbol search by name and documentation
-      - Import dependency analysis and module resolution
-      - Impact analysis using import graph traversal
-      - MCP server integration and tool orchestration
-      - Change detection for efficient differential indexing
+      - Code search task specification evaluation
+      - Implementation of code index builder
+      - Implementation of code search CLI
+      - Integration of language-specific MCP servers
+      - Code index schema design review
+      - Search performance optimization
+      - Affected files analysis for change impact assessment
     keywords:
       - code index
-      - code metadata
+      - AST extraction
+      - MCP server
       - import graph
-      - search
-      - Swift
-      - MCP
-      - AST
-      - symbol
-      - import dependency
       - differential update
+      - keyword search
+      - semantic search
+      - Swift-Selena
+      - schema version management
+      - dependency analysis
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
-    title: FNC-001 Context External Search Specification
-    purpose: Defines requirements for executing document search (query-specs / query-rules) outside AI context window, passing search results as path lists to AI
+    title: "FNC-001: Context External Search Specification"
+    purpose: Defines requirements for executing document search operations outside the AI context window, with search results returned as path lists to the AI
     content_details:
-      - Index/ToC/auto 3 modes for search
-      - External execution via search_docs.py / grep_docs.py to avoid context consumption
-      - ToC mode with AI keyword matching (context-consuming but high-precision)
-      - Search input as task description in natural language
-      - Output as candidate document path list from project root
-      - Error handling for missing index, empty query, zero results
+      - Search execution outside context window using search_docs.py and grep_docs.py scripts
+      - Three-mode search strategy (--toc, --index, auto mode)
+      - ToC mode with keyword matching for high precision
+      - Index mode with semantic search capabilities
+      - Output format as candidate document path lists
+      - Error handling for missing indexes, empty queries, and zero results
       - Test requirements for new Python scripts
-      - Source user-visible execution method and output format unchanged
+      - Related requirements FNC-002, FNC-003, NFR-001
     applicable_tasks:
-      - Document search feature implementation
-      - Context cost optimization for search
-      - Search script development and testing
-      - Index generation and maintenance
+      - Search functionality implementation for doc-advisor
+      - Query-specs and query-rules command enhancement
+      - Search index generation and management
+      - Context cost optimization for AI operations
+      - Search accuracy validation and testing
     keywords:
       - context window
-      - search
+      - search index
+      - path list
+      - semantic search
+      - ToC mode
+      - Index mode
+      - search_docs.py
+      - grep_docs.py
       - query-specs
       - query-rules
-      - Index
-      - ToC
-      - external search
-      - FNC-001
   docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md:
     doc_type: requirement
     title: FNC-002 Zero-Miss Search Accuracy Specification
-    purpose: Defines requirements for doc-advisor search functionality to achieve 100% recall with no false negatives, returning all relevant documents without result count limits
+    purpose: Defines requirements for achieving zero false-negative search accuracy in doc-advisor, ensuring all relevant documents are returned without result count limits
     content_details:
-      - Search accuracy requirements with zero false negatives and no result count limits
-      - Target search fields including title, purpose, content_details, applicable_tasks, and keywords
-      - Category separation maintaining rules and specs independently
-      - Quality test methodology using golden dataset with 43 queries across 6 query types
-      - Test results from v0.2.0 showing ToC method highest accuracy
-      - Error handling for stale index detection with recovery guidance
+      - Search accuracy requirements (false negatives = 0, no result limit)
+      - Search target fields (title, purpose, content_details, applicable_tasks, keywords)
+      - Category separation requirement (rules/specs independence)
+      - Quality verification approach (golden test set with manual validation)
+      - Test results from v0.2.0 (ToC vs Index vs auto hybrid comparison)
+      - Error handling for stale indexes (warning and regeneration guidance)
     applicable_tasks:
-      - Search functionality implementation
-      - Quality testing and evaluation
-      - Index accuracy validation
-      - Document retrieval completeness verification
+      - Search system specification review
+      - Search accuracy validation planning
+      - Quality test implementation
+      - Index staleness handling design
     keywords:
-      - zero-miss search
+      - zero-miss
       - false negative
-      - recall
       - search accuracy
-      - golden dataset
-      - ToC index
-      - quality testing
-      - embedding comparison
+      - quality test
+      - golden set
+      - index staleness
+      - ToC
+      - Embedding
+      - hybrid search
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md:
     doc_type: requirement
-    title: Fast Index Generation Specification
-    purpose: Specifies high-speed index generation for document search, with full rebuild and differential update capabilities
+    title: Fast Index Generation Requirements
+    purpose: Specifies requirements for accelerating index generation through full rebuild and incremental update capabilities using SHA-256 checksums
     content_details:
-      - Speed requirements for full rebuild and differential updates
-      - Index generation triggers via create-specs-toc and create-rules-toc skills
-      - Index persistence and differential detection using SHA-256 checksums
-      - Error handling for corrupted indexes and deleted files
-      - Related requirements linking to context-aware search and ToC deprecation
+      - Speed requirements for full rebuild and incremental updates
+      - Incremental update trigger via create-specs-toc and create-rules-toc skills
+      - Persistent index storage in .claude/doc-advisor/
+      - Index corruption handling with full rebuild fallback
+      - File deletion detection for incremental removal from index
+      - SHA-256 checksum-based change detection
+      - Relationship to context-free search and YAML ToC deprecation
+      - Numeric targets for speed measurement unspecified
     applicable_tasks:
-      - Index generation implementation
-      - Differential update processing
-      - Performance optimization
-      - Error recovery implementation
+      - Planning index generation optimization
+      - Implementing full and incremental index rebuilds
+      - Handling index corruption and recovery
+      - Validating index generation performance
+      - Designing search capability improvements
     keywords:
       - index generation
+      - incremental update
+      - checksum
+      - SHA-256
+      - fast rebuild
       - differential update
-      - full rebuild
-      - checksums
-      - fast search
+      - persistence
+      - ToC deprecation
+  docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md:
+    doc_type: requirement
+    title: FNC-004 doc_type Filter Requirement Specification
+    purpose: Defines requirements for adding doc_type filtering to query-specs SKILL, setting default behavior, and establishing guidelines for mapping ADR elements to ToC entries
+    content_details:
+      - doc_type filtering syntax with comma-separated multiple values
+      - "Input normalization rules: comma-separated, whitespace trimming, case-sensitive, error handling for empty elements and duplicates"
+      - Default behavior without --doc-type flag is design,requirement
+      - Valid doc_type values derived from .doc_structure.yaml specs.doc_types_map excluding specs.patterns.exclude
+      - ADR search target registration with doc_type=adr in specs category
+      - "Structure mapping guidelines for ADR elements: Status→keywords, Decision→purpose or content_details, Context/Options/Consequences→content_details, Supersedes→content_details and keywords"
+      - "False negative requirement: related documents must appear in results across all three search modes (ToC, Index, auto)"
+      - "Error cases: undefined doc_type values, empty strings, empty elements in comma list, case mismatch, missing task description"
+    applicable_tasks:
+      - doc_type filtering requirement definition
+      - Query-specs SKILL argument design
+      - ADR integration planning
+      - Search result validation across multiple modes
+      - Error handling specification
+    keywords:
+      - doc_type filtering
+      - query-specs
+      - Architecture Decision Record
+      - ADR
+      - ToC mapping
+      - search precision
+      - default behavior
+      - input normalization
+      - false negative
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md:
     doc_type: requirement
     title: NFR-001 Context Cost Reduction Specification
-    purpose: Specifies requirements for reducing AI context window consumption during document retrieval by eliminating full ToC YAML loading
+    purpose: Defines requirements for reducing AI context window consumption during document searches through index-based and ToC selection modes
     content_details:
-      - Context cost reduction targets 50% or more reduction in --index mode
-      - "Three retrieval modes: --index candidate documents only, --toc full ToC, auto hybrid approach"
-      - Measurement methodology using token count on fixed query set
-      - Error handling cases for missing index, missing ToC, both unavailable
-      - Fallback behavior --index and --toc modes do not auto-fallback, auto mode provides guidance
-      - Prerequisite FNC-001 out-of-context search must be implemented
+      - Cost reduction targets by search mode (index, toc, auto)
+      - Context cost measurement methodology
+      - Three-mode search strategy with auto-mode 100-entry threshold
+      - Error handling for missing index or ToC
+      - Auto mode precision-first design with fallback behavior
     applicable_tasks:
-      - Index mode implementation
-      - Context cost measurement and optimization
-      - Error handling and fallback design
-      - Query mode selection logic
+      - Context cost optimization review
+      - Search performance implementation
+      - AI token consumption monitoring
+      - Index vs ToC mode selection design
+      - Error handling for missing search resources
     keywords:
       - context cost
-      - index mode
-      - ToC
-      - token reduction
-      - retrieval modes
-      - query performance
+      - token consumption
+      - search mode
+      - index threshold
+      - cost reduction
+      - document search
+      - index candidate
+      - ToC filtering
   docs/specs/doc-advisor/requirements/NFR-002_yaml_toc_abolition_spec.md:
     doc_type: requirement
-    title: YAML ToC Abolition Specification
-    purpose: Defines requirements and conditions for discontinuing the YAML ToC generation pipeline once embedding-based search achieves sufficient accuracy
+    title: NFR-002 YAML ToC Abolition Specification
+    purpose: Defines requirements for abolishing the current YAML ToC and its generation pipeline after new search index achieves sufficient precision
     content_details:
-      - Frozen status as of 2026-04-11
-      - Abolition conditions and triggers
-      - "Targets for discontinuation: YAML ToC files and generation pipeline components"
-      - "Components to maintain: checksums, doc_structure.yaml, skill contracts"
-      - "Operational continuity requirements: differential updates, index recovery, interruption handling"
-      - "Prerequisite: FNC-002 precision validation completion"
+      - Abolition conditions requiring precision validation without false negatives
+      - Abolition scope including specs_toc.yaml, rules_toc.yaml, and ToC generation pipeline
+      - Maintained components such as toc_checksums.yaml and doc_structure.yaml
+      - Operational continuity requirements for differential updates and recovery
+      - Error handling when precision validation is incomplete
+      - Frozen status rationale and hybrid ToC-Embedding approach
+      - Related requirements traceability with FNC-002, FNC-003, and REQ-001
     applicable_tasks:
-      - Evaluate search index performance
-      - Plan ToC deprecation lifecycle
-      - Design hybrid index strategy
-      - Validate embedding index quality
+      - Doc-advisor architecture and strategy planning
+      - Search index evaluation and performance comparison
+      - ToC generation pipeline decommissioning
+      - Embedding index implementation and quality validation
+      - Precision validation testing and precision metrics definition
     keywords:
       - YAML ToC
       - abolition
-      - embedding index
-      - search precision
-      - index generation
-      - ハイブリッド方式
+      - embedding
+      - search index
+      - precision validation
+      - frozen
+      - hybrid approach
+      - FNC-002
+      - FNC-003
+      - doc-advisor
   docs/specs/doc-advisor/requirements/NFR-003_standard_library_preferred_spec.md:
     doc_type: requirement
-    title: Standard Library Preferred Specification
-    purpose: Defines library selection policy for search index implementation, allowing external libraries when standard library cannot meet accuracy and speed requirements
+    title: NFR-003 Standard Library Preference Requirement Definition
+    purpose: Specifies the standard library preference policy for search index implementation, balancing between standard library usage and external dependencies for semantic search accuracy and performance requirements
     content_details:
-      - "Library selection priority: standard library first"
-      - External library usage permitted for semantic search accuracy and speed
-      - "Applicable scope: index construction, search execution, and result ranking"
-      - Error handling when external library is missing
-      - "Related requirements: context-aware search, index generation acceleration"
+      - Library selection policy prioritizing standard library (sqlite3, json) with external library exception
+      - "Scope of application: search index construction, search execution, search result ranking"
+      - Error case handling for missing external libraries with installation guidance
+      - "Related requirements: FNC-001 context-agnostic search, FNC-003 index generation acceleration"
+      - Relaxation from NFR-01-1 strict standard-library-only approach approved by project owner
     applicable_tasks:
-      - Search index implementation planning
-      - Library dependency evaluation
-      - Design review for index construction
-      - Performance optimization planning
+      - Search index implementation
+      - Semantic search optimization
+      - External library dependency evaluation
+      - Search result ranking implementation
     keywords:
       - standard library
-      - external library
-      - search index
       - semantic search
-      - Python dependencies
-      - accuracy
+      - dependency
+      - Python
+      - sqlite3
+      - json
+      - OpenAI API
+      - external library
       - performance
+      - index generation
   docs/specs/doc-advisor/requirements/REQ-001_doc_advisor.md:
     doc_type: requirement
-    title: Doc Advisor Requirements Definition
-    purpose: Specifies requirements for Doc Advisor tool to automatically index project documents and enable AI agents to quickly identify necessary documentation
+    title: "REQ-001: Doc Advisor Requirement Specification"
+    purpose: Defines requirements for Doc Advisor, an automatic document indexing tool enabling AI agents to quickly identify necessary documents through ToC keyword search and embedding-based semantic search
     content_details:
-      - Two-category document management (rules, specs)
+      - Document management with rule and spec categories
       - Automatic ToC generation from markdown files
-      - Metadata extraction (title, purpose, keywords)
-      - SHA-256 hash-based change detection
-      - Parallel document processing (max 5 concurrent)
-      - Hybrid search modes (ToC keyword, Embedding semantic, auto)
-      - Directory classification and doc_type mapping
-      - .doc_structure.yaml runtime configuration
-      - Pre-check validation for skill execution
-      - Standard library only (no pip dependencies)
+      - Change detection using SHA-256 hashing
+      - Parallel processing with up to 5 concurrent workers
+      - Hybrid document search combining ToC and embedding methods
+      - Directory structure validation and setup procedures
+      - Configuration management via .doc_structure.yaml
+      - Document type classification system with 7 built-in types
+      - Checkpoint and recovery for interrupted processing
+      - Setup and pre-check validation workflows
     applicable_tasks:
-      - Doc Advisor tool setup and configuration
-      - ToC generation and maintenance
-      - Documentation search in task planning
-      - Change detection and incremental updates
-      - Directory structure classification
-      - Embedding index management
+      - Doc Advisor setup and configuration
+      - Document structure classification
+      - ToC generation and incremental updates
+      - Document search functionality implementation
+      - Change detection and processing
+      - Directory scanning and metadata extraction
     keywords:
       - Doc Advisor
-      - ToC
       - document indexing
+      - ToC
+      - embedding search
       - .doc_structure.yaml
-      - change detection
-      - metadata extraction
+      - SHA-256 hashing
+      - parallel processing
+      - document classification
       - semantic search
-      - requirements management
   docs/specs/doc-advisor/requirements/REQ-002_upgrade_v2_to_v3.md:
     doc_type: requirement
-    title: "REQ-002: Upgrade Requirements (v2.0 to v4.x)"
-    purpose: "Defines upgrade requirements from Doc Advisor v2.0 to v4.x: version deltas, identifier-based managed-file rules, user asset and config protection, legacy detection, and advisor-to-query-skill migration."
+    title: Upgrade Requirements (v2.0 to v4.x)
+    purpose: Defines upgrade requirements, migration principles, and legacy file handling for Doc Advisor when upgrading from v2.0 to v3.x and later versions
     content_details:
-      - "v2.0 vs v3.x structural deltas: command files to skills, slash names, ToC under doc-advisor/toc/{rules,specs}, advisor agents to /query-rules and /query-specs, root_dir to root_dirs with target_glob"
-      - "Identifier-based lifecycle using doc-advisor-version-xK9XmQ: current managed files are kept, old marked files may be removed, unmarked legacy files detected by path and name"
-      - "User asset and config principles: do not delete user commands or non-doc-advisor agents; do not overwrite customized config without explicit user confirmation"
-      - "REQ-002-01: Detect legacy create-*_toc commands and old .claude/doc-advisor layout; guide removal; no silent automatic deletion in the user workspace"
-      - "REQ-002-02: Preserve .claude/commands and user agents; retain runtime outputs under toc/rules and toc/specs including ToC YAML and checksums"
-      - "REQ-002-03: On plugin update, do not overwrite .doc_structure.yaml; preserve customized root_dirs and doc_types_map"
-      - "REQ-002-04: Detect rules-advisor.md and specs-advisor.md; migration target is plugin-provided /query-rules and /query-specs skills with acceptance tests for availability"
-      - "NF: Keep existing rules_toc.yaml and specs_toc.yaml; v2 ToC lived under doc-advisor/rules without toc segment—manual move or full regeneration with --full recommended"
-      - "NF: Identifier presence drives keep/delete decisions; v2 artifacts lack the marker so filename-based legacy detection remains required"
+      - Identifier-based protection principle using doc-advisor-version-xK9XmQ identifier
+      - Legacy file detection and removal guidance for v2.0 commands and configuration
+      - User asset protection for custom commands, agents, and runtime outputs
+      - Configuration file preservation for .doc_structure.yaml and custom settings
+      - Advisor agent to query-* skill migration path
+      - ToC file retention and differential update support
+      - Plugin environment adaptation for managed file installation and deletion
+      - Version identifier-based file management state determination
     applicable_tasks:
-      - Implementing or verifying Doc Advisor upgrade from v2.0 to v3.x or v4.x
-      - Building legacy file detection and user-facing migration guidance
-      - Ensuring plugin updates preserve .doc_structure.yaml and user ToC assets
-      - Testing replacement of rules-advisor and specs-advisor with query skills
+      - Doc Advisor upgrade planning
+      - Legacy file cleanup
+      - Migration validation testing
+      - Configuration preservation strategy
+      - Plugin update handling
+      - User data protection assessment
     keywords:
-      - doc-advisor-version-xK9XmQ
-      - rules-advisor
-      - specs-advisor
-      - query-rules
-      - query-specs
-      - root_dirs
-      - doc_types_map
-      - create-rules-toc
-      - legacy migration
-      - ToC path
+      - upgrade
+      - migration
+      - legacy
+      - v2.0
+      - v3.x
+      - v4.x
+      - identifier
+      - protection
+      - config.yaml
+      - .doc_structure.yaml
   docs/specs/doc-advisor/requirements/REQ-003_versioned_migration.md:
     doc_type: requirement
-    title: "REQ-003: Phased Version Migration Requirements"
-    purpose: Defines a phased migration framework for versioned data formats, ensuring backward compatibility by converting legacy data to the current format.
+    title: Staged Version Migration Requirements
+    purpose: Defines backward-compatible staged migration framework for versioned data formats, with requirements for version detection, incremental migration, and extensibility
     content_details:
-      - Major-version detection from data; missing identifier treated as v1; integer major versions only
-      - One-step migrations only (v1→v2→v3); registry keyed by target version; chain for detected_version < v <= current_version ascending
-      - Each step maps previous output to target format; idempotent; no side effects (no I/O or network)
-      - On error return pre-migration state; skip migration when detected_version > current_version; detection failure falls back to oldest version
-      - Add new version by registering one function and updating current_version; do not modify existing migrations (Open-Closed)
-      - "NFR: in-memory transform only without rewriting source data; stdlib-only (no external libs)"
-      - "Reference pattern: CURRENT_VERSION, MIGRATIONS dict, apply_migrations with rollback"
-      - "Example scope: .doc_structure.yaml doc_structure_version via toc_utils load_config()"
+      - Version detection mechanism
+      - Staged incremental migration pattern
+      - Migration function registry
+      - Migration chain execution
+      - Error handling and rollback strategy
+      - Future version extensibility
+      - Migration idempotency requirements
+      - Memory-only data transformation
+      - Custom migration function contracts
     applicable_tasks:
-      - Implementing phased migrations for versioned config or persisted data
-      - Adding a new schema version and migration step
-      - Reviewing backward compatibility of stored data formats
+      - Data format version upgrade implementation
+      - Migration framework design
+      - Version detection logic implementation
+      - Backward compatibility verification
+      - Migration function testing
     keywords:
-      - phased migration
-      - MIGRATIONS
-      - CURRENT_VERSION
-      - idempotent
+      - version migration
       - backward compatibility
-      - major version
-      - apply_migrations
-      - doc_structure_version
+      - staged upgrade
       - migration registry
-      - Open-Closed
+      - incremental transformation
+      - version detection
+      - rollback
+      - extensibility
   docs/specs/doc-advisor/requirements/REQ-004_code_index.md:
     doc_type: requirement
-    title: "REQ-004: Code Index Requirements Specification"
-    purpose: Specifies requirements for extracting source structure via language plugins and MCP, persisting a code index, import-graph queries, and two-stage mechanical-plus-AI search for large projects.
+    title: Code Index Requirements Definition
+    purpose: Specifies requirements for automatic extraction of code structure (imports, exports, documentation comments) and generation of code index to enable AI agents to identify task-relevant source files efficiently
     content_details:
-      - Recursive source scan with default exclude dirs and extension-based language dispatch; unsupported extensions indexed with path and line count only
-      - "Language plugin model: per-language MCP extraction, core dispatches by extension; new languages add plugins without core changes"
-      - "Metadata: path, language, lines; MCP supplies imports, documented exports, protocol conformances, sections; missing MCP returns an error with setup guidance"
-      - Swift plugin requires Swift-Selena MCP (analyze_imports, list_symbols, list_protocol_conformances, list_extensions) and handles connection failures
-      - Import graph with internal vs external distinction; dependents, dependencies, and N-hop impact expansion
-      - "Two-stage search: Stage 1 keyword match without AI; Stage 2 AI on candidates with ~30KB metadata cap; impact search via the graph"
-      - Incremental updates using SHA-256 hashes; diff default, full rebuild mode; JSON index and checksum paths under .claude/doc-advisor/code/
-      - CLI for index build and keyword or affected-by search with JSON status output
-      - "NFR: core uses Python stdlib only; performance targets for rebuild and Stage 1 latency"
+      - Automatic detection of source code files via recursive scanning and language plugin dispatch
+      - Language plugin structure with MCP server integration for metadata extraction
+      - "Metadata extraction: imports, exports with doc comments, protocol conformances, section structure"
+      - Swift language plugin using Swift-Selena MCP with AST analysis (import analysis, symbol extraction, protocol conformances, extensions)
+      - Import graph construction and dependency tracking with N-hop chain traversal
+      - "Two-stage search: Stage 1 mechanical filtering via string matching, Stage 2 AI inference on candidate metadata"
+      - Differential update using SHA-256 hashes with full rebuild mode support
+      - JSON index persistence at .claude/doc-advisor/code/code_index.json
+      - CLI interfaces for index generation, keyword search, affected-by graph search
     applicable_tasks:
-      - Implementing or extending the doc-advisor code index
-      - Integrating Swift-Selena MCP for Swift symbol and import extraction
-      - Building incremental index updates and checksum persistence
-      - Implementing two-stage code search and impact-range queries
+      - Code indexing implementation for source code files
+      - Language plugin development
+      - Two-stage code search implementation
+      - Import dependency analysis
+      - Project-scale code structure understanding
     keywords:
-      - code_index.json
-      - Swift-Selena
-      - analyze_imports
-      - list_symbols
-      - two-stage search
+      - code index
+      - Swift
+      - MCP server
       - import graph
-      - build_code_index
+      - metadata extraction
       - language plugin
-      - REQ-004
-      - toc_utils
+      - symbol extraction
+      - two-stage search
+      - differential update
   docs/specs/doc-advisor/requirements/technical_qa.md:
     doc_type: requirement
     title: Semantic Search Technical Q&A
-    purpose: Records questions and answers exchanged during technology selection process for semantic query requirements, providing understanding of technical concepts for beginners
+    purpose: Records technical decision-making Q&A for embedding-based semantic search implementation, covering Embedding, Vector Search, OpenAI API strategy, and hybrid search architecture
     content_details:
-      - Embedding as AI-based semantic similarity detection versus BM25 keyword matching
-      - Vector search as mathematical distance calculation separate from embedding
-      - "External dependencies analysis: OpenAI API versus Vector DB"
-      - OpenAI Embedding API with standard library HTTP requests
-      - Modern embedding models processing full text using Transformer architecture
-      - Hybrid approach combining Embedding with AI-based named entity detection
-      - "Phase-based strategy: Embedding-first then hybrid if needed"
-      - Architecture decision history and design evolution from 2026-03-29 to 2026-04-11
+      - Embedding vs BM25 comparison
+      - Embedding and Vector Search separation of concerns
+      - Vector DB necessity analysis for 600 documents
+      - OpenAI Embedding API implementation approach
+      - Modern Embedding semantic capabilities and limitations
+      - Hybrid search approach with Embedding and full-text search
+      - AI-based proper noun detection in queries
     applicable_tasks:
-      - Semantic search implementation design
-      - Technology selection for document indexing
-      - Architecture design for search systems
-      - Embedding versus BM25 comparison and evaluation
-      - Integration of external API-based embedding services
+      - Semantic search implementation
+      - Technology selection for doc-advisor
+      - Embedding architecture design
+      - Search quality evaluation
     keywords:
       - Embedding
-      - Vector search
+      - Vector Search
+      - Semantic Search
       - OpenAI API
       - BM25
-      - Semantic search
+      - Hybrid search
       - Cosine similarity
-      - Text-embedding-3
-      - doc-advisor
+      - Document retrieval
   docs/specs/doc-advisor/requirements/technical_research_report.md:
     doc_type: requirement
     title: Semantic Search Technical Research Report
-    purpose: Compiles technical research results comparing full-text search, embedding, vector database, and hybrid search approaches to inform doc-advisor design decisions for improving search efficiency
+    purpose: Summarizes technical research findings on search technologies including full-text search, embedding models, and vector databases to inform design decisions for semantic search implementation
     content_details:
-      - Full-text search and indexing fundamentals
-      - BM25 scoring algorithm and characteristics
-      - Embedding models and vector search methods
-      - Tokenization for Japanese and English mixed text
-      - Hybrid search combining BM25 and vector search
-      - RRF and Convex Combination fusion techniques
-      - Technology comparison matrix (SQLite FTS5, BM25, ChromaDB, embedding models)
-      - Design approach options evaluation (approaches A-D)
-      - Adoption rationale (Embedding-based with full-text search fallback, 2026-03-29)
+      - Full-text search concepts and BM25 algorithm
+      - Embedding models and vector similarity search
+      - Tokenization approaches for multilingual text
+      - Hybrid search combining keyword matching and semantic similarity
+      - Result fusion methods (RRF and Convex Combination)
+      - SQLite FTS5 implementation with optional Japanese language support
+      - Lightweight Python search libraries (Whoosh, tantivy, bm25s) evaluation
+      - Embedding model options (OpenAI, Voyage-4-nano, multilingual-e5)
+      - Vector database comparison (ChromaDB, LanceDB, sqlite-vec, FAISS)
+      - Design approaches (FTS5 only, BM25 custom, Vector-only, Hybrid)
     applicable_tasks:
-      - Implementing semantic document search
-      - Optimizing document retrieval algorithm selection
-      - Evaluating embedding models for multilingual content
-      - Designing hybrid search systems
-      - Selecting search infrastructure for knowledge bases
+      - Semantic search architecture design
+      - Search technology selection for documentation systems
+      - Index strategy and implementation planning
+      - Search quality testing and evaluation
+      - Performance optimization for document retrieval
+      - Embedding model integration strategy
+      - Hybrid search implementation
     keywords:
       - semantic search
       - BM25
       - embedding
-      - vector database
-      - full-text search
+      - vector search
+      - hybrid search
+      - SQLite FTS5
       - ChromaDB
       - tokenization
-      - hybrid search
-      - doc-advisor
-      - OpenAI API
+      - retrieval
+      - similarity search
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* Skills Orchestrator Design
-    purpose: Defines orchestrator pattern for start-design, start-plan, and start-requirements skills with parallel context collection framework and session directory architecture
+    purpose: Specifies architecture and implementation approach to refactor start-design, start-plan, and start-requirements skills from God-Skill monolithic structure to orchestrator pattern with parallel context gathering agents
     content_details:
-      - Orchestrator pattern for create-* skills with parallel context collection
-      - Common context gathering framework standardized from review skill
-      - Session directory structure with session.yaml and refs/ schema
-      - Phase-by-phase conversion from God-Skill to orchestrator pattern
-      - refs/ schema for specs.yaml, rules.yaml, and code.yaml
-      - Failure handling for parallel context collection with graceful degradation
-      - Skill-specific implementations for start-design, start-plan, start-requirements
-      - Session lifecycle management and session_manager.py script integration
-      - Mermaid sequence diagrams for parallel execution flows
-      - Applicable context matrices for each skill
+      - Current God-Skill structure problems and target orchestrator architecture
+      - Common context gathering framework for specs, rules, and code agents
+      - Parallel execution design with session management
+      - Skill-specific implementation details for start-design, start-plan, and start-requirements
+      - Session directory structure and refs schema
+      - Orchestrator responsibilities vs agent responsibilities
+      - Context integration and failure handling
+      - AIReview phase integration using /forge:review skill
+      - Progress reporting conventions for collected references
     applicable_tasks:
-      - start-design skill orchestrator implementation
-      - start-plan skill orchestrator implementation
-      - start-requirements skill orchestrator implementation
-      - Context collection subagent coordination
-      - Session directory management design
-      - Parallel context gathering execution
-      - Review skill pattern reuse and adaptation
+      - Refactoring create-* skills to orchestrator pattern
+      - Implementing parallel context gathering agents
+      - Designing session lifecycle management
+      - Integrating AIReview phase into document creation workflows
+      - Setting up refs directory structure for specs/rules/code collection
     keywords:
       - orchestrator
-      - context collection
-      - session directory
-      - start-design
-      - start-plan
-      - start-requirements
+      - context gathering
+      - parallel agents
+      - session management
+      - specs agent
+      - rules agent
+      - code agent
+      - session.yaml
       - refs schema
-      - parallel execution
-      - session_manager.py
-      - subagent
+      - God-Skill pattern
   docs/specs/forge/design/DES-011_session_management_design.md:
     doc_type: design
-    title: Session Management Design
-    purpose: Defines session lifecycle management, orchestrator skill patterns, and session_manager.py script design for coordinating multi-phase workflows in forge orchestrator skills
+    title: Session Management Design for Orchestrator Skills
+    purpose: Defines session lifecycle management, session_manager.py design, and SKILL.md integration patterns for all orchestrator skills in forge
     content_details:
-      - Session lifecycle (creation, detection, resumption, cleanup)
-      - Rationale for file-based inter-phase communication
-      - SKILL.md structural patterns across orchestrators
-      - "session_manager.py design: init/find/cleanup subcommands"
-      - resume_policy design and skill-specific defaults
-      - Data flow between parallel agents via refs/ files
-      - Separation of infrastructure concerns from business logic phases
-      - Timestamp format standardization and YAML field ordering
+      - Session lifecycle design (creation, detection, resumption, cleanup)
+      - session_manager.py design with init, find, and cleanup subcommands
+      - resume_policy strategies (resume for review, none for linear workflows)
+      - SKILL.md structure pattern with pre-setup, session management, business phases, and teardown sections
+      - File-based inter-phase communication pattern
+      - Path traversal prevention and timestamp standardization
+      - Field ordering (common fields before skill-specific fields)
+      - JSON output format for AI parsing
     applicable_tasks:
-      - Implementing orchestrator skills (review, start-design, start-plan, start-requirements, start-implement)
-      - Designing inter-phase data communication for multi-stage workflows
-      - Creating session management utilities
-      - Defining skill lifecycle patterns
-      - Session resumption and recovery mechanisms
-      - Infrastructure layer design for skill orchestration
+      - Orchestrator skill design and implementation
+      - Session lifecycle management in forge skills
+      - Context recovery and resumption policy design
+      - YAML schema generation for sessions
+      - Session cleanup and teardown handling
     keywords:
       - session management
+      - orchestrator
+      - forge
+      - lifecycle
       - session_manager.py
-      - orchestrator pattern
-      - file-based communication
       - resume_policy
-      - SKILL.md structure
-      - inter-phase data
-      - session lifecycle
-      - workflow phases
-      - parallel agents
+      - YAML schema
+      - phase management
+      - file-based communication
+      - session.yaml
   docs/specs/forge/design/DES-012_show_browser_design.md:
     doc_type: design
-    title: DES-012 show-browser Design Specification
-    purpose: Specifies the real-time browser monitoring system for forge skill execution, including monitor lifecycle, communication protocols, and template selection mechanism
+    title: show-browser Monitor Module Design
+    purpose: Specifies the design and implementation of the internal monitor module for real-time progress visualization of forge skills in the browser, covering architecture, module structure, use cases, API endpoints, and lifecycle management
     content_details:
-      - Monitor module architecture and auto-startup via session_manager
-      - Skill-based template selection and asset sharing (tokens.css, layout.css, monitor.js)
-      - Real-time notification via direct notify POST and 30s mtime heartbeat
-      - Multi-monitor concurrent operation with port fallback (8765-8775)
-      - SSE server with session state tracking and mtime snapshot management
-      - API endpoints for index, session state, assets, and notify POST
-      - Template mapping for 6 skills (review, start-requirements, start-design, start-plan, start-implement, start-uxui-design)
-      - Orphan monitor cleanup and graceful shutdown with session_end detection
-      - Client-side rendering in window.Forge namespace with SSE reconnection handling
+      - Internal module architecture replacing the deprecated show-browser skill
+      - Session manager auto-startup integration with non-blocking fork
+      - Direct notification pathway plus mtime heartbeat for real-time updates
+      - Skill-to-template auto-resolution (review/document/implement/uxui/generic)
+      - Port fallback mechanism (8765 priority with 8766-8775 range)
+      - Orphaned monitor cleanup with PID validation
+      - SSE server endpoints and request handlers
+      - YAML-to-JSON conversion for session state
+      - Design tokens and shared assets (tokens.css/layout.css/monitor.js)
+      - Lifecycle management and graceful shutdown
     applicable_tasks:
-      - Implement monitor module components (launcher, server, notify)
-      - Test multi-monitor concurrent operation and port conflict handling
-      - Design browser UI template rendering for different skill types
-      - Integrate monitor auto-startup into session_manager
-      - Review notification latency and heartbeat mtime snapshot consistency
+      - Monitor module implementation and integration
+      - Real-time progress display debugging
+      - Browser communication protocol implementation
+      - Template system design and extension
+      - Session lifecycle management
+      - Integration with forge skill writers
+      - Performance testing and optimization
+      - Port conflict resolution
     keywords:
       - show-browser
-      - monitor module
-      - SSE server
-      - skill-based template
+      - monitor
+      - real-time
+      - SSE
       - session manager
+      - skill template
       - port fallback
       - mtime heartbeat
-      - window.Forge
-      - design tokens
-      - EventSource
+      - progress visualization
+      - forge architecture
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     doc_type: design
-    title: DES-013 Context Gathering Task Specification
-    purpose: "Specifies context gathering tasks used by forge's create-* and start-implement skills, defining task execution conditions and agent composition for each skill type"
+    title: Context Gathering Task Specification
+    purpose: Defines context gathering tasks executed by forge create-* and start-implement skills, including task types, skill-by-task application matrix, and agent instruction format
     content_details:
-      - Five types of context gathering tasks (Issue/Task confirmation, Spec investigation, Implementation rules investigation, Similar PR investigation, Existing code investigation)
-      - Task execution matrix by skill type (start-requirements, start-design, start-plan, start-implement)
-      - Agent composition per skill with task assignment and conditional trigger logic
-      - Instruction format for agents (YAML schema with session_dir, spec, tasks, feature, skill_type fields)
-      - Design decisions for minimal context collection (interactive mode) and direct specification identification (start-implement)
+      - "Five task types: Issue/Task confirmation, Specification investigation, Implementation rules investigation, Similar PR investigation, Existing code investigation"
+      - Skill-by-task execution matrix for start-requirements, start-design, start-plan, start-implement
+      - Agent composition per skill with start-requirements, start-design, start-plan, start-implement configurations
+      - Conditional execution triggers for specs agent, rules agent, code agent based on skill and mode
+      - YAML instruction format with session_dir, spec, tasks, feature, skill_type fields for agent invocation
+      - "Design decisions: start-requirements minimal context collection, start-plan excludes code investigation, start-implement derives specs from traceability matrix"
     applicable_tasks:
-      - start-requirements skill implementation
-      - start-design skill implementation
-      - start-plan skill implementation
-      - start-implement skill implementation
-      - Context gathering design review
+      - Context gathering orchestration for forge create-requirements, create-design, create-plan skills
+      - Implementation planning for start-implement skill
+      - Agent configuration for specification-driven development workflow
+      - Multi-task scheduling and conditional execution
+      - Context resolution for documentation and implementation tasks
     keywords:
       - context gathering
       - task specification
-      - agent composition
-      - specs investigation
-      - rules investigation
-      - code investigation
+      - agent orchestration
+      - skill configuration
+      - execution matrix
       - start-requirements
       - start-design
       - start-plan
@@ -721,487 +815,464 @@ docs:
   docs/specs/forge/design/DES-014_orchestrator_session_protocol_design.md:
     doc_type: design
     title: Orchestrator Session Communication Protocol Design
-    purpose: Defines a common protocol for orchestrator skills to communicate with subagents and agents using session directory as a data bus with file-based data exchange
+    purpose: Defines common session protocol for orchestrator skills to communicate with subagents and agents via session directories and reference files
     content_details:
-      - Session directory structure with skill name and random hash for collision avoidance
-      - Common metadata schema in session.yaml with shared and skill-specific fields
-      - Reference file directory (refs/) for context collection agent outputs with independent file schema
-      - Session lifecycle management including resume policy for handling stale sessions
-      - Communication flow patterns for orchestrators with typical agent coordination sequence
+      - Session directory structure with .claude/.temp/{skill_name}-{random6}/ pattern
+      - session.yaml common metadata with skill, started_at, last_updated, status, resume_policy fields
+      - refs/ reference file directory with specs.yaml, rules.yaml, prs.yaml, code.yaml
+      - Shared ref file schema with source, query, documents list
+      - Session lifecycle with detection, resumption, and cleanup
+      - resume_policy branching for resume vs none modes
+      - Context gathering agent flow with parallel execution
+      - Skill-specific file extensions for review, create-design, create-plan, create-requirements
+      - Relationship to twinkling-popping-kahan.md design document
     applicable_tasks:
       - Orchestrator skill implementation
-      - Inter-agent communication protocol design
-      - Session state management implementation
-      - Context gathering workflow design
+      - Session management and lifecycle handling
+      - Context gathering pipeline setup
+      - Session resumption logic
+      - Subagent communication protocol
+      - Skill-specific session file extension design
+      - Session directory initialization and cleanup
+      - Parallel reference file collection
     keywords:
-      - session directory
-      - protocol design
-      - subagent communication
-      - refs directory
-      - resume policy
       - orchestrator
+      - session protocol
+      - session.yaml
+      - refs directory
       - context gathering
+      - resume policy
+      - .claude/.temp
+      - subagent
+      - session lifecycle
+      - skill-specific
   docs/specs/forge/design/DES-015_review_workflow_design.md:
     doc_type: design
-    title: Forge Review Workflow Design
-    purpose: Defines orchestration architecture, phase workflow, and skill responsibilities for the review process in the forge plugin
+    title: Review Workflow Design
+    purpose: Specifies the orchestrator architecture and execution phases for the forge review workflow, including multi-perspective parallel execution, evaluator judgment, and automatic vs interactive correction modes
     content_details:
-      - "Phase 1: argument parsing to determine review type, engine, and mode"
-      - "Phase 2: target file resolution and reference document collection"
-      - "Phase 3: parallel review execution using multiple perspectives"
-      - "Phase 4: findings consolidation and deduplication"
-      - "Phase 5: parallel evaluation and recommendation assignment"
-      - "Phase 6: interactive or auto mode execution with fix cycles"
-      - "Phase 7: completion handling including tests and commit confirmation"
-      - Session directory architecture for persistent inter-skill data flow
-      - Parallel execution model for reviewers and evaluators
-      - Auto-fix cycle with re-review for modification-induced issues
+      - "Orchestrator workflow with 7 phases: argument parsing, target resolution, parallel reviewer execution per perspective, finding extraction and deduplication, parallel evaluator judgment, fix recommendation, and completion handling"
+      - Session working directory design for persisting state and preventing context compression
+      - "Skill-to-skill interfaces: reviewer, evaluator, present-findings, fixer with data flow through session files"
+      - "Core loop design: reviewers(parallel) -> extract -> evaluators(parallel) -> fixer -> re-review cycles"
+      - "Evaluator judgment framework: rule compliance, design intent, side effects, false positives, target file verification"
+      - "Auto mode(--auto N) vs interactive mode: evaluator always executes, AI recommends fixes, humans judge in interactive mode"
+      - "Review types support: code, requirement, design, plan, generic with reference doc collection strategy"
     applicable_tasks:
-      - Review workflow orchestration
-      - Reference document collection strategy
-      - Parallel perspective-based review implementation
-      - Evaluation and recommendation logic
-      - Fix cycle automation
-      - Session management and data persistence
-      - Code and document review execution
-      - Quality assurance for modifications
+      - Review workflow orchestration implementation
+      - Code/requirement/design/plan/generic review setup
+      - Perspective-based parallel review execution
+      - Auto-correction cycle design and implementation
+      - Review finding extraction and deduplication
+      - Evaluator judgment and recommendation system
+      - Session state management and persistence
+      - Test execution and fix validation
     keywords:
       - review workflow
-      - orchestration
+      - orchestrator
       - perspective
-      - evaluation
-      - fixer
+      - evaluator
+      - auto-correction
       - session directory
-      - parallel review
-      - auto-fix cycle
-      - recommendation
-      - phase management
+      - parallel execution
+      - judgment framework
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md:
     doc_type: design
-    title: Doc Structure Version Management Design
-    purpose: Defines version management strategy for .doc_structure.yaml with stepwise migration approach compatible with COMMON-REQ-001
+    title: .doc_structure.yaml Version Management Design
+    purpose: Defines version management and migration approach for .doc_structure.yaml using staged migration pattern with Python scripts
     content_details:
-      - Version identifier format (X.Y in YAML comments)
-      - Semantic versioning rules (major for breaking changes, minor for backward-compatible additions)
-      - Migration registry and chainable transformation functions
-      - Error handling strategy (exception propagation, version mismatch handling, fallback to v1)
-      - Migration script CLI interface (normal, --dry-run, --check modes)
-      - v1-to-v2 and v2-to-v3 transformation specifications
-      - User configuration preservation rules
-      - Migration history documentation (v1.0, v2.0, v3.0)
+      - Version identifier format in YAML comment (X.Y pattern)
+      - Version semantic meaning for major vs minor changes
+      - MIGRATIONS registry with chained migration functions
+      - Version detection using get_major_version function
+      - Migration flow with detect-validate-apply stages
+      - Text-based migration functions (str to str format)
+      - Backward compatibility and error handling rules
+      - CURRENT_VERSION constant set to version 3
+      - Migration script CLI with --check and --dry-run modes
+      - User configuration preservation rules during migrations
     applicable_tasks:
-      - Doc Advisor version integration
-      - Migration script implementation
-      - Version detection API integration
-      - Setup-doc-structure workflow updates
-      - Configuration backward compatibility verification
+      - .doc_structure.yaml version upgrade implementation
+      - Migration function development and testing
+      - Version detection and validation in forge scripts
+      - Doc-advisor internal field removal and schema updates
+      - Setup-doc-structure workflow integration
     keywords:
       - version management
-      - .doc_structure.yaml
       - migration
-      - YAML versioning
-      - stepwise migration
+      - .doc_structure.yaml
+      - staged migration
+      - CURRENT_VERSION
+      - MIGRATIONS registry
+      - get_major_version
       - backward compatibility
-      - v1 v2 v3
-      - COMMON-REQ-001
+      - schema evolution
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md:
     doc_type: design
-    title: DES-017 forge requirements definition workflow design
-    purpose: Defines the orchestrator design for /forge:start-requirements skill with three modes (interactive, reverse-engineering, from-figma) and their respective workflows
+    title: DES-017 forge Create Requirements Workflow Design
+    purpose: Defines the orchestrator skill design for /forge:start-requirements with three modes (interactive, reverse-engineering, from-figma), including dispatcher responsibility, mode-specific workflows, and implementation principles
     content_details:
-      - Three workflow modes with different input sources (interactive/reverse-engineering/from-figma)
-      - SKILL.md dispatcher pattern for mode selection and session management
-      - Interactive mode with on-demand context gathering driven by user dialogue
-      - Reverse-engineering mode with pre-collected context from source code analysis
-      - From-figma mode with Figma MCP integration and design token extraction
-      - Self-contained workflow files handling all steps from context collection to completion
-      - Phase-based progression model (Phase 0-5 depending on mode)
-      - Specification format with ID system (APP-xxx, SCR-xxx, FNC-xxx, etc.)
-      - Quality confirmation and post-processing pipeline (review → ToC → commit)
-      - Related documents and templates integration
+      - Orchestrator dispatcher pattern with mode selection
+      - Interactive workflow with on-demand context gathering
+      - Reverse-engineering workflow with parallel agent initialization
+      - From-Figma workflow with design system token structure
+      - Three self-contained workflow files for each mode
+      - Design principles and What/How boundaries
+      - ID system consistency requirements
     applicable_tasks:
-      - Creating requirements from scratch using interactive mode
-      - Extracting requirements from existing source code
-      - Generating requirements and design tokens from Figma designs
-      - New feature planning and specification
-      - Requirements workflow implementation review
+      - /forge:start-requirements skill implementation
+      - Requirement definition workflow design review
+      - Multi-mode orchestrator pattern implementation
+      - Context gathering strategy optimization
     keywords:
       - /forge:start-requirements
-      - requirements
-      - interactive mode
-      - reverse-engineering
-      - Figma
-      - workflow
       - orchestrator
-      - session management
-      - specification format
+      - interactive workflow
+      - reverse-engineering
+      - Figma integration
+      - modal dispatch
+      - context gathering
+      - requirement definition
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
     doc_type: design
-    title: DES-018 forge Design Document Creation Workflow Design
-    purpose: Specifies the orchestrator skill workflow for creating design documents from requirements, including context collection, draft creation, human review, and quality assurance phases.
+    title: Create Design Workflow Design
+    purpose: Defines the orchestration workflow for creating design documents from requirements, including context gathering, design draft creation, AI review, and quality assurance phases
     content_details:
-      - Prerequisite check phase with .doc_structure.yaml and feature name confirmation
-      - Context collection from specs, rules, and existing code assets
-      - Design document drafting with format compliance and ID validation
-      - Mandatory human review for each completed file via AskUserQuestion
-      - AI review phase using /forge:review design --auto
-      - Quality assurance including completeness validation and /create-specs-toc execution
-      - Commit/push confirmation via /anvil:commit
-      - "Design principles: full requirements coverage, existing asset reuse, What/How boundary separation"
+      - Orchestrator pattern requirements
+      - Context collection phase using parallel agents
+      - Design document creation and format compliance
+      - User review validation with AskUserQuestion
+      - AI review with auto-fix capability
+      - Quality assurance and completeness checks
+      - Design principles including requirements coverage and asset reuse
+      - What/How boundary guidelines
+      - File organization with design format templates
+      - Integration with specs/rules queries and code analysis
     applicable_tasks:
-      - Design document creation workflow implementation
-      - Requirements document analysis and coverage validation
-      - Existing implementation asset discovery and reuse planning
-      - Design format compliance review
-      - AI-assisted design review and auto-fix
+      - Design document creation workflow planning
+      - Design skill implementation and orchestration
+      - Context gathering agent delegation
+      - Design quality assurance
+      - Design review process setup
     keywords:
       - forge
-      - start-design
-      - orchestrator
-      - requirements
-      - design document
-      - context collection
-      - human review
-      - AI review
+      - design workflow
+      - orchestrator pattern
+      - context gathering
+      - design creation
+      - requirements analysis
+      - code asset reuse
       - quality assurance
       - design principles
+      - multi-agent delegation
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     doc_type: design
-    title: DES-019 forge Plan Creation Workflow Design
-    purpose: Defines workflow and architecture for forge start-plan skill, including context collection, task extraction, and plan creation phases
+    title: Create Plan Workflow Design
+    purpose: Specifies the workflow and phases for creating and updating forge plan documents from specifications and rules
     content_details:
-      - Four-phase workflow (prerequisite confirmation, context collection, plan creation, AI review)
-      - Context collection agents for specs and rules in parallel
-      - Task granularity rules (single agent execution unit, 5-10 items, build success as completion criterion)
-      - Traceability matrix (requirement → design → task mapping)
-      - Plan update mode (existing plan confirmation, requirement and design reflection status)
-      - Completion flow (auto review, ToC update, commit confirmation)
-      - Mandatory complete verification checklist
-      - Next step guidance to start-implement skill
+      - Plan creation orchestrator skill scope
+      - Prerequisite confirmation phase with doc_structure validation
+      - Context collection phase delegating to specs and rules agents
+      - Plan creation and task extraction from design documents
+      - Completeness checks for task IDs and traceability
+      - AI review and auto-fix workflow
+      - Specification ToC generation and commit integration
+      - Task granularity requirements (5-10 items, single agent completion)
+      - Traceability matrix for requirements-design-task mapping
     applicable_tasks:
-      - Plan document creation
-      - Task extraction and division from design specs
-      - Workflow design review
-      - Orchestrator pattern implementation
-      - Subagent delegation architecture design
+      - Plan document creation and updates
+      - Workflow orchestration for plan generation
+      - Task extraction and division from specifications
+      - Traceability verification between requirements and tasks
+      - Plan format validation and completeness checking
     keywords:
-      - plan
+      - plan creation
+      - workflow orchestration
       - task extraction
-      - orchestrator pattern
       - traceability
-      - subagent
-      - context collection
-      - workflow design
-      - forge
+      - phase design
+      - task granularity
+      - completeness check
   docs/specs/forge/design/DES-020_clean_rules_design.md:
     doc_type: design
-    title: DES-020 clean-rules skill design
-    purpose: Defines the design and workflow for the clean-rules skill that analyzes project rules, detects duplication with forge docs, and restructures documentation based on taxonomy classification
+    title: DES-020 clean-rules Skill Design
+    purpose: Specifies the design of the clean-rules skill for analyzing and reorganizing project rules, removing duplicates with forge built-in docs, and restructuring content according to the development document taxonomy
     content_details:
-      - "Taxonomy classification system (Content Type: Constraint/Convention/Format/Process/Decision/Reference; Authority Source: Tool-provided/Project-defined/External standard)"
-      - detect_forge_overlap.py embedding-based duplicate detection script using OpenAI API
-      - "Four execution modes: analyze-only (default), --delete for removing forge overlap, --rebuild for taxonomy-based restructuring, --delete --rebuild combined"
-      - "Phase-based workflow: information gathering, AI classification, git stash safety, execution, and completion with ToC and commit integration"
-      - "Separation of responsibilities between forge (Tool-provided: review criteria, document formats, workflow) and projects (Project-defined: naming conventions, code style, architectural decisions)"
+      - "Mode configuration with three options: analysis-only, delete mode, and rebuild mode"
+      - Taxonomy framework defining content types and authority sources
+      - detect_forge_overlap.py script using embedding cosine similarity for duplicate detection
+      - Phase-based workflow including information collection, AI classification, safety procedures, and execution phases
+      - Project vs forge responsibility separation based on content type and authority
     applicable_tasks:
-      - Project rules cleanup and reorganization
-      - Duplicate content detection between project and forge documentation
-      - Rules taxonomy classification and semantic analysis
-      - Documentation structure validation and improvement
-      - Safe batch deletion with git stash protection
+      - Cleaning up and reorganizing existing project rules files
+      - Detecting and removing duplicate content with forge built-in documentation
+      - Restructuring rules according to the development document taxonomy
+      - Preparing projects for forge adoption with automated rule analysis
+      - Implementing division and consolidation of rule documents based on content type
     keywords:
       - clean-rules
       - taxonomy
-      - duplicate detection
-      - embedding similarity
       - forge overlap
-      - documentation reorganization
-      - Content Type
-      - Authority Source
+      - content type
+      - authority source
+      - restructuring
+      - embedding similarity
+      - rule analysis
+      - document classification
   docs/specs/forge/design/DES-021_review_perspective_split_design.md:
     doc_type: design
-    title: DES-021 Reviewer Perspective Split Design
-    purpose: Specifies design for splitting review criteria by perspective and implementing parallel review agents to improve review quality by addressing severity bias and enabling deeper analysis
+    title: DES-021 Reviewer Perspective-based Agent Split Design
+    purpose: Defines design for splitting reviewer into perspective-specific agents running in parallel to improve review depth and reduce severity bias across different review dimensions
     content_details:
-      - Perspective-based criteria splitting
-      - Parallel reviewer agents by perspective
-      - Multiple perspective result management
-      - Perspective definition patterns for each review type
-      - Extract and merge findings across perspectives
-      - Evaluator parallelization with shared plan.yaml
-      - Codex and Claude engine perspective handling
+      - Perspective split mechanism for reviewers
+      - Parallel agent execution and context management
+      - Review criteria file organization by document type
+      - refs.yaml perspectives schema definition
+      - Plan.yaml schema extension with recommendation and auto_fixable fields
+      - Extract review findings multi-file merge logic
+      - Evaluator parallel execution with output contract pattern
+      - Perspective definitions for requirement, design, plan, code, and generic documents
+      - Implementation order and impact analysis across SKILL.md and scripts
+      - Error handling and partial failure recovery
     applicable_tasks:
-      - Review pipeline architecture enhancement
-      - Parallel agent implementation
-      - Review criteria refactoring
-      - Observation perspective definition
-      - Session format schema update
+      - Review system architecture enhancement
+      - Reviewer agent parallelization implementation
+      - Review criteria file creation and organization
+      - Refs.yaml schema extension
+      - Extract findings script update for multi-file support
+      - Plan.yaml schema migration
+      - Review pipeline validation and testing
+      - Evaluator skill refactoring for perspective-based evaluation
     keywords:
-      - perspective
-      - parallel review
-      - reviewer agent
+      - perspective split
+      - parallel agents
       - review criteria
-      - observation
-      - architecture
-      - agent parallelization
-      - evaluate findings
+      - refs.yaml
+      - plan.yaml
+      - extract findings
+      - evaluator
+      - Codex fallback
+      - context management
+      - observation bias
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     doc_type: design
-    title: Parallel Agent Output Contract Pattern Design
-    purpose: Defines output contract pattern to eliminate concurrent write conflicts in parallel agent orchestration
+    title: Parallel Agent Output Contract Design
+    purpose: Defines patterns for parallel agent execution to eliminate concurrent write conflicts on shared resources through individual output files and orchestrator-managed merging
     content_details:
-      - Parallel write conflict problem and race condition mechanics
-      - Output contract pattern with three-step workflow
-      - Result file naming conventions for write separation
-      - Orchestrator and agent responsibilities
-      - Application examples for review pipeline and context collection
-      - Batch merge implementation patterns
-      - Anti-patterns and failure handling strategies
-      - Design checklist for parallel agent systems
+      - Parallel write conflict problem
+      - Individual agent output files pattern
+      - Orchestrator responsibilities for result collection and merging
+      - Result file naming conventions
+      - Batch update script patterns
+      - Anti-patterns and race condition scenarios
+      - Checklist for new parallel agent design
     applicable_tasks:
-      - Parallel agent orchestration design
-      - Concurrent file write conflict resolution
-      - Review pipeline architecture implementation
-      - Task executor context collection design
-      - Agent output contract specification
+      - Parallel agent orchestrator design
+      - Concurrent output conflict resolution
+      - Agent result collection and aggregation
+      - Review pipeline implementation
+      - Implementation context gathering
     keywords:
       - parallel agent
       - output contract
+      - write conflict
       - race condition
-      - concurrent writes
       - orchestrator
       - batch merge
-      - result file naming
-      - subagent
+      - file locking alternatives
   docs/specs/forge/design/DES-023_version_management_workflow_design.md:
     doc_type: design
     title: Version Management Workflow Design
-    purpose: Defines architecture and implementation workflow for multi-plugin version management automation, including configuration schema, version update scripts, and error handling
+    purpose: Defines the complete version management workflow for multi-plugin repositories, including configuration schema, script responsibilities, and step-by-step procedures for setup and update operations
     content_details:
-      - Version config YAML schema
-      - setup-version-config and update-version skill workflows
-      - scan_version_targets.py for project scanning
-      - calculate_version.py for version calculation
-      - update_version_files.py for file updates with filter, path, and simple modes
-      - Changelog update with git integration
-      - Error handling for missing files and version mismatches
-      - Test coverage (40+ cases)
+      - .version-config.yaml schema with targets, sync_files, changelog, and git configuration
+      - scan_version_targets.py for version file detection and metadata collection
+      - calculate_version.py for semantic version calculation
+      - update_version_files.py with three replacement modes (filter, path, simple)
+      - setup-version-config workflow with interactive user confirmation
+      - update-version workflow with changelog generation and git operations
+      - Error handling strategies for both workflows
+      - Testing strategy with test coverage for all scripts
     applicable_tasks:
-      - Version management automation setup
-      - Version increment (patch, minor, major)
-      - Marketplace plugin version sync
-      - README and CHANGELOG updates
-      - Multi-target version synchronization
-      - Project structure scanning for version files
+      - Version management system implementation
+      - Multi-plugin version synchronization
+      - Version update automation
+      - Configuration file design review
+      - Script design review for version management
+      - Changelog generation and maintenance
     keywords:
       - version management
-      - plugin version sync
       - semantic versioning
-      - version-config.yaml
-      - marketplace.json
+      - multi-plugin
+      - configuration schema
+      - version sync
+      - changelog
       - git tagging
-      - CHANGELOG
-      - update-version skill
-  docs/specs/forge/io_verb/design/DES-024_io_verb_design.md:
+  docs/specs/forge/design/DES-024_skill_script_layout_design.md:
     doc_type: design
-    title: "io_verb Design: Hiding Script Details from SKILL.md"
-    purpose: Defines wrapper layer architecture for hiding script selection complexity from SKILL.md, establishing a single subprocess-calling abstraction per operation
+    title: SKILL.md and script layout and contract design
+    purpose: Defines the architecture and responsibility separation between SKILL.md, wrapper scripts, low-level scripts, and external files, establishing wrapper classification, deployment criteria, and naming conventions
     content_details:
-      - Wrapper type classification (single vs composite)
-      - Common principles for all wrappers
-      - Shared wrapper avoidance policy
-      - Naming conventions
-      - session_manager.py find wrappers (6 scripts)
-      - session_manager.py init wrappers (6 scripts)
-      - resolve_doc_structure.py wrappers (8 scripts)
-      - update_plan.py wrappers (5 scripts)
-      - update_version_files.py wrappers (5 scripts)
-      - Error handling and stderr contracts
+      - One-way dependency chain (SKILL.md → wrapper → low-level script → external file)
+      - Wrapper types (primary single wrapper and composite exception wrapper)
+      - Wrapper creation decision criteria (hardcoding SKILL-specific values, composite operations, mode semantics)
+      - Deployment principles (skill-specific wrappers in plugin/skills/{skill}/scripts, low-level scripts in plugin/scripts/{domain})
+      - Naming rules (verb-based operation names)
+      - SKILL.md writing rules (no flag parameters, single-line script calls)
+      - Layer structure with flowchart showing dependency direction
+      - Implementation templates for single and composite wrappers
+      - Error handling contract (stage identifier with exit code in stderr)
+      - Testing principles for wrapper subprocess argument validation and exit code transparency
     applicable_tasks:
-      - SKILL script wrapper implementation
-      - SKILL.md refactoring to use wrappers
-      - Script abstraction layer design review
-      - Wrapper testing implementation
-      - Subprocess calling pattern implementation
+      - Skill script implementation
+      - Wrapper creation and design
+      - Low-level script organization
+      - Plugin architecture review
+      - Script deployment planning
+      - Dependency validation and architecture review
     keywords:
-      - wrapper
-      - subprocess
       - SKILL.md
-      - script abstraction
-      - io_verb
-      - DES-024
-      - flag elimination
-      - single responsibility
-      - exception layer
-  docs/specs/forge/io_verb/requirements/inventory.md:
-    doc_type: requirement
-    title: "io_verb Inventory: Pain Points in SKILL.md"
-    purpose: Documents a comprehensive audit of script invocation patterns in forge SKILL.md files, identifying 28 pain points across flag exposure, multi-argument calls, and choice enumeration to guide wrapper script design
-    content_details:
-      - Audit of 16 SKILL.md files with script references
-      - Flag exposure patterns (7 occurrences of --doc-type, 6 of --skill, 5 of --batch/--id/--status, 3 of --version-path/--filter/--optional)
-      - Multi-argument invocations with 3-6 flags in session_manager.py init calls
-      - Choice enumeration where AI selects status values (in_progress, needs_review, skipped)
-      - Four affected low-level scripts (session_manager.py, resolve_doc_structure.py, update_plan.py, update_version_files.py)
-      - Total of 28 pain points requiring wrapper script solutions
-    applicable_tasks:
-      - Script abstraction layer design
-      - SKILL.md refactoring planning
-      - API wrapper implementation
-      - io_verb feature specification
-    keywords:
-      - io_verb
-      - SKILL.md
-      - script wrapping
-      - flag exposure
-      - session_manager
-      - resolve_doc_structure
-      - update_plan
-      - update_version_files
-      - refactoring
-      - abstraction
-  docs/specs/forge/io_verb/requirements/io_verb_requirements.md:
-    doc_type: requirement
-    title: "io_verb Requirements: Separating SKILL.md from Script Implementation Details"
-    purpose: Defines requirements for refactoring forge plugin to decouple SKILL.md from script-specific details through thin wrapper scripts, reducing AI context load and improving maintainability
-    content_details:
-      - Background and motivation
-      - Scope and inclusions/exclusions
-      - Requirements R1-R7 including clean state, argument minimization, and script placement guidelines
-      - "Wrapper script architecture with two classifications: low-level scripts and SKILL-specific wrappers"
-      - Exception layer for composite wrappers
-      - Success criteria using qualitative Yes/No assessment
-      - Constraints on Python stdlib usage and test requirements
-    applicable_tasks:
-      - forge plugin refactoring planning
-      - SKILL.md cleanup and consolidation
-      - wrapper script design and implementation
-      - script API minimization
-      - forge architecture review
-      - implementation guidelines enforcement
-    keywords:
-      - io_verb
       - wrapper script
-      - SKILL.md
-      - argument minimization
-      - script placement
       - low-level script
-      - context reduction
-      - CLI interface
-      - forge architecture
+      - dependency direction
+      - subprocess
+      - plugin architecture
+      - script layout
+      - responsibility separation
+      - naming convention
   docs/specs/forge/plan/forge_plan.md:
     doc_type: plan
     title: forge Implementation Plan
-    purpose: Defines forge plugin implementation roadmap with task decomposition, traceability matrices connecting requirements and design, and dependency management across orchestrator skill modernization
+    purpose: Details the implementation roadmap for forge plugin with requirements-design-task traceability, phased execution strategy, and acceptance criteria for orchestrator skill development
     content_details:
-      - Requirement traceability matrix with 4 requirements
-      - Design traceability matrix linking DES-010 to 7 tasks
-      - 7 implementation tasks with priority, dependencies, and acceptance criteria
-      - Task dependency graph (TASK-001,002 as foundation for TASK-003,004,005)
-      - Priority scale (90-99 high, 40-69 medium, 1-39 low)
-      - Session directory architecture and /query-rules integration tasks
-      - Version management and changelog updates
+      - Requirements traceability matrix (FNC-001 through FNC-004)
+      - Design traceability matrix linking designs to tasks (DES-010)
+      - Task list with priorities, dependencies, and acceptance criteria
+      - "Task-001: context_gathering_spec.md creation for context collection agents"
+      - "Task-002: orchestrator_session_protocol.md update with resume_policy definition"
+      - "Task-003: start-design SKILL.md orchestration with session lifecycle and parallel context collection"
+      - "Task-004: start-plan SKILL.md orchestration with conditional rules agent execution"
+      - "Task-005: start-requirements SKILL.md orchestration with mode-dependent context gathering"
+      - "Task-006: Design document migration to formal directory with ToC update"
+      - "Task-007: Version increment and CHANGELOG update"
     applicable_tasks:
-      - forge plugin implementation planning
-      - Skill orchestrator modernization
-      - Session directory architecture implementation
-      - Context gathering specification
-      - Task dependency analysis and scheduling
-      - Design document organization
-      - Version release planning
+      - Forge plugin implementation tracking
+      - Design specification integration
+      - Session management protocol implementation
+      - Orchestrator skill development and refinement
+      - Task execution and prioritization planning
     keywords:
       - forge
-      - plan
+      - implementation plan
       - orchestrator
-      - session directory
-      - traceability
-      - task dependency
-      - implementation
-      - design
-      - requirement
-  docs/specs/forge/requirements/orchestrator_pattern.md:
+      - session management
+      - requirements traceability
+      - design traceability
+      - task execution
+      - context collection
+      - skill orchestration
+      - resume policy
+  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     doc_type: requirement
-    title: Orchestrator Pattern Requirements
-    purpose: Defines orchestrator design patterns for forge skills to address context consumption and parallelization challenges in document generation and code implementation workflows
+    title: REQ-001 Orchestrator Pattern Requirements
+    purpose: Defines requirements for orchestrator pattern design across forge plugin skills to address context consumption and execution parallelization challenges
     content_details:
-      - Orchestrator design pattern for all user-invocable skills
-      - Session directory communication protocol between orchestrator and agents
-      - Self-contained reference documents for agent execution
-      - Parallel execution structure for independent work processes
-      - Document format selection criteria based on document characteristics
-      - Common completion flow for document generation orchestrators
-      - User input interpretation by AI without rigid script parsing
+      - God-Skill problem and context limitations
+      - Orchestrator responsibilities and subagent delegation
+      - Session directory communication protocol
+      - Self-contained reference documents
+      - Parallel execution structure for independent investigation tasks
+      - Document format selection criteria (YAML vs Markdown)
+      - Common completion flow for documentation generation orchestrators
+      - User input interpretation by AI
     applicable_tasks:
-      - Forge skill development and refactoring
-      - Orchestrator architecture design and implementation
-      - Subagent delegation and session management
-      - Code generation and document creation workflows
-      - Plugin architecture evolution and scalability
+      - Orchestrator pattern design and implementation
+      - Skill architecture review
+      - Session protocol integration
+      - Subagent delegation structure design
     keywords:
-      - orchestrator
+      - orchestrator pattern
+      - God-Skill problem
       - session directory
-      - subagent
+      - subagent delegation
       - parallel execution
-      - workflow
-      - context consumption
-      - skill composition
-      - document format
-      - YAML
-      - Markdown
-  docs/specs/forge/requirements/skill_monitor_requirement.md:
+      - SKILL.md design
+  docs/specs/forge/requirements/REQ-002_skill_monitor.md:
     doc_type: requirement
-    title: skill_monitor Requirement Specification
-    purpose: Defines requirements for real-time browser display of session data managed by forge orchestrators using SSE server and Claude Code hooks, without additional skill code
+    title: Skill Monitor Requirements
+    purpose: Defines real-time browser display of session data for forge orchestrators with hook-based updates and SSE server architecture
     content_details:
-      - Session data browser display from YAML files (session.yaml, plan.yaml, refs.yaml)
-      - Real-time updates via Claude Code PostToolUse hook and SSE server
-      - Context non-pollution through independent hook and SSE server processes
-      - Universal support across all orchestrators (review, start-design, start-plan, start-requirements, start-implement)
-      - "SSE server endpoints: POST /notify, GET /sse, GET /session, GET /history"
-      - Claude Code hook deployment in .claude/hooks/ with .claude/settings.json registration
-      - Browser UI using static HTML and JavaScript with session_format.md schema-based rendering
-      - Python standard library implementation requirement for SSE server
-      - "Target files: session.yaml, refs.yaml, review.md, plan.yaml, refs/*.yaml with conditional rendering"
+      - Session file browser display
+      - Real-time updates via Claude Code PostToolUse hooks
+      - Context-free operation with independent SSE server
+      - Cross-orchestrator compatibility for review, design, planning, requirements, and implementation
+      - SSE server with POST /notify, GET /sse, GET /session, GET /history endpoints
+      - Claude Code hook detection of file writes in session directory
+      - Browser UI with static HTML and JavaScript
+      - Session file schema rendering based on session_format.md
     applicable_tasks:
-      - SSE server implementation for forge orchestrators
-      - Claude Code hook development for session file monitoring
-      - Browser UI design and rendering for multi-file session display
-      - Integration testing across orchestrator types
-      - Session data schema validation and rendering
+      - Orchestrator session monitoring
+      - Real-time progress tracking during design and planning sessions
+      - Session state browser display
+      - Review result and plan tracking visualization
     keywords:
-      - skill-monitor
-      - SSE
-      - real-time
-      - session-display
+      - skill_monitor
+      - session display
+      - SSE server
+      - PostToolUse hook
       - orchestrator
-      - PostToolUse-hook
-      - browser-UI
+      - real-time update
       - session.yaml
+      - plan.yaml
+      - display_notify
+  docs/specs/forge/requirements/REQ-003_skill_script_separation.md:
+    doc_type: requirement
+    title: SKILL.md and Script Responsibility Separation Requirements
+    purpose: Defines responsibility separation between SKILL.md and script files to minimize AI cognitive load and prevent mixed concerns
+    content_details:
+      - SKILL.md clean state principles
+      - Argument minimization in script calls
+      - One scenario one script pattern
+      - Misuse defense positioning
+      - Measurement based approach
+      - Applicable scope for forge plugin
+    applicable_tasks:
+      - forge SKILL.md design review
+      - Script architecture design
+      - Responsibility boundary definition
+      - AI context optimization
+      - Script refactoring
+    keywords:
+      - SKILL.md
+      - script separation
+      - responsibility
+      - argument
+      - AI context
+      - misuse defense
+      - forge
   docs/specs/xcode/requirements/REQ-001_doc_comments.md:
     doc_type: requirement
-    title: "REQ-001: Swift Documentation Comment Generation Requirements"
-    purpose: "Specifies requirements for DocC triple-slash documentation comments on Swift public APIs in the xcode plugin: detection rules, modes (--full, --force), parallel processing, CLI, safety (no code edits), and Quick Help quality."
+    title: "REQ-001: Swift Document Comment Generation"
+    purpose: Specifies requirements for automatic generation and insertion of DocC-format documentation comments into Swift source files to improve API documentation and code discoverability
     content_details:
-      - Targets public/open and selected internal types; skips private/fileprivate, test and mock files, and declarations that already have /// or block doc comments
-      - DocC structure with Parameter, Returns, and Throws for functions; AI writes intent-based summaries and may use tests as reference; optional broader coverage (e.g., properties) via flags
-      - "Modes: default uncommitted files via git status, --full for entire tree, --force to overwrite existing ///, plus file or glob path selection"
-      - "Safety: preserve // comments and non-comment code; default does not modify existing documentation comments or copyright headers"
-      - "Parallel execution: one agent per Swift file, 5-10 concurrent workers, continue after per-file failures"
-      - "CLI: /xcode:doc-comments with --full, --force, and path patterns; reports file count, generated count, skips, and errors"
-      - Auto-invocation after Swift file create or edit with the same exclusion rules; processes touched files without multi-agent orchestration for that trigger
-      - "NFR: valid Quick Help rendering; comment language matches project Japanese or English; independent from legacy create-code-headers file-header skill"
+      - Automatic detection of declarations without documentation comments
+      - DocC format comment generation with parameter and return value descriptions
+      - "Multiple operation modes: default, --full, --force"
+      - "Safety constraints: preserve existing comments and code structure"
+      - Parallel file processing with error isolation
+      - Auto-trigger on Swift file creation
+      - Support for public/open API and internal type definitions
+      - Exclusion of private declarations and test files
     applicable_tasks:
-      - Implement or extend the xcode doc-comments skill and CLI
-      - Review Swift API documentation comment generation scope and safety constraints
-      - Plan doc-advisor code index alignment with triple-slash documentation coverage
+      - Swift documentation comment generation for new files
+      - Documentation enhancement for existing code
+      - Automated documentation quality improvement
+      - Code discovery index enrichment
     keywords:
-      - DocC
       - Swift
-      - Quick Help
-      - xcode:doc-comments
-      - git status
-      - parallel agents
-      - documentation comment
-      - REQ-001
-      - test exclusion
-      - create-code-headers
+      - DocC
+      - documentation comments
+      - API documentation
+      - Xcode Quick Help
+      - code comments
+      - code generation
