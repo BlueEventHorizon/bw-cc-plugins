@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-04-30T02:48:54Z
+  generated_at: 2026-05-04T08:10:47Z
   file_count: 44
 
 docs:
@@ -316,40 +316,39 @@ docs:
       - dependency analysis
   docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md:
     doc_type: design
-    title: doc_type Filter Search Design (DES-026)
-    purpose: Defines query-specs doc_type filter implementation across ToC, Index, and auto search modes with unified doc_type resolution and ADR integration.
+    title: doc_type Filter Search and ADR Coexistence Design
+    purpose: Defines design for doc_type filtering across ToC, Index, and auto search modes, and establishes framework for ADR coexistence in specs with centralized orchestration and responsibility boundaries
     content_details:
-      - doc_type filter architecture with 5-layer design (display, control, utility, search, data)
-      - Argument normalization and doc_type validation via doc_type_utils
-      - Unified doc_type resolution using path prefix matching via toc_utils.determine_doc_type
-      - Subprocess call contracts for filter_toc, search_docs, and grep_docs with error handling
-      - 7 use case scenarios including auto mode, ToC mode, Index mode, and ADR search
-      - doc_type determination rules and API specifications with 3-path consistency (ToC generation, ToC search, Index/grep)
-      - Error handling and response schemas for success and failure cases
-      - ADR directory placement and ToC mapping strategy
-      - Integration with existing components and modifications to toc_utils, filter_toc, search_docs, grep_docs
-      - Additive development deployment strategy with staged implementation steps
+      - doc_type filtering in three search modes (ToC/Index/auto)
+      - Orchestration script responsibilities (argument normalization, mode dispatch, result union)
+      - doc_type determination via longest prefix match against doc_types_map
+      - Index post-filter using path-to-doc_type resolution
+      - grep auxiliary path invoked by AI final judgment layer
+      - ADR mapping and doc_structure.yaml integration
+      - Error handling by mode (100-item threshold logic, API errors, stale index)
+      - Submodule contracts for filter_toc.py and search_docs.py
+      - YAML format for intermediate work files
+      - Dependency hierarchy (query_specs.py orchestrator, doc_type_utils, toc_utils)
     applicable_tasks:
-      - query-specs doc_type filter implementation
-      - doc_type validation framework setup
-      - Path-based doc_type resolution system development
-      - Search layer (ToC/Index/grep) modification for doc_type filtering
-      - ADR integration into specs documentation structure
-      - Architectural review for unified doc_type resolution
-      - Error handling and response schema implementation
-      - Integration testing for 3-path consistency
-      - doc-advisor quality testing with golden datasets
+      - Implementing doc_type filtering feature in query-specs SKILL
+      - Creating query_specs.py orchestrator module
+      - Adding doc_type normalization utilities
+      - Modifying filter_toc and search_docs for doc_type filtering
+      - Integrating ADR support in doc structure
+      - Testing doc_type filtering across all search modes
+      - Designing error handling and recovery for stale Index
+      - Extending SKILL.md documentation with grep auxiliary examples
     keywords:
       - doc_type
-      - filter
-      - search
-      - ADR
+      - filtering
+      - orchestration
       - ToC
       - Index
+      - ADR
+      - prefix match
+      - search modes
       - grep
-      - path resolution
-      - normalize
-      - orchestrator
+      - query_specs
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
     title: "FNC-001: Context External Search Specification"
@@ -436,33 +435,37 @@ docs:
       - ToC deprecation
   docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md:
     doc_type: requirement
-    title: FNC-004 doc_type Filter Requirement Specification
-    purpose: Defines requirements for adding doc_type filtering to query-specs SKILL, setting default behavior, and establishing guidelines for mapping ADR elements to ToC entries
+    title: FNC-004 doc_type Filter Specification
+    purpose: Specifies requirements for adding document-type filtering to query-specs SKILL and integrating ADR as searchable documents in doc-advisor ToC
     content_details:
-      - doc_type filtering syntax with comma-separated multiple values
-      - "Input normalization rules: comma-separated, whitespace trimming, case-sensitive, error handling for empty elements and duplicates"
-      - Default behavior without --doc-type flag is design,requirement
-      - Valid doc_type values derived from .doc_structure.yaml specs.doc_types_map excluding specs.patterns.exclude
-      - ADR search target registration with doc_type=adr in specs category
-      - "Structure mapping guidelines for ADR elements: Status→keywords, Decision→purpose or content_details, Context/Options/Consequences→content_details, Supersedes→content_details and keywords"
-      - "False negative requirement: related documents must appear in results across all three search modes (ToC, Index, auto)"
-      - "Error cases: undefined doc_type values, empty strings, empty elements in comma list, case mismatch, missing task description"
+      - doc_type filtering syntax and normalization rules
+      - Default search scope (design,requirement) when doc-type not specified
+      - Valid values derived from doc_types_map with exclusions applied
+      - Multi-value OR filtering with comma-separated syntax
+      - ADR integration in specs category with doc_type=adr
+      - ADR structure mapping to ToC entry schema
+      - Three-mode consistency (toc, index, auto) with equivalent filtering semantics
+      - Fallback principles for mode branching and Index unavailability
+      - False negative zero guarantee across all modes
+      - Error handling for invalid, empty, and malformed doc_type values
     applicable_tasks:
-      - doc_type filtering requirement definition
-      - Query-specs SKILL argument design
-      - ADR integration planning
-      - Search result validation across multiple modes
-      - Error handling specification
+      - doc-type filtering feature implementation
+      - ADR search indexing configuration
+      - query-specs SKILL enhancement
+      - ToC entry extraction for ADR documents
+      - Index path doc_type judgment
+      - Fallback logic specification for auto mode
     keywords:
-      - doc_type filtering
+      - doc_type
+      - doc-advisor
       - query-specs
-      - Architecture Decision Record
       - ADR
-      - ToC mapping
-      - search precision
-      - default behavior
-      - input normalization
+      - filtering
+      - normalize
+      - exclude
       - false negative
+      - semantic search
+      - Index
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md:
     doc_type: requirement
     title: NFR-001 Context Cost Reduction Specification
