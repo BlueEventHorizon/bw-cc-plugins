@@ -1,0 +1,391 @@
+# add-adr 実装計画書
+# 対象 feature: add-adr (doc-advisor)
+# 関連: FNC-004 (要件) / DES-026 (設計)
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: FNC-004
+    title: "doc_type 絞り込み検索の要件定義（feature: add-adr）"
+    design_id: DES-026
+    status: pending
+
+design_traceability:
+  - design_id: DES-026
+    title: "doc_type 絞り込み検索と ADR 同居の設計（feature: add-adr）"
+    requirement_ids:
+      - FNC-004
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+      - TASK-009
+      - TASK-010a
+      - TASK-010b
+      - TASK-010c
+      - TASK-010d
+      - TASK-011
+      - TASK-012
+      - TASK-013
+      - TASK-014
+      - TASK-015
+
+# === タスク一覧 ===
+tasks:
+  # --- Step 1（共通層整備） §12 ---
+  - task_id: TASK-001
+    title: "toc_utils._parse_config_yaml の dict key quote 除去"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §5.1 表「_parse_config_yaml の dict key 処理」行に従い、quote 文字 (`"` `'`) を除去する処理を追加する
+      - 既存テスト（tests/doc_advisor/scripts/test_toc_utils.py 等）で .doc_structure.yaml の quoted key 解釈が glob 展開へ正しく繋がることを検証する
+      - quoted key シナリオの単体テストを追加する（quote 除去前後で expand_doc_types_map の結果差分を確認）
+    acceptance_criteria: ".doc_structure.yaml に quoted key（例: \"docs/specs/**/design/\"）を書いても expand_doc_types_map が 0 件展開しないこと。既存テスト全件 pass"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/rules/implementation_guidelines.md
+
+  - task_id: TASK-002
+    title: "toc_utils.get_all_md_files の警告出力先を stderr 化"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §5.1 表「get_all_md_files の警告出力」行および §9.1 に従い、警告 print の出力先を stdout から stderr へ変更する
+      - もしくは無警告 skip + warnings 集約に統一する（query_specs.py の stdout JSON 契約を汚染しないため）
+      - 既存テストへの影響範囲を確認し、stderr キャプチャテストを追加する
+    acceptance_criteria: "存在しない root_dir を渡したとき stdout に警告が出ず、stderr に出ること。既存テスト全件 pass"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/rules/cli_output_formatting.md
+
+  - task_id: TASK-003
+    title: "toc_utils.init_common_config() に raw_doc_types_map / expanded_doc_types_map を追加（DD-11）"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §5.1 表 init_common_config 行 / DD-11 / §10 に従い戻り値に 2 キーを追加する
+      - 既存キー doc_types_map（expanded を指す）は後方互換として残置する
+      - 既存呼び出し側の挙動が変わらないことを確認する単体テストを追加する
+      - raw / expanded 差分が ADR ディレクトリ未作成シナリオで顕在化するケースを単体テストで担保する
+    acceptance_criteria: "init_common_config() の戻り値に raw_doc_types_map / expanded_doc_types_map / doc_types_map（expanded）が含まれ、既存呼び出しが破壊されないこと"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  - task_id: TASK-004
+    title: "toc_utils に determine_doc_type 移設・新 API 化（§3.4）+ parse_toc_subset_yaml 新設（DD-12）"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+      - TASK-003
+    group_id: "GROUP-001 (1/2)"
+    build_check: skip
+    description:
+      - DES-026 §3.4 のシグネチャで determine_doc_type を toc_utils に新規追加する（map-only / 最長 prefix match / 一致なし None）
+      - DES-026 §3.4 補助 API に従い parse_toc_subset_yaml を toc_utils に新設する（metadata.missing_paths 平坦化、YAML 構文不正は ValueError）
+      - DES-026 §11.1 単体テストの該当行を作成する（フルパス入力 / ディレクトリ入力 / 末尾スラッシュ正規化 / None / 決定論性 / metadata 平坦化 / 空 list / ValueError）
+    acceptance_criteria: "新 API が単体テストで全パターン通過すること。create_pending_yaml.py 側はまだ旧定義を維持しビルド可能"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/rules/implementation_guidelines.md
+
+  - task_id: TASK-005
+    title: "create_pending_yaml.py の旧 determine_doc_type 削除と新 API 呼び出しへの書き換え（同等性ユニットテスト含む）"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-004
+    group_id: "GROUP-001 (2/2)"
+    build_check: on_group_complete
+    description:
+      - create_pending_yaml.py 内の旧 determine_doc_type を削除し、toc_utils.determine_doc_type 呼び出しに置換する
+      - DOC_TYPE_KEYWORDS は新共有 API 移行後の利用箇所がない場合は削除する。ToC 生成テストの過渡的フォールバックなど明示的な利用箇所が残る場合に限り legacy_determine_doc_type_with_keywords 等の別名関数として隔離し、隔離理由を関数 docstring に明記する（DES-026 §5.1 / §9.3）
+      - DES-026 §11.1 「ToC 生成 ↔ 検索経路の同等性」テストを追加し、3 経路が同一 doc_type を返すことを検証する
+      - ToC 生成パイプラインの既存テスト・既存ゴールデンセットが破壊されていないことを確認する
+    acceptance_criteria: "create_pending_yaml.py が新 API のみを使用し、ToC 生成テスト・同等性テストが全件 pass。DOC_TYPE_KEYWORDS は呼び出し箇所が存在しない場合は削除されており、残置する場合は隔離理由を関数 docstring に明記している"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  # --- Step 2（共通層追加） §12 ---
+  - task_id: TASK-006
+    title: "doc_type_utils.py 新規作成（normalize_doc_types / effective_valid_set / DocTypeError）"
+    priority: 90
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-003
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §3.1 / §3.2 クラス図 DocTypeUtils に従い API を実装する
+      - effective_valid_set の入力源は raw_doc_types_map（DD-11）。expanded は使わない
+      - DES-026 §11.1 単体テスト「doc_type_utils.normalize_doc_types」「effective_valid_set」を全ケース実装する
+      - tests/doc_advisor/scripts/test_doc_type_utils.py を新規作成する
+    acceptance_criteria: "新規モジュールの単体テストが全パターン pass。case-sensitive / 多値 OR / trim / 重複一意化 / エイリアス拒否を網羅"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/rules/implementation_guidelines.md
+
+  # --- Step 3（検索層拡張） §12 ---
+  - task_id: TASK-007
+    title: "filter_toc.py に --doc-type を追加（DD-10 共通正規化）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-004
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §3.1 / §3.3 末尾「子 script の doc_type 正規化責務」/ DD-10 に従い、CLI 受け取り時点で doc_type_utils.normalize_doc_types を呼び出す
+      - render_subset_yaml 出力の filtered 構築直前で doc_type フィルタを適用する（DES-026 §5）
+      - 未指定時は既存挙動を維持する（後方互換）
+      - DES-026 §11.1 単体テスト「filter_toc.py --doc-type」全行を実装する（CLI 単独実行時の正規化動作含む）
+    acceptance_criteria: "--doc-type 単値 / 多値 OR / 0 件 / --paths 併用 / 未指定時 / CLI 直叩き時の正規化動作 が全 pass"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  - task_id: TASK-008
+    title: "search_docs.py に --doc-type を追加（事後フィルタ + DD-10 共通正規化）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-004
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §3.1 / §4.4 採用案 / §6.2 / DD-10 に従い、CLI 受け取り時点で normalize_doc_types を呼び出す
+      - 検索結果の path 列に対して toc_utils.determine_doc_type で path → doc_type 解決し doc_type 一致のみを残す
+      - DES-026 §11.1 単体テスト「search_docs.py --doc-type」全行を実装する
+      - 既存「Index is stale」「Model mismatch」「API error」「OPENAI_API_KEY not set」エラーパスは変更せず、stderr / JSON 契約を維持する
+    acceptance_criteria: "事後フィルタ・正規化テスト全 pass。既存の Index 関連エラーケースが破壊されていないこと"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  - task_id: TASK-009
+    title: "grep_docs.py に --doc-type を追加（事後フィルタ + DD-10 共通正規化）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-004
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §3.1 / §6.2 / DD-09 / DD-10 に従い、CLI 受け取り時点で normalize_doc_types を呼び出す
+      - grep 結果の path 列に toc_utils.determine_doc_type を適用して事後フィルタする
+      - DES-026 §11.1 単体テスト「grep_docs.py --doc-type」を実装する
+      - grep_docs.py は query_specs.py の subprocess 契約に含まれない（§3.3 / DD-09 / §4.4）。SKILL.md AI 層からの直接起動を想定する
+    acceptance_criteria: "正規化・事後フィルタ・既存挙動互換のテストが全 pass"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  # --- Step 4（オーケストレータ追加） §12 ---
+  - task_id: TASK-010a
+    title: "query_specs.py 骨子（CLI / 既定値補完 / 成功・エラー JSON skeleton）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-006
+    group_id: "GROUP-002 (1/4)"
+    build_check: skip
+    description:
+      - DES-026 §3.1 / §3.3 subprocess 契約 / §8.1 成功 JSON / §8.2 エラー JSON / §10 DD-01〜DD-12 に従い、新規 query_specs.py の骨子を実装する
+      - argparse による CLI 構造化解析（--toc / --index / --doc-type CSV / task description passthrough）
+      - 既定値補完（--doc-type 未指定時は design,requirement を補う）
+      - 成功 JSON / エラー JSON の skeleton（mode / status / paths / warnings / missing_paths / index_used フィールド）を出力できる状態にする
+      - DES-026 §11.1 単体テスト「query_specs.py」のうち CLI 引数解析 / 既定値補完 / JSON skeleton 行を実装する
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に CLI 引数解析・既定値補完・JSON skeleton のユニットテストが配置されて pass する"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
+
+  - task_id: TASK-010b
+    title: "query_specs.py adapter（filter_toc → parse_toc_subset_yaml → missing_paths 転写）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-010a
+      - TASK-004
+      - TASK-007
+    group_id: "GROUP-002 (2/4)"
+    build_check: skip
+    description:
+      - DES-026 §3.3 / §3.4 / §4.2 シーケンス / §8.1 に従い、filter_toc.py を subprocess.run で起動する adapter を実装する（shell=False / capture_output=True / text=True）
+      - parse_toc_subset_yaml の戻り値の missing_paths を §8.1 top-level に転写し、warnings に SSoT フォーマット要約のみを追加する
+      - DES-026 §11.1 単体テスト「query_specs.py adapter（missing_paths 転写）」を実装する
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に filter_toc adapter / missing_paths 転写の adapter テストが配置されて pass する"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  - task_id: TASK-010c
+    title: "query_specs.py adapter（search_docs / mode 別エラー継承 §8.3）"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-010a
+      - TASK-008
+    group_id: "GROUP-002 (3/4)"
+    build_check: skip
+    description:
+      - DES-026 §3.3 / §4.2 / §8.3 に従い、search_docs.py を subprocess.run で起動する adapter を実装する。grep_docs.py は呼ばない（DD-09）
+      - mode=auto Index 不在は status:ok / index_used:false（FNC-004 §F-2/F-3 通常分岐）、mode=index Index 不在は status:error（FNC-004 §F-1）の継承ロジックを実装する
+      - DES-026 §11.1 単体テスト「query_specs.py」のうち mode 別エラー継承の行を実装する
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に search_docs adapter / mode 別エラー継承の adapter テストが配置されて pass する"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
+
+  - task_id: TASK-010d
+    title: "query_specs.py: 100 件しきい値 + Index ∪ ToC 全量 union + §11.2 統合テスト"
+    priority: 80
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-010b
+      - TASK-010c
+      - TASK-005
+    group_id: "GROUP-002 (4/4)"
+    build_check: on_group_complete
+    description:
+      - DES-026 §4.2 / §11.2 に従い、100 件超 Index 非空時は Index ∪ ToC 全量補完を実装する
+      - DES-026 §11.2 統合テスト全シナリオを tests/doc_advisor/scripts/test_query_specs.py（および必要に応じて統合テスト用ファイル）に実装する
+      - 決定論性（5 回連続実行で同結果）を検証する
+    acceptance_criteria: "DES-026 §11.1 / §11.2 のテストが tests/doc_advisor/scripts/test_query_specs.py（adapter 単体テストを含む）として配置されて全件 pass。決定論性（5 回連続実行で同結果）が確認できる"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
+
+  # --- Step 5（SKILL.md 切替 + workflow 注記をペアで commit） §12 ---
+  - task_id: TASK-011
+    title: "query-specs/SKILL.md を query_specs.py 呼び出し型に書き換え + grep 補助起動節追加"
+    priority: 70
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-009
+      - TASK-010d
+    group_id: "GROUP-003 (1/2)"
+    build_check: skip
+    description:
+      - DES-026 §3.1 SKILL.md 行 / §12 Step 5 に従い、薄い AI 層へ書き換える
+      - argument-hint を `[--toc|--index] [--doc-type TYPE[,TYPE...]] task description` に更新する
+      - 既定値 design,requirement を本文に明示する
+      - 「grep 補助起動の AI 手順節」を新設し、grep_docs.py --doc-type のコマンド例を SSoT として集約する（DD-09 / DES-026 §3.1 / §4.4）
+      - 候補 Read による最終関連性判定の手順を残す
+    acceptance_criteria: "SKILL.md が新仕様に沿い、grep コマンド例が SKILL.md 本文のみに存在すること（他文書からは参照のみ）"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-012
+    title: "query_toc_workflow.md / query_index_workflow.md を更新（所有境界注記 + コマンド例追記）"
+    priority: 70
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-007
+      - TASK-008
+      - TASK-011
+    group_id: "GROUP-003 (2/2)"
+    build_check: on_group_complete
+    description:
+      - DES-026 §3.1 / §12 Step 5 に従い query_toc_workflow.md に filter_toc.py --doc-type のコマンド例を追加する
+      - query_index_workflow.md は search_docs.py のコマンド例のみ追記する（grep のコマンド例は記載しない / DD-09）
+      - 両ファイルに「`--doc-type` は query-specs 経由でのみ使用、query-rules SKILL は提供しない」の所有境界注記を追加する
+    acceptance_criteria: "両 workflow 文書に所有境界注記とコマンド例（適切な範囲）が反映されている。SKILL.md（TASK-011）と本タスクが GROUP-003 として同時に完了し、SSoT とその参照が同一 commit / PR でマージされる"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  # --- Step 6（.doc_structure.yaml 更新） §12 ---
+  - task_id: TASK-013
+    title: ".doc_structure.yaml に ADR 配置を追加（root_dirs / doc_types_map）"
+    priority: 70
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-010d
+      - TASK-012
+    group_id: null
+    build_check: per_task
+    description:
+      - 'DES-026 §9.1 のサンプルに従い root_dirs に "docs/specs/**/adr/"、doc_types_map に "docs/specs/**/adr/": adr を追加する'
+      - "exclude: [plan] は維持する"
+      - ADR ディレクトリ未作成のままでも有効値 adr が認識され、glob 展開 0 件・誤一致なしであることを統合テストで確認する（DES-026 §9.1 / §11.2）
+    acceptance_criteria: "--doc-type adr 指定時に未定義値エラーにならず、status:ok / paths:[] / warnings に doc_type=adr matched no directory を返すこと。.doc_structure.yaml の specs.root_dirs に \"docs/specs/**/adr/\" が存在し、specs.doc_types_map に \"docs/specs/**/adr/\": adr エントリが存在し、specs.patterns.exclude: [plan] が維持されていること"
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  # --- Step 7（toc_format.md 追補） §12 ---
+  - task_id: TASK-014
+    title: "plugins/doc-advisor/docs/toc_format.md に §ADR Mapping を追補"
+    priority: 50
+    status: pending
+    design_id: DES-026
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-026 §9.2 のマッピング表をそのまま新節として追補する（Title / Decision / Context / Considered Options / Consequences / Status / Supersedes / 適用作業）
+      - スキーマ拡張禁止（要件 [制約]）を明記する
+      - toc-updater agent が ADR 生成時に参照する文書として位置づける
+    acceptance_criteria: "toc_format.md 末尾または適切な節位置に §ADR Mapping が存在し、FNC-004 §文書要件の AND 条件を満たすこと"
+    required_reading:
+      - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+  # --- Step 8（ToC 再生成） §12 ---
+  - task_id: TASK-015
+    title: "ToC 再生成（/doc-advisor:create-specs-toc --full）で doc_type 系を再決定"
+    priority: 30
+    status: pending
+    design_id: DES-026
+    depends_on:
+      - TASK-013
+      - TASK-014
+    group_id: null
+    build_check: per_task
+    description:
+      - /doc-advisor:create-specs-toc --full を実行し doc_type を再付与する
+      - ADR ディレクトリが現存しなくても再生成パイプラインが skip するのみで無害であることを確認する（DES-026 §9.1 / §12 Step 8）
+      - validate_toc.py で検証 OK を確認する
+    acceptance_criteria: |
+      /doc-advisor:create-specs-toc --full 実行が成功し、specs_toc.yaml が再生成される。
+      既存 design / requirement エントリの doc_type が共有 API（toc_utils.determine_doc_type）経由で再付与されている。
+      python3 plugins/doc-advisor/scripts/validate_toc.py specs が exit 0 を返すこと。
+    required_reading:
+      - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-05-04"
+    content: "初版作成（feature: add-adr / FNC-004 / DES-026）。設計書 §12 段階的展開の 8 Step を 15 タスクに分割（TASK-004/005 を GROUP-001 でビルド整合確保）"
+  - date: "2026-05-04"
+    content: "レビュー指摘修正（review-0fe67a）: YAML パース不能の値を quote 化 / TASK-010 を GROUP-002 として 4 タスク（TASK-010a〜010d）に分割 / TASK-011 と TASK-012 を GROUP-003 でペア化（DES-026 §12 Step 5 の同時 commit 担保）/ TASK-015 の build_check を per_task に修正 / 節番号のみ参照に DES-026 / FNC-004 を補完 / TASK-005 の DOC_TYPE_KEYWORDS 削除原則を明文化 / TASK-013 acceptance に .doc_structure.yaml の構造確認を追記"
