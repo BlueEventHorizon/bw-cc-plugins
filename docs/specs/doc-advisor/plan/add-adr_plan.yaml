@@ -1,6 +1,5 @@
 # add-adr 実装計画書
 # 対象 feature: add-adr (doc-advisor)
-# 関連: FNC-004 (要件) / DES-026 (設計)
 
 # === トレーサビリティ ===
 requirements_traceability:
@@ -121,8 +120,9 @@ tasks:
       - create_pending_yaml.py 内の旧 determine_doc_type を削除し、toc_utils.determine_doc_type 呼び出しに置換する
       - DOC_TYPE_KEYWORDS は新共有 API 移行後の利用箇所がない場合は削除する。ToC 生成テストの過渡的フォールバックなど明示的な利用箇所が残る場合に限り legacy_determine_doc_type_with_keywords 等の別名関数として隔離し、隔離理由を関数 docstring に明記する（DES-026 §5.1 / §9.3）
       - DES-026 §11.1 「ToC 生成 ↔ 検索経路の同等性」テストを追加し、3 経路が同一 doc_type を返すことを検証する
-      - ToC 生成パイプラインの既存テスト・既存ゴールデンセットが破壊されていないことを確認する
-    acceptance_criteria: "create_pending_yaml.py が新 API のみを使用し、ToC 生成テスト・同等性テストが全件 pass。DOC_TYPE_KEYWORDS は呼び出し箇所が存在しない場合は削除されており、残置する場合は隔離理由を関数 docstring に明記している"
+      - ToC 生成パイプラインの既存ユニットテスト（tests/doc_advisor/ 配下）が破壊されていないことを確認する
+      - meta/test_docs/ ゴールデンセットは git 管理外・ローカル限定（AGENTS.md 規定）のため本タスクの acceptance には含めず、ローカル環境でデータ・API キーが揃っている場合の任意確認とする。品質再評価は DES-026 §11.4 に従い後続フェーズで扱う
+    acceptance_criteria: "create_pending_yaml.py が新 API のみを使用し、tests/doc_advisor/ 配下の ToC 生成ユニットテスト・同等性テストが全件 pass。DOC_TYPE_KEYWORDS は呼び出し箇所が存在しない場合は削除されており、残置する場合は隔離理由を関数 docstring に明記している"
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
 
@@ -217,10 +217,11 @@ tasks:
     description:
       - DES-026 §3.1 / §3.3 subprocess 契約 / §8.1 成功 JSON / §8.2 エラー JSON / §10 DD-01〜DD-12 に従い、新規 query_specs.py の骨子を実装する
       - argparse による CLI 構造化解析（--toc / --index / --doc-type CSV / task description passthrough）
-      - 既定値補完（--doc-type 未指定時は design,requirement を補う）
-      - 成功 JSON / エラー JSON の skeleton（mode / status / paths / warnings / missing_paths / index_used フィールド）を出力できる状態にする
-      - DES-026 §11.1 単体テスト「query_specs.py」のうち CLI 引数解析 / 既定値補完 / JSON skeleton 行を実装する
-    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に CLI 引数解析・既定値補完・JSON skeleton のユニットテストが配置されて pass する"
+      - 既定値補完（--doc-type 未指定時は design,requirement を補う）。補完が動作したとき doc_types_default_applied=true を返す
+      - DES-026 §8.1 成功 JSON の全 15 フィールドを skeleton として出力できる状態にする（status / mode_requested / mode_effective / doc_types_requested / doc_types_applied / doc_types_default_applied / toc_total_count / toc_filtered_count / index_used / index_status / index_error / warnings / missing_paths / candidate_sources / paths）
+      - DES-026 §8.2 エラー JSON の skeleton（status / error / valid_doc_types）も出力できる状態にする
+      - DES-026 §11.1 単体テスト「query_specs.py」のうち CLI 引数解析 / 既定値補完 / JSON skeleton 行を実装する（§8.1 全 15 フィールドの存在・型および doc_types_default_applied 切り替えを検証する）
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に CLI 引数解析・既定値補完・JSON skeleton のユニットテストが配置されて pass する。成功 JSON skeleton では §8.1 の全 15 フィールド（status / mode_requested / mode_effective / doc_types_requested / doc_types_applied / doc_types_default_applied / toc_total_count / toc_filtered_count / index_used / index_status / index_error / warnings / missing_paths / candidate_sources / paths）の存在と型、および既定値補完時に doc_types_default_applied=true となることを単体テストで検証する"
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
       - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
@@ -239,8 +240,10 @@ tasks:
     description:
       - DES-026 §3.3 / §3.4 / §4.2 シーケンス / §8.1 に従い、filter_toc.py を subprocess.run で起動する adapter を実装する（shell=False / capture_output=True / text=True）
       - parse_toc_subset_yaml の戻り値の missing_paths を §8.1 top-level に転写し、warnings に SSoT フォーマット要約のみを追加する
-      - DES-026 §11.1 単体テスト「query_specs.py adapter（missing_paths 転写）」を実装する
-    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に filter_toc adapter / missing_paths 転写の adapter テストが配置されて pass する"
+      - filter_toc 結果の各 path について candidate_sources に "toc" 由来を記録する（§8.1 candidate_sources 仕様）
+      - toc_total_count（doc_type 適用前 ToC エントリ数）/ toc_filtered_count（doc_type 適用後 ToC エントリ数）を §8.1 の定義どおりに付与する
+      - DES-026 §11.1 単体テスト「query_specs.py adapter（missing_paths 転写）」を実装する。candidate_sources["toc"] の付与・toc_total_count / toc_filtered_count の正確な値もテストで検証する
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に filter_toc adapter / missing_paths 転写の adapter テストが配置されて pass する。candidate_sources に \"toc\" 由来が記録されること、toc_total_count / toc_filtered_count が §8.1 定義どおりの値になることが単体テストで検証されている"
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
 
@@ -257,8 +260,10 @@ tasks:
     description:
       - DES-026 §3.3 / §4.2 / §8.3 に従い、search_docs.py を subprocess.run で起動する adapter を実装する。grep_docs.py は呼ばない（DD-09）
       - mode=auto Index 不在は status:ok / index_used:false（FNC-004 §F-2/F-3 通常分岐）、mode=index Index 不在は status:error（FNC-004 §F-1）の継承ロジックを実装する
-      - DES-026 §11.1 単体テスト「query_specs.py」のうち mode 別エラー継承の行を実装する
-    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に search_docs adapter / mode 別エラー継承の adapter テストが配置されて pass する"
+      - search_docs 結果の各 path について candidate_sources に "index" 由来を記録する（§8.1 candidate_sources 仕様、ToC と重なる path は ["toc","index"] となる）
+      - index_status（"ok" / "skipped" / "error"）と index_error（Model mismatch / API error / Index is stale / 非 JSON / OPENAI_API_KEY 未設定 / null）を §8.1 / §8.3 の遷移どおりに設定する
+      - DES-026 §11.1 単体テスト「query_specs.py」のうち mode 別エラー継承の行を実装する。candidate_sources["index"] 付与、index_status / index_error の各遷移（mode=auto / mode=index × 各失敗ケース）も単体テストで検証する
+    acceptance_criteria: "tests/doc_advisor/scripts/test_query_specs.py に search_docs adapter / mode 別エラー継承の adapter テストが配置されて pass する。candidate_sources に \"index\" 由来が記録されること、index_status / index_error が §8.1 / §8.3 の遷移どおりに設定されることが単体テストで検証されている"
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
       - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
@@ -277,8 +282,9 @@ tasks:
     description:
       - DES-026 §4.2 / §11.2 に従い、100 件超 Index 非空時は Index ∪ ToC 全量補完を実装する
       - DES-026 §11.2 統合テスト全シナリオを tests/doc_advisor/scripts/test_query_specs.py（および必要に応じて統合テスト用ファイル）に実装する
+      - mode_requested / mode_effective / doc_types_default_applied の生成検証も §11.2 統合テスト範囲に含める（mode=auto Index 不在時の mode_effective 不変、既定値補完時の doc_types_default_applied=true 等）
       - 決定論性（5 回連続実行で同結果）を検証する
-    acceptance_criteria: "DES-026 §11.1 / §11.2 のテストが tests/doc_advisor/scripts/test_query_specs.py（adapter 単体テストを含む）として配置されて全件 pass。決定論性（5 回連続実行で同結果）が確認できる"
+    acceptance_criteria: "DES-026 §11.1 のうち query_specs.py 関連の上位シナリオ（100 件しきい値・Index ∪ ToC 全量 union）と §11.2 の query_specs 統合シナリオ全件が tests/doc_advisor/scripts/test_query_specs.py に配置されて全件 pass。§8.3 表の mode 別エラー継承（mode=auto Index 不在 → status:ok / mode=index Index 不在 → status:error 等）も §11.2 統合シナリオとして検証する。mode_requested / mode_effective / doc_types_default_applied の値が §8.1 定義どおりに設定されることも統合テストで検証する。決定論性（5 回連続実行で同結果）が確認できる。§11.1 のうちモジュール別単体テスト（doc_type_utils / toc_utils.determine_doc_type / filter_toc / search_docs / grep_docs）は §11.3 配置に従い各担当タスク（TASK-004 / TASK-006 / TASK-007 / TASK-008 / TASK-009）の acceptance に従い別テストファイルへ配置する（本タスクの責務外）"
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md
       - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
@@ -356,6 +362,7 @@ tasks:
       - DES-026 §9.2 のマッピング表をそのまま新節として追補する（Title / Decision / Context / Considered Options / Consequences / Status / Supersedes / 適用作業）
       - スキーマ拡張禁止（要件 [制約]）を明記する
       - toc-updater agent が ADR 生成時に参照する文書として位置づける
+      - DES-026 §12 末尾「各ステップ単独で commit / PR 化が可能」に従い TASK-013 と並列実行可能
     acceptance_criteria: "toc_format.md 末尾または適切な節位置に §ADR Mapping が存在し、FNC-004 §文書要件の AND 条件を満たすこと"
     required_reading:
       - docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md
@@ -378,7 +385,7 @@ tasks:
       - validate_toc.py で検証 OK を確認する
     acceptance_criteria: |
       /doc-advisor:create-specs-toc --full 実行が成功し、specs_toc.yaml が再生成される。
-      既存 design / requirement エントリの doc_type が共有 API（toc_utils.determine_doc_type）経由で再付与されている。
+      代表パス（design / requirement / adr 各 1 件以上）について、toc_utils.determine_doc_type(path, expanded_doc_types_map) の戻り値と再生成後 specs_toc.yaml の当該エントリ doc_type が一致すること（同等性確認）。確認は ad-hoc スクリプトまたは tests/doc_advisor/ 配下の小さな同等性テストで実施する。
       python3 plugins/doc-advisor/scripts/validate_toc.py specs が exit 0 を返すこと。
     required_reading:
       - docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md

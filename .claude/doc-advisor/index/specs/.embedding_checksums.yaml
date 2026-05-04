@@ -1,7 +1,7 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-04-29T15:55:15Z
-file_count: 42
+generated_at: 2026-05-04T08:33:13Z
+file_count: 44
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -13,9 +13,11 @@ checksums:
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: c5e151828923fee43cd764ac6c916f6d8496d38fe4357b9070c5417b897d8bf1
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md: ce1ca801d97795fb4caab2700cb04fb764f5314849ec0c8bc5ac1385d868b732
   docs/specs/doc-advisor/design/DES-007_code_index_design.md: a2c263f6b69b1a5ff6a86c87a7952ef6d8dda0062b46ebab2c9c2f18287da033
+  docs/specs/doc-advisor/design/DES-026_doc_type_filter_design.md: 464688d137f57e289b12705521bf903a05e59680d44dbd573911d5d58f21b3f6
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: db988f06f6af2e6d4b731e356cadfedef5a17489de9a1f714a062107e8ebdcdf
   docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: 2a913f08383b45272e025f6b9df41c0e6073df431f6372d09c3cfed1cd14b5a4
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md: cb6f505f6a76c03541f92633de47ebcf7a47aa5d25aecefce4b4af5c5d66c73f
+  docs/specs/doc-advisor/requirements/FNC-004_doc_type_filter_spec.md: 13c637ac1b483bb3f276e19bc48690dc48516c711ed8c3c5d78afedfc89a5d06
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md: 58559880acfec8b7ae3697a28868958491430fe3561a104864e3ba01008e241a
   docs/specs/doc-advisor/requirements/NFR-002_yaml_toc_abolition_spec.md: c5f4bde6e317477f63a47b94d9e7f91babe5e16b32483c6f724419b88062e750
   docs/specs/doc-advisor/requirements/NFR-003_standard_library_preferred_spec.md: e88dd0e5af5c77a89356d78ba7393b9b49924e8baa1b46a02c82c2c11592a7ea
