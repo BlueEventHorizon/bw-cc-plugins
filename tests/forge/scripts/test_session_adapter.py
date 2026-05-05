@@ -18,9 +18,7 @@ from session_adapter import (  # noqa: E402
     REFS_FILES,
     SESSION_FILES,
     build_monitor_session,
-    read_markdown_file,
     read_session_file,
-    read_yaml_file,
 )
 
 
@@ -32,7 +30,7 @@ def _write_file(directory, filename, content):
 
 
 class TestReadHelpers(unittest.TestCase):
-    """個別ファイル読み取り helper のテスト。"""
+    """adapter facade の読み取り helper のテスト。"""
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
@@ -40,23 +38,8 @@ class TestReadHelpers(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    def test_read_yaml_file_missing_returns_none(self):
-        self.assertIsNone(read_yaml_file(os.path.join(self.tmpdir, "missing.yaml")))
-
-    def test_read_yaml_file_empty_returns_dict(self):
-        path = _write_file(self.tmpdir, "empty.yaml", "")
-        self.assertEqual(read_yaml_file(path), {})
-
-    def test_read_yaml_file_comment_only_returns_dict(self):
-        path = _write_file(self.tmpdir, "comments.yaml", "# comment\n# another\n")
-        self.assertEqual(read_yaml_file(path), {})
-
-    def test_read_yaml_file_reads_flat_yaml(self):
-        path = _write_file(self.tmpdir, "session.yaml", "skill: review\n")
-        self.assertEqual(read_yaml_file(path)["skill"], "review")
-
-    def test_read_yaml_file_reads_nested_review_refs(self):
-        path = _write_file(self.tmpdir, "refs.yaml", """\
+    def test_read_session_file_reads_nested_review_refs(self):
+        _write_file(self.tmpdir, "refs.yaml", """\
 target_files:
   - plugins/forge/skills/review/SKILL.md
 reference_docs:
@@ -71,24 +54,23 @@ related_code:
     reason: "同種 AI 専用スキルの frontmatter 参考"
     lines: "1-30"
 """)
-        result = read_yaml_file(path)
+        entry = read_session_file(self.tmpdir, "refs.yaml")
+        result = entry["content"]
         self.assertEqual(result["target_files"][0], "plugins/forge/skills/review/SKILL.md")
         self.assertEqual(result["reference_docs"][0]["path"], "docs/rules/skill_authoring_notes.md")
         self.assertEqual(result["perspectives"][0]["name"], "correctness")
         self.assertEqual(result["perspectives"][0]["section"], "正確性 (Logic)")
         self.assertEqual(result["related_code"][0]["lines"], "1-30")
 
-    def test_read_markdown_file_missing_returns_none(self):
-        self.assertIsNone(read_markdown_file(os.path.join(self.tmpdir, "missing.md")))
-
-    def test_read_markdown_file_reads_text(self):
-        path = _write_file(self.tmpdir, "review.md", "# Review\n")
-        self.assertEqual(read_markdown_file(path), "# Review\n")
-
     def test_read_session_file_missing_entry(self):
         entry = read_session_file(self.tmpdir, "session.yaml")
         self.assertFalse(entry["exists"])
         self.assertIsNone(entry["content"])
+
+    def test_read_session_file_reads_markdown(self):
+        _write_file(self.tmpdir, "review.md", "# Review\n")
+        entry = read_session_file(self.tmpdir, "review.md")
+        self.assertEqual(entry["content"], "# Review\n")
 
 
 class TestBuildMonitorSession(unittest.TestCase):

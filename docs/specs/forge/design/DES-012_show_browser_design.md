@@ -571,12 +571,10 @@ def notify_session_update(session_dir: str, file_path: str,
 
 **呼び出し点**:
 
-- `update_plan.py :: write_plan()` — plan.yaml 書き込み直後
-- `write_interpretation.py :: _atomic_write_text()` — interpretation.md 等の直後
-- `write_refs.py` — refs.yaml 書き込み直後
-- `extract_review_findings.py` — review.md / review_{p}.md / eval_{p}.json の
-  atomic write 直後（3 箇所）
-- `merge_evals.py` — 内部で `update_plan.write_plan()` を呼ぶため自動カバー
+- `SessionStore.write_text()` — core writer の artifact 書き込み直後
+- `session.meta.update_session_meta()` — `session.yaml` meta 更新直後
+- legacy mode の `extract_review_findings.py` — session_dir を持たない旧 2 引数モードの plan 書き込み直後
+- `merge_evals.py` — `update_plan.write_plan(..., meta=...)` を呼ぶため `SessionStore` 経由で自動カバー
 
 ### 5.12 mtime ハートビート仕様
 
@@ -593,17 +591,18 @@ def notify_session_update(session_dir: str, file_path: str,
 
 ## 6. 使用する既存コンポーネント
 
-| コンポーネント | ファイルパス                                       | 用途                                            |
-| -------------- | -------------------------------------------------- | ----------------------------------------------- |
-| YAML パーサー  | `scripts/session/yaml_utils.py::parse_yaml`        | session.yaml / plan.yaml / refs.yaml 読み込み   |
-| Atomic writer  | `scripts/session/yaml_utils.py::write_nested_yaml` | update_plan.py で使用中                         |
-| セッション管理 | `scripts/session_manager.py`                       | cmd_init() に `ensure_monitor_running()` を注入 |
+| コンポーネント | ファイルパス                                | 用途                                            |
+| -------------- | ------------------------------------------- | ----------------------------------------------- |
+| YAML パーサー  | `scripts/session/yaml_utils.py::parse_yaml` | session.yaml / plan.yaml / refs.yaml 読み込み   |
+| Reader         | `scripts/session/reader.py`                 | session files / refs files の読み取り共通処理   |
+| SessionStore   | `scripts/session/store.py`                  | artifact atomic write / notify / meta 更新      |
+| セッション管理 | `scripts/session_manager.py`                | cmd_init() に `ensure_monitor_running()` を注入 |
 
 ---
 
 ### 6.4 session adapter 分離
 
-`GET /session` のファイル読み取り・YAML/Markdown 正規化・表示用派生情報生成は `plugins/forge/scripts/monitor/session_adapter.py` に分離する。`server.py` は HTTP / SSE / asset 配信に責務を絞り、session file schema の解釈を直接持たない。
+`GET /session` のファイル読み取り・YAML/Markdown 正規化は `plugins/forge/scripts/session/reader.py` が担う。`plugins/forge/scripts/monitor/session_adapter.py` は reader の結果に表示用派生情報を付与する。`server.py` は HTTP / SSE / asset 配信に責務を絞り、session file schema の解釈を直接持たない。
 
 adapter は既存レスポンス互換の `session_dir`, `skill`, `files`, `refs`, `refs_yaml` を維持し、追加で `derived` を返す。
 
