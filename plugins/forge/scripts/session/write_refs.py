@@ -32,6 +32,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 
 from session.yaml_utils import write_nested_yaml
 from monitor.notify import notify_session_update
+from session_manager import update_session_meta_warning
 
 # perspectives[].name の許容パターン（英小文字・数字・アンダースコア・ハイフンのみ）
 _PERSPECTIVE_NAME_RE = re.compile(r"^[a-z0-9_-]+$")
@@ -129,6 +130,11 @@ def write_refs(session_dir, data):
     output_path = Path(session_dir) / "refs.yaml"
     write_nested_yaml(str(output_path), sections)
     notify_session_update(session_dir, str(output_path))
+    update_session_meta_warning(session_dir, {
+        "phase": "context_ready",
+        "phase_status": "completed",
+        "active_artifact": "refs.yaml",
+    })
     return str(output_path)
 
 

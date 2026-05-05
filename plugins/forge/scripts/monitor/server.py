@@ -29,7 +29,13 @@ _SCRIPTS_DIR = os.path.abspath(
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from session.yaml_utils import parse_yaml  # noqa: E402
+from session_adapter import (  # noqa: E402
+    REFS_FILES,
+    SESSION_FILES,
+    build_monitor_session,
+    read_markdown_file,
+    read_yaml_file,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -70,73 +76,23 @@ ASSET_MIME = {
 class YamlReader:
     """セッションディレクトリ内の YAML / Markdown を読み込み dict / str に変換する。"""
 
-    SESSION_FILES = [
-        "session.yaml",
-        "plan.yaml",
-        "review.md",
-        "requirements.md",
-        "design.md",
-    ]
-
-    REFS_FILES = [
-        "specs.yaml",
-        "rules.yaml",
-        "code.yaml",
-    ]
+    SESSION_FILES = SESSION_FILES
+    REFS_FILES = REFS_FILES
 
     def read_session_dir(self, session_dir):
         """セッションディレクトリ内の全ファイルを読み込み JSON 化する。"""
-        result = {
-            "session_dir": session_dir,
-            "files": {},
-            "refs": {},
-            "refs_yaml": {"exists": False, "content": None},
-        }
-
-        for filename in self.SESSION_FILES:
-            filepath = os.path.join(session_dir, filename)
-            if filename.endswith(".md"):
-                content = self.read_markdown_file(filepath)
-            else:
-                content = self.read_yaml_file(filepath)
-            result["files"][filename] = {
-                "exists": content is not None,
-                "content": content,
-            }
-
-        refs_dir = os.path.join(session_dir, "refs")
-        for filename in self.REFS_FILES:
-            filepath = os.path.join(refs_dir, filename)
-            content = self.read_yaml_file(filepath)
-            result["refs"][filename] = {
-                "exists": content is not None,
-                "content": content,
-            }
-
-        refs_yaml_path = os.path.join(session_dir, "refs.yaml")
-        refs_yaml_content = self.read_yaml_file(refs_yaml_path)
-        if refs_yaml_content is not None:
-            result["refs_yaml"] = {"exists": True, "content": refs_yaml_content}
-
-        return result
+        return build_monitor_session(session_dir)
 
     def read_yaml_file(self, filepath):
-        if not os.path.isfile(filepath):
-            return None
         try:
-            content = Path(filepath).read_text(encoding="utf-8")
+            return read_yaml_file(filepath)
         except (IOError, OSError) as e:
             print(f"警告: YAML 読み込み失敗: {filepath}: {e}", file=sys.stderr)
             return None
-        if not content.strip():
-            return {}
-        return parse_yaml(content)
 
     def read_markdown_file(self, filepath):
-        if not os.path.isfile(filepath):
-            return None
         try:
-            return Path(filepath).read_text(encoding="utf-8")
+            return read_markdown_file(filepath)
         except (IOError, OSError) as e:
             print(f"警告: Markdown 読み込み失敗: {filepath}: {e}", file=sys.stderr)
             return None
@@ -287,10 +243,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def _handle_session(self):
         """GET /session — セッション全体を JSON で返す。"""
-        reader = YamlReader()
-        data = reader.read_session_dir(self.server.session_dir)
-        # skill 情報もレスポンスに含める(ブラウザ側レイアウト切替用)
-        data["skill"] = self.server.skill
+        data = build_monitor_session(self.server.session_dir, self.server.skill)
         self._send_json(data)
 
     def _handle_sse(self):

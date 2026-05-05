@@ -1,102 +1,49 @@
 #!/usr/bin/env python3
-"""
-review/scripts/init_session.py のテスト
+"""review/scripts/init_session.py の薄い wrapper テスト。"""
 
-session_manager.py init を透過的に呼び出すラッパーを検証する。
-位置引数 {review_type} {engine} {auto_count} →
---review-type / --engine / --auto-count へのマッピング、
---current-cycle 0 のハードコード、ハードコード --skill、
-exit code 透過を確認。
-"""
-
-import importlib.util
-import subprocess
-import sys
 import unittest
-from pathlib import Path
-from unittest import mock
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-WRAPPER_PATH = (REPO_ROOT / 'plugins' / 'forge' / 'skills'
-                / 'review' / 'scripts' / 'init_session.py')
-EXPECTED_SKILL = "review"
-EXPECTED_LOW_LEVEL = (REPO_ROOT / 'plugins' / 'forge' / 'scripts'
-                      / 'session_manager.py')
+from tests.forge.wrapper_helpers import (
+    SESSION_MANAGER,
+    assert_exit_code_transparent,
+    assert_init_session_command,
+    assert_low_level,
+    assert_transparent_subprocess_kwargs,
+    command_from_mock,
+    invoke_with_mocked_run,
+    load_wrapper,
+    wrapper_path,
+)
 
-
-def _load_wrapper():
-    spec = importlib.util.spec_from_file_location(
-        "_init_session_review", WRAPPER_PATH
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+EXPECTED_SKILL = 'review'
+WRAPPER_PATH = wrapper_path(EXPECTED_SKILL, "init_session.py")
 
 
 class TestInitSessionWrapper(unittest.TestCase):
+    """位置引数 {review_type} {engine} {auto_count} を init flags に変換する。"""
+
     def setUp(self):
-        self.wrapper = _load_wrapper()
+        self.wrapper = load_wrapper(WRAPPER_PATH, '_init_session_review')
 
     def test_skill_hardcoded(self):
         self.assertEqual(self.wrapper.SKILL, EXPECTED_SKILL)
 
     def test_low_level_path_points_session_manager(self):
-        self.assertEqual(self.wrapper.LOW_LEVEL.resolve(),
-                         EXPECTED_LOW_LEVEL.resolve())
+        assert_low_level(self, self.wrapper, SESSION_MANAGER)
 
     def test_positional_args_mapped_to_flags(self):
-        """位置引数 {review_type} {engine} {auto_count} が正しく flag に変換される"""
-        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
-            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
-            argv = ["init_session.py", "code", "codex", "3"]
-            with mock.patch.object(sys, "argv", argv):
-                rc = self.wrapper.main()
+        rc, mock_run = invoke_with_mocked_run(self.wrapper, argv=['init_session.py', 'code', 'codex', '3'])
         self.assertEqual(rc, 0)
-        cmd = mock_run.call_args.args[0]
-        self.assertEqual(cmd[0], sys.executable)
-        self.assertEqual(Path(cmd[1]).resolve(), EXPECTED_LOW_LEVEL.resolve())
-        self.assertEqual(cmd[2], "init")
-        self.assertEqual(cmd[cmd.index("--skill") + 1], EXPECTED_SKILL)
-        self.assertIn("--review-type", cmd)
-        self.assertEqual(cmd[cmd.index("--review-type") + 1], "code")
-        self.assertIn("--engine", cmd)
-        self.assertEqual(cmd[cmd.index("--engine") + 1], "codex")
-        self.assertIn("--auto-count", cmd)
-        self.assertEqual(cmd[cmd.index("--auto-count") + 1], "3")
-        self.assertFalse(mock_run.call_args.kwargs.get("check", True))
-
-    def test_current_cycle_hardcoded_zero(self):
-        """review ラッパーは --current-cycle 0 を内部でハードコードする"""
-        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
-            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
-            argv = ["init_session.py", "code", "codex", "3"]
-            with mock.patch.object(sys, "argv", argv):
-                self.wrapper.main()
-        cmd = mock_run.call_args.args[0]
-        self.assertIn("--current-cycle", cmd)
-        self.assertEqual(cmd[cmd.index("--current-cycle") + 1], "0")
+        assert_init_session_command(
+            self,
+            command_from_mock(mock_run),
+            EXPECTED_SKILL,
+            {'--review-type': 'code', '--engine': 'codex', '--auto-count': '3', '--current-cycle': '0'},
+        )
+        assert_transparent_subprocess_kwargs(self, mock_run)
 
     def test_exit_code_transparent(self):
-        for code in (0, 1, 2, 42):
-            with self.subTest(code=code):
-                with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
-                    mock_run.return_value = subprocess.CompletedProcess(
-                        args=[], returncode=code)
-                    argv = ["init_session.py", "code", "codex", "3"]
-                    with mock.patch.object(sys, "argv", argv):
-                        rc = self.wrapper.main()
-                self.assertEqual(rc, code)
-
-    def test_stdout_stderr_not_captured_by_wrapper(self):
-        with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
-            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
-            argv = ["init_session.py", "code", "codex", "3"]
-            with mock.patch.object(sys, "argv", argv):
-                self.wrapper.main()
-        kw = mock_run.call_args.kwargs
-        self.assertNotIn("capture_output", kw)
-        self.assertNotIn("stdout", kw)
-        self.assertNotIn("stderr", kw)
+        assert_exit_code_transparent(self, self.wrapper, lambda: ['init_session.py', 'code', 'codex', '3'])
 
 
 if __name__ == "__main__":

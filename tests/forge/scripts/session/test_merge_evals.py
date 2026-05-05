@@ -18,7 +18,7 @@ from session.merge_evals import (
     collect_eval_files,
     merge_eval_updates,
 )
-from session.yaml_utils import write_nested_yaml
+from session.yaml_utils import read_yaml, write_nested_yaml
 
 SCRIPT = str(
     Path(__file__).resolve().parents[4]
@@ -373,6 +373,9 @@ class TestMergeEvalUpdates(unittest.TestCase):
 class TestMergeEvalsCli(_FsTestCase):
     def test_basic_e2e(self):
         """CLI 経由で eval_*.json → plan.yaml 更新が動作する。"""
+        (self.session_dir / "session.yaml").write_text(
+            "status: active\nskill: review\n", encoding="utf-8"
+        )
         self._write_plan(_sample_plan_items())
         self._write_eval("alignment", [
             {"id": 1, "status": "pending", "recommendation": "fix",
@@ -399,6 +402,11 @@ class TestMergeEvalsCli(_FsTestCase):
         self.assertEqual(output["skip_count"], 1)
         self.assertEqual(output["should_continue"], True)
         self.assertEqual(output["not_auto_fixable"], [3])  # architecture id=1 → global 3
+
+        session = read_yaml(str(self.session_dir / "session.yaml"))
+        self.assertEqual(session["phase"], "evaluation_merged")
+        self.assertEqual(session["phase_status"], "completed")
+        self.assertEqual(session["active_artifact"], "plan.yaml")
 
     def test_no_eval_files(self):
         """eval_*.json が存在しない場合はエラーを stderr に出力。"""
@@ -527,7 +535,6 @@ class TestMergeEvalsCli(_FsTestCase):
         )
 
         # plan.yaml を読み直して検証
-        from session.yaml_utils import read_yaml
         plan = read_yaml(str(self.session_dir / "plan.yaml"))
         items = plan["items"]
 
