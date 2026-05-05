@@ -18,82 +18,12 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from session.yaml_utils import read_yaml
-
-# セッション直下のファイル（検出対象）
-SESSION_FILES = [
-    "session.yaml",
-    "refs.yaml",
-    "review.md",
-    "plan.yaml",
-]
-
-# refs/ サブディレクトリのファイル
-REFS_FILES = [
-    "specs.yaml",
-    "rules.yaml",
-    "code.yaml",
-]
-
-
-def read_file_entry(filepath):
-    """単一ファイルを読み込み {exists, content} を返す。
-
-    Args:
-        filepath: ファイルパス（Path）
-
-    Returns:
-        dict: {"exists": bool, "content": ...}
-    """
-    if not filepath.exists():
-        return {"exists": False, "content": None}
-
-    if filepath.suffix == ".md":
-        content = filepath.read_text(encoding="utf-8")
-        return {"exists": True, "content": content}
-
-    if filepath.suffix == ".yaml":
-        try:
-            content = read_yaml(str(filepath))
-            return {"exists": True, "content": content}
-        except (IOError, OSError, UnicodeDecodeError) as e:
-            return {"exists": True, "content": None,
-                    "error": str(e)}
-
-    return {"exists": False, "content": None}
-
-
-def read_session_files(session_dir, file_filter=None):
-    """セッションディレクトリ内のファイルを読み込む。
-
-    Args:
-        session_dir: セッションディレクトリパス
-        file_filter: 読み込み対象ファイル名リスト（None で全件）
-
-    Returns:
-        dict: 読み込み結果
-    """
-    session_path = Path(session_dir)
-    result = {
-        "session_dir": str(session_dir),
-        "files": {},
-        "refs": {},
-    }
-
-    # セッション直下ファイル
-    targets = file_filter if file_filter else SESSION_FILES
-    for name in targets:
-        if name in SESSION_FILES:
-            result["files"][name] = read_file_entry(session_path / name)
-
-    # refs/ サブディレクトリ
-    ref_targets = file_filter if file_filter else REFS_FILES
-    refs_dir = session_path / "refs"
-    for name in ref_targets:
-        if name in REFS_FILES:
-            result["refs"][name] = read_file_entry(refs_dir / name)
-
-    return result
+from session.reader import (  # noqa: E402
+    REFS_FILES,
+    SESSION_FILES,
+    read_entry as read_file_entry,
+    read_session_files,
+)
 
 
 def main():

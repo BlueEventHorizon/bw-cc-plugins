@@ -390,7 +390,8 @@ monitor の `/session` レスポンスは、`plugins/forge/scripts/monitor/sessi
 | `session.yaml`           | セッション manifest と浅い進行状態だけを保持                            |
 | `refs/`, `refs.yaml`     | 参照情報の正規成果物                                                    |
 | `plan.yaml`, `review.md` | review の正規成果物                                                     |
-| `session_adapter.py`     | ファイル群を monitor 表示用 JSON へ正規化し、`derived` を付与           |
+| `session/reader.py`      | session files / refs files の低レベル読み取りを共通化                   |
+| `session_adapter.py`     | reader の結果に monitor 表示用の `derived` を付与                       |
 | `server.py`              | `/session` / `/notify` / SSE / asset 配信。ファイル schema は解釈しない |
 
 ### `/session` レスポンス
@@ -430,7 +431,7 @@ monitor の `/session` レスポンスは、`plugins/forge/scripts/monitor/sessi
 }
 ```
 
-`derived` は表示用の派生情報であり、正規状態ではない。AI / SKILL.md は monitor 表示更新のための追加手順を持たない。成果物 writer が既存の書き込み処理の末尾で `session.yaml` を更新する。
+`derived` は表示用の派生情報であり、正規状態ではない。AI / SKILL.md は monitor 表示更新のための追加手順を持たない。成果物 writer は `session/store.py` の `SessionStore` 経由で artifact write → notify → `session.yaml` meta 更新を行う。
 
 ---
 
@@ -774,6 +775,8 @@ echo '<json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_refs.py {ses
 
 成功時は `session.yaml` の `phase: context_ready`, `phase_status: completed`, `active_artifact: refs.yaml` を更新する。`session.yaml` が存在しない旧式・単体実行では成果物保存を優先し、meta 更新はスキップする。
 
+実装上は `SessionStore.write_nested_yaml()` を使い、`refs.yaml` の atomic write、monitor 通知、meta 更新を同じ経路で実行する。
+
 ### update_plan.py — plan.yaml ステータス更新
 
 **単一項目更新:**
@@ -800,6 +803,8 @@ echo '<json>' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/update_plan.py {se
 
 成功時は `session.yaml` の `active_artifact: plan.yaml` を更新する。`merge_evals.py` 経由で evaluator 結果を統合した場合は追加で `phase: evaluation_merged`, `phase_status: completed` を更新する。
 
+`write_plan(session_dir, plan_data, meta=None)` は `SessionStore` 経由で `plan.yaml` を保存する。`merge_evals.py` は `meta` を渡すことで、plan 書き込みと `evaluation_merged` 更新を 1 経路にまとめる。
+
 ### write_interpretation.py — review_{perspective}.md 書き換え
 
 ```bash
@@ -811,6 +816,8 @@ cat review_logic.md | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_interp
 
 成功時は `session.yaml` の `active_artifact: review_{perspective}.md` を更新する。
 
+`review_{perspective}.raw.md` の初回バックアップと `review_{perspective}.md` の上書きは、いずれも `SessionStore.write_text()` で atomic に行う。
+
 ### read_session.py — セッション全ファイル読み取り
 
 ```bash
@@ -818,6 +825,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/read_session.py {session_dir} [--f
 ```
 
 **出力**: `{"status": "ok", "files": {...}, "refs": {...}}`
+
+`read_session.py` と monitor adapter はどちらも `session/reader.py` を使う。reader は YAML / Markdown の entry 形式（`exists`, `content`, `error`）を共通化し、monitor adapter はその結果に `derived` だけを追加する。
 
 ---
 

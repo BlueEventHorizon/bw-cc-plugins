@@ -127,10 +127,10 @@ class TestWriteInterpretation(_FsTestCase):
     def test_atomic_rename_does_not_corrupt_on_partial(self):
         """書き込みに失敗しても target は直前の内容のまま維持される。
 
-        _atomic_write_text の tmp エラーパスを検証: 書き込み中に例外が
+        store の tmp エラーパスを検証: 書き込み中に例外が
         発生した場合、target は書き換わらず tmp は掃除される。
         """
-        from session.write_interpretation import _atomic_write_text
+        from session.store import _atomic_write_text
 
         target = self.session_dir / "test_atomic.md"
         target.write_text("original", encoding="utf-8")

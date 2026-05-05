@@ -33,9 +33,8 @@ from session_adapter import (  # noqa: E402
     REFS_FILES,
     SESSION_FILES,
     build_monitor_session,
-    read_markdown_file,
-    read_yaml_file,
 )
+from session.reader import read_entry  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -84,18 +83,16 @@ class YamlReader:
         return build_monitor_session(session_dir)
 
     def read_yaml_file(self, filepath):
-        try:
-            return read_yaml_file(filepath)
-        except (IOError, OSError) as e:
-            print(f"警告: YAML 読み込み失敗: {filepath}: {e}", file=sys.stderr)
+        entry = read_entry(filepath)
+        if not entry.get("exists"):
             return None
+        return entry.get("content")
 
     def read_markdown_file(self, filepath):
-        try:
-            return read_markdown_file(filepath)
-        except (IOError, OSError) as e:
-            print(f"警告: Markdown 読み込み失敗: {filepath}: {e}", file=sys.stderr)
+        entry = read_entry(filepath)
+        if not entry.get("exists"):
             return None
+        return entry.get("content")
 
 
 # ---------------------------------------------------------------------------

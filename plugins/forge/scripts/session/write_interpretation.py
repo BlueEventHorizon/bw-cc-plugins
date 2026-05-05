@@ -28,43 +28,14 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from monitor.notify import notify_session_update  # noqa: E402
-from session_manager import update_session_meta_warning  # noqa: E402
-
-
-def _atomic_write_text(target, content, encoding="utf-8"):
-    """同一ディレクトリ内で tmp ファイル作成 → rename でアトミックに書き込む。
-
-    途中クラッシュ / 割り込みで target が空・途中書きになるのを防ぐ。
-    rename は POSIX で atomic が保証される(同一ファイルシステム上)。
-    """
-    target = Path(target)
-    target_dir = target.parent
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=f".{target.name}.", suffix=".tmp", dir=str(target_dir)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding=encoding) as f:
-            f.write(content)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_path, str(target))
-    except Exception:
-        # 失敗したら tmp を削除する(target は変更されない)
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+from session.store import SessionStore  # noqa: E402
 
 
 def write_interpretation(session_dir, perspective, content):
@@ -88,6 +59,7 @@ def write_interpretation(session_dir, perspective, content):
     session_path = Path(session_dir)
     target = session_path / f"review_{perspective}.md"
     backup = session_path / f"review_{perspective}.raw.md"
+    store = SessionStore(session_path)
 
     if not target.exists():
         raise FileNotFoundError(
@@ -100,14 +72,14 @@ def write_interpretation(session_dir, perspective, content):
         # shutil.copyfile は書き込みがアトミックでないため tmp 経由で行う
         with open(str(target), "r", encoding="utf-8") as f:
             raw_content = f.read()
-        _atomic_write_text(backup, raw_content)
+        store.write_text(backup.name, raw_content, notify=False)
         backup_created = True
 
-    _atomic_write_text(target, content)
-    notify_session_update(str(session_path), str(target))
-    update_session_meta_warning(
-        str(session_path),
-        {"active_artifact": target.name},
+    store.write_text(
+        target.name,
+        content,
+        notify=True,
+        meta={"active_artifact": target.name},
     )
 
     return {

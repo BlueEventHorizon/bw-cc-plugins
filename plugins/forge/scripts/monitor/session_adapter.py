@@ -8,7 +8,6 @@ JSON 構造へ正規化する。monitor/server.py は HTTP / SSE に集中し、
 
 import os
 import sys
-from pathlib import Path
 
 _SCRIPTS_DIR = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -16,7 +15,12 @@ _SCRIPTS_DIR = os.path.abspath(
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from session.yaml_utils import parse_yaml  # noqa: E402
+from session.reader import (  # noqa: E402
+    MONITOR_SESSION_FILES as SESSION_FILES,
+    REFS_FILES,
+    read_entry,
+    read_session_files,
+)
 
 
 SESSION_FILES = [
@@ -27,68 +31,17 @@ SESSION_FILES = [
     "design.md",
 ]
 
-REFS_FILES = [
-    "specs.yaml",
-    "rules.yaml",
-    "code.yaml",
-]
-
 REVIEW_STATUSES = ["pending", "in_progress", "fixed", "skipped", "needs_review"]
-
-
-def _missing_entry():
-    return {"exists": False, "content": None}
-
-
-def _error_entry(error):
-    return {"exists": True, "content": None, "error": str(error)}
-
-
-def _read_text(path):
-    return Path(path).read_text(encoding="utf-8")
-
-
-def read_yaml_file(filepath):
-    """YAML ファイルを dict として読む。存在しない場合は None。"""
-    if not os.path.isfile(filepath):
-        return None
-    content = _read_text(filepath)
-    if not content.strip():
-        return {}
-    return parse_yaml(content)
-
-
-def read_markdown_file(filepath):
-    """Markdown ファイルを文字列として読む。存在しない場合は None。"""
-    if not os.path.isfile(filepath):
-        return None
-    return _read_text(filepath)
 
 
 def read_session_file(session_dir, name):
     """session_dir 直下の既知ファイルを /session entry 形式で読む。"""
-    filepath = os.path.join(session_dir, name)
-    if not os.path.isfile(filepath):
-        return _missing_entry()
-    try:
-        if name.endswith(".md"):
-            return {"exists": True, "content": read_markdown_file(filepath)}
-        return {"exists": True, "content": read_yaml_file(filepath)}
-    except (OSError, UnicodeDecodeError, ValueError) as e:
-        print(f"警告: session file 読み込み失敗: {filepath}: {e}", file=sys.stderr)
-        return _error_entry(e)
+    return read_entry(os.path.join(session_dir, name))
 
 
 def read_refs_file(session_dir, name):
     """refs/ 配下の YAML ファイルを /session entry 形式で読む。"""
-    filepath = os.path.join(session_dir, "refs", name)
-    if not os.path.isfile(filepath):
-        return _missing_entry()
-    try:
-        return {"exists": True, "content": read_yaml_file(filepath)}
-    except (OSError, UnicodeDecodeError, ValueError) as e:
-        print(f"警告: refs file 読み込み失敗: {filepath}: {e}", file=sys.stderr)
-        return _error_entry(e)
+    return read_entry(os.path.join(session_dir, "refs", name))
 
 
 def _content_dict(entry):
@@ -147,20 +100,12 @@ def build_derived(data, skill):
 
 def build_monitor_session(session_dir, skill=""):
     """session_dir を読み、既存 /session レスポンス互換の dict を返す。"""
-    result = {
-        "session_dir": session_dir,
-        "skill": skill or "",
-        "files": {},
-        "refs": {},
-        "refs_yaml": _missing_entry(),
-    }
-
-    for filename in SESSION_FILES:
-        result["files"][filename] = read_session_file(session_dir, filename)
-
-    for filename in REFS_FILES:
-        result["refs"][filename] = read_refs_file(session_dir, filename)
-
+    result = read_session_files(
+        session_dir,
+        session_files=SESSION_FILES,
+        refs_files=REFS_FILES,
+    )
+    result["skill"] = skill or ""
     result["refs_yaml"] = read_session_file(session_dir, "refs.yaml")
 
     session = _content_dict(result["files"].get("session.yaml"))
