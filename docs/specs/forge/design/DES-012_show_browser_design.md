@@ -103,14 +103,15 @@ plugins/forge/skills/reviewer/scripts/extract_review_findings.py ← 3 箇所に
 
 ### 責務の分離
 
-| コンポーネント             | 責務                                                                       | コンテキスト影響 |
-| -------------------------- | -------------------------------------------------------------------------- | ---------------- |
-| `session_manager.cmd_init` | session_dir 作成後に `ensure_monitor_running()` 呼び出し（非ブロッキング） | なし             |
-| `monitor/launcher.py`      | monitor_dir 作成・ポート確保・孤立 dir 掃除・server fork・ブラウザ open    | なし             |
-| `monitor/server.py`        | HTTP + SSE + YAML→JSON + skill→template 解決 + mtime heartbeat             | なし             |
-| `monitor/notify.py`        | 各 writer スクリプトから呼び出され、session_dir 一致の全 monitor に POST   | なし             |
-| 各 writer スクリプト       | 既存書き込み処理の末尾で `notify_session_update()` を 1 行呼ぶ             | なし             |
-| テンプレート HTML          | render 関数のみ定義し tokens.css / layout.css / monitor.js を利用          | なし             |
+| コンポーネント               | 責務                                                                       | コンテキスト影響 |
+| ---------------------------- | -------------------------------------------------------------------------- | ---------------- |
+| `session_manager.cmd_init`   | session_dir 作成後に `ensure_monitor_running()` 呼び出し（非ブロッキング） | なし             |
+| `monitor/launcher.py`        | monitor_dir 作成・ポート確保・孤立 dir 掃除・server fork・ブラウザ open    | なし             |
+| `monitor/server.py`          | HTTP + SSE + skill→template 解決 + mtime heartbeat                         | なし             |
+| `monitor/session_adapter.py` | session files 読み取り + monitor JSON 正規化 + `derived` 生成              | なし             |
+| `monitor/notify.py`          | 各 writer スクリプトから呼び出され、session_dir 一致の全 monitor に POST   | なし             |
+| 各 writer スクリプト         | 既存書き込み処理の末尾で `notify_session_update()` を 1 行呼ぶ             | なし             |
+| テンプレート HTML            | render 関数のみ定義し tokens.css / layout.css / monitor.js を利用          | なし             |
 
 ---
 
@@ -121,7 +122,8 @@ plugins/forge/skills/reviewer/scripts/extract_review_findings.py ← 3 箇所に
 | モジュール         | ファイル                                                            | 責務                                                |
 | ------------------ | ------------------------------------------------------------------- | --------------------------------------------------- |
 | エントリーポイント | `scripts/monitor/launcher.py`                                       | monitor_dir 作成・空きポート検出・server fork・open |
-| SSE サーバー       | `scripts/monitor/server.py`                                         | HTTP + SSE + YAML→JSON + テンプレ解決 + heartbeat   |
+| SSE サーバー       | `scripts/monitor/server.py`                                         | HTTP + SSE + テンプレ解決 + heartbeat               |
+| session adapter    | `scripts/monitor/session_adapter.py`                                | YAML / Markdown 読み取り + monitor JSON 正規化      |
 | 通知ライブラリ     | `scripts/monitor/notify.py`                                         | writer スクリプトから呼ぶ通知関数                   |
 | 自動起動統合       | `scripts/session_manager.py`                                        | `ensure_monitor_running()` で fork                  |
 | テンプレート       | `scripts/monitor/templates/*.html`                                  | skill 別レンダリング（共通アセットに依存）          |
@@ -157,14 +159,14 @@ classDiagram
         -_handle_notify()   : refresh_session_state も呼ぶ
     }
 
-    class YamlReader {
-        +read_session_dir(path) dict
+    class SessionAdapter {
+        +build_monitor_session(path, skill) dict
         +read_yaml_file(path) dict
         +read_markdown_file(path) str
     }
 
     SkillMonitorServer --> RequestHandler
-    RequestHandler --> YamlReader
+    RequestHandler --> SessionAdapter
 ```
 
 ---

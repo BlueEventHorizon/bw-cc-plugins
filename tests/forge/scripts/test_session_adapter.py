@@ -47,9 +47,36 @@ class TestReadHelpers(unittest.TestCase):
         path = _write_file(self.tmpdir, "empty.yaml", "")
         self.assertEqual(read_yaml_file(path), {})
 
+    def test_read_yaml_file_comment_only_returns_dict(self):
+        path = _write_file(self.tmpdir, "comments.yaml", "# comment\n# another\n")
+        self.assertEqual(read_yaml_file(path), {})
+
     def test_read_yaml_file_reads_flat_yaml(self):
         path = _write_file(self.tmpdir, "session.yaml", "skill: review\n")
         self.assertEqual(read_yaml_file(path)["skill"], "review")
+
+    def test_read_yaml_file_reads_nested_review_refs(self):
+        path = _write_file(self.tmpdir, "refs.yaml", """\
+target_files:
+  - plugins/forge/skills/review/SKILL.md
+reference_docs:
+  - path: docs/rules/skill_authoring_notes.md
+perspectives:
+  - name: correctness
+    criteria_path: review/docs/review_criteria_code.md
+    section: "正確性 (Logic)"
+    output_path: review_correctness.md
+related_code:
+  - path: plugins/forge/skills/reviewer/SKILL.md
+    reason: "同種 AI 専用スキルの frontmatter 参考"
+    lines: "1-30"
+""")
+        result = read_yaml_file(path)
+        self.assertEqual(result["target_files"][0], "plugins/forge/skills/review/SKILL.md")
+        self.assertEqual(result["reference_docs"][0]["path"], "docs/rules/skill_authoring_notes.md")
+        self.assertEqual(result["perspectives"][0]["name"], "correctness")
+        self.assertEqual(result["perspectives"][0]["section"], "正確性 (Logic)")
+        self.assertEqual(result["related_code"][0]["lines"], "1-30")
 
     def test_read_markdown_file_missing_returns_none(self):
         self.assertIsNone(read_markdown_file(os.path.join(self.tmpdir, "missing.md")))
