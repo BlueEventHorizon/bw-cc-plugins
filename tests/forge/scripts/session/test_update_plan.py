@@ -254,6 +254,17 @@ class TestReadWritePlan(_FsTestCase):
         with self.assertRaises(FileNotFoundError):
             read_plan(str(self.session_dir))
 
+    def test_write_plan_updates_session_meta(self):
+        """plan.yaml 書き戻し後に active_artifact を更新する。"""
+        (self.session_dir / "session.yaml").write_text(
+            "status: active\nskill: review\n", encoding="utf-8"
+        )
+
+        write_plan(str(self.session_dir), {"items": _sample_items()})
+
+        session = read_yaml(str(self.session_dir / "session.yaml"))
+        self.assertEqual(session["active_artifact"], "plan.yaml")
+
 
 class TestCLI(_FsTestCase):
     """CLI 統合テスト。"""

@@ -561,6 +561,25 @@ def notify_session_update(session_dir: str, file_path: str,
 
 ---
 
+### 6.4 session adapter 分離
+
+`GET /session` のファイル読み取り・YAML/Markdown 正規化・表示用派生情報生成は `plugins/forge/scripts/monitor/session_adapter.py` に分離する。`server.py` は HTTP / SSE / asset 配信に責務を絞り、session file schema の解釈を直接持たない。
+
+adapter は既存レスポンス互換の `session_dir`, `skill`, `files`, `refs`, `refs_yaml` を維持し、追加で `derived` を返す。
+
+| `derived` フィールド | 入力                                   | 用途                    |
+| -------------------- | -------------------------------------- | ----------------------- |
+| `phase`              | `session.yaml.phase`                   | 粗い進行段階表示        |
+| `phase_status`       | `session.yaml.phase_status` / `status` | phase の状態表示        |
+| `focus`              | `session.yaml.focus`                   | 現在の焦点表示          |
+| `waiting`            | `waiting_type` / `waiting_reason`      | 待機状態表示            |
+| `active_artifact`    | `session.yaml.active_artifact`         | 直近成果物表示          |
+| `review_counts`      | `plan.yaml.items[].status` のカウント  | review 進捗サマリー表示 |
+
+`derived` は monitor 表示用の派生情報であり、正規状態ではない。正規状態は引き続き `session.yaml`, `refs/`, `refs.yaml`, `plan.yaml`, `review.md` に置く。
+
+---
+
 ## 7. インターフェース
 
 v3.0 以降、ユーザーが CLI / SKILL から明示呼び出しする手段は原則 **なし**
@@ -585,6 +604,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
 | `launcher.find_free_port`                | 8765 優先取得、フォールバック、全滅時 OSError                                                                            |
 | `launcher.cleanup_orphan_monitors`       | pid 不在 / 数値でない / 死亡 → 削除、生存 → 維持                                                                         |
 | `launcher._should_skip_open`             | `FORGE_MONITOR_NO_OPEN` / `--no-open`                                                                                    |
+| `session_adapter.build_monitor_session`  | 既存 `/session` キー互換、欠損ファイル、`derived`、`review_counts`                                                       |
 | `server._resolve_template_for_skill`     | 全 skill に対して期待テンプレート、不明時は generic                                                                      |
 | `server._handle_index`                   | skill→template 選択 + 不在時の generic フォールバック + パストラバーサル拒否                                             |
 | `server._handle_asset`                   | 存在ファイルの MIME、パストラバーサル拒否、シンボリックリンク経由の脱出拒否                                              |
@@ -673,3 +693,4 @@ python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
 | 2026-04-14 | 2.0        | スキル名 `forge:show-browser` を追加。複数 monitor 対応（`.claude/.temp/{ts}-{template}-monitor/`）。テンプレート切り替え機構（`review_list.html` 等）。`show_browser.py`（エントリーポイント）・`server.py`（SSE サーバー）・`notifier.py`（フック）にリネーム。session_manager.py 依存を削除し独立起動に変更。monitor ディレクトリのクリーンアップ設計を追加。                                                                                                                                          |
 | 2026-04-15 | 2.1        | 入力バリデーション（テンプレート名・ペイロード上限）、エラーハンドリング個別捕捉、session_dir 境界判定を強化                                                                                                                                                                                                                                                                                                                                                                                              |
 | 2026-04-20 | 3.0        | **SKILL 廃止・内部モジュール化**。`plugins/forge/scripts/monitor/` に移設。session_manager.cmd_init による自動起動（AI 無関与）。通知経路を直接通知 + mtime heartbeat の二系統に統合し PostToolUse フックを廃止。skill→template 自動選択。全 6 スキル対応（review / start-requirements / start-design / start-plan / start-implement / start-uxui-design）。3 層デザイントークン + 共通 layout/monitor.js に UI を分離。launcher の `--template` → `--skill` 引数化。ポート 8766〜8775 にフォールバック。 |
+| 2026-05-05 | 3.1        | `/session` のファイル読み取りを `monitor/session_adapter.py` に分離し、既存レスポンス互換を維持したまま `derived` を追加。`session.yaml` の浅い進行状態を monitor 表示に使う方針を追記。                                                                                                                                                                                                                                                                                                                  |

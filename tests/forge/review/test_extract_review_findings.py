@@ -520,6 +520,9 @@ class TestSessionDirMode(unittest.TestCase):
 
     def test_basic_multi_file(self):
         """session_dir モード基本テスト: 2ファイル → 統合 plan.yaml + review.md"""
+        (self.session_path / 'session.yaml').write_text(
+            'status: active\nskill: review\n', encoding='utf-8'
+        )
         self._write_review('review_correctness.md', REVIEW_CORRECTNESS)
         self._write_review('review_resilience.md', REVIEW_RESILIENCE)
 
@@ -544,6 +547,11 @@ class TestSessionDirMode(unittest.TestCase):
         self.assertTrue(review_path.exists())
         review_content = review_path.read_text(encoding='utf-8')
         self.assertIn('統合レビュー結果', review_content)
+
+        session_content = (self.session_path / 'session.yaml').read_text(encoding='utf-8')
+        self.assertIn('phase: review_extracted', session_content)
+        self.assertIn('phase_status: completed', session_content)
+        self.assertIn('active_artifact: review.md', session_content)
 
     def test_perspective_tags(self):
         """perspective タグ付与テスト: ファイル名から perspective 名が正しく抽出される"""

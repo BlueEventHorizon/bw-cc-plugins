@@ -26,6 +26,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 from session.update_plan import read_plan, update_items_batch, write_plan
+from session_manager import update_session_meta_warning
 
 
 def build_perspective_id_map(items):
@@ -249,6 +250,11 @@ def main():
 
         plan_data["items"] = items
         write_plan(session_dir, plan_data)
+        update_session_meta_warning(session_dir, {
+            "phase": "evaluation_merged",
+            "phase_status": "completed",
+            "active_artifact": "plan.yaml",
+        })
     else:
         updated_ids = []
 

@@ -38,6 +38,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 from monitor.notify import notify_session_update  # noqa: E402
+from session_manager import update_session_meta_warning  # noqa: E402
 
 
 def _atomic_write_text(target, content, encoding="utf-8"):
@@ -104,6 +105,10 @@ def write_interpretation(session_dir, perspective, content):
 
     _atomic_write_text(target, content)
     notify_session_update(str(session_path), str(target))
+    update_session_meta_warning(
+        str(session_path),
+        {"active_artifact": target.name},
+    )
 
     return {
         "path": str(target),

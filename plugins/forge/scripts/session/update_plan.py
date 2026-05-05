@@ -28,6 +28,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 
 from session.yaml_utils import read_yaml, write_nested_yaml, now_iso
 from monitor.notify import notify_session_update
+from session_manager import update_session_meta_warning
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
 VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
@@ -171,6 +172,7 @@ def write_plan(session_dir, plan_data):
     output_path = Path(session_dir) / "plan.yaml"
     write_nested_yaml(str(output_path), sections)
     notify_session_update(session_dir, str(output_path))
+    update_session_meta_warning(session_dir, {"active_artifact": "plan.yaml"})
     return str(output_path)
 
 

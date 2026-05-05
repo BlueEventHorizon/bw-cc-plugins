@@ -25,12 +25,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
 
 from session_manager import (
     COMMON_FIELDS,
+    SESSION_FIELD_ORDER,
     TEMP_BASE,
     cmd_cleanup,
     cmd_find,
     cmd_init,
+    cmd_update_meta,
     generate_session_name,
     parse_extra_args,
+    update_session_meta,
+    update_session_meta_warning,
     validate_temp_path,
 )
 from session.yaml_utils import (
@@ -398,7 +402,140 @@ class TestCmdCleanup(_FsTestCase):
 
 
 # =========================================================================
-# 6. CLI 統合テスト
+# 6. update-meta
+# =========================================================================
+
+class TestUpdateMeta(_FsTestCase):
+    """update_session_meta / cmd_update_meta のテスト"""
+
+    def _create_session(self, extra=None):
+        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
+        os.makedirs(session_dir, exist_ok=True)
+        data = {
+            "skill": "start-plan",
+            "started_at": "2026-05-05T01:00:00Z",
+            "last_updated": "2026-05-05T01:00:00Z",
+            "status": "in_progress",
+            "resume_policy": "none",
+            "feature": "cleanup",
+            "mode": "new",
+        }
+        if extra:
+            data.update(extra)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            data,
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
+
+    def _make_args(self, session_dir, **kwargs):
+        class Args:
+            pass
+        a = Args()
+        a.session_dir = session_dir
+        for key in (
+            "phase", "phase_status", "focus", "waiting_type",
+            "waiting_reason", "active_artifact",
+        ):
+            setattr(a, key, kwargs.get(key))
+        return a
+
+    def test_update_meta_adds_shallow_fields(self):
+        session_dir = self._create_session()
+        result = update_session_meta(session_dir, {
+            "phase": "context_ready",
+            "phase_status": "completed",
+            "focus": "参照情報を収集済み",
+            "active_artifact": "refs/rules.yaml",
+        }, notify=False)
+        self.assertEqual(result["status"], "ok")
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["phase"], "context_ready")
+        self.assertEqual(data["phase_status"], "completed")
+        self.assertEqual(data["focus"], "参照情報を収集済み")
+        self.assertEqual(data["active_artifact"], "refs/rules.yaml")
+
+    def test_update_meta_preserves_existing_fields(self):
+        session_dir = self._create_session()
+        update_session_meta(session_dir, {"phase": "context_ready"}, notify=False)
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["feature"], "cleanup")
+        self.assertEqual(data["mode"], "new")
+        self.assertEqual(data["skill"], "start-plan")
+
+    def test_update_meta_updates_last_updated(self):
+        session_dir = self._create_session()
+        before = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
+        update_session_meta(session_dir, {"phase": "context_ready"}, notify=False)
+        after = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
+        self.assertNotEqual(before, after)
+
+    def test_update_meta_clears_waiting_reason_when_waiting_none(self):
+        session_dir = self._create_session({
+            "waiting_type": "user_input",
+            "waiting_reason": "確認待ち",
+        })
+        update_session_meta(session_dir, {"waiting_type": "none"}, notify=False)
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["waiting_type"], "none")
+        self.assertEqual(data["waiting_reason"], "")
+
+    def test_update_meta_normalizes_multiline_text(self):
+        session_dir = self._create_session()
+        update_session_meta(session_dir, {"focus": "line1\nline2"}, notify=False)
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["focus"], "line1 line2")
+
+    def test_update_meta_completed_sets_status_completed(self):
+        session_dir = self._create_session()
+        update_session_meta(session_dir, {
+            "phase": "completed",
+            "phase_status": "completed",
+        }, notify=False)
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["status"], "completed")
+
+    def test_update_meta_rejects_invalid_phase_status(self):
+        session_dir = self._create_session()
+        with self.assertRaises(ValueError):
+            update_session_meta(session_dir, {"phase_status": "bad"}, notify=False)
+
+    def test_update_meta_rejects_invalid_waiting_type(self):
+        session_dir = self._create_session()
+        with self.assertRaises(ValueError):
+            update_session_meta(session_dir, {"waiting_type": "bad"}, notify=False)
+
+    def test_update_meta_missing_session_dir(self):
+        with self.assertRaises(FileNotFoundError):
+            update_session_meta(os.path.join(TEMP_BASE, "missing"), {}, notify=False)
+
+    def test_update_meta_missing_session_yaml(self):
+        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
+        os.makedirs(session_dir, exist_ok=True)
+        with self.assertRaises(FileNotFoundError):
+            update_session_meta(session_dir, {}, notify=False)
+
+    def test_update_meta_warning_skips_missing_session_yaml(self):
+        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
+        os.makedirs(session_dir, exist_ok=True)
+        result = update_session_meta_warning(
+            session_dir,
+            {"active_artifact": "plan.yaml"},
+            notify=False,
+        )
+        self.assertEqual(result["status"], "skipped")
+
+    def test_cmd_update_meta_returns_error_for_invalid_enum(self):
+        session_dir = self._create_session()
+        result = cmd_update_meta(
+            self._make_args(session_dir, phase_status="bad")
+        )
+        self.assertEqual(result["status"], "error")
+
+
+# =========================================================================
+# 7. CLI 統合テスト
 # =========================================================================
 
 class TestCLI(_FsTestCase):
@@ -454,6 +591,27 @@ class TestCLI(_FsTestCase):
         r = self._run("find", "--skill", "start-plan")
         find_data = json.loads(r.stdout)
         self.assertEqual(find_data["status"], "none")
+
+    def test_update_meta_cli(self):
+        r = self._run("init", "--skill", "start-plan", "--feature", "test")
+        self.assertEqual(r.returncode, 0)
+        init_data = json.loads(r.stdout)
+        session_dir = init_data["session_dir"]
+
+        r = self._run(
+            "update-meta", session_dir,
+            "--phase", "context_ready",
+            "--phase-status", "completed",
+            "--focus", "context ready",
+        )
+        self.assertEqual(r.returncode, 0)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["status"], "ok")
+
+        yaml_data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(yaml_data["phase"], "context_ready")
+        self.assertEqual(yaml_data["phase_status"], "completed")
+        self.assertEqual(yaml_data["focus"], "context ready")
 
     def test_no_command_shows_help(self):
         r = self._run()

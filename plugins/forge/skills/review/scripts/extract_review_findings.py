@@ -34,6 +34,7 @@ if str(_FORGE_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_FORGE_SCRIPTS))
 
 from monitor.notify import notify_session_update  # noqa: E402
+from session_manager import update_session_meta_warning  # noqa: E402
 
 # セクションマーカーと severity のマッピング
 SECTION_MARKERS = {
@@ -390,6 +391,12 @@ def run_session_dir_mode(session_dir, review_only=False):
     review_path = session_path / 'review.md'
     review_path.write_text(review_md, encoding='utf-8')
     notify_session_update(str(session_path), str(review_path))
+    if not review_only:
+        update_session_meta_warning(str(session_path), {
+            "phase": "review_extracted",
+            "phase_status": "completed",
+            "active_artifact": "review.md",
+        })
 
     # サマリーを stdout に出力
     result = summarize(all_findings)
