@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.19] - 2026-05-06
+
+### marketplace
+
+- **feat**: forge を 0.0.43、anvil を 0.0.7 に更新。start-implement の plan 後始末強化と impl-issue Phase 5 の AskUserQuestion 追加を反映
+
+## [0.0.43] - 2026-05-06
+
+### forge
+
+- **feat(start-implement)**: 全タスク完了時に plan の扱いをユーザーへ確認するフローを追加。`{main_specs_root}` 配下の構成から追加開発か基本仕様修正かを文脈判定し、`/forge:merge-feature-specs` 実行 / plan 削除 / plan 残し のいずれかを `AskUserQuestion` で誘導（#31）
+- **refactor(session)**: セッション管理を新方式に刷新。session_manager の責務分離、monitor のクリーンアップ、`atomic_write_text` を `yaml_utils` に統合し共通化
+- **fix(help)**: help SKILL の動作不具合を修正
+
+## [anvil 0.0.7] - 2026-05-06
+
+### anvil
+
+- **refactor(impl-issue)**: 類似 PR 調査（Phase 5）の実行前に `AskUserQuestion` でユーザー確認を入れるよう改善
+
 ## [marketplace 0.1.18] - 2026-04-29
 
 ### marketplace
