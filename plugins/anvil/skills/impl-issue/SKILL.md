@@ -25,7 +25,7 @@ UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、U
 - [ ] Phase 2: Issue を確認する
 - [ ] Phase 3: 仕様書を調査する
 - [ ] Phase 4: 実装ルールを調査する
-- [ ] Phase 5: 類似PRを調査する
+- [ ] Phase 5: 類似PRを調査する（ユーザにAskUserQuestionで実行するか確認）
 - [ ] Phase 6: 既存コードを調査する
 - [ ] Phase 7: Figma デザイン仕様書を作成する（UI Issue のみ）
 - [ ] Phase 8: デザイン仕様書をレビューする（UI Issue のみ）
@@ -161,6 +161,8 @@ gh repo view --json nameWithOwner --jq '.nameWithOwner'
 - `/doc-advisor:query-rules` で "architecture" / "coding" / "layer" 等をクエリして重要文書を特定する
 
 ### Phase 5: 類似実装済みPRを調査する
+
+- ユーザにAskUserQuestionで実行するか確認
 
 今回の実装と同じスコープのマージ済みPRを3件以上探し、実装パターンを学習する。
 
