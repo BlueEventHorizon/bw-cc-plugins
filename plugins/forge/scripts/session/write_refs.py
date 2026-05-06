@@ -30,8 +30,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from session.yaml_utils import write_nested_yaml
-from monitor.notify import notify_session_update
+from session.store import SessionStore
 
 # perspectives[].name の許容パターン（英小文字・数字・アンダースコア・ハイフンのみ）
 _PERSPECTIVE_NAME_RE = re.compile(r"^[a-z0-9_-]+$")
@@ -126,9 +125,15 @@ def write_refs(session_dir, data):
         str: 書き出したファイルのパス
     """
     sections = build_refs_sections(data)
-    output_path = Path(session_dir) / "refs.yaml"
-    write_nested_yaml(str(output_path), sections)
-    notify_session_update(session_dir, str(output_path))
+    output_path = SessionStore(session_dir).write_nested_yaml(
+        "refs.yaml",
+        sections,
+        meta={
+            "phase": "context_ready",
+            "phase_status": "completed",
+            "active_artifact": "refs.yaml",
+        },
+    )
     return str(output_path)
 
 

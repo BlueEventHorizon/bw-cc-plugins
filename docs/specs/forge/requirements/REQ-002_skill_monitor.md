@@ -1,4 +1,4 @@
-# REQ-002 skill_monitor 要件定義書
+# REQ-002 monitor 要件定義書
 
 ## メタデータ
 
@@ -28,7 +28,7 @@ forge オーケストレータが管理するセッションデータ（YAML 等
 
 ### 解決策
 
-SKILL は既存の YAML を更新するだけ（追加コード不要）。Claude Code フックが更新を検知し、独立プロセスの SSE サーバーがブラウザに Push する。
+SKILL は既存の YAML / Markdown を更新するだけ（追加コード不要）。writer スクリプトの直接通知と heartbeat が更新を検知し、独立プロセスの SSE サーバーがブラウザに Push する。
 
 ---
 
@@ -44,19 +44,19 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 
 ### FNC-002: リアルタイム更新
 
-| ID        | 要件                                                                   |
-| --------- | ---------------------------------------------------------------------- |
-| FNC-002-1 | SKILL がセッションファイルを更新したとき、ブラウザに自動反映される     |
-| FNC-002-2 | 更新通知は Claude Code の PostToolUse フック経由で行う（イベント駆動） |
-| FNC-002-3 | フックはセッションディレクトリ内のファイルへの Write / Edit に反応する |
-| FNC-002-4 | ブラウザへの Push は SSE（Server-Sent Events）を使用する               |
+| ID        | 要件                                                               |
+| --------- | ------------------------------------------------------------------ |
+| FNC-002-1 | SKILL がセッションファイルを更新したとき、ブラウザに自動反映される |
+| FNC-002-2 | 更新通知は writer スクリプトからの直接通知を主経路とする           |
+| FNC-002-3 | 直接通知がない変更は monitor の heartbeat によって検知する         |
+| FNC-002-4 | ブラウザへの Push は SSE（Server-Sent Events）を使用する           |
 
 ### FNC-003: コンテキスト非汚染
 
 | ID        | 要件                                                                     |
 | --------- | ------------------------------------------------------------------------ |
 | FNC-003-1 | SKILL は既存のセッションファイル更新以外の追加作業を一切行わない         |
-| FNC-003-2 | フックはシェルスクリプトとして Claude のコンテキスト外で実行される       |
+| FNC-003-2 | monitor は独立プロセスとして Claude のコンテキスト外で実行される         |
 | FNC-003-3 | SSE サーバーは独立プロセスとして動作し、SKILL のコンテキストに影響しない |
 
 ### FNC-004: 全オーケストレータ共通
@@ -71,20 +71,20 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 
 | ID        | 要件                                                                    |
 | --------- | ----------------------------------------------------------------------- |
-| FNC-005-1 | `POST /notify` — フックからの更新通知を受け取る                         |
+| FNC-005-1 | `POST /notify` — writer からの更新通知を受け取る                        |
 | FNC-005-2 | `GET /sse` — SSE ストリームをブラウザに提供する                         |
 | FNC-005-3 | `GET /session` — セッションディレクトリ内の全 YAML を読んで JSON で返す |
 | FNC-005-4 | `GET /history` — 更新履歴（いつ、どのファイルが更新されたか）を返す     |
 | FNC-005-5 | Python 標準ライブラリのみで実装する（外部依存禁止）                     |
 
-### FNC-006: Claude Code フック
+### FNC-006: 通知経路
 
-| ID        | 要件                                                                                         |
-| --------- | -------------------------------------------------------------------------------------------- |
-| FNC-006-1 | PostToolUse フックで Write および Edit ツールの実行を検知する                                |
-| FNC-006-2 | 書き込み先がセッションディレクトリ（`.claude/.temp/` 配下）の場合のみ SSE サーバーに通知する |
-| FNC-006-3 | フックは `.claude/hooks/` に配置し、`.claude/settings.json` で登録する                       |
-| FNC-006-4 | フックの実行が失敗しても SKILL の動作に影響しない（exit 0 を保証）                           |
+| ID        | 要件                                                                              |
+| --------- | --------------------------------------------------------------------------------- |
+| FNC-006-1 | writer スクリプトは成果物保存後に `monitor.notify.notify_session_update()` を呼ぶ |
+| FNC-006-2 | 通知は session_dir が一致する monitor にのみ POST する                            |
+| FNC-006-3 | monitor は mtime heartbeat により、直接通知がないファイル変更も検知する           |
+| FNC-006-4 | 通知失敗や monitor 未起動は SKILL / writer の主処理に影響しない                   |
 
 ### FNC-007: ブラウザ UI
 
@@ -102,7 +102,7 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 | ID      | 要件                                                                |
 | ------- | ------------------------------------------------------------------- |
 | NFR-001 | SSE サーバーは Python 標準ライブラリのみで実装する                  |
-| NFR-002 | フックの実行時間は 100ms 以内に完了する                             |
+| NFR-002 | writer からの通知は短時間で完了する                                 |
 | NFR-003 | SSE サーバーはローカルホストのみでリッスンする（セキュリティ）      |
 | NFR-004 | 同時に1つのセッションのみ表示する（マルチセッション対応は将来課題） |
 
@@ -114,16 +114,16 @@ SKILL は既存の YAML を更新するだけ（追加コード不要）。Claud
 SKILL が plan.yaml 等を更新（既存動作、変更なし）
     │
     ▼
-PostToolUse フック（.claude/.temp/ 内への Write を検知）
+monitor.notify.notify_session_update()
     │
     ▼
-display_notify.sh → SSE サーバーに HTTP POST（更新されたファイルパス）
+monitor/server.py に HTTP POST（更新されたファイルパス）
     │
     ▼
-skill_monitor.py（SSE サーバー）
-├── 通知受信 → history.jsonl に追記
+monitor/server.py（SSE サーバー）
+├── 通知受信 → history に追記
 ├── SSE クライアントに更新イベントを Push
-└── /session リクエスト時にセッションディレクトリの全 YAML を読んで JSON 化
+└── /session リクエスト時に session_adapter でセッションファイルを JSON 化
     │
     ▼
 ブラウザ
@@ -152,12 +152,13 @@ skill_monitor.py（SSE サーバー）
 
 ## 構成要素
 
-| 要素                | 配置場所                 | 役割                                            |
-| ------------------- | ------------------------ | ----------------------------------------------- |
-| `skill_monitor.py`  | `plugins/forge/scripts/` | SSE サーバー + YAML → JSON 変換                 |
-| `display_notify.py` | `.claude/hooks/`         | PostToolUse フック → SSE サーバー通知（Python） |
-| `index.html`        | `plugins/forge/static/`  | ブラウザ UI                                     |
-| フック設定          | `.claude/settings.json`  | PostToolUse フック登録                          |
+| 要素                         | 配置場所                         | 役割                                      |
+| ---------------------------- | -------------------------------- | ----------------------------------------- |
+| `monitor/launcher.py`        | `plugins/forge/scripts/monitor/` | monitor_dir 作成・ポート確保・server fork |
+| `monitor/server.py`          | `plugins/forge/scripts/monitor/` | SSE サーバー + HTTP endpoint              |
+| `monitor/session_adapter.py` | `plugins/forge/scripts/monitor/` | セッションファイル → monitor JSON 正規化  |
+| `monitor/notify.py`          | `plugins/forge/scripts/monitor/` | writer スクリプト → SSE サーバー通知      |
+| `templates/*.html`           | `plugins/forge/scripts/monitor/` | ブラウザ UI                               |
 
 ---
 

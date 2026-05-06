@@ -26,8 +26,8 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from session.yaml_utils import read_yaml, write_nested_yaml, now_iso
-from monitor.notify import notify_session_update
+from session.store import SessionStore
+from session.yaml_utils import read_yaml, now_iso
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
 VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
@@ -142,12 +142,13 @@ def update_items_batch(items, updates_list):
     return updated_ids
 
 
-def write_plan(session_dir, plan_data):
+def write_plan(session_dir, plan_data, meta=None):
     """plan.yaml を書き戻す。
 
     Args:
         session_dir: セッションディレクトリパス
         plan_data: items を含む dict
+        meta: 書き込み後に更新する session meta。None の場合は active_artifact のみ。
 
     Returns:
         str: 書き出したファイルのパス
@@ -168,9 +169,11 @@ def write_plan(session_dir, plan_data):
         ordered_items.append(ordered)
 
     sections = [("items", ordered_items)]
-    output_path = Path(session_dir) / "plan.yaml"
-    write_nested_yaml(str(output_path), sections)
-    notify_session_update(session_dir, str(output_path))
+    if meta is None:
+        meta = {"active_artifact": "plan.yaml"}
+    output_path = SessionStore(session_dir).write_nested_yaml(
+        "plan.yaml", sections, meta=meta
+    )
     return str(output_path)
 
 

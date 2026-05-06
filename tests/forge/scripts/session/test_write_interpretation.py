@@ -14,6 +14,7 @@ sys.path.insert(
 )
 
 from session.write_interpretation import write_interpretation
+from session.yaml_utils import read_yaml
 
 SCRIPT = str(
     Path(__file__).resolve().parents[4]
@@ -111,20 +112,32 @@ class TestWriteInterpretation(_FsTestCase):
         hidden_files = list(self.session_dir.glob(".*.tmp"))
         self.assertEqual(hidden_files, [])
 
+    def test_updates_session_meta(self):
+        """review_{perspective}.md 書き換え後に active_artifact を更新する。"""
+        (self.session_dir / "session.yaml").write_text(
+            "status: active\nskill: review\n", encoding="utf-8"
+        )
+        self._write_review("logic", "# reviewer 原文\n")
+
+        write_interpretation(str(self.session_dir), "logic", "# 整形\n")
+
+        session = read_yaml(str(self.session_dir / "session.yaml"))
+        self.assertEqual(session["active_artifact"], "review_logic.md")
+
     def test_atomic_rename_does_not_corrupt_on_partial(self):
         """書き込みに失敗しても target は直前の内容のまま維持される。
 
-        _atomic_write_text の tmp エラーパスを検証: 書き込み中に例外が
+        atomic_write_text の tmp エラーパスを検証: 書き込み中に例外が
         発生した場合、target は書き換わらず tmp は掃除される。
         """
-        from session.write_interpretation import _atomic_write_text
+        from session.yaml_utils import atomic_write_text
 
         target = self.session_dir / "test_atomic.md"
         target.write_text("original", encoding="utf-8")
 
         # disk full 相当をシミュレート: content 引数に非 str を渡して TypeError
         with self.assertRaises((TypeError, AttributeError)):
-            _atomic_write_text(target, 12345)  # 非文字列 → 書き込み時に失敗
+            atomic_write_text(target, 12345)  # 非文字列 → 書き込み時に失敗
 
         # target は元のまま
         self.assertEqual(target.read_text(encoding="utf-8"), "original")

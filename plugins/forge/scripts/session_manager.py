@@ -22,21 +22,25 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
+from session.meta import (
+    COMMON_FIELDS,
+    SESSION_FIELD_ORDER,
+    SESSION_META_FIELDS,
+    VALID_PHASE_STATUSES,
+    VALID_WAITING_TYPES,
+    update_session_meta,
+    update_session_meta_warning,
+)
 from session.yaml_utils import now_iso, read_yaml, write_flat_yaml
 
 # セッションディレクトリのベースパス
 TEMP_BASE = ".claude/.temp"
 
-# session.yaml の共通フィールド（この順序で出力）
-COMMON_FIELDS = ["skill", "started_at", "last_updated", "status", "resume_policy"]
-
 # スキルごとの resume_policy デフォルト値（未登録は "none"）
 DEFAULT_RESUME_POLICY = {
     "review": "resume",
 }
-
 
 # monitor launcher.py 起動の既定タイムアウト
 MONITOR_LAUNCH_TIMEOUT = 5.0
@@ -196,6 +200,12 @@ def cmd_init(args, remaining):
         "last_updated": ts,
         "status": "in_progress",
         "resume_policy": DEFAULT_RESUME_POLICY.get(skill, "none"),
+        "phase": "created",
+        "phase_status": "in_progress",
+        "focus": "",
+        "waiting_type": "none",
+        "waiting_reason": "",
+        "active_artifact": "",
     }
 
     # 残余引数からスキル固有フィールドを追加
@@ -209,7 +219,7 @@ def cmd_init(args, remaining):
 
     # session.yaml 書き出し
     yaml_path = os.path.join(session_dir, "session.yaml")
-    write_flat_yaml(yaml_path, data, field_order=COMMON_FIELDS)
+    write_flat_yaml(yaml_path, data, field_order=SESSION_FIELD_ORDER)
 
     # monitor(ブラウザ進捗表示)の自動起動 — 失敗しても init は成功させる
     if _should_skip_monitor():
@@ -278,6 +288,22 @@ def cmd_cleanup(args):
     return {"status": "deleted", "session_dir": session_dir}
 
 
+def cmd_update_meta(args):
+    """session.yaml の浅い進行状態を更新する。"""
+    updates = {
+        "phase": args.phase,
+        "phase_status": args.phase_status,
+        "focus": args.focus,
+        "waiting_type": args.waiting_type,
+        "waiting_reason": args.waiting_reason,
+        "active_artifact": args.active_artifact,
+    }
+    try:
+        return update_session_meta(args.session_dir, updates, notify=True)
+    except (FileNotFoundError, ValueError, OSError) as e:
+        return {"status": "error", "error": str(e)}
+
+
 # ---------------------------------------------------------------------------
 # メイン
 # ---------------------------------------------------------------------------
@@ -298,6 +324,16 @@ def main():
     cleanup_parser = subparsers.add_parser("cleanup", help="セッション削除")
     cleanup_parser.add_argument("session_dir", help="削除するセッションディレクトリパス")
 
+    # update-meta サブコマンド
+    update_parser = subparsers.add_parser("update-meta", help="セッションメタデータ更新")
+    update_parser.add_argument("session_dir", help="セッションディレクトリパス")
+    update_parser.add_argument("--phase", help="現在の粗いフェーズ")
+    update_parser.add_argument("--phase-status", help="phase の状態")
+    update_parser.add_argument("--focus", help="現在の作業焦点")
+    update_parser.add_argument("--waiting-type", help="待機種別")
+    update_parser.add_argument("--waiting-reason", help="待機理由")
+    update_parser.add_argument("--active-artifact", help="直近更新成果物パス")
+
     # parse_known_args で init の任意フィールドに対応
     args, remaining = parser.parse_known_args()
 
@@ -311,6 +347,8 @@ def main():
         result = cmd_find(args)
     elif args.command == "cleanup":
         result = cmd_cleanup(args)
+    elif args.command == "update-meta":
+        result = cmd_update_meta(args)
     else:
         parser.print_help()
         sys.exit(1)

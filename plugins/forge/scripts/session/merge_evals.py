@@ -248,7 +248,15 @@ def main():
             sys.exit(1)
 
         plan_data["items"] = items
-        write_plan(session_dir, plan_data)
+        write_plan(
+            session_dir,
+            plan_data,
+            meta={
+                "phase": "evaluation_merged",
+                "phase_status": "completed",
+                "active_artifact": "plan.yaml",
+            },
+        )
     else:
         updated_ids = []
 

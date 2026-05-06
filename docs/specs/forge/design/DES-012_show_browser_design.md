@@ -11,8 +11,8 @@
 | 設計ID     | DES-012                                    |
 | 関連要件   | REQ-002 FNC-001〜FNC-007, NFR-001〜NFR-004 |
 | 作成日     | 2026-03-15                                 |
-| 更新日     | 2026-04-20                                 |
-| バージョン | 3.0                                        |
+| 更新日     | 2026-05-05                                 |
+| バージョン | 3.1                                        |
 
 ## 1. 概要
 
@@ -44,9 +44,11 @@ v3.0 では以下を実施した。
 | 起動者                  | session_manager.cmd_init() が fork       | AI が SKILL.md 指示で呼び出し | AI の忘却・コンテキスト消費を排除                            |
 | 通知方式                | スクリプト直接通知 + mtime ハートビート  | PostToolUse フック            | Bash 経由の Python 書き込みは Write/Edit フックで拾えない    |
 | テンプレート選択        | `config.json.skill` から自動解決         | `--template` 明示指定         | AI が template 名を知る必要をなくす                          |
+| session 読み取り        | `monitor/session_adapter.py`             | `server.py` 直読み            | HTTP 層と session file 正規化を分離し、重複実装を避ける      |
 | 単一ポート / 複数ポート | 8765 優先 + 8766〜8775 フォールバック    | 単一固定                      | 複数スキル並行実行を許容しつつ URL の連続性を維持            |
 | CSS 構成                | tokens.css / layout.css を 3 層で分離    | HTML 内 style 埋め込み        | UI スキル（ui-ux-pro-max / ckm:design-system）の成果物を活用 |
 | 履歴保持                | なし（前セッションは消える）             | archive 機能                  | スコープ外（次フェーズ）                                     |
+| 旧実装の扱い            | `skill_monitor.py` を削除                | 互換 entrypoint として残す    | runtime 参照がなく、server.py と責務が重複するため           |
 
 ---
 
@@ -72,6 +74,7 @@ flowchart LR
 plugins/forge/scripts/monitor/           ← 新規（旧 skills/show-browser/ の実装を内部化）
 ├── launcher.py                          # 旧 show_browser.py（--skill を追加）
 ├── server.py                            # 旧 server.py（skill→template 自動選択 + mtime heartbeat）
+├── session_adapter.py                   # session files → monitor JSON の正規化
 ├── notify.py                            # 新規（notify_session_update を提供）
 └── templates/
     ├── generic.html                     # 新規 フォールバック
@@ -98,19 +101,21 @@ plugins/forge/skills/reviewer/scripts/extract_review_findings.py ← 3 箇所に
 **廃止されたもの**:
 
 - `plugins/forge/skills/show-browser/` ディレクトリ全体（SKILL.md, scripts/, templates/）
+- `plugins/forge/scripts/skill_monitor.py`（`monitor/server.py` + `monitor/session_adapter.py` に統合）
 - `.claude/hooks/notifier.py`（PostToolUse フック）
 - `.claude/settings.json` の `PostToolUse` 登録
 
 ### 責務の分離
 
-| コンポーネント             | 責務                                                                       | コンテキスト影響 |
-| -------------------------- | -------------------------------------------------------------------------- | ---------------- |
-| `session_manager.cmd_init` | session_dir 作成後に `ensure_monitor_running()` 呼び出し（非ブロッキング） | なし             |
-| `monitor/launcher.py`      | monitor_dir 作成・ポート確保・孤立 dir 掃除・server fork・ブラウザ open    | なし             |
-| `monitor/server.py`        | HTTP + SSE + YAML→JSON + skill→template 解決 + mtime heartbeat             | なし             |
-| `monitor/notify.py`        | 各 writer スクリプトから呼び出され、session_dir 一致の全 monitor に POST   | なし             |
-| 各 writer スクリプト       | 既存書き込み処理の末尾で `notify_session_update()` を 1 行呼ぶ             | なし             |
-| テンプレート HTML          | render 関数のみ定義し tokens.css / layout.css / monitor.js を利用          | なし             |
+| コンポーネント               | 責務                                                                       | コンテキスト影響 |
+| ---------------------------- | -------------------------------------------------------------------------- | ---------------- |
+| `session_manager.cmd_init`   | session_dir 作成後に `ensure_monitor_running()` 呼び出し（非ブロッキング） | なし             |
+| `monitor/launcher.py`        | monitor_dir 作成・ポート確保・孤立 dir 掃除・server fork・ブラウザ open    | なし             |
+| `monitor/server.py`          | HTTP + SSE + skill→template 解決 + mtime heartbeat                         | なし             |
+| `monitor/session_adapter.py` | session files 読み取り + monitor JSON 正規化 + `derived` 生成              | なし             |
+| `monitor/notify.py`          | 各 writer スクリプトから呼び出され、session_dir 一致の全 monitor に POST   | なし             |
+| 各 writer スクリプト         | 既存書き込み処理の末尾で `notify_session_update()` を 1 行呼ぶ             | なし             |
+| テンプレート HTML            | render 関数のみ定義し tokens.css / layout.css / monitor.js を利用          | なし             |
 
 ---
 
@@ -121,7 +126,8 @@ plugins/forge/skills/reviewer/scripts/extract_review_findings.py ← 3 箇所に
 | モジュール         | ファイル                                                            | 責務                                                |
 | ------------------ | ------------------------------------------------------------------- | --------------------------------------------------- |
 | エントリーポイント | `scripts/monitor/launcher.py`                                       | monitor_dir 作成・空きポート検出・server fork・open |
-| SSE サーバー       | `scripts/monitor/server.py`                                         | HTTP + SSE + YAML→JSON + テンプレ解決 + heartbeat   |
+| SSE サーバー       | `scripts/monitor/server.py`                                         | HTTP + SSE + テンプレ解決 + heartbeat               |
+| session adapter    | `scripts/monitor/session_adapter.py`                                | YAML / Markdown 読み取り + monitor JSON 正規化      |
 | 通知ライブラリ     | `scripts/monitor/notify.py`                                         | writer スクリプトから呼ぶ通知関数                   |
 | 自動起動統合       | `scripts/session_manager.py`                                        | `ensure_monitor_running()` で fork                  |
 | テンプレート       | `scripts/monitor/templates/*.html`                                  | skill 別レンダリング（共通アセットに依存）          |
@@ -157,15 +163,49 @@ classDiagram
         -_handle_notify()   : refresh_session_state も呼ぶ
     }
 
-    class YamlReader {
-        +read_session_dir(path) dict
+    class SessionAdapter {
+        +build_monitor_session(path, skill) dict
         +read_yaml_file(path) dict
         +read_markdown_file(path) str
     }
 
     SkillMonitorServer --> RequestHandler
-    RequestHandler --> YamlReader
+    RequestHandler --> SessionAdapter
 ```
+
+### 3.3 session adapter 契約
+
+`monitor/session_adapter.py` は、session files から monitor 表示用 JSON を組み立てる唯一の層である。
+`server.py` は HTTP / SSE / notify / heartbeat に集中し、SKILL 固有ファイル名の読み分けを直接持たない。
+
+想定 API:
+
+```python
+def build_monitor_session(session_dir: str, skill: str) -> dict:
+    ...
+```
+
+戻り値は `/session` レスポンス互換を維持し、派生値は `derived` に閉じ込める。
+
+```json
+{
+  "session_dir": "...",
+  "skill": "review",
+  "files": {
+    "session.yaml": { "exists": true, "content": {} },
+    "plan.yaml": { "exists": true, "content": {} }
+  },
+  "refs": {},
+  "refs_yaml": { "exists": true, "content": {} },
+  "derived": {
+    "phase": "...",
+    "counts": {}
+  }
+}
+```
+
+`derived` は monitor 表示用の派生情報であり、永続状態ではない。永続正規情報は
+`DES-011` と `plugins/forge/docs/session_format.md` の責務表に従う。
 
 ---
 
@@ -531,12 +571,10 @@ def notify_session_update(session_dir: str, file_path: str,
 
 **呼び出し点**:
 
-- `update_plan.py :: write_plan()` — plan.yaml 書き込み直後
-- `write_interpretation.py :: _atomic_write_text()` — interpretation.md 等の直後
-- `write_refs.py` — refs.yaml 書き込み直後
-- `extract_review_findings.py` — review.md / review_{p}.md / eval_{p}.json の
-  atomic write 直後（3 箇所）
-- `merge_evals.py` — 内部で `update_plan.write_plan()` を呼ぶため自動カバー
+- `SessionStore.write_text()` — core writer の artifact 書き込み直後
+- `session.meta.update_session_meta()` — `session.yaml` meta 更新直後
+- legacy mode の `extract_review_findings.py` — session_dir を持たない旧 2 引数モードの plan 書き込み直後
+- `merge_evals.py` — `update_plan.write_plan(..., meta=...)` を呼ぶため `SessionStore` 経由で自動カバー
 
 ### 5.12 mtime ハートビート仕様
 
@@ -553,11 +591,31 @@ def notify_session_update(session_dir: str, file_path: str,
 
 ## 6. 使用する既存コンポーネント
 
-| コンポーネント | ファイルパス                                       | 用途                                            |
-| -------------- | -------------------------------------------------- | ----------------------------------------------- |
-| YAML パーサー  | `scripts/session/yaml_utils.py::parse_yaml`        | session.yaml / plan.yaml / refs.yaml 読み込み   |
-| Atomic writer  | `scripts/session/yaml_utils.py::write_nested_yaml` | update_plan.py で使用中                         |
-| セッション管理 | `scripts/session_manager.py`                       | cmd_init() に `ensure_monitor_running()` を注入 |
+| コンポーネント | ファイルパス                                | 用途                                            |
+| -------------- | ------------------------------------------- | ----------------------------------------------- |
+| YAML パーサー  | `scripts/session/yaml_utils.py::parse_yaml` | session.yaml / plan.yaml / refs.yaml 読み込み   |
+| Reader         | `scripts/session/reader.py`                 | session files / refs files の読み取り共通処理   |
+| SessionStore   | `scripts/session/store.py`                  | artifact atomic write / notify / meta 更新      |
+| セッション管理 | `scripts/session_manager.py`                | cmd_init() に `ensure_monitor_running()` を注入 |
+
+---
+
+### 6.4 session adapter 分離
+
+`GET /session` のファイル読み取り・YAML/Markdown 正規化は `plugins/forge/scripts/session/reader.py` が担う。`plugins/forge/scripts/monitor/session_adapter.py` は reader の結果に表示用派生情報を付与する。`server.py` は HTTP / SSE / asset 配信に責務を絞り、session file schema の解釈を直接持たない。
+
+adapter は既存レスポンス互換の `session_dir`, `skill`, `files`, `refs`, `refs_yaml` を維持し、追加で `derived` を返す。
+
+| `derived` フィールド | 入力                                   | 用途                    |
+| -------------------- | -------------------------------------- | ----------------------- |
+| `phase`              | `session.yaml.phase`                   | 粗い進行段階表示        |
+| `phase_status`       | `session.yaml.phase_status` / `status` | phase の状態表示        |
+| `focus`              | `session.yaml.focus`                   | 現在の焦点表示          |
+| `waiting`            | `waiting_type` / `waiting_reason`      | 待機状態表示            |
+| `active_artifact`    | `session.yaml.active_artifact`         | 直近成果物表示          |
+| `review_counts`      | `plan.yaml.items[].status` のカウント  | review 進捗サマリー表示 |
+
+`derived` は monitor 表示用の派生情報であり、正規状態ではない。正規状態は引き続き `session.yaml`, `refs/`, `refs.yaml`, `plan.yaml`, `review.md` に置く。
 
 ---
 
@@ -585,6 +643,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
 | `launcher.find_free_port`                | 8765 優先取得、フォールバック、全滅時 OSError                                                                            |
 | `launcher.cleanup_orphan_monitors`       | pid 不在 / 数値でない / 死亡 → 削除、生存 → 維持                                                                         |
 | `launcher._should_skip_open`             | `FORGE_MONITOR_NO_OPEN` / `--no-open`                                                                                    |
+| `session_adapter.build_monitor_session`  | 既存 `/session` キー互換、欠損ファイル、`derived`、`review_counts`                                                       |
 | `server._resolve_template_for_skill`     | 全 skill に対して期待テンプレート、不明時は generic                                                                      |
 | `server._handle_index`                   | skill→template 選択 + 不在時の generic フォールバック + パストラバーサル拒否                                             |
 | `server._handle_asset`                   | 存在ファイルの MIME、パストラバーサル拒否、シンボリックリンク経由の脱出拒否                                              |
@@ -618,6 +677,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
 | パス                                                                   | 理由                                                                       |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `plugins/forge/skills/show-browser/`                                   | SKILL 廃止。内部モジュール化により `plugins/forge/scripts/monitor/` に移設 |
+| `plugins/forge/scripts/skill_monitor.py`                               | `monitor/server.py` と責務が重複。adapter 移行後に削除                     |
 | `.claude/hooks/notifier.py`                                            | PostToolUse フック廃止（スクリプト直接通知に置換）                         |
 | `.claude/settings.json` の `PostToolUse` notifier 登録                 | 同上                                                                       |
 | `tests/forge/scripts/test_show_browser_*.py`                           | `test_monitor_*.py` に置換                                                 |
@@ -673,3 +733,4 @@ python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
 | 2026-04-14 | 2.0        | スキル名 `forge:show-browser` を追加。複数 monitor 対応（`.claude/.temp/{ts}-{template}-monitor/`）。テンプレート切り替え機構（`review_list.html` 等）。`show_browser.py`（エントリーポイント）・`server.py`（SSE サーバー）・`notifier.py`（フック）にリネーム。session_manager.py 依存を削除し独立起動に変更。monitor ディレクトリのクリーンアップ設計を追加。                                                                                                                                          |
 | 2026-04-15 | 2.1        | 入力バリデーション（テンプレート名・ペイロード上限）、エラーハンドリング個別捕捉、session_dir 境界判定を強化                                                                                                                                                                                                                                                                                                                                                                                              |
 | 2026-04-20 | 3.0        | **SKILL 廃止・内部モジュール化**。`plugins/forge/scripts/monitor/` に移設。session_manager.cmd_init による自動起動（AI 無関与）。通知経路を直接通知 + mtime heartbeat の二系統に統合し PostToolUse フックを廃止。skill→template 自動選択。全 6 スキル対応（review / start-requirements / start-design / start-plan / start-implement / start-uxui-design）。3 層デザイントークン + 共通 layout/monitor.js に UI を分離。launcher の `--template` → `--skill` 引数化。ポート 8766〜8775 にフォールバック。 |
+| 2026-05-05 | 3.1        | `/session` のファイル読み取りを `monitor/session_adapter.py` に分離し、既存レスポンス互換を維持したまま `derived` を追加。`session.yaml` の浅い進行状態を monitor 表示に使う方針を追記。旧 `skill_monitor.py` は runtime 参照がなく `monitor/server.py` と責務が重複するため削除対象に統合。                                                                                                                                                                                                              |
