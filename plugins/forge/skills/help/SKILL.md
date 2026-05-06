@@ -21,20 +21,26 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 ```
 利用可能な forge スキル:
 
-  1. review              : コード・文書のレビュー（オーケストレーター）
-  2. start-uxui-design   : 要件定義書からデザイントークン・コンポーネント視覚仕様を創造
-  3. start-requirements  : 要件定義書の作成
-  4. start-design        : 設計書の作成
-  5. start-plan          : 計画書の作成
-  6. start-implement     : 計画書からタスクを選択して実装を実行する
-  7. setup               : .doc_structure.yaml の作成・更新
+  review              : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+  start-requirements  : 要件定義書の作成。3モード対応
+  start-design        : 設計書の作成。レビュー+自動修正→commit
+  start-plan          : 計画書の作成。レビュー+自動修正→commit
+  start-implement     : 計画書から実装・レビュー・計画更新
+  start-uxui-design    : デザイントークン・UI 視覚仕様を創造
+  create-feature-from-plan: plan ファイルから要件定義→設計書へ展開
+  clean-rules         : ルール文書を分析し重複を検出・削除
+  merge-feature-specs : 完了した FEATURE の仕様を main に統合
+  setup-doc-structure : .doc_structure.yaml を対話的に生成
+  setup-version-config: .version-config.yaml を対話的に生成
+  update-version      : バージョンを一括更新。CHANGELOG 自動反映
+  query-forge-rules   : forge 内蔵知識ベースを ToC 検索
 ```
 
 AskUserQuestion:
 
-- question: "スキル番号を入力してください（1〜7）"
-- options: ["1 (review)", "2 (start-uxui-design)", "3 (start-requirements)", "4 (start-design)"]
-- ※ 5〜7 は Other で入力する
+- question: "スキルを選択してください"
+- options: ["review", "start-requirements", "start-design", "start-plan"]
+- ※ 他は Other で入力
 
 ---
 
@@ -93,9 +99,9 @@ AskUserQuestion:
 ```
 修正モードを選択してください:
 - レビューのみ（修正なし）
-- 自動修正 1サイクル（🔴致命的 + 🟡品質問題を修正）
-- 自動修正 Nサイクル（サイクル数を指定）
-- --auto [N]（N サイクル自動修正。省略時 N=1）
+- 自動修正 1サイクル（🔴🟡を自動修正）
+- 自動修正 Nサイクル（N サイクル）
+- --auto-critical（🔴致命的のみ自動修正）
 ```
 
 「自動修正 Nサイクル」を選んだ場合:
@@ -132,7 +138,15 @@ AskUserQuestion:
 対象の Feature 名を入力してください（省略時はインタラクティブに決定）:
 ```
 
-#### 2-2. モード
+#### 2-2. 開発種別
+
+```
+開発種別を選択してください:
+- 新規アプリ（--new）
+- 既存アプリへの追加（--add）
+```
+
+#### 2-3. モード
 
 ```
 作成モードを選択してください:
@@ -182,24 +196,56 @@ AskUserQuestion:
 「タスク ID を指定する」を選んだ場合:
 
 ```
-タスク ID を入力してください（例: TASK-001）:
+タスク ID を入力してください（例: TASK-001,TASK-003）:
 ```
 
-#### 2-3. 並列実行
+#### 2-3. サイクル数
 
 ```
-並列実行モードを選択してください:
-- 逐次実行（デフォルト）
-- 並列実行（--parallel）: 独立タスクを同時に実行
+最大サイクル数を入力してください（例: 3）:
 ```
 
 ---
 
-### setup
+### create-feature-from-plan
 
-引数なし。そのまま Step 3 へ進む。
+引数: plan ファイルパス（省略時は対話で決定）
 
 ---
+
+### clean-rules
+
+引数: ルールディレクトリパス（省略時はデフォルト）
+
+---
+
+### merge-feature-specs
+
+引数: FEATURE 名（省略時は対話で決定）
+
+---
+
+### setup-doc-structure
+
+引数: なし。実行すると対話的に開始する。
+
+---
+
+### setup-version-config
+
+引数: なし。実行すると対話的に開始する。
+
+---
+
+### update-version
+
+引数: バージョンアップの種別（patch/minor/major/直接指定）。省略時は対話で決定。
+
+---
+
+### query-forge-rules
+
+引数: 検索クエリ。省略時は対話で決定。
 
 ---
 
