@@ -23,14 +23,6 @@ from session.reader import (  # noqa: E402
 )
 
 
-SESSION_FILES = [
-    "session.yaml",
-    "plan.yaml",
-    "review.md",
-    "requirements.md",
-    "design.md",
-]
-
 REVIEW_STATUSES = ["pending", "in_progress", "fixed", "skipped", "needs_review"]
 
 
@@ -106,6 +98,8 @@ def build_monitor_session(session_dir, skill=""):
         refs_files=REFS_FILES,
     )
     result["skill"] = skill or ""
+    # refs.yaml は session/refs どちらのリストにも含めず、既存 /session レスポンスの
+    # refs_yaml キーとして個別に読み込む（互換性のため）
     result["refs_yaml"] = read_session_file(session_dir, "refs.yaml")
 
     session = _content_dict(result["files"].get("session.yaml"))

@@ -3,13 +3,11 @@
 writer script から共通利用される session meta 更新 API を提供する。
 """
 
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 from monitor.notify import notify_session_update
-from session.yaml_utils import now_iso, read_yaml, yaml_scalar
+from session.yaml_utils import atomic_write_text, now_iso, read_yaml, yaml_scalar
 
 # session.yaml の共通フィールド（この順序で出力）
 COMMON_FIELDS = ["skill", "started_at", "last_updated", "status", "resume_policy"]
@@ -51,24 +49,8 @@ def _build_flat_yaml_text(data, field_order=None):
 
 def _atomic_write_flat_yaml(path, data, field_order=None):
     """同一ディレクトリ内の一時ファイル経由で flat YAML を原子的に書く。"""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
     text = _build_flat_yaml_text(data, field_order=field_order)
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(text)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_path, str(target))
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    atomic_write_text(path, text)
 
 
 def _validate_meta_updates(updates):

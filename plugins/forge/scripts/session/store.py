@@ -4,12 +4,11 @@ artifact 書き込み、monitor 通知、session meta 更新の順序を集約�
 """
 
 import os
-import tempfile
 from pathlib import Path
 
 from monitor.notify import notify_session_update
 from session.meta import update_session_meta_warning
-from session.yaml_utils import build_nested_yaml_text
+from session.yaml_utils import atomic_write_text, build_nested_yaml_text
 
 
 class SessionStore:
@@ -28,7 +27,7 @@ class SessionStore:
         target.parent.mkdir(parents=True, exist_ok=True)
 
         if atomic:
-            _atomic_write_text(target, content)
+            atomic_write_text(target, content)
         else:
             target.write_text(content, encoding="utf-8")
 
@@ -69,24 +68,3 @@ class SessionStore:
         if resolved != base and not str(resolved).startswith(str(base) + os.sep):
             raise ValueError(f"path escapes session_dir: {relative_path}")
         return target
-
-
-def _atomic_write_text(path, content):
-    """同一ディレクトリ内の一時ファイル経由でテキストを原子的に書く。"""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_path, str(target))
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise

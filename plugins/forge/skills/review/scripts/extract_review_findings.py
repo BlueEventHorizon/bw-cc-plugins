@@ -29,7 +29,8 @@ from review.findings_renderer import (  # noqa: E402
     generate_review_md,
     summarize,
 )
-from session.store import SessionStore, _atomic_write_text  # noqa: E402
+from session.store import SessionStore  # noqa: E402
+from session.yaml_utils import atomic_write_text  # noqa: E402
 
 
 def _emit_error(error):
@@ -129,7 +130,7 @@ def run_legacy_mode(review_md_path, output_path):
 
     findings = extract_findings(content)
     plan_path = Path(output_path)
-    _atomic_write_text(plan_path, generate_plan_yaml(findings))
+    atomic_write_text(plan_path, generate_plan_yaml(findings))
     notify_session_update(str(plan_path.parent), str(plan_path))
 
     result = summarize(findings)

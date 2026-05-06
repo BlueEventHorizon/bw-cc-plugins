@@ -7,6 +7,8 @@ session/ 配下の全スクリプトがこのモジュールを共有する。
 PyYAML 等の外部依存は使用しない（NFR-02 準拠）。
 """
 
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -66,6 +68,27 @@ def write_flat_yaml(path, data, field_order=None):
     for key in ordered:
         lines.append(f"{key}: {yaml_scalar(data[key])}")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def atomic_write_text(path, content):
+    """同一ディレクトリ内の一時ファイル経由でテキストを原子的に書く。"""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent)
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, str(target))
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 # ---------------------------------------------------------------------------
