@@ -125,26 +125,3 @@ flowchart TD
 | `plan.yaml`    | 修正プランと進捗状態                               |
 
 正常完了時は自動削除。中断時は残存し、次回起動時に再開提案される。
-
----
-
-## モニターモジュール（ブラウザ進捗表示）
-
-`/forge:review` や `/forge:start-*` の各スキルは、セッション作成時に **モニターモジュール**（`plugins/forge/scripts/monitor/`）を自動起動する。SSE サーバーがセッションディレクトリの更新を検知し、ブラウザに自動反映する。
-
-- **ユーザーの操作は不要**: `session_manager` が `cmd_init()` の末尾で非同期 fork する
-- **URL**: `http://localhost:8765/`（使用中なら 8766〜8775 にフォールバック）
-- **skill 別テンプレート**:
-  - `review` → 指摘一覧（severity フィルタ + 進捗バー）
-  - `start-requirements` / `start-design` / `start-plan` → ドキュメントプレビュー
-  - `start-implement` → タスク進行状況
-  - `start-uxui-design` → ASCII アート + デザイントークン
-- **通知経路**: writer スクリプトからの直接通知 + 30 秒周期の mtime ハートビート
-- **自動停止**: セッションディレクトリ削除を検知するとサーバーも自動停止
-
-起動をスキップしたい場合は環境変数 `FORGE_SESSION_SKIP_MONITOR=1` / `FORGE_MONITOR_NO_OPEN=1` を使う。手動起動は以下:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
-  --session-dir <セッションディレクトリ> --skill <skill 名>
-```

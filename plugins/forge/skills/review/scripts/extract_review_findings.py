@@ -19,7 +19,6 @@ if _loaded_review:
     if not loaded_path.startswith(_FORGE_SCRIPTS_STR):
         del sys.modules["review"]
 
-from monitor.notify import notify_session_update  # noqa: E402
 from review.findings_parser import (  # noqa: E402
     extract_findings,
     extract_perspective_from_filename,
@@ -131,7 +130,6 @@ def run_legacy_mode(review_md_path, output_path):
     findings = extract_findings(content)
     plan_path = Path(output_path)
     atomic_write_text(plan_path, generate_plan_yaml(findings))
-    notify_session_update(str(plan_path.parent), str(plan_path))
 
     result = summarize(findings)
     result["status"] = "ok"

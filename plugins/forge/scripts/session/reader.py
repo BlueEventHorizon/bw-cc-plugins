@@ -12,15 +12,6 @@ SESSION_FILES = [
     "plan.yaml",
 ]
 
-# monitor /session の既定対象
-MONITOR_SESSION_FILES = [
-    "session.yaml",
-    "plan.yaml",
-    "review.md",
-    "requirements.md",
-    "design.md",
-]
-
 REFS_FILES = [
     "specs.yaml",
     "rules.yaml",

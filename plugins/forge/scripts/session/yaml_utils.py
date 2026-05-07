@@ -182,7 +182,6 @@ def read_yaml(path):
     """YAML ファイルを読み込んで dict に変換する。
 
     フラット YAML もリスト付き YAML も統一的に扱う。
-    旧 monitor 実装の YamlReader._parse_yaml_with_lists() を関数化。
 
     Args:
         path: YAML ファイルパス

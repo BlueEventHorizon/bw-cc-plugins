@@ -5,7 +5,6 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 sys.path.insert(
     0,
@@ -43,37 +42,28 @@ class TestSessionStorePathSafety(_FsTestCase):
     def test_rejects_absolute_path(self):
         store = SessionStore(str(self.session_dir))
         with self.assertRaises(ValueError):
-            store.write_text("/tmp/outside.yaml", "x", notify=False)
+            store.write_text("/tmp/outside.yaml", "x")
 
     def test_rejects_traversal(self):
         store = SessionStore(str(self.session_dir))
         with self.assertRaises(ValueError):
-            store.write_text("../outside.yaml", "x", notify=False)
+            store.write_text("../outside.yaml", "x")
 
     def test_rejects_nested_traversal(self):
         store = SessionStore(str(self.session_dir))
         with self.assertRaises(ValueError):
-            store.write_text("refs/../../outside.yaml", "x", notify=False)
+            store.write_text("refs/../../outside.yaml", "x")
 
 
 class TestSessionStoreWrite(_FsTestCase):
     def test_write_text_creates_file(self):
         store = SessionStore(str(self.session_dir))
-        path = store.write_text("refs.yaml", "target_files:\n  - a.py\n", notify=False)
+        path = store.write_text("refs.yaml", "target_files:\n  - a.py\n")
 
         self.assertEqual(path, self.session_dir / "refs.yaml")
         self.assertEqual(
             (self.session_dir / "refs.yaml").read_text(encoding="utf-8"),
             "target_files:\n  - a.py\n",
-        )
-
-    def test_write_text_notifies_artifact(self):
-        store = SessionStore(str(self.session_dir))
-        with mock.patch("session.store.notify_session_update") as notify:
-            store.write_text("refs.yaml", "x\n", notify=True)
-
-        notify.assert_called_once_with(
-            str(self.session_dir), str(self.session_dir / "refs.yaml")
         )
 
     def test_write_text_updates_meta_after_artifact(self):
@@ -83,7 +73,6 @@ class TestSessionStoreWrite(_FsTestCase):
         store.write_text(
             "plan.yaml",
             "items:\n  - id: 1\n    status: pending\n",
-            notify=False,
             meta={"active_artifact": "plan.yaml"},
         )
 
@@ -109,7 +98,6 @@ class TestSessionStoreWrite(_FsTestCase):
         path = store.write_text(
             "refs.yaml",
             "target_files:\n  - a.py\n",
-            notify=False,
             meta={"active_artifact": "refs.yaml"},
         )
 

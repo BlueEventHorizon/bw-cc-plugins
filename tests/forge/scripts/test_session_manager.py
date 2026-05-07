@@ -55,17 +55,10 @@ class _FsTestCase(unittest.TestCase):
         os.chdir(self.tmpdir)
         # .claude/.temp/ を作成
         (self.tmpdir / ".claude" / ".temp").mkdir(parents=True, exist_ok=True)
-        # 既存テストでは monitor 自動起動を抑止(別途 integration test で検証)
-        self._orig_skip_monitor = os.environ.get("FORGE_SESSION_SKIP_MONITOR")
-        os.environ["FORGE_SESSION_SKIP_MONITOR"] = "1"
 
     def tearDown(self):
         os.chdir(self.orig_cwd)
         shutil.rmtree(self.tmpdir, ignore_errors=True)
-        if self._orig_skip_monitor is None:
-            os.environ.pop("FORGE_SESSION_SKIP_MONITOR", None)
-        else:
-            os.environ["FORGE_SESSION_SKIP_MONITOR"] = self._orig_skip_monitor
 
     def _write_file(self, rel_path, content=''):
         p = self.tmpdir / rel_path
@@ -448,7 +441,7 @@ class TestUpdateMeta(_FsTestCase):
             "phase_status": "completed",
             "focus": "参照情報を収集済み",
             "active_artifact": "refs/rules.yaml",
-        }, notify=False)
+        })
         self.assertEqual(result["status"], "ok")
         data = read_yaml(os.path.join(session_dir, "session.yaml"))
         self.assertEqual(data["phase"], "context_ready")
@@ -458,7 +451,7 @@ class TestUpdateMeta(_FsTestCase):
 
     def test_update_meta_preserves_existing_fields(self):
         session_dir = self._create_session()
-        update_session_meta(session_dir, {"phase": "context_ready"}, notify=False)
+        update_session_meta(session_dir, {"phase": "context_ready"})
         data = read_yaml(os.path.join(session_dir, "session.yaml"))
         self.assertEqual(data["feature"], "cleanup")
         self.assertEqual(data["mode"], "new")
@@ -467,7 +460,7 @@ class TestUpdateMeta(_FsTestCase):
     def test_update_meta_updates_last_updated(self):
         session_dir = self._create_session()
         before = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
-        update_session_meta(session_dir, {"phase": "context_ready"}, notify=False)
+        update_session_meta(session_dir, {"phase": "context_ready"})
         after = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
         self.assertNotEqual(before, after)
 
@@ -476,14 +469,14 @@ class TestUpdateMeta(_FsTestCase):
             "waiting_type": "user_input",
             "waiting_reason": "確認待ち",
         })
-        update_session_meta(session_dir, {"waiting_type": "none"}, notify=False)
+        update_session_meta(session_dir, {"waiting_type": "none"})
         data = read_yaml(os.path.join(session_dir, "session.yaml"))
         self.assertEqual(data["waiting_type"], "none")
         self.assertEqual(data["waiting_reason"], "")
 
     def test_update_meta_normalizes_multiline_text(self):
         session_dir = self._create_session()
-        update_session_meta(session_dir, {"focus": "line1\nline2"}, notify=False)
+        update_session_meta(session_dir, {"focus": "line1\nline2"})
         data = read_yaml(os.path.join(session_dir, "session.yaml"))
         self.assertEqual(data["focus"], "line1 line2")
 
@@ -492,29 +485,29 @@ class TestUpdateMeta(_FsTestCase):
         update_session_meta(session_dir, {
             "phase": "completed",
             "phase_status": "completed",
-        }, notify=False)
+        })
         data = read_yaml(os.path.join(session_dir, "session.yaml"))
         self.assertEqual(data["status"], "completed")
 
     def test_update_meta_rejects_invalid_phase_status(self):
         session_dir = self._create_session()
         with self.assertRaises(ValueError):
-            update_session_meta(session_dir, {"phase_status": "bad"}, notify=False)
+            update_session_meta(session_dir, {"phase_status": "bad"})
 
     def test_update_meta_rejects_invalid_waiting_type(self):
         session_dir = self._create_session()
         with self.assertRaises(ValueError):
-            update_session_meta(session_dir, {"waiting_type": "bad"}, notify=False)
+            update_session_meta(session_dir, {"waiting_type": "bad"})
 
     def test_update_meta_missing_session_dir(self):
         with self.assertRaises(FileNotFoundError):
-            update_session_meta(os.path.join(TEMP_BASE, "missing"), {}, notify=False)
+            update_session_meta(os.path.join(TEMP_BASE, "missing"), {})
 
     def test_update_meta_missing_session_yaml(self):
         session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
         os.makedirs(session_dir, exist_ok=True)
         with self.assertRaises(FileNotFoundError):
-            update_session_meta(session_dir, {}, notify=False)
+            update_session_meta(session_dir, {})
 
     def test_update_meta_warning_skips_missing_session_yaml(self):
         session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
@@ -522,7 +515,6 @@ class TestUpdateMeta(_FsTestCase):
         result = update_session_meta_warning(
             session_dir,
             {"active_artifact": "plan.yaml"},
-            notify=False,
         )
         self.assertEqual(result["status"], "skipped")
 
