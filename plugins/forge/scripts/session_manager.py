@@ -22,24 +22,13 @@ import os
 import shutil
 import sys
 
-from session.meta import (
-    COMMON_FIELDS,
-    SESSION_FIELD_ORDER,
-    SESSION_META_FIELDS,
-    VALID_PHASE_STATUSES,
-    VALID_WAITING_TYPES,
-    update_session_meta,
-    update_session_meta_warning,
-)
 from session.yaml_utils import now_iso, read_yaml, write_flat_yaml
 
 # セッションディレクトリのベースパス
 TEMP_BASE = ".claude/.temp"
 
-# スキルごとの resume_policy デフォルト値（未登録は "none"）
-DEFAULT_RESUME_POLICY = {
-    "review": "resume",
-}
+# session.yaml の出力フィールド順（共通4フィールド + スキル固有の追加フィールド）
+SESSION_FIELD_ORDER = ["skill", "started_at", "last_updated", "status"]
 
 
 # ---------------------------------------------------------------------------
@@ -110,22 +99,10 @@ def cmd_init(args, remaining):
         "started_at": ts,
         "last_updated": ts,
         "status": "in_progress",
-        "resume_policy": DEFAULT_RESUME_POLICY.get(skill, "none"),
-        "phase": "created",
-        "phase_status": "in_progress",
-        "focus": "",
-        "waiting_type": "none",
-        "waiting_reason": "",
-        "active_artifact": "",
     }
 
     # 残余引数からスキル固有フィールドを追加
     extra = parse_extra_args(remaining)
-
-    # resume_policy が明示指定されていれば上書き
-    if "resume_policy" in extra:
-        data["resume_policy"] = extra.pop("resume_policy")
-
     data.update(extra)
 
     # session.yaml 書き出し
@@ -185,22 +162,6 @@ def cmd_cleanup(args):
     return {"status": "deleted", "session_dir": session_dir}
 
 
-def cmd_update_meta(args):
-    """session.yaml の浅い進行状態を更新する。"""
-    updates = {
-        "phase": args.phase,
-        "phase_status": args.phase_status,
-        "focus": args.focus,
-        "waiting_type": args.waiting_type,
-        "waiting_reason": args.waiting_reason,
-        "active_artifact": args.active_artifact,
-    }
-    try:
-        return update_session_meta(args.session_dir, updates)
-    except (FileNotFoundError, ValueError, OSError) as e:
-        return {"status": "error", "error": str(e)}
-
-
 # ---------------------------------------------------------------------------
 # メイン
 # ---------------------------------------------------------------------------
@@ -221,16 +182,6 @@ def main():
     cleanup_parser = subparsers.add_parser("cleanup", help="セッション削除")
     cleanup_parser.add_argument("session_dir", help="削除するセッションディレクトリパス")
 
-    # update-meta サブコマンド
-    update_parser = subparsers.add_parser("update-meta", help="セッションメタデータ更新")
-    update_parser.add_argument("session_dir", help="セッションディレクトリパス")
-    update_parser.add_argument("--phase", help="現在の粗いフェーズ")
-    update_parser.add_argument("--phase-status", help="phase の状態")
-    update_parser.add_argument("--focus", help="現在の作業焦点")
-    update_parser.add_argument("--waiting-type", help="待機種別")
-    update_parser.add_argument("--waiting-reason", help="待機理由")
-    update_parser.add_argument("--active-artifact", help="直近更新成果物パス")
-
     # parse_known_args で init の任意フィールドに対応
     args, remaining = parser.parse_known_args()
 
@@ -244,8 +195,6 @@ def main():
         result = cmd_find(args)
     elif args.command == "cleanup":
         result = cmd_cleanup(args)
-    elif args.command == "update-meta":
-        result = cmd_update_meta(args)
     else:
         parser.print_help()
         sys.exit(1)

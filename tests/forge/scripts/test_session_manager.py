@@ -11,7 +11,6 @@ session_manager.py のテスト
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -24,17 +23,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'scripts'))
 
 from session_manager import (
-    COMMON_FIELDS,
     SESSION_FIELD_ORDER,
     TEMP_BASE,
     cmd_cleanup,
     cmd_find,
     cmd_init,
-    cmd_update_meta,
     generate_session_name,
     parse_extra_args,
-    update_session_meta,
-    update_session_meta_warning,
     validate_temp_path,
 )
 from session.yaml_utils import (
@@ -106,7 +101,7 @@ class TestWriteReadYaml(_FsTestCase):
     def test_roundtrip_basic(self):
         path = self.tmpdir / "test.yaml"
         data = {"skill": "review", "status": "in_progress", "auto_count": 3}
-        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
+        write_flat_yaml(path, data, field_order=SESSION_FIELD_ORDER)
         result = read_yaml(path)
         self.assertEqual(result["skill"], "review")
         self.assertEqual(result["status"], "in_progress")
@@ -121,9 +116,8 @@ class TestWriteReadYaml(_FsTestCase):
             "status": "in_progress",
             "started_at": "2026-03-13T10:00:00Z",
             "last_updated": "2026-03-13T10:00:00Z",
-            "resume_policy": "none",
         }
-        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
+        write_flat_yaml(path, data, field_order=SESSION_FIELD_ORDER)
         content = path.read_text(encoding="utf-8")
         lines = [l for l in content.strip().split("\n") if l]
         # 最初の行は skill
@@ -137,7 +131,7 @@ class TestWriteReadYaml(_FsTestCase):
         """スペース・特殊文字を含む値の往復"""
         path = self.tmpdir / "test.yaml"
         data = {"output_dir": "specs/login/design", "skill": "start-design"}
-        write_flat_yaml(path, data, field_order=COMMON_FIELDS)
+        write_flat_yaml(path, data, field_order=SESSION_FIELD_ORDER)
         result = read_yaml(path)
         self.assertEqual(result["output_dir"], "specs/login/design")
 
@@ -154,7 +148,8 @@ class TestWriteReadYaml(_FsTestCase):
     def test_integer_roundtrip(self):
         """整数値が正しく往復する"""
         path = self.tmpdir / "test.yaml"
-        write_flat_yaml(path, {"auto_count": 0, "skill": "review"}, field_order=COMMON_FIELDS)
+        write_flat_yaml(path, {"auto_count": 0, "skill": "review"},
+                        field_order=SESSION_FIELD_ORDER)
         result = read_yaml(path)
         self.assertEqual(result["auto_count"], 0)
         self.assertIsInstance(result["auto_count"], int)
@@ -254,26 +249,15 @@ class TestCmdInit(_FsTestCase):
                          r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
         self.assertEqual(data["started_at"], data["last_updated"])
 
-    def test_resume_policy_review(self):
-        """review は resume_policy: resume"""
+    def test_only_common_fields_by_default(self):
+        """進行状態フィールドが session.yaml に書かれないこと"""
         result = cmd_init(self._make_args("review"), [])
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
-        self.assertEqual(data["resume_policy"], "resume")
-
-    def test_resume_policy_create(self):
-        """create-* は resume_policy: none"""
-        result = cmd_init(self._make_args("start-design"), [])
-        data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
-        self.assertEqual(data["resume_policy"], "none")
-
-    def test_resume_policy_explicit(self):
-        """--resume-policy で明示指定すると上書きされる"""
-        result = cmd_init(
-            self._make_args("start-design"),
-            ["--resume-policy", "resume"],
-        )
-        data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
-        self.assertEqual(data["resume_policy"], "resume")
+        for removed in (
+            "phase", "phase_status", "focus", "waiting_type",
+            "waiting_reason", "active_artifact", "resume_policy",
+        ):
+            self.assertNotIn(removed, data)
 
     def test_extra_fields(self):
         """任意の --key value がsession.yaml に含まれる"""
@@ -327,8 +311,8 @@ class TestCmdFind(_FsTestCase):
             os.path.join(session_dir, "session.yaml"),
             {"skill": skill, "started_at": "2026-03-13T18:00:00Z",
              "last_updated": "2026-03-13T18:00:00Z",
-             "status": "in_progress", "resume_policy": "none"},
-            field_order=COMMON_FIELDS,
+             "status": "in_progress"},
+            field_order=SESSION_FIELD_ORDER,
         )
         return session_dir
 
@@ -395,139 +379,7 @@ class TestCmdCleanup(_FsTestCase):
 
 
 # =========================================================================
-# 6. update-meta
-# =========================================================================
-
-class TestUpdateMeta(_FsTestCase):
-    """update_session_meta / cmd_update_meta のテスト"""
-
-    def _create_session(self, extra=None):
-        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
-        os.makedirs(session_dir, exist_ok=True)
-        data = {
-            "skill": "start-plan",
-            "started_at": "2026-05-05T01:00:00Z",
-            "last_updated": "2026-05-05T01:00:00Z",
-            "status": "in_progress",
-            "resume_policy": "none",
-            "feature": "cleanup",
-            "mode": "new",
-        }
-        if extra:
-            data.update(extra)
-        write_flat_yaml(
-            os.path.join(session_dir, "session.yaml"),
-            data,
-            field_order=SESSION_FIELD_ORDER,
-        )
-        return session_dir
-
-    def _make_args(self, session_dir, **kwargs):
-        class Args:
-            pass
-        a = Args()
-        a.session_dir = session_dir
-        for key in (
-            "phase", "phase_status", "focus", "waiting_type",
-            "waiting_reason", "active_artifact",
-        ):
-            setattr(a, key, kwargs.get(key))
-        return a
-
-    def test_update_meta_adds_shallow_fields(self):
-        session_dir = self._create_session()
-        result = update_session_meta(session_dir, {
-            "phase": "context_ready",
-            "phase_status": "completed",
-            "focus": "参照情報を収集済み",
-            "active_artifact": "refs/rules.yaml",
-        })
-        self.assertEqual(result["status"], "ok")
-        data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(data["phase"], "context_ready")
-        self.assertEqual(data["phase_status"], "completed")
-        self.assertEqual(data["focus"], "参照情報を収集済み")
-        self.assertEqual(data["active_artifact"], "refs/rules.yaml")
-
-    def test_update_meta_preserves_existing_fields(self):
-        session_dir = self._create_session()
-        update_session_meta(session_dir, {"phase": "context_ready"})
-        data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(data["feature"], "cleanup")
-        self.assertEqual(data["mode"], "new")
-        self.assertEqual(data["skill"], "start-plan")
-
-    def test_update_meta_updates_last_updated(self):
-        session_dir = self._create_session()
-        before = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
-        update_session_meta(session_dir, {"phase": "context_ready"})
-        after = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
-        self.assertNotEqual(before, after)
-
-    def test_update_meta_clears_waiting_reason_when_waiting_none(self):
-        session_dir = self._create_session({
-            "waiting_type": "user_input",
-            "waiting_reason": "確認待ち",
-        })
-        update_session_meta(session_dir, {"waiting_type": "none"})
-        data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(data["waiting_type"], "none")
-        self.assertEqual(data["waiting_reason"], "")
-
-    def test_update_meta_normalizes_multiline_text(self):
-        session_dir = self._create_session()
-        update_session_meta(session_dir, {"focus": "line1\nline2"})
-        data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(data["focus"], "line1 line2")
-
-    def test_update_meta_completed_sets_status_completed(self):
-        session_dir = self._create_session()
-        update_session_meta(session_dir, {
-            "phase": "completed",
-            "phase_status": "completed",
-        })
-        data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(data["status"], "completed")
-
-    def test_update_meta_rejects_invalid_phase_status(self):
-        session_dir = self._create_session()
-        with self.assertRaises(ValueError):
-            update_session_meta(session_dir, {"phase_status": "bad"})
-
-    def test_update_meta_rejects_invalid_waiting_type(self):
-        session_dir = self._create_session()
-        with self.assertRaises(ValueError):
-            update_session_meta(session_dir, {"waiting_type": "bad"})
-
-    def test_update_meta_missing_session_dir(self):
-        with self.assertRaises(FileNotFoundError):
-            update_session_meta(os.path.join(TEMP_BASE, "missing"), {})
-
-    def test_update_meta_missing_session_yaml(self):
-        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
-        os.makedirs(session_dir, exist_ok=True)
-        with self.assertRaises(FileNotFoundError):
-            update_session_meta(session_dir, {})
-
-    def test_update_meta_warning_skips_missing_session_yaml(self):
-        session_dir = os.path.join(TEMP_BASE, "start-plan-aaaaaa")
-        os.makedirs(session_dir, exist_ok=True)
-        result = update_session_meta_warning(
-            session_dir,
-            {"active_artifact": "plan.yaml"},
-        )
-        self.assertEqual(result["status"], "skipped")
-
-    def test_cmd_update_meta_returns_error_for_invalid_enum(self):
-        session_dir = self._create_session()
-        result = cmd_update_meta(
-            self._make_args(session_dir, phase_status="bad")
-        )
-        self.assertEqual(result["status"], "error")
-
-
-# =========================================================================
-# 7. CLI 統合テスト
+# 6. CLI 統合テスト
 # =========================================================================
 
 class TestCLI(_FsTestCase):
@@ -583,27 +435,6 @@ class TestCLI(_FsTestCase):
         r = self._run("find", "--skill", "start-plan")
         find_data = json.loads(r.stdout)
         self.assertEqual(find_data["status"], "none")
-
-    def test_update_meta_cli(self):
-        r = self._run("init", "--skill", "start-plan", "--feature", "test")
-        self.assertEqual(r.returncode, 0)
-        init_data = json.loads(r.stdout)
-        session_dir = init_data["session_dir"]
-
-        r = self._run(
-            "update-meta", session_dir,
-            "--phase", "context_ready",
-            "--phase-status", "completed",
-            "--focus", "context ready",
-        )
-        self.assertEqual(r.returncode, 0)
-        data = json.loads(r.stdout)
-        self.assertEqual(data["status"], "ok")
-
-        yaml_data = read_yaml(os.path.join(session_dir, "session.yaml"))
-        self.assertEqual(yaml_data["phase"], "context_ready")
-        self.assertEqual(yaml_data["phase_status"], "completed")
-        self.assertEqual(yaml_data["focus"], "context ready")
 
     def test_no_command_shows_help(self):
         r = self._run()

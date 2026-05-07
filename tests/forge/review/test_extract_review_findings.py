@@ -548,11 +548,6 @@ class TestSessionDirMode(unittest.TestCase):
         review_content = review_path.read_text(encoding='utf-8')
         self.assertIn('統合レビュー結果', review_content)
 
-        session_content = (self.session_path / 'session.yaml').read_text(encoding='utf-8')
-        self.assertIn('phase: review_extracted', session_content)
-        self.assertIn('phase_status: completed', session_content)
-        self.assertIn('active_artifact: review.md', session_content)
-
     def test_perspective_tags(self):
         """perspective タグ付与テスト: ファイル名から perspective 名が正しく抽出される"""
         self._write_review('review_correctness.md', REVIEW_CORRECTNESS)

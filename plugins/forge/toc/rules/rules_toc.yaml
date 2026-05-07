@@ -233,13 +233,11 @@ docs:
     content_details:
       - Session concept and rationale
       - Directory structure and paths
-      - session.yaml metadata fields and lifecycle
-      - Status and phase tracking fields
+      - session.yaml common metadata fields (skill / started_at / last_updated / status)
       - Context collection results in refs/
       - review skill specific files (refs.yaml, review.md, plan.yaml)
       - start-implement executor result files
-      - Session manager CLI (init, find, cleanup, update-meta)
-      - Monitor display and session adapter
+      - Session manager CLI (init, find, cleanup)
       - Writer scripts for YAML operations
     applicable_tasks:
       - Session initialization and lifecycle management
@@ -247,7 +245,6 @@ docs:
       - Review orchestration and multi-cycle management
       - Implementation executor result collection
       - Session resumption and recovery
-      - Progress state updates and artifact tracking
     keywords:
       - session
       - temporary directory

@@ -16,7 +16,7 @@ sys.path.insert(
 from session.update_plan import (
     read_plan, update_item, update_items_batch, write_plan,
 )
-from session.yaml_utils import write_nested_yaml, read_yaml
+from session.yaml_utils import write_nested_yaml
 
 SCRIPT = str(
     Path(__file__).resolve().parents[4]
@@ -253,17 +253,6 @@ class TestReadWritePlan(_FsTestCase):
     def test_file_not_found(self):
         with self.assertRaises(FileNotFoundError):
             read_plan(str(self.session_dir))
-
-    def test_write_plan_updates_session_meta(self):
-        """plan.yaml 書き戻し後に active_artifact を更新する。"""
-        (self.session_dir / "session.yaml").write_text(
-            "status: active\nskill: review\n", encoding="utf-8"
-        )
-
-        write_plan(str(self.session_dir), {"items": _sample_items()})
-
-        session = read_yaml(str(self.session_dir / "session.yaml"))
-        self.assertEqual(session["active_artifact"], "plan.yaml")
 
 
 class TestCLI(_FsTestCase):
