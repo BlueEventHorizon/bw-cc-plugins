@@ -14,7 +14,6 @@ sys.path.insert(
 )
 
 from session.write_interpretation import write_interpretation
-from session.yaml_utils import read_yaml
 
 SCRIPT = str(
     Path(__file__).resolve().parents[4]
@@ -111,18 +110,6 @@ class TestWriteInterpretation(_FsTestCase):
         # .review_logic.md.* のような隠しファイルも残らない
         hidden_files = list(self.session_dir.glob(".*.tmp"))
         self.assertEqual(hidden_files, [])
-
-    def test_updates_session_meta(self):
-        """review_{perspective}.md 書き換え後に active_artifact を更新する。"""
-        (self.session_dir / "session.yaml").write_text(
-            "status: active\nskill: review\n", encoding="utf-8"
-        )
-        self._write_review("logic", "# reviewer 原文\n")
-
-        write_interpretation(str(self.session_dir), "logic", "# 整形\n")
-
-        session = read_yaml(str(self.session_dir / "session.yaml"))
-        self.assertEqual(session["active_artifact"], "review_logic.md")
 
     def test_atomic_rename_does_not_corrupt_on_partial(self):
         """書き込みに失敗しても target は直前の内容のまま維持される。

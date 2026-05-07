@@ -311,20 +311,6 @@ class TestWriteRefs(_FsTestCase):
         result = read_yaml(path)
         self.assertNotIn("review_criteria_path", result)
 
-    def test_updates_session_meta(self):
-        """refs.yaml 書き出し後に session.yaml の浅い状態を更新する。"""
-        (self.session_dir / "session.yaml").write_text(
-            "status: active\nskill: review\n", encoding="utf-8"
-        )
-
-        write_refs(str(self.session_dir), _base_data())
-
-        session = read_yaml(str(self.session_dir / "session.yaml"))
-        self.assertEqual(session["phase"], "context_ready")
-        self.assertEqual(session["phase_status"], "completed")
-        self.assertEqual(session["active_artifact"], "refs.yaml")
-
-
 class TestCLI(_FsTestCase):
     """CLI 統合テスト。"""
 

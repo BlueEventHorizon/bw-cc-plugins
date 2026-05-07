@@ -99,16 +99,9 @@ def run_session_dir_mode(session_dir, review_only=False):
 
     store = SessionStore(session_path)
     if not review_only:
-        store.write_text("plan.yaml", generate_plan_yaml(all_findings), meta=None)
+        store.write_text("plan.yaml", generate_plan_yaml(all_findings))
 
-    review_meta = None
-    if not review_only:
-        review_meta = {
-            "phase": "review_extracted",
-            "phase_status": "completed",
-            "active_artifact": "review.md",
-        }
-    store.write_text("review.md", generate_review_md(all_findings), meta=review_meta)
+    store.write_text("review.md", generate_review_md(all_findings))
 
     result = summarize(all_findings)
     result["status"] = "ok"

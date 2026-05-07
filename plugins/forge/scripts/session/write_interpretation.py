@@ -75,11 +75,7 @@ def write_interpretation(session_dir, perspective, content):
         store.write_text(backup.name, raw_content)
         backup_created = True
 
-    store.write_text(
-        target.name,
-        content,
-        meta={"active_artifact": target.name},
-    )
+    store.write_text(target.name, content)
 
     return {
         "path": str(target),

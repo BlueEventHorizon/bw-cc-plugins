@@ -142,13 +142,12 @@ def update_items_batch(items, updates_list):
     return updated_ids
 
 
-def write_plan(session_dir, plan_data, meta=None):
+def write_plan(session_dir, plan_data):
     """plan.yaml を書き戻す。
 
     Args:
         session_dir: セッションディレクトリパス
         plan_data: items を含む dict
-        meta: 書き込み後に更新する session meta。None の場合は active_artifact のみ。
 
     Returns:
         str: 書き出したファイルのパス
@@ -169,10 +168,8 @@ def write_plan(session_dir, plan_data, meta=None):
         ordered_items.append(ordered)
 
     sections = [("items", ordered_items)]
-    if meta is None:
-        meta = {"active_artifact": "plan.yaml"}
     output_path = SessionStore(session_dir).write_nested_yaml(
-        "plan.yaml", sections, meta=meta
+        "plan.yaml", sections
     )
     return str(output_path)
 
