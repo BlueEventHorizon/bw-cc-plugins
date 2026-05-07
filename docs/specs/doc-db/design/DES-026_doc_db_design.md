@@ -527,7 +527,7 @@ sequenceDiagram
 | Index build スケルトン | `plugins/doc-advisor/scripts/embed_docs.py` | コピー → chunk 単位に拡張 |
 | 検索 orchestrator スケルトン | `plugins/doc-advisor/scripts/search_docs.py` | コピー → Hybrid + Rerank 拡張 |
 | Lexical 検索の起点 | `plugins/doc-advisor/scripts/grep_docs.py` | コピー → スコアリング追加 |
-| Index 読み書きパターン | `plugins/doc-advisor/scripts/code_index/core.py` | schema_version 検証パターンを採用 |
+
 | `.doc_structure.yaml` 解決 | `plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py` | コピー → `plugins/doc-db/scripts/doc_structure.py` として自 plugin 内に閉じる（forge は設計時の参照元、runtime 依存は持たない） |
 
 **新規作成（doc-advisor に該当なし）**:
