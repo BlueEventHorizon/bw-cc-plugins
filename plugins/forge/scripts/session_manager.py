@@ -20,7 +20,6 @@ import glob
 import json
 import os
 import shutil
-import subprocess
 import sys
 
 from session.meta import (
@@ -42,98 +41,10 @@ DEFAULT_RESUME_POLICY = {
     "review": "resume",
 }
 
-# monitor launcher.py 起動の既定タイムアウト
-MONITOR_LAUNCH_TIMEOUT = 5.0
-
-# テスト / 特殊環境向け: monitor 起動を抑止する環境変数
-SKIP_MONITOR_ENV = "FORGE_SESSION_SKIP_MONITOR"
-
-
-def _should_skip_monitor():
-    val = os.environ.get(SKIP_MONITOR_ENV, "").strip().lower()
-    return val in ("1", "true", "yes", "on")
-
 
 # ---------------------------------------------------------------------------
 # ヘルパー
 # ---------------------------------------------------------------------------
-
-
-def ensure_monitor_running(session_dir, skill, timeout=MONITOR_LAUNCH_TIMEOUT):
-    """monitor/launcher.py を起動して server.py を fork 起動する。
-
-    非ブロッキング設計: 失敗しても init 自体は成功させる。
-    launcher.py は server.py を start_new_session=True で fork し、
-    server.pid の出現を短時間待ってから同期的に終了するため、
-    ここでは launcher.py の exit を待てば monitor 起動の成否が判る。
-
-    Args:
-        session_dir: セッションディレクトリの絶対パス
-        skill: skill 名(launcher.py の --skill に渡す)
-        timeout: launcher.py の最大実行時間(秒)
-
-    Returns:
-        dict: {"ok": True, "monitor_dir", "port", "url"} or
-              {"ok": False, "reason": <str>}
-    """
-    launcher = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "monitor", "launcher.py"
-    )
-    if not os.path.isfile(launcher):
-        print(f"警告: monitor launcher.py が見つかりません: {launcher}",
-              file=sys.stderr)
-        return {"ok": False, "reason": "launcher_not_found"}
-
-    try:
-        proc = subprocess.Popen(
-            [sys.executable, launcher,
-             "--skill", skill,
-             "--session-dir", session_dir],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            start_new_session=True,
-        )
-    except OSError as e:
-        print(f"警告: monitor launcher.py の起動に失敗: {e}", file=sys.stderr)
-        return {"ok": False, "reason": "popen_failed", "error": str(e)}
-
-    try:
-        stdout, stderr = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        try:
-            proc.communicate(timeout=1.0)
-        except subprocess.TimeoutExpired:
-            pass
-        print(
-            f"警告: monitor 起動が {timeout}s 以内に完了しませんでした",
-            file=sys.stderr,
-        )
-        return {"ok": False, "reason": "launcher_timeout"}
-
-    if proc.returncode != 0:
-        err = stderr.decode("utf-8", errors="replace").strip()
-        print(
-            f"警告: monitor 起動失敗(exit={proc.returncode}): {err}",
-            file=sys.stderr,
-        )
-        return {
-            "ok": False,
-            "reason": "launcher_exit_error",
-            "returncode": proc.returncode,
-        }
-
-    try:
-        info = json.loads(stdout.decode("utf-8", errors="replace"))
-    except (json.JSONDecodeError, ValueError) as e:
-        print(
-            f"警告: monitor launcher の JSON 出力パース失敗: {e}",
-            file=sys.stderr,
-        )
-        return {"ok": False, "reason": "json_parse_error"}
-
-    return {"ok": True, **info}
 
 
 def generate_session_name(skill):
@@ -221,23 +132,9 @@ def cmd_init(args, remaining):
     yaml_path = os.path.join(session_dir, "session.yaml")
     write_flat_yaml(yaml_path, data, field_order=SESSION_FIELD_ORDER)
 
-    # monitor(ブラウザ進捗表示)の自動起動 — 失敗しても init は成功させる
-    if _should_skip_monitor():
-        monitor_result = {"ok": False, "reason": "skipped_by_env"}
-    else:
-        try:
-            monitor_result = ensure_monitor_running(
-                os.path.abspath(session_dir), skill
-            )
-        except Exception as e:  # noqa: BLE001 - init を絶対に失敗させない
-            print(f"警告: monitor 起動中に予期せぬ例外: {e}", file=sys.stderr)
-            monitor_result = {"ok": False, "reason": "unexpected_error",
-                              "error": str(e)}
-
     return {
         "status": "created",
         "session_dir": session_dir,
-        "monitor": monitor_result,
     }
 
 
@@ -299,7 +196,7 @@ def cmd_update_meta(args):
         "active_artifact": args.active_artifact,
     }
     try:
-        return update_session_meta(args.session_dir, updates, notify=True)
+        return update_session_meta(args.session_dir, updates)
     except (FileNotFoundError, ValueError, OSError) as e:
         return {"status": "error", "error": str(e)}
 

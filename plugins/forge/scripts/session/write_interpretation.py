@@ -72,13 +72,12 @@ def write_interpretation(session_dir, perspective, content):
         # shutil.copyfile は書き込みがアトミックでないため tmp 経由で行う
         with open(str(target), "r", encoding="utf-8") as f:
             raw_content = f.read()
-        store.write_text(backup.name, raw_content, notify=False)
+        store.write_text(backup.name, raw_content)
         backup_created = True
 
     store.write_text(
         target.name,
         content,
-        notify=True,
         meta={"active_artifact": target.name},
     )
 

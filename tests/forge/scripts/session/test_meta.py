@@ -53,7 +53,6 @@ class TestUpdateSessionMeta(_FsTestCase):
                 "focus": "line1\nline2",
                 "active_artifact": "refs.yaml",
             },
-            notify=False,
         )
 
         self.assertEqual(result["status"], "ok")
@@ -68,12 +67,10 @@ class TestUpdateSessionMeta(_FsTestCase):
         update_session_meta(
             str(self.session_dir),
             {"waiting_type": "user_input", "waiting_reason": "needs answer"},
-            notify=False,
         )
         update_session_meta(
             str(self.session_dir),
             {"waiting_type": "none"},
-            notify=False,
         )
 
         data = read_yaml(str(self.session_dir / "session.yaml"))
@@ -84,7 +81,6 @@ class TestUpdateSessionMeta(_FsTestCase):
         update_session_meta(
             str(self.session_dir),
             {"phase": "completed", "phase_status": "completed"},
-            notify=False,
         )
 
         data = read_yaml(str(self.session_dir / "session.yaml"))
@@ -93,14 +89,13 @@ class TestUpdateSessionMeta(_FsTestCase):
     def test_invalid_phase_status_raises(self):
         with self.assertRaises(ValueError):
             update_session_meta(
-                str(self.session_dir), {"phase_status": "done"}, notify=False
+                str(self.session_dir), {"phase_status": "done"}
             )
 
     def test_field_order_keeps_meta_before_extra_fields(self):
         update_session_meta(
             str(self.session_dir),
             {"active_artifact": "plan.yaml"},
-            notify=False,
         )
 
         lines = (self.session_dir / "session.yaml").read_text(
@@ -119,7 +114,7 @@ class TestUpdateSessionMetaWarning(unittest.TestCase):
             session_dir = tmpdir / "review-abc123"
             session_dir.mkdir()
             result = update_session_meta_warning(
-                str(session_dir), {"active_artifact": "plan.yaml"}, notify=False
+                str(session_dir), {"active_artifact": "plan.yaml"}
             )
             self.assertEqual(result["status"], "skipped")
         finally:

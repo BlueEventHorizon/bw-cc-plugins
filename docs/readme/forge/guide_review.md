@@ -125,31 +125,3 @@ A session directory is created under `.claude/.temp/` during review.
 | `plan.yaml`    | Fix plan and progress state                   |
 
 Automatically deleted on normal completion. On interruption, the directory remains and a resume is proposed on next launch.
-
----
-
-## Browser monitor module
-
-`/forge:review` and the `/forge:start-*` skills automatically launch a **monitor module**
-(`plugins/forge/scripts/monitor/`) when a session is created. An SSE server watches the
-session directory and pushes updates to the browser in real time.
-
-- **No user action required**: `session_manager` forks the monitor asynchronously at the
-  end of `cmd_init()`.
-- **URL**: `http://localhost:8765/` (falls back to 8766–8775 if in use).
-- **Skill-specific templates**:
-  - `review` → Findings list (severity filters + progress bar)
-  - `start-requirements` / `start-design` / `start-plan` → Document preview
-  - `start-implement` → Task progress
-  - `start-uxui-design` → ASCII art + design tokens
-- **Notification paths**: Direct notifications from writer scripts + 30-second mtime
-  heartbeat fallback.
-- **Auto-stop**: The server shuts down when the session directory is deleted.
-
-Set `FORGE_SESSION_SKIP_MONITOR=1` / `FORGE_MONITOR_NO_OPEN=1` to skip launch or to
-suppress the browser open. Manual launch:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/plugins/forge/scripts/monitor/launcher.py \
-  --session-dir <session-directory> --skill <skill-name>
-```

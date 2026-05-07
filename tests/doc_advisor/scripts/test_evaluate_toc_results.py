@@ -10,18 +10,27 @@ import unittest
 from pathlib import Path
 
 # テスト対象モジュールのインポート
+# meta/ は .gitignore 対象（CLAUDE.md 参照: 検索品質測定はローカルのみ）。
+# 配置されていない環境ではテストをスキップする。
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "meta" / "test_docs"))
 
-from evaluate_toc_results import (
-    evaluate_entry,
-    load_results_json,
-    match_results_to_queries,
-    print_report,
-    save_results,
-)
+try:
+    from evaluate_toc_results import (
+        evaluate_entry,
+        load_results_json,
+        match_results_to_queries,
+        print_report,
+        save_results,
+    )
+    _HAS_EVALUATE_MODULE = True
+except ImportError:
+    _HAS_EVALUATE_MODULE = False
+
+_SKIP_REASON = "meta/test_docs/evaluate_toc_results.py is local-only (.gitignore'd)"
 
 
+@unittest.skipUnless(_HAS_EVALUATE_MODULE, _SKIP_REASON)
 class TestEvaluateEntry(unittest.TestCase):
     """evaluate_entry() のテスト"""
 
@@ -134,6 +143,7 @@ class TestEvaluateEntry(unittest.TestCase):
         self.assertIn("path/a.md", result["missing"])
 
 
+@unittest.skipUnless(_HAS_EVALUATE_MODULE, _SKIP_REASON)
 class TestMatchResultsToQueries(unittest.TestCase):
     """match_results_to_queries() のテスト"""
 
@@ -222,6 +232,7 @@ class TestMatchResultsToQueries(unittest.TestCase):
                 self.assertEqual(r["status"], "error")
 
 
+@unittest.skipUnless(_HAS_EVALUATE_MODULE, _SKIP_REASON)
 class TestLoadResultsJson(unittest.TestCase):
     """load_results_json() のテスト"""
 
@@ -245,6 +256,7 @@ class TestLoadResultsJson(unittest.TestCase):
             os.unlink(tmp_path)
 
 
+@unittest.skipUnless(_HAS_EVALUATE_MODULE, _SKIP_REASON)
 class TestPrintReport(unittest.TestCase):
     """print_report() のテスト"""
 
@@ -284,6 +296,7 @@ class TestPrintReport(unittest.TestCase):
         self.assertEqual(summary["total"], 0)
 
 
+@unittest.skipUnless(_HAS_EVALUATE_MODULE, _SKIP_REASON)
 class TestSaveResults(unittest.TestCase):
     """save_results() のテスト"""
 

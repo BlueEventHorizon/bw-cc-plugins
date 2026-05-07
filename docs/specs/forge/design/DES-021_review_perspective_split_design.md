@@ -328,7 +328,7 @@ python3 extract_review_findings.py <session_dir>
 実装では `extract_review_findings.py` は CLI orchestration に絞る。review markdown の parse は
 `plugins/forge/scripts/review/findings_parser.py`、`plan.yaml` / `review.md` の文字列生成は
 `plugins/forge/scripts/review/findings_renderer.py` が担う。session_dir mode の書き込みは
-`SessionStore` 経由で行い、artifact write、monitor 通知、`session.yaml` meta 更新の順序を統一する。
+`SessionStore` 経由で行い、artifact write、`session.yaml` meta 更新の順序を統一する。
 
 ---
 

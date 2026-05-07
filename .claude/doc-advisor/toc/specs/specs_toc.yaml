@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-06T00:44:18Z
-  file_count: 42
+  generated_at: 2026-05-07T15:03:00Z
+  file_count: 45
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -300,39 +300,6 @@ docs:
       - 3-mode search
       - search quality
       - scalability
-  docs/specs/doc-advisor/design/DES-007_code_index_design.md:
-    doc_type: design
-    title: Code Index Design
-    purpose: Defines architecture and implementation of persistent code index using AST extraction and two-stage search (keyword matching and AI inference)
-    content_details:
-      - File scanning and exclusion logic
-      - Language-specific metadata extraction via MCP servers
-      - Import dependency graph construction and traversal
-      - "Two-stage search: Stage 1 keyword matching and Stage 2 AI inference"
-      - Difference detection via SHA-256 checksums
-      - Index JSON schema and versioning strategy
-      - Swift language subagent interface and MCP tool integration
-      - Common metadata format for language subagents
-      - Error handling and recovery procedures
-      - Test design for code index components
-    applicable_tasks:
-      - Code search implementation
-      - Project-wide code discovery
-      - Dependency impact analysis
-      - Architecture design review
-      - New language plugin addition
-      - Code index schema updates
-    keywords:
-      - code index
-      - AST extraction
-      - import graph
-      - keyword search
-      - MCP server
-      - Swift-Selena
-      - difference detection
-      - schema versioning
-      - dependency analysis
-      - language plugin
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
     title: Context-External Search Specification
@@ -556,39 +523,6 @@ docs:
       - incremental version update
       - idempotent
       - data format evolution
-  docs/specs/doc-advisor/requirements/REQ-004_code_index.md:
-    doc_type: requirement
-    title: Code Index Requirements
-    purpose: Defines requirements for extracting source code structure information (imports, exports, documentation comments) and generating searchable code index to enable AI agents to rapidly identify relevant source files in large projects
-    content_details:
-      - Scope includes Swift source files and test files
-      - Auto-detection of target files and recursive scanning of project root
-      - Language plugin architecture for extensibility to multiple languages
-      - Metadata extraction including imports, exports, documentation comments, section structure
-      - Swift language plugin with AST-based analysis via Swift-Selena MCP server
-      - Import graph construction to track file dependencies and affected files
-      - "Two-stage search: Stage 1 keyword matching and Stage 2 AI inference for final file selection"
-      - Differential index updates with SHA-256 file change detection
-      - Index persistence in JSON format at .claude/doc-advisor/code/code_index.json
-      - CLI interface for index generation, keyword search, impact analysis, and freshness check
-    applicable_tasks:
-      - Code index generation and maintenance
-      - Identifying relevant source files for task implementation
-      - Performing impact analysis across project files
-      - Validating code dependencies and import relationships
-      - Adding support for new programming languages
-      - Optimizing large-scale project search performance
-    keywords:
-      - code index
-      - source code search
-      - language plugin
-      - import graph
-      - metadata extraction
-      - Swift
-      - semantic search
-      - two-stage search
-      - MCP server
-      - AST analysis
   docs/specs/doc-advisor/requirements/technical_qa.md:
     doc_type: requirement
     title: Semantic Search Technical Q&A
@@ -648,6 +582,216 @@ docs:
       - hybrid search
       - information retrieval
       - tokenization
+  docs/specs/doc-db/design/DES-026_doc_db_design.md:
+    doc_type: design
+    title: DES-026 doc-db Plugin Design
+    purpose: Defines architecture, module design, data format, and search orchestration for doc-db plugin with heading-unit chunk extraction, Hybrid search combining Embedding and Lexical methods, and LLM Rerank with dynamic token budget control
+    content_details:
+      - Architecture with Skills, Orchestration, Search, Storage layers
+      - Heading unit chunk extraction with char_range and chunk_id tracking
+      - Index format in JSON with metadata and chunk-level embedding vectors
+      - Hybrid search using Reciprocal Rank Fusion for Embedding and Lexical score integration
+      - LLM Rerank using gpt-4o-mini with context window and token budget constraints
+      - doc_type unit Index separation (requirement, design, plan for specs; single Index for rules)
+      - Two-phase consistency between Index and checksums.yaml with generated_at synchronization
+      - Golden set evaluation framework measuring recall, precision, false negatives, API costs
+      - Search orchestrator handling Index staleness checks, auto-rebuild, and fallback on rerank failure
+    applicable_tasks:
+      - doc-db plugin implementation
+      - Chunk extraction and Index building design
+      - Hybrid search algorithm implementation
+      - LLM Rerank integration with failure recovery
+      - Index consistency and persistence review
+      - Golden set evaluation framework setup
+      - API cost and token usage measurement
+    keywords:
+      - doc-db
+      - chunk extraction
+      - Hybrid search
+      - Embedding
+      - Lexical search
+      - LLM Rerank
+      - Index design
+      - RRF
+      - gpt-4o-mini
+      - evaluation
+  docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md:
+    doc_type: requirement
+    title: "FNC-005: doc-db Index Build Requirements"
+    purpose: Defines requirements for splitting documents into heading-based chunks, vectorizing them with embeddings, and persisting to local index with doc-type categorization
+    content_details:
+      - Chunk splitting at Markdown heading boundaries with hierarchy path
+      - Multi-vector embedding at chunk granularity
+      - Separate index management by doc_type (specs) and single category (rules)
+      - Build state tracking (complete/incomplete) based on chunk failure presence
+      - Full index regeneration capability via --full flag
+      - Difference update mechanism with checksum-based change detection
+      - Schema metadata (version, model name, dimensions)
+    applicable_tasks:
+      - Index build and regeneration
+      - Multi-vector embedding implementation
+      - Chunk-based semantic search preparation
+      - Document indexing for doc-db
+    keywords:
+      - doc-db
+      - chunk
+      - embedding
+      - index build
+      - multi-vector
+      - heading hierarchy
+      - doc_type categorization
+      - checksum
+      - schema metadata
+      - semantic search
+  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md:
+    doc_type: requirement
+    title: "FNC-006: doc-db Search Specification"
+    purpose: Defines hybrid search combining embedding search, lexical search, and LLM reranking to retrieve and rank document candidates based on user queries
+    content_details:
+      - Natural language and ID-based queries
+      - Configurable result limit (top-N)
+      - Multiple search modes (embedding-only, lexical-only, hybrid, hybrid+rerank)
+      - Multi-vector aggregation for chunks and fields
+      - Lexical score calculation with exact ID and named entity matching
+      - Embedding and lexical score integration
+      - LLM-based reranking with fallback to integrated score
+      - Result output with document path, chunk heading, text, and score breakdown
+      - Compatibility with existing query-specs interface for doc_type filtering
+      - Error handling for missing index or API failures
+    applicable_tasks:
+      - Hybrid search implementation
+      - Embedding search integration
+      - Lexical search engine setup
+      - LLM reranking pipeline implementation
+      - Search result output formatting
+      - Score aggregation and integration
+      - doc-db search interface design
+      - Search performance optimization
+    keywords:
+      - search
+      - hybrid
+      - embedding
+      - lexical
+      - reranking
+      - LLM
+      - vector
+      - doc-db
+      - relevance
+      - ranking
+  docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md:
+    doc_type: requirement
+    title: "FNC-007: doc-db Evaluation Specification"
+    purpose: Specifies requirements for measuring doc-db search quality using golden set and comparing ToC, current Embedding, and doc-db methods with evaluation reports
+    content_details:
+      - Search quality measurement (recall, precision, false negative count)
+      - Performance metrics (search time, index generation time)
+      - Cost metrics (Embedding API, LLM Rerank API call count, token consumption)
+      - Aggregated report table format (recall, precision, search time, cost by method)
+      - False negative analysis and trend classification
+      - Markdown report output format
+      - Comparison of ToC method, current Embedding method (doc-advisor), and doc-db method
+      - Golden set evaluation prerequisites and dependencies
+    applicable_tasks:
+      - doc-db search quality evaluation
+      - Search method comparison and validation
+      - doc-db adoption decision making
+      - Performance and cost analysis
+      - Golden set test case validation
+    keywords:
+      - doc-db
+      - evaluation
+      - search quality
+      - golden set
+      - Embedding
+      - recall
+      - precision
+      - false negative
+      - performance metrics
+      - cost analysis
+  docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md:
+    doc_type: requirement
+    title: doc-db Search Quality Requirements
+    purpose: Defines search quality requirements for doc-db system, ensuring recall equivalent to doc-advisor ToC and embedding search methods
+    content_details:
+      - QUL-01 recall requirement equal to ToC and embedding methods
+      - QUL-02 false negative classification and root cause analysis
+      - QUL-03 result explainability with chunk and score traceability
+      - QUL-04 evaluation metrics for ToC vs doc-db method decision
+      - Baseline comparison against doc-advisor ToC method
+      - Baseline comparison against current embedding method
+      - Golden set evaluation criteria
+    applicable_tasks:
+      - doc-db search implementation
+      - Search quality evaluation planning
+      - Baseline method comparison testing
+      - False negative pattern analysis
+      - Search result explainability implementation
+      - Evaluation metric definition
+    keywords:
+      - doc-db
+      - search quality
+      - recall
+      - embedding
+      - ToC
+      - golden set
+      - evaluation
+      - false negative
+  docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md:
+    doc_type: requirement
+    title: doc-db Zero Dependency Specification
+    purpose: Defines distribution constraints requiring Python standard library only, no resident server processes, and exclusive use of OpenAI API for doc-db deployment
+    content_details:
+      - Standard library only implementation requirement
+      - No pip install requirement
+      - No resident server process requirement
+      - OpenAI API exclusive adoption constraint
+      - Environment prerequisites and compliance scope
+      - Future exception conditions for performance and quality issues
+      - Related requirements mapping
+    applicable_tasks:
+      - doc-db architectural design
+      - Dependency selection review
+      - API provider selection verification
+      - Distribution method planning
+    keywords:
+      - doc-db
+      - zero dependency
+      - Python standard library
+      - OpenAI API
+      - distribution constraint
+      - no pip install
+      - embedded search
+      - no server process
+  docs/specs/doc-db/requirements/REQ-006_doc_db.md:
+    doc_type: requirement
+    title: doc-db plugin Requirements Definition
+    purpose: Defines requirements for doc-db plugin, a hybrid search system combining embedding and lexical search with LLM reranking for document retrieval
+    content_details:
+      - Heading-unit chunk multi-vector embedding index generation
+      - Hybrid search with embedding and lexical methods plus LLM reranking
+      - Golden set-based search quality evaluation
+      - doc-advisor baseline preservation for comparison
+      - Recall requirement equal to or exceeding ToC and current embedding methods
+      - Standard library only implementation without external dependencies
+      - doc-db independent operation without affecting doc-advisor behavior
+    applicable_tasks:
+      - Search quality evaluation planning
+      - Embedding system architecture design
+      - Hybrid search implementation
+      - LLM reranking integration
+      - Comparative evaluation setup
+      - Plugin independence validation
+    keywords:
+      - doc-db
+      - hybrid search
+      - embedding
+      - lexical search
+      - LLM rerank
+      - golden set
+      - recall
+      - chunk
+      - doc_type
+      - search quality
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* skills orchestrator design
@@ -680,68 +824,36 @@ docs:
       - DES-010
   docs/specs/forge/design/DES-011_session_management_design.md:
     doc_type: design
-    title: Session Management Design for Forge Orchestrator
-    purpose: Defines session lifecycle design, session_manager.py implementation patterns, and SKILL.md session management structure for all forge orchestrator skills including resume policy and state management
+    title: Session Management Design
+    purpose: Defines session lifecycle, session_manager.py architecture, and session integration patterns for forge orchestrator skills
     content_details:
-      - Session lifecycle design and state transitions
-      - session_manager.py subcommand design (init, find, cleanup, update-meta)
-      - resume_policy design and skill-specific defaults
-      - SKILL.md common pattern structure (event preparation, session management, business phases, teardown)
-      - session.yaml field design including phase, phase_status, focus, waiting_type, active_artifact
-      - Session writer notification and monitor integration patterns
-      - Session data flow with parallel agent context gathering
-      - Path traversal prevention and atomic file operations
+      - Why file-based communication between phases
+      - Why session_manager.py script delegation
+      - Avoiding duplicate state sources
+      - session.yaml manifest structure
+      - SKILL.md structure pattern
+      - Session lifecycle flowchart (creation, detection, cleanup)
+      - resume_policy design by skill
+      - session_manager.py subcommands (init, find, cleanup, update-meta)
+      - update-meta field update rules
+      - session.yaml field ordering
+      - writer meta update timing and patterns
     applicable_tasks:
-      - Orchestrator skill implementation and development
+      - Implementing orchestrator skills (review, start-design, start-plan, start-requirements, start-implement)
       - Session management infrastructure design
-      - SKILL.md structure standardization
-      - Session state and lifecycle testing
-      - Monitor integration design
-      - Session recovery and resume policy implementation
+      - Data flow between skill phases
+      - Session state tracking and recovery
+      - Python script design for session operations
     keywords:
       - session management
+      - orchestrator
       - session_manager.py
-      - orchestrator pattern
+      - session lifecycle
       - resume_policy
       - session.yaml
-      - lifecycle design
-      - context gathering
-      - atomic operations
       - phase tracking
-  docs/specs/forge/design/DES-012_show_browser_design.md:
-    doc_type: design
-    title: DES-012 show-browser Design Specification
-    purpose: "Defines the architecture, module design, and implementation of forge plugin's real-time progress monitoring interface (monitor module) integrated into session management"
-    content_details:
-      - Monitor module internal architecture
-      - Auto-launch via session_manager.cmd_init
-      - Dual notification pathways - direct script notification and mtime heartbeat
-      - Skill-to-template automatic mapping
-      - Multi-port fallback strategy (8765-8775)
-      - Server lifecycle and process cleanup
-      - SSE event format and session adapter contract
-      - 3-layer design token system with shared assets
-      - Security constraints and input validation
-      - Monitor directory cleanup and orphan process detection
-    applicable_tasks:
-      - Monitor module implementation
-      - Session manager integration
-      - Real-time progress display implementation
-      - Template system design and configuration
-      - Multi-skill concurrent monitoring
-      - SSE server implementation
-      - Process lifecycle management
-    keywords:
-      - monitor module
-      - SSE
-      - session_manager
-      - real-time
-      - template auto-selection
-      - heartbeat
-      - port fallback
-      - notify_session_update
-      - skill mapping
-      - design token
+      - file-based communication
+      - context persistence
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     doc_type: design
     title: DES-013 Context Gathering Task Design
@@ -799,33 +911,34 @@ docs:
       - file-based data exchange
   docs/specs/forge/design/DES-015_review_workflow_design.md:
     doc_type: design
-    title: DES-015 forge Review Workflow Design
-    purpose: Defines the orchestration design for the review workflow, including phase breakdown, data flow, skill delegation, and session management between reviewer, evaluator, and fixer agents.
+    title: Review Workflow Design
+    purpose: Specifies the review orchestration workflow with phases, skill responsibilities, session management, and parallel execution strategy for code and document reviews
     content_details:
-      - "Phase structure: argument parsing, target resolution, review execution, findings extraction, evaluation, correction (interactive/auto modes), completion"
-      - "Skill delegation architecture: reviewer, evaluator, present-findings, fixer"
-      - Session directory design with refs.yaml and plan.yaml
-      - Perspective-based parallel review execution
-      - Auto mode vs interactive mode workflows
-      - Re-review loop for fixing-induced issues
+      - Seven-phase workflow from argument parsing through completion
+      - Session working directory design with refs.yaml, review_*.md, and plan.yaml
+      - Skill interfaces for reviewer, evaluator, fixer, and present-findings
+      - Parallel execution patterns for reviewers and evaluators per perspective
+      - Core loop identical across auto and interactive modes
+      - Plan YAML structure with recommendation, auto_fixable, and reason fields
       - Reference document collection strategy by review type
     applicable_tasks:
-      - Code review workflow implementation
-      - Review skill orchestration design
-      - Session state management implementation
-      - Multi-perspective parallel execution design
-      - Interactive vs auto mode workflow implementation
+      - Code review implementation
+      - Design review implementation
+      - Document review implementation
+      - Review workflow orchestration
+      - Auto-fix mode development
+      - Session management implementation
+      - Review result aggregation
     keywords:
       - review workflow
-      - orchestration
-      - perspective-based review
-      - session management
-      - refs.yaml
-      - plan.yaml
+      - orchestrator
+      - perspective
       - evaluator
-      - reviewer
       - fixer
-      - present-findings
+      - session management
+      - plan.yaml
+      - refs.yaml
+      - parallel execution
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md:
     doc_type: design
     title: Design for .doc_structure.yaml Version Management
@@ -968,36 +1081,35 @@ docs:
   docs/specs/forge/design/DES-021_review_perspective_split_design.md:
     doc_type: design
     title: DES-021 Reviewer Perspective Split Design
-    purpose: Defines perspective-based division of reviewer agents and multi-perspective parallel review architecture for improved review quality and reduced analysis bias
+    purpose: Defines design for splitting reviewer criteria by perspective and running multiple specialist agents in parallel to improve code review quality by addressing severity bias and context conflicts
     content_details:
-      - Problem analysis with severity bias and shallow depth trade-offs
-      - Perspective-based criteria file organization with Perspective section format
-      - Perspectives array schema for refs.yaml with name, criteria_path, section, output_path
-      - Single-perspective reviewer agent execution model
-      - Codex vs Claude engine parallel execution strategy
-      - Review result management with multiple review_*.md files and plan.yaml schema updates
-      - Extract_review_findings.py multi-file merge and ID numbering
-      - Evaluator parallel execution with individual eval_*.json output files
-      - Orchestrator batch merge pattern for plan.yaml
-      - Perspective definitions for requirement, design, plan, and code document types
+      - Perspective-based criteria splitting (logic, resilience, maintainability, architecture, alignment, completeness, consistency, verifiability)
+      - refs.yaml extension with perspectives array schema and validation
+      - Multiple reviewer agent parallel execution with output to review_*.md files
+      - Multiple result management with plan.yaml schema changes (recommendation, auto_fixable, reason, perspective fields)
+      - Evaluator parallel execution with eval_{perspective}.json output files and batch merge
+      - extract_review_findings.py multi-file merge with deduplication by title similarity and location
+      - "Perspective distribution: requirement (3), design (3), plan (2), code (3), generic (1)"
+      - Implementation order across session_format.md, review_criteria files, SKILL.md, and scripts
     applicable_tasks:
-      - Reviewer agent architecture design
-      - Parallel agent pattern implementation
-      - Review criteria file restructuring
-      - Session format and plan.yaml schema updates
-      - Multi-perspective evaluation system implementation
-      - Extract and evaluator script enhancement
+      - Review skill orchestration design
+      - Reviewer agent perspective-based implementation
+      - Evaluator parallel execution and output contract design
+      - extract_review_findings.py multi-file merge enhancement
+      - Session format schema updates for perspectives
+      - refs.yaml schema validation implementation
+      - Plan.yaml field extension for perspective tracking
     keywords:
-      - perspective
       - reviewer
-      - parallel
-      - criteria
-      - evaluation
-      - agent
-      - bias
-      - quality
-      - orchestrator
+      - perspective
+      - parallel agents
+      - review criteria
       - refs.yaml
+      - deduplication
+      - evaluator
+      - session_dir
+      - plan.yaml
+      - orchestrator
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     doc_type: design
     title: Parallel Agent Output Contract Pattern Design
@@ -1150,34 +1262,6 @@ docs:
       - YAML
       - Markdown
       - forge plugin
-  docs/specs/forge/requirements/REQ-002_skill_monitor.md:
-    doc_type: requirement
-    title: REQ-002 Monitor Skill Requirements
-    purpose: Specifies requirements for the monitor skill, a real-time session data display system for forge orchestrators with SSE server, file watching, and universal browser UI support
-    content_details:
-      - Session data browser display capability
-      - Real-time update mechanism via writer script direct notification and heartbeat polling
-      - Context isolation through independent processes
-      - Universal support for all orchestrators without skill-specific code
-      - SSE server endpoints for notification, session state, and update history
-      - Session file format schema support
-      - Browser UI with static HTML and JavaScript
-    applicable_tasks:
-      - Monitor skill implementation
-      - SSE server development
-      - Session display system design
-      - Browser integration and testing
-      - File watching and notification mechanism implementation
-    keywords:
-      - monitor skill
-      - SSE
-      - real-time update
-      - session display
-      - orchestrator
-      - heartbeat
-      - writer notification
-      - session_format.md
-      - independent process
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md:
     doc_type: requirement
     title: SKILL.md and Script Responsibility Separation Requirements
