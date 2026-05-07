@@ -66,7 +66,7 @@ tasks:
   - task_id: TASK-001
     title: 共通基盤モジュール一式（_utils / doc_structure / embedding_api）の配置
     priority: 95
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on: []
     group_id: "GROUP-001 (1/1)"
