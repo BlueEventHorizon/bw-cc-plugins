@@ -15,7 +15,7 @@ user-invocable: false
 > このファイルは fork されたサブエージェントである **あなた自身への実行指示書** である。
 > 親エージェントから渡された `$ARGUMENTS`（タスク説明）に対して、以下の手順を**あなた自身で実行**せよ。
 >
-> - ❌ 禁止: `Skill` ツールで `query-rules` / `query-specs` / `query-code` / `query-forge-rules` を呼ぶこと（無限再帰でハーネスが詰まる）
+> - ❌ 禁止: `Skill` ツールで `query-rules` / `query-specs` / `query-forge-rules` を呼ぶこと（無限再帰でハーネスが詰まる）
 > - ❌ 禁止: 「`/query-forge-rules` を実行します」のように、自分が呼び出されたスキルを再起動すること
 > - ✅ 必須: 下記 Procedure に従って Read 等の基本ツールで処理を完了させ、結果を返す
 

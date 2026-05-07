@@ -45,7 +45,7 @@ All notable changes to this project will be documented in this file.
 
 ### marketplace
 
-- **fix**: forge を 0.0.41、doc-advisor を 0.2.2 に更新。`context: fork` SKILL（query-rules / query-specs / query-code / query-forge-rules）が無限再帰でハーネスを詰まらせる重大バグを修正
+- **fix**: forge を 0.0.41、doc-advisor を 0.2.2 に更新。`context: fork` SKILL が無限再帰でハーネスを詰まらせる重大バグを修正
 
 ## [0.0.41] - 2026-04-28
 
