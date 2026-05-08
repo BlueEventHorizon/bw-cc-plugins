@@ -1,6 +1,9 @@
 # 要件定義書 デフォルトフォーマット
 
-プロジェクト固有の `spec_format.md` が見つからない場合に使用する汎用フォーマット。
+プロジェクト固有の「要件定義書 フォーマット」が見つからない場合に使用する汎用フォーマット。
+
+作成原則: `${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`
+要件との境界: `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`
 
 ---
 
