@@ -12,7 +12,6 @@ sys.path.insert(
 )
 
 from session.reader import (
-    MONITOR_SESSION_FILES,
     REFS_FILES,
     SESSION_FILES,
     read_entry,
@@ -93,10 +92,10 @@ class TestReadSessionFiles(_FsTestCase):
         self.assertIn("session.yaml", result["files"])
         self.assertNotIn("plan.yaml", result["files"])
 
-    def test_monitor_file_set(self):
+    def test_custom_session_files(self):
         result = read_session_files(
             str(self.session_dir),
-            session_files=MONITOR_SESSION_FILES,
+            session_files=["session.yaml", "requirements.md", "design.md"],
             refs_files=REFS_FILES,
         )
         self.assertIn("requirements.md", result["files"])

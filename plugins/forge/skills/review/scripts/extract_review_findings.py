@@ -19,7 +19,6 @@ if _loaded_review:
     if not loaded_path.startswith(_FORGE_SCRIPTS_STR):
         del sys.modules["review"]
 
-from monitor.notify import notify_session_update  # noqa: E402
 from review.findings_parser import (  # noqa: E402
     extract_findings,
     extract_perspective_from_filename,
@@ -100,16 +99,9 @@ def run_session_dir_mode(session_dir, review_only=False):
 
     store = SessionStore(session_path)
     if not review_only:
-        store.write_text("plan.yaml", generate_plan_yaml(all_findings), meta=None)
+        store.write_text("plan.yaml", generate_plan_yaml(all_findings))
 
-    review_meta = None
-    if not review_only:
-        review_meta = {
-            "phase": "review_extracted",
-            "phase_status": "completed",
-            "active_artifact": "review.md",
-        }
-    store.write_text("review.md", generate_review_md(all_findings), meta=review_meta)
+    store.write_text("review.md", generate_review_md(all_findings))
 
     result = summarize(all_findings)
     result["status"] = "ok"
@@ -131,7 +123,6 @@ def run_legacy_mode(review_md_path, output_path):
     findings = extract_findings(content)
     plan_path = Path(output_path)
     atomic_write_text(plan_path, generate_plan_yaml(findings))
-    notify_session_update(str(plan_path.parent), str(plan_path))
 
     result = summarize(findings)
     result["status"] = "ok"

@@ -128,11 +128,6 @@ def write_refs(session_dir, data):
     output_path = SessionStore(session_dir).write_nested_yaml(
         "refs.yaml",
         sections,
-        meta={
-            "phase": "context_ready",
-            "phase_status": "completed",
-            "active_artifact": "refs.yaml",
-        },
     )
     return str(output_path)
 

@@ -403,11 +403,6 @@ class TestMergeEvalsCli(_FsTestCase):
         self.assertEqual(output["should_continue"], True)
         self.assertEqual(output["not_auto_fixable"], [3])  # architecture id=1 → global 3
 
-        session = read_yaml(str(self.session_dir / "session.yaml"))
-        self.assertEqual(session["phase"], "evaluation_merged")
-        self.assertEqual(session["phase_status"], "completed")
-        self.assertEqual(session["active_artifact"], "plan.yaml")
-
     def test_no_eval_files(self):
         """eval_*.json が存在しない場合はエラーを stderr に出力。"""
         self._write_plan(_sample_plan_items())
