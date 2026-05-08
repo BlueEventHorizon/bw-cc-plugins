@@ -10,11 +10,16 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import chunk_extractor
-from _utils import calculate_file_hash, load_checksums, log, write_checksums_yaml
-from doc_structure import load_doc_structure, resolve_files, resolve_files_by_doc_type
+from _utils import calculate_file_hash, load_checksums
+from doc_structure import (
+    invert_doc_types_map,
+    load_doc_structure,
+    resolve_files,
+    resolve_files_by_doc_type,
+)
 from embedding_api import EMBEDDING_MODEL, call_embedding_api
 
 SCHEMA_VERSION = "1.0"
@@ -30,8 +35,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_index_path(project_root: Path, category: str) -> Path:
-    return project_root / f".claude/doc-db/index/{category}/{category}_index.json"
+def get_index_path(project_root: Path, category: str, doc_type: str = "") -> Path:
+    if category == "specs":
+        suffix = f"{doc_type}_index.json" if doc_type else "specs_index.json"
+        return project_root / f".claude/doc-db/index/specs/{suffix}"
+    return project_root / ".claude/doc-db/index/rules/rules_index.json"
 
 
 def get_checksums_path(index_path: Path) -> Path:
@@ -54,18 +62,74 @@ def load_index(index_path: Path) -> Dict:
         return json.load(f)
 
 
-def save_index(index: Dict, index_path: Path):
+def _render_checksums_content(checksums: Dict[str, str], generated_at: str) -> str:
+    lines = [
+        "# doc-db checksums",
+        "# Auto-generated - do not edit",
+        f"generated_at: {generated_at}",
+        f"file_count: {len(checksums)}",
+        "checksums:",
+    ]
+    for rel_path, hash_value in sorted(checksums.items()):
+        lines.append(f"  {rel_path}: {hash_value}")
+    return "\n".join(lines) + "\n"
+
+
+def save_index_and_checksums_two_phase(
+    index: Dict,
+    index_path: Path,
+    checksums: Dict[str, str],
+    checksums_path: Path,
+    generated_at: str,
+):
     index_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        dir=index_path.parent,
-        delete=False,
-        suffix=".tmp",
-    ) as tf:
-        tmp = Path(tf.name)
-        json.dump(index, tf, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp, index_path)
+    checksums_path.parent.mkdir(parents=True, exist_ok=True)
+    index_tmp = None
+    checksums_tmp = None
+    old_index_bytes = index_path.read_bytes() if index_path.exists() else None
+    old_checksums_bytes = checksums_path.read_bytes() if checksums_path.exists() else None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=index_path.parent,
+            delete=False,
+            suffix=".tmp",
+        ) as tf_index:
+            index_tmp = Path(tf_index.name)
+            json.dump(index, tf_index, ensure_ascii=False, separators=(",", ":"))
+            tf_index.flush()
+            os.fsync(tf_index.fileno())
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=checksums_path.parent,
+            delete=False,
+            suffix=".tmp",
+        ) as tf_checksums:
+            checksums_tmp = Path(tf_checksums.name)
+            tf_checksums.write(_render_checksums_content(checksums, generated_at))
+            tf_checksums.flush()
+            os.fsync(tf_checksums.fileno())
+        os.replace(index_tmp, index_path)
+        try:
+            os.replace(checksums_tmp, checksums_path)
+        except Exception:
+            if old_index_bytes is not None:
+                index_path.write_bytes(old_index_bytes)
+            else:
+                index_path.unlink(missing_ok=True)
+            if old_checksums_bytes is not None:
+                checksums_path.write_bytes(old_checksums_bytes)
+            else:
+                checksums_path.unlink(missing_ok=True)
+            raise
+    except Exception:
+        if index_tmp and index_tmp.exists():
+            index_tmp.unlink(missing_ok=True)
+        if checksums_tmp and checksums_tmp.exists():
+            checksums_tmp.unlink(missing_ok=True)
+        raise
 
 
 def resolve_target_files(project_root: Path, category: str, doc_type: str) -> List[str]:
@@ -76,6 +140,13 @@ def resolve_target_files(project_root: Path, category: str, doc_type: str) -> Li
             files.extend(resolve_files_by_doc_type(config, category, t, str(project_root)))
         return sorted(set(files))
     return resolve_files(config, category, str(project_root))
+
+
+def resolve_specs_doc_types(project_root: Path) -> List[str]:
+    config, _ = load_doc_structure(str(project_root))
+    specs = config.get("specs", {})
+    doc_types_map = specs.get("doc_types_map", {})
+    return sorted(invert_doc_types_map(doc_types_map).keys())
 
 
 def _validate_existing_schema(existing: Dict, full: bool):
@@ -92,8 +163,8 @@ def _embed_chunks(chunk_records: List[Dict], api_key: str):
     return chunk_records
 
 
-def run_build(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> int:
-    index_path = get_index_path(project_root, category)
+def _run_build_one(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> int:
+    index_path = get_index_path(project_root, category, doc_type)
     checksums_path = get_checksums_path(index_path)
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
@@ -183,8 +254,7 @@ def run_build(project_root: Path, category: str, full: bool = False, doc_type: s
         },
         "entries": entries,
     }
-    save_index(index, index_path)
-    write_checksums_yaml(current_checksums, checksums_path, header_comment="doc-db checksums")
+    save_index_and_checksums_two_phase(index, index_path, current_checksums, checksums_path, now)
     print(
         json.dumps(
             {
@@ -198,14 +268,28 @@ def run_build(project_root: Path, category: str, full: bool = False, doc_type: s
     return 0
 
 
-def run_check(project_root: Path, category: str):
-    index_path = get_index_path(project_root, category)
+def run_build(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> int:
+    if category == "specs":
+        if doc_type:
+            doc_types = [x.strip() for x in doc_type.split(",") if x.strip()]
+        else:
+            doc_types = resolve_specs_doc_types(project_root)
+        for one_type in doc_types:
+            rc = _run_build_one(project_root, category, full=full, doc_type=one_type)
+            if rc != 0:
+                return rc
+        return 0
+    return _run_build_one(project_root, category, full=full, doc_type=doc_type)
+
+
+def _run_check_one(project_root: Path, category: str, doc_type: str = ""):
+    index_path = get_index_path(project_root, category, doc_type)
     checksums_path = get_checksums_path(index_path)
     if not index_path.exists():
         print(json.dumps({"status": "stale", "reason": "index_not_found"}))
         return 0
     index = load_index(index_path)
-    files = resolve_target_files(project_root, category, "")
+    files = resolve_target_files(project_root, category, doc_type)
     disk = {p: calculate_file_hash(project_root / p) for p in files}
     saved = load_checksums(checksums_path)
     if disk != saved:
@@ -217,6 +301,15 @@ def run_check(project_root: Path, category: str):
         return 0
     print(json.dumps({"status": "fresh"}))
     return 0
+
+
+def run_check(project_root: Path, category: str):
+    if category == "specs":
+        doc_types = resolve_specs_doc_types(project_root)
+        for one_type in doc_types:
+            _run_check_one(project_root, category, one_type)
+        return 0
+    return _run_check_one(project_root, category)
 
 
 def main():

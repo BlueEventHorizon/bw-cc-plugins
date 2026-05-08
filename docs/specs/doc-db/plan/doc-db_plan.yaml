@@ -241,7 +241,7 @@ tasks:
   - task_id: TASK-008
     title: doc_type 単位 Index 分離と二相整合性プロトコル実装
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-003

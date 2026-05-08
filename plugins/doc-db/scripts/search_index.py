@@ -44,6 +44,20 @@ def load_index(index_path: Path) -> Dict:
     return {}
 
 
+def _load_index_or_rebuild(
+    project_root: Path,
+    category: str,
+    doc_type: str,
+    require_full: bool = False,
+) -> Dict:
+    index_path = build_index.get_index_path(project_root, category, doc_type)
+    if not index_path.exists():
+        rc = build_index.run_build(project_root, category, full=require_full, doc_type=doc_type)
+        if rc != 0:
+            _error("index_not_found", "run build_index first")
+    return load_index(index_path)
+
+
 def cosine_similarity(a: List[float], b: List[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))
@@ -53,8 +67,18 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (na * nb)
 
 
-def _is_stale(project_root: Path, category: str, index: Dict) -> bool:
-    checksums_path = build_index.get_checksums_path(build_index.get_index_path(project_root, category))
+def _resolve_doc_types(category: str, doc_type: str) -> List[str]:
+    if category != "specs":
+        return [""]
+    if doc_type:
+        return [x.strip() for x in doc_type.split(",") if x.strip()]
+    return ["requirement", "design"]
+
+
+def _is_stale(project_root: Path, category: str, index: Dict, doc_type: str) -> bool:
+    checksums_path = build_index.get_checksums_path(
+        build_index.get_index_path(project_root, category, doc_type)
+    )
     saved = load_checksums(checksums_path)
     index_generated_at = index.get("metadata", {}).get("generated_at", "")
     checksum_generated_at = build_index._read_checksums_generated_at(checksums_path)
@@ -64,11 +88,14 @@ def _is_stale(project_root: Path, category: str, index: Dict) -> bool:
     for rel, digest in saved.items():
         if calculate_file_hash(project_root / rel) != digest:
             return True
+    current_files = set(build_index.resolve_target_files(project_root, category, doc_type))
+    if current_files != set(saved.keys()):
+        return True
     return False
 
 
 def _ensure_fresh(project_root: Path, category: str, index: Dict, doc_type: str):
-    if _is_stale(project_root, category, index):
+    if _is_stale(project_root, category, index, doc_type):
         rc = build_index.run_build(project_root, category, full=False, doc_type=doc_type)
         if rc != 0:
             _error("auto_rebuild_failed", "run build_index manually")
@@ -100,14 +127,18 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
     if top_n < 1:
         _error("top_n must be >= 1", "set --top-n 1..100")
 
-    index_path = build_index.get_index_path(project_root, category)
-    index = load_index(index_path)
-    if index.get("metadata", {}).get("model") not in ("", EMBEDDING_MODEL):
-        _error("model_mismatch", "run build_index --full")
+    doc_types = _resolve_doc_types(category, doc_type)
+    indexes = []
+    for one_type in doc_types:
+        index = _load_index_or_rebuild(project_root, category, one_type)
+        if index.get("metadata", {}).get("model") not in ("", EMBEDDING_MODEL):
+            _error("model_mismatch", "run build_index --full")
+        _ensure_fresh(project_root, category, index, one_type)
+        indexes.append(_load_index_or_rebuild(project_root, category, one_type))
 
-    _ensure_fresh(project_root, category, index, doc_type)
-    index = load_index(index_path)
-    entries_map = index.get("entries", {})
+    entries_map = {}
+    for index in indexes:
+        entries_map.update(index.get("entries", {}))
     entries = list(entries_map.values())
 
     if mode == "lex":
@@ -161,8 +192,10 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
         "rerank_error": None,
         "api_calls": {"embedding": 1 if mode in ("emb", "hybrid") else 0, "rerank": 0},
         "token_usage": {"embedding": 0, "rerank": 0},
-        "build_state": index.get("metadata", {}).get("build_state", "complete"),
-        "incomplete_count": len(index.get("metadata", {}).get("failed_chunks", [])),
+        "build_state": "incomplete"
+        if any(i.get("metadata", {}).get("build_state") == "incomplete" for i in indexes)
+        else "complete",
+        "incomplete_count": sum(len(i.get("metadata", {}).get("failed_chunks", [])) for i in indexes),
     }
     print(json.dumps(output, ensure_ascii=False))
     return 0

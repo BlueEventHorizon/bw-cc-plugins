@@ -1,6 +1,7 @@
 import pathlib
 import sys
 import unittest
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "plugins/doc-db/scripts"))
@@ -31,6 +32,17 @@ class ChunkExtractorTests(unittest.TestCase):
         chunks = chunk_extractor.extract_chunks("docs/a.md", text, max_chunk_chars=40)
         self.assertGreaterEqual(len(chunks), 2)
         self.assertTrue(all(len(c["body"]) <= 40 for c in chunks))
+
+    def test_chunk_id_collision_adds_suffix(self):
+        class _FakeHash:
+            def hexdigest(self):
+                return "deadbeef" * 8
+
+        text = "# A\nfirst\n## B\nsecond\n"
+        with patch.object(chunk_extractor.hashlib, "sha256", return_value=_FakeHash()):
+            chunks = chunk_extractor.extract_chunks("docs/a.md", text)
+        self.assertEqual(chunks[0]["chunk_id"], "deadbeef")
+        self.assertEqual(chunks[1]["chunk_id"], "deadbeef-2")
 
 
 if __name__ == "__main__":

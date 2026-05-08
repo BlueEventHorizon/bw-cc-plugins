@@ -25,8 +25,12 @@ def _write_doc_structure(root: pathlib.Path):
                 "    target_glob: \"**/*.md\"",
                 "    exclude: []",
                 "specs:",
-                "  root_dirs: []",
-                "  doc_types_map: {}",
+                "  root_dirs:",
+                "    - docs/specs/**/requirements/",
+                "    - docs/specs/**/design/",
+                "  doc_types_map:",
+                "    docs/specs/**/requirements/: requirement",
+                "    docs/specs/**/design/: design",
                 "  patterns:",
                 "    target_glob: \"**/*.md\"",
                 "    exclude: []",
@@ -41,14 +45,23 @@ class BuildIndexTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = pathlib.Path(self.tmp.name)
         (self.root / "docs/rules").mkdir(parents=True)
+        (self.root / "docs/specs/f1/requirements").mkdir(parents=True)
+        (self.root / "docs/specs/f1/design").mkdir(parents=True)
         (self.root / "docs/rules/a.md").write_text("# Title\nbody", encoding="utf-8")
+        (self.root / "docs/specs/f1/requirements/r1.md").write_text("# R1\nbody", encoding="utf-8")
+        (self.root / "docs/specs/f1/design/d1.md").write_text("# D1\nbody", encoding="utf-8")
         _write_doc_structure(self.root)
+        self._old_api_key = os.environ.get("OPENAI_API_KEY")
         os.environ["OPENAI_API_KEY"] = "dummy"
         self._old_embed = build_index.call_embedding_api
         build_index.call_embedding_api = lambda texts, _: [[0.1, 0.2] for _ in texts]
 
     def tearDown(self):
         build_index.call_embedding_api = self._old_embed
+        if self._old_api_key is None:
+            os.environ.pop("OPENAI_API_KEY", None)
+        else:
+            os.environ["OPENAI_API_KEY"] = self._old_api_key
         self.tmp.cleanup()
 
     def test_build_chunk_index(self):
@@ -79,6 +92,62 @@ class BuildIndexTests(unittest.TestCase):
         data = json.loads(build_index.get_index_path(self.root, "rules").read_text(encoding="utf-8"))
         self.assertEqual(data["metadata"]["build_state"], "incomplete")
         self.assertGreater(len(data["metadata"]["failed_chunks"]), 0)
+
+    def test_specs_doc_type_split(self):
+        rc = build_index.run_build(self.root, "specs", full=True)
+        self.assertEqual(rc, 0)
+        req_index = build_index.get_index_path(self.root, "specs", "requirement")
+        des_index = build_index.get_index_path(self.root, "specs", "design")
+        self.assertTrue(req_index.exists())
+        self.assertTrue(des_index.exists())
+        req_data = json.loads(req_index.read_text(encoding="utf-8"))
+        des_data = json.loads(des_index.read_text(encoding="utf-8"))
+        self.assertGreater(len(req_data["entries"]), 0)
+        self.assertGreater(len(des_data["entries"]), 0)
+
+        req_gen = req_data["metadata"]["generated_at"]
+        req_checksum_gen = build_index._read_checksums_generated_at(
+            build_index.get_checksums_path(req_index)
+        )
+        des_gen = des_data["metadata"]["generated_at"]
+        des_checksum_gen = build_index._read_checksums_generated_at(
+            build_index.get_checksums_path(des_index)
+        )
+        self.assertEqual(req_gen, req_checksum_gen)
+        self.assertEqual(des_gen, des_checksum_gen)
+
+    def test_two_phase_failure_keeps_old_state(self):
+        index_path = build_index.get_index_path(self.root, "rules")
+        checksums_path = build_index.get_checksums_path(index_path)
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        checksums_path.parent.mkdir(parents=True, exist_ok=True)
+        index_path.write_text('{"old": true}', encoding="utf-8")
+        checksums_path.write_text("generated_at: old\nchecksums:\n", encoding="utf-8")
+
+        old_replace = build_index.os.replace
+        counter = {"n": 0}
+
+        def flaky_replace(src, dst):
+            counter["n"] += 1
+            if counter["n"] == 2:
+                raise OSError("replace failed")
+            return old_replace(src, dst)
+
+        build_index.os.replace = flaky_replace
+        try:
+            with self.assertRaises(OSError):
+                build_index.save_index_and_checksums_two_phase(
+                    {"metadata": {}, "entries": {}},
+                    index_path,
+                    {"a.md": "hash"},
+                    checksums_path,
+                    "2026-01-01T00:00:00Z",
+                )
+        finally:
+            build_index.os.replace = old_replace
+
+        self.assertEqual(index_path.read_text(encoding="utf-8"), '{"old": true}')
+        self.assertIn("generated_at: old", checksums_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
