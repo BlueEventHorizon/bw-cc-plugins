@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [forge 0.0.44] - 2026-05-08
+
+### forge
+
+- **feat**: start-implement で全タスク完了後に plan の扱いをユーザーへ確認するフローを追加
+- **feat**: review SKILL の TBD-xxx fix path を需求レビューで対応
+- **refactor**: monitor 機能の削除、meta & progress の削除、冗長性の解消
+- **fix**: review SKILL の修正、meta 関連テストの修正
+
+## [doc-advisor 0.2.3] - 2026-05-08
+
+### doc-advisor
+
+- **docs**: デザイン DES-026 追加、heading-chunk ハイブリッド検索プラグインの要件定義書追加 (#33)
+- **chore**: create-code-index / query-code スキルと関連コードの削除
+- **refactor**: index の更新
+
 ## [marketplace 0.1.19] - 2026-05-06
 
 ### marketplace
