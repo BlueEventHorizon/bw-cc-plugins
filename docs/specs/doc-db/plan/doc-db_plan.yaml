@@ -57,6 +57,7 @@ design_traceability:
       - TASK-013
       - TASK-014
       - TASK-015
+      - TASK-016
 
 # === タスク一覧 ===
 tasks:
@@ -380,6 +381,34 @@ tasks:
       - docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md
 
   # ---------------------------------------------------------------
+  # P5.5: grep 補完（FNC-006 GRP-01〜03）
+  # ---------------------------------------------------------------
+  - task_id: TASK-016
+    title: grep_docs.py 実装と /doc-db:query SKILL ワークフロー統合
+    priority: 75
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-010
+    group_id: null
+    build_check: per_task
+    description:
+      - "DES-026 §3.4 に従い plugins/doc-db/scripts/grep_docs.py を新規実装"
+      - ".doc_structure.yaml の root_dirs / target_glob / exclude に従い対象ファイルを走査"
+      - "keyword の行マッチ結果（パス・行番号・マッチ行）を構造化して返す"
+      - "plugins/doc-db/skills/query/SKILL.md にワークフローを記述: Hybrid 検索 → ID/固有名詞抽出 → grep → 結果統合"
+      - "grep 結果のうち Hybrid 検索結果に含まれないパスを補完候補として追加する統合ロジックを SKILL に記述"
+      - "tests/doc_db/test_grep_docs.py で対象ファイル解決・keyword マッチ・exclude 除外を検証"
+    acceptance_criteria: |
+      /doc-db:query --query "FNC-006" 実行時に grep 補完が動作し、
+      Index に含まれないファイルも結果に含まれること。
+      grep 単体テストが全て成功すること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+      - plugins/doc-advisor/docs/query_index_workflow.md
+
+  # ---------------------------------------------------------------
   # 統合テスト + 配布
   # ---------------------------------------------------------------
   - task_id: TASK-014
@@ -433,3 +462,5 @@ tasks:
 revision_history:
   - date: "2026-05-07"
     content: 初版作成（DES-026 §9 実装ロードマップ P1〜P6 を 15 タスクに展開）
+  - date: "2026-05-08"
+    content: TASK-016 追加（FNC-006 GRP-01〜03 grep 補完。DES-026 §3.4 対応）
