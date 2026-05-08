@@ -15,6 +15,7 @@ from typing import Dict, List
 import build_index
 import hybrid_score
 import lexical_search
+import llm_rerank
 from _utils import calculate_file_hash, load_checksums
 from embedding_api import EMBEDDING_MODEL, call_embedding_api_single
 
@@ -23,7 +24,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Search doc-db index")
     parser.add_argument("--category", required=True, choices=["rules", "specs"])
     parser.add_argument("--query", required=True)
-    parser.add_argument("--mode", default="hybrid", choices=["emb", "lex", "hybrid"])
+    parser.add_argument("--mode", default="hybrid", choices=["emb", "lex", "hybrid", "rerank"])
     parser.add_argument("--top-n", type=int, default=10)
     parser.add_argument("--doc-type", default="")
     return parser.parse_args()
@@ -141,6 +142,11 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
         entries_map.update(index.get("entries", {}))
     entries = list(entries_map.values())
 
+    fallback_used = False
+    rerank_error = None
+    rerank_api_calls = 0
+    rerank_token_usage = 0
+
     if mode == "lex":
         lex = lexical_search.score_chunks(query, entries)
         results = [
@@ -180,18 +186,60 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
             emb_map = {row["chunk_id"]: row["emb_score"] for row in emb}
             lex_map = {row["chunk_id"]: row["lex_score"] for row in lex_for_fuse}
             ids = []
-            for row in fused[:top_n]:
+            for row in fused[: max(top_n, llm_rerank.MAX_CANDIDATES)]:
                 row["emb_score"] = emb_map.get(row["chunk_id"], 0.0)
                 row["lex_score"] = lex_map.get(row["chunk_id"], 0.0)
                 ids.append(row)
-            results = _make_results(entries, ids, "score")
+            base_results = _make_results(entries, ids, "score")
+            if mode == "hybrid":
+                results = base_results[:top_n]
+            else:
+                candidates = []
+                for row in ids:
+                    # Build explicit candidate payload so rerank has stable ids and breakdown.
+                    entry = entries_map.get(row["chunk_id"])
+                    if entry is None:
+                        continue
+                    candidates.append(
+                        {
+                            "chunk_id": row["chunk_id"],
+                            "path": entry["path"],
+                            "heading_path": entry["heading_path"],
+                            "body": entry["body"],
+                            "score": row["score"],
+                            "emb_score": row["emb_score"],
+                            "lex_score": row["lex_score"],
+                        }
+                    )
+                reranked, rerank_meta = llm_rerank.rerank(query, candidates, api_key)
+                fallback_used = rerank_meta["fallback_used"]
+                rerank_error = rerank_meta["rerank_error"]
+                rerank_api_calls = rerank_meta["api_calls"]
+                rerank_token_usage = rerank_meta["token_usage"]
+                results = [
+                    {
+                        "path": c["path"],
+                        "heading_path": c["heading_path"],
+                        "body": c["body"],
+                        "score": c.get("rerank_score", c["score"]),
+                        "breakdown": {
+                            "emb": c["emb_score"],
+                            "lex": c["lex_score"],
+                            "rerank": c.get("rerank_score", c["score"]),
+                        },
+                    }
+                    for c in reranked[:top_n]
+                ]
 
     output = {
         "results": results,
-        "fallback_used": False,
-        "rerank_error": None,
-        "api_calls": {"embedding": 1 if mode in ("emb", "hybrid") else 0, "rerank": 0},
-        "token_usage": {"embedding": 0, "rerank": 0},
+        "fallback_used": fallback_used,
+        "rerank_error": rerank_error,
+        "api_calls": {
+            "embedding": 1 if mode in ("emb", "hybrid", "rerank") else 0,
+            "rerank": rerank_api_calls,
+        },
+        "token_usage": {"embedding": 0, "rerank": rerank_token_usage},
         "build_state": "incomplete"
         if any(i.get("metadata", {}).get("build_state") == "incomplete" for i in indexes)
         else "complete",

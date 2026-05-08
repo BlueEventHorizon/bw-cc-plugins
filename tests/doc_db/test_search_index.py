@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, str(ROOT / "plugins/doc-db/scripts"))
 
 import build_index
+import llm_rerank
 import search_index
 
 
@@ -57,13 +58,25 @@ class SearchIndexTests(unittest.TestCase):
 
         self._old_embed = build_index.call_embedding_api
         self._old_qembed = search_index.call_embedding_api_single
+        self._old_rerank = llm_rerank.rerank
         build_index.call_embedding_api = lambda texts, _: [[0.1, 0.2] for _ in texts]
         search_index.call_embedding_api_single = lambda *_: [0.1, 0.2]
+        llm_rerank.rerank = lambda _q, cand, _k: (
+            list(reversed(cand)),
+            {
+                "fallback_used": False,
+                "rerank_error": None,
+                "api_calls": 1,
+                "token_usage": 111,
+                "candidate_count": len(cand),
+            },
+        )
         build_index.run_build(self.root, "rules", full=True)
 
     def tearDown(self):
         build_index.call_embedding_api = self._old_embed
         search_index.call_embedding_api_single = self._old_qembed
+        llm_rerank.rerank = self._old_rerank
         if self._old_api_key is None:
             os.environ.pop("OPENAI_API_KEY", None)
         else:
@@ -71,7 +84,7 @@ class SearchIndexTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_modes(self):
-        for mode in ("emb", "lex", "hybrid"):
+        for mode in ("emb", "lex", "hybrid", "rerank"):
             rc = search_index.search(self.root, "rules", "FNC-006", mode, 5)
             self.assertEqual(rc, 0)
 

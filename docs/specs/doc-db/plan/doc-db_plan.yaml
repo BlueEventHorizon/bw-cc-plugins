@@ -215,7 +215,7 @@ tasks:
   - task_id: TASK-007
     title: llm_rerank.py 実装と search_index への統合
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-006
