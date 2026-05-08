@@ -1,0 +1,3 @@
+checksums:
+  rules/kept.md: old_hash
+  rules/removed.md: removed_hash
