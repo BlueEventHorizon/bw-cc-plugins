@@ -4,5 +4,8 @@
   "version": "0.0.1",
   "author": { "name": "moons" },
   "license": "MIT",
-  "skills": []
+  "skills": [
+    "./skills/build-index",
+    "./skills/query"
+  ]
 }
