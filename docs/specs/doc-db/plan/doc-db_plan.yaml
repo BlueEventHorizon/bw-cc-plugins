@@ -264,7 +264,7 @@ tasks:
   - task_id: TASK-009
     title: 入力バリデーションと検索結果観測フィールドの確定
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-007
@@ -289,7 +289,7 @@ tasks:
   - task_id: TASK-010
     title: SKILL レイヤー実装（/doc-db:build-index と /doc-db:query）
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-009
@@ -314,7 +314,7 @@ tasks:
   - task_id: TASK-011
     title: evaluate.py ランナー実装（doc-db / ToC / doc-advisor 並列実行）
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-010
@@ -336,7 +336,7 @@ tasks:
   - task_id: TASK-012
     title: AC-01 を保つ評価用一時 Index 生成手順の実装
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-011
@@ -360,7 +360,7 @@ tasks:
   - task_id: TASK-013
     title: Markdown レポート生成と /doc-db:evaluate SKILL
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-012

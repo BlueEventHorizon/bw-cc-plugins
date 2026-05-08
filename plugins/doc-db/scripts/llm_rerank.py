@@ -23,8 +23,9 @@ OUTPUT_BUDGET_TOKENS = 1500
 
 
 def _estimate_tokens(text: str) -> int:
-    words = re.findall(r"\S+", text)
-    return max(1, len(words))
+    ascii_words = len(re.findall(r"[a-zA-Z0-9_]+", text))
+    non_ascii_chars = sum(1 for c in text if ord(c) > 127)
+    return max(1, ascii_words + max(1, non_ascii_chars // 2))
 
 
 def _truncate_tokens(text: str, token_limit: int) -> str:

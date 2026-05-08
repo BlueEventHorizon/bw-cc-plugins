@@ -94,6 +94,16 @@ SKILL.md からの参照には `${CLAUDE_SKILL_DIR}` または `${CLAUDE_PLUGIN_
 
 ---
 
+## 設計書の保守 [MANDATORY]
+
+forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.md`「設計書の保守」）に従う。
+
+本リポジトリ固有の補足:
+
+- ADR の配置先: `docs/specs/{plugin}/design/ADR-{NNN}_{topic}.md`
+
+---
+
 ## 使わないコードは削除する [MANDATORY]
 
 非推奨マーカーやコメントアウトで残さない。残存コードは勘違いの原因になる。

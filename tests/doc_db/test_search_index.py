@@ -3,6 +3,8 @@ import os
 import pathlib
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 import sys
@@ -12,6 +14,7 @@ sys.path.insert(0, str(ROOT / "plugins/doc-db/scripts"))
 import build_index
 import llm_rerank
 import search_index
+from search_index import SearchError
 
 
 def _write_doc_structure(root: pathlib.Path):
@@ -85,20 +88,45 @@ class SearchIndexTests(unittest.TestCase):
 
     def test_modes(self):
         for mode in ("emb", "lex", "hybrid", "rerank"):
-            rc = search_index.search(self.root, "rules", "FNC-006", mode, 5)
+            rc, result = search_index.search(self.root, "rules", "FNC-006", mode, 5)
             self.assertEqual(rc, 0)
+            self.assertIn("results", result)
+
+    def test_validation_query_length(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            with self.assertRaises(SearchError) as ctx:
+                search_index.search(self.root, "rules", "", "lex", 5)
+        self.assertEqual(ctx.exception.exit_code, 2)
+        self.assertIn('"event_type": "validation_error"', err.getvalue())
+
+    def test_validation_top_n(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            with self.assertRaises(SearchError) as ctx:
+                search_index.search(self.root, "rules", "abc", "lex", 0)
+        self.assertEqual(ctx.exception.exit_code, 2)
+        self.assertIn('"event_type": "validation_error"', err.getvalue())
+
+    def test_validation_doc_type_allowlist(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            with self.assertRaises(SearchError) as ctx:
+                search_index.search(self.root, "specs", "abc", "lex", 3, doc_type="invalid")
+        self.assertEqual(ctx.exception.exit_code, 2)
+        self.assertIn("unsupported doc_type", err.getvalue())
 
     def test_generated_at_mismatch(self):
         checksums_path = build_index.get_checksums_path(build_index.get_index_path(self.root, "rules"))
         txt = checksums_path.read_text(encoding="utf-8").replace("generated_at:", "generated_at: 1999-01-01T00:00:00Z #")
         checksums_path.write_text(txt, encoding="utf-8")
-        with self.assertRaises(SystemExit) as ctx:
+        with self.assertRaises(SearchError) as ctx:
             search_index.search(self.root, "rules", "x", "lex", 3)
-        self.assertEqual(ctx.exception.code, 2)
+        self.assertEqual(ctx.exception.exit_code, 2)
 
     def test_stale_auto_rebuild(self):
         (self.root / "docs/rules/a.md").write_text("# FNC-006\nupdated body", encoding="utf-8")
-        rc = search_index.search(self.root, "rules", "updated", "hybrid", 3)
+        rc, result = search_index.search(self.root, "rules", "updated", "hybrid", 3)
         self.assertEqual(rc, 0)
         index = json.loads(build_index.get_index_path(self.root, "rules").read_text(encoding="utf-8"))
         bodies = [v["body"] for v in index["entries"].values()]
@@ -106,7 +134,7 @@ class SearchIndexTests(unittest.TestCase):
 
     def test_new_file_detected_as_stale_and_rebuilt(self):
         (self.root / "docs/rules/new.md").write_text("# NEW-ID\nnew file body", encoding="utf-8")
-        rc = search_index.search(self.root, "rules", "NEW-ID", "lex", 5)
+        rc, result = search_index.search(self.root, "rules", "NEW-ID", "lex", 5)
         self.assertEqual(rc, 0)
         index = json.loads(build_index.get_index_path(self.root, "rules").read_text(encoding="utf-8"))
         paths = {v["path"] for v in index["entries"].values()}
@@ -117,7 +145,7 @@ class SearchIndexTests(unittest.TestCase):
         des_index = build_index.get_index_path(self.root, "specs", "design")
         req_index.unlink(missing_ok=True)
         des_index.unlink(missing_ok=True)
-        rc = search_index.search(self.root, "specs", "REQ-001", "lex", 5)
+        rc, result = search_index.search(self.root, "specs", "REQ-001", "lex", 5)
         self.assertEqual(rc, 0)
         self.assertTrue(req_index.exists())
         self.assertTrue(des_index.exists())
@@ -127,6 +155,17 @@ class SearchIndexTests(unittest.TestCase):
         des_paths = {v["path"] for v in des_data["entries"].values()}
         self.assertIn("docs/specs/f1/requirements/r1.md", req_paths)
         self.assertIn("docs/specs/f1/design/d1.md", des_paths)
+
+    def test_auto_rebuild_does_not_pollute_stdout(self):
+        """Regression: search() must not write anything to stdout (I/O separation)."""
+        (self.root / "docs/rules/extra.md").write_text("# EXTRA\nextra body", encoding="utf-8")
+        stdout_capture = StringIO()
+        with redirect_stdout(stdout_capture):
+            rc, result = search_index.search(self.root, "rules", "EXTRA", "lex", 5)
+        self.assertEqual(rc, 0)
+        self.assertEqual(stdout_capture.getvalue(), "")
+        self.assertIn("results", result)
+        self.assertNotIn("index", result)
 
 
 if __name__ == "__main__":

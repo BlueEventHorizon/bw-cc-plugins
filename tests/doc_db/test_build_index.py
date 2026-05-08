@@ -3,6 +3,8 @@ import os
 import pathlib
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 import sys
@@ -65,7 +67,7 @@ class BuildIndexTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_build_chunk_index(self):
-        rc = build_index.run_build(self.root, "rules", full=True)
+        rc, _ = build_index.run_build(self.root, "rules", full=True)
         self.assertEqual(rc, 0)
         index_path = build_index.get_index_path(self.root, "rules")
         data = json.loads(index_path.read_text(encoding="utf-8"))
@@ -79,7 +81,7 @@ class BuildIndexTests(unittest.TestCase):
             json.dumps({"metadata": {"schema_version": "0.0"}, "entries": {}}),
             encoding="utf-8",
         )
-        rc = build_index.run_build(self.root, "rules", full=False)
+        rc, _ = build_index.run_build(self.root, "rules", full=False)
         self.assertEqual(rc, 2)
 
     def test_failed_chunks_mark_incomplete(self):
@@ -87,14 +89,14 @@ class BuildIndexTests(unittest.TestCase):
             raise RuntimeError("boom")
 
         build_index.call_embedding_api = _raise
-        rc = build_index.run_build(self.root, "rules", full=True)
+        rc, _ = build_index.run_build(self.root, "rules", full=True)
         self.assertEqual(rc, 0)
         data = json.loads(build_index.get_index_path(self.root, "rules").read_text(encoding="utf-8"))
         self.assertEqual(data["metadata"]["build_state"], "incomplete")
         self.assertGreater(len(data["metadata"]["failed_chunks"]), 0)
 
     def test_specs_doc_type_split(self):
-        rc = build_index.run_build(self.root, "specs", full=True)
+        rc, _ = build_index.run_build(self.root, "specs", full=True)
         self.assertEqual(rc, 0)
         req_index = build_index.get_index_path(self.root, "specs", "requirement")
         des_index = build_index.get_index_path(self.root, "specs", "design")
@@ -148,6 +150,20 @@ class BuildIndexTests(unittest.TestCase):
 
         self.assertEqual(index_path.read_text(encoding="utf-8"), '{"old": true}')
         self.assertIn("generated_at: old", checksums_path.read_text(encoding="utf-8"))
+
+    def test_validation_doc_type_not_allowed_for_rules(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            rc, _ = build_index.run_build(self.root, "rules", full=True, doc_type="requirement")
+        self.assertEqual(rc, 2)
+        self.assertIn("validation_error", err.getvalue())
+
+    def test_validation_doc_type_allowlist_specs(self):
+        err = StringIO()
+        with redirect_stderr(err):
+            rc, _ = build_index.run_build(self.root, "specs", full=True, doc_type="invalid")
+        self.assertEqual(rc, 2)
+        self.assertIn("unsupported doc_type", err.getvalue())
 
 
 if __name__ == "__main__":

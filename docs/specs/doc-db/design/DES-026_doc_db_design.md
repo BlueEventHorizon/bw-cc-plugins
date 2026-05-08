@@ -429,9 +429,11 @@ sequenceDiagram
 | H1〜H2 のみで切る | 不採用 | chunk が長くなり embedding の意味希釈が起きやすい |
 | 固定 token 数で切る | 不採用 | Markdown 構造を無視して意味境界を分断する |
 
-### 6.2 chunk 上限 token 数（FNC-005 CHK-04 相当）
+### 6.2 chunk 上限サイズ（FNC-005 CHK-04 相当）
 
-**採用**: 1 chunk = 8192 tokens を上限とし、超過時は段落境界（空行）で再分割。`text-embedding-3-large` の入力上限（8192 tokens）に整合。
+**採用**: 1 chunk = 8192 文字（chars）を上限とし、超過時は段落境界（空行）で再分割。
+
+正確な token 数制御には tiktoken 等の外部ライブラリが必要であり NFR-005（標準ライブラリのみ）に抵触するため、文字数による近似を採用する。日本語文書では 8192 chars ≈ 4096-8192 tokens となり `text-embedding-3-large` の入力上限（8192 tokens）を実用上超えない。英語主体文書では 8192 chars ≈ 2048 tokens となり上限の 1/4 程度で収まるが、embedding 品質への悪影響はない（短い chunk は意味の希釈を起こさない）。
 
 ### 6.3 field 別ベクトル（EMB-01）
 

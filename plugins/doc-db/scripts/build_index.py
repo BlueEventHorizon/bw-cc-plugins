@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 import tempfile
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -24,6 +25,12 @@ from embedding_api import EMBEDDING_MODEL, call_embedding_api
 
 SCHEMA_VERSION = "1.0"
 CHECKSUMS_SUFFIX = ".checksums.yaml"
+
+
+def _event(event_type: str, **fields):
+    payload = {"event_type": event_type}
+    payload.update(fields)
+    sys.stderr.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def parse_args():
@@ -155,6 +162,31 @@ def _validate_existing_schema(existing: Dict, full: bool):
         raise RuntimeError("schema mismatch: run with --full")
 
 
+def _classify_embedding_error(exc: Exception) -> str:
+    """DES-026 §4.1 の error_type 分類: rate_limit | timeout | 5xx | invalid_request | other"""
+    import urllib.error
+
+    if isinstance(exc, urllib.error.HTTPError):
+        if exc.code == 429:
+            return "rate_limit"
+        if 500 <= exc.code < 600:
+            return "5xx"
+        if exc.code in (400, 422):
+            return "invalid_request"
+    if isinstance(exc, urllib.error.URLError):
+        reason = str(getattr(exc, "reason", ""))
+        if "timed out" in reason.lower() or "timeout" in reason.lower():
+            return "timeout"
+    msg = str(exc).lower()
+    if "429" in msg or "rate" in msg:
+        return "rate_limit"
+    if "timeout" in msg or "timed out" in msg:
+        return "timeout"
+    if "500" in msg or "502" in msg or "503" in msg:
+        return "5xx"
+    return "other"
+
+
 def _embed_chunks(chunk_records: List[Dict], api_key: str):
     texts = [c["body"] if c["body"].strip() else c["path"] for c in chunk_records]
     vectors = call_embedding_api(texts, api_key)
@@ -163,20 +195,20 @@ def _embed_chunks(chunk_records: List[Dict], api_key: str):
     return chunk_records
 
 
-def _run_build_one(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> int:
+def _run_build_one(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> Tuple[int, Dict]:
     index_path = get_index_path(project_root, category, doc_type)
     checksums_path = get_checksums_path(index_path)
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
-        print(json.dumps({"status": "error", "error": "OPENAI_API_KEY is required"}))
-        return 1
+        _event("validation_error", error="OPENAI_API_KEY is required")
+        return 1, {"status": "error", "error": "OPENAI_API_KEY is required"}
 
     existing = load_index(index_path)
     try:
         _validate_existing_schema(existing, full)
     except RuntimeError as e:
-        print(json.dumps({"status": "error", "error": str(e), "hint": "use --full"}))
-        return 2
+        _event("validation_error", error=str(e), hint="use --full")
+        return 2, {"status": "error", "error": str(e), "hint": "use --full"}
 
     targets = resolve_target_files(project_root, category, doc_type)
     current_checksums = {p: calculate_file_hash(project_root / p) for p in targets}
@@ -185,8 +217,7 @@ def _run_build_one(project_root: Path, category: str, full: bool = False, doc_ty
     changed = [p for p in targets if old_checksums.get(p) != current_checksums.get(p)]
     deleted = [p for p in old_checksums if p not in current_checksums]
     if not changed and not deleted and existing.get("entries"):
-        print(json.dumps({"status": "ok", "message": "up-to-date"}))
-        return 0
+        return 0, {"status": "ok", "message": "up-to-date"}
 
     entries = {} if full else dict(existing.get("entries", {}))
     for key, val in list(entries.items()):
@@ -210,18 +241,20 @@ def _run_build_one(project_root: Path, category: str, full: bool = False, doc_ty
             _embed_chunks(to_embed, api_key)
         except Exception as e:  # noqa: BLE001
             now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            error_type = _classify_embedding_error(e)
             for c in to_embed:
                 failed_chunks.append(
                     {
                         "chunk_id": c["chunk_id"],
                         "path": c["path"],
-                        "error_type": "other",
+                        "error_type": error_type,
                         "message": str(e),
                         "attempts": 1,
                         "last_failed_at": now,
                     }
                 )
             to_embed = []
+            _event("incomplete_detected", failed_chunks=len(failed_chunks), reason=str(e))
 
     for c in to_embed:
         key = f"{c['path']}#{c['chunk_id']}"
@@ -255,69 +288,83 @@ def _run_build_one(project_root: Path, category: str, full: bool = False, doc_ty
         "entries": entries,
     }
     save_index_and_checksums_two_phase(index, index_path, current_checksums, checksums_path, now)
-    print(
-        json.dumps(
-            {
-                "status": "ok",
-                "index": str(index_path.relative_to(project_root)),
-                "build_state": index["metadata"]["build_state"],
-                "failed_count": len(failed_chunks),
-            }
-        )
-    )
-    return 0
+    return 0, {
+        "status": "ok",
+        "index": str(index_path.relative_to(project_root)),
+        "build_state": index["metadata"]["build_state"],
+        "failed_count": len(failed_chunks),
+    }
 
 
-def run_build(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> int:
+def run_build(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> Tuple[int, Dict]:
     if category == "specs":
         if doc_type:
             doc_types = [x.strip() for x in doc_type.split(",") if x.strip()]
         else:
             doc_types = resolve_specs_doc_types(project_root)
+        allowed = set(resolve_specs_doc_types(project_root))
+        invalid = [d for d in doc_types if d not in allowed]
+        if invalid:
+            _event(
+                "validation_error",
+                error=f"unsupported doc_type: {','.join(invalid)}",
+                hint=f"allowed: {','.join(sorted(allowed))}",
+            )
+            return 2, {
+                "status": "error",
+                "error": f"unsupported doc_type: {','.join(invalid)}",
+                "hint": f"allowed: {','.join(sorted(allowed))}",
+            }
         for one_type in doc_types:
-            rc = _run_build_one(project_root, category, full=full, doc_type=one_type)
+            rc, result = _run_build_one(project_root, category, full=full, doc_type=one_type)
             if rc != 0:
-                return rc
-        return 0
+                return rc, result
+        return 0, {"status": "ok"}
+    if doc_type.strip():
+        _event("validation_error", error="doc_type is only valid for specs category")
+        return 2, {
+            "status": "error",
+            "error": "doc_type is only valid for specs category",
+            "hint": "remove --doc-type or use --category specs",
+        }
     return _run_build_one(project_root, category, full=full, doc_type=doc_type)
 
 
-def _run_check_one(project_root: Path, category: str, doc_type: str = ""):
+def _run_check_one(project_root: Path, category: str, doc_type: str = "") -> Dict:
     index_path = get_index_path(project_root, category, doc_type)
     checksums_path = get_checksums_path(index_path)
     if not index_path.exists():
-        print(json.dumps({"status": "stale", "reason": "index_not_found"}))
-        return 0
+        return {"status": "stale", "reason": "index_not_found"}
     index = load_index(index_path)
     files = resolve_target_files(project_root, category, doc_type)
     disk = {p: calculate_file_hash(project_root / p) for p in files}
     saved = load_checksums(checksums_path)
     if disk != saved:
-        print(json.dumps({"status": "stale", "reason": "checksum_mismatch"}))
-        return 0
+        return {"status": "stale", "reason": "checksum_mismatch"}
     checksum_generated_at = _read_checksums_generated_at(checksums_path)
     if checksum_generated_at and checksum_generated_at != index.get("metadata", {}).get("generated_at"):
-        print(json.dumps({"status": "stale", "reason": "generated_at_mismatch"}))
-        return 0
-    print(json.dumps({"status": "fresh"}))
-    return 0
+        return {"status": "stale", "reason": "generated_at_mismatch"}
+    return {"status": "fresh"}
 
 
-def run_check(project_root: Path, category: str):
+def run_check(project_root: Path, category: str) -> List[Dict]:
     if category == "specs":
         doc_types = resolve_specs_doc_types(project_root)
-        for one_type in doc_types:
-            _run_check_one(project_root, category, one_type)
-        return 0
-    return _run_check_one(project_root, category)
+        return [_run_check_one(project_root, category, one_type) for one_type in doc_types]
+    return [_run_check_one(project_root, category)]
 
 
 def main():
     args = parse_args()
     project_root = Path.cwd().resolve()
     if args.check:
-        return run_check(project_root, args.category)
-    return run_build(project_root, args.category, full=args.full, doc_type=args.doc_type)
+        results = run_check(project_root, args.category)
+        for r in results:
+            print(json.dumps(r))
+        return 0
+    rc, result = run_build(project_root, args.category, full=args.full, doc_type=args.doc_type)
+    print(json.dumps(result))
+    return rc
 
 
 if __name__ == "__main__":

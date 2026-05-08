@@ -41,18 +41,12 @@ def _log(*args, **kwargs):
     print(*args, **kwargs)
 
 
-def call_embedding_api(texts, api_key):
-    """OpenAI Embedding API をバッチ呼び出しする。
-
-    Args:
-        texts: Embedding するテキストリスト (list[str])
-        api_key: OpenAI API キー
-
-    Returns:
-        list[list[float]]: テキストに対応する Embedding ベクトルのリスト
+def _call_embedding_batch(texts, api_key):
+    """単一バッチの Embedding API 呼び出し（内部用）。
 
     Raises:
         RuntimeError: API 呼び出し失敗（リトライ後も失敗）
+        urllib.error.HTTPError: 分類可能な HTTP エラー（呼び出し元で判別用）
     """
     payload = json.dumps({
         "model": EMBEDDING_MODEL,
@@ -80,7 +74,6 @@ def call_embedding_api(texts, api_key):
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 if attempt < API_MAX_RETRIES:
-                    # Retry-After ヘッダーがあればその値を優先する
                     retry_after = RATE_LIMIT_WAIT_SECONDS
                     if e.headers and e.headers.get("Retry-After"):
                         try:
@@ -113,6 +106,34 @@ def call_embedding_api(texts, api_key):
             last_error = e
 
     raise RuntimeError(f"API 呼び出し失敗: {last_error}") from last_error
+
+
+def call_embedding_api(texts, api_key):
+    """OpenAI Embedding API をバッチ分割して呼び出す。
+
+    EMBEDDING_BATCH_SIZE ごとに分割し、API の入力上限を超えないようにする。
+
+    Args:
+        texts: Embedding するテキストリスト (list[str])
+        api_key: OpenAI API キー
+
+    Returns:
+        list[list[float]]: テキストに対応する Embedding ベクトルのリスト
+
+    Raises:
+        RuntimeError: API 呼び出し失敗（リトライ後も失敗）
+    """
+    if not texts:
+        return []
+    if len(texts) <= EMBEDDING_BATCH_SIZE:
+        return _call_embedding_batch(texts, api_key)
+
+    all_embeddings = []
+    for i in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+        batch = texts[i : i + EMBEDDING_BATCH_SIZE]
+        batch_result = _call_embedding_batch(batch, api_key)
+        all_embeddings.extend(batch_result)
+    return all_embeddings
 
 
 def call_embedding_api_single(text, api_key):
