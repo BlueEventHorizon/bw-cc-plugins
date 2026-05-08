@@ -414,7 +414,7 @@ tasks:
   - task_id: TASK-014
     title: 統合テスト 3 シナリオの実装
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-010
@@ -437,7 +437,7 @@ tasks:
   - task_id: TASK-015
     title: plugin 配布（plugin.json / marketplace.json / README）と最終確認
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-014
