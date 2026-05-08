@@ -94,7 +94,7 @@ tasks:
   - task_id: TASK-002
     title: chunk_extractor.py 実装（見出し境界 chunk 抽出）
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-001
@@ -117,7 +117,7 @@ tasks:
   - task_id: TASK-003
     title: build_index.py コピー → chunk 単位 Index 拡張
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-001
@@ -144,7 +144,7 @@ tasks:
   - task_id: TASK-004
     title: lexical_search.py 実装（語彙一致 + ID パターン高スコア化）
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-001
@@ -166,7 +166,7 @@ tasks:
   - task_id: TASK-005
     title: hybrid_score.py 実装（RRF + 線形加重統合）
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-001
@@ -187,7 +187,7 @@ tasks:
   - task_id: TASK-006
     title: search_index.py コピー → Embedding + Lexical + Hybrid 統合
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-026
     depends_on:
       - TASK-003
