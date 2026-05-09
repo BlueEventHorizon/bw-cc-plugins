@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [BR-001 / BR-002 対応] - 2026-05-09
+
+### forge / doc-db / doc-advisor
+
+- **fix(BR-001)**: 全プラグインの Python スクリプトのエラーメッセージに含まれるスラッシュコマンド形式（`/forge:setup-doc-structure`, `/doc-advisor:create-*-toc` 等）を環境非依存な表記に変更。プラグインモードとスタンドアロンモードの両方で正しいスキル名を案内できるようにした。対象: doc-db 2 箇所、doc-advisor 5 箇所、forge 3 箇所の計 10 箇所
+- **test**: `TestNoSlashCommandRefsInScripts` を `tests/common/test_plugin_integrity.py` に追加。forge / doc-advisor / doc-db の Python スクリプト内にスラッシュコマンド形式が残っていないことを自動検証する回帰防止テスト
+- **docs(BR-002)**: SKILL.md 内のクロスプラグイン参照（64 箇所）は、プラグインモード（一次配布形態）で名前空間付きが必須のため変更不要と判断。スタンドアロンモードは setup.sh 側の sed 変換で対処済み
+
 ## [forge 0.0.44] - 2026-05-08
 
 ### forge

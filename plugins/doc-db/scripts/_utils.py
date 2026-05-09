@@ -154,7 +154,7 @@ def find_config_file():
 
     raise FileNotFoundError(
         ".doc_structure.yaml not found.\n"
-        "Run /forge:setup-doc-structure to create it."
+        "Run setup-doc-structure to create it."
     )
 
 

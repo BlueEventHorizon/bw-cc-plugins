@@ -143,7 +143,7 @@ def main():
     if not toc_path.exists():
         print(json.dumps({
             "status": "error",
-            "error": f"ToC not found: {toc_path}. Run /doc-advisor:create-{args.category}-toc first.",
+            "error": f"ToC not found: {toc_path}. Run create-{args.category}-toc first.",
         }))
         sys.exit(1)
 
