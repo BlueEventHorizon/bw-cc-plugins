@@ -66,8 +66,13 @@ class GrepDocsTestBase(unittest.TestCase):
         os.environ['CLAUDE_PROJECT_DIR'] = self.project_root
 
         # sys.path にスクリプトディレクトリを追加（直接 import 用）
-        if SCRIPTS_DIR not in sys.path:
-            sys.path.insert(0, SCRIPTS_DIR)
+        # doc-db 側 tests が先に plugins/doc-db/scripts を path 先頭に載せた場合、
+        # grep_docs が doc-db 実装として import 済みになる。常に doc-advisor 版を先頭にし、
+        # キャッシュを捨ててから読み込む。
+        while SCRIPTS_DIR in sys.path:
+            sys.path.remove(SCRIPTS_DIR)
+        sys.path.insert(0, SCRIPTS_DIR)
+        sys.modules.pop('grep_docs', None)
 
     def tearDown(self):
         """一時ディレクトリを削除、環境変数を復元"""

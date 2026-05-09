@@ -48,6 +48,16 @@
       },
       "source": "./plugins/doc-advisor",
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
+    },
+    {
+      "name": "doc-db",
+      "description": "Heading-chunk hybrid search index plugin (Embedding + Lexical + LLM Rerank)",
+      "version": "0.0.1",
+      "author": {
+        "name": "moons"
+      },
+      "source": "./plugins/doc-db",
+      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
 }

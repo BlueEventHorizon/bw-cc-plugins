@@ -1,0 +1,466 @@
+# doc-db 実装計画書
+#
+# 親要件: REQ-006 / 設計: DES-026
+# 配布形態: plugins/doc-db（独立 plugin、AC-01「doc-advisor 本体不変」を厳守）
+# 依存制約: Python 標準ライブラリのみ（NFR-005 / DEP-01〜04）
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: REQ-006
+    title: doc-db plugin 親要件
+    design_id: DES-026
+    status: pending
+  - requirement_id: FNC-005
+    title: 見出し単位 chunk + Multi-vector Index 生成
+    design_id: DES-026
+    status: pending
+  - requirement_id: FNC-006
+    title: Hybrid 検索（Embedding + Lexical）+ LLM Rerank
+    design_id: DES-026
+    status: pending
+  - requirement_id: FNC-007
+    title: ゴールデンセット評価機能
+    design_id: DES-026
+    status: pending
+  - requirement_id: NFR-004
+    title: 検索品質（recall 同等以上 / 説明可能性）
+    design_id: DES-026
+    status: pending
+  - requirement_id: NFR-005
+    title: ゼロ依存配布（標準ライブラリのみ）
+    design_id: DES-026
+    status: pending
+
+design_traceability:
+  - design_id: DES-026
+    title: doc-db plugin 設計書
+    requirement_ids:
+      - REQ-006
+      - FNC-005
+      - FNC-006
+      - FNC-007
+      - NFR-004
+      - NFR-005
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+      - TASK-009
+      - TASK-010
+      - TASK-011
+      - TASK-012
+      - TASK-013
+      - TASK-014
+      - TASK-015
+      - TASK-016
+
+# === タスク一覧 ===
+tasks:
+  # ---------------------------------------------------------------
+  # P1: 共通基盤（_utils + doc_structure + embedding_api）
+  # ---------------------------------------------------------------
+  - task_id: TASK-001
+    title: 共通基盤モジュール一式（_utils / doc_structure / embedding_api）の配置
+    priority: 95
+    status: completed
+    design_id: DES-026
+    depends_on: []
+    group_id: "GROUP-001 (1/1)"
+    build_check: per_task
+    description:
+      - "plugins/doc-db/ 配下の plugin スケルトン（plugin.json / scripts/ / skills/）を作成する"
+      - "_utils.py を新規作成し DES-026 §3.1 の責務（checksum / hash / glob / NFC 正規化 / log）を実装"
+      - "doc_structure.py を plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py からコピーし plugins/doc-db/scripts/ 配下に配置（forge 本体を runtime 参照しない・AC-01 / NFR-005 整合）"
+      - "embedding_api.py を plugins/doc-advisor/scripts/embedding_api.py からコピーし EMBEDDING_MODEL を text-embedding-3-large に差し替える（DES-026 §6.7）"
+      - "tests/doc_db/test_utils.py を作成し checksum 計算の安定性・glob 解決・NFC 正規化を検証"
+      - "tests/doc_db/test_doc_structure.py で doc_types_map 解決の基本ケースを検証"
+      - "コピー方針の根拠と AC-01 境界をモジュール冒頭の docstring に記載"
+    acceptance_criteria: |
+      python3 -m unittest discover -s tests/doc_db -p 'test_*.py' が成功し、
+      plugins/forge / plugins/doc-advisor のファイルが一切変更されていないこと。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/REQ-006_doc_db.md
+      - docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md
+      - docs/rules/implementation_guidelines.md
+
+  # ---------------------------------------------------------------
+  # P2: chunk_extractor + build_index 骨格 + Index フォーマット
+  # ---------------------------------------------------------------
+  - task_id: TASK-002
+    title: chunk_extractor.py 実装（見出し境界 chunk 抽出）
+    priority: 90
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-002 (1/2)"
+    build_check: skip
+    description:
+      - "DES-026 §3.1 / §6.1 / §6.2 に従い chunk_extractor.py を新規実装する"
+      - "Markdown を H1〜H6 の見出し境界で分割し chunk_id・heading_path・char_range・本文を生成"
+      - "見出しなし文書は文書全体を 1 chunk として扱う（FNC-005 CHK-02）"
+      - "1 chunk が token 上限 8192 を超える場合は段落境界で再分割（DES-026 §6.2）"
+      - "chunk_id は file_path + heading_path の SHA-256 先頭 8 文字、衝突時は連番サフィックス"
+      - "tests/doc_db/test_chunk_extractor.py で見出し階層保持・char_range の正確性・上限超過時の再分割を検証"
+    acceptance_criteria: |
+      tests/doc_db/test_chunk_extractor.py が成功し、設計書 §6.1 / §6.2 の境界条件
+      （見出しなし・上限超過・H1〜H6）すべてのテストケースが通ること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md
+
+  - task_id: TASK-003
+    title: build_index.py コピー → chunk 単位 Index 拡張
+    priority: 90
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+      - TASK-002
+    group_id: "GROUP-002 (2/2)"
+    build_check: on_group_complete
+    description:
+      - "plugins/doc-advisor/scripts/embed_docs.py を plugins/doc-db/scripts/build_index.py としてコピー"
+      - "Index フォーマットを DES-026 §4.1 の chunk 単位スキーマに変更（metadata / chunks 配列）"
+      - "chunk_extractor を呼び出して file → chunks 展開、各 chunk を batch Embedding"
+      - "失敗 chunk は metadata.failed_chunks に構造化記録（chunk_id / path / error_type / attempts / last_failed_at）し build_state=incomplete として保存（DES-026 §4.1）"
+      - "差分更新（新規 / 変更 / 削除 / リネーム）を doc-advisor から継承した checksum 比較で実装"
+      - "tests/doc_db/test_build_index.py で差分更新・incomplete 記録・schema mismatch 時の保護を検証"
+    acceptance_criteria: |
+      tests/doc_db/ の全テストが成功し、build-index 単独で chunk 単位 Index が
+      生成され build_state / failed_chunks の構造が DES-026 §4.1 と一致すること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md
+
+  # ---------------------------------------------------------------
+  # P3: lexical_search + hybrid_score + search_index 骨格
+  # ---------------------------------------------------------------
+  - task_id: TASK-004
+    title: lexical_search.py 実装（語彙一致 + ID パターン高スコア化）
+    priority: 80
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-003 (1/3)"
+    build_check: skip
+    description:
+      - "plugins/doc-advisor/scripts/grep_docs.py をコピーし lexical_search.py に改名"
+      - "DES-026 §6.4 の単語分割（空白 + 記号分割）を実装"
+      - "ID パターン `[A-Z]+-\\d+` の完全一致を高スコア化"
+      - "大文字小文字・全角半角の正規化を適用（FNC-006 LEX-01）"
+      - "tests/doc_db/test_lexical_search.py で ID 高スコア化・正規化・完全一致を検証"
+    acceptance_criteria: |
+      ID 検索（例: `FNC-006`）が自然文検索より高スコアになり、
+      正規化テストが全て通ること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+
+  - task_id: TASK-005
+    title: hybrid_score.py 実装（RRF + 線形加重統合）
+    priority: 80
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-003 (2/3)"
+    build_check: skip
+    description:
+      - "DES-026 §6.5 に従い hybrid_score.py を新規実装"
+      - "Reciprocal Rank Fusion（RRF, k=60）を初期実装として提供"
+      - "設定で α 加重統合（α * emb + (1-α) * lex）に切替可能とする"
+      - "tests/doc_db/test_hybrid_score.py で RRF の決定論性・α=0/α=1 の境界値・空入力を検証"
+    acceptance_criteria: |
+      RRF / 線形加重ともに同一入力で安定したランキングを返し、
+      α=0 で lex のみ・α=1 で emb のみとなること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+
+  - task_id: TASK-006
+    title: search_index.py コピー → Embedding + Lexical + Hybrid 統合
+    priority: 85
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-003
+      - TASK-004
+      - TASK-005
+    group_id: "GROUP-003 (3/3)"
+    build_check: on_group_complete
+    description:
+      - "plugins/doc-advisor/scripts/search_docs.py をコピーし search_index.py に改名"
+      - "Index ロード → Embedding 検索（cosine）と Lexical 検索を並列実行 → Hybrid 統合の検索パイプラインを実装"
+      - "mode={emb, lex, hybrid} の 3 モードを動作させる（rerank は次タスク）"
+      - "起動時に Index ↔ checksums の generated_at 突き合わせを行い不整合時はエラー終了で --full 案内（DES-026 §5.2 / §5.3）"
+      - "Index 鮮度確認 → 不一致時の差分自動再生成（FNC-006 §2 doc-advisor 継承機能）"
+      - "tests/doc_db/test_search_index.py で各 mode の出力フォーマット・鮮度確認・自動再生成・整合性チェックを検証"
+    acceptance_criteria: |
+      mode=emb / lex / hybrid いずれでも検索結果が返り、起動時整合性チェックで
+      generated_at 不一致を検出すると exit code 2 で --full を案内すること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+
+  # ---------------------------------------------------------------
+  # P4: LLM Rerank
+  # ---------------------------------------------------------------
+  - task_id: TASK-007
+    title: llm_rerank.py 実装と search_index への統合
+    priority: 75
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - "DES-026 §6.6 に従い llm_rerank.py を新規実装（採用モデル: gpt-4o-mini）"
+      - "preview = heading_path + 本文先頭 200 token に切り詰めて prompt を構築"
+      - "token budget 動的制御（context 128K の 70% を入力上限）で候補数を 5〜30 の範囲で動的決定"
+      - "API 失敗時は統合スコア順を fallback として返し、結果に fallback_used / rerank_error を含める（FNC-006 RR-02）"
+      - "search_index.py に mode=rerank を統合し検索結果スキーマに api_calls / token_usage を追加（DES-026 §5.3）"
+      - "tests/doc_db/test_llm_rerank.py で fallback 動作・preview 切り詰め・token budget 縮小を検証"
+    acceptance_criteria: |
+      mode=rerank で API 成功時はランキングが変動、API 失敗時は fallback_used=true で
+      統合スコア順が返ること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+
+  # ---------------------------------------------------------------
+  # P5: doc_type 単位 Index 分離 + 入力バリデーション + SKILL レイヤー
+  # ---------------------------------------------------------------
+  - task_id: TASK-008
+    title: doc_type 単位 Index 分離と二相整合性プロトコル実装
+    priority: 80
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-003
+    group_id: "GROUP-005 (1/3)"
+    build_check: skip
+    description:
+      - "DES-026 §3.1 / §4.4 / §5.2 に従い specs Index を doc_type 単位（requirement / design / plan）に分離"
+      - "Index 配置を `.claude/doc-db/index/{rules|specs}/{<doc_type>_index|rules_index}.json` に変更"
+      - "checksums.yaml も doc_type 単位に分離"
+      - "二相書き込みプロトコルを build_index.py に実装（tmp 両方生成 → fsync → os.replace を Index→checksums の順）"
+      - "metadata と checksums.yaml に同一 generated_at を埋め込む"
+      - "tests/doc_db/test_build_index.py に doc_type 分離・二相書き込み失敗時の旧状態保持テストを追加"
+    acceptance_criteria: |
+      specs build で doc_type 単位の Index が生成され、書き込み中の擬似失敗
+      （tmp 削除）で旧 Index / 旧 checksums が保持されること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md
+
+  - task_id: TASK-009
+    title: 入力バリデーションと検索結果観測フィールドの確定
+    priority: 75
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-007
+      - TASK-008
+    group_id: "GROUP-005 (2/3)"
+    build_check: skip
+    description:
+      - "search_index.py / build_index.py の引数パーサに DES-026 §3.2 のバリデーション規則を実装"
+      - "違反時は stderr に {\"error\": ..., \"hint\": ...} を JSON で返し exit 2"
+      - "specs 検索で --doc-type 未指定時のデフォルト requirement,design を実装（FNC-006 OP-04）"
+      - "検索結果スキーマに fallback_used / rerank_error / api_calls / token_usage / build_state / incomplete_count を含める"
+      - "stderr 構造化ログ（event_type 付き 1 行 JSON）を fallback / incomplete / validation_error について出力"
+      - "tests/doc_db/test_search_index.py / test_build_index.py に境界値・許容集合違反・デフォルト doc_type のテストを追加"
+    acceptance_criteria: |
+      --query 0 文字 / --top-n 0 等のすべての違反ケースで exit code 2 が返り、
+      正常検索時の結果 JSON に観測フィールドが揃うこと。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+      - docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md
+
+  - task_id: TASK-010
+    title: SKILL レイヤー実装（/doc-db:build-index と /doc-db:query）
+    priority: 70
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-009
+    group_id: "GROUP-005 (3/3)"
+    build_check: on_group_complete
+    description:
+      - "plugins/doc-db/skills/build-index/SKILL.md を作成し build_index.py の薄いラッパーとする"
+      - "plugins/doc-db/skills/query/SKILL.md を作成し search_index.py の薄いラッパーとする"
+      - "frontmatter は doc-advisor の SKILL を参考に user-invocable / disable-model-invocation を設定"
+      - "SKILL は ${CLAUDE_PLUGIN_ROOT}/scripts/ のスクリプト呼び出しに留め、ロジックを書かない"
+      - "両 SKILL の手動実行で rules / specs の Index 生成 → 検索が通ることを確認"
+    acceptance_criteria: |
+      /doc-db:build-index --category rules / /doc-db:query --category specs --query "..."
+      の手動実行が成功し、結果スキーマが §5.3 と一致すること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  # ---------------------------------------------------------------
+  # P6: 評価機能（FNC-007）
+  # ---------------------------------------------------------------
+  - task_id: TASK-011
+    title: evaluate.py ランナー実装（doc-db / ToC / doc-advisor 並列実行）
+    priority: 65
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-010
+    group_id: "GROUP-006 (1/3)"
+    build_check: skip
+    description:
+      - "DES-026 §3.1 / §5.4 に従い evaluate.py を新規実装"
+      - "ゴールデンセット（meta/test_docs/）を読み込み doc-db / ToC / doc-advisor の検索を順に実行"
+      - "recall / precision / false negative 数（MET-01）と検索時間（MET-02）と API コール数・token 数（MET-03）を集計"
+      - "false negative の傾向分類（ID 検索失敗 / 長文希釈 / 自然文意味ズレ 等）を実装（FNC-007 REP-02）"
+      - "tests/doc_db/test_evaluate.py で recall / precision 計算・false negative 分類を検証"
+    acceptance_criteria: |
+      小規模ゴールデンセットで全指標が算出され、傾向分類が空でないこと。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md
+      - docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md
+
+  - task_id: TASK-012
+    title: AC-01 を保つ評価用一時 Index 生成手順の実装
+    priority: 65
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-011
+    group_id: "GROUP-006 (2/3)"
+    build_check: skip
+    description:
+      - "DES-026 §6.7 の手順をシェル / Python で自動化（meta/test_docs/_tmp_3large/ 配下）"
+      - "doc-advisor 依存モジュールを $TMP/scripts/ にコピー、コピー版の embedding_api.py で EMBEDDING_MODEL を text-embedding-3-large に変更"
+      - "$TMP/docs を評価対象 docs/ への symlink として配置（root_dirs 解決のため）"
+      - "$TMP/.doc_structure.yaml を生成し index_file を絶対パスで明示"
+      - "実行時に CLAUDE_PROJECT_DIR=$TMP を明示して project_root を $TMP に固定（toc_utils が cwd より優先するため）"
+      - "評価終了後に $TMP をディレクトリごと削除"
+      - "doc-advisor 本体（plugins/doc-advisor/ と .claude/doc-advisor/）が一切変更されないことを assert（AC-01）"
+    acceptance_criteria: |
+      評価実行前後で plugins/doc-advisor/ と .claude/doc-advisor/ の checksum が
+      一致し、$TMP は完全削除されること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/REQ-006_doc_db.md
+
+  - task_id: TASK-013
+    title: Markdown レポート生成と /doc-db:evaluate SKILL
+    priority: 60
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-012
+    group_id: "GROUP-006 (3/3)"
+    build_check: on_group_complete
+    description:
+      - "FNC-007 REP-01 / REP-02 / REP-03 に従う Markdown レポートを evaluate.py から生成"
+      - "方式別集計表（recall / precision / 検索時間 / コスト）を冒頭に配置"
+      - "false negative 一覧と傾向分類セクションを含める"
+      - "plugins/doc-db/skills/evaluate/SKILL.md を作成し --method {toc|advisor|doc-db|all} と --output を受け取る"
+      - "SKILL から evaluate.py 経由で Markdown レポートが指定パスに出力されることを確認"
+    acceptance_criteria: |
+      /doc-db:evaluate --method all --output report.md で recall / precision /
+      false negative 分類を含む Markdown が生成されること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md
+
+  # ---------------------------------------------------------------
+  # P5.5: grep 補完（FNC-006 GRP-01〜03）
+  # ---------------------------------------------------------------
+  - task_id: TASK-016
+    title: grep_docs.py 実装と /doc-db:query SKILL ワークフロー統合
+    priority: 75
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-010
+    group_id: null
+    build_check: per_task
+    description:
+      - "DES-026 §3.4 に従い plugins/doc-db/scripts/grep_docs.py を新規実装"
+      - ".doc_structure.yaml の root_dirs / target_glob / exclude に従い対象ファイルを走査"
+      - "keyword の行マッチ結果（パス・行番号・マッチ行）を構造化して返す"
+      - "plugins/doc-db/skills/query/SKILL.md にワークフローを記述: Hybrid 検索 → ID/固有名詞抽出 → grep → 結果統合"
+      - "grep 結果のうち Hybrid 検索結果に含まれないパスを補完候補として追加する統合ロジックを SKILL に記述"
+      - "tests/doc_db/test_grep_docs.py で対象ファイル解決・keyword マッチ・exclude 除外を検証"
+    acceptance_criteria: |
+      /doc-db:query --query "FNC-006" 実行時に grep 補完が動作し、
+      Index に含まれないファイルも結果に含まれること。
+      grep 単体テストが全て成功すること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md
+      - plugins/doc-advisor/docs/query_index_workflow.md
+
+  # ---------------------------------------------------------------
+  # 統合テスト + 配布
+  # ---------------------------------------------------------------
+  - task_id: TASK-014
+    title: 統合テスト 3 シナリオの実装
+    priority: 70
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-010
+      - TASK-013
+    group_id: null
+    build_check: per_task
+    description:
+      - "tests/doc_db/test_integration.py を新規作成"
+      - "シナリオ 1: Index 構築 → 検索 → 評価のエンドツーエンド（meta/test_docs/ 小規模ゴールデンセット）"
+      - "シナリオ 2: doc_type 単位 Index 分離（複数 doc_type 指定時のマージ結果が期待通り）"
+      - "シナリオ 3: doc-advisor との並行運用（doc-db build / query 前後で plugins/doc-advisor/ と .claude/doc-advisor/ が不変）"
+      - "OpenAI API key が無い CI 環境でもスキップせずモック / 録画レスポンスで動作するよう設計（NFR-005）"
+    acceptance_criteria: |
+      3 シナリオすべてが API key 有無にかかわらずローカルで成功し、
+      AC-01〜AC-04 を機械的に検証できること。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/REQ-006_doc_db.md
+
+  - task_id: TASK-015
+    title: plugin 配布（plugin.json / marketplace.json / README）と最終確認
+    priority: 60
+    status: completed
+    design_id: DES-026
+    depends_on:
+      - TASK-014
+    group_id: null
+    build_check: per_task
+    description:
+      - "plugins/doc-db/.claude-plugin/plugin.json を作成し name / version / description を記入"
+      - ".claude-plugin/marketplace.json に doc-db を登録"
+      - "docs/readme/guide_doc-db_ja.md を新規作成し /doc-db:build-index / query / evaluate の使用例を記載"
+      - "プロジェクト直下 README.md に doc-db を追加（4 plugin → 5 plugin）"
+      - "/plugin install doc-db のローカルテストで build-index / query / evaluate が単体で動作することを確認"
+      - "AC-01〜AC-05 のチェックリストを README に併記"
+    acceptance_criteria: |
+      claude --plugin-dir ./plugins/doc-db でインストールし build-index / query / evaluate
+      が動作する。AC-01〜AC-05 すべてが満たされる。
+    required_reading:
+      - docs/specs/doc-db/design/DES-026_doc_db_design.md
+      - docs/specs/doc-db/requirements/REQ-006_doc_db.md
+      - docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-05-07"
+    content: 初版作成（DES-026 §9 実装ロードマップ P1〜P6 を 15 タスクに展開）
+  - date: "2026-05-08"
+    content: TASK-016 追加（FNC-006 GRP-01〜03 grep 補完。DES-026 §3.4 対応）

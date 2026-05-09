@@ -4,6 +4,8 @@
 
 **マーケットプレイスバージョン: 0.1.19**
 
+マーケットプレイスは **5 つのプラグイン**（forge、anvil、xcode、doc-advisor、**doc-db**）で構成される。**doc-db** は見出し単位 chunk の Embedding + Lexical による Hybrid 検索と LLM Rerank で、ルール・仕様文書の発見精度を補完する。doc-advisor（ToC／軽量インデックス）と**上位互換ではなく併用**し、同一の `.doc_structure.yaml` を参照する。
+
 [English README (README_en.md)](README_en.md)
 
 ## 仕様駆動開発とは
@@ -30,18 +32,20 @@ flowchart LR
     end
     RF --> DL([成果物])
     DA[doc-advisor] -. コンテキスト収集 .-> forge
+    DB[doc-db] -. chunk Hybrid 検索 .-> forge
     AV[anvil] -- コミット & PR --> DL
     XC[xcode] -. ビルド & テスト .-> RF
 ```
 
 ## プラグイン一覧
 
-| プラグイン      | バージョン | 説明                                                                                                                                              |
-| --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.0.44     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応                           |
-| **anvil**       | 0.0.7      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                                                     |
-| **xcode**       | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                                          |
-| **doc-advisor** | 0.2.3      | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する |
+| プラグイン      | バージョン | 説明                                                                                                                                                     |
+| --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **forge**       | 0.0.44     | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応                                  |
+| **anvil**       | 0.0.7      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                                                            |
+| **xcode**       | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                                                 |
+| **doc-advisor** | 0.2.3      | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する        |
+| **doc-db**      | 0.0.1      | 見出し chunk 単位の Hybrid 検索（Embedding + Lexical）と LLM Rerank。ID や固有名詞は grep 結果も統合して取りこぼしを抑える（doc-advisor とは併用・補完） |
 
 ## スキル一覧
 
@@ -147,6 +151,15 @@ flowchart LR
 
 > **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
+### doc-db
+
+> [詳細ガイド](docs/readme/guide_doc-db_ja.md) — 使い方、使用例、doc-advisor との併用
+
+| スキル                                                        | 説明                                                                 | トリガー            |
+| ------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- |
+| [**build-index**](docs/readme/guide_doc-db_ja.md#build-index) | 見出し chunk 単位で Index を構築・更新（rules / specs、`--full` 等） | `"doc-db の index"` |
+| [**query**](docs/readme/guide_doc-db_ja.md#query)             | Hybrid / Rerank 検索。必要に応じ grep で全文行検索し結果を統合       | `"doc-db で検索"`   |
+
 ## インストール
 
 ### 方法 A: マーケットプレイス経由（永続）
@@ -158,6 +171,7 @@ Claude Code セッション内で:
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
 /plugin install doc-advisor@bw-cc-plugins
+/plugin install doc-db@bw-cc-plugins
 /plugin install xcode@bw-cc-plugins
 ```
 
@@ -188,7 +202,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## 文書構造管理 (.doc_structure.yaml)
 
-`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge と doc-advisor の両方が参照する。`/forge:setup-doc-structure` で生成する。
+`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge・doc-advisor・doc-db が参照する。`/forge:setup-doc-structure` で生成する。
 → [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) | [スキーマ仕様](plugins/forge/docs/doc_structure_format.md)
 
 ## Git 情報キャッシュ (.git_information.yaml)
@@ -200,7 +214,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
-- OpenAI API キー（doc-advisor の embedding 機能使用時。`OPENAI_API_KEY` 環境変数に設定）
+- OpenAI API キー（doc-advisor の embedding、および doc-db の Index 構築・検索・Rerank 使用時。`OPENAI_API_KEY` 環境変数に設定）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 - Xcode / `xcodebuild`（xcode プラグイン用）
 
