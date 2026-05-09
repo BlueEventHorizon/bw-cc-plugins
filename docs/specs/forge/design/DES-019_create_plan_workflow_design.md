@@ -15,17 +15,17 @@
 
 ## 1. 概要
 
-`/forge:start-plan` は要件定義書・設計書からタスクを抽出し計画書を作成するオーケストレータスキル。
-文書取得 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
+`/forge:start-plan` は設計書から実装戦略を策定し、タスクを抽出して計画書を作成するオーケストレータスキル。
+文書取得 → 実装戦略策定 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
 
-### 現状の課題
+### SubAgent への委譲
 
-現在は全工程をオーケストレータ自身が単一コンテキストで実行している。
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程は subagent への委譲が望ましい:
+以下の工程を subagent に委譲している:
 
 - 要件定義書・設計書・ルールの収集（コンテキスト収集 agent）
-- AIレビュー（既に `/forge:review plan` として委譲済み）
+- 実装戦略の策定（実装戦略 agent — `strategy_formulation_spec.md`）
+- AIレビュー（`/forge:review plan`）
 
 ---
 
@@ -33,33 +33,44 @@
 
 ```mermaid
 flowchart TD
-    User([ユーザー]) --> ORCHESTRATOR
+    User([ユーザー]) --> ORCHESTRATOR["start-plan orchestrator"]
 
-    ORCHESTRATOR["/forge:start-plan<br>オーケストレーター"] --> PREREQ
+    ORCHESTRATOR --> PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>モード判定"]
 
-    PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>モード判定"] --> CONTEXT
+    PREREQ --> CONTEXT
 
-    CONTEXT["コンテキスト収集<br>（並列）"] --> MODE_CHECK
-
-    subgraph CONTEXT_AGENTS["コンテキスト収集 agent"]
-        A1["specs agent<br>要件定義書+設計書取得"] --> REFS_SPECS["refs/specs.yaml"]
-        A2["rules agent<br>ルール取得"] --> REFS_RULES["refs/rules.yaml"]
+    subgraph CONTEXT["Phase 1: コンテキスト収集"]
+        A1["specs agent"] --> REFS_SPECS["refs/specs.yaml"]
+        A2["rules agent"] --> REFS_RULES["refs/rules.yaml"]
     end
 
-    MODE_CHECK{モード?} -->|"新規作成"| CREATE
+    CONTEXT --> READ["Phase 2: 文書読み込み"]
+
+    READ --> STRATEGY_PHASE
+
+    subgraph STRATEGY_PHASE["Phase 3: 実装戦略策定"]
+        SA["strategy agent<br>strategy_formulation_spec.md"] --> DRAFT["strategy_draft.md"]
+        DRAFT --> APPROVAL{"ユーザー承認?"}
+        APPROVAL -->|"修正要望"| SA
+        APPROVAL -->|"承認"| COPY["output_dir に配置<br>feature_strategy.md"]
+    end
+
+    STRATEGY_PHASE --> MODE_CHECK{モード?}
+
+    MODE_CHECK -->|"新規作成"| CREATE
     MODE_CHECK -->|"更新"| UPDATE_CHECK
 
-    UPDATE_CHECK["既存計画書の確認<br>要件・設計反映状況<br>未着手タスク把握"] --> CREATE
+    UPDATE_CHECK["既存計画書の確認"] --> CREATE
 
-    CREATE["計画書作成<br>タスク抽出・分割<br>フォーマット適用"] --> QA
+    CREATE["Phase 4: 計画書作成<br>戦略に基づくタスク抽出"] --> QA["完全性チェック"]
 
-    QA["完全性チェック<br>トレーサビリティ"] --> AI_REVIEW
+    QA --> AI_REVIEW["Phase 5: AIレビュー<br>review plan --auto"]
 
-    AI_REVIEW["/forge:review plan --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> TOC
+    AI_REVIEW --> TOC["create-specs-toc"]
 
-    TOC["/create-specs-toc"] --> COMMIT
+    TOC --> COMMIT["anvil:commit"]
 
-    COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
+    COMMIT --> DONE([完了])
 ```
 
 ---
@@ -91,14 +102,32 @@ flowchart TD
 
 **設計書は必須入力。** 見つからない場合は AskUserQuestion でユーザーに手動指定またはスキップ確認（リスク理解のもと）。
 
-### Phase 2: 計画書の作成・更新
+### Phase 2: 文書の読み込み
+
+| Step | 内容                                                    | 実行者       |
+| ---- | ------------------------------------------------------- | ------------ |
+| 2.1  | refs/specs.yaml → 要件定義書・設計書を Read             | orchestrator |
+| 2.2  | refs/rules.yaml → プロジェクト固有ルールを Read         | orchestrator |
+
+### Phase 3: 実装戦略の策定 [MANDATORY]
+
+| Step | 内容                                                          | 実行者         |
+| ---- | ------------------------------------------------------------- | -------------- |
+| 3.1  | strategy agent 起動（`strategy_formulation_spec.md` を渡す）  | SubAgent       |
+| 3.2  | `strategy_draft.md` を Read してユーザーに提示・承認を取得    | orchestrator   |
+| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置    | orchestrator   |
+
+**入力**: refs/specs.yaml から抽出した設計書パス + refs/rules.yaml のルール文書パス
+**出力**: `{session_dir}/strategy_draft.md` → `{output_dir}/{feature}_strategy.md`
+
+### Phase 4: 計画書の作成・更新
 
 | Step | 内容                                                                   |
 | ---- | ---------------------------------------------------------------------- |
-| 2.1  | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握） |
-| 2.2  | 設計書からタスク抽出・分割                                             |
-| 2.3  | フォーマット適用（`plan_format.md` に準拠）                            |
-| 2.4  | 完全性チェック [MANDATORY]                                             |
+| 4.1  | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握） |
+| 4.2  | 実装戦略のフェーズ分割に基づきタスク抽出・分割                         |
+| 4.3  | フォーマット適用（`plan_format.md` に準拠）                            |
+| 4.4  | 完全性チェック [MANDATORY]                                             |
 
 **タスク粒度 [MANDATORY]:**
 
@@ -108,22 +137,23 @@ flowchart TD
 
 **完全性チェック項目:**
 
+- 実装戦略のフェーズ分割がタスク優先度に反映されているか
 - タスクID の一意性
 - 要件 → 設計 → タスクのトレーサビリティマトリクス
 - 優先度と依存関係の整合性
 
-### Phase 3: AIレビュー
+### Phase 5: AIレビュー
 
 | Step | 内容                                                            | 実行者              |
 | ---- | --------------------------------------------------------------- | ------------------- |
-| 3.1  | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| 5.1  | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
 
-### Phase 4: 完了処理
+### 完了処理
 
 | Step | 内容                                       |
 | ---- | ------------------------------------------ |
-| 4.1  | `/create-specs-toc` 実行（利用可能な場合） |
-| 4.2  | `/anvil:commit` による commit/push 確認    |
+| 6.1  | `/create-specs-toc` 実行（利用可能な場合） |
+| 6.2  | `/anvil:commit` による commit/push 確認    |
 
 ---
 
@@ -161,9 +191,20 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                     | 説明                 |
-| -------------------------------------------- | -------------------- |
-| `plugins/forge/skills/start-plan/SKILL.md`   | スキル仕様           |
-| `plugins/forge/docs/plan_format.md`          | 計画書テンプレート   |
-| `plugins/forge/docs/plan_principles_spec.md` | 計画書作成原則ガイド |
-| `plugins/forge/docs/spec_format.md`          | ID分類カタログ       |
+| ファイル                                              | 説明                              |
+| ----------------------------------------------------- | --------------------------------- |
+| `plugins/forge/skills/start-plan/SKILL.md`            | スキル仕様                        |
+| `plugins/forge/docs/strategy_formulation_spec.md`     | 実装戦略 SubAgent 作業指示書      |
+| `plugins/forge/docs/plan_format.md`                   | 計画書テンプレート                |
+| `plugins/forge/docs/plan_principles_spec.md`          | 計画書作成原則ガイド              |
+| `plugins/forge/docs/spec_format.md`                   | ID分類カタログ                    |
+| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md` | ADR: 実装戦略フェーズ導入 |
+
+---
+
+## 改定履歴
+
+| 日付       | 内容                                                              |
+| ---------- | ----------------------------------------------------------------- |
+| 2026-03-14 | 初版作成                                                          |
+| 2026-05-09 | Phase 3（実装戦略策定 SubAgent）追加、Phase 番号繰り下げ（DES-027） |
