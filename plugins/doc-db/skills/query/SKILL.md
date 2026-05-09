@@ -24,7 +24,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/search_index.py" \
 ```
 
 - `$ARGUMENTS` からユーザーの意図を解釈し、各引数を明示的に組み立てる（`$@` は使わない）。
-- specs で `--doc-type` をユーザーが省略している場合、`search_index.py` 側の既定（`requirement` と `design`）に合わせる。
+- `--doc-type` 省略時、スクリプトは `.doc_structure.yaml` の全 doc_type を検索する。ユーザーが特定の種別のみ検索したい意図がある場合は AI が判断して `--doc-type` を明示する。
 - rules の場合、`--doc-type` は付けない（無視される）。
 
 ## 2. grep 併用（条件付き・DES-026 §3.4）
@@ -47,7 +47,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/search_index.py" \
 
 **grep の実行（抽出した各キーワードごと）:**
 
-`search_index.py` に渡した `--category` と一致させる。`--doc-type` は specs のときのみ、`search_index` に渡した値と同じカンマ区切りを渡す（ユーザーが省略していたら `grep_docs` 側も省略でよい — scripts 既定は `requirement,design`）。
+`search_index.py` に渡した `--category` と一致させる。`--doc-type` は specs のときのみ、`search_index` に渡した値と同じカンマ区切りを渡す（ユーザーが省略していたら `grep_docs` 側も省略でよい — 両スクリプトとも `.doc_structure.yaml` の全 doc_type を検索する）。
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/grep_docs.py" \

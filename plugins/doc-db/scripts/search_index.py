@@ -83,12 +83,12 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (na * nb)
 
 
-def _resolve_doc_types(category: str, doc_type: str) -> List[str]:
+def _resolve_doc_types(category: str, doc_type: str, project_root: Path) -> List[str]:
     if category != "specs":
         return [""]
     if doc_type:
         return [x.strip() for x in doc_type.split(",") if x.strip()]
-    return ["requirement", "design"]
+    return build_index.resolve_specs_doc_types(project_root)
 
 
 def _validate_doc_type_values(project_root: Path, category: str, doc_types: List[str]):
@@ -160,7 +160,7 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
     if top_n < 1 or top_n > 100:
         _error("top_n must be 1..100", "set --top-n 1..100")
 
-    doc_types = _resolve_doc_types(category, doc_type)
+    doc_types = _resolve_doc_types(category, doc_type, project_root)
     _validate_doc_type_values(project_root, category, doc_types)
     indexes = []
     for one_type in doc_types:

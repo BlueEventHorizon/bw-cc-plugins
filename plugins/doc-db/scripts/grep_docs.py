@@ -20,7 +20,7 @@ stdout 出力:
     }
 
 規約:
-    - specs かつ --doc-type 省略時は search_index と同様に requirement,design を対象とする
+    - specs かつ --doc-type 省略時は .doc_structure.yaml の全 doc_type を対象とする
     - rules 時は --doc-type を無視（FNC-006 OP-05）
 """
 
@@ -60,17 +60,13 @@ def parse_args(argv: List[str] | None = None):
     parser.add_argument(
         "--doc-type",
         default="",
-        help="specs のみ。カンマ区切り（例: requirement,design）。省略時は requirement,design",
+        help="specs のみ。カンマ区切り（例: requirement,design）。省略時は全 doc_type",
     )
     return parser.parse_args(argv)
 
 
-def _default_specs_doc_types() -> str:
-    return "requirement,design"
-
-
 def _resolve_target_rel_paths(project_root: Path, category: str, doc_type: str) -> List[str]:
-    """build_index.resolve_target_files と search のデフォルトスコープを踏襲する。"""
+    """対象ファイルを解決する。--doc-type 省略時は .doc_structure.yaml の全 doc_type を対象とする。"""
     config, raw_content = load_doc_structure(str(project_root))
     validation = validate_doc_structure(config, raw_content)
     if not validation.get("valid"):
@@ -80,18 +76,20 @@ def _resolve_target_rel_paths(project_root: Path, category: str, doc_type: str) 
         return resolve_files(config, "rules", str(project_root))
 
     # specs
-    dt = doc_type.strip()
-    if not dt:
-        dt = _default_specs_doc_types()
-    types = [x.strip() for x in dt.split(",") if x.strip()]
     specs = config.get("specs", {})
     doc_types_map = specs.get("doc_types_map", {})
     allowed = set(invert_doc_types_map(doc_types_map).keys())
-    invalid = [t for t in types if t not in allowed]
-    if invalid:
-        raise ValueError(
-            f"unsupported doc_type: {','.join(invalid)}; allowed: {','.join(sorted(allowed))}"
-        )
+
+    dt = doc_type.strip()
+    if dt:
+        types = [x.strip() for x in dt.split(",") if x.strip()]
+        invalid = [t for t in types if t not in allowed]
+        if invalid:
+            raise ValueError(
+                f"unsupported doc_type: {','.join(invalid)}; allowed: {','.join(sorted(allowed))}"
+            )
+    else:
+        types = sorted(allowed)
 
     files: List[str] = []
     for t in types:

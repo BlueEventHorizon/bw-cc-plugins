@@ -156,6 +156,41 @@ class SearchIndexTests(unittest.TestCase):
         self.assertIn("docs/specs/f1/requirements/r1.md", req_paths)
         self.assertIn("docs/specs/f1/design/d1.md", des_paths)
 
+    def test_specs_default_doc_types_dynamic(self):
+        """--doc-type 省略時は .doc_structure.yaml の全 doc_type を動的取得する。"""
+        # plan を追加した .doc_structure.yaml を作成
+        (self.root / "docs/specs/f1/plan").mkdir(parents=True, exist_ok=True)
+        (self.root / "docs/specs/f1/plan/p1.md").write_text("# PLAN\nplan body", encoding="utf-8")
+        (self.root / ".doc_structure.yaml").write_text(
+            "\n".join([
+                "rules:",
+                "  root_dirs:",
+                "    - docs/rules/",
+                "  doc_types_map:",
+                "    docs/rules/: rule",
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+                "specs:",
+                "  root_dirs:",
+                "    - docs/specs/**/requirements/",
+                "    - docs/specs/**/design/",
+                "    - docs/specs/**/plan/",
+                "  doc_types_map:",
+                "    docs/specs/**/requirements/: requirement",
+                "    docs/specs/**/design/: design",
+                "    docs/specs/**/plan/: plan",
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+            ]),
+            encoding="utf-8",
+        )
+        rc, result = search_index.search(self.root, "specs", "plan body", "lex", 5)
+        self.assertEqual(rc, 0)
+        paths = [r["path"] for r in result["results"]]
+        self.assertIn("docs/specs/f1/plan/p1.md", paths)
+
     def test_auto_rebuild_does_not_pollute_stdout(self):
         """Regression: search() must not write anything to stdout (I/O separation)."""
         (self.root / "docs/rules/extra.md").write_text("# EXTRA\nextra body", encoding="utf-8")

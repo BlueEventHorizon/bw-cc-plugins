@@ -100,13 +100,15 @@ class GrepDocsTests(unittest.TestCase):
         data = json.loads(buf.getvalue())
         self.assertEqual(len(data["results"]), 1)
 
-    def test_specs_default_doc_types_excludes_plan(self):
+    def test_specs_default_doc_types_includes_all(self):
+        """--doc-type 省略時は .doc_structure.yaml の全 doc_type（plan 含む）を検索する。"""
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = grep_docs.main(["--category", "specs", "--keyword", "PLAN-XYZ"])
         self.assertEqual(rc, 0)
         data = json.loads(buf.getvalue())
-        self.assertEqual(data["results"], [])
+        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["results"][0]["path"], "docs/specs/f1/plan/p1.md")
 
     def test_specs_explicit_plan_doc_type_finds_plan(self):
         buf = io.StringIO()
