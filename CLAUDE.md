@@ -103,6 +103,10 @@ python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パ
 python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクトルート]
 ```
 
+## Debugging [MANDATORY]
+
+コード読解による推論で 2〜3 回修正しても解決しない場合は、**ログ挿入で実際の状態を観測する**。推測に基づく修正を繰り返さず、`print()` / 変数ダンプで実際に何が起こっているかを確認してから次の修正を行う。観測後にログを除去すること。
+
 ## Testing [MANDATORY]
 
 `plugins/` 配下の Python スクリプトにはテストが必須。SKILL.md はテスト困難なため例外。
