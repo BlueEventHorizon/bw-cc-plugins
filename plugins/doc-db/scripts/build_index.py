@@ -42,11 +42,26 @@ def parse_args():
     return parser.parse_args()
 
 
+def _get_output_dir(project_root: Path, category: str) -> str:
+    """doc_structure.yaml から output_dir を取得する。"""
+    try:
+        config, _ = load_doc_structure(str(project_root))
+        return config.get(category, {}).get("output_dir", "")
+    except (FileNotFoundError, Exception):
+        return ""
+
+
 def get_index_path(project_root: Path, category: str, doc_type: str = "") -> Path:
+    output_dir = _get_output_dir(project_root, category)
+    if output_dir:
+        base = project_root / output_dir.rstrip("/") / "index" / category
+    else:
+        base = project_root / ".claude" / "doc-db" / "index" / category
+
     if category == "specs":
         suffix = f"{doc_type}_index.json" if doc_type else "specs_index.json"
-        return project_root / f".claude/doc-db/index/specs/{suffix}"
-    return project_root / ".claude/doc-db/index/rules/rules_index.json"
+        return base / suffix
+    return base / "rules_index.json"
 
 
 def get_checksums_path(index_path: Path) -> Path:

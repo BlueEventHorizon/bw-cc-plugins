@@ -166,5 +166,99 @@ class BuildIndexTests(unittest.TestCase):
         self.assertIn("unsupported doc_type", err.getvalue())
 
 
+class OutputDirTests(unittest.TestCase):
+    """get_index_path が output_dir を尊重するかのテスト。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(self.tmp.name)
+        (self.root / "docs/rules").mkdir(parents=True)
+        (self.root / "docs/rules/a.md").write_text("# A\nbody", encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_default_path_without_output_dir(self):
+        """output_dir 未設定時はデフォルトの .claude/doc-db/index/ を使う。"""
+        (self.root / ".doc_structure.yaml").write_text(
+            "\n".join([
+                "rules:",
+                "  root_dirs:",
+                "    - docs/rules/",
+                "  doc_types_map:",
+                "    docs/rules/: rule",
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+            ]),
+            encoding="utf-8",
+        )
+        path = build_index.get_index_path(self.root, "rules")
+        self.assertEqual(
+            path,
+            self.root / ".claude" / "doc-db" / "index" / "rules" / "rules_index.json",
+        )
+
+    def test_custom_path_with_output_dir(self):
+        """output_dir 設定時はそのディレクトリにインデックスを出力する。"""
+        (self.root / ".doc_structure.yaml").write_text(
+            "\n".join([
+                "rules:",
+                "  output_dir: custom/test_output/",
+                "  root_dirs:",
+                "    - docs/rules/",
+                "  doc_types_map:",
+                "    docs/rules/: rule",
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+            ]),
+            encoding="utf-8",
+        )
+        path = build_index.get_index_path(self.root, "rules")
+        self.assertEqual(
+            path,
+            self.root / "custom" / "test_output" / "index" / "rules" / "rules_index.json",
+        )
+
+    def test_specs_with_output_dir(self):
+        """specs カテゴリでも output_dir が効く。"""
+        (self.root / ".doc_structure.yaml").write_text(
+            "\n".join([
+                "rules:",
+                "  root_dirs:",
+                "    - docs/rules/",
+                "  doc_types_map:",
+                "    docs/rules/: rule",
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+                "specs:",
+                "  output_dir: meta/test/",
+                "  root_dirs:",
+                '    - "docs/specs/**/requirements/"',
+                "  doc_types_map:",
+                '    "docs/specs/**/requirements/": requirement',
+                "  patterns:",
+                '    target_glob: "**/*.md"',
+                "    exclude: []",
+            ]),
+            encoding="utf-8",
+        )
+        path = build_index.get_index_path(self.root, "specs", "requirement")
+        self.assertEqual(
+            path,
+            self.root / "meta" / "test" / "index" / "specs" / "requirement_index.json",
+        )
+
+    def test_missing_doc_structure_falls_back_to_default(self):
+        """doc_structure.yaml がない場合はデフォルトパスにフォールバック。"""
+        path = build_index.get_index_path(self.root, "rules")
+        self.assertEqual(
+            path,
+            self.root / ".claude" / "doc-db" / "index" / "rules" / "rules_index.json",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
