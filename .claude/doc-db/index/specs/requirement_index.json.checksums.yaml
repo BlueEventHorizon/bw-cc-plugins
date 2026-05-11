@@ -1,0 +1,28 @@
+# doc-db checksums
+# Auto-generated - do not edit
+generated_at: 2026-05-11T13:40:20Z
+file_count: 23
+checksums:
+  docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
+  docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
+  docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
+  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: db988f06f6af2e6d4b731e356cadfedef5a17489de9a1f714a062107e8ebdcdf
+  docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: 2a913f08383b45272e025f6b9df41c0e6073df431f6372d09c3cfed1cd14b5a4
+  docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md: cb6f505f6a76c03541f92633de47ebcf7a47aa5d25aecefce4b4af5c5d66c73f
+  docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md: 58559880acfec8b7ae3697a28868958491430fe3561a104864e3ba01008e241a
+  docs/specs/doc-advisor/requirements/NFR-002_yaml_toc_abolition_spec.md: c5f4bde6e317477f63a47b94d9e7f91babe5e16b32483c6f724419b88062e750
+  docs/specs/doc-advisor/requirements/NFR-003_standard_library_preferred_spec.md: e88dd0e5af5c77a89356d78ba7393b9b49924e8baa1b46a02c82c2c11592a7ea
+  docs/specs/doc-advisor/requirements/REQ-001_doc_advisor.md: 1c5e85278d467134abed10e2d48944eb19d6bab49db967f7c7f2215bbd5c27b3
+  docs/specs/doc-advisor/requirements/REQ-002_upgrade_v2_to_v3.md: d1052f9e76a55360f3614e57103c75b420be3c089044b4f867e967d6cbbc5342
+  docs/specs/doc-advisor/requirements/REQ-003_versioned_migration.md: 7ed7b69855005886bf472d0a1fdbae3f421980e1376e7a2c6afd54494318749c
+  docs/specs/doc-advisor/requirements/technical_qa.md: ff2633465c89e08abc07613d4ca5d6dacfc948928c531d36f7d88278f79a8ebd
+  docs/specs/doc-advisor/requirements/technical_research_report.md: d7830ed9b2b50d1f0155449d8a3f4445d8de16a99597525ac04e97472b9074dc
+  docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md: a77db97491efb8181025d946fda8829f8f7e21c422eb60878b9133803899196b
+  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 6f3effde893b930bbc8a2168fc1ac518237f3a5661d87c19da04f222ba027722
+  docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md: d8ac0542b7370f720121d5946369b585eb8b70a01bbf90e30533592e2e90ce04
+  docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: 5c530b5072c2006cf0e571f44655daf7239a522bcde74f2efc0a09ef49c252da
+  docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 34ba80946e94f8f02be2c5031179d903737eca014c8a5ba0f2fc970f3874f4fc
+  docs/specs/doc-db/requirements/REQ-006_doc_db.md: 8c541e4849d11413a60f9a24837a29f173306e4009f199a623ac483ccdc1bd0a
+  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 8abf0c945e48a1b0d6be922c6e7c63da0c6bf516b30876a66e1679e3a2223365
+  docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 61c41caf741b964dfbbe8a798ce6236eb14abd3102180362c737895042d9ea33
+  docs/specs/xcode/requirements/REQ-001_doc_comments.md: cb0d31c986ffc5129df925688a18de4d965666138af5be1531603dfa518087e1

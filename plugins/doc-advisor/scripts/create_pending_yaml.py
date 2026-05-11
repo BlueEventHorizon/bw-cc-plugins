@@ -293,7 +293,7 @@ def main():
     # --check mode: report staleness without creating files
     if args.check:
         if not TOC_FILE.exists():
-            log(f"WARNING: ToC not found. Run /doc-advisor:create-{CATEGORY}-toc to generate it.")
+            log(f"WARNING: ToC not found. Run create-{CATEGORY}-toc to generate it.")
             return 0
         if not CHECKSUMS_FILE.exists():
             return 0
@@ -325,7 +325,7 @@ def main():
             if deleted_count:
                 parts.append(f"{deleted_count} deleted")
             log(f"WARNING: ToC may be stale ({', '.join(parts)}).")
-            log(f"Consider running /doc-advisor:create-{CATEGORY}-toc to refresh the index.")
+            log(f"Consider running create-{CATEGORY}-toc to refresh the index.")
         return 0
 
     full_mode = args.full

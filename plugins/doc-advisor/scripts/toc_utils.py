@@ -169,7 +169,7 @@ def find_config_file():
 
     raise FileNotFoundError(
         ".doc_structure.yaml not found.\n"
-        "Run /forge:setup-doc-structure to create it."
+        "Run setup-doc-structure to create it."
     )
 
 
@@ -1214,7 +1214,7 @@ def init_common_config(category):
         if not default_path.is_dir():
             raise ConfigNotReadyError(
                 f"Document directories not configured for '{category}'. "
-                f"Run /forge:setup-doc-structure to configure."
+                f"Run setup-doc-structure to configure."
             )
 
     root_dirs_config = expand_root_dir_globs(root_dirs_config, project_root)

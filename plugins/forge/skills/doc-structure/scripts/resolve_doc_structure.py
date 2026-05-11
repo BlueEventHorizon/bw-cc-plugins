@@ -552,7 +552,7 @@ def validate_doc_structure(config, raw_content):
               {"valid": False, "error": "...", "suggestion": "..."}
     """
     suggestion = (
-        "/forge:setup-doc-structure を実行して "
+        "setup-doc-structure を実行して "
         ".doc_structure.yaml を再生成してください"
     )
 

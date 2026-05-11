@@ -74,7 +74,7 @@ def load_version_config(project_root):
     if not config_path.exists():
         raise FileNotFoundError(
             f".version-config.yaml が見つかりません: {config_path}\n"
-            "先に /forge:setup-version-config を実行してください。"
+            "先に setup-version-config を実行してください。"
         )
 
     # 標準ライブラリのみで最小限の YAML パース（単純な key: value 形式）

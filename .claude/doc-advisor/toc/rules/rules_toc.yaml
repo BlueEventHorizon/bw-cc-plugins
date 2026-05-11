@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-04-29T07:13:52Z
+  generated_at: 2026-05-10T08:15:09Z
   file_count: 5
 
 docs:
@@ -66,32 +66,30 @@ docs:
   docs/rules/implementation_guidelines.md:
     doc_type: rule
     title: Implementation Guidelines
-    purpose: Defines rules for plugin script selection, testing requirements, skill documentation practices, code cleanup, parsing approaches, and version management workflow
+    purpose: Defines rules for plugin scripts (Python/Bash) and SKILL.md implementation, including test requirements, dead code deletion, and version file editing restrictions
     content_details:
-      - Script language selection criteria (Python for data transformation, Bash for external commands)
-      - Mandatory test requirements for plugins/scripts
-      - No inline scripts in SKILL.md (use external script files)
-      - Unused code deletion policy
-      - Avoid rigid parsers for natural language input
-      - Version-related files editing prohibition and update-version workflow
-      - Script placement conventions (skill-specific vs plugin-wide)
+      - Script language selection criteria (Python vs Bash)
+      - Mandatory testing for plugins/ Python scripts
+      - No inline scripts in SKILL.md requirement
+      - Design document conservation rules (ADR placement)
+      - Dead code deletion policy
+      - AI-based input parsing instead of rigid token parsers
+      - Version file editing prohibition for normal PRs
     applicable_tasks:
-      - Plugin script implementation
-      - SKILL documentation creation
-      - Code review (testing compliance)
-      - Script architecture review
-      - Version update management
-      - Test suite organization
+      - Script implementation
+      - SKILL.md authoring
+      - Code review
+      - Test setup
+      - Version management workflow
     keywords:
-      - SKILL.md
+      - implementation guidelines
+      - script
       - Python
       - Bash
-      - test mandatory
-      - script placement
+      - SKILL.md
+      - testing
       - version management
-      - CHANGELOG
-      - unittest
-      - no inline code
+      - dead code
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
     title: SKILL.md Authoring Notes

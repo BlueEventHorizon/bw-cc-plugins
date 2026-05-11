@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-07T15:03:00Z
-  file_count: 45
+  generated_at: 2026-05-10T09:05:56Z
+  file_count: 47
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -582,39 +582,64 @@ docs:
       - hybrid search
       - information retrieval
       - tokenization
+  docs/specs/doc-db/design/ADR-001_build_search_io_separation.md:
+    doc_type: design
+    title: "ADR-001: build_index / search_index I/O Separation and Internal Call Design"
+    purpose: Records ADR for build_index/search_index I/O separation, logic/pure function pattern, and implementation issues found and fixed
+    content_details:
+      - build_index.py logic/I/O separation with pure functions
+      - search_index.py pure function conversion (Tuple[int, Dict] return)
+      - SearchError custom exception replacing SystemExit
+      - call_embedding_api batch splitting by EMBEDDING_BATCH_SIZE
+      - Hybrid token estimation for Japanese text
+      - _classify_embedding_error() for embedding API errors
+      - Chunk limit chars vs tokens alignment with DES-026
+      - Two-phase write atomicity limitation
+    applicable_tasks:
+      - build_index implementation review
+      - search_index implementation review
+      - I/O separation pattern adoption
+      - embedding API error handling review
+    keywords:
+      - build_index
+      - search_index
+      - I/O separation
+      - pure function
+      - SearchError
+      - EMBEDDING_BATCH_SIZE
+      - two-phase write
+      - token estimation
   docs/specs/doc-db/design/DES-026_doc_db_design.md:
     doc_type: design
     title: DES-026 doc-db Plugin Design
-    purpose: Defines architecture, module design, data format, and search orchestration for doc-db plugin with heading-unit chunk extraction, Hybrid search combining Embedding and Lexical methods, and LLM Rerank with dynamic token budget control
+    purpose: Defines architecture, module design, data format, and search pipeline for the doc-db plugin (heading-based chunk Hybrid search + LLM Rerank)
     content_details:
-      - Architecture with Skills, Orchestration, Search, Storage layers
-      - Heading unit chunk extraction with char_range and chunk_id tracking
-      - Index format in JSON with metadata and chunk-level embedding vectors
-      - Hybrid search using Reciprocal Rank Fusion for Embedding and Lexical score integration
-      - LLM Rerank using gpt-4o-mini with context window and token budget constraints
-      - doc_type unit Index separation (requirement, design, plan for specs; single Index for rules)
-      - Two-phase consistency between Index and checksums.yaml with generated_at synchronization
-      - Golden set evaluation framework measuring recall, precision, false negatives, API costs
-      - Search orchestrator handling Index staleness checks, auto-rebuild, and fallback on rerank failure
+      - Overall architecture (Skills/Orchestration/Search/Storage layers)
+      - "9 modules: chunk_extractor, embedding_api, build_index, search_index, lexical_search, hybrid_score, llm_rerank, evaluate, _utils"
+      - Chunk extraction by heading boundary (H1-H6), 8192 char limit
+      - JSON index format with chunk-level entries, embeddings, checksums
+      - "Hybrid score fusion: RRF + linear alpha-weighted"
+      - Input validation rules for SKILL CLI arguments (query, top-n, mode, doc-type)
+      - Grep-based fallback workflow for ID/proper noun matching
+      - Golden set evaluation metrics (recall/precision/token usage)
+      - Six-phase implementation roadmap (P1-P6)
     applicable_tasks:
-      - doc-db plugin implementation
-      - Chunk extraction and Index building design
-      - Hybrid search algorithm implementation
-      - LLM Rerank integration with failure recovery
-      - Index consistency and persistence review
-      - Golden set evaluation framework setup
-      - API cost and token usage measurement
+      - Plugin architecture design
+      - Search pipeline design
+      - Index format specification
+      - Module implementation planning
+      - Golden set evaluation setup
     keywords:
       - doc-db
-      - chunk extraction
       - Hybrid search
+      - chunk extraction
       - Embedding
       - Lexical search
       - LLM Rerank
-      - Index design
       - RRF
-      - gpt-4o-mini
-      - evaluation
+      - index format
+      - golden set evaluation
+      - doc_structure.yaml
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md:
     doc_type: requirement
     title: "FNC-005: doc-db Index Build Requirements"
@@ -645,39 +670,32 @@ docs:
       - semantic search
   docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md:
     doc_type: requirement
-    title: "FNC-006: doc-db Search Specification"
-    purpose: Defines hybrid search combining embedding search, lexical search, and LLM reranking to retrieve and rank document candidates based on user queries
+    title: "FNC-006: doc-db Search Requirement Specification"
+    purpose: Defines Hybrid search requirements (Embedding + Lexical + LLM Rerank) for doc-db, including operations, scoring, grep completion, and output format
     content_details:
-      - Natural language and ID-based queries
-      - Configurable result limit (top-N)
-      - Multiple search modes (embedding-only, lexical-only, hybrid, hybrid+rerank)
-      - Multi-vector aggregation for chunks and fields
-      - Lexical score calculation with exact ID and named entity matching
-      - Embedding and lexical score integration
-      - LLM-based reranking with fallback to integrated score
-      - Result output with document path, chunk heading, text, and score breakdown
-      - Compatibility with existing query-specs interface for doc_type filtering
-      - Error handling for missing index or API failures
+      - Hybrid search architecture (Embedding + Lexical + LLM Rerank)
+      - "Search operations (OP-01 to OP-05: natural language, top-N, search mode, doc_type filtering)"
+      - Multi-vector score aggregation (EMB-01)
+      - Lexical matching for IDs and proper nouns (LEX-01)
+      - Embedding-Lexical score integration (SC-01)
+      - LLM Rerank with fallback (RR-01, RR-02)
+      - grep completion for ID/proper noun queries (GRP-01 to GRP-03)
+      - Result output format with score breakdown and hit rationale (OUT-01, OUT-02)
     applicable_tasks:
-      - Hybrid search implementation
-      - Embedding search integration
-      - Lexical search engine setup
-      - LLM reranking pipeline implementation
-      - Search result output formatting
-      - Score aggregation and integration
-      - doc-db search interface design
-      - Search performance optimization
+      - doc-db search implementation
+      - Hybrid search algorithm design
+      - LLM Rerank integration
+      - Search quality evaluation
+      - grep completion feature development
     keywords:
-      - search
-      - hybrid
-      - embedding
-      - lexical
-      - reranking
-      - LLM
-      - vector
+      - Hybrid search
+      - LLM Rerank
+      - Multi-vector embedding
+      - Lexical search
+      - grep completion
+      - score integration
+      - chunk scoring
       - doc-db
-      - relevance
-      - ranking
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md:
     doc_type: requirement
     title: "FNC-007: doc-db Evaluation Specification"
@@ -1028,31 +1046,29 @@ docs:
       - What/How boundary
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     doc_type: design
-    title: forge Planning Document Creation Workflow Design
-    purpose: Defines the orchestrator workflow design for creating project plans from requirements and design documents with task extraction, validation, AI review, and human approval phases
+    title: DES-019 forge Plan Creation Workflow Design
+    purpose: "Defines orchestrator workflow for /forge:start-plan: context collection, strategy formulation via SubAgent, task extraction, plan creation, AI review, and commit"
     content_details:
-      - Workflow orchestration pattern with parallel context collection
-      - Prerequisite confirmation phase (doc_structure.yaml validation, feature name determination, mode selection)
-      - Context collection phase (specs and rules gathering via agents)
-      - Plan creation with task extraction and division principles
-      - Completeness validation and traceability matrix verification
-      - AI review integration via /forge:review plan
-      - Update mode logic (existing plan assessment before modification)
-      - Task granularity requirements (1 agent execution unit, 5-10 items, build success as completion criterion)
+      - Orchestrator pattern with SubAgent delegation
+      - "Phase 1-5 workflow: context collection, document reading, strategy formulation, plan creation, AI review"
+      - Task granularity rules (single-agent completeable, 5-10 items, build success as completion condition)
+      - Traceability matrix (requirementID to designID to taskID)
+      - "Update mode: existing plan confirmation and unstarted task detection"
+      - "Defaults loaded: spec_format.md, plan_format.md, plan_principles_spec.md"
     applicable_tasks:
-      - Plan creation workflow orchestration
-      - Task extraction and decomposition
-      - Traceability validation
-      - Plan update workflow
-      - AI review integration
+      - Implementing /forge:start-plan skill
+      - Creating implementation strategy documents
+      - Designing task extraction and splitting logic
+      - Planning AI review integration
     keywords:
-      - /forge:start-plan
-      - orchestrator
+      - forge:start-plan
+      - orchestrator pattern
+      - SubAgent
+      - strategy formulation
       - task extraction
       - traceability matrix
       - plan creation
-      - context collection agent
-      - task granularity
+      - build success condition
   docs/specs/forge/design/DES-020_clean_rules_design.md:
     doc_type: design
     title: clean-rules Skill Design
@@ -1203,6 +1219,31 @@ docs:
       - low-level script
       - naming convention
       - public CLI
+  docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md:
+    doc_type: design
+    title: "ADR: Implementation Strategy Phase for start-plan"
+    purpose: Defines the strategy to introduce an implementation strategy formulation phase between Phase 2 and Phase 3 in /forge:start-plan, outputting strategy as ephemeral Markdown file
+    content_details:
+      - Gap between design docs and task lists in start-plan
+      - Decision to insert Phase 2.5 (implementation strategy formulation)
+      - "Strategy file format: {feature}_strategy.md as ephemeral doc"
+      - "Strategy sections: approach selection, phase division, verification points, risks, existing asset utilization"
+      - "Rationale: ephemeral markdown vs plan.yaml vs design doc"
+      - "Impact: SKILL.md, plan_principles_spec.md, DES-019"
+    applicable_tasks:
+      - Implementation strategy planning
+      - start-plan workflow modification
+      - ADR review and acceptance
+      - Phase design for task extraction
+    keywords:
+      - start-plan
+      - implementation strategy
+      - ephemeral doc
+      - Phase 2.5
+      - task extraction
+      - ADR
+      - phase division
+      - approach selection
   docs/specs/forge/plan/forge_plan.md:
     doc_type: plan
     title: forge Implementation Plan
