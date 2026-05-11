@@ -1,6 +1,6 @@
 # doc-db checksums
 # Auto-generated - do not edit
-generated_at: 2026-05-10T09:22:44Z
+generated_at: 2026-05-11T13:40:20Z
 file_count: 23
 checksums:
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -18,7 +18,7 @@ checksums:
   docs/specs/doc-advisor/requirements/technical_qa.md: ff2633465c89e08abc07613d4ca5d6dacfc948928c531d36f7d88278f79a8ebd
   docs/specs/doc-advisor/requirements/technical_research_report.md: d7830ed9b2b50d1f0155449d8a3f4445d8de16a99597525ac04e97472b9074dc
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md: a77db97491efb8181025d946fda8829f8f7e21c422eb60878b9133803899196b
-  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 88a24cd61508d7f25c614701c773392d73d2464ce6416aee23b5600c8519e59e
+  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 6f3effde893b930bbc8a2168fc1ac518237f3a5661d87c19da04f222ba027722
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md: d8ac0542b7370f720121d5946369b585eb8b70a01bbf90e30533592e2e90ce04
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: 5c530b5072c2006cf0e571f44655daf7239a522bcde74f2efc0a09ef49c252da
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 34ba80946e94f8f02be2c5031179d903737eca014c8a5ba0f2fc970f3874f4fc
