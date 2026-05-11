@@ -6,6 +6,11 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+# lex ヒット率（len(lex_items) / len(emb_items)）がこの値未満の場合、
+# RRF ではなく emb スコア降順でフォールバックする。
+# 日本語クエリで Lexical がほぼヒットしない場合に Embedding を優先するため。
+EMB_FALLBACK_LEX_RATIO = 0.05
+
 
 def _to_rank_map(items: List[Dict], score_key: str) -> Dict[str, int]:
     ordered = sorted(items, key=lambda x: (-float(x.get(score_key, 0.0)), x["chunk_id"]))
@@ -17,6 +22,11 @@ def _to_score_map(items: List[Dict], score_key: str) -> Dict[str, float]:
 
 
 def rrf_fuse(emb_items: List[Dict], lex_items: List[Dict], k: int = 60) -> List[Dict]:
+    # lex ヒット率が低い場合は emb only にフォールバック
+    if emb_items and len(lex_items) / len(emb_items) < EMB_FALLBACK_LEX_RATIO:
+        sorted_emb = sorted(emb_items, key=lambda x: (-x["emb_score"], x["chunk_id"]))
+        return [{"chunk_id": r["chunk_id"], "score": r["emb_score"]} for r in sorted_emb]
+
     emb_rank = _to_rank_map(emb_items, "emb_score")
     lex_rank = _to_rank_map(lex_items, "lex_score")
     all_ids = set(emb_rank.keys()) | set(lex_rank.keys())

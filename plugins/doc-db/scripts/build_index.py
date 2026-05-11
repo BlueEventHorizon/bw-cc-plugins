@@ -25,6 +25,7 @@ from embedding_api import EMBEDDING_MODEL, call_embedding_api
 
 SCHEMA_VERSION = "1.0"
 CHECKSUMS_SUFFIX = ".checksums.yaml"
+MIN_CHUNK_LEVEL = 6
 
 
 def _event(event_type: str, **fields):
@@ -247,7 +248,7 @@ def _run_build_one(project_root: Path, category: str, full: bool = False, doc_ty
     for rel_path in changed:
         abs_path = project_root / rel_path
         text = abs_path.read_text(encoding="utf-8")
-        chunks = chunk_extractor.extract_chunks(rel_path, text)
+        chunks = chunk_extractor.extract_chunks(rel_path, text, min_chunk_level=MIN_CHUNK_LEVEL)
         for c in chunks:
             to_embed.append(c)
 
