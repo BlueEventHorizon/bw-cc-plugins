@@ -79,6 +79,20 @@ targets:
         pattern: "**doc-advisor** (v{version})"
         filter: "**doc-advisor** (v"
 
+  - name: doc-db
+    version_file: plugins/doc-db/.claude-plugin/plugin.json
+    version_path: version
+    sync_files:
+      - path: .claude-plugin/marketplace.json
+        pattern: '"version": "{version}"'
+        filter: '"name": "doc-db"'
+      - path: README.md
+        pattern: "| **doc-db**      | {version} |"
+        filter: "| **doc-db**"
+      - path: CLAUDE.md
+        pattern: "**doc-db** (v{version})"
+        filter: "**doc-db** (v"
+
 changelog:
   file: CHANGELOG.md
   format: keep-a-changelog
