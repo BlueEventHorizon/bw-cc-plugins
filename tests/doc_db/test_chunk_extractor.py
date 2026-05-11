@@ -66,6 +66,36 @@ class ChunkExtractorTests(unittest.TestCase):
             [c["heading_path"] for c in chunks_explicit],
         )
 
+    def test_embed_text_includes_heading_path(self):
+        """embed_text に heading_path の文脈が含まれる"""
+        prose = "ここが本文です。十分な長さのテキストを含みます。テスト用のサンプルテキスト。"
+        text = f"# AAA\n## BBB\n### CCC\n{prose}\n"
+        chunks = chunk_extractor.extract_chunks("docs/a.md", text)
+        ccc = next(c for c in chunks if c["heading_path"] == ["AAA", "BBB", "CCC"])
+        self.assertIn("AAA", ccc["embed_text"])
+        self.assertIn("BBB", ccc["embed_text"])
+        self.assertIn("CCC", ccc["embed_text"])
+        self.assertIn("ここが本文", ccc["embed_text"])
+
+    def test_embed_text_fallback_to_ancestor_prose(self):
+        """prose が MIN_EMBED_PROSE 未満の空セクションは直前チャンクの prose で補完される"""
+        prose = "十分な長さの本文テキストです。" * 5
+        text = f"# AAA\n{prose}\n## BBB\n### 空セクション\n"
+        chunks = chunk_extractor.extract_chunks("docs/a.md", text)
+        empty_chunk = next(c for c in chunks if "空セクション" in c["heading_path"])
+        self.assertIn(prose.strip()[:20], empty_chunk["embed_text"])
+        self.assertIn("空セクション", empty_chunk["embed_text"])
+
+    def test_embed_text_no_fallback_across_files(self):
+        """異なる path の chunk を遡らない"""
+        prose = "十分な長さの本文テキストです。" * 5
+        chunks_a = chunk_extractor.extract_chunks("docs/a.md", f"# A\n{prose}\n")
+        chunks_b = chunk_extractor.extract_chunks("docs/b.md", "# B\n## 空\n")
+        combined = chunks_a + chunks_b
+        chunk_extractor._enrich_embed_texts(combined)
+        b_empty = next(c for c in combined if c["path"] == "docs/b.md" and "空" in c["heading_path"])
+        self.assertNotIn(prose.strip()[:20], b_empty.get("embed_text", ""))
+
     def test_chunk_id_collision_adds_suffix(self):
         class _FakeHash:
             def hexdigest(self):

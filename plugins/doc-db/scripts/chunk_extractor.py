@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 MAX_CHUNK_CHARS = 8192
+MIN_EMBED_PROSE = 50  # prose がこの文字数未満なら同一ファイル内を遡って補完する
 
 
 def _split_large_chunk(body: str, start: int, end: int, max_chars: int) -> List[Tuple[str, int, int]]:
@@ -35,6 +36,39 @@ def _split_large_chunk(body: str, start: int, end: int, max_chars: int) -> List[
     if not segments:
         return [(body[:max_chars], start, min(start + max_chars, end))]
     return segments
+
+
+def _find_prose(body: str) -> str:
+    """見出し行（# で始まる行）を除いた本文テキストを返す。"""
+    lines = [l for l in body.split("\n") if not l.startswith("#")]
+    return "\n".join(lines).strip()
+
+
+def _enrich_embed_texts(chunks: List[Dict]) -> None:
+    """各 chunk に embed_text フィールドを付与する。
+
+    embed_text は embedding API に渡すテキスト。body とは独立しており、
+    heading_path による文脈 + prose を含む。
+    prose が MIN_EMBED_PROSE 未満の場合は同一ファイル内の直前 chunk を遡って補完する。
+    """
+    for i, chunk in enumerate(chunks):
+        prose = _find_prose(chunk["body"])
+        if len(prose) < MIN_EMBED_PROSE:
+            for j in range(i - 1, -1, -1):
+                if chunks[j]["path"] != chunk["path"]:
+                    break
+                candidate = _find_prose(chunks[j]["body"])
+                if len(candidate) >= MIN_EMBED_PROSE:
+                    prose = candidate
+                    break
+
+        heading_ctx = " > ".join(chunk["heading_path"])
+        if heading_ctx and prose:
+            chunk["embed_text"] = f"{heading_ctx}\n\n{prose}"
+        elif heading_ctx:
+            chunk["embed_text"] = heading_ctx
+        else:
+            chunk["embed_text"] = prose or chunk["body"]
 
 
 def _build_chunk_id(path: str, heading_path: List[str], seen: Dict[str, int]) -> str:
@@ -106,4 +140,5 @@ def extract_chunks(
                 }
             )
 
+    _enrich_embed_texts(chunks)
     return chunks
