@@ -1,37 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Lexical 検索（語彙一致 + ID 完全一致ブースト）。"""
+"""Lexical 検索（BM25 スコアリング + ID 完全一致ブースト）。
+
+正規化済みトークンの substring マッチングで TF を計算し、
+IDF は全 chunk を対象として Robertson IDF 式で算出する。
+クロスランゲージ同義語マッチングは Embedding 検索が担う。
+"""
 
 from __future__ import annotations
 
+import math
 import re
 import unicodedata
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 ID_RE = re.compile(r"[A-Z]+-\d+")
-# [^\W\d_A-Za-z]+ : CJK 等の非 ASCII・非数字 Unicode 単語文字
-# \d+             : 数字（CJK との境界で分割するため独立させる）
-# [A-Za-z0-9_]+  : ASCII 英数字・アンダースコア
-# [A-Za-z]+-\d+  : 英数字 ID (例: FNC-001)
+# [A-Za-z]+-\d+ : 英数字 ID (例: FNC-001)
+# [A-Za-z0-9_]+ : ASCII 英数字・アンダースコア
+# [^\W\d_A-Za-z]+: CJK 等の非 ASCII・非数字 Unicode 単語文字
+# \d+            : 数字（CJK との境界で分割するため独立させる）
 TOKEN_RE = re.compile(r"[A-Za-z]+-\d+|[A-Za-z0-9_]+|[^\W\d_A-Za-z]+|\d+", re.UNICODE)
 
-# 英語フレーズ → カタカナ / カタカナ → 英語フレーズ の同義語辞書（小文字キー）
-# body.count() で部分文字列マッチするため、フレーズ単位で定義する
-PHRASE_SYNONYMS: List[Tuple[str, str]] = [
-    ("golden set", "ゴールデンセット"),
-    ("golden dataset", "ゴールデンデータセット"),
-    ("embedding", "エンベディング"),
-    ("lexical search", "語彙検索"),
-    ("hybrid search", "ハイブリッド検索"),
-    ("rerank", "リランク"),
-    ("chunk", "チャンク"),
-    ("pipeline", "パイプライン"),
-    ("migration", "マイグレーション"),
-    ("workflow", "ワークフロー"),
-    ("orchestrator", "オーケストレータ"),
-    ("skill", "スキル"),
-    ("plugin", "プラグイン"),
-]
+BM25_K1 = 1.5  # TF 飽和係数（標準パラメータ、ゴールデンセット評価で検証）
+BM25_B = 0.75  # 文書長正規化係数（同上）
 
 
 def normalize_text(text: str) -> str:
@@ -43,40 +34,52 @@ def tokenize(text: str) -> List[str]:
 
 
 def score_chunks(query: str, chunks: List[Dict]) -> List[Dict]:
+    """BM25 スコアリングによる語彙一致検索。"""
     query_norm = normalize_text(query)
-    query_tokens = tokenize(query_norm)
+    query_tokens = [t for t in tokenize(query_norm) if t]
     id_tokens = [t.lower() for t in ID_RE.findall(unicodedata.normalize("NFKC", query).upper())]
 
-    # クエリに含まれるフレーズの同義語を収集
-    synonym_expansions: List[str] = []
-    for en_phrase, ja_phrase in PHRASE_SYNONYMS:
-        en_norm = normalize_text(en_phrase)
-        ja_norm = normalize_text(ja_phrase)
-        if en_norm in query_norm and ja_norm not in query_norm:
-            synonym_expansions.append(ja_norm)
-        elif ja_norm in query_norm and en_norm not in query_norm:
-            synonym_expansions.append(en_norm)
+    if not chunks:
+        return []
+
+    # 全 chunk の正規化済み body を事前計算
+    normalized_bodies = [normalize_text(c.get("body", "")) for c in chunks]
+    N = len(chunks)
+
+    # Robertson IDF（substring マッチングベースの文書頻度）
+    unique_tokens = set(query_tokens)
+    idf: Dict[str, float] = {}
+    for token in unique_tokens:
+        df = sum(1 for b in normalized_bodies if token in b)
+        idf[token] = math.log((N - df + 0.5) / (df + 0.5) + 1)
+
+    # 文書長（文字数）の平均
+    char_counts = [len(b) for b in normalized_bodies]
+    avgdl = sum(char_counts) / N if N > 0 else 1.0
 
     results: List[Dict] = []
 
-    for chunk in chunks:
-        body = normalize_text(chunk.get("body", ""))
+    for i, (chunk, body) in enumerate(zip(chunks, normalized_bodies)):
+        dl = char_counts[i]
         score = 0.0
 
+        # BM25 スコアリング
         for token in query_tokens:
-            if not token:
+            tf = body.count(token)
+            if tf == 0:
                 continue
-            score += body.count(token)
+            token_idf = idf.get(token, 0.0)
+            tf_norm = (tf * (BM25_K1 + 1)) / (tf + BM25_K1 * (1 - BM25_B + BM25_B * dl / avgdl))
+            score += token_idf * tf_norm
 
+        # ID 完全一致ボーナス
         for id_token in id_tokens:
             if id_token in body:
                 score += 10.0
 
+        # クエリ全体の完全一致ボーナス
         if query_norm.strip() and query_norm in body:
             score += 2.0
-
-        for synonym in synonym_expansions:
-            score += body.count(synonym)
 
         if score > 0:
             results.append(
