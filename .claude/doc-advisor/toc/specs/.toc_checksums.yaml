@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-07T15:01:37Z
-file_count: 45
+generated_at: 2026-05-10T08:24:16Z
+file_count: 47
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -23,9 +23,10 @@ checksums:
   docs/specs/doc-advisor/requirements/REQ-003_versioned_migration.md: 7ed7b69855005886bf472d0a1fdbae3f421980e1376e7a2c6afd54494318749c
   docs/specs/doc-advisor/requirements/technical_qa.md: ff2633465c89e08abc07613d4ca5d6dacfc948928c531d36f7d88278f79a8ebd
   docs/specs/doc-advisor/requirements/technical_research_report.md: d7830ed9b2b50d1f0155449d8a3f4445d8de16a99597525ac04e97472b9074dc
-  docs/specs/doc-db/design/DES-026_doc_db_design.md: c2ef44711d6540fd9dfeba86bfef1681d46fb80d52070fe57a79ac655a0e6140
+  docs/specs/doc-db/design/ADR-001_build_search_io_separation.md: df27305e56167316847a6c4c2b9dd208bfd89ca197775ca75814266cd1464bba
+  docs/specs/doc-db/design/DES-026_doc_db_design.md: feb4a138f72a02c480eb1ca29dfe39b9fb350fe04197d38e2b35f2b365abf51d
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md: a77db97491efb8181025d946fda8829f8f7e21c422eb60878b9133803899196b
-  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: cea6a41be0631f722c123673e12a66d42457b54ebfa5766238c9147f728dc6f2
+  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 88a24cd61508d7f25c614701c773392d73d2464ce6416aee23b5600c8519e59e
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md: d8ac0542b7370f720121d5946369b585eb8b70a01bbf90e30533592e2e90ce04
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: 5c530b5072c2006cf0e571f44655daf7239a522bcde74f2efc0a09ef49c252da
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 34ba80946e94f8f02be2c5031179d903737eca014c8a5ba0f2fc970f3874f4fc
@@ -38,12 +39,13 @@ checksums:
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md: 343199fafc6701746e5c7e5246c42d8db89c0fc99586267e502bbf040e47a38f
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md: f97c1e49c75e59e065602162737252ef0937323ed8c00f5989cc74183ef440b1
   docs/specs/forge/design/DES-018_create_design_workflow_design.md: 2feeaf62a5ef08f6ce46872d83f55a6459c7a6fdc09edae7e82db67e50e085c4
-  docs/specs/forge/design/DES-019_create_plan_workflow_design.md: 5a6c5865ad47675ef06d5503baeff074c4951801716d0701acf2cfbe14c95c79
+  docs/specs/forge/design/DES-019_create_plan_workflow_design.md: 0e3c9c3ae18f0253364913987eae6e6a105b63934544996ca23bb995953c0b8c
   docs/specs/forge/design/DES-020_clean_rules_design.md: 2f0f4cf7d41672d050540f5a321dd9ab074044aaf6faa84d3f19c759ad58c280
   docs/specs/forge/design/DES-021_review_perspective_split_design.md: 78a8ec3ff882137a39852aba2664425879a3cc28510ef50f66f1f1ea4ec4ed1f
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md: ec8fbd381c1af346ca7b8b95c648241ae6c260bda4d038946e2cca4973587e12
   docs/specs/forge/design/DES-023_version_management_workflow_design.md: 5e5da5dacd59e3e742fde393dec019c6cfebfaa2fe4ecfcfb2dc9135cd28d475
   docs/specs/forge/design/DES-024_skill_script_layout_design.md: 7e2d2e0d07a336571571ce1bbfbad940e36bfa4ad0a4722a62435ec828ba8003
+  docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md: 0f2fc4b569a787914f856dc11e40242ee92e62ac589d10b36c98fa5c57f7c01b
   docs/specs/forge/plan/forge_plan.md: 0ad43e83b01400b318ce83ffd8836783185ee4c6852d883d40f0c258195b8ae6
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 8abf0c945e48a1b0d6be922c6e7c63da0c6bf516b30876a66e1679e3a2223365
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 61c41caf741b964dfbbe8a798ce6236eb14abd3102180362c737895042d9ea33
