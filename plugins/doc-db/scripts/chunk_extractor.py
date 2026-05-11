@@ -46,7 +46,17 @@ def _build_chunk_id(path: str, heading_path: List[str], seen: Dict[str, int]) ->
     return f"{base}-{count}"
 
 
-def extract_chunks(path: str, markdown_text: str, max_chunk_chars: int = MAX_CHUNK_CHARS) -> List[Dict]:
+def extract_chunks(
+    path: str,
+    markdown_text: str,
+    max_chunk_chars: int = MAX_CHUNK_CHARS,
+    min_chunk_level: int = 6,
+) -> List[Dict]:
+    """Markdown を見出し境界でチャンク分割する。
+
+    min_chunk_level: このレベル以下の見出しのみチャンク境界とする（デフォルト 6 = 全レベル）。
+    例えば min_chunk_level=1 にすると h1 のみが境界となり、h2 以下は親チャンクに含まれる。
+    """
     matches = list(HEADING_RE.finditer(markdown_text))
     chunks: List[Dict] = []
     seen_ids: Dict[str, int] = {}
@@ -66,12 +76,17 @@ def extract_chunks(path: str, markdown_text: str, max_chunk_chars: int = MAX_CHU
             )
         return chunks
 
+    # min_chunk_level 以下の見出しのみをチャンク境界とする
+    boundary_matches = [m for m in matches if len(m.group(1)) <= min_chunk_level]
+    if not boundary_matches:
+        boundary_matches = matches
+
     heading_stack: List[str] = []
-    for i, match in enumerate(matches):
+    for idx, match in enumerate(boundary_matches):
         level = len(match.group(1))
         title = match.group(2).strip()
         content_start = match.start()
-        content_end = matches[i + 1].start() if i + 1 < len(matches) else len(markdown_text)
+        content_end = boundary_matches[idx + 1].start() if idx + 1 < len(boundary_matches) else len(markdown_text)
         section_text = markdown_text[content_start:content_end]
 
         heading_stack = heading_stack[: level - 1]

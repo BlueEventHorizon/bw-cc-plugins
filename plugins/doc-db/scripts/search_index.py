@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("--category", required=True, choices=["rules", "specs"])
     parser.add_argument("--query", required=True)
     parser.add_argument("--mode", default="hybrid", choices=["emb", "lex", "hybrid", "rerank"])
-    parser.add_argument("--top-n", type=int, default=10)
+    parser.add_argument("--top-n", type=int, default=20)
     parser.add_argument("--doc-type", default="")
     return parser.parse_args()
 
