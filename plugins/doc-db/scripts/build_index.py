@@ -204,7 +204,7 @@ def _classify_embedding_error(exc: Exception) -> str:
 
 
 def _embed_chunks(chunk_records: List[Dict], api_key: str):
-    texts = [c["body"] if c["body"].strip() else c["path"] for c in chunk_records]
+    texts = [c.get("embed_text") or c["body"] or c["path"] for c in chunk_records]
     vectors = call_embedding_api(texts, api_key)
     for i, vector in enumerate(vectors):
         chunk_records[i]["embedding"] = vector

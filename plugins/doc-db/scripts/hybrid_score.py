@@ -11,6 +11,11 @@ from typing import Dict, List
 # 日本語クエリで Lexical がほぼヒットしない場合に Embedding を優先するため。
 EMB_FALLBACK_LEX_RATIO = 0.05
 
+# hybrid recall(top-N) ≥ emb recall(top-N) を保証するための定数。
+# emb 上位 K 件が RRF スコアに関わらず必ず fused の上位 K 件に含まれるよう昇格させる。
+# クロスランゲージ同義語など lex=0 の文書が RRF で押し出される問題を防ぐ。
+EMB_GUARANTEE_K = 5
+
 
 def _to_rank_map(items: List[Dict], score_key: str) -> Dict[str, int]:
     ordered = sorted(items, key=lambda x: (-float(x.get(score_key, 0.0)), x["chunk_id"]))
@@ -39,6 +44,27 @@ def rrf_fuse(emb_items: List[Dict], lex_items: List[Dict], k: int = 60) -> List[
             score += 1.0 / (k + lex_rank[chunk_id])
         fused.append({"chunk_id": chunk_id, "score": score})
     fused.sort(key=lambda x: (-x["score"], x["chunk_id"]))
+
+    # emb top-K 保証: emb 上位 K 件が fused 上位 K 件に含まれるよう昇格させる
+    if EMB_GUARANTEE_K > 0 and emb_items:
+        top_emb_ids = [
+            item["chunk_id"]
+            for item in sorted(emb_items, key=lambda x: (-x["emb_score"], x["chunk_id"]))[:EMB_GUARANTEE_K]
+        ]
+        top_emb_id_set = set(top_emb_ids)
+        # 上位 K 件のうち保証対象外のアイテム（侵入者）を特定する
+        intruders = [x for x in fused[:EMB_GUARANTEE_K] if x["chunk_id"] not in top_emb_id_set]
+        if intruders:
+            # 侵入者の最高スコアを超えるよう昇格させる
+            promotion_threshold = max(x["score"] for x in intruders)
+            guaranteed_not_in_top = top_emb_id_set - {x["chunk_id"] for x in fused[:EMB_GUARANTEE_K]}
+            score_map = {x["chunk_id"]: x for x in fused}
+            for rank_idx, cid in enumerate(top_emb_ids):
+                if cid in guaranteed_not_in_top:
+                    # emb ランク順を保持するため rank_idx に応じた微小オフセットを加える
+                    score_map[cid]["score"] = promotion_threshold + (EMB_GUARANTEE_K - rank_idx) * 1e-9
+            fused.sort(key=lambda x: (-x["score"], x["chunk_id"]))
+
     return fused
 
 

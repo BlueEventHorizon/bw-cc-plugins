@@ -51,6 +51,46 @@ class HybridScoreTests(unittest.TestCase):
         top_ids = [r["chunk_id"] for r in result[:3]]
         self.assertIn("9", top_ids)
 
+    def test_emb_guarantee_k_in_top_k(self):
+        """emb 上位 K 件は lex=0 でも fused 上位 K 件に含まれる"""
+        # emb 上位: a(0.9), b(0.8) — どちらも lex=0
+        # lex 上位: c,d,e,f,g — emb では下位
+        emb = [{"chunk_id": c, "emb_score": s} for c, s in [
+            ("a", 0.9), ("b", 0.8), ("c", 0.4), ("d", 0.35), ("e", 0.3), ("f", 0.25), ("g", 0.2)
+        ]]
+        lex = [{"chunk_id": c, "lex_score": s} for c, s in [
+            ("c", 10.0), ("d", 9.0), ("e", 8.0), ("f", 7.0), ("g", 6.0)
+        ]]
+        result = hybrid_score.rrf_fuse(emb, lex, k=60)
+        top_k_ids = {r["chunk_id"] for r in result[:hybrid_score.EMB_GUARANTEE_K]}
+        self.assertIn("a", top_k_ids)
+        self.assertIn("b", top_k_ids)
+
+    def test_emb_guarantee_preserves_emb_rank_order(self):
+        """昇格した emb 上位 K 件は top-K 内で emb ランク順（best が second より前）を保つ"""
+        emb = [{"chunk_id": c, "emb_score": s} for c, s in [
+            ("best", 0.95), ("second", 0.85), ("c", 0.1), ("d", 0.1), ("e", 0.1), ("f", 0.1), ("g", 0.1)
+        ]]
+        lex = [{"chunk_id": c, "lex_score": s} for c, s in [
+            ("c", 10.0), ("d", 9.0), ("e", 8.0), ("f", 7.0), ("g", 6.0)
+        ]]
+        result = hybrid_score.rrf_fuse(emb, lex, k=60)
+        top_k_ids = [r["chunk_id"] for r in result[:hybrid_score.EMB_GUARANTEE_K]]
+        # best と second が top-K に含まれる
+        self.assertIn("best", top_k_ids)
+        self.assertIn("second", top_k_ids)
+        # best が second より前の位置にある（emb ランク順が保持される）
+        self.assertLess(top_k_ids.index("best"), top_k_ids.index("second"))
+
+    def test_emb_guarantee_no_effect_when_already_in_top_k(self):
+        """emb 上位 K 件がすでに fused 上位 K 件に含まれる場合はスコアを変えない"""
+        emb = [{"chunk_id": "a", "emb_score": 0.9}, {"chunk_id": "b", "emb_score": 0.8}]
+        lex = [{"chunk_id": "a", "lex_score": 5.0}, {"chunk_id": "b", "lex_score": 4.0}]
+        result_normal = hybrid_score.rrf_fuse(emb, lex, k=60)
+        # a, b は RRF でも上位 → 昇格不要
+        self.assertEqual(result_normal[0]["chunk_id"], "a")
+        self.assertEqual(result_normal[1]["chunk_id"], "b")
+
     def test_emb_fallback_with_zero_lex(self):
         """lex ヒットが 0 件の場合も emb only フォールバックが動作する"""
         emb = [{"chunk_id": "a", "emb_score": 0.9}, {"chunk_id": "b", "emb_score": 0.5}]
