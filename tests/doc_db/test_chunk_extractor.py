@@ -33,6 +33,39 @@ class ChunkExtractorTests(unittest.TestCase):
         self.assertGreaterEqual(len(chunks), 2)
         self.assertTrue(all(len(c["body"]) <= 40 for c in chunks))
 
+    # 施策4: min_chunk_level テスト
+    def test_min_chunk_level_1_collapses_to_h1(self):
+        """min_chunk_level=1 では h1 のみがチャンク境界となり h2/h3 が同一チャンクに含まれる"""
+        text = "# A\nintro\n## B\nbody\n### C\nmore\n"
+        chunks = chunk_extractor.extract_chunks("docs/a.md", text, min_chunk_level=1)
+        # h1 のみが境界 → 1チャンクのみ
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(chunks[0]["heading_path"], ["A"])
+        # h2 以下のテキストも含まれる
+        self.assertIn("body", chunks[0]["body"])
+        self.assertIn("more", chunks[0]["body"])
+
+    def test_min_chunk_level_2_collapses_h3(self):
+        """min_chunk_level=2 では h1/h2 が境界となり h3 以下が h2 チャンクに含まれる"""
+        text = "# A\nintro\n## B\nbody\n### C\nmore\n"
+        chunks = chunk_extractor.extract_chunks("docs/a.md", text, min_chunk_level=2)
+        self.assertEqual(len(chunks), 2)
+        self.assertEqual(chunks[0]["heading_path"], ["A"])
+        self.assertEqual(chunks[1]["heading_path"], ["A", "B"])
+        # h3 の "more" は h2 チャンクに含まれる
+        self.assertIn("more", chunks[1]["body"])
+
+    def test_min_chunk_level_default_unchanged(self):
+        """デフォルト (min_chunk_level=6) では既存動作と同じ"""
+        text = "# A\nintro\n## B\nbody\n### C\nmore\n"
+        chunks_default = chunk_extractor.extract_chunks("docs/a.md", text)
+        chunks_explicit = chunk_extractor.extract_chunks("docs/a.md", text, min_chunk_level=6)
+        self.assertEqual(len(chunks_default), 3)
+        self.assertEqual(
+            [c["heading_path"] for c in chunks_default],
+            [c["heading_path"] for c in chunks_explicit],
+        )
+
     def test_chunk_id_collision_adds_suffix(self):
         class _FakeHash:
             def hexdigest(self):
