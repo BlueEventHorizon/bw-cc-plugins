@@ -56,8 +56,8 @@ class SearchIndexTests(unittest.TestCase):
         (self.root / "docs/specs/f1/requirements/r1.md").write_text("# REQ-001\nspec body", encoding="utf-8")
         (self.root / "docs/specs/f1/design/d1.md").write_text("# DES-001\ndesign body", encoding="utf-8")
         _write_doc_structure(self.root)
-        self._old_api_key = os.environ.get("OPENAI_API_KEY")
-        os.environ["OPENAI_API_KEY"] = "dummy"
+        self._old_api_key = os.environ.get("OPENAI_API_DOCDB_KEY")
+        os.environ["OPENAI_API_DOCDB_KEY"] = "dummy"
 
         self._old_embed = build_index.call_embedding_api
         self._old_qembed = search_index.call_embedding_api_single
@@ -81,9 +81,9 @@ class SearchIndexTests(unittest.TestCase):
         search_index.call_embedding_api_single = self._old_qembed
         llm_rerank.rerank = self._old_rerank
         if self._old_api_key is None:
-            os.environ.pop("OPENAI_API_KEY", None)
+            os.environ.pop("OPENAI_API_DOCDB_KEY", None)
         else:
-            os.environ["OPENAI_API_KEY"] = self._old_api_key
+            os.environ["OPENAI_API_DOCDB_KEY"] = self._old_api_key
         self.tmp.cleanup()
 
     def test_modes(self):

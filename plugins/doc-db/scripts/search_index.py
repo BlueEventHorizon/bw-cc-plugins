@@ -17,7 +17,7 @@ import hybrid_score
 import lexical_search
 import llm_rerank
 from _utils import calculate_file_hash, load_checksums
-from embedding_api import EMBEDDING_MODEL, call_embedding_api_single
+from embedding_api import EMBEDDING_MODEL, OPENAI_API_KEY_ENV, call_embedding_api_single, get_api_key
 
 
 class SearchError(Exception):
@@ -203,9 +203,9 @@ def search(project_root: Path, category: str, query: str, mode: str, top_n: int,
             for x in lex[:top_n]
         ]
     else:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = get_api_key()
         if not api_key:
-            _error("OPENAI_API_KEY not set", "export OPENAI_API_KEY=...")
+            _error(f"{OPENAI_API_KEY_ENV} not set", f"export {OPENAI_API_KEY_ENV}=...")
         qvec = call_embedding_api_single(query, api_key)
         emb = []
         for key, entry in entries_map.items():
