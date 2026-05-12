@@ -21,7 +21,7 @@ from doc_structure import (
     resolve_files,
     resolve_files_by_doc_type,
 )
-from embedding_api import EMBEDDING_MODEL, call_embedding_api
+from embedding_api import EMBEDDING_MODEL, OPENAI_API_KEY_ENV, call_embedding_api, get_api_key
 
 SCHEMA_VERSION = "1.0"
 CHECKSUMS_SUFFIX = ".checksums.yaml"
@@ -214,10 +214,10 @@ def _embed_chunks(chunk_records: List[Dict], api_key: str):
 def _run_build_one(project_root: Path, category: str, full: bool = False, doc_type: str = "") -> Tuple[int, Dict]:
     index_path = get_index_path(project_root, category, doc_type)
     checksums_path = get_checksums_path(index_path)
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    api_key = get_api_key()
     if not api_key:
-        _event("validation_error", error="OPENAI_API_KEY is required")
-        return 1, {"status": "error", "error": "OPENAI_API_KEY is required"}
+        _event("validation_error", error=f"{OPENAI_API_KEY_ENV} is required")
+        return 1, {"status": "error", "error": f"{OPENAI_API_KEY_ENV} is required"}
 
     existing = load_index(index_path)
     try:

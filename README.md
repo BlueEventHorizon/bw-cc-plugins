@@ -214,7 +214,8 @@ claude plugin update forge@bw-cc-plugins --scope local
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
-- OpenAI API キー（doc-advisor の embedding、および doc-db の Index 構築・検索・Rerank 使用時。`OPENAI_API_KEY` 環境変数に設定）
+- OpenAI API キー（doc-advisor の embedding 使用時。`OPENAI_API_KEY` 環境変数に設定）
+- OpenAI API キー（doc-db の Index 構築・検索・Rerank 使用時。`OPENAI_API_DOCDB_KEY` 環境変数に設定）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 - Xcode / `xcodebuild`（xcode プラグイン用）
 

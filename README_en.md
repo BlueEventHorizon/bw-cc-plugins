@@ -196,6 +196,7 @@ On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and 
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
 - OpenAI API key (for doc-advisor embedding features; set `OPENAI_API_KEY`)
+- OpenAI API key (for doc-db index build / search / rerank; set `OPENAI_API_DOCDB_KEY`)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 - Xcode with `xcodebuild` (for xcode plugin)
 

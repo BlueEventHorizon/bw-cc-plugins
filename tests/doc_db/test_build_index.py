@@ -53,17 +53,17 @@ class BuildIndexTests(unittest.TestCase):
         (self.root / "docs/specs/f1/requirements/r1.md").write_text("# R1\nbody", encoding="utf-8")
         (self.root / "docs/specs/f1/design/d1.md").write_text("# D1\nbody", encoding="utf-8")
         _write_doc_structure(self.root)
-        self._old_api_key = os.environ.get("OPENAI_API_KEY")
-        os.environ["OPENAI_API_KEY"] = "dummy"
+        self._old_api_key = os.environ.get("OPENAI_API_DOCDB_KEY")
+        os.environ["OPENAI_API_DOCDB_KEY"] = "dummy"
         self._old_embed = build_index.call_embedding_api
         build_index.call_embedding_api = lambda texts, _: [[0.1, 0.2] for _ in texts]
 
     def tearDown(self):
         build_index.call_embedding_api = self._old_embed
         if self._old_api_key is None:
-            os.environ.pop("OPENAI_API_KEY", None)
+            os.environ.pop("OPENAI_API_DOCDB_KEY", None)
         else:
-            os.environ["OPENAI_API_KEY"] = self._old_api_key
+            os.environ["OPENAI_API_DOCDB_KEY"] = self._old_api_key
         self.tmp.cleanup()
 
     def test_build_chunk_index(self):
