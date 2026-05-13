@@ -97,10 +97,6 @@ design_traceability:
       - TASK-004
       - TASK-005
       - TASK-006
-      - TASK-007a
-      - TASK-007b
-      - TASK-007c
-      - TASK-007d
 
 # === タスク一覧 ===
 tasks:
@@ -251,8 +247,8 @@ tasks:
     depends_on:
       - TASK-002
       - TASK-005
-    group_id: "GROUP-003 (1/5)"
-    build_check: skip
+    group_id: null
+    build_check: per_task
     description:
       - "tests/doc_advisor/integration/ 配下に DES-028 §7.3 表の全シナリオ（UC-01 / UC-02 / UC-03 / UC-04 / UC-05a〜e / UC-06 / UC-07）を再現する統合テストを実装する（既存ファイルがあれば拡張）"
       - "各 UC の期待挙動・対応操作モード・関連要件 ID は DES-028 §7.3 表を一次ソースとし、本 description で仕様を再記述しない"
@@ -265,87 +261,6 @@ tasks:
       - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
       - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
 
-  - task_id: TASK-007a
-    title: DES-028 §8 完了判定の機械チェック実装
-    priority: 65
-    status: pending
-    design_id: DES-028
-    depends_on:
-      - TASK-003
-      - TASK-005
-      - TASK-006
-    group_id: "GROUP-003 (2/5)"
-    build_check: per_task
-    description:
-      - "DES-028 §8 完了判定表の全項目を機械的に検証するチェックシェルまたは pytest を tests/doc_advisor/ 配下に追加する（各項目の判定条件は DES-028 §8 表を一次ソースとし、本 description で再記述しない）"
-    acceptance_criteria: |
-      DES-028 §8 完了判定表の各行を tests/doc_advisor/ 配下のテストメソッド（または check スクリプト）と
-      1:1 対応させ、`python3 -m unittest discover -s tests/doc_advisor -p 'test_*.py' -v` で全項目が
-      パスすること。各テストメソッドの docstring に対応する §8 表の項目名を明記し、
-      pytest 出力から「§8 のどの行が落ちたか」が一意に特定可能であること。
-      （手動チェックで補う項目がある場合は、対応するテストメソッドの docstring に手動確認手順を記載する）
-    required_reading:
-      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
-      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
-
-  - task_id: TASK-007b
-    title: guide_doc-advisor_ja.md の mode=auto 説明更新
-    priority: 60
-    status: pending
-    design_id: DES-028
-    depends_on:
-      - TASK-006
-    group_id: "GROUP-003 (3/5)"
-    build_check: per_task
-    description:
-      - "docs/readme/guide_doc-advisor_ja.md の mode=auto 説明を doc-db Hybrid 検索ベースに更新する（--toc / --index は現行維持を明記）"
-    acceptance_criteria: |
-      docs/readme/guide_doc-advisor_ja.md の mode=auto 説明が doc-db first の動作（auto 既定 = Hybrid 検索）と整合し、
-      --toc / --index が現行維持である旨が明記されていること。
-    required_reading:
-      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
-      - docs/readme/guide_doc-advisor_ja.md
-
-  - task_id: TASK-007c
-    title: golden set による NFR-01 / NFR-02 計測（前提・停止条件込み）
-    priority: 60
-    status: pending
-    design_id: DES-028
-    depends_on:
-      - TASK-007a
-    group_id: "GROUP-003 (4/5)"
-    build_check: per_task
-    description:
-      - "meta/test_docs/ のゴールデンセットで NFR-01 / NFR-02（recall 同等以上 / 見落としゼロ）を測定し結果サマリを PR 説明に記載する（meta/ への新規ファイル追加が必要なら CLAUDE.md の meta ルールに従う）"
-      - "前提確認: meta/test_docs/ と OPENAI_API_DOCDB_KEY（または OPENAI_API_KEY）の存在を事前確認し、不足時は本タスクを FAILURE として停止し設計差し戻しを起票する"
-      - "recall 未達時の対応: 現行 recall を下回った場合は DES-028 §8 NFR-01 注記に従い設計差し戻し PR を別途起票し、本 plan の完了判定を保留する（実装前の設計判断）"
-    acceptance_criteria: |
-      meta/test_docs/ と API KEY の前提が満たされ、ゴールデンセット評価で recall が現行同等以上
-      （NFR-01 / NFR-02）であること。または、前提不足・recall 未達時は本タスクを FAILURE として停止し、
-      設計差し戻し PR が別途起票されていること（その場合 plan の完了判定は保留）。
-    required_reading:
-      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
-      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
-
-  - task_id: TASK-007d
-    title: FNC-008 / DES-028 改定履歴・関連要件メタデータ確認
-    priority: 55
-    status: pending
-    design_id: DES-028
-    depends_on:
-      - TASK-007a
-      - TASK-007b
-      - TASK-007c
-    group_id: "GROUP-003 (5/5)"
-    build_check: on_group_complete
-    description:
-      - "FNC-008 / DES-028 の関連要件メタデータ・改定履歴が plan 完了時点まで最新化されていることを確認する"
-    acceptance_criteria: |
-      FNC-008 / DES-028 の関連要件メタデータ（version, status, history）が plan 完了時点の状態を反映しており、
-      revision_history に本 plan 完了の節目が記録されていること。
-    required_reading:
-      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
-      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
 
 # === 改定履歴 ===
 revision_history:
@@ -355,6 +270,8 @@ revision_history:
     content: |
       /forge:review plan の指摘反映。
       (1) TASK-006 description を設計書参照型に整理（UC 挙動の二重記述を除去）。
-      (2) TASK-007 を粒度過大として TASK-007a/b/c/d に分割し GROUP-003 を 5 サブゲート構成に再編。
-      (3) TASK-007c に golden set 評価の前提確認と停止条件（meta/test_docs 不在 / API KEY 不在 / recall 未達時の設計差し戻し）を明記。
-      (4) DES-028 §7.3 表に UC-03 行を追加し plan↔設計の整合を回復。
+      (2) DES-028 §7.3 表に UC-03 行を追加し plan↔設計の整合を回復。
+  - date: "2026-05-14"
+    content: |
+      TASK-007 系（完了判定機械チェック / ガイド更新 / golden set 計測 / 改定履歴確認）を本 plan から除外。
+      本機能（auto = Hybrid 検索）の動作は TASK-001〜006 で完結するため、品質保証・周辺整備系は別 issue として切り出す方針に変更。
