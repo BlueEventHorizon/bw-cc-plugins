@@ -1,0 +1,298 @@
+# doc-db-first 実装計画書
+#
+# 親要件: FNC-008（doc-advisor 検索エンジン昇格 - doc-db first）
+# 設計: DES-028（v2.0）
+# 配布形態: plugins/doc-advisor / plugins/doc-db（既存 plugin への修正、新規 plugin なし）
+# 依存制約: Python 標準ライブラリのみ（既存 doc-advisor / doc-db の方針を継承）
+#
+# 方針補足 (FNC-008 v1.4 / DES-028 v2.0 整合):
+#  - doc-advisor の Embedding 関連スクリプト・--index モード・関連テストは「保持」
+#  - 本 feature の変更スコープ:
+#    (1) mode=auto を doc-db Hybrid 検索へ切替
+#    (2) doc-advisor 側 Embedding 関連スクリプトの API KEY 参照を doc-db と統一
+#    (3) query-specs / query-rules SKILL.md の description / argument-hint / mode=auto 更新
+#  - forge:clean-rules SKILL の無効化は本 feature では行わない（独立 issue）
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: FNC-008
+    title: doc-advisor 検索エンジン昇格（doc-db first）
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-OP-01
+    title: auto モードで doc-db Hybrid 検索を実行、未インストール時は ToC へフォールバック
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-OP-02
+    title: --toc モード現行維持
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-OP-03
+    title: --index モード現行維持
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-KEY-01
+    title: doc-advisor Embedding スクリプトの API KEY 参照を doc-db と統一
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-KEY-02
+    title: doc-advisor SKILL.md エラーメッセージの API KEY 表記統一
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-IDX-01
+    title: Index 未構築時の自動 build と失敗時のエラー停止
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-IDX-02
+    title: build-index 進行状況のユーザー通知
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-SRC-01
+    title: auto モードで Hybrid 検索（Embedding + Lexical + LLM Rerank）使用
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-SRC-02
+    title: doc-db 検索失敗時に ToC へフォールバックせず停止
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-TST-01
+    title: get_api_key() の 4 ケース（DOCDB のみ / 標準のみ / 両方 / 両方未設定）検証
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-TST-02
+    title: test_embed_docs.py / test_search_docs.py の環境変数モック更新
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-NFR-01
+    title: FNC-002「見落としゼロ」要件を引き続き満たす
+    design_id: DES-028
+    status: pending
+  - requirement_id: FNC-008-NFR-02
+    title: REQ-006 NFR-004（recall 同等基準）を満たす
+    design_id: DES-028
+    status: pending
+
+design_traceability:
+  - design_id: DES-028
+    title: doc-advisor 検索エンジン昇格（doc-db first）設計書
+    requirement_ids:
+      - FNC-008
+      - FNC-008-OP-01
+      - FNC-008-OP-02
+      - FNC-008-OP-03
+      - FNC-008-KEY-01
+      - FNC-008-KEY-02
+      - FNC-008-IDX-01
+      - FNC-008-IDX-02
+      - FNC-008-SRC-01
+      - FNC-008-SRC-02
+      - FNC-008-TST-01
+      - FNC-008-TST-02
+      - FNC-008-NFR-01
+      - FNC-008-NFR-02
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+
+# === タスク一覧 ===
+tasks:
+  # ---------------------------------------------------------------
+  # P1: API KEY 統一（doc-advisor 内独立実装）
+  # ---------------------------------------------------------------
+  - task_id: TASK-001
+    title: embedding_api.py に get_api_key() を新設し API KEY 参照を統一
+    priority: 90
+    status: pending
+    design_id: DES-028
+    depends_on: []
+    group_id: "GROUP-001 (1/2)"
+    build_check: skip
+    description:
+      - "plugins/doc-advisor/scripts/embedding_api.py の冒頭に DES-028 §3.4.2 の実装契約を導入する"
+      - "モジュールトップに OPENAI_API_KEY_ENV = \"OPENAI_API_DOCDB_KEY\" と _FALLBACK_ENV = \"OPENAI_API_KEY\" を定数として定義"
+      - "get_api_key() -> str を新設し os.environ.get(OPENAI_API_KEY_ENV) or os.environ.get(_FALLBACK_ENV, \"\") を返す（フォールバックの一方向解決のみ）"
+      - "docstring に DES-028 §3.4 / FNC-008 KEY-01 を典拠として明記する"
+      - "embedding_api.py 内で従来 os.environ.get(\"OPENAI_API_KEY\") を直接参照していた箇所があれば get_api_key() に置換する"
+      - "tests/doc_advisor/scripts/test_embedding_api.py に DES-028 §7.1 / TST-01 の 4 ケース（(a) DOCDB のみ / (b) 標準のみ / (c) 両方設定 / (d) 両方未設定）を追加する"
+      - "cross-plugin import は行わない（DES-028 §3.4.4 / §5.3.1 と整合させる）"
+    acceptance_criteria: |
+      python3 -m unittest tests.doc_advisor.scripts.test_embedding_api -v が成功し、
+      TST-01 の 4 ケース全てで期待値（DOCDB のみ → DOCDB の値, 標準のみ → 標準の値,
+      両方 → DOCDB の値, 両方未設定 → 空文字列）が返ること。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
+      - docs/rules/implementation_guidelines.md
+
+  - task_id: TASK-002
+    title: search_docs.py / embed_docs.py を get_api_key() 経由に統一
+    priority: 90
+    status: pending
+    design_id: DES-028
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-001 (2/2)"
+    build_check: on_group_complete
+    description:
+      - "plugins/doc-advisor/scripts/search_docs.py の os.environ.get(\"OPENAI_API_KEY\", \"\")（L285 付近）を embedding_api.get_api_key() 呼び出しに置換する"
+      - "plugins/doc-advisor/scripts/embed_docs.py の os.environ.get(\"OPENAI_API_KEY\")（L507 付近）を embedding_api.get_api_key() 呼び出しに置換する"
+      - "両ファイルのエラーメッセージを DES-028 §3.4.3 のテンプレートに統一する（\"OPENAI_API_DOCDB_KEY が未設定です（フォールバックの OPENAI_API_KEY も未設定）。...\"）"
+      - "tests/doc_advisor/scripts/test_embed_docs.py / test_search_docs.py の環境変数モックを OPENAI_API_DOCDB_KEY 主体に差し替える（TST-02）"
+      - "スクリプト本体の Embedding API 呼び出しロジック・出力契約は変更しない（FNC-008 v1.4 / OP-03 維持）"
+    acceptance_criteria: |
+      python3 -m unittest tests.doc_advisor.scripts.test_embed_docs tests.doc_advisor.scripts.test_search_docs -v が成功し、
+      search_docs.py / embed_docs.py から os.environ.get(\"OPENAI_API_KEY\" の直接参照が消えていること
+      （grep で 0 件、ただし embedding_api.py 内の _FALLBACK_ENV 経由の参照は許容）。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
+
+  # ---------------------------------------------------------------
+  # P2: SKILL.md エラーメッセージ・案内文言の API KEY 表記統一
+  # ---------------------------------------------------------------
+  - task_id: TASK-003
+    title: doc-advisor SKILL.md のエラーメッセージを API KEY 新仕様に統一
+    priority: 80
+    status: pending
+    design_id: DES-028
+    depends_on:
+      - TASK-002
+    group_id: null
+    build_check: per_task
+    description:
+      - "DES-028 §3.4.3 のテンプレートに従い 4 SKILL.md（plugins/doc-advisor/skills/{query-specs,query-rules,create-specs-toc,create-rules-toc}/SKILL.md）内の API KEY 関連エラーメッセージ・案内文言を更新する"
+      - "「OPENAI_API_KEY」単独参照を「OPENAI_API_DOCDB_KEY（フォールバック: OPENAI_API_KEY）」へ書き換える"
+      - "案内が複数箇所に分散している場合は同一テンプレート文言に統一する（KEY-02）"
+      - "SKILL.md の frontmatter（name / description / argument-hint / disable-model-invocation 等）は本タスクで変更しない（description は TASK-004 のスコープ）"
+      - "変更箇所を grep で機械的に列挙し、見落としがないことを PR 説明に記載する"
+    acceptance_criteria: |
+      grep -r \"OPENAI_API_KEY\" plugins/doc-advisor/skills/ で見つかる箇所が全て
+      「OPENAI_API_DOCDB_KEY（フォールバック: OPENAI_API_KEY）」表記または embedding_api.py
+      実装注釈の形に揃っていること。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/rules/skill_authoring_notes.md
+      - docs/rules/document_writing_rules.md
+
+  # ---------------------------------------------------------------
+  # P3: query-specs / query-rules SKILL.md の description / argument-hint
+  # ---------------------------------------------------------------
+  - task_id: TASK-004
+    title: query-specs / query-rules SKILL.md の description / argument-hint を再設計
+    priority: 80
+    status: pending
+    design_id: DES-028
+    depends_on: []
+    group_id: "GROUP-002 (1/2)"
+    build_check: skip
+    description:
+      - "plugins/doc-advisor/skills/query-specs/SKILL.md および plugins/doc-advisor/skills/query-rules/SKILL.md の frontmatter を DES-028 §3.3 description / argument-hint 設計に揃える"
+      - "argument-hint は \"[--toc|--index] task description\" を維持（DES-028 §3.3 引数パース「変更なし」）"
+      - "description を DES-028 §3.3 の query-specs / query-rules テンプレート（250 文字以内の front-load + 詳細）に置換する"
+      - ".claude/skills/review-skill-description/SKILL.md の 7 基準（What+When / 意味アンカー / 差別化 / invocable 整合性 / パイプライン記載 / トリガー品質 / 250 文字制限）への適合を本人レビューし PR 説明にチェック結果を書く"
+      - "description 本文から「実装着手前」「タスク」語を排除する（DES-028 §3.3 / v1.5 改訂理由）"
+      - "query-rules 側はトリガー語に \"作業開始\" を含める（CLAUDE.md L19 [MANDATORY] と整合）"
+      - "本タスクは frontmatter のみ更新し、本文 mode=auto フロー記述は TASK-005 で扱う"
+    acceptance_criteria: |
+      両 SKILL.md の description が DES-028 §3.3 の文面と一致し、先頭 250 文字以内に
+      「対象範囲 + 使用場面 + 主要 benefit（Hybrid 検索）」が front-load されていること。
+      「実装着手前」「タスク」語が description 本文に含まれていないこと。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-005
+    title: query-specs / query-rules SKILL.md の mode=auto フロー実装（subagent 内完結）
+    priority: 85
+    status: pending
+    design_id: DES-028
+    depends_on:
+      - TASK-004
+    group_id: "GROUP-002 (2/2)"
+    build_check: on_group_complete
+    description:
+      - "両 SKILL.md の本文に DES-028 §3.3 mode=auto（新フロー）の動作概要・Step 1a / 1b / 2 / 3 / 最終判定をインライン記述する"
+      - "Step 1a: subagent 起動直後に available-skills リストを参照し /doc-db:build-index と /doc-db:query の両 SKILL 存在を確認（OP-01）。いずれか不在なら ToC ワークフロー（query_toc_workflow.md）へ即時切替"
+      - "Step 1b: /doc-db:build-index --category {category} --check を Skill ツールで起動し DES-028 §3.3 の戻り契約（execution_error / success + fresh|stale 判定）に従って分岐"
+      - "Step 2: stale + index_not_found 検出時に /doc-db:build-index --category {category} を起動し DES-028 §3.3 の判定（status==ok のみ完了、status==error は停止）に従う（IDX-01 / IDX-02）"
+      - "Step 3: /doc-db:query --category {category} --query \"{依頼内容}\" --mode rerank を起動。query-specs は --doc-type requirement,design を明示、query-rules は --doc-type 指定なし（DES-028 §3.3 `--doc-type` 絞り込みポリシー）"
+      - "Step 3 の成否判定は「exit_code==0 かつ stdout JSON parse 可かつ results 配列が存在」（status フィールド非依存）"
+      - "失敗時・0 件時とも SRC-02 に従い ToC へフォールバックしないことを明示し、error + hint または「該当する文書が見つかりませんでした」を return"
+      - "subagent 内完結フロー（fork 内で Skill ツール起動 / 集約結果のみを親 Claude に return）を §1.2 / §5.3 の文言で本文に書く"
+      - "mode=toc / mode=index の処理パスは本文構造上 mode=auto と独立させ、現行記述（query_toc_workflow.md / query_index_workflow.md への分岐）を維持する（OP-02 / OP-03）"
+      - "SKILL.md レビューを skill_authoring_notes.md の「自己再帰の禁止」「許容される呼び出しパターン」「依存 SKILL の存在確認」基準で行う"
+    acceptance_criteria: |
+      両 SKILL.md に mode=auto の subagent 内完結フロー（Step 1a / 1b / 2 / 3）が
+      インライン記述されており、available-skills 事前参照（Step 1a）と
+      /doc-db:build-index --check（Step 1b）の分岐が DES-028 §3.3 表と一致していること。
+      mode=toc / mode=index の従来動作は変更されていないこと。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/rules/skill_authoring_notes.md
+      - plugins/doc-advisor/docs/query_toc_workflow.md
+      - plugins/doc-advisor/docs/query_index_workflow.md
+
+  # ---------------------------------------------------------------
+  # P4: 統合テストと完了判定
+  # ---------------------------------------------------------------
+  - task_id: TASK-006
+    title: 統合テスト UC-01〜UC-07 の追加・更新
+    priority: 70
+    status: pending
+    design_id: DES-028
+    depends_on:
+      - TASK-002
+      - TASK-005
+    group_id: "GROUP-003 (1/2)"
+    build_check: skip
+    description:
+      - "tests/doc_advisor/integration/ 配下に DES-028 §7.3 の 10 シナリオを再現する統合テストを実装する（既存ファイルがあれば拡張）"
+      - "UC-01: doc-db インストール済み + auto モードの正常系（Skill ツール呼び出しをモック化）"
+      - "UC-02: doc-db 未インストール時の available-skills 検出 → ToC フォールバック"
+      - "UC-04: --index モード現行維持（embedding_api.get_api_key() 経由で動作）"
+      - "UC-06: Index 未構築 → /doc-db:build-index 自動実行 → /doc-db:query"
+      - "UC-05a〜e: 異常系（未インストール / build 失敗 / query 失敗 / parse エラー / 0 件）で SRC-02 の非フォールバック挙動"
+      - "UC-07: API KEY フォールバック挙動（4 ケース、doc-advisor 側と doc-db 側で同一結果）"
+      - "OpenAI API key が無い CI 環境でも Skill ツール / API 呼び出しを差し替え可能なテストハーネスとする"
+    acceptance_criteria: |
+      python3 -m unittest discover -s tests/doc_advisor/integration -p 'test_*.py' -v が成功し、
+      DES-028 §7.3 表に列挙された UC-01 / UC-02 / UC-04 / UC-05a〜e / UC-06 / UC-07 全シナリオが
+      実装・パスしていること。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
+
+  - task_id: TASK-007
+    title: 完了判定条件の機械的検証と README / ガイド更新
+    priority: 65
+    status: pending
+    design_id: DES-028
+    depends_on:
+      - TASK-003
+      - TASK-005
+      - TASK-006
+    group_id: "GROUP-003 (2/2)"
+    build_check: on_group_complete
+    description:
+      - "DES-028 §8 の完了判定 9 行（Embedding 保持 / query_index_workflow 保持 / --index 維持 / clean-rules 維持 / テスト保持 / Hybrid 検索 / 未インストール時フォールバック / 異常系停止 / KEY-01・02 / TST-01・02 / NFR-01・02）を機械的に検証するチェックシェルまたは pytest を tests/doc_advisor/ 配下に追加する"
+      - "docs/readme/guide_doc-advisor_ja.md の mode=auto 説明を doc-db Hybrid 検索ベースに更新する（--toc / --index は現行維持を明記）"
+      - "meta/test_docs/ のゴールデンセットで NFR-01 / NFR-02（recall 同等以上 / 見落としゼロ）を測定し結果サマリを PR 説明に記載する（meta/ への新規ファイル追加が必要なら CLAUDE.md の meta ルールに従う）"
+      - "FNC-008 / DES-028 の関連要件メタデータ・改定履歴が plan 完了時点まで最新化されていることを確認する"
+    acceptance_criteria: |
+      DES-028 §8 の完了判定 9 項目が機械チェックまたは手動チェックで全て満たされ、
+      README / guide の説明が doc-db first の動作（auto 既定 = Hybrid 検索）と整合していること。
+      ゴールデンセット評価で recall が現行同等以上であること（NFR-01 / NFR-02）。
+    required_reading:
+      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
+      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
+      - docs/readme/guide_doc-advisor_ja.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-05-13"
+    content: 初版作成。FNC-008 v1.4 / DES-028 v2.0 のスコープ縮小（Embedding スクリプト・--index モード保持 + API KEY 統一）を 7 タスクに展開
