@@ -209,7 +209,7 @@ tasks:
   - task_id: TASK-005
     title: query-specs / query-rules SKILL.md の mode=auto フロー実装（subagent 内完結）
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-004
