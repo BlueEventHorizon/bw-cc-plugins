@@ -96,7 +96,6 @@ design_traceability:
       - TASK-003
       - TASK-004
       - TASK-005
-      - TASK-006
 
 # === タスク一覧 ===
 tasks:
@@ -238,29 +237,14 @@ tasks:
       - plugins/doc-advisor/docs/query_index_workflow.md
 
   # ---------------------------------------------------------------
-  # P4: 統合テストと完了判定
+  # P4: 統合テスト（旧 TASK-006）
   # ---------------------------------------------------------------
-  - task_id: TASK-006
-    title: 統合テスト UC-01〜UC-07 の追加・更新
-    priority: 70
-    status: pending
-    design_id: DES-028
-    depends_on:
-      - TASK-002
-      - TASK-005
-    group_id: null
-    build_check: per_task
-    description:
-      - "tests/doc_advisor/integration/ 配下に DES-028 §7.3 表の全シナリオ（UC-01 / UC-02 / UC-03 / UC-04 / UC-05a〜e / UC-06 / UC-07）を再現する統合テストを実装する（既存ファイルがあれば拡張）"
-      - "各 UC の期待挙動・対応操作モード・関連要件 ID は DES-028 §7.3 表を一次ソースとし、本 description で仕様を再記述しない"
-      - "外部依存（OpenAI API 呼び出し、subagent 起動、available-skills 判定）は環境変数モックまたは関数差し替えで再現し、ローカル `python3 -m unittest` で実行可能とする（本リポジトリにテスト自動実行 CI は無いため、CI 環境前提は置かない）"
-    acceptance_criteria: |
-      python3 -m unittest discover -s tests/doc_advisor/integration -p 'test_*.py' -v が成功し、
-      DES-028 §7.3 表に列挙された UC-01 / UC-02 / UC-03 / UC-04 / UC-05a〜e / UC-06 / UC-07 全シナリオが
-      実装・パスしていること。
-    required_reading:
-      - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
-      - docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md
+  # 旧 TASK-006「統合テスト UC-01〜UC-07 の追加・更新」は本 plan から除外。
+  # 詳細は revision_history（2026-05-14）参照:
+  #   UC-04 / UC-07 は既に tests/doc_advisor/scripts/{test_search_docs,test_embedding_api}.py で検証済み。
+  #   UC-01 / UC-02 / UC-03 / UC-05a〜e / UC-06 は SKILL ツール起動 / subagent fork /
+  #   available-skills 判定など Python レイヤに対応物が存在せず、unittest 化が不適。
+  #   SKILL 実行現場での smoke 検証は別 issue で扱う方針。
 
 
 # === 改定履歴 ===
@@ -283,3 +267,16 @@ revision_history:
       実装過程で create-specs-toc / create-rules-toc は Embedding API 未使用（OPENAI_API_KEY 言及なし）と確認したため、
       対象を 4 SKILL.md → 2 SKILL.md に縮小し description / acceptance_criteria に明記。
       FNC-008-KEY-02 を completed に遷移。
+  - date: "2026-05-14"
+    content: |
+      TASK-006「統合テスト UC-01〜UC-07 の追加・更新」を本 plan から除外。
+      理由:
+        - UC-04（--index 経路）と UC-07（API KEY 解決）は既に
+          tests/doc_advisor/scripts/test_search_docs.py / test_embedding_api.py で検証済み。
+        - UC-01 / UC-02 / UC-03 / UC-05a〜e / UC-06 は SKILL ツール起動・subagent fork・
+          available-skills 判定など Claude セッション機能に依存しており、Python レイヤに対応物が存在しない。
+          unittest で再現するには SKILL 動作シミュレータを自作する必要があり、検証対象より重い実装となる。
+      対応:
+        - SKILL 実行現場での smoke 検証用チェックリストは別 issue で扱う。
+        - design_traceability.task_ids から TASK-006 を除外（TASK-001〜005 の 5 タスク構成へ）。
+        - FNC-008-NFR-01 / FNC-008-NFR-02 は他経路で評価する前提で pending のまま残置。
