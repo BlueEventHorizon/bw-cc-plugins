@@ -1,11 +1,12 @@
 ---
 name: query-specs
 description: |
-  Search document indexes to identify specification documents needed for a task.
-  Supports ToC (keyword), Index (semantic), and hybrid (auto) modes.
-  Trigger:
-  - "What specs apply to this task?"
-  - Before starting implementation work
+  ユーザーの依頼や現在の作業に関連する要件定義書・設計書・計画書を docs/specs/ から見落としなく特定する。
+  要件作成・設計・計画・実装・レビュー・仕様変更・既存仕様の確認など、プロジェクト仕様を参照するあらゆる場面で使用（特定フェーズに限定されない）。
+  デフォルト (auto) は doc-db Hybrid 検索（Embedding + Lexical + LLM Rerank）で高精度に抽出。
+  doc-db 未インストール時は ToC keyword 検索へ自動フォールバック。`--toc` で keyword 検索のみ、`--index` で doc-advisor Embedding 検索に固定可能。
+  対象範囲: docs/specs/（ルールは /doc-advisor:query-rules、forge 内部仕様は /forge:query-forge-rules）。
+  トリガー: "関連仕様を確認", "specs 検索", "要件/設計/計画を探す", "What specs apply"
 context: fork
 agent: general-purpose
 model: sonnet

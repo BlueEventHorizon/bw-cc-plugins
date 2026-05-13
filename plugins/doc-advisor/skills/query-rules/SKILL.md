@@ -1,11 +1,12 @@
 ---
 name: query-rules
 description: |
-  Search document indexes to identify rule documents needed for a task.
-  Supports ToC (keyword), Index (semantic), and hybrid (auto) modes.
-  Trigger:
-  - "What rules apply to this task?"
-  - Before starting implementation work
+  現在の作業に適用すべきプロジェクトルール（コーディング規約・命名規則・設計原則・アーキテクチャ規約等）を docs/rules/ から見落としなく特定する。
+  CLAUDE.md の規約により**全ての作業開始時に実行する**ことが推奨されている。実装・設計・レビュー・リファクタリング等のあらゆる場面で使用。
+  デフォルト (auto) は doc-db Hybrid 検索（Embedding + Lexical + LLM Rerank）で高精度に抽出。
+  doc-db 未インストール時は ToC keyword 検索へ自動フォールバック。`--toc` で keyword 検索のみ、`--index` で doc-advisor Embedding 検索に固定可能。
+  対象範囲: docs/rules/（仕様書は /doc-advisor:query-specs、forge 内部仕様は /forge:query-forge-rules）。
+  トリガー: "ルール確認", "規約を確認", "rules 検索", "What rules apply", "作業開始"
 context: fork
 agent: general-purpose
 model: sonnet

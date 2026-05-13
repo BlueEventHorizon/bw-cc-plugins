@@ -34,7 +34,7 @@ requirements_traceability:
   - requirement_id: FNC-008-KEY-01
     title: doc-advisor Embedding スクリプトの API KEY 参照を doc-db と統一
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-KEY-02
     title: doc-advisor SKILL.md エラーメッセージの API KEY 表記統一
     design_id: DES-028
@@ -62,7 +62,7 @@ requirements_traceability:
   - requirement_id: FNC-008-TST-02
     title: test_embed_docs.py / test_search_docs.py の環境変数モック更新
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-NFR-01
     title: FNC-002「見落としゼロ」要件を引き続き満たす
     design_id: DES-028
@@ -132,7 +132,7 @@ tasks:
   - task_id: TASK-002
     title: search_docs.py / embed_docs.py を get_api_key() 経由に統一
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -185,7 +185,7 @@ tasks:
   - task_id: TASK-004
     title: query-specs / query-rules SKILL.md の description / argument-hint を再設計
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on: []
     group_id: "GROUP-002 (1/2)"
