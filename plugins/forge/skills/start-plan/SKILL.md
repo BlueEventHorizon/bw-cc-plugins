@@ -189,8 +189,11 @@ rules_docs:
 
 SubAgent 完了後:
 
-1. `{session_dir}/strategy_draft.md` を Read して内容を表示する
-2. AskUserQuestion でユーザーに確認する:
+1. `{session_dir}/strategy_draft.md` を Read し、**内容を全文テキストとしてチャットに出力する** [MANDATORY]
+   - AskUserQuestion を呼び出す前に必ずテキスト出力すること
+   - ユーザーが承認対象の内容を読んでから判断できるようにする
+   - 略さず全文を出力すること（"省略しました" 等は禁止）
+2. テキスト出力が完了した後に AskUserQuestion でユーザーに確認する:
    - **承認** → Phase 3.3 へ
    - **修正要望あり** → 修正内容を反映して SubAgent を再起動（または orchestrator が直接修正）
 
