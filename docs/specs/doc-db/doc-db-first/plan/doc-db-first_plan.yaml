@@ -38,7 +38,7 @@ requirements_traceability:
   - requirement_id: FNC-008-KEY-02
     title: doc-advisor SKILL.md エラーメッセージの API KEY 表記統一
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-IDX-01
     title: Index 未構築時の自動 build と失敗時のエラー停止
     design_id: DES-028
@@ -157,21 +157,22 @@ tasks:
   - task_id: TASK-003
     title: doc-advisor SKILL.md のエラーメッセージを API KEY 新仕様に統一
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-002
     group_id: null
     build_check: per_task
     description:
-      - "DES-028 §3.4.3 のテンプレートに従い 4 SKILL.md（plugins/doc-advisor/skills/{query-specs,query-rules,create-specs-toc,create-rules-toc}/SKILL.md）内の API KEY 関連エラーメッセージ・案内文言を更新する"
-      - "「OPENAI_API_KEY」単独参照を「OPENAI_API_DOCDB_KEY（フォールバック: OPENAI_API_KEY）」へ書き換える"
+      - "DES-028 §3.4.3 のテンプレートに従い、Embedding API を呼び出す 2 SKILL.md（plugins/doc-advisor/skills/{query-specs,query-rules}/SKILL.md）内の API KEY 関連エラーメッセージ・案内文言を更新する"
+      - "「OPENAI_API_KEY」単独参照を「OPENAI_API_DOCDB_KEY/OPENAI_API_KEY」併記表記へ書き換える"
       - "案内が複数箇所に分散している場合は同一テンプレート文言に統一する（KEY-02）"
       - "SKILL.md の frontmatter（name / description / argument-hint / disable-model-invocation 等）は本タスクで変更しない（description は TASK-004 のスコープ）"
+      - "create-specs-toc / create-rules-toc SKILL.md は ToC 構築のみで Embedding API を使用しないため本タスクの対象外（OPENAI_API_KEY 言及なしを確認済み）"
       - "変更箇所を grep で機械的に列挙し、見落としがないことを PR 説明に記載する"
     acceptance_criteria: |
       grep -r \"OPENAI_API_KEY\" plugins/doc-advisor/skills/ で見つかる箇所が全て
-      「OPENAI_API_DOCDB_KEY（フォールバック: OPENAI_API_KEY）」表記または embedding_api.py
+      「OPENAI_API_DOCDB_KEY/OPENAI_API_KEY」併記表記または embedding_api.py
       実装注釈の形に揃っていること。
     required_reading:
       - docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md
@@ -275,3 +276,10 @@ revision_history:
     content: |
       TASK-007 系（完了判定機械チェック / ガイド更新 / golden set 計測 / 改定履歴確認）を本 plan から除外。
       本機能（auto = Hybrid 検索）の動作は TASK-001〜006 で完結するため、品質保証・周辺整備系は別 issue として切り出す方針に変更。
+  - date: "2026-05-14"
+    content: |
+      TASK-003 完了。query-specs / query-rules SKILL.md (L50) の API KEY 関連エラーメッセージを
+      「OPENAI_API_DOCDB_KEY/OPENAI_API_KEY 未設定等」併記表記へ統一。
+      実装過程で create-specs-toc / create-rules-toc は Embedding API 未使用（OPENAI_API_KEY 言及なし）と確認したため、
+      対象を 4 SKILL.md → 2 SKILL.md に縮小し description / acceptance_criteria に明記。
+      FNC-008-KEY-02 を completed に遷移。

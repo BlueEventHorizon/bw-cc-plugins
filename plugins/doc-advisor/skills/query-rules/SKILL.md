@@ -47,7 +47,7 @@ argument-hint: "[--toc|--index] task description"
 
 `${CLAUDE_PLUGIN_ROOT}/docs/query_index_workflow.md` を Read し、`category = rules` として手順に従う。
 
-- Index 構築に失敗した場合（OPENAI_API_KEY 未設定等）: AskUserQuestion でエラー内容を通知する。**ToC にフォールバックしない**
+- Index 構築に失敗した場合（OPENAI_API_DOCDB_KEY/OPENAI_API_KEY 未設定等）: AskUserQuestion でエラー内容を通知する。**ToC にフォールバックしない**
 - 候補あり → Step: 最終判定 へ
 
 ## mode = auto（デフォルト）
