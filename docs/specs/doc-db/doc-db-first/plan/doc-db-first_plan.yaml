@@ -58,7 +58,7 @@ requirements_traceability:
   - requirement_id: FNC-008-TST-01
     title: get_api_key() の 4 ケース（DOCDB のみ / 標準のみ / 両方 / 両方未設定）検証
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-TST-02
     title: test_embed_docs.py / test_search_docs.py の環境変数モック更新
     design_id: DES-028
@@ -107,7 +107,7 @@ tasks:
   - task_id: TASK-001
     title: embedding_api.py に get_api_key() を新設し API KEY 参照を統一
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on: []
     group_id: "GROUP-001 (1/2)"

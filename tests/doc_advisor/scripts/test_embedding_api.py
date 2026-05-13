@@ -195,5 +195,40 @@ class TestCallEmbeddingApiSingle(unittest.TestCase):
         mock_batch.assert_called_once_with(["テスト"], "fake-key")
 
 
+class TestGetApiKey(unittest.TestCase):
+    """get_api_key() のフォールバック動作テスト（DES-028 §7.1 / TST-01）。
+
+    検証ケース:
+    - (a) OPENAI_API_DOCDB_KEY のみ設定 → DOCDB の値が返る
+    - (b) OPENAI_API_KEY のみ設定 → 標準の値が返る
+    - (c) 両方設定 → DOCDB の値が返る（フォールバックは使われない）
+    - (d) 両方未設定 → 空文字列が返る
+    """
+
+    def test_returns_docdb_key_when_only_docdb_set(self):
+        """(a) OPENAI_API_DOCDB_KEY のみ設定 → DOCDB の値が返る。"""
+        with patch.dict(os.environ, {"OPENAI_API_DOCDB_KEY": "docdb-key"}, clear=True):
+            self.assertEqual(embedding_api.get_api_key(), "docdb-key")
+
+    def test_returns_standard_key_when_only_standard_set(self):
+        """(b) OPENAI_API_KEY のみ設定 → 標準の値が返る（フォールバック）。"""
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "standard-key"}, clear=True):
+            self.assertEqual(embedding_api.get_api_key(), "standard-key")
+
+    def test_returns_docdb_key_when_both_set(self):
+        """(c) 両方設定 → DOCDB の値が返る（フォールバックは使われない）。"""
+        with patch.dict(
+            os.environ,
+            {"OPENAI_API_DOCDB_KEY": "docdb-key", "OPENAI_API_KEY": "standard-key"},
+            clear=True,
+        ):
+            self.assertEqual(embedding_api.get_api_key(), "docdb-key")
+
+    def test_returns_empty_string_when_neither_set(self):
+        """(d) 両方未設定 → 空文字列が返る。"""
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(embedding_api.get_api_key(), "")
+
+
 if __name__ == '__main__':
     unittest.main()
