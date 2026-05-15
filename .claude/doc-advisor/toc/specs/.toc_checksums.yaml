@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-10T08:24:16Z
-file_count: 47
+generated_at: 2026-05-13T03:43:43Z
+file_count: 49
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -24,9 +24,11 @@ checksums:
   docs/specs/doc-advisor/requirements/technical_qa.md: ff2633465c89e08abc07613d4ca5d6dacfc948928c531d36f7d88278f79a8ebd
   docs/specs/doc-advisor/requirements/technical_research_report.md: d7830ed9b2b50d1f0155449d8a3f4445d8de16a99597525ac04e97472b9074dc
   docs/specs/doc-db/design/ADR-001_build_search_io_separation.md: df27305e56167316847a6c4c2b9dd208bfd89ca197775ca75814266cd1464bba
-  docs/specs/doc-db/design/DES-026_doc_db_design.md: feb4a138f72a02c480eb1ca29dfe39b9fb350fe04197d38e2b35f2b365abf51d
+  docs/specs/doc-db/design/DES-026_doc_db_design.md: 0c7f9fc2fea84067fb36d68081d371372a409dad5d3f2f934c9a9891a845031f
+  docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md: 317b81dfb2db20d7b73eddb7530e19f5695cf348f7d3dd8eaebae139c2a0918b
+  docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md: ccfca5fe136250cf62c704a4d619104e1f222d5c00b2b27606a1e0d3dff5939b
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md: a77db97491efb8181025d946fda8829f8f7e21c422eb60878b9133803899196b
-  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 88a24cd61508d7f25c614701c773392d73d2464ce6416aee23b5600c8519e59e
+  docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 6f3effde893b930bbc8a2168fc1ac518237f3a5661d87c19da04f222ba027722
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md: d8ac0542b7370f720121d5946369b585eb8b70a01bbf90e30533592e2e90ce04
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: 5c530b5072c2006cf0e571f44655daf7239a522bcde74f2efc0a09ef49c252da
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 34ba80946e94f8f02be2c5031179d903737eca014c8a5ba0f2fc970f3874f4fc

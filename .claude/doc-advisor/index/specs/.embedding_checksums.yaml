@@ -1,7 +1,7 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-05-12T02:57:34Z
-file_count: 47
+generated_at: 2026-05-12T07:42:45Z
+file_count: 48
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -24,7 +24,8 @@ checksums:
   docs/specs/doc-advisor/requirements/technical_qa.md: ff2633465c89e08abc07613d4ca5d6dacfc948928c531d36f7d88278f79a8ebd
   docs/specs/doc-advisor/requirements/technical_research_report.md: d7830ed9b2b50d1f0155449d8a3f4445d8de16a99597525ac04e97472b9074dc
   docs/specs/doc-db/design/ADR-001_build_search_io_separation.md: df27305e56167316847a6c4c2b9dd208bfd89ca197775ca75814266cd1464bba
-  docs/specs/doc-db/design/DES-026_doc_db_design.md: b278322bd6cdf166626b6c2f7f63064c13bd1ae5736f44863dcbb3807718ae62
+  docs/specs/doc-db/design/DES-026_doc_db_design.md: 0c7f9fc2fea84067fb36d68081d371372a409dad5d3f2f934c9a9891a845031f
+  docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md: d468a474642ad1e2b4459218b476f629b2389fe5e4673e8a23bd8c0c143218b3
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md: a77db97491efb8181025d946fda8829f8f7e21c422eb60878b9133803899196b
   docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md: 6f3effde893b930bbc8a2168fc1ac518237f3a5661d87c19da04f222ba027722
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md: d8ac0542b7370f720121d5946369b585eb8b70a01bbf90e30533592e2e90ce04
