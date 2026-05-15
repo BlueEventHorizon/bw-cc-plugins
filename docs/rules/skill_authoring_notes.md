@@ -75,7 +75,7 @@ $ARGUMENTS[0] # $0 と同等
 
 ## 別スキルの呼び出し
 
-スキル内で別スキルを呼び出す場合は、Claude に指示として書く（直接呼び出し構文はない）。
+スキル内で別スキルを呼び出す場合は、Claude に指示として書く（直接呼び出し構文はない）。スクリプト（Bash 等）から直接呼ぶ構文も存在しない。
 
 ```markdown
 以下を呼び出してください:
@@ -83,7 +83,29 @@ $ARGUMENTS[0] # $0 と同等
 - `/kaizen:fix-findings --batch` を呼び出し、🔴問題を修正する
 ```
 
-スクリプト（Bash コマンド）から直接スキルを呼び出すことはできない。
+- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。`context: fork` の subagent 内からも同様（例: `create-feature-from-plan` → `/forge:start-*`、query-specs / query-rules → `/doc-db:*`）
+- ❌ 自己再帰禁止（下記）
+
+### 自己再帰禁止 [MANDATORY]
+
+SKILL 内から自身を `Skill` ツールで呼ぶ・「`/<self-skill>` を実行します」のように再起動することは禁止する（ハーネスが無限ループで詰まる）。
+
+特に「作業着手前に毎回呼ばれる」以下 SKILL は、SKILL.md 冒頭に明示すること:
+
+- `doc-advisor:query-rules` / `doc-advisor:query-specs` / `forge:query-forge-rules`
+
+```markdown
+> - ❌ 禁止: `Skill` ツールで `query-rules` / `query-specs` / `query-forge-rules` を呼ぶこと（無限再帰でハーネスが詰まる）
+> - ❌ 禁止: 「`/query-rules` を実行します」のように自身を再起動すること
+```
+
+---
+
+## 依存 SKILL の存在確認
+
+別プラグインの SKILL に依存する場合は、起動直後にシステムリマインダの `available-skills` リストを参照して依存先の有無を判定する（事前検知）。`Skill` ツールを起動して失敗で気付く事後検知より低コスト。
+
+`available-skills` の提供仕様（フォーマット・タイミング・粒度）は Claude Code 現行実装への依存があるため **必須化はせず推奨パターン**。仕様変更時は本セクションと該当 SKILL を追随更新すること。事前参照が成立しない環境では事後検知へフォールバックしてよい。
 
 ---
 

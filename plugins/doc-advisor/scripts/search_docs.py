@@ -20,11 +20,10 @@ Run from: Project root
 import argparse
 import json
 import math
-import os
 import sys
 from pathlib import Path
 
-from embedding_api import EMBEDDING_MODEL, call_embedding_api_single
+from embedding_api import EMBEDDING_MODEL, call_embedding_api_single, get_api_key
 from toc_utils import (
     ConfigNotReadyError,
     calculate_file_hash,
@@ -281,14 +280,14 @@ def main():
         }))
         sys.exit(1)
 
-    # API キーの取得
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    # API キーの取得（DES-028 §3.4 / FNC-008 KEY-01: OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY にフォールバック）
+    api_key = get_api_key()
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": (
-                "OPENAI_API_KEY not set. "
-                "Set it with: export OPENAI_API_KEY=sk-..."
+                "OPENAI_API_DOCDB_KEY（または OPENAI_API_KEY）が設定されていません。"
+                "export OPENAI_API_DOCDB_KEY='your-api-key' を実行してください。"
             ),
         }))
         sys.exit(1)

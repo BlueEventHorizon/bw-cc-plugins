@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。5プラグインを格納・配布する。
 
-- **forge** (v0.0.44) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
-- **doc-advisor** (v0.2.3) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
+- **forge** (v0.0.45) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **doc-advisor** (v0.2.5) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
 - **doc-db** (v0.0.1) — 見出し chunk の Hybrid 検索（Embedding + Lexical + LLM Rerank）。doc-advisor とは併用・補完
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 - **xcode** — Xcode ビルド / テスト実行（`/xcode:build`, `/xcode:test`）
@@ -140,5 +140,5 @@ python3 -m unittest tests.forge.review.test_xxx -v
 ユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
 
 - doc-db / Embedding / ToC の方式を同一ゴールデンセットで比較評価
-- 評価スクリプト: `meta/scripts/evaluate.py`
+- 評価スクリプト: `meta/test_docs/` 配下（`run_docdb_test.py` / `run_search_test.py` / `evaluate_toc_results.py` 等）
 - 詳細・実行手順は `meta/test_docs/README.md`

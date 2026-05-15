@@ -16,7 +16,7 @@
 ## 前提条件
 
 - プロジェクトルートに `.doc_structure.yaml`（`/forge:setup-doc-structure` で生成）— [文書構造ガイド](guide_doc_structure_ja.md) を参照
-- `OPENAI_API_KEY` — Embedding（Index 構築・クエリ）および Rerank モードで LLM API を使用する
+- `OPENAI_API_DOCDB_KEY` — Embedding（Index 構築・クエリ）および Rerank モードで LLM API を使用する
 - Python 3（スキルから `python3` で `plugins/doc-db/scripts/` を実行）
 
 ## スキル一覧

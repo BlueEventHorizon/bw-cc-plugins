@@ -162,14 +162,14 @@ class TestDocDbIntegration(unittest.TestCase):
     """TASK-014: 統合シナリオ 1〜3。"""
 
     def setUp(self):
-        self._old_api_key = os.environ.get("OPENAI_API_KEY")
-        os.environ["OPENAI_API_KEY"] = "dummy"
+        self._old_api_key = os.environ.get("OPENAI_API_DOCDB_KEY")
+        os.environ["OPENAI_API_DOCDB_KEY"] = "dummy"
 
     def tearDown(self):
         if self._old_api_key is None:
-            os.environ.pop("OPENAI_API_KEY", None)
+            os.environ.pop("OPENAI_API_DOCDB_KEY", None)
         else:
-            os.environ["OPENAI_API_KEY"] = self._old_api_key
+            os.environ["OPENAI_API_DOCDB_KEY"] = self._old_api_key
 
     def test_scenario1_e2e_build_then_search_schema(self):
         """シナリオ 1: rules Index 構築 → lex / hybrid / emb でスキーマ検証。"""

@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-10T09:05:56Z
-  file_count: 47
+  generated_at: 2026-05-13T03:44:26Z
+  file_count: 49
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -611,35 +611,102 @@ docs:
       - token estimation
   docs/specs/doc-db/design/DES-026_doc_db_design.md:
     doc_type: design
-    title: DES-026 doc-db Plugin Design
-    purpose: Defines architecture, module design, data format, and search pipeline for the doc-db plugin (heading-based chunk Hybrid search + LLM Rerank)
+    title: doc-db Plugin Design
+    purpose: "Specifies architecture, data design, and implementation strategy for doc-db plugin: heading-based chunk extraction, hybrid search (embedding + lexical), LLM reranking, and evaluation methodology"
     content_details:
-      - Overall architecture (Skills/Orchestration/Search/Storage layers)
-      - "9 modules: chunk_extractor, embedding_api, build_index, search_index, lexical_search, hybrid_score, llm_rerank, evaluate, _utils"
-      - Chunk extraction by heading boundary (H1-H6), 8192 char limit
-      - JSON index format with chunk-level entries, embeddings, checksums
-      - "Hybrid score fusion: RRF + linear alpha-weighted"
-      - Input validation rules for SKILL CLI arguments (query, top-n, mode, doc-type)
-      - Grep-based fallback workflow for ID/proper noun matching
-      - Golden set evaluation metrics (recall/precision/token usage)
-      - Six-phase implementation roadmap (P1-P6)
+      - "Architecture layers: skills, orchestration, search, storage"
+      - Chunk extraction by heading boundaries with parent hierarchy preservation
+      - "Hybrid search: embedding + BM25 lexical scoring with RRF fusion"
+      - LLM reranking with token budget control and fallback
+      - "Index format: chunk-level JSON with metadata and failed_chunks tracking"
+      - doc_type separation for specs indices
+      - Two-phase consistency between index and checksum files
+      - Evaluation with precision, recall, API cost metrics
     applicable_tasks:
-      - Plugin architecture design
-      - Search pipeline design
-      - Index format specification
-      - Module implementation planning
-      - Golden set evaluation setup
+      - Implementation of doc-db plugin architecture
+      - Index building and differential updates
+      - Hybrid search pipeline implementation
+      - LLM reranking module development
+      - Golden set evaluation and quality comparison with doc-advisor
+    keywords:
+      - doc-db
+      - chunk extraction
+      - hybrid search
+      - BM25
+      - embedding
+      - LLM rerank
+      - RRF fusion
+      - index design
+      - golden set evaluation
+  docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md:
+    doc_type: design
+    title: Design for Promoting doc-db as Default Search Engine (DES-028)
+    purpose: Specifies the design for upgrading doc-db Hybrid search as the default search engine for query-specs and query-rules SKILL, with fallback to ToC search when doc-db is not installed.
+    content_details:
+      - doc-db Hybrid search (Embedding + Lexical + LLM Rerank) integration
+      - subagent fork context execution model with available-skills detection
+      - step-by-step workflow (doc-db availability check, Index freshness verification, automatic build, Hybrid search execution)
+      - API KEY unified specification (OPENAI_API_DOCDB_KEY with OPENAI_API_KEY fallback)
+      - SKILL.md changes for query-specs and query-rules description and mode=auto behavior
+      - mode=toc and mode=index maintained without change
+      - doc-db unavailable fallback to ToC keyword search
+      - error handling and result aggregation
+      - documentation specifications for doc-db plugin SKILL invocation
+      - compatibility maintenance for existing embedding-based search functionality
+    applicable_tasks:
+      - Design implementation for doc-advisor plugin upgrade
+      - SKILL modification and testing
+      - Hybrid search integration
+      - API KEY configuration and unified specification
+      - Backward compatibility verification
+      - Error handling and edge case testing
     keywords:
       - doc-db
       - Hybrid search
-      - chunk extraction
       - Embedding
       - Lexical search
       - LLM Rerank
-      - RRF
-      - index format
-      - golden set evaluation
-      - doc_structure.yaml
+      - query-specs
+      - query-rules
+      - subagent
+      - available-skills
+      - API KEY
+      - fallback
+      - Index build
+  docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md:
+    doc_type: requirement
+    title: "FNC-008: doc-advisor Search Engine Promotion (doc-db first) Requirement Specification"
+    purpose: Defines requirements for upgrading doc-advisor default search from Embedding-based to doc-db Hybrid search, including API KEY unification and operational mode changes
+    content_details:
+      - Auto mode search switched to doc-db Hybrid search when installed
+      - TOC keyword search fallback for doc-db unavailable
+      - Index mode preserved for backward compatibility
+      - "API KEY reference unified: OPENAI_API_DOCDB_KEY priority with OPENAI_API_KEY fallback"
+      - Automatic doc-db index building on first run
+      - Build progress notification to user
+      - Error handling with explicit user notification
+      - Embedding script preservation and test updates
+      - forge clean-rules SKILL scope exclusion
+      - Feature recall requirement NFR-02 maintained
+    applicable_tasks:
+      - doc-advisor search mode implementation
+      - API KEY reference unification
+      - doc-db Hybrid search integration
+      - Index auto-build feature implementation
+      - Embedding script API KEY update
+      - Test suite adaptation
+      - SKILL documentation update
+    keywords:
+      - doc-advisor
+      - Hybrid search
+      - Embedding
+      - Lexical search
+      - LLM rerank
+      - doc-db
+      - API KEY
+      - OPENAI_API_DOCDB_KEY
+      - search mode
+      - fallback
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md:
     doc_type: requirement
     title: "FNC-005: doc-db Index Build Requirements"
@@ -670,32 +737,36 @@ docs:
       - semantic search
   docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md:
     doc_type: requirement
-    title: "FNC-006: doc-db Search Requirement Specification"
-    purpose: Defines Hybrid search requirements (Embedding + Lexical + LLM Rerank) for doc-db, including operations, scoring, grep completion, and output format
+    title: "FNC-006: doc-db Search Requirements"
+    purpose: Specifies hybrid search requirements combining embedding and lexical search with LLM reranking for document retrieval
     content_details:
-      - Hybrid search architecture (Embedding + Lexical + LLM Rerank)
-      - "Search operations (OP-01 to OP-05: natural language, top-N, search mode, doc_type filtering)"
-      - Multi-vector score aggregation (EMB-01)
-      - Lexical matching for IDs and proper nouns (LEX-01)
-      - Embedding-Lexical score integration (SC-01)
-      - LLM Rerank with fallback (RR-01, RR-02)
-      - grep completion for ID/proper noun queries (GRP-01 to GRP-03)
-      - Result output format with score breakdown and hit rationale (OUT-01, OUT-02)
+      - Hybrid search combining embedding and lexical search with LLM reranking
+      - Search mode selection (embedding only, lexical only, hybrid, hybrid + rerank)
+      - Query support for natural language and ID/proper noun search
+      - Multi-vector aggregation for chunk and field-level embeddings
+      - BM25 lexical scoring with full-match handling for IDs and proper nouns
+      - LLM rerank with fallback to combined score ranking
+      - Grep-based file system search complement for ID and proper noun queries
+      - Score output breakdown (embedding, lexical, rerank components)
+      - doc_type filtering (requirement/design for specs, rules as single category)
+      - Top-N result limit configuration
     applicable_tasks:
       - doc-db search implementation
-      - Hybrid search algorithm design
-      - LLM Rerank integration
+      - Hybrid search algorithm selection and configuration
+      - LLM rerank integration
       - Search quality evaluation
-      - grep completion feature development
+      - Search result interpretation
     keywords:
-      - Hybrid search
-      - LLM Rerank
-      - Multi-vector embedding
-      - Lexical search
-      - grep completion
-      - score integration
-      - chunk scoring
       - doc-db
+      - hybrid search
+      - embedding
+      - lexical
+      - BM25
+      - LLM rerank
+      - grep
+      - chunk
+      - scoring
+      - search quality
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md:
     doc_type: requirement
     title: "FNC-007: doc-db Evaluation Specification"

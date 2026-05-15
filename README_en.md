@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.19**
+**Marketplace version: 0.1.21**
 
 [Japanese README (README.md)](README.md)
 
@@ -36,10 +36,10 @@ flowchart LR
 
 | Plugin          | Version | Description                                                                                                                                          |
 | --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.0.44  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
+| **forge**       | 0.0.45  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
 | **anvil**       | 0.0.7   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                 |
 | **xcode**       | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.                                                   |
-| **doc-advisor** | 0.2.3   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
+| **doc-advisor** | 0.2.5   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
 
 ## Skills
 
@@ -196,6 +196,7 @@ On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and 
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
 - OpenAI API key (for doc-advisor embedding features; set `OPENAI_API_KEY`)
+- OpenAI API key (for doc-db index build / search / rerank; set `OPENAI_API_DOCDB_KEY`)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 - Xcode with `xcodebuild` (for xcode plugin)
 

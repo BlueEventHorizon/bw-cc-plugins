@@ -55,6 +55,7 @@ _spec.loader.exec_module(embedding_api)
 
 API_MAX_RETRIES = embedding_api.API_MAX_RETRIES
 EMBEDDING_MODEL = embedding_api.EMBEDDING_MODEL
+OPENAI_EMBEDDINGS_URL = embedding_api.OPENAI_EMBEDDINGS_URL
 RATE_LIMIT_WAIT_SECONDS = embedding_api.RATE_LIMIT_WAIT_SECONDS
 call_embedding_api = embedding_api.call_embedding_api
 call_embedding_api_single = embedding_api.call_embedding_api_single
@@ -152,7 +153,7 @@ class TestCallEmbeddingApi(_SuppressResourceWarningMixin, unittest.TestCase):
         """401 エラーで RuntimeError を発生させる。"""
         import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
+            url=OPENAI_EMBEDDINGS_URL,
             code=401, msg="Unauthorized", hdrs={}, fp=None,
         )
         with self.assertRaises(RuntimeError) as ctx:
@@ -178,7 +179,7 @@ class TestCallEmbeddingApi(_SuppressResourceWarningMixin, unittest.TestCase):
         """429 レート制限でリトライする。"""
         import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
+            url=OPENAI_EMBEDDINGS_URL,
             code=429, msg="Too Many Requests", hdrs={}, fp=None,
         )
         with self.assertRaises(RuntimeError):
@@ -196,7 +197,7 @@ class TestCallEmbeddingApi(_SuppressResourceWarningMixin, unittest.TestCase):
         headers = http.client.HTTPMessage()
         headers["Retry-After"] = "30"
         mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
+            url=OPENAI_EMBEDDINGS_URL,
             code=429, msg="Too Many Requests", hdrs=headers, fp=None,
         )
         with self.assertRaises(RuntimeError):
@@ -209,7 +210,7 @@ class TestCallEmbeddingApi(_SuppressResourceWarningMixin, unittest.TestCase):
         """500 等のサーバーエラーでリトライ後に RuntimeError を発生させる。"""
         import urllib.error
         mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="https://api.openai.com/v1/embeddings",
+            url=OPENAI_EMBEDDINGS_URL,
             code=500, msg="Internal Server Error", hdrs={}, fp=None,
         )
         with self.assertRaises(RuntimeError):
@@ -261,6 +262,38 @@ class TestCallEmbeddingApiSingle(_SuppressResourceWarningMixin, unittest.TestCas
         call_embedding_api_single("テスト", "fake-key")
 
         mock_batch.assert_called_once_with(["テスト"], "fake-key")
+
+
+class TestGetApiKey(unittest.TestCase):
+    """get_api_key のフォールバック動作テスト。"""
+
+    def setUp(self):
+        self._saved = {
+            k: os.environ.pop(k, None)
+            for k in ("OPENAI_API_DOCDB_KEY", "OPENAI_API_KEY")
+        }
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def test_docdb_key_takes_priority(self):
+        """OPENAI_API_DOCDB_KEY が設定されていればそれを返す。"""
+        os.environ["OPENAI_API_DOCDB_KEY"] = "docdb-key"
+        os.environ["OPENAI_API_KEY"] = "fallback-key"
+        self.assertEqual(embedding_api.get_api_key(), "docdb-key")
+
+    def test_fallback_to_openai_api_key(self):
+        """OPENAI_API_DOCDB_KEY 未設定時は OPENAI_API_KEY にフォールバックする。"""
+        os.environ["OPENAI_API_KEY"] = "fallback-key"
+        self.assertEqual(embedding_api.get_api_key(), "fallback-key")
+
+    def test_empty_string_when_both_missing(self):
+        """両方未設定のときは空文字列を返す。"""
+        self.assertEqual(embedding_api.get_api_key(), "")
 
 
 if __name__ == '__main__':

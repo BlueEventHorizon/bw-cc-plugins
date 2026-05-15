@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.21] - 2026-05-15
+
+### marketplace
+
+- **chore**: doc-advisor 0.2.5 のリリースに伴い marketplace バージョンをバンプ
+
+## [doc-advisor 0.2.5] - 2026-05-15
+
+### doc-advisor
+
+- **feat**: API KEY 参照を `OPENAI_API_DOCDB_KEY` 優先 + `OPENAI_API_KEY` フォールバックの方式で doc-db と統一。`embedding_api.get_api_key()` を新設し、`embed_docs.py` / `search_docs.py` の直接参照を置き換え
+- **feat**: query-specs / query-rules SKILL.md に mode=auto subagent 内完結フロー（doc-db Hybrid 検索委譲・available-skills 事前参照）を実装
+- **docs**: SKILL.md の API KEY 関連エラー文言を `OPENAI_API_DOCDB_KEY` / `OPENAI_API_KEY` 併記に統一
+
+## [forge 0.0.45] - 2026-05-12
+
+### forge
+
+- **feat**: start-plan に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを戦略的に判断し `strategy_draft.md` を生成するフェーズを導入
+- **fix(BR-001)**: スクリプトのエラーメッセージからスラッシュコマンド形式を除去し、プラグインモード・スタンドアロンモード両方で正しいスキル名を案内するよう変更
+
+## [doc-advisor 0.2.4] - 2026-05-12
+
+### doc-advisor
+
+- **fix(BR-001)**: スクリプトのエラーメッセージからスラッシュコマンド形式を除去し、環境非依存な表記に変更（5 箇所）
+
+## [marketplace 0.1.20] - 2026-05-12
+
+### marketplace
+
+- **chore**: forge 0.0.45、doc-advisor 0.2.4、doc-db 0.0.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [doc-db 0.0.1] - 2026-05-12
+
+### doc-db
+
+- **feat**: 初回リリース。見出し chunk 単位の Hybrid 検索（Embedding + Lexical BM25）と LLM Rerank
+- **feat**: emb top-K 保証（EMB_GUARANTEE_K=5）を実装し、hybrid recall ≥ emb recall の不変条件を保証。RRF による語彙マッチなしチャンクの押し出しを防ぐ
+- **feat**: `embed_text` フィールドを導入。heading_path の文脈 + 直近祖先 prose を結合してチャンク埋め込みの精度を向上（空セクションのフォールバック対応）
+- **refactor**: Lexical スコアリングを TF から BM25 に刷新し、PHRASE_SYNONYMS（手動同義語辞書）を削除。字句一致のみに特化し、意味的類似は Embedding に委ねる
+- **feat**: `get_index_path()` が `.doc_structure.yaml` の `output_dir` を尊重するように対応
+
 ## [BR-001 / BR-002 対応] - 2026-05-09
 
 ### forge / doc-db / doc-advisor

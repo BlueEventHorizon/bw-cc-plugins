@@ -20,7 +20,6 @@ Run from: プロジェクトルート
 
 import argparse
 import json
-import os
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -30,6 +29,7 @@ from embedding_api import (
     EMBEDDING_BATCH_SIZE,
     EMBEDDING_MODEL,
     call_embedding_api,
+    get_api_key,
 )
 from toc_utils import (
     ConfigNotReadyError,
@@ -503,14 +503,14 @@ def main():
         run_check_mode(category, common, index_path, checksums_file)
         return 0
 
-    # API キーの確認
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # API キーの確認（DES-028 §3.4 / FNC-008 KEY-01: OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY にフォールバック）
+    api_key = get_api_key()
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": (
-                "OPENAI_API_KEY が設定されていません。"
-                "export OPENAI_API_KEY='your-api-key' を実行してください。"
+                "OPENAI_API_DOCDB_KEY（または OPENAI_API_KEY）が設定されていません。"
+                "export OPENAI_API_DOCDB_KEY='your-api-key' を実行してください。"
             ),
         }))
         return 1
