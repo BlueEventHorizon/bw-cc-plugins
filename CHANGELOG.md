@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.21] - 2026-05-15
+
+### marketplace
+
+- **chore**: doc-advisor 0.2.5 のリリースに伴い marketplace バージョンをバンプ
+
+## [doc-advisor 0.2.5] - 2026-05-15
+
+### doc-advisor
+
+- **feat**: API KEY 参照を `OPENAI_API_DOCDB_KEY` 優先 + `OPENAI_API_KEY` フォールバックの方式で doc-db と統一。`embedding_api.get_api_key()` を新設し、`embed_docs.py` / `search_docs.py` の直接参照を置き換え
+- **feat**: query-specs / query-rules SKILL.md に mode=auto subagent 内完結フロー（doc-db Hybrid 検索委譲・available-skills 事前参照）を実装
+- **docs**: SKILL.md の API KEY 関連エラー文言を `OPENAI_API_DOCDB_KEY` / `OPENAI_API_KEY` 併記に統一
+
 ## [forge 0.0.45] - 2026-05-12
 
 ### forge
