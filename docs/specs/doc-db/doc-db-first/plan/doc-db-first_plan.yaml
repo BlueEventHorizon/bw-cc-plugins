@@ -18,19 +18,19 @@ requirements_traceability:
   - requirement_id: FNC-008
     title: doc-advisor 検索エンジン昇格（doc-db first）
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-OP-01
     title: auto モードで doc-db Hybrid 検索を実行、未インストール時は ToC へフォールバック
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-OP-02
     title: --toc モード現行維持
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-OP-03
     title: --index モード現行維持
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-KEY-01
     title: doc-advisor Embedding スクリプトの API KEY 参照を doc-db と統一
     design_id: DES-028
@@ -42,19 +42,19 @@ requirements_traceability:
   - requirement_id: FNC-008-IDX-01
     title: Index 未構築時の自動 build と失敗時のエラー停止
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-IDX-02
     title: build-index 進行状況のユーザー通知
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-SRC-01
     title: auto モードで Hybrid 検索（Embedding + Lexical + LLM Rerank）使用
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-SRC-02
     title: doc-db 検索失敗時に ToC へフォールバックせず停止
     design_id: DES-028
-    status: pending
+    status: completed
   - requirement_id: FNC-008-TST-01
     title: get_api_key() の 4 ケース（DOCDB のみ / 標準のみ / 両方 / 両方未設定）検証
     design_id: DES-028
@@ -280,3 +280,17 @@ revision_history:
         - SKILL 実行現場での smoke 検証用チェックリストは別 issue で扱う。
         - design_traceability.task_ids から TASK-006 を除外（TASK-001〜005 の 5 タスク構成へ）。
         - FNC-008-NFR-01 / FNC-008-NFR-02 は他経路で評価する前提で pending のまま残置。
+  - date: "2026-05-15"
+    content: |
+      TASK-001〜005 完了に対応し requirements_traceability.status を追従更新。
+      completed へ遷移:
+        - FNC-008（本体）: TASK-001〜005 完走により実装完了。
+        - FNC-008-OP-01: TASK-005 Step 1a（available-skills 参照）で未インストール時 ToC 切替を実装。
+        - FNC-008-OP-02: query-specs / query-rules SKILL.md L41（`--toc` → query_toc_workflow.md）の現行経路維持を確認。
+        - FNC-008-OP-03: query-specs / query-rules SKILL.md L48（`--index` → query_index_workflow.md）の現行経路維持を確認。
+        - FNC-008-IDX-01: TASK-005 Step 1b/2（`/doc-db:build-index --check` → status==ok のみ Step 3、それ以外停止）で実装。
+        - FNC-008-IDX-02: TASK-005 Step 2（stderr JSONL を集約し親 Claude へ return）で実装。
+        - FNC-008-SRC-01: TASK-005 Step 3（`/doc-db:query --mode rerank`）で実装。
+        - FNC-008-SRC-02: TASK-005 Step 1b/2/3 の失敗・0 件時に「ToC にはフォールバックしない」を明示。
+      pending 残置:
+        - FNC-008-NFR-01 / FNC-008-NFR-02: 別経路（golden set 計測等）で評価する前提のため未遷移。
