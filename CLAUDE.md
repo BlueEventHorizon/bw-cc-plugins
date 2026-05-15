@@ -140,5 +140,5 @@ python3 -m unittest tests.forge.review.test_xxx -v
 ユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
 
 - doc-db / Embedding / ToC の方式を同一ゴールデンセットで比較評価
-- 評価スクリプト: `meta/scripts/evaluate.py`
+- 評価スクリプト: `meta/test_docs/` 配下（`run_docdb_test.py` / `run_search_test.py` / `evaluate_toc_results.py` 等）
 - 詳細・実行手順は `meta/test_docs/README.md`
