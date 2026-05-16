@@ -60,7 +60,6 @@ design_traceability:
 # === タスク一覧 ===
 
 tasks:
-
   - task_id: TASK-001
     title: toc_utils.py に load_metadata() と get_all_md_files() を追加
     priority: 95
@@ -98,7 +97,7 @@ tasks:
       - init_common_config() → get_all_md_files() → 差分検出 → load_metadata() の処理フロー
       - build_embedding_text() によるメタデータ → Embedding テキスト変換
       - OpenAI Embedding API バッチ呼び出し（urllib.request, バッチ上限 100）
-      - {category}_index.json への保存（DES-006 §3.3 インデックス JSON スキーマ参照）
+      - "{category}_index.json への保存（DES-006 §3.3 インデックス JSON スキーマ参照）"
       - write_checksums_yaml() でチェックサム更新
       - エラーハンドリング（DES-006 §8 参照）：API キー未設定/429/部分失敗/中断再開
       - EMBEDDING_MODEL = "text-embedding-3-small" 定数をモジュールトップに定義
