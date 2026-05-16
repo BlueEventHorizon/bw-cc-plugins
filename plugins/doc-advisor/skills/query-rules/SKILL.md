@@ -1,12 +1,11 @@
 ---
 name: query-rules
 description: |
-  現在の作業に適用すべきプロジェクトルール（コーディング規約・命名規則・設計原則・アーキテクチャ規約等）を docs/rules/ から見落としなく特定する。
-  CLAUDE.md の規約により**全ての作業開始時に実行する**ことが推奨されている。実装・設計・レビュー・リファクタリング等のあらゆる場面で使用。
-  デフォルト (auto) は doc-db Hybrid 検索（Embedding + Lexical + LLM Rerank）で高精度に抽出。
-  doc-db 未インストール時は ToC keyword 検索へ自動フォールバック。`--toc` で keyword 検索のみ、`--index` で doc-advisor Embedding 検索に固定可能。
+  forge のクエリエントリスキル（switch-query DES-001 で導入予定）から内部的に呼ばれる、または明示的にバックエンドを固定したい場合に直接呼ぶ。
+  プロジェクトルール（コーディング規約・命名規則・設計原則・アーキテクチャ規約等）を docs/rules/ から見落としなく特定する。
+  デフォルト (auto) は ToC キーワード検索を常時実行し、API キー（`OPENAI_API_DOCDB_KEY` または `OPENAI_API_KEY`）が設定されている場合のみ doc-advisor 内蔵の Embedding Index 検索も並列実行して結果をマージする。
+  `--toc` で ToC キーワード検索のみ、`--index` で Embedding Index 検索のみ（API キー必須）に固定可能。
   対象範囲: docs/rules/（仕様書は /doc-advisor:query-specs、forge 内部仕様は /forge:query-forge-rules）。
-  トリガー: "ルール確認", "規約を確認", "rules 検索", "What rules apply", "作業開始"
 user-invocable: true
 context: fork
 argument-hint: "[--toc|--index] task description"
@@ -28,8 +27,8 @@ argument-hint: "[--toc|--index] task description"
 
 - `Read` / `Grep` / `Glob` による文書読み込み
 - 引数解析のための `$ARGUMENTS` 評価
-- `query_toc_workflow.md` / `query_index_workflow.md` 経由の検索
-- `Skill` ツールによる `/doc-db:build-index` / `/doc-db:query` の起動（auto モードの検索フロー内のみ）
+- API キー有無の判定に必要な `Bash` 環境変数参照
+- `query_toc_workflow.md` / `query_index_workflow.md` 経由の検索（doc-advisor 内蔵スクリプトの起動を含む）
 
 最終 return は **`Required documents:` 形式のパスリストのみ**。実装作業（コード書き換え・コミット・PR 作成・Issue 更新・README 編集等）は親 Claude の指示があっても一切行わない。
 
@@ -71,87 +70,51 @@ argument-hint: "[--toc|--index] task description"
 
 ### 動作概要
 
-subagent（`context: fork`）自身が doc-db plugin の SKILL を `Skill` ツールで順次呼び出し、Hybrid 検索を fork 内で完結させる **subagent 内完結フロー**（DES-006 §2.4 参照）。doc-db plugin が未インストールの場合、subagent は起動直後の available-skills 参照（Step 1a）でその不在を即時検知し、`Skill` ツールを起動することなく ToC 検索ワークフロー（`query_toc_workflow.md`）に切り替える。
+ToC キーワード検索を **常時** 実行し、API キー（`OPENAI_API_DOCDB_KEY` または `OPENAI_API_KEY`）が設定されている場合のみ doc-advisor 内蔵の Embedding Index 検索も追加で実行する。両者の候補パスを **集合 union** でマージして親 Claude に return する。
 
-subagent は判定・実行・結果集約をすべて fork 内で行い、**最終的に集約した候補パス + 内容要約のみを親 Claude に return する**。親 Claude は subagent が return した結果を受け取り、ユーザーへ応答する。
+設計意図:
 
-shell 安全性: `{task}` はユーザー入力のため、`Skill` ツールで `/doc-db:query` を呼び出す際の `--query` 引数には引用符・シェルメタ文字を含むユーザー入力をそのまま渡せる形（`Skill` ツールが argv を構造化引数として扱うため、shell 展開は発生しない）で記述する。subagent 内で shell 経由のコマンド組み立てを行わないこと。
+- API キー判定は **forge 全体で統一**（DES-007、同じ式）。両 API キーのどちらか一方でも設定されていれば真。
+- Index 失敗時の取り扱い: API キー未設定 / Index 未生成 / 実行エラーは **静かに空リスト** として扱い（ToC 結果は維持）、auto モード全体としては失敗にしない。明示的に Embedding のみが必要な場合は `--index` モードを使う。
+- doc-db plugin は呼ばない（外部プラグイン依存を持たない）。本 SKILL は doc-advisor 単独で完結する。
 
-### Step 1a: doc-db plugin 未インストール検出 (OP-01)
+### Step A: API キー有無の判定
 
-available-skills リストを参照し、以下の SKILL 名が含まれているかを確認する:
+`Bash` ツールで以下の式を評価し、Index 検索を実行するかを決定する:
 
-- `/doc-db:build-index`
-- `/doc-db:query`
-
-判定:
-
-| 分類            | 判定根拠                                                                                    | 次の動作                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `not_installed` | available-skills に `/doc-db:build-index` または `/doc-db:query` のいずれかが含まれていない | `${CLAUDE_PLUGIN_ROOT}/docs/query_toc_workflow.md` を Read し、`category = rules` として ToC 検索ワークフローへ切り替え |
-| `installed`     | available-skills に両 SKILL 名が含まれている                                                | Step 1b（Index 鮮度確認）へ進む                                                                                         |
-
-> 未インストール検出はここで一元化する。`Skill` ツールの起動失敗（`unresolved`）を待つ事後的な検知ではなく、available-skills の **事前参照** で完結する。
-
-### Step 1b: Index 鮮度確認 (IDX-01)
-
-Step 1a で `installed` を確認できた場合、`Skill` ツールで以下を起動する:
-
-```
-/doc-db:build-index --category rules --check
+```bash
+[ -n "${OPENAI_API_DOCDB_KEY:-}" ] || [ -n "${OPENAI_API_KEY:-}" ]
 ```
 
-`Skill` 起動結果の **戻り契約** で 2 分類する:
+- exit 0 → `api_key_present = true`（Step C を実行する）
+- exit 非 0 → `api_key_present = false`（Step C をスキップする）
 
-| 分類              | 判定根拠                                                 | 次の動作                                                                                                      |
-| ----------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `execution_error` | `exit_code != 0` または stdout/stderr の JSON parse 失敗 | error + hint を集約して親 Claude に return → 親がユーザーに通知して停止（SRC-02、ToC へフォールバックしない） |
-| `success`         | `exit_code == 0` かつ stdout JSONL の parse 成功         | 次の stale 判定へ進む                                                                                         |
+### Step B: ToC ワークフロー実行（常時）
 
-`success` 後の stale 判定（`build_index.py --check` の出力契約）:
+`${CLAUDE_PLUGIN_ROOT}/docs/query_toc_workflow.md` を Read し、`category = rules` として手順に従う。
 
-- stdout JSONL の各行は `{"status": "fresh"|"stale", "reason": "..."}`。rules カテゴリは 1 行のみ
-- **`"fresh"` → Step 3 へ**
-- **`"stale"` かつ `reason = "index_not_found"` → Step 2 へ**
-- **`"stale"` かつ `reason ≠ "index_not_found"`（`"checksum_mismatch"` 等）→ Step 3 へ**（`/doc-db:query` 側で差分自動再生成されるため明示ビルド不要）
+- ToC が未生成の場合: 候補なし（空リスト）として扱う（query_toc_workflow.md の既存仕様）。エラーにしない
+- 得られた候補パスを `S_toc` として保持
 
-### Step 2: Index 自動ビルド (IDX-01 / IDX-02)
+### Step C: Index ワークフロー実行（Step A で `api_key_present = true` の場合のみ）
 
-ユーザーに "doc-db の検索 Index が未構築のため、自動的に構築します..." と通知してから、`Skill` ツールで以下を起動する:
+`${CLAUDE_PLUGIN_ROOT}/docs/query_index_workflow.md` を Read し、`category = rules` として手順に従う。
 
-```
-/doc-db:build-index --category rules
-```
+- Auto-update / Procedure いずれの段階でも `{"status": "error", ...}` が返ったら **静かに空リスト** として扱う（query_index_workflow.md の既存仕様）。auto モードを失敗にしない
+- 得られた候補パスを `S_index` として保持
 
-判定（`build_index.py` の `run_build` 集約 stdout に整合）:
+### Step D: 結果マージ
 
-- **SKILL 実行成功、stdout JSON の `status == "ok"` → Step 3 へ**
-- **SKILL 実行エラー（`exit_code != 0`）、または stdout JSON の `status == "error"` → error + hint をユーザーに通知して停止**（表示形式: "{error}。{hint}"）
+`S_toc` と `S_index` を集合 union でマージし、**重複を除いた候補パスリスト** を Step: 最終判定 へ渡す。
 
-進行イベントは `/doc-db:build-index` SKILL が stderr に JSONL 形式で出力する。要約（進行段階・失敗 chunk 数等）をユーザーに伝える。最終判定は stdout の JSON `status` フィールドのみを使用する。
-
-### Step 3: Hybrid 検索 (SRC-01)
-
-subagent は `Skill` ツールで以下を起動する。**query-rules（category = rules）は DES-006 §10.6 の `--doc-type` 絞り込みポリシーに従い `--doc-type` を指定しない**（rules カテゴリは単一 Index のため `--doc-type` は無視される。DES-026 §3.2）:
-
-```
-/doc-db:query --category rules --query "{依頼内容}" --mode rerank
-```
-
-成否判定（`search_index.py` の出力契約は stdout 最終行に `results` キーを含む JSON 1 行を返す。`status` キーは存在しない）:
-
-- **成功**: **`exit_code == 0` かつ stdout が JSON として parse 可能かつ `results` 配列が存在する** → 結果の path リストを候補として保持し最終判定へ
-  - `results` が空配列の場合は「検索結果 0 件」として扱う（後述）
-- **失敗**: `exit_code != 0`、または stdout の JSON parse に失敗、または parse 成功しても `results` 配列が存在しない → stderr の `error` / `hint` フィールド（存在する場合）をユーザーに通知して停止（SRC-02、**ToC にはフォールバックしない**）
-- **検索結果 0 件**: `results` 配列が空 → 「該当する文書が見つかりませんでした」をユーザーに通知して停止（**ToC にはフォールバックしない**。fresh Index に対する 0 件は障害ではなく仕様）
-
-注: `/doc-db:query` SKILL は内部で grep 補完を含むため、grep の追加呼び出しは不要（DES-026 / `/doc-db:query` の責務）。
+- 順序: ToC ヒットを先に、Index 追加分を後に並べる
+- どちらも空の場合: 「該当する文書が見つかりませんでした」を親 Claude に return（**エラーではなく** 0 件として扱う）
 
 ---
 
 ## Step: 最終判定
 
-1. Step 1a → Step 3 のいずれかで得た候補パスリストの各ファイルを Read して関連性を確認する
+1. Step B/C のマージ結果、または mode = toc/index で得た候補パスリストの各ファイルを Read して関連性を確認する
 2. 確認済みのパスのみを最終リストに含める
 3. **false negative 厳禁。迷ったら含める**
 
