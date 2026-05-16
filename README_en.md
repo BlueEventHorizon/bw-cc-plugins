@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.22**
+**Marketplace version: 0.1.23**
 
 [Japanese README (README.md)](README.md)
 
@@ -39,7 +39,7 @@ flowchart LR
 | **forge**       | 0.0.45  | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
 | **anvil**       | 0.0.7   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                 |
 | **xcode**       | 0.0.1   | Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.                                                   |
-| **doc-advisor** | 0.2.6   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
+| **doc-advisor** | 0.3.0   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
 
 ## Skills
 
