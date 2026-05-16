@@ -14,10 +14,10 @@ doc-advisor（`/doc-advisor:query-rules`, `/doc-advisor:query-specs`）と doc-d
 
 ## テスト対象
 
-| 手法 | 検索方式 | エントリポイント |
-|------|---------|----------------|
+| 手法                        | 検索方式                                                             | エントリポイント                                                           |
+| --------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | **doc-advisor**（Baseline） | auto モード（ToC キーワード + Embedding セマンティックの組み合わせ） | `/doc-advisor:query-rules {query}` <br> `/doc-advisor:query-specs {query}` |
-| **doc-db**（Target） | Hybrid（Embedding + Lexical + LLM Rerank） | `search_index.py --mode hybrid` |
+| **doc-db**（Target）        | Hybrid（Embedding + Lexical + LLM Rerank）                           | `search_index.py --mode hybrid`                                            |
 
 doc-advisor の auto モードは、内部で ToC キーワード検索を実行し、結果が不足すれば Embedding セマンティック検索で補完する。SKILL として実際に呼んだ際の出力（ファイルパス一覧）を評価対象とする。
 
@@ -25,23 +25,23 @@ doc-advisor の auto モードは、内部で ToC キーワード検索を実行
 
 `meta/test_docs/bw-cc-plugins/test_manage/queries.yaml` を使用。
 
-| タイプ | 検証する能力 | rules | specs |
-|--------|----|------|------|
-| `direct` | 基本精度 | 5 | 6 |
-| `task` | タスク起点 | 4 | 2 |
-| `crosscut` | 横断的クエリ | 3 | 3 |
-| `synonym` | 言い換え耐性 | 2 | 2 |
-| `proper` | 固有名詞 | 2 | 2 |
-| `negative` | 無関係クエリの棄却 | 1 | 1 |
-| **合計** | | **17** | **16** |
+| タイプ     | 検証する能力       | rules  | specs  |
+| ---------- | ------------------ | ------ | ------ |
+| `direct`   | 基本精度           | 5      | 6      |
+| `task`     | タスク起点         | 4      | 2      |
+| `crosscut` | 横断的クエリ       | 3      | 3      |
+| `synonym`  | 言い換え耐性       | 2      | 2      |
+| `proper`   | 固有名詞           | 2      | 2      |
+| `negative` | 無関係クエリの棄却 | 1      | 1      |
+| **合計**   |                    | **17** | **16** |
 
 ## 評価指標
 
-| 指標 | 計算方法 | 閾値 |
-|------|---------|------|
-| Recall | `hit_count / expected_count` | 両手法で 100%（FN ゼロ） |
-| Precision | `hit_count / result_count` | doc-db >= doc-advisor |
-| MRR | 期待結果の逆数順位平均 | doc-db >= doc-advisor |
+| 指標      | 計算方法                     | 閾値                     |
+| --------- | ---------------------------- | ------------------------ |
+| Recall    | `hit_count / expected_count` | 両手法で 100%（FN ゼロ） |
+| Precision | `hit_count / result_count`   | doc-db >= doc-advisor    |
+| MRR       | 期待結果の逆数順位平均       | doc-db >= doc-advisor    |
 
 判定: Recall が FN ゼロで、Precision と MRR が doc-db >= doc-advisor なら合格。
 
@@ -129,11 +129,11 @@ python3 meta/test_docs/evaluate_toc_results.py bw-cc-plugins docdb_results.json 
 
 ## 判定基準
 
-| 条件 | 結果 |
-|------|------|
-| Recall が両手法とも 100% で、Precision/MRR が doc-db >= doc-advisor | **合格** |
-| Recall が 100% 未満 | **不合格**（FN の原因分析必須） |
-| Precision/MRR が doc-db < doc-advisor | **要分析**（差の要因を報告） |
+| 条件                                                                | 結果                            |
+| ------------------------------------------------------------------- | ------------------------------- |
+| Recall が両手法とも 100% で、Precision/MRR が doc-db >= doc-advisor | **合格**                        |
+| Recall が 100% 未満                                                 | **不合格**（FN の原因分析必須） |
+| Precision/MRR が doc-db < doc-advisor                               | **要分析**（差の要因を報告）    |
 
 ## 前提条件
 

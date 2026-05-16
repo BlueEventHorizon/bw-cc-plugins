@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-13T03:44:26Z
+  generated_at: 2026-05-16T03:35:32Z
   file_count: 49
 
 docs:
@@ -269,85 +269,127 @@ docs:
       - orchestrator
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md:
     doc_type: design
-    title: Semantic Search Design Specification
-    purpose: Designs a hybrid 3-mode search architecture combining existing ToC keyword matching with Embedding-based semantic search via OpenAI API
+    title: Semantic Search Design (DES-006)
+    purpose: Defines three-mode search architecture (ToC keyword matching, doc-advisor Embedding Index, doc-db Hybrid search) with fallback strategies, subagent workflow integration, and API KEY unified reference specification
     content_details:
-      - Hybrid search architecture with 3 modes (ToC, Index, auto)
-      - Embedding index construction and differential updates
-      - Semantic search via cosine similarity
-      - Full-text search for proper nouns
-      - Query workflow separation into reusable documents
-      - Filter mechanism for large ToC (>100 entries)
-      - OpenAI API integration with error handling
-      - Phase 3 freeze rationale based on quality test results
-      - Existing ToC YAML maintenance as primary search method
-      - Scale handling with filtered ToC for projects exceeding 100 entries
+      - Three-mode search architecture (--toc, --index, auto)
+      - Embedding index construction with difference update via SHA-256 checksum
+      - Semantic search using cosine similarity calculation
+      - Full-text search complementation with grep_docs.py
+      - subagent context isolation and fork workflow design
+      - ToC filtering mechanism for entries exceeding 100 records
+      - doc-db Hybrid search integration (Embedding + Lexical + LLM Rerank)
+      - available-skills pre-check for doc-db plugin detection
+      - Error handling for staleness, API key, model mismatch
+      - Phase-based migration strategy with backward compatibility
     applicable_tasks:
-      - Semantic search feature implementation
-      - Doc-advisor search architecture design review
-      - Hybrid search mode integration testing
-      - Index construction and differential update implementation
-      - Search result quality evaluation
-      - Large-scale ToC optimization (100+ entries)
+      - Document search implementation and integration
+      - Embedding index construction and maintenance
+      - Multi-mode query processing (specs, rules)
+      - Semantic search design review
+      - subagent workflow architecture design
+      - Hybrid search evaluation and fallback strategy
+      - Search quality validation with golden set testing
     keywords:
       - semantic search
-      - Embedding
-      - OpenAI API
-      - hybrid search
-      - ToC
-      - Index
+      - embedding
+      - doc-db Hybrid
       - cosine similarity
-      - 3-mode search
-      - search quality
-      - scalability
-  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
-    doc_type: requirement
-    title: Context-External Search Specification
-    purpose: Specifies requirements for executing document search processing outside the AI context window, returning only candidate paths to the AI for further processing
-    content_details:
-      - Search execution modes (--index, --toc, auto)
-      - External execution via search_docs.py and grep_docs.py
-      - ToC YAML keyword matching
-      - Candidate document path list output
-      - Support for query-specs and query-rules
-      - Error handling for missing index, empty query, and no results
-      - Test requirements for new Python scripts
-    applicable_tasks:
-      - Document search implementation planning
-      - Search performance optimization
-      - Context cost reduction analysis
-      - Search accuracy verification
-    keywords:
-      - context window
-      - external search
-      - ToC matching
-      - index search
+      - ToC filtering
+      - subagent
+      - OpenAI API
       - query-specs
       - query-rules
-      - document path list
+      - search architecture
+  docs/specs/doc-advisor/design/DES-007_unified_api_key_reference_design.md:
+    doc_type: design
+    title: DES-007 Unified API Key Reference Design
+    purpose: Specifies how each plugin implements the FNC-004 unified API key reference convention, including the resolution order, helper contract, error messages, cross-plugin import rejection rationale, test design, and migration path
+    content_details:
+      - "§2.1: Resolution order — plugin-specific env var first, then OPENAI_API_KEY fallback"
+      - "§2.2: get_api_key() implementation contract with full Python reference snippet"
+      - "§2.3: Standardized error message templates for missing keys"
+      - "§3: Rationale for forbidding cross-plugin imports of the helper (plugin independence)"
+      - "§4: Test design with full mock pattern code for the 4-case truth table"
+      - "§5: Migration compatibility — existing OPENAI_API_KEY users keep working"
+      - "Reference: applied independently by doc-advisor (OPENAI_API_ADVISOR_KEY) and doc-db (OPENAI_API_DOCDB_KEY)"
+    applicable_tasks:
+      - implementing get_api_key() inside a new plugin
+      - reviewing or modifying the OpenAI API key resolution helper
+      - writing or updating tests that exercise environment variable fallback
+      - adding error messages for missing API keys
+      - migrating an existing user setup to plugin-scoped keys
+    keywords:
+      - API key resolution
+      - get_api_key
+      - OPENAI_API_KEY
+      - OPENAI_API_DOCDB_KEY
+      - OPENAI_API_ADVISOR_KEY
+      - environment variable fallback
+      - plugin independence
+      - cross-plugin import
+      - test design
+      - migration
+  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
+    doc_type: requirement
+    title: FNC-001 External Context Search Specification
+    purpose: Defines requirements for executing document search outside AI context window using three search modes (ToC, Index, Auto with doc-db Hybrid search)
+    content_details:
+      - "Three search modes: ToC keyword matching, Index Embedding search, Auto Hybrid search (Embedding + Lexical + LLM Rerank)"
+      - "Search input: task description in natural language"
+      - "Search output: candidate document paths relative to project root"
+      - doc-db auto-fallback to ToC when doc-db plugin unavailable
+      - doc-db search failures prevent fallback for search quality visibility
+      - "Error cases: missing index, empty query, zero matches, doc-db unavailable, API errors"
+      - Test requirements for new Python scripts
+      - Context cost reduction requirement
+    applicable_tasks:
+      - doc-advisor search feature implementation
+      - Hybrid search with doc-db integration
+      - search mode selection and fallback logic
+      - search result ranking and relevance scoring
+      - context window cost optimization
+      - search quality testing
+    keywords:
+      - document search
+      - context window
+      - Embedding search
+      - Hybrid search
+      - doc-db
+      - ToC keyword matching
+      - Lexical search
+      - LLM Rerank
+      - search modes
+      - fallback strategy
   docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md:
     doc_type: requirement
-    title: FNC-002 Zero-Miss Search Accuracy Requirement
-    purpose: Defines zero false-negative search accuracy requirements, test methodology, and quality validation for doc-advisor document retrieval across rules and specs categories
+    title: FNC-002 Zero Miss Search Accuracy Requirements Specification
+    purpose: Defines search accuracy requirements for doc-advisor to ensure all relevant documents are retrieved without any false negatives
     content_details:
-      - Zero false negatives requirement for search results
-      - Unlimited result count, returning all related documents
-      - "Search field scope: title, purpose, content details, applicable tasks, keywords"
-      - Category separation requirement for rules and specs indexes
-      - Golden dataset with 43 queries for precision validation
-      - Quality test results showing ToC > Index > Embedding precision
-      - Index staleness detection and update notification
+      - False Negatives requirement zero
+      - No result count limit for related documents
+      - "Search target fields: title, purpose, content_details, applicable_tasks, keywords"
+      - "Category separation: rules and specs indexes independent"
+      - Precision verification with golden test set 43 queries
+      - "Quality test results v0.2.0: ToC > Index > Embedding"
+      - v0.3.x auto mode doc-db Hybrid must achieve equal or better recall
+      - ToC mode as reference implementation and upper bound standard
+      - "Error case: stale index triggers warning and prevents search"
     applicable_tasks:
-      - Search accuracy testing and validation
-      - Document index quality assurance
-      - Search recall verification planning
+      - Search accuracy requirement definition
+      - Quality testing and measurement for search functionality
+      - doc-db Hybrid search evaluation and tuning
+      - Search index staleness handling
+      - Precision verification methodology setup
     keywords:
-      - search accuracy
-      - false negative
-      - golden dataset
-      - ToC search
-      - index staleness
-      - quality test
+      - zero miss search accuracy
+      - false negatives
+      - golden test set
+      - doc-db Hybrid search
+      - search precision
+      - recall measurement
+      - ToC index
+      - search quality
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md:
     doc_type: requirement
     title: FNC-003 Fast Index Generation Specification
@@ -373,6 +415,36 @@ docs:
       - diff detection
       - rebuild
       - doc-advisor
+  docs/specs/doc-advisor/requirements/FNC-004_unified_api_key_reference_spec.md:
+    doc_type: requirement
+    title: FNC-004 Unified API Key Reference Convention Specification
+    purpose: Defines the cross-plugin convention for resolving OpenAI API keys via plugin-specific environment variables with a shared fallback, applied uniformly to doc-advisor / doc-db / future plugins
+    content_details:
+      - "KEY-01: Each plugin reads its plugin-specific env var first (e.g., OPENAI_API_DOCDB_KEY for doc-db, OPENAI_API_ADVISOR_KEY for doc-advisor)"
+      - "KEY-02: Falls back to OPENAI_API_KEY only when the plugin-specific key is unset"
+      - "KEY-03: Each plugin owns its own get_api_key() implementation (no cross-plugin imports allowed)"
+      - "CMP-01 / CMP-02: Backward compatibility for users with only OPENAI_API_KEY set"
+      - "SCP-01 to SCP-04: Scope covers existing doc-advisor / doc-db and future plugins using the same convention"
+      - "TST-01 / TST-02: 4-case test pattern (plugin key only, OPENAI_API_KEY only, both set, neither set)"
+      - "NFR-01: Quality of resolution must not regress when adding new plugins"
+      - "NFR-02: Plugin independence preserved (no shared module dependency)"
+    applicable_tasks:
+      - configuring OpenAI API keys for doc-advisor or doc-db
+      - implementing a new plugin that needs OpenAI access
+      - migrating users from a single OPENAI_API_KEY to plugin-scoped keys
+      - "debugging \"API key not set\" errors"
+      - writing tests for the api key resolution helper
+    keywords:
+      - API key
+      - OPENAI_API_KEY
+      - OPENAI_API_DOCDB_KEY
+      - OPENAI_API_ADVISOR_KEY
+      - environment variable
+      - fallback
+      - plugin independence
+      - cross-plugin convention
+      - get_api_key
+      - secret reference
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md:
     doc_type: requirement
     title: NFR-001 Context Cost Reduction Specification
@@ -638,135 +710,63 @@ docs:
       - RRF fusion
       - index design
       - golden set evaluation
-  docs/specs/doc-db/doc-db-first/design/DES-028_doc_db_first_design.md:
-    doc_type: design
-    title: Design for Promoting doc-db as Default Search Engine (DES-028)
-    purpose: Specifies the design for upgrading doc-db Hybrid search as the default search engine for query-specs and query-rules SKILL, with fallback to ToC search when doc-db is not installed.
-    content_details:
-      - doc-db Hybrid search (Embedding + Lexical + LLM Rerank) integration
-      - subagent fork context execution model with available-skills detection
-      - step-by-step workflow (doc-db availability check, Index freshness verification, automatic build, Hybrid search execution)
-      - API KEY unified specification (OPENAI_API_DOCDB_KEY with OPENAI_API_KEY fallback)
-      - SKILL.md changes for query-specs and query-rules description and mode=auto behavior
-      - mode=toc and mode=index maintained without change
-      - doc-db unavailable fallback to ToC keyword search
-      - error handling and result aggregation
-      - documentation specifications for doc-db plugin SKILL invocation
-      - compatibility maintenance for existing embedding-based search functionality
-    applicable_tasks:
-      - Design implementation for doc-advisor plugin upgrade
-      - SKILL modification and testing
-      - Hybrid search integration
-      - API KEY configuration and unified specification
-      - Backward compatibility verification
-      - Error handling and edge case testing
-    keywords:
-      - doc-db
-      - Hybrid search
-      - Embedding
-      - Lexical search
-      - LLM Rerank
-      - query-specs
-      - query-rules
-      - subagent
-      - available-skills
-      - API KEY
-      - fallback
-      - Index build
-  docs/specs/doc-db/doc-db-first/requirements/FNC-008_doc_advisor_search_upgrade_spec.md:
-    doc_type: requirement
-    title: "FNC-008: doc-advisor Search Engine Promotion (doc-db first) Requirement Specification"
-    purpose: Defines requirements for upgrading doc-advisor default search from Embedding-based to doc-db Hybrid search, including API KEY unification and operational mode changes
-    content_details:
-      - Auto mode search switched to doc-db Hybrid search when installed
-      - TOC keyword search fallback for doc-db unavailable
-      - Index mode preserved for backward compatibility
-      - "API KEY reference unified: OPENAI_API_DOCDB_KEY priority with OPENAI_API_KEY fallback"
-      - Automatic doc-db index building on first run
-      - Build progress notification to user
-      - Error handling with explicit user notification
-      - Embedding script preservation and test updates
-      - forge clean-rules SKILL scope exclusion
-      - Feature recall requirement NFR-02 maintained
-    applicable_tasks:
-      - doc-advisor search mode implementation
-      - API KEY reference unification
-      - doc-db Hybrid search integration
-      - Index auto-build feature implementation
-      - Embedding script API KEY update
-      - Test suite adaptation
-      - SKILL documentation update
-    keywords:
-      - doc-advisor
-      - Hybrid search
-      - Embedding
-      - Lexical search
-      - LLM rerank
-      - doc-db
-      - API KEY
-      - OPENAI_API_DOCDB_KEY
-      - search mode
-      - fallback
   docs/specs/doc-db/requirements/FNC-005_doc_db_index_build_spec.md:
     doc_type: requirement
-    title: "FNC-005: doc-db Index Build Requirements"
-    purpose: Defines requirements for splitting documents into heading-based chunks, vectorizing them with embeddings, and persisting to local index with doc-type categorization
+    title: doc-db Index Build Specification
+    purpose: Specifies requirements for dividing documents into heading-level chunks, generating embeddings, and persisting to local index with category-based separation
     content_details:
-      - Chunk splitting at Markdown heading boundaries with hierarchy path
-      - Multi-vector embedding at chunk granularity
-      - Separate index management by doc_type (specs) and single category (rules)
-      - Build state tracking (complete/incomplete) based on chunk failure presence
-      - Full index regeneration capability via --full flag
-      - Difference update mechanism with checksum-based change detection
-      - Schema metadata (version, model name, dimensions)
+      - Heading-level chunk extraction
+      - Multi-vector embedding per chunk
+      - Category-based index separation for specs by doc_type
+      - Build completion status tracking
+      - Incremental updates via checksum detection
+      - doc-advisor embedding mechanism inheritance
     applicable_tasks:
-      - Index build and regeneration
-      - Multi-vector embedding implementation
-      - Chunk-based semantic search preparation
-      - Document indexing for doc-db
+      - Index generation implementation
+      - Multi-vector embedding handling
+      - Category-based index management
+      - Build status tracking
+      - Incremental index updates
+      - Search method comparison via full rebuild
     keywords:
-      - doc-db
       - chunk
       - embedding
-      - index build
+      - index
       - multi-vector
-      - heading hierarchy
-      - doc_type categorization
+      - heading boundary
+      - doc_type
+      - incremental update
       - checksum
-      - schema metadata
-      - semantic search
   docs/specs/doc-db/requirements/FNC-006_doc_db_search_spec.md:
     doc_type: requirement
-    title: "FNC-006: doc-db Search Requirements"
-    purpose: Specifies hybrid search requirements combining embedding and lexical search with LLM reranking for document retrieval
+    title: "FNC-006: doc-db Search Specification"
+    purpose: Defines hybrid search requirements combining embedding, lexical, and LLM reranking for document retrieval
     content_details:
       - Hybrid search combining embedding and lexical search with LLM reranking
-      - Search mode selection (embedding only, lexical only, hybrid, hybrid + rerank)
-      - Query support for natural language and ID/proper noun search
-      - Multi-vector aggregation for chunk and field-level embeddings
-      - BM25 lexical scoring with full-match handling for IDs and proper nouns
-      - LLM rerank with fallback to combined score ranking
-      - Grep-based file system search complement for ID and proper noun queries
-      - Score output breakdown (embedding, lexical, rerank components)
-      - doc_type filtering (requirement/design for specs, rules as single category)
-      - Top-N result limit configuration
+      - Multi-vector handling for chunks and fields
+      - BM25 lexical scoring for query term matching
+      - Score integration and LLM rerank with fallback
+      - Grep complement for ID and proper noun searches
+      - Result format with path, chunk hierarchy, text, and detailed scores
+      - Search mode selection and document type filtering options
+      - Index freshness verification and automatic regeneration
     applicable_tasks:
       - doc-db search implementation
-      - Hybrid search algorithm selection and configuration
-      - LLM rerank integration
       - Search quality evaluation
-      - Search result interpretation
+      - Hybrid search parameter tuning
+      - Integration with doc-advisor search mechanism
+      - Search result ranking and relevance assessment
     keywords:
-      - doc-db
       - hybrid search
       - embedding
-      - lexical
+      - lexical search
       - BM25
       - LLM rerank
-      - grep
+      - grep complement
       - chunk
-      - scoring
+      - document index
       - search quality
+      - semantic search
   docs/specs/doc-db/requirements/FNC-007_doc_db_evaluation_spec.md:
     doc_type: requirement
     title: "FNC-007: doc-db Evaluation Specification"
@@ -853,34 +853,32 @@ docs:
       - no server process
   docs/specs/doc-db/requirements/REQ-006_doc_db.md:
     doc_type: requirement
-    title: doc-db plugin Requirements Definition
-    purpose: Defines requirements for doc-db plugin, a hybrid search system combining embedding and lexical search with LLM reranking for document retrieval
+    title: doc-db Plugin Requirements Specification
+    purpose: Defines requirements for doc-db plugin with Hybrid search, LLM Rerank, and search quality evaluation for heading-level chunked document retrieval
     content_details:
-      - Heading-unit chunk multi-vector embedding index generation
-      - Hybrid search with embedding and lexical methods plus LLM reranking
-      - Golden set-based search quality evaluation
-      - doc-advisor baseline preservation for comparison
-      - Recall requirement equal to or exceeding ToC and current embedding methods
-      - Standard library only implementation without external dependencies
-      - doc-db independent operation without affecting doc-advisor behavior
+      - Heading-level chunk multi-vector embedding index generation
+      - Hybrid search combining Embedding and Lexical search with LLM Rerank
+      - Golden set based search quality evaluation
+      - OpenAI API key configuration with fallback rules
+      - Independence from doc-advisor with baseline protection
+      - Recall comparison framework for ToC, Embedding, and doc-db methods
     applicable_tasks:
-      - Search quality evaluation planning
-      - Embedding system architecture design
-      - Hybrid search implementation
-      - LLM reranking integration
-      - Comparative evaluation setup
-      - Plugin independence validation
+      - Search quality evaluation and comparison
+      - Plugin architecture design review
+      - Search functionality implementation
+      - Integration planning with doc-advisor
+      - Golden set test case creation
     keywords:
       - doc-db
-      - hybrid search
-      - embedding
-      - lexical search
-      - LLM rerank
+      - Hybrid search
+      - Embedding
+      - Lexical search
+      - LLM Rerank
+      - chunk
       - golden set
       - recall
-      - chunk
-      - doc_type
       - search quality
+      - multi-vector
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* skills orchestrator design

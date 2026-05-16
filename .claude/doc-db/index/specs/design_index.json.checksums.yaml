@@ -1,7 +1,7 @@
 # doc-db checksums
 # Auto-generated - do not edit
-generated_at: 2026-05-11T13:40:17Z
-file_count: 23
+generated_at: 2026-05-16T01:23:51Z
+file_count: 24
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md: 286ba521c2bd35026023cd0a8d00b989921a7f8b7ea46336b36ee8392ce35c18
@@ -10,7 +10,8 @@ checksums:
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: c5e151828923fee43cd764ac6c916f6d8496d38fe4357b9070c5417b897d8bf1
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md: ce1ca801d97795fb4caab2700cb04fb764f5314849ec0c8bc5ac1385d868b732
   docs/specs/doc-db/design/ADR-001_build_search_io_separation.md: df27305e56167316847a6c4c2b9dd208bfd89ca197775ca75814266cd1464bba
-  docs/specs/doc-db/design/DES-026_doc_db_design.md: b278322bd6cdf166626b6c2f7f63064c13bd1ae5736f44863dcbb3807718ae62
+  docs/specs/doc-db/design/DES-026_doc_db_design.md: 0c7f9fc2fea84067fb36d68081d371372a409dad5d3f2f934c9a9891a845031f
+  docs/specs/doc-db/design/DES-028_doc_advisor_search_upgrade_design.md: 909f34061e57f0e3f6b496c2a3c73cda3fea4355dcfcb53ceb57556e63431684
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: ab46fe033f2e59baa00fa05d395e789203436f8bd8d23a57b212851efde6e450
   docs/specs/forge/design/DES-011_session_management_design.md: f7a5a980694c9b440f881a5eaa07e5d53be4c85c5095fc9fc4b82c6095938052
   docs/specs/forge/design/DES-013_context_gathering_design.md: a7282f2511aa22a021f8ac65cf4625139cdb083a15d4e4fb2cb354199a1b835f
