@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.22] - 2026-05-16
+
+### marketplace
+
+- **chore**: doc-advisor 0.2.6 のリリースに伴い marketplace バージョンをバンプ
+
+## [doc-advisor 0.2.6] - 2026-05-16
+
+### doc-advisor
+
+- **fix**: query-specs / query-rules SKILL.md から `context: fork` 等の subagent 起動 frontmatter を削除し、`/doc-advisor:query-specs` が "initializing" で停止する不具合を解消。SKILL 本体を直接実行する方式に変更し、doc-db への Hybrid 検索委譲フロー（`/doc-db:build-index --check` / `/doc-db:query`）は維持
+
 ## [marketplace 0.1.21] - 2026-05-15
 
 ### marketplace
