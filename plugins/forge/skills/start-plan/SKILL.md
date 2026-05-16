@@ -172,14 +172,14 @@ skill_type: "計画書作成"
 Agent ツールで実装戦略 agent を起動する。refs/specs.yaml から設計書パスを抽出し、パラメータとして渡す:
 
 ```yaml
-session_dir: {session_dir}
+session_dir: { session_dir }
 spec: ${CLAUDE_PLUGIN_ROOT}/docs/strategy_formulation_spec.md
 feature: "{feature}"
 design_docs:
-  - {設計書パス1}
-  - {設計書パス2}
+  - { 設計書パス1 }
+  - { 設計書パス2 }
 rules_docs:
-  - {ルール文書パス1}
+  - { ルール文書パス1 }
 ```
 
 - `design_docs`: refs/specs.yaml の documents から設計書（`*_design.md`）のパスを抽出

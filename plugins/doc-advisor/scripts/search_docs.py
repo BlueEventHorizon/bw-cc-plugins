@@ -280,7 +280,7 @@ def main():
         }))
         sys.exit(1)
 
-    # API キーの取得（DES-028 §3.4 / FNC-008 KEY-01: OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY にフォールバック）
+    # API キーの取得（FNC-004 KEY-01 / DES-007 §2.2: OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY にフォールバック）
     api_key = get_api_key()
     if not api_key:
         print(json.dumps({

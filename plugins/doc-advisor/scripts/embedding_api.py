@@ -20,9 +20,9 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 
 OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings"
 
-# API KEY 参照仕様（DES-028 §3.4 / FNC-008 KEY-01）
+# API KEY 参照仕様（FNC-004 KEY-01 / DES-007 §2.2）
 # OPENAI_API_DOCDB_KEY を優先参照し、未設定時のみ OPENAI_API_KEY をフォールバックとして使用する。
-# cross-plugin import を行わず doc-advisor 内で独立実装する（DES-028 §3.4.4 / §5.3.1）。
+# cross-plugin import を行わず doc-advisor 内で独立実装する（DES-007 §3）。
 OPENAI_API_KEY_ENV = "OPENAI_API_DOCDB_KEY"
 _OPENAI_API_KEY_FALLBACK_ENV = "OPENAI_API_KEY"
 
@@ -30,7 +30,7 @@ _OPENAI_API_KEY_FALLBACK_ENV = "OPENAI_API_KEY"
 def get_api_key() -> str:
     """OPENAI_API_DOCDB_KEY を優先参照し、未設定時のみ OPENAI_API_KEY をフォールバック解決する。
 
-    典拠: DES-028 §3.4.2 / FNC-008 KEY-01。
+    典拠: FNC-004 KEY-01 / DES-007 §2.2。
     両方未設定なら空文字列を返す（既存契約と互換）。
     """
     return os.environ.get(OPENAI_API_KEY_ENV) or os.environ.get(_OPENAI_API_KEY_FALLBACK_ENV, "")
