@@ -2,6 +2,11 @@
 
 Claude Code プラグイン/スキルの SKILL.md を作成・編集する際の注意点をまとめる。
 
+## 必須
+
+claude code SKILL に関しては
+まず、claude-code-guide Agent を使って公式仕様を理解してください。  [MANDATORY]
+
 ---
 
 ## frontmatter フィールド
