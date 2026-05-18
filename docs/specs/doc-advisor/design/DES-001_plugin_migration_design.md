@@ -12,7 +12,7 @@
 
 DocAdvisor-CC（テンプレートベースのインストーラ）を Claude Code プラグインとして bw-cc-plugins リポジトリに移行する。setup.sh による `.claude/` への展開方式を廃止し、`plugins/doc-advisor/` 配下に全コンポーネントを配置する。最大の設計変更は config.yaml の廃止と `.doc_structure.yaml` の直接参照への切り替えである。
 
-**採用アプローチ**: 既存の forge/anvil/xcode プラグインパターンに準拠しつつ、DocAdvisor 固有の制約（スクリプト間の共有 import）に対応するため scripts/ をプラグインルート直下にフラット配置する。
+**採用アプローチ**: 既存の forge/anvil プラグインパターンに準拠しつつ、DocAdvisor 固有の制約（スクリプト間の共有 import）に対応するため scripts/ をプラグインルート直下にフラット配置する。
 
 > **移行計画書との関係**: 本設計書は移行計画書（`docs/specs/doc-advisor/reference/specs/plan/plugin_migration_plan.md`）の Phase 1〜7 を詳細化したものである。移行計画書との差異がある場合は本設計書を正とする。
 
@@ -377,7 +377,7 @@ DocAdvisor-CC の `feature/for_plugin` ブランチで `doc-advisor-version-xK9X
 }
 ```
 
-**設計判断 — skills/agents フィールド**: 移行計画書 Phase 5-1 では `"skills": "./skills/"`, `"agents": "./agents/"` を plugin.json に含めているが、既存の forge/anvil/xcode の plugin.json にはこれらのフィールドが存在しない。Claude Code はデフォルトで `skills/` と `agents/` ディレクトリを自動検出するため、明示的な宣言は不要と判断した。ただし、Phase 7 の統合テストでスキル・エージェントの認識を検証し、認識されない場合は追加する。
+**設計判断 — skills/agents フィールド**: 移行計画書 Phase 5-1 では `"skills": "./skills/"`, `"agents": "./agents/"` を plugin.json に含めているが、既存の forge/anvil/doc-db の plugin.json にはこれらのフィールドが存在しない。Claude Code はデフォルトで `skills/` と `agents/` ディレクトリを自動検出するため、明示的な宣言は不要と判断した。ただし、Phase 7 の統合テストでスキル・エージェントの認識を検証し、認識されない場合は追加する。
 
 ### 6.2 marketplace.json エントリ
 

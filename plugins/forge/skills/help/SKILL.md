@@ -29,7 +29,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
   create-feature-from-plan: plan ファイルから要件定義→設計書へ展開
   clean-rules         : ルール文書を分析し重複を検出・削除
-  merge-feature-specs : 完了した FEATURE の仕様を main に統合
+  merge-specs          : 2 つの仕様 DIR（基本 / 追加）を内容単位でマージ
   setup-doc-structure : .doc_structure.yaml を対話的に生成
   setup-version-config: .version-config.yaml を対話的に生成
   update-version      : バージョンを一括更新。CHANGELOG 自動反映
@@ -219,9 +219,9 @@ AskUserQuestion:
 
 ---
 
-### merge-feature-specs
+### merge-specs
 
-引数: FEATURE 名（省略時は対話で決定）
+引数: `[base] [additional]`（基本 DIR と追加 DIR の 2 つ。短縮名なら `.doc_structure.yaml` の spec ルート配下を自動探索）
 
 ---
 

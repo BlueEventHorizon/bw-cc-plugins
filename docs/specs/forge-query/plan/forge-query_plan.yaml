@@ -271,7 +271,7 @@ tasks:
       - "DES-001 §3.1 [MANDATORY] に従い、Skill ツール経由で /forge:query-db-* を呼ぶ箇所の args を **検索語 + 短文タスク記述のみ** に正規化（Issue 本文 / 実装指示 / diff / 親 context は貼らない）"
       - "残存 grep: `grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' plugins/forge/skills/ .claude/skills/ .agents/skills/` でヒットが説明文中の言及（再帰防止注記 / 設計書引用）のみになることを確認"
       - DES-001 §8.2 に従い query 系の「利用可能ならスキップ」ガードを削除（検索結果が必須）、update 系のガードは維持
-      - merge-feature-specs の Phase 0「doc-advisor 必須」検査を「抽象 skill 必須」検査に置換（DES-001 §4.2 末尾）
+      - merge-specs の Phase 0「doc-advisor 必須」検査を「抽象 skill 必須」検査に置換（DES-001 §4.2 末尾）
       - "ガイド文書（CLAUDE.md / README.md / README_en.md / docs/readme/forge/guide_*.md / docs/readme/guide_doc-advisor_ja.md）の呼び方を抽象 SKILL に統一"
       - "`dprint fmt` で Markdown フォーマットを揃える"
       - バージョン関連ファイル（version 行 / marketplace.json / CHANGELOG.md）に diff を出さない

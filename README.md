@@ -103,7 +103,7 @@ flowchart LR
 | [**start-implement**](docs/readme/forge/guide_implement_ja.md)                            | 計画書のタスクを選択し、実装・レビュー・計画書更新を一連で実行            | `"実装開始"`                     |
 | [**start-uxui-design**](docs/readme/forge/guide_uxui_design_ja.md)                        | 要件定義書からデザイントークン・UI 仕様を UX 評価付きで創造               | `"UXUIデザイン"`                 |
 | **create-feature-from-plan**                                                              | Claude plan mode の出力 markdown から要件定義書 → 設計書を一気通貫で作成  | `"plan から feature 作成"`       |
-| **merge-feature-specs**                                                                   | 完了 feature の仕様を main 仕様棚に統合（永続原則のみ抽出・作業履歴削除） | `"feature を仕様に統合"`         |
+| **merge-specs**                                                                            | 2 つの仕様 DIR（基本 / 追加）を内容単位でマージ。追加側を正として基本側を改訂し、純粋新規分のみ移送 | `"spec をマージ"`                |
 | [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold                        | `"初期設定"`                     |
 | [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config)      | `.version-config.yaml` 生成・更新                                         | `"バージョン設定"`               |
 | [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                            | `"バージョン更新"`               |

@@ -416,16 +416,16 @@ rm -rf {session_dir}
 2. `{candidate_dir}` が `{requirements,design,plan}` を含むディレクトリであり、さらに **その親（仕様棚）に他の兄弟仕様（別 feature ディレクトリや別の `{requirements,design,plan}` セット）が存在する** → **追加開発**の可能性が高い
 3. 仕様棚に他の仕様が見当たらず、`{candidate_dir}` のみ → **基本仕様の修正**である可能性が高い
 4. 判定が不確実な場合は AskUserQuestion で確認:
-   - 質問:「これは追加開発（merge-feature-specs で本体に統合する）ですか、それとも基本仕様の修正ですか？」
+   - 質問:「これは追加開発（後で merge-specs で本体仕様 DIR に統合する）ですか、それとも基本仕様の修正ですか？」
    - 選択肢: `追加開発` / `基本仕様の修正`
 
 ディレクトリ名（`main` 等）の固定形式は存在しないため、名前一致や深さの機械的ルールには依存しない。
 
 #### Step 2A: 追加開発の場合
 
-AskUserQuestion:「追加開発の全タスクが完了しました。`/forge:merge-feature-specs` を実行して本体仕様に統合しますか？（plan は統合処理の中で削除されます）」
+AskUserQuestion:「追加開発の全タスクが完了しました。`/forge:merge-specs` を実行して本体仕様 DIR に統合しますか？（実行時は基本 DIR と追加 DIR の 2 引数が必要）」
 
-- **統合する** → `/forge:merge-feature-specs {feature}` を実行 → 完了案内（merge 実行パターン）
+- **統合する** → `/forge:merge-specs <base> {feature}` を実行（`<base>` は本体仕様 DIR の短縮名 / 相対パス）→ 完了案内（merge 実行パターン）
 - **後で実行する** → 計画書はそのまま残す → 完了案内（plan 残しパターン）
 
 #### Step 2B: 基本仕様修正の場合
@@ -474,7 +474,7 @@ executor が FAILURE を報告した場合:
 ```
 {feature} の全タスクが完了し、本体仕様への統合を実行しました。
   完了タスク: {完了タスク数} / {全タスク数}
-  統合: /forge:merge-feature-specs {feature} 完了（plan 削除済み）
+  統合: /forge:merge-specs <base> {feature} 完了
 ```
 
 ### plan 削除パターン（基本仕様修正 → plan 削除）
@@ -493,4 +493,4 @@ executor が FAILURE を報告した場合:
   計画書: {plan_path}
 ```
 
-追加開発で merge を後回しにした場合、必要なタイミングで `/forge:merge-feature-specs {feature}` を実行する。
+追加開発で merge を後回しにした場合、必要なタイミングで `/forge:merge-specs <base> {feature}` を実行する（`<base>` は本体仕様 DIR の短縮名 / 相対パス）。
