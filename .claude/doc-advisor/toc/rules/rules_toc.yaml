@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-10T08:15:09Z
+  generated_at: 2026-05-18T02:20:16Z
   file_count: 5
 
 docs:
@@ -92,33 +92,33 @@ docs:
       - dead code
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
-    title: SKILL.md Authoring Notes
-    purpose: Defines guidelines and best practices for creating and editing Claude Code plugin SKILL.md files, including frontmatter fields, argument handling, directory structure, and mandatory user interaction patterns
+    title: SKILL Authoring Notes
+    purpose: Defines authoring conventions, frontmatter configuration, and implementation guidelines for Claude Code plugin skills
     content_details:
-      - frontmatter fields (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
-      - description writing guidelines for auto-invocation triggering
-      - argument variables ($ARGUMENTS, $0, $1, $2)
-      - plugin variables (${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_SKILL_DIR}, ${CLAUDE_SESSION_ID})
-      - cross-skill invocation patterns
-      - directory structure and SKILL.md organization
-      - SKILL.md splitting criteria for external references
-      - AskUserQuestion tool requirement for user interaction
-      - project-specific conventions (Japanese comments, user-invocable rules, path references, MANDATORY markers)
+      - Frontmatter fields (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
+      - Distinction between user-invocable and disable-model-invocation
+      - Description writing for automatic invocation trigger recognition
+      - Argument reference syntax and variables (ARGUMENTS, positional args, CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
+      - Skill-to-skill invocation patterns and self-recursion prohibition
+      - Dependent skill existence verification via available-skills
+      - Directory structure and SKILL.md splitting criteria
+      - AskUserQuestion tool usage for user confirmation
     applicable_tasks:
-      - SKILL.md creation and editing
-      - plugin skill development
-      - skill parameter design
-      - user interaction implementation
-      - multi-skill workflow design
+      - SKILL authoring and editing
+      - frontmatter configuration for new skills
+      - Reviewing skill documentation compliance
+      - Plugin development
+      - Subagent skill creation with fork context
     keywords:
       - SKILL.md
       - frontmatter
-      - description
       - user-invocable
       - disable-model-invocation
-      - argument
-      - variables
+      - automatic invocation
+      - skill recursion
       - AskUserQuestion
+      - Claude Code
+      - context fork
   docs/rules/version_migration_design.md:
     doc_type: rule
     title: Version Migration Design Rule

@@ -40,6 +40,7 @@ Apple HIG・Don Norman の感情デザイン・Dieter Rams の 10 原則・Niels
 3. プラットフォームガイド（対象文書のプラットフォームに応じて。不明な場合は両方）:
    - iOS → `${CLAUDE_PLUGIN_ROOT}/skills/start-uxui-design/docs/ios_platform_guide.md`
    - macOS → `${CLAUDE_PLUGIN_ROOT}/skills/start-uxui-design/docs/macos_platform_guide.md`
+4. `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md` — 文書スタイル違反のチェック基準
 
 ---
 
