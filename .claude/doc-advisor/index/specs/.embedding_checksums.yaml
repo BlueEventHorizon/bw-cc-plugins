@@ -1,21 +1,21 @@
 # Embedding index checksums for specs
 # Auto-generated - do not edit
-generated_at: 2026-05-16T15:43:46Z
-file_count: 50
+generated_at: 2026-05-18T08:34:40Z
+file_count: 51
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
-  docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md: 5618f2cedb93abf1842a25b17418e06569ce5dd7deab5900c290e444152f478e
+  docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md: 51abbe5016ed1e2dd79156da67d5bfa184dd1d0fe48d1b7a0e0e182aa9eb6e21
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md: 286ba521c2bd35026023cd0a8d00b989921a7f8b7ea46336b36ee8392ce35c18
   docs/specs/doc-advisor/design/DES-003_document_identifier.md: 392ac77041e109c5d6f84243ea019a398cae4a6d2aa3d37190e4e350dc8dcc2a
   docs/specs/doc-advisor/design/DES-004_document_model.md: a632e67261f5e897df76e675f9e9b3b3c71417f3d6e096ddd0b5544d22c6c6b1
   docs/specs/doc-advisor/design/DES-005_toc_generation_flow.md: c5e151828923fee43cd764ac6c916f6d8496d38fe4357b9070c5417b897d8bf1
-  docs/specs/doc-advisor/design/DES-006_semantic_search_design.md: 697d9580666a63de28ac16b562bcd505027a0b283d308e9751d33ace4b7296ee
+  docs/specs/doc-advisor/design/DES-006_semantic_search_design.md: b179e53c281508138f823b41cf8dbe7f5bdea1d33d7618f608662a171a5c1cb6
   docs/specs/doc-advisor/design/DES-007_unified_api_key_reference_design.md: 958da88d30f924df0779c164671284e859ec7558d874e529bbf7ae9e43d996cf
-  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: fb4357f0543478e9e00fa813605f78565243721a7cca17f15d61719599db42ee
-  docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: 041bf9603ce71e51150769f6be679a8f03a8af1f691aa2585c4c44686b1ca325
+  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: 80815c11b0151eb6cbb39ba17e9f60872c2927148903e2ba92c91a4e14dde990
+  docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: c9f0838cecbcf4536c09d327c797443e7e963ddd06a2e5b970f70a4e11d5100f
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md: cb6f505f6a76c03541f92633de47ebcf7a47aa5d25aecefce4b4af5c5d66c73f
   docs/specs/doc-advisor/requirements/FNC-004_unified_api_key_reference_spec.md: e81e7b601ac18514513a4e0beafd7905c7418b10e88c4033b40f793f03464696
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md: 58559880acfec8b7ae3697a28868958491430fe3561a104864e3ba01008e241a
@@ -34,6 +34,7 @@ checksums:
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: cd91a0dadb4eb22a5088d9ac434b1cdaa148daf4ac15acc62604292c60d1c6a9
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 7a9df6e214d2f5064c41d89595731317f8bd2381ffc654f7115aa86e140b3ad4
   docs/specs/doc-db/requirements/REQ-006_doc_db.md: 6bbb83a0609873d10ca7a184b05d6f81fcc326538fc07728a22969c8fc8379d7
+  docs/specs/forge-query/design/DES-001_forge-query_abstraction.md: 00e0e04b3589b9ad032fb9fca01e04452c412d027bfe0d599c54156daa7fb23d
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: ab46fe033f2e59baa00fa05d395e789203436f8bd8d23a57b212851efde6e450
   docs/specs/forge/design/DES-011_session_management_design.md: 7466197c7f9a0570e2ca46f0044f4b5864e06fdad290be249ac2d07cb664875e
   docs/specs/forge/design/DES-013_context_gathering_design.md: a7282f2511aa22a021f8ac65cf4625139cdb083a15d4e4fb2cb354199a1b835f
