@@ -123,10 +123,10 @@ feature 名を確定してください
 
 ### 4.1 自動判定
 
-| 条件                                                                                                | モード  |
-| --------------------------------------------------------------------------------------------------- | ------- |
-| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/doc-advisor/xcode/common 等） | `--add` |
-| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在                | `--new` |
+| 条件                                                                                          | モード  |
+| --------------------------------------------------------------------------------------------- | ------- |
+| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/doc-advisor/common 等） | `--add` |
+| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在          | `--new` |
 
 ### 4.2 ユーザー確認
 

@@ -4,7 +4,7 @@
 
 **マーケットプレイスバージョン: 0.1.24**
 
-マーケットプレイスは **5 つのプラグイン**（forge、anvil、xcode、doc-advisor、**doc-db**）で構成される。**doc-db** は見出し単位 chunk の Embedding + Lexical による Hybrid 検索と LLM Rerank で、ルール・仕様文書の発見精度を補完する。doc-advisor（ToC／軽量インデックス）と**上位互換ではなく併用**し、同一の `.doc_structure.yaml` を参照する。
+マーケットプレイスは **4 つのプラグイン**（forge、anvil、doc-advisor、**doc-db**）で構成される。**doc-db** は見出し単位 chunk の Embedding + Lexical による Hybrid 検索と LLM Rerank で、ルール・仕様文書の発見精度を補完する。doc-advisor（ToC／軽量インデックス）と**上位互換ではなく併用**し、同一の `.doc_structure.yaml` を参照する。
 
 [English README (README_en.md)](README_en.md)
 
@@ -34,7 +34,6 @@ flowchart LR
     DA[doc-advisor] -. コンテキスト収集 .-> forge
     DB[doc-db] -. chunk Hybrid 検索 .-> forge
     AV[anvil] -- コミット & PR --> DL
-    XC[xcode] -. ビルド & テスト .-> RF
 ```
 
 ## プラグイン一覧
@@ -43,7 +42,6 @@ flowchart LR
 | --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **forge**       | 0.1.0      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応                                  |
 | **anvil**       | 0.0.8      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                                                            |
-| **xcode**       | 0.0.1      | Xcode ビルド・テストツールキット。iOS/macOS プロジェクトのビルドとテストをプラットフォーム自動判定で実行                                                 |
 | **doc-advisor** | 0.3.0      | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する        |
 | **doc-db**      | 0.0.2      | 見出し chunk 単位の Hybrid 検索（Embedding + Lexical）と LLM Rerank。ID や固有名詞は grep 結果も統合して取りこぼしを抑える（doc-advisor とは併用・補完） |
 
@@ -129,15 +127,6 @@ flowchart LR
 | **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）           | `"issue を作成"`      |
 | **impl-issue**                                           | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応） | `"この issue を実装"` |
 
-### xcode
-
-> [詳細ガイド](docs/readme/guide_xcode_ja.md) — 使い方、使用例
-
-| スキル                                           | 説明                                                           | トリガー   |
-| ------------------------------------------------ | -------------------------------------------------------------- | ---------- |
-| [**build**](docs/readme/guide_xcode_ja.md#build) | Xcode プロジェクトをビルドし、エラーを報告。iOS/macOS 自動判定 | `"ビルド"` |
-| [**test**](docs/readme/guide_xcode_ja.md#test)   | テストを実行し、失敗を報告。iOS/macOS 自動判定                 | `"テスト"` |
-
 ### doc-advisor
 
 > [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
@@ -172,7 +161,6 @@ Claude Code セッション内で:
 /plugin install anvil@bw-cc-plugins
 /plugin install doc-advisor@bw-cc-plugins
 /plugin install doc-db@bw-cc-plugins
-/plugin install xcode@bw-cc-plugins
 ```
 
 無効化したプラグインを再有効化するには、ターミナルから:
@@ -217,7 +205,6 @@ claude plugin update forge@bw-cc-plugins --scope local
 - OpenAI API キー（doc-advisor の embedding 使用時。`OPENAI_API_KEY` 環境変数に設定）
 - OpenAI API キー（doc-db の Index 構築・検索・Rerank 使用時。`OPENAI_API_DOCDB_KEY` 環境変数に設定）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
-- Xcode / `xcodebuild`（xcode プラグイン用）
 
 ## ライセンス
 

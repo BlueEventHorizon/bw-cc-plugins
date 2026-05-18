@@ -2,14 +2,14 @@
 
 ## メタデータ
 
-| 項目       | 値                                                                               |
-| ---------- | -------------------------------------------------------------------------------- |
-| 設計 ID    | COMMON-DES-001                                                                   |
-| 関連要件   | -                                                                                |
-| 関連 ADR   | `docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md`        |
-| 関連ルール | `docs/rules/skill_authoring_notes.md`                                            |
-| 作成日     | 2026-05-18                                                                       |
-| 適用範囲   | bw-cc-plugins 配下の全プラグイン（forge / doc-advisor / doc-db / anvil / xcode） |
+| 項目       | 値                                                                        |
+| ---------- | ------------------------------------------------------------------------- |
+| 設計 ID    | COMMON-DES-001                                                            |
+| 関連要件   | -                                                                         |
+| 関連 ADR   | `docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md` |
+| 関連ルール | `docs/rules/skill_authoring_notes.md`                                     |
+| 作成日     | 2026-05-18                                                                |
+| 適用範囲   | bw-cc-plugins 配下の全プラグイン（forge / doc-advisor / doc-db / anvil）  |
 
 ## 1. 概要
 
