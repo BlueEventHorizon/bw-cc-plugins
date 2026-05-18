@@ -11,7 +11,7 @@ DES-001 / ADR-001 から把握した実装対象:
   - `plugins/forge/skills/update-db-specs/SKILL.md`（同上）
   - `plugins/forge/scripts/backend_selection/select_backend.py`（分岐ロジック単一実装。Python 標準ライブラリのみ・read-only）
 - **既存 SKILL の出力契約変更 1 点**: `plugins/doc-db/skills/query/SKILL.md` の Output Format を `Required documents:` 先頭ハイブリッド形式に書換（スクリプト本体は不変、§7.1）
-- **既存 forge 17+ ファイルの参照置換**（§4.2）: `plugins/forge/skills/{review,start-design,start-plan,clean-rules,merge-feature-specs,create-feature-from-plan,start-requirements,start-uxui-design}/...` 配下の SKILL.md および `docs/*.md` / `review_criteria_*.md` 内の `/doc-advisor:query-*` / `/doc-advisor:create-*-toc` 直呼びを抽象 4 SKILL 呼びに一斉置換
+- **既存 forge 17+ ファイルの参照置換**（§4.2）: `plugins/forge/skills/{review,start-design,start-plan,clean-rules,merge-specs,create-feature-from-plan,start-requirements,start-uxui-design}/...` 配下の SKILL.md および `docs/*.md` / `review_criteria_*.md` 内の `/doc-advisor:query-*` / `/doc-advisor:create-*-toc` 直呼びを抽象 4 SKILL 呼びに一斉置換
 - **ガード方針の差分対応**（§8.2）: query 系の「利用可能ならスキップ」ガードは削除、update 系は維持
 - **テスト 3 点**
   - 新規 `tests/forge/scripts/test_backend_selection.py`（分岐テーブル A 5 行 + B 8 行 + §1.5.1 API キー判定 + §5.1 エラー文字列完全一致 + read-only 性）
@@ -92,7 +92,7 @@ DES-001 / ADR-001 から把握した実装対象:
   - DES-001 §4.2 の既知対象 17+ ファイル + `.claude/skills/` / `.agents/skills/` 配下を含むプロジェクトルート全体で `/doc-advisor:query-*` / `/doc-advisor:create-*-toc` 直呼びが新規 4 抽象 SKILL 呼びに置換される
   - `grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' ./` をプロジェクトルートで実行した結果、説明文中の言及（再帰防止注記 / README の説明）以外で **0 件**になる（受入条件 #5）
   - query 系のガード（「利用可能ならスキップ」）が **削除**され、update 系のガードは **維持**される（§8.2）
-  - `merge-feature-specs` の Phase 0「doc-advisor 必須」検査が「抽象 skill 必須検査」に置き換わる（§4.2 末尾、`/forge:query-db-specs` または `/forge:update-db-specs` の存在判定）
+  - `merge-specs` の Phase 0「doc-advisor 必須」検査が「抽象 skill 必須検査」に置き換わる（§4.2 末尾、`/forge:query-db-specs` または `/forge:update-db-specs` の存在判定）
   - `CLAUDE.md` / `README.md` / `README_en.md` / `docs/readme/guide_doc-advisor_ja.md` / `docs/readme/forge/guide_*.md` の呼び方が抽象 SKILL に統一される（§4.3、ただし **バージョン表の数値変更は禁止**、`docs/rules/implementation_guidelines.md`）
   - `plugins/forge/docs/` 配下の forge 内蔵知識ベース ToC（`plugins/forge/toc/rules/rules_toc.yaml`）が必要に応じて `update-forge-toc` で再生成される（§8.4）
   - SW-02 / SW-03a / SW-03b / SW-06 / SW-07 / SW-08 を含む §10.2 SW-01〜SW-11 全シナリオが観察的検証で期待動作を示す（受入条件 #7）

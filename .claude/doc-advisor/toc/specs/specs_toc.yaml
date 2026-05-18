@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-18T22:40:09Z
+  generated_at: 2026-05-18T23:21:57Z
   file_count: 53
 
 docs:
@@ -982,61 +982,71 @@ docs:
       - responsibility separation
   docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md:
     doc_type: design
-    title: DES-001 Document Search Backend Abstraction (switch-query) Design
-    purpose: Defines architecture for decoupling forge from specific search backends through abstraction, enabling flexible backend selection based on installation and API key availability
+    title: forge-query abstraction design (switch-query)
+    purpose: Specifies the design for inverting forge dependency on search backends (doc-db/doc-advisor), enabling flexible backend selection based on installation status and API key availability
     content_details:
-      - Backend abstraction pattern inverting dependencies from concrete plugins to abstract skills
-      - Four new internal skills for search and index update operations with automatic backend selection
-      - Backend selection logic based on installation status and API key availability
-      - Subagent contract requirements for read-only inherited skills without context forking
-      - Output contract standardizing results with Required documents section
-      - Error handling for missing backends and API key issues
-      - Integration mapping replacing direct plugin calls across forge skills
-      - Script implementation select_backend.py for centralized backend selection logic
+      - Dependency inversion architecture with abstract skills
+      - Backend selection logic (doc-db prioritized when API key present, doc-advisor as fallback)
+      - Four new abstract skills (query-db-rules, query-db-specs, update-db-rules, update-db-specs)
+      - Backend selection decision table (5 combinations) and skill mapping table (8 rows)
+      - select_backend.py Python script for centralized branch logic
+      - Output contract with Required documents prefix format
+      - Subagent contract (fork prevention, read-only constraints, argument interpretation)
+      - Error handling for missing backends, API key issues, no fallback between backends
     applicable_tasks:
-      - Backend abstraction implementation in forge plugin
-      - Search skill refactoring to use abstraction layer
-      - Doc-db integration and output format alignment
-      - Doc-advisor auto mode integration
-      - forge skill updates for backend-agnostic search
+      - Implement backend abstraction layer in forge
+      - Update forge skill calls to use abstract skills
+      - Create select_backend.py script implementation
+      - Update doc-db SKILL.md output format
+      - Replace direct doc-advisor calls in all forge skills
+      - Test backend selection logic
     keywords:
       - dependency inversion
       - backend abstraction
       - doc-db
       - doc-advisor
-      - skill orchestration
-      - API key resolution
-      - DES-007
       - select_backend.py
       - query-db-rules
       - query-db-specs
+      - update-db-rules
+      - update-db-specs
+      - API key handling
   docs/specs/forge-query/plan/forge-query_strategy.md:
     doc_type: plan
     title: forge-query implementation strategy
-    purpose: Outlines the complete implementation approach, phased execution plan, risk analysis, and verification strategy for the forge-query feature integration including backend selection logic, new skill implementation, and reference replacement across existing forge skills
+    purpose: Defines implementation strategy for forge-query feature including phase breakdown, risk analysis, verification points, and integration approach with backend selection logic and abstract SKILL creation
     content_details:
-      - Full architecture analysis of 5 new modules and 1 output contract change
-      - Risk analysis across 8 categories including technical uncertainty, data integrity, integration, and dependency complexity
-      - Bottom-up with risk-driven approach combining dependency graph analysis and early contract validation
-      - "Three implementation phases: phase 1 output contract and backend selection, phase 2 abstract skill implementation, phase 3 reference replacement"
-      - Detailed verification points including unit tests, integration tests, and observational validation scenarios
-      - Risk mitigation strategies mapped to implementation phases
-      - Acceptance criteria with grep-based verification and version constraint enforcement
+      - Overall structure analysis identifying 5 new modules and changes to 17+ existing files
+      - "Phase 1: output contract alignment and backend selection logic implementation"
+      - "Phase 2: abstract 4 SKILL creation and layer integration with role and argument constraints"
+      - "Phase 3: reference replacement across all forge skills and documentation updates"
+      - "Risk analysis with 6 categories: technical uncertainty, data consistency, integration, dependency complexity, side effects, version control"
+      - Golden test requirements covering Table A (5 rows) and Table B (8 rows) of backend selection
+      - Error message exact matching validation in test_backend_selection.py
+      - Manifest integrity checks and constraint verification tests
+      - Available-skills API constraint and SoT integrity requirements
+      - Observational verification scenarios SW-01 through SW-11
     applicable_tasks:
-      - forge-query feature implementation planning
+      - forge-query implementation planning
       - Backend selection logic design and testing
-      - Skill inheritance pattern implementation
-      - Reference replacement across forge modules
-      - Output contract integration testing
-      - Risk-driven development planning
+      - Abstract SKILL creation for query-db-rules, query-db-specs, update-db-rules, update-db-specs
+      - Integration testing between doc-db and forge query skills
+      - Reference replacement across forge codebase
+      - Risk mitigation and golden test implementation
+      - Constraint validation for inherited-type SKILL
+      - Output contract verification for hybrid search backend
     keywords:
       - forge-query
       - backend selection
-      - inheritance pattern
+      - Table A and Table B branching
       - output contract
-      - risk-driven implementation
-      - phased execution
-      - script architecture
+      - query-db-rules
+      - query-db-specs
+      - update-db-rules
+      - update-db-specs
+      - select_backend.py
+      - inherit-type SKILL
+      - constraint validation
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* skills orchestrator design

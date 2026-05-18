@@ -19,7 +19,7 @@
 
 ### 1.1 現状の問題
 
-forge の各 skill（`review` / `start-design` / `start-plan` / `start-implement` / `clean-rules` / `merge-feature-specs` 等）は、ルール・仕様の検索および ToC 更新を **`/doc-advisor:query-rules` / `/doc-advisor:query-specs` / `/doc-advisor:create-rules-toc` / `/doc-advisor:create-specs-toc` を具体プラグイン名で直接呼ぶ** 構造になっている。これにより以下の不整合が生じている。
+forge の各 skill（`review` / `start-design` / `start-plan` / `start-implement` / `clean-rules` / `merge-specs` 等）は、ルール・仕様の検索および ToC 更新を **`/doc-advisor:query-rules` / `/doc-advisor:query-specs` / `/doc-advisor:create-rules-toc` / `/doc-advisor:create-specs-toc` を具体プラグイン名で直接呼ぶ** 構造になっている。これにより以下の不整合が生じている。
 
 1. **doc-advisor を抜くと forge のフローが機能不全になる**。各 skill のガードは「利用可能ならスキップ」だが、**query 系の検索結果は後段の入力として必須** のため、スキップすると review のルール検索や start-implement のコンテキスト収集が無音で抜け落ちる。
 2. **doc-db のみで運用したいユーザーが doc-advisor を強制される**。doc-db は機能的に doc-advisor の Embedding 検索を包含するが、forge が doc-advisor を直呼びしているため、doc-advisor をインストールしないと forge が完全動作しない。
@@ -332,7 +332,7 @@ grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' ./
 - `plugins/forge/skills/start-design/SKILL.md`（L281）
 - `plugins/forge/skills/start-plan/SKILL.md`（L303）
 - `plugins/forge/skills/clean-rules/SKILL.md`（L288）
-- `plugins/forge/skills/merge-feature-specs/SKILL.md`（L64, L105-L122, L564, L570, L572, L608, L612, L624, L626）
+- `plugins/forge/skills/merge-specs/SKILL.md`（L64, L105-L122, L564, L570, L572, L608, L612, L624, L626）
 - `plugins/forge/skills/create-feature-from-plan/SKILL.md`
 - `plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md`
 - `plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md`
@@ -354,7 +354,7 @@ grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' ./
 - `.agents/skills/update-forge-toc/SKILL.md`
 - `.agents/skills/setup-doc-structure/SKILL.md`
 
-`merge-feature-specs` の Phase 0 にある「doc-advisor 必須」検査は **抽象 skill 必須検査** に置き換える（`/forge:query-db-specs` または `/forge:update-db-specs` の存在のみで判定）。
+`merge-specs` の Phase 0 にある「doc-advisor 必須」検査は **抽象 skill 必須検査** に置き換える（`/forge:query-db-specs` または `/forge:update-db-specs` の存在のみで判定）。
 
 > 出力契約の扱い: 置換対象の forge skill は新呼び出しの出力を §3.1 の正規化契約（`Required documents:` 先頭セクション）に従って解釈する。後段セクション（Hybrid scores / grep hits）は補助情報のため、forge skill 側の主処理では参照しなくてよい。
 
@@ -689,7 +689,7 @@ API キー要件の表記揺れは [#53](https://github.com/BlueEventHorizon/bw-
 
 以下を全て満たす:
 
-1. doc-db のみインストール + API キーありで forge の全 skill（review / start-* / clean-rules / merge-feature-specs）が完全動作する
+1. doc-db のみインストール + API キーありで forge の全 skill（review / start-* / clean-rules / merge-specs）が完全動作する
 2. doc-advisor のみインストールで forge の全 skill が完全動作する（doc-advisor の auto モードがフラグなし呼び出しで応答を返す。内部挙動は doc-advisor 側 SoT に従う、§5.3）
 3. 両方インストール時、§2.3 分岐テーブル A に従い API キーありなら doc-db、API キーなしなら doc-advisor が採用される
 4. どちらもインストールされていない場合、`/forge:query-db-*` および `/forge:update-db-*` は §5.1 のエラーメッセージで終了する
