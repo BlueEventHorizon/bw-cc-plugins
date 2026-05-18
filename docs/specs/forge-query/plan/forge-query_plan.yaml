@@ -84,7 +84,6 @@ design_traceability:
 # === タスク一覧 ===
 tasks:
   # ---------- フェーズ 1: 共通基盤 ----------
-
   - task_id: TASK-001
     title: select_backend.py を新規実装
     priority: 95
@@ -144,17 +143,16 @@ tasks:
     description:
       - plugins/forge/skills/query-db-rules/SKILL.md を新設
       - 雛形は plugins/forge/skills/query-forge-rules/SKILL.md（継承型）の構造を流用
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
       - "argument-hint: \"task description\"（--toc / --index は受理しない / ADR-001）"
       - 内部フロー: available-skills を LLM が読む → Bash で select_backend.py --category rules --operation query 呼出 → JSON から Skill ツールで該当バックエンド起動
       - 分岐テーブルを SKILL.md に複製しない（SoT は select_backend.py のみ）
       - Role 章に read-only [MANDATORY] / バックエンド検索 SKILL 以外の Skill 起動禁止 / 自己再帰禁止を明記（ADR-002 §B / DES-001 §3.1）
       - 引数解釈 [MANDATORY] セクション（ADR-002 §C）
-      - "DES-001 §5.3 に従い、doc-advisor 採用時の応答中の旧スキル名（/doc-advisor:create-rules-toc 等）を /forge:update-db-rules に置換してから親に返す責務を出力後処理章で明示"
       - バージョン関連ファイル（plugin.json の version 行 / marketplace.json / CHANGELOG.md）は触らない
     acceptance_criteria: |
       SKILL.md が継承型 frontmatter（context: fork なし）+ B/C 層多重防御契約 + Required documents 出力契約を満たし、
       Bash と Skill 以外の書き込み系ツールが allowed-tools に含まれない。
-      doc-advisor 応答中の旧スキル名を /forge:update-db-rules に置換する責務（DES-001 §5.3）が SKILL.md 本文に記載されている。
     required_reading:
       - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
       - docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md
@@ -173,14 +171,13 @@ tasks:
     description:
       - plugins/forge/skills/query-db-specs/SKILL.md を新設
       - 構造は TASK-003 と同一で検索対象を specs に切り替える
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
       - select_backend.py への呼出パラメータは --category specs --operation query
       - B/C 層多重防御契約と引数解釈 [MANDATORY] セクションは TASK-003 と同じ
       - ADR-001 に従い --toc / --index を SKILL.md 本文に書かない
-      - "DES-001 §5.3 に従い、doc-advisor 採用時の応答中の旧スキル名（/doc-advisor:create-specs-toc 等）を /forge:update-db-specs に置換してから親に返す責務を出力後処理章で明示"
     acceptance_criteria: |
       SKILL.md が継承型 frontmatter + B/C 層制約 + Required documents 出力契約を満たし、
       query-db-rules と検索対象（rules / specs）のみが差分となる。
-      doc-advisor 応答中の旧スキル名を /forge:update-db-specs に置換する責務（DES-001 §5.3）が SKILL.md 本文に記載されている。
     required_reading:
       - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
       - docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md
@@ -197,6 +194,7 @@ tasks:
     build_check: skip
     description:
       - plugins/forge/skills/update-db-rules/SKILL.md を新設
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
       - "argument-hint: \"[--full]\""
       - 内部フロー: available-skills 確認 → Bash で select_backend.py --category rules --operation update → JSON から該当バックエンドの ToC 構築 SKILL（/doc-db:build-index または /doc-advisor:create-rules-toc）を Skill ツールで起動
       - --full が指定された場合はバックエンドに転送
@@ -220,6 +218,7 @@ tasks:
     description:
       - plugins/forge/skills/update-db-specs/SKILL.md を新設
       - 構造は TASK-005 と同一で対象を specs に切り替える
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
       - select_backend.py への呼出パラメータは --category specs --operation update
       - バックエンドが doc-db なら /doc-db:build-index --category specs、doc-advisor なら /doc-advisor:create-specs-toc を起動
       - グループ最終タスクとして 4 SKILL.md 全体の整合性を確認

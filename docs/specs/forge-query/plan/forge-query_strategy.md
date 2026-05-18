@@ -23,16 +23,16 @@ DES-001 / ADR-001 から把握した実装対象:
 
 ## リスク分析（Step 2）
 
-| リスクカテゴリ | リスク | 影響度 |
-| --- | --- | --- |
-| 技術的不確実性 | available-skills を Python から取得する API が存在せず、SKILL.md 側で LLM が組立てる必要がある（§10.1）。SKILL.md と `select_backend.py` の責務分割を誤ると分岐表が SKILL.md に流出して SoT 多重化する | 中 |
-| データ整合性 | §5.1 のエラーメッセージ全文（複数行）と `select_backend.py` の `error` フィールド出力が完全一致する必要あり。改行・空白の不一致でテストが落ち、ユーザー導線が壊れる | 中 |
-| インテグレーション | doc-db 側 SKILL.md の Output Format 変更と forge 抽象 SKILL の出力契約が `Required documents:` 形式で噛み合う必要あり。先に doc-db を直さないと test_query_output_contract.py が落ちる | 高 |
-| 依存の複雑性 | §4.2 影響範囲が 17+ ファイル + `.claude/skills/` / `.agents/skills/` まで及ぶ。grep 漏れがあると `/doc-advisor:*` 直呼びが残存し受け入れ条件 #5 を満たせない | 高 |
-| 副作用暴走 | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / ADR-002） | 高 |
-| 非目的の混入 | ADR-001 で「`--toc` / `--index` は forge 抽象 SKILL の正式引数として持たない」と確定。`argument-hint` への混入や SKILL.md 内バリデーション記述で抽象が崩れる | 低 |
-| パフォーマンス | 該当なし（Python 標準ライブラリのみ・分岐評価は O(1)） | - |
-| バージョン関連 | `docs/rules/implementation_guidelines.md` の「バージョン関連ファイル編集禁止 [MANDATORY]」により plugin.json / marketplace.json / CHANGELOG.md / README バージョン表は本 PR 編集禁止。skill 一覧追加のみ可（§8.3 / §9） | 低（制約として常時遵守） |
+| リスクカテゴリ     | リスク                                                                                                                                                                                                                  | 影響度                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 技術的不確実性     | available-skills を Python から取得する API が存在せず、SKILL.md 側で LLM が組立てる必要がある（§10.1）。SKILL.md と `select_backend.py` の責務分割を誤ると分岐表が SKILL.md に流出して SoT 多重化する                  | 中                       |
+| データ整合性       | §5.1 のエラーメッセージ全文（複数行）と `select_backend.py` の `error` フィールド出力が完全一致する必要あり。改行・空白の不一致でテストが落ち、ユーザー導線が壊れる                                                     | 中                       |
+| インテグレーション | doc-db 側 SKILL.md の Output Format 変更と forge 抽象 SKILL の出力契約が `Required documents:` 形式で噛み合う必要あり。先に doc-db を直さないと test_query_output_contract.py が落ちる                                  | 高                       |
+| 依存の複雑性       | §4.2 影響範囲が 17+ ファイル + `.claude/skills/` / `.agents/skills/` まで及ぶ。grep 漏れがあると `/doc-advisor:*` 直呼びが残存し受け入れ条件 #5 を満たせない                                                            | 高                       |
+| 副作用暴走         | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / ADR-002）  | 高                       |
+| 非目的の混入       | ADR-001 で「`--toc` / `--index` は forge 抽象 SKILL の正式引数として持たない」と確定。`argument-hint` への混入や SKILL.md 内バリデーション記述で抽象が崩れる                                                            | 低                       |
+| パフォーマンス     | 該当なし（Python 標準ライブラリのみ・分岐評価は O(1)）                                                                                                                                                                  | -                        |
+| バージョン関連     | `docs/rules/implementation_guidelines.md` の「バージョン関連ファイル編集禁止 [MANDATORY]」により plugin.json / marketplace.json / CHANGELOG.md / README バージョン表は本 PR 編集禁止。skill 一覧追加のみ可（§8.3 / §9） | 低（制約として常時遵守） |
 
 ## アプローチ（Step 3）
 
@@ -110,14 +110,14 @@ DES-001 / ADR-001 から把握した実装対象:
 
 ## リスクと対策
 
-| リスク | 影響度 | 対策（どのフェーズで潰すか） |
-| --- | --- | --- |
-| §5.1 エラーメッセージ全文と `error` フィールドの不一致 | 中 | フェーズ 1: `test_backend_selection.py` で文字列等価テスト（改行含む完全一致）を最初に書き、`select_backend.py` 実装と同時に固定する |
-| doc-db / doc-advisor の出力先頭が `Required documents:` で揃わない | 高 | フェーズ 1: doc-db SKILL.md Output Format を先に書換し、`test_query_output_contract.py` を新規追加して 3 SKILL の先頭契約を機械検証。フェーズ 2 以降で抽象 SKILL を組む前に契約を固定する |
-| 継承型 SKILL の B/C 層制約漏れによる副作用暴走（write 操作・自己再帰・ゴミ引数解釈） | 高 | フェーズ 2: 雛形を継承型 `query-forge-rules` から派生させ、`test_query_skill_isolation.py` の `CONSTRAINT_TARGET_SKILLS` 拡張で「`context: fork` 不在 / Role 制約文言 / 引数解釈セクション / Output Format 先頭契約」を機械検証 |
-| §4.2 影響範囲の grep 漏れによる `/doc-advisor:*` 直呼び残存 | 高 | フェーズ 3: スキル名ベース grep（プレフィックスあり/なし両形式を一括捕捉）をプロジェクトルート全体（`.claude/skills/` / `.agents/skills/` 含む）で実行し受入条件 #5 をチェックリスト化。`test_query_output_contract.py` の対象範囲に grep 結果検証を組み込むことも検討 |
-| SKILL.md 側に分岐テーブルが流出して SoT 多重化 | 中 | フェーズ 2: SKILL.md レビュー時に「分岐テーブルが書かれていないこと」を明示チェック。`select_backend.py` のみが分岐 SoT となるよう、SKILL.md は available-skills 構築 + Bash 呼出 + Skill 起動の 3 ステップに限定 |
-| ADR-001 違反（`--toc` / `--index` の SKILL.md への流出） | 低 | フェーズ 2: `argument-hint: "task description"` のみとし、SKILL.md 本文に `--toc` / `--index` 文字列を含めない。フェーズ 3 で grep 検証（SW-11） |
-| バージョン関連ファイルへの不用意な編集 | 低（制約） | 全フェーズ共通: 各フェーズ完了時に `git diff -- plugins/*/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md` で version 行に変更がないことを確認。plugin.json への skill 追加は構造変更のみ許可（§8.3） |
-| 観察的検証（SW-01〜SW-11）の手動実行漏れ | 中 | フェーズ 2 で SW-01 / 04a / 04b / 05 / 09 / 10 / 11 を実施、フェーズ 3 で残り（SW-02 / 03a / 03b / 06 / 07 / 08）を実施しチェックリストで管理 |
-| doc-advisor 側 SoT との矛盾（auto モード前提が破綻） | 低 | フェーズ 0 相当の §11 手順 1 として、フェーズ 1 着手前に「doc-advisor がフラグなし呼び出しで auto モード `Required documents:` 応答を返す」前提を観察的に確認。前提が崩れている場合は doc-advisor 側 SoT の修正を別 Issue 化し、本 PR は中断 |
+| リスク                                                                               | 影響度     | 対策（どのフェーズで潰すか）                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §5.1 エラーメッセージ全文と `error` フィールドの不一致                               | 中         | フェーズ 1: `test_backend_selection.py` で文字列等価テスト（改行含む完全一致）を最初に書き、`select_backend.py` 実装と同時に固定する                                                                                                                                   |
+| doc-db / doc-advisor の出力先頭が `Required documents:` で揃わない                   | 高         | フェーズ 1: doc-db SKILL.md Output Format を先に書換し、`test_query_output_contract.py` を新規追加して 3 SKILL の先頭契約を機械検証。フェーズ 2 以降で抽象 SKILL を組む前に契約を固定する                                                                              |
+| 継承型 SKILL の B/C 層制約漏れによる副作用暴走（write 操作・自己再帰・ゴミ引数解釈） | 高         | フェーズ 2: 雛形を継承型 `query-forge-rules` から派生させ、`test_query_skill_isolation.py` の `CONSTRAINT_TARGET_SKILLS` 拡張で「`context: fork` 不在 / Role 制約文言 / 引数解釈セクション / Output Format 先頭契約」を機械検証                                        |
+| §4.2 影響範囲の grep 漏れによる `/doc-advisor:*` 直呼び残存                          | 高         | フェーズ 3: スキル名ベース grep（プレフィックスあり/なし両形式を一括捕捉）をプロジェクトルート全体（`.claude/skills/` / `.agents/skills/` 含む）で実行し受入条件 #5 をチェックリスト化。`test_query_output_contract.py` の対象範囲に grep 結果検証を組み込むことも検討 |
+| SKILL.md 側に分岐テーブルが流出して SoT 多重化                                       | 中         | フェーズ 2: SKILL.md レビュー時に「分岐テーブルが書かれていないこと」を明示チェック。`select_backend.py` のみが分岐 SoT となるよう、SKILL.md は available-skills 構築 + Bash 呼出 + Skill 起動の 3 ステップに限定                                                      |
+| ADR-001 違反（`--toc` / `--index` の SKILL.md への流出）                             | 低         | フェーズ 2: `argument-hint: "task description"` のみとし、SKILL.md 本文に `--toc` / `--index` 文字列を含めない。フェーズ 3 で grep 検証（SW-11）                                                                                                                       |
+| バージョン関連ファイルへの不用意な編集                                               | 低（制約） | 全フェーズ共通: 各フェーズ完了時に `git diff -- plugins/*/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md` で version 行に変更がないことを確認。plugin.json への skill 追加は構造変更のみ許可（§8.3）                                          |
+| 観察的検証（SW-01〜SW-11）の手動実行漏れ                                             | 中         | フェーズ 2 で SW-01 / 04a / 04b / 05 / 09 / 10 / 11 を実施、フェーズ 3 で残り（SW-02 / 03a / 03b / 06 / 07 / 08）を実施しチェックリストで管理                                                                                                                          |
+| doc-advisor 側 SoT との矛盾（auto モード前提が破綻）                                 | 低         | フェーズ 0 相当の §11 手順 1 として、フェーズ 1 着手前に「doc-advisor がフラグなし呼び出しで auto モード `Required documents:` 応答を返す」前提を観察的に確認。前提が崩れている場合は doc-advisor 側 SoT の修正を別 Issue 化し、本 PR は中断                           |

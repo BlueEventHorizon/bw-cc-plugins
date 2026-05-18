@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-18T14:21:01Z
-  file_count: 53
+  generated_at: 2026-05-18T16:26:23Z
+  file_count: 54
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -169,32 +169,36 @@ docs:
       - IOError
   docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md:
     doc_type: design
-    title: "ADR-002: query-rules / query-specs SKILL subagent isolation and read-only constraints"
-    purpose: Specifies how query-rules and query-specs SKILLs must enforce read-only behavior with context isolation and explicit non-modification constraints to prevent subagent runaway from inheriting parent context
+    title: "ADR-002: query-rules / query-specs SKILL subagent isolation and read-only constraint"
+    purpose: Documents design decision for adding subagent isolation and read-only constraints to query-rules and query-specs SKILLs to prevent unauthorized write operations
     content_details:
-      - "Issue #55 incident: subagent inherited parent conversation context and performed unintended implementation instead of read-only search"
-      - "Five root causes: missing context fork in frontmatter, lack of negative constraints in Role, write tools granted to subagent, command-like query strings, and side effects from old auto mode"
-      - "Decision A: Add context: fork to SKILL.md frontmatter to prevent context inheritance"
-      - "Decision B: Add explicit read-only constraints to Role section prohibiting Edit/Write/MultiEdit/Bash/Skill tools"
-      - "Decision C: Clarify argument interpretation with examples (keywords/task description, not implementation instructions)"
-      - "Decision D: Apply same three constraints to forge:query-forge-rules SKILL"
-      - "Decision E: Add regression tests verifying context fork and read-only constraint text presence"
-      - "Alternative options evaluated: context fork alone, Role constraints alone, physical tool denial, and adopted multi-layered defense"
+      - Incident analysis of parent context inheritance causing subagent to execute implementation instead of search
+      - "Five root causes identified: missing context fork, lack of negative constraints in Role, unrestricted tool access, query string command interpretation, legacy auto mode side effects"
+      - "Decision A: adding context fork to frontmatter"
+      - "Decision B: explicit read-only constraints in Role with forbidden and permitted operations listed"
+      - "Decision C: argument interpretation guidelines to prevent misinterpretation as implementation instructions"
+      - "Wave application: same constraints to forge:query-forge-rules SKILL"
+      - "Regression prevention: test cases validating context fork and read-only constraint markers in SKILL.md"
+      - Alternative options evaluation with multi-defense rationale
+      - Remaining judgment items regarding Claude Code subagent authority boundary and template standardization for read-only SKILLs
     applicable_tasks:
-      - Security review for read-only SKILL design
-      - SKILL.md modification for query-rules and query-specs
-      - Test development for SKILL frontmatter validation
-      - Security incident investigation and root cause analysis
-      - Context isolation architecture evaluation
+      - SKILL design review for read-only operations
+      - Subagent isolation implementation and configuration
+      - Context fork validation
+      - Role constraint specification and enforcement
+      - Regression testing for authorization boundaries
+      - Query skill architecture review
     keywords:
       - subagent isolation
-      - read-only constraint
       - context fork
-      - SKILL design
-      - security
-      - write tools denial
+      - read-only constraint
+      - Role specification
+      - authorization boundary
       - "Issue #55"
-      - "Issue #54"
+      - parent context inheritance
+      - multi-defense
+      - write tool denial
+      - SKILL frontmatter
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md:
     doc_type: design
     title: DocAdvisor Plugin Migration Design
@@ -326,38 +330,38 @@ docs:
       - orchestrator
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md:
     doc_type: design
-    title: Semantic Search Design Specification
-    purpose: Defines 3-mode search architecture for doc-advisor (ToC keyword search, Embedding semantic search, hybrid auto mode) and implementation specifications for search components and workflows
+    title: Semantic Search Design
+    purpose: Defines three-mode search architecture (ToC keyword matching, Embedding semantic search, and auto hybrid mode) for doc-advisor, with subagent isolation and doc-db backend selection responsibility assignment to forge side.
     content_details:
-      - 3-mode search architecture (--toc, --index, auto modes)
-      - Component design and module responsibilities (embed_docs.py, search_docs.py, grep_docs.py, filter_toc.py)
-      - Embedding index construction with OpenAI API integration
-      - Semantic search using cosine similarity on document vectors
-      - Reusable workflow documents for ToC and Index search procedures
-      - Subagent internal completion flow with fork context isolation
-      - ToC size handling with 100-entry threshold and filtered ToC approach
-      - Error handling and graceful degradation for API failures
-      - Data flow design for index construction and query execution
-      - Testing strategy with golden set verification and precision validation
+      - Three-mode search architecture (--toc, --index, auto)
+      - subagent fork-based isolation with doc-advisor-only completion
+      - ToC YAML as persistent search index with AI keyword matching
+      - OpenAI Embedding API integration for semantic vector search
+      - Cosine similarity calculation for index scoring
+      - Auto mode with ToC always-on plus optional Embedding parallel execution
+      - "Fallback handling: Embedding failures silently treated as empty results"
+      - ToC scalability above 100 entries via filter_toc.py for reduced YAML extraction
+      - Backend selection responsibility delegated to forge /forge:query-db-* abstraction SKILL
+      - Unified API KEY reference standard (OPENAI_API_DOCDB_KEY or OPENAI_API_KEY)
     applicable_tasks:
-      - Semantic search implementation
-      - Embedding index construction and maintenance
-      - Search backend architecture design
-      - Query workflow and mode switching logic
-      - Subagent context isolation and fork management
-      - API key configuration and reference standards
-      - Search precision testing and quality validation
+      - Implementing semantic document search pipeline
+      - Configuring three-mode query resolution for rules and specs
+      - Optimizing search accuracy through ToC-Embedding hybrid strategy
+      - Handling API failures and graceful degradation
+      - Scaling search to large document collections above 100 entries
+      - Designing subagent search workflow isolation
+      - Selecting search backend strategy at project level
     keywords:
       - semantic search
-      - embedding
-      - vector similarity
-      - ToC
-      - auto mode
-      - query workflow
-      - doc-advisor
-      - OpenAI API
+      - Embedding API
+      - ToC YAML
       - cosine similarity
-      - context fork
+      - three-mode architecture
+      - subagent fork isolation
+      - doc-advisor unified search
+      - backend abstraction
+      - hybrid search strategy
+      - search scalability
   docs/specs/doc-advisor/design/DES-007_unified_api_key_reference_design.md:
     doc_type: design
     title: Unified API Key Reference Design
@@ -386,68 +390,65 @@ docs:
       - fallback resolution
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
-    title: Context External Search Specification
-    purpose: Defines requirements for executing document search operations outside AI context window, returning candidate document paths via three search modes (--toc keyword matching, --index embedding search, auto doc-advisor standalone)
+    title: FNC-001 Context External Search Specification
+    purpose: "Specifies requirements for executing document search operations outside the AI context window and returning candidate file paths, with support for three search modes: ToC keyword matching, Index-based Embedding search, and Auto mode combining both with fallback behavior"
     content_details:
-      - "Three search modes: --toc for in-context keyword matching, --index for embedding search outside context, auto for doc-advisor standalone with ToC and optional Embedding"
-      - Search input is task description in natural language, output is candidate document paths
-      - Error handling for missing index, empty query, zero results, API key unavailability, and search failures
-      - "doc-advisor single-completion principle: ToC search always runs, Embedding search runs parallel if API key present, results merged via union"
-      - "Graceful fallback: Embedding failures and missing API keys result in silent empty list, returning only ToC results"
-      - Search results passed as path list to AI, which reads and confirms actual content
-      - Test requirements for all new Python scripts
-      - "Prerequisites: doc-advisor plugin installed, .doc_structure.yaml configured, OpenAI API key available"
+      - "Three search modes: --toc (ToC in-context keyword matching), --index (doc-advisor Embedding search), auto (ToC + Embedding union)"
+      - "Auto mode implementation: doc-advisor standalone search with ToC keyword matching always active and optional Embedding search when API keys available"
+      - Error handling for missing indices, empty queries, zero results, API key unavailability, and Embedding search failures
+      - "Search input: natural language task description; output: candidate document path list (project-relative paths)"
+      - Fallback behavior when doc-db plugin unavailable or search components fail
+      - Embedding search result as union merge of ToC and API-based results
+      - "Integration with forge's query-db-* abstraction for backend selection responsibility"
+      - Auto mode does not call doc-db plugin; backend selection is forge side responsibility
+      - Test requirements for new Python scripts in tests/ directory
     applicable_tasks:
-      - Document search feature implementation
-      - Search mode selection and switching logic (--toc/--index/auto)
-      - Error handling and graceful fallback design
-      - API key management and conditional search execution
-      - Context cost optimization for large document sets
+      - Document search implementation for query-specs and query-rules SKILLs
+      - Search mode configuration and option handling (--toc, --index, auto)
+      - Error handling and fallback behavior design
+      - Embedding search integration with API key management
+      - ToC keyword matching implementation
+      - Search result merging and deduplication
+      - context-external search pipeline design
     keywords:
+      - context external search
       - doc-advisor
-      - context window
-      - external search
-      - embedding search
       - ToC keyword matching
-      - search modes
-      - subagent
-      - API key
+      - Embedding search
+      - API key management
       - fallback behavior
+      - search index
+      - candidate paths
       - union merge
+      - three search modes
   docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md:
     doc_type: requirement
-    title: Zero-Miss Search Accuracy Specification
-    purpose: Specifies requirements for achieving zero false negatives in doc-advisor search, ensuring all related documents are retrieved without count limits
+    title: FNC-002 Zero-Miss Search Accuracy Specification
+    purpose: Specifies requirements for doc-advisor search to achieve zero false negatives and return all related documents without missing any
     content_details:
-      - Precision requirements with no false negatives
-      - Search target fields (title, purpose, content_details, applicable_tasks, keywords)
-      - Category separation for rules and specs
-      - Accuracy verification using golden test query set
-      - Quality test results from v0.2.0 (ToC, Index, auto mode comparison)
-      - v0.3.x quality criteria (auto mode as doc-advisor standalone with ToC + Embedding union)
-      - Recall measurement baseline (--toc mode as reference implementation)
-      - Error handling for stale index (warning and index regeneration guidance)
-      - Related requirements (FNC-001, NFR-002)
-      - Resolved TBD items and change history
+      - Recall-focused precision requirement without result count limits
+      - "Search field coverage: title, purpose, content_details, applicable_tasks, keywords"
+      - "Category separation requirement: independent index generation and search for rules and specs"
+      - Golden test set with 43 queries and 6 query types
+      - "v0.2.0 quality test results: ToC > Index > Embedding accuracy ranking"
+      - v0.3.x auto mode redefined as doc-advisor standalone union of ToC and Embedding with --toc as lower bound baseline
+      - "Staleness error handling: reject old index and guide regeneration"
     applicable_tasks:
-      - Search accuracy evaluation and improvement
-      - Quality testing with golden dataset
-      - Index staleness detection and handling
-      - doc-advisor auto mode validation
-      - Recall measurement against baselines
-      - Embedding threshold tuning
-      - ToC metadata completeness verification
+      - Search accuracy verification and testing
+      - Index quality evaluation
+      - doc-advisor feature requirement validation
+      - ToC metadata completeness assessment
+      - Backend search method comparison
     keywords:
-      - zero-miss search
-      - false negatives
       - search accuracy
-      - golden test set
+      - false negative
       - recall
-      - ToC union
-      - Embedding union
-      - threshold tuning
-      - doc-advisor
-      - search precision
+      - zero miss
+      - ToC
+      - Embedding
+      - golden test set
+      - union mode
+      - baseline requirement
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md:
     doc_type: requirement
     title: FNC-003 Fast Index Generation Specification
@@ -954,33 +955,39 @@ docs:
       - multi-vector
   docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md:
     doc_type: design
-    title: "ADR-001: forge:query-db-* does not accept --toc / --index flags (direct invocation policy for quality inspection flags)"
-    purpose: Defines the design decision that forge abstract SKILLs should not expose quality inspection flags and specifies which layer (forge vs doc-advisor) should handle backend-specific modes
+    title: "ADR-001: forge:query-db-* Test Flag Policy"
+    purpose: Records the architectural decision that forge abstract SKILLs do not accept quality inspection flags (--toc, --index), maintaining responsibility separation between production and testing layers
     content_details:
-      - "Problem: user confusion about whether --toc/--index flags work with forge abstract SKILLs"
-      - "Decision: forge SKILLs accept only task parameter; quality inspection uses doc-advisor/doc-db directly"
-      - Three evaluated options with reasons (explicit error, mode parameter, thin wrapper approach)
-      - "Responsibility separation: forge for production, doc-advisor/doc-db for quality inspection"
-      - Impact on SKILL.md argument specifications
-      - Consistency with overall design philosophy (garbage argument handling by AI judgment)
-      - Remaining considerations for user documentation and CI automation
+      - Architectural decision context and rationale
+      - Three decision options evaluated with adoption rationale
+      - Responsibility separation principle (abstract SKILL layer vs. backend)
+      - Why error handling (option A) was rejected
+      - Why explicit --mode flag (option B) was rejected
+      - Chosen option C rationale and justification
+      - "Impact scope: DES-001 reference, SKILL.md argument specification, test script unaffected"
+      - "Remaining decision items: user guide documentation"
+      - Future CI automation considerations
+      - Alignment with DES-001 design philosophy and prior decisions (id=2)
     applicable_tasks:
-      - forge-query abstraction design
-      - SKILL argument specification validation
-      - Backend selection strategy documentation
-      - Quality inspection tool selection guidance
+      - forge query-db SKILL design review
+      - Backend abstraction layer validation
+      - Quality inspection mode definition
+      - Responsibility separation verification
+      - SKILL argument specification refinement
+      - Test flag policy implementation
       - Design decision documentation
+      - forge-query architecture alignment
     keywords:
-      - forge
-      - abstract SKILL
-      - query
-      - backend selection
-      - responsibility separation
-      - quality inspection
+      - forge query
+      - test flag
       - "--toc"
       - "--index"
-      - thin wrapper
-      - ADR
+      - responsibility separation
+      - abstract SKILL
+      - backend selection
+      - quality inspection
+      - decision record
+      - design philosophy
   docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md:
     doc_type: design
     title: DES-001 Document Search Backend Abstraction (switch-query) Design
@@ -1011,6 +1018,33 @@ docs:
       - Hybrid search
       - ToC
       - forward compatibility
+  docs/specs/forge-query/plan/forge-query_strategy.md:
+    doc_type: plan
+    title: forge-query implementation strategy
+    purpose: Outlines the complete implementation approach, phased execution plan, risk analysis, and verification strategy for the forge-query feature integration including backend selection logic, new skill implementation, and reference replacement across existing forge skills
+    content_details:
+      - Full architecture analysis of 5 new modules and 1 output contract change
+      - Risk analysis across 8 categories including technical uncertainty, data integrity, integration, and dependency complexity
+      - Bottom-up with risk-driven approach combining dependency graph analysis and early contract validation
+      - "Three implementation phases: phase 1 output contract and backend selection, phase 2 abstract skill implementation, phase 3 reference replacement"
+      - Detailed verification points including unit tests, integration tests, and observational validation scenarios
+      - Risk mitigation strategies mapped to implementation phases
+      - Acceptance criteria with grep-based verification and version constraint enforcement
+    applicable_tasks:
+      - forge-query feature implementation planning
+      - Backend selection logic design and testing
+      - Skill inheritance pattern implementation
+      - Reference replacement across forge modules
+      - Output contract integration testing
+      - Risk-driven development planning
+    keywords:
+      - forge-query
+      - backend selection
+      - inheritance pattern
+      - output contract
+      - risk-driven implementation
+      - phased execution
+      - script architecture
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* skills orchestrator design
