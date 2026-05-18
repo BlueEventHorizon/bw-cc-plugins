@@ -243,7 +243,7 @@ merge では以下を行う:
 3. 追加開発の計画 → 破棄（既に実装済み）
 4. 新規追加したコード・関数を恒久的な配置に移動（必要なら）
 5. 一時文書（要件・設計・計画）を削除
-6. `/doc-advisor:create-specs-toc` で specs ToC を更新
+6. `/forge:update-db-specs` で specs ToC を更新
 
 **AI が追加開発のタスクを実行するときの詳細な判定基準**は [additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) にまとめてある。
 

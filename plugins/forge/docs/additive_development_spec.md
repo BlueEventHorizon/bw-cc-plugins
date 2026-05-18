@@ -75,7 +75,7 @@
    - `type: temporary-feature-requirement` の要件定義書を削除
    - 対応する設計書・計画書も削除
 5. **ToC 再生成**
-   - `/doc-advisor:create-specs-toc` で specs ToC を更新
+   - `/forge:update-db-specs` で specs ToC を更新
 
 merge が完了するまで、一時文書は残す。
 

@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-10T08:15:09Z
+  generated_at: 2026-05-18T13:57:09Z
   file_count: 5
 
 docs:
@@ -37,32 +37,33 @@ docs:
   docs/rules/document_writing_rules.md:
     doc_type: rule
     title: Document Writing Rules
-    purpose: Establishes unified conventions for document structure, terminology, formatting, and code examples across all documentation types to ensure consistency and AI readability
+    purpose: Defines unified document structure, formatting standards, and authoring conventions for all project documents
     content_details:
-      - Heading and tag conventions with MANDATORY, CRITICAL, IMPORTANT tags
-      - Unified terminology including long sound rules and English phrase enforcement
-      - Document structure requirements for workflows, agents, rules, and commands
-      - Emphasis and formatting rules for text, code blocks, lists, and tables
-      - File reference notation rules for paths in specs/ and rules/
-      - Code example and placeholder naming rules for rules/ documents
-      - Metadata requirements for specs/ documents including related requirements
-      - Common mistakes and verification methods
+      - Tag placement and heading conventions
+      - Unified terminology and emphasis phrases
+      - Document structure by type
+      - Formatting and emphasis rules
+      - Directory role separation and document properties
+      - Abstract examples and placeholder naming conventions
+      - Specs document metadata guidelines
+      - Common mistakes and corrections
+      - Validation methods
     applicable_tasks:
-      - Document writing and review
-      - Documentation structure validation
-      - Code example standardization
-      - Rule document creation
-      - Multi-project documentation template reuse
-      - Documentation consistency checking
+      - Document creation and review
+      - Specification writing
+      - Rule documentation
+      - SKILL authoring
+      - Document structure design
     keywords:
-      - document conventions
-      - MANDATORY tag
-      - terminology
-      - frontmatter
-      - placeholder naming
-      - code examples
-      - file references
+      - document standards
+      - formatting
       - metadata
+      - frontmatter
+      - heading tags
+      - MANDATORY
+      - terminology
+      - document structure
+      - writing conventions
   docs/rules/implementation_guidelines.md:
     doc_type: rule
     title: Implementation Guidelines
@@ -93,32 +94,35 @@ docs:
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
     title: SKILL.md Authoring Notes
-    purpose: Defines guidelines and best practices for creating and editing Claude Code plugin SKILL.md files, including frontmatter fields, argument handling, directory structure, and mandatory user interaction patterns
+    purpose: Guidance for creating and editing Claude Code plugin skill manifest files, including frontmatter fields, fork vs inheritance execution models, and context safety requirements
     content_details:
-      - frontmatter fields (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
-      - description writing guidelines for auto-invocation triggering
-      - argument variables ($ARGUMENTS, $0, $1, $2)
-      - plugin variables (${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_SKILL_DIR}, ${CLAUDE_SESSION_ID})
-      - cross-skill invocation patterns
-      - directory structure and SKILL.md organization
-      - SKILL.md splitting criteria for external references
-      - AskUserQuestion tool requirement for user interaction
-      - project-specific conventions (Japanese comments, user-invocable rules, path references, MANDATORY markers)
+      - Frontmatter field definitions and validation rules
+      - Fork type vs inheritance type skill execution models
+      - Multi-layer defense architecture for context isolation
+      - Description writing guidelines for auto-invocation
+      - Argument referencing and available variables
+      - Cross-skill invocation patterns and recursion prevention
+      - Directory structure and file splitting conventions
+      - User interaction via AskUserQuestion tool
+      - Project-specific authoring rules
+      - Common misconceptions and compliance checklist
     applicable_tasks:
-      - SKILL.md creation and editing
-      - plugin skill development
-      - skill parameter design
-      - user interaction implementation
-      - multi-skill workflow design
+      - SKILL.md creation and review
+      - Plugin development and maintenance
+      - Context safety audits
+      - Security validation for context inheritance
+      - Auto-invocation mechanism tuning
     keywords:
       - SKILL.md
       - frontmatter
-      - description
-      - user-invocable
-      - disable-model-invocation
-      - argument
-      - variables
-      - AskUserQuestion
+      - fork
+      - context isolation
+      - inheritance model
+      - auto-invocation
+      - subagent
+      - allowed-tools
+      - permission
+      - Claude Code
   docs/rules/version_migration_design.md:
     doc_type: rule
     title: Version Migration Design Rule

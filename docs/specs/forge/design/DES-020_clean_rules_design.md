@@ -180,7 +180,7 @@ python3 detect_forge_overlap.py \
 - 結果サマリー出力
 - `.doc_structure.yaml` の自動更新
 - 相互参照の更新レポート
-- DocAdvisor ToC 更新（`/doc-advisor:create-rules-toc` が利用可能な場合）
+- ルール ToC 更新（`/forge:update-db-rules` が利用可能な場合）
 - `/anvil:commit` で commit 確認
 - ロールバック手段の提示（`git stash pop`）
 

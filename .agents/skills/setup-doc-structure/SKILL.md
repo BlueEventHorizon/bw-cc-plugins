@@ -182,8 +182,8 @@ Specs directories:
   - design/
 
 Next steps:
-  - /create-rules-toc --full  (generate rules search index)
-  - /create-specs-toc --full  (generate specs search index)
+  - /forge:update-db-rules --full  (generate rules search index)
+  - /forge:update-db-specs --full  (generate specs search index)
 ```
 
 ## Error Handling

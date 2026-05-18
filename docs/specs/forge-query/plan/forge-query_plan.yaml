@@ -1,0 +1,304 @@
+# forge-query 実装計画書
+#
+# 事前確認（タスク化しない・実装着手前に手動で 1 回確認）:
+#   - /doc-advisor:query-rules / /doc-advisor:query-specs を --toc / --index 付けずに呼ぶと
+#     auto モードで動作し、Required documents: 形式の応答を返すこと
+#   - doc-advisor 側 SKILL description が forge 抽象 SKILL のトリガー句と競合しないこと
+#   未充足なら doc-advisor 側 Issue で対応し、本実装は中断（DES-001 §11 手順1）
+#
+# 既存実装状況:
+#   - plugins/doc-db/skills/query/SKILL.md の Output Format は既に Required documents: 形式（タスク化不要）
+#   - plugins/forge/scripts/backend_selection/ は未実装
+#   - 4 新規 SKILL は未実装
+#   - 既存 forge skills に /doc-advisor:* 直呼びが残っている
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: REQ-001
+    title: オーケストレータパターン（forge の依存逆転による抽象化）
+    design_id: DES-001
+    status: pending
+  - requirement_id: REQ-003
+    title: SKILL とスクリプトの分離
+    design_id: DES-001
+    status: pending
+  - requirement_id: FNC-001
+    title: "コンテキスト外検索の契約（Required documents: 形式）"
+    design_id: DES-001
+    status: pending
+  - requirement_id: FNC-002
+    title: ゼロ漏れ検索の精度要件
+    design_id: DES-001
+    status: pending
+  - requirement_id: FNC-004
+    title: API キー参照統一（OPENAI_API_DOCDB_KEY / OPENAI_API_KEY）
+    design_id: DES-001
+    status: pending
+  - requirement_id: FNC-005
+    title: doc-db インデックス構築（update-db-* 経由のラップ）
+    design_id: DES-001
+    status: pending
+  - requirement_id: FNC-006
+    title: doc-db 検索仕様（出力契約 OUT-01 / OUT-02 の維持）
+    design_id: DES-001
+    status: pending
+  - requirement_id: NFR-004
+    title: doc-db 検索品質要件
+    design_id: DES-001
+    status: pending
+  - requirement_id: NFR-005
+    title: doc-db ゼロ依存配布要件（Python 標準ライブラリのみ）
+    design_id: DES-001
+    status: pending
+
+design_traceability:
+  - design_id: DES-001
+    title: forge-query 抽象化設計書
+    requirement_ids:
+      - REQ-001
+      - REQ-003
+      - FNC-001
+      - FNC-002
+      - FNC-004
+      - FNC-005
+      - FNC-006
+      - NFR-004
+      - NFR-005
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+  - design_id: ADR-001
+    title: "forge:query-db-* は --toc / --index を受理しない（品質検査用フラグの直呼び方針）"
+    requirement_ids:
+      - FNC-001
+    task_ids:
+      - TASK-003
+      - TASK-004
+
+# === タスク一覧 ===
+tasks:
+  # ---------- フェーズ 1: 共通基盤 ----------
+  - task_id: TASK-001
+    title: select_backend.py を新規実装
+    priority: 95
+    status: pending
+    design_id: DES-001
+    depends_on: []
+    group_id: "GROUP-001 (1/2)"
+    build_check: skip
+    description:
+      - plugins/forge/scripts/backend_selection/select_backend.py を新規作成
+      - 引数: --available <skill_list> / --category {rules|specs} / --operation {query|update}
+      - DES-001 §1.5.1 API キー判定（OPENAI_API_DOCDB_KEY / OPENAI_API_KEY のフォールバック、空文字列は未設定扱い）
+      - DES-001 §2.3 分岐テーブル A（採用バックエンド決定 5 行）を網羅評価
+      - DES-001 §2.3 分岐テーブル B（バックエンド × category × operation → skill 名 8 行）を網羅評価
+      - stdout に JSON {backend, skill, error} を出力。error は §5.1 のエラーメッセージ全文と完全一致
+      - Python 標準ライブラリのみ。read-only（ファイル書込・外部プロセス起動・git 操作なし）
+    acceptance_criteria: |
+      `python3 plugins/forge/scripts/backend_selection/select_backend.py --available doc-db,doc-advisor --category rules --operation query` が
+      環境変数の状態に応じて分岐テーブル A/B 通りの JSON を stdout に返し、ファイル書込が発生しない。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/rules/implementation_guidelines.md
+
+  - task_id: TASK-002
+    title: select_backend.py のユニットテスト追加
+    priority: 95
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-001 (2/2)"
+    build_check: on_group_complete
+    description:
+      - tests/forge/scripts/test_backend_selection.py を新規追加
+      - 分岐テーブル A 5 行をゴールデン網羅
+      - 分岐テーブル B 8 行（backend × category × operation → skill）を網羅
+      - API キー判定の正常/異常パスを網羅（DOCDB のみ / KEY のみ / 両方未設定 / 両方空文字列 / 片方空・片方有効）
+      - バックエンド不在時の error 文字列が DES-001 §5.1 と完全一致することを文字列等価で検証
+      - read-only 性を tmp ディレクトリ + checksum で確認
+      - "`python3 -m unittest tests.forge.scripts.test_backend_selection -v` 全合格"
+    acceptance_criteria: |
+      分岐テーブル A 5 行 + B 8 行 + API キー判定パス + §5.1 エラー文字列完全一致 + read-only 性の全テストが合格する。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+
+  # ---------- フェーズ 2: 4 SKILL 作成 ----------
+
+  - task_id: TASK-003
+    title: "/forge:query-db-rules SKILL.md を新設"
+    priority: 80
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-002 (1/4)"
+    build_check: skip
+    description:
+      - plugins/forge/skills/query-db-rules/SKILL.md を新設
+      - 雛形は plugins/forge/skills/query-forge-rules/SKILL.md（継承型）の構造を流用
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
+      - "argument-hint: \"task description\"（--toc / --index は受理しない / ADR-001）"
+      - 内部フロー: available-skills を LLM が読む → Bash で select_backend.py --category rules --operation query 呼出 → JSON から Skill ツールで該当バックエンド起動
+      - 分岐テーブルを SKILL.md に複製しない（SoT は select_backend.py のみ）
+      - Role 章に read-only [MANDATORY] / バックエンド検索 SKILL 以外の Skill 起動禁止 / 自己再帰禁止を明記（ADR-002 §B / DES-001 §3.1）
+      - 引数解釈 [MANDATORY] セクション（ADR-002 §C）
+      - バージョン関連ファイル（plugin.json の version 行 / marketplace.json / CHANGELOG.md）は触らない
+    acceptance_criteria: |
+      SKILL.md が継承型 frontmatter（context: fork なし）+ B/C 層多重防御契約 + Required documents 出力契約を満たし、
+      Bash と Skill 以外の書き込み系ツールが allowed-tools に含まれない。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md
+      - docs/rules/skill_authoring_notes.md
+      - docs/rules/document_writing_rules.md
+
+  - task_id: TASK-004
+    title: "/forge:query-db-specs SKILL.md を新設"
+    priority: 80
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-002 (2/4)"
+    build_check: skip
+    description:
+      - plugins/forge/skills/query-db-specs/SKILL.md を新設
+      - 構造は TASK-003 と同一で検索対象を specs に切り替える
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
+      - select_backend.py への呼出パラメータは --category specs --operation query
+      - B/C 層多重防御契約と引数解釈 [MANDATORY] セクションは TASK-003 と同じ
+      - ADR-001 に従い --toc / --index を SKILL.md 本文に書かない
+    acceptance_criteria: |
+      SKILL.md が継承型 frontmatter + B/C 層制約 + Required documents 出力契約を満たし、
+      query-db-rules と検索対象（rules / specs）のみが差分となる。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-005
+    title: "/forge:update-db-rules SKILL.md を新設"
+    priority: 75
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-002 (3/4)"
+    build_check: skip
+    description:
+      - plugins/forge/skills/update-db-rules/SKILL.md を新設
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
+      - "argument-hint: \"[--full]\""
+      - 内部フロー: available-skills 確認 → Bash で select_backend.py --category rules --operation update → JSON から該当バックエンドの ToC 構築 SKILL（/doc-db:build-index または /doc-advisor:create-rules-toc）を Skill ツールで起動
+      - --full が指定された場合はバックエンドに転送
+      - SKILL.md に分岐テーブルを複製しない
+      - 副作用 SKILL の自動呼び出し制御方針（disable-model-invocation 等）は Issue #60 で別途扱う（本タスク範囲外）
+    acceptance_criteria: |
+      SKILL.md が select_backend.py 経由でバックエンドを選択し、--full を任意で転送する構造になる。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  - task_id: TASK-006
+    title: "/forge:update-db-specs SKILL.md を新設"
+    priority: 75
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-001
+    group_id: "GROUP-002 (4/4)"
+    build_check: on_group_complete
+    description:
+      - plugins/forge/skills/update-db-specs/SKILL.md を新設
+      - 構造は TASK-005 と同一で対象を specs に切り替える
+      - "user-invocable: false（DES-001 §2.2 / skill_authoring_notes.md 規約準拠、内部 SKILL）"
+      - select_backend.py への呼出パラメータは --category specs --operation update
+      - バックエンドが doc-db なら /doc-db:build-index --category specs、doc-advisor なら /doc-advisor:create-specs-toc を起動
+      - グループ最終タスクとして 4 SKILL.md 全体の整合性を確認
+    acceptance_criteria: |
+      4 SKILL.md が新設され、`python3 -m unittest discover -s tests -p 'test_*.py' -v` が既存テストを破壊せず合格する。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/rules/skill_authoring_notes.md
+
+  # ---------- フェーズ 3: 登録 ----------
+
+  - task_id: TASK-007
+    title: plugin.json に 4 SKILL を登録
+    priority: 70
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - plugins/forge/.claude-plugin/plugin.json の skills 配列に query-db-rules / query-db-specs / update-db-rules / update-db-specs を追加
+      - version フィールドは絶対に編集しない（implementation_guidelines.md 必須）
+      - "`dprint fmt` で JSON フォーマットを揃える"
+      - tests/common/ のマニフェスト整合性テストが合格すること
+    acceptance_criteria: |
+      plugin.json の skills リストに 4 件追加され、version 行に diff が出ない。
+      `python3 -m unittest discover -s tests/common -p 'test_*.py' -v` が合格する。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/rules/implementation_guidelines.md
+
+  # ---------- フェーズ 4: 既存呼び出し置換 ----------
+
+  - task_id: TASK-008
+    title: "既存 forge skills の /doc-advisor:* 直呼びを /forge:*-db-* に置換 + ガイド文書統一"
+    priority: 60
+    status: pending
+    design_id: DES-001
+    depends_on:
+      - TASK-007
+    group_id: null
+    build_check: per_task
+    description:
+      - "DES-001 §4.1 マッピングで置換: /doc-advisor:query-rules → /forge:query-db-rules、/doc-advisor:query-specs → /forge:query-db-specs、/doc-advisor:create-rules-toc → /forge:update-db-rules、/doc-advisor:create-specs-toc → /forge:update-db-specs"
+      - 対象範囲は plugins/forge/skills/*/SKILL.md + plugins/forge/skills/*/docs/*.md + plugins/forge/skills/review/docs/review_criteria_*.md + .claude/skills/ + .agents/skills/
+      - "DES-001 §3.1 [MANDATORY] に従い、Skill ツール経由で /forge:query-db-* を呼ぶ箇所の args を **検索語 + 短文タスク記述のみ** に正規化（Issue 本文 / 実装指示 / diff / 親 context は貼らない）"
+      - "残存 grep: `grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' plugins/forge/skills/ .claude/skills/ .agents/skills/` でヒットが説明文中の言及（再帰防止注記 / 設計書引用）のみになることを確認"
+      - DES-001 §8.2 に従い query 系の「利用可能ならスキップ」ガードを削除（検索結果が必須）、update 系のガードは維持
+      - merge-feature-specs の Phase 0「doc-advisor 必須」検査を「抽象 skill 必須」検査に置換（DES-001 §4.2 末尾）
+      - "ガイド文書（CLAUDE.md / README.md / README_en.md / docs/readme/forge/guide_*.md / docs/readme/guide_doc-advisor_ja.md）の呼び方を抽象 SKILL に統一"
+      - "`dprint fmt` で Markdown フォーマットを揃える"
+      - バージョン関連ファイル（version 行 / marketplace.json / CHANGELOG.md）に diff を出さない
+    acceptance_criteria: |
+      旧呼び出しの残存 grep が説明文中の言及のみとなる（受入条件 #5）。
+      query 系のガードが削除され、update 系のガードが維持される。
+      ガイド文書が抽象 SKILL 経由の導線で統一される。
+      `python3 -m unittest discover -s tests -p 'test_*.py' -v` 全合格 + `dprint check` 通過。
+      バージョン関連ファイルに diff が出ない。
+    required_reading:
+      - docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/document_writing_rules.md
+
+# === 受入確認（タスク外・実装完了後に実施）===
+# DES-001 §13 受入条件 1〜10 をチェックリストで確認。
+# SW-01〜SW-11 の観察検証は meta/test_docs/ で AI に観察実行させる（タスク化しない）。
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-05-19"
+    content: |
+      初版作成（17→22 タスク版から本質「4 SKILL 作成 + 置換」に圧縮した 8 タスク版）。
+      削除した過剰要素:
+      (1) TASK-001 doc-db Output Format 書換 — 既に Required documents: 形式で実装済み
+      (2) TASK-000 doc-advisor 前提確認の独立タスク化 — 手動チェックで十分
+      (3) SKILL 構造テスト（Python ユニットテスト）— SKILL.md は AI 実行のため動作検証不可、構造テストも維持コスト高
+      (4) TASK-012 の 4 サブタスク分割 — TASK-008 で 1 タスクにまとめる（grep 条件で対象範囲は明確）
+      (5) 観察検証 SW-01〜SW-11 の独立タスク化 — meta/test_docs/ で AI 観察実行
+      (6) TASK-015 / TASK-016 のガイド更新分離 — TASK-008 に統合

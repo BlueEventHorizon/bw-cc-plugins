@@ -1,10 +1,10 @@
 # Embedding index checksums for rules
 # Auto-generated - do not edit
-generated_at: 2026-05-13T03:46:06Z
+generated_at: 2026-05-18T08:33:40Z
 file_count: 5
 checksums:
   docs/rules/cli_output_formatting.md: 0136a2118c9e73169ddd91e1fb9d1a0bcfca85c698fa2587b9b0330db27a6fcf
-  docs/rules/document_writing_rules.md: 36bd583a38eb4815686c06a6182996efc6cb2e87e50d5518cda892be36f1e797
+  docs/rules/document_writing_rules.md: e9b873d30c9444693b31312209c4f6b458fe7cf0dfb0ffc4c09cb160bb8c516b
   docs/rules/implementation_guidelines.md: 7bdabd4c8ea1a5e7dd7dcb05a7aa18ed4c41713cc37f7a93d1dfebd10f6ce2d7
-  docs/rules/skill_authoring_notes.md: 5a1b6138f184f6dd67de0083e182b71643340a989e9bad2d58f0cd1a3031fc98
+  docs/rules/skill_authoring_notes.md: 9d523aed06f3d2f8ad4b80b94c85dc1db883f8487f205d059a40b1a90107de57
   docs/rules/version_migration_design.md: b23a7f63df8a8af24cc2adcb44d1a5cde2e080e31eeb1caf9d1bc09926164044
