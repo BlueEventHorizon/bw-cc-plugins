@@ -18,6 +18,7 @@ applicable_when:
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ## 目的
 
@@ -81,10 +82,9 @@ graph TD
 
 **既存資産の確認が必須**:
 
-1. **`/doc-advisor:query-specs` Skill で既存仕様を検索する**（利用可能な場合）
+1. **`/forge:query-db-specs` Skill で既存仕様を検索する**
    - 既存の要件定義書一覧を把握
    - 関連する既存要件を特定
-   - Skill が利用不可の場合は Glob で `specs/` 配下を探索
 
 2. **関連する設計書を読む**
    - 既存のアーキテクチャを理解
@@ -111,15 +111,13 @@ graph TD
 
 ### 0.5.1 ルール文書の特定（新規・追加共通）
 
-開発ルール文書は `/doc-advisor:query-rules` Skill を使って特定する（利用可能な場合）:
+開発ルール文書は `/forge:query-db-rules` Skill を使って特定する:
 
 - タスク内容: 対話型要件定義作成
 
-Skill が利用不可の場合は Glob で `docs/rules/` 配下を探索する。
-
 ### 0.5.2 既存仕様の特定（機能追加の場合）
 
-要件定義書・既存の設計書は `/doc-advisor:query-specs` Skill を使って特定する（利用可能な場合）:
+要件定義書・既存の設計書は `/forge:query-db-specs` Skill を使って特定する:
 
 - タスク内容: [追加機能の概要]
 
@@ -355,7 +353,7 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 ### 4.5 specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する（利用不可の場合はスキップ）。
+`/forge:update-db-specs` が利用可能であれば実行する（利用不可の場合はスキップ）。
 
 ### 4.6 commit/push 確認
 

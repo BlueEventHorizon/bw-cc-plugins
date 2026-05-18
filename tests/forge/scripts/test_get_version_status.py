@@ -146,12 +146,12 @@ targets:
         """version_path がない target も name/version_file を取得できる"""
         yaml = """
 targets:
-  - name: xcode
-    version_file: plugins/xcode/.claude-plugin/plugin.json
+  - name: sample
+    version_file: plugins/sample/.claude-plugin/plugin.json
 """
         result = _parse_version_config_yaml(yaml)
         target = result["targets"][0]
-        self.assertEqual(target["name"], "xcode")
+        self.assertEqual(target["name"], "sample")
         self.assertNotIn("version_path", target)
 
 

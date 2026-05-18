@@ -27,7 +27,7 @@ Output (JSON):
       ],
       "summary": {
         "changed": ["marketplace", "doc-advisor"],
-        "unchanged": ["forge", "anvil", "xcode"],
+        "unchanged": ["forge", "anvil"],
         "plugins_changed_on_base": ["doc-advisor"]
       }
     }

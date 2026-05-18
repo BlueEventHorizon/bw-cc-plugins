@@ -81,19 +81,17 @@ target_description: "..." # feature がない場合に使用
 
 **手順（優先順）**:
 
-### 方法 A: `/doc-advisor:query-specs` Skill を使用
-
-`/doc-advisor:query-specs` が利用可能な場合:
+### 方法 A: `/forge:query-db-specs` Skill を使用
 
 ```
-/doc-advisor:query-specs {タスクの説明やキーワード}
+/forge:query-db-specs {タスクの説明やキーワード}
 ```
 
 返された文書パスを結果に含める。
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
 
-`/doc-advisor:query-specs` が利用できない場合、`doc-structure` スキルのスクリプトを使用:
+`/forge:query-db-specs` がバックエンド未インストールで停止した場合、`doc-structure` スキルのスクリプトを使用:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
@@ -132,12 +130,10 @@ documents:
 
 **手順（優先順）**:
 
-### 方法 A: `/doc-advisor:query-rules` Skill を使用
-
-`/doc-advisor:query-rules` が利用可能な場合:
+### 方法 A: `/forge:query-db-rules` Skill を使用
 
 ```
-/doc-advisor:query-rules {タスクの説明やキーワード}
+/forge:query-db-rules {タスクの説明やキーワード}
 ```
 
 ### 方法 B: `.doc_structure.yaml` フォールバック
@@ -256,6 +252,6 @@ documents:
 ## エラー時の振る舞い
 
 - 各タスクで検索結果が 0 件の場合: 空の documents で yaml を書き込む
-- `/doc-advisor:query-specs` や `/doc-advisor:query-rules` が利用不可の場合: フォールバック手段に切り替える
+- `/forge:query-db-specs` や `/forge:query-db-rules` がバックエンド未インストールで停止した場合: フォールバック手段に切り替える
 - `gh` CLI が利用不可の場合: 「類似PR調査」をスキップ（refs/prs.yaml を作成しない）
 - 予期しないエラーの場合: エラー内容をオーケストレータに報告し、該当タスクをスキップ

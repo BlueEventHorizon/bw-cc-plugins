@@ -53,7 +53,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/scan_version_targets.py"
 
 ```
 スキャン完了:
-  バージョンファイル: 3件 (forge, anvil, xcode)
+  バージョンファイル: 3件 (forge, anvil, doc-advisor)
   カタログ: .claude-plugin/marketplace.json
   README: README.md, README_en.md
   CHANGELOG: CHANGELOG.md (keep-a-changelog 形式)

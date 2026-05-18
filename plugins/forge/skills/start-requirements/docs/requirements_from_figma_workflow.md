@@ -17,6 +17,7 @@ applicable_when:
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ## 目的
 
@@ -60,13 +61,11 @@ graph TD
 
 ### 1.3 ルール文書・既存仕様の取得 [MANDATORY]
 
-1. **`/doc-advisor:query-rules`** でルール文書を特定（利用可能な場合）
+1. **`/forge:query-db-rules`** でルール文書を特定
    - タスク内容: Figma デザインからの要件定義書作成
-   - Skill 利用不可の場合は Glob で `docs/rules/` を探索
 
-2. **`/doc-advisor:query-specs`** で既存要件定義書・設計書を確認（利用可能な場合）
+2. **`/forge:query-db-specs`** で既存要件定義書・設計書を確認
    - タスク内容: Figma デザインからの要件定義書作成
-   - Skill 利用不可の場合は Glob で specs 配下を探索
 
 3. 返却された文書を全文読み込み
 
@@ -230,7 +229,7 @@ Figma から抽出した画像の扱い:
 
 ### 5.4 specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する。
+`/forge:update-db-specs` が利用可能であれば実行する。
 
 ### 5.5 commit/push 確認
 

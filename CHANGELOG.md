@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.24] - 2026-05-19
+
+### marketplace
+
+- **chore**: forge 0.1.0、anvil 0.0.8、doc-db 0.0.2 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.1.0] - 2026-05-19
+
+### forge
+
+- **feat**: forge-query 抽象 SKILL（`query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs`）を新設し、doc-advisor / doc-db バックエンドを自動選択する設計を導入（DES-001 / ADR-001）。`select_backend.py` が API キー有無と利用可能バックエンドから採用先を決定し、4 SKILL は `user-invocable: false` の内部 SKILL として動作する
+- **refactor**: forge skills 内の `/doc-advisor:*` 直呼びを `/forge:*-db-*` 抽象 SKILL に切り替え（review / start-design / start-plan / clean-rules / merge-feature-specs / create-feature-from-plan / start-requirements / start-uxui-design）
+- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加（Issue #55 / ADR-002）
+- **refactor**: start-plan SKILL に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを判断し `strategy_draft.md` を生成する
+- **refactor**: FNC-008/DES-028 を doc-advisor へ再配置し、merge-feature-specs に配置整合性検査を追加
+- **docs**: SKILL 基本設計書を新設し fork 型を規定リストで厳密管理。forge 文書スタイル指針と ID 参照記法、文書スタイル指針 (document_style_guide) を追加し DWR を整理
+
+## [anvil 0.0.8] - 2026-05-19
+
+### anvil
+
+- **docs(impl-issue)**: `/doc-advisor:query-specs` / `/doc-advisor:query-rules` への args 渡し方を、Issue タイトル・本文から抽出した短い検索キーワードまたは短い自然文のタスク記述に限定する制約を明文化（COMMON-DES-001 §3.4 [MANDATORY]）。Issue 本文の全文貼り付けを禁止
+
+## [doc-db 0.0.2] - 2026-05-19
+
+### doc-db
+
+- **update**: query SKILL の Output Format を `Required documents:` 先頭ハイブリッド形式に統一（forge-query 抽象 SKILL との互換性確保）
+
 ## [marketplace 0.1.22] - 2026-05-16
 
 ### marketplace
