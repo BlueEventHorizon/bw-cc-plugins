@@ -173,7 +173,7 @@ ADR-002 で採択した多重防御を SKILL 型ごとに適用する。
 
 ### 7.2 一覧の保守 [MANDATORY]
 
-本設計書 §4 の規定リストは **bw-cc-plugins における fork 型 SKILL の唯一の正式記録**である。SKILL 追加・削除時は §4.3 の手順で本書を更新する。`/doc-advisor:create-specs-toc` 実行時に本設計書自体は specs ToC に登録されるが、fork 型 SKILL の規定リストとしては §4 の表が SoT である。
+本設計書 §4 の規定リストは **bw-cc-plugins における fork 型 SKILL の唯一の正式記録**である。SKILL 追加・削除時は §4.3 の手順で本書を更新する。`/forge:update-db-specs` 実行時に本設計書自体は specs ToC に登録されるが、fork 型 SKILL の規定リストとしては §4 の表が SoT である。
 
 自動生成（SKILL.md frontmatter のスキャン等）は監査用途には使えるが、**規定の根拠は本書 §4** とする。frontmatter と本書 §4 に乖離がある場合は、§4 を正として SKILL.md を修正する。
 

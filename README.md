@@ -117,6 +117,10 @@ flowchart LR
 | [_present-findings_](docs/readme/forge/guide_review_ja.md#実行フロー)                     | レビュー結果を対話的に1件ずつ提示                                         | ※ review が委譲                  |
 | [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                  | ※ 各オーケストレーターが呼び出し |
 | [_next-spec-id_](docs/readme/forge/guide_create_docs_ja.md)                               | 全ブランチをスキャンして仕様書 ID の次番を取得                            | ※ start-requirements が呼び出し  |
+| **query-db-rules**                                                                        | バックエンド（doc-db / doc-advisor）を自動選択してルール文書を検索        | `"ルール確認"`                   |
+| **query-db-specs**                                                                        | バックエンド（doc-db / doc-advisor）を自動選択して仕様文書を検索          | `"仕様確認"`                     |
+| **update-db-rules**                                                                       | ルール文書の検索インデックスを再構築（バックエンド自動選択）              | `"rules インデックス更新"`       |
+| **update-db-specs**                                                                       | 仕様文書の検索インデックスを再構築（バックエンド自動選択）                | `"specs インデックス更新"`       |
 
 ### anvil
 
@@ -141,6 +145,8 @@ flowchart LR
 ### doc-advisor
 
 > [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
+>
+> **推奨**: forge ワークフロー内では `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` を使うとバックエンド（doc-db / doc-advisor）が自動選択される。
 
 | スキル                                                                       | 説明                                                                           | トリガー           |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ |

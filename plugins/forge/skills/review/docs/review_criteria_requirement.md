@@ -1,7 +1,7 @@
 # 要件定義書レビュー観点
 
 プロジェクト固有のレビュー観点がない場合に使用するプラグインデフォルト定義。
-DocAdvisor（`/doc-advisor:query-rules`）が利用可能な場合は、プロジェクト固有の観点が追加の perspective として加わる。
+`/forge:query-db-rules` で取得したプロジェクト固有の観点が追加の perspective として加わる。
 
 ## 必須参照: 知識ベース [MANDATORY]
 

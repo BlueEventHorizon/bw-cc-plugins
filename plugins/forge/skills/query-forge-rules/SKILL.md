@@ -4,7 +4,7 @@ description: |
   forge 内蔵の知識ベースを ToC 検索し、タスクに関連するドキュメントのパスを返す。
   対象: ID体系・仕様フォーマット・設計原則・レビュー基準・ワークフロー仕様・HIG/UXガイド等。
   他スキルが forge の内部仕様や規約を参照する必要がある場面で使用する。
-  ※ プロジェクト文書には /doc-advisor:query-rules を使う。本スキルは forge 自体の docs が対象。
+  ※ プロジェクト文書には /forge:query-db-rules を使う。本スキルは forge 自体の docs が対象。
 user-invocable: false
 ---
 
@@ -12,7 +12,7 @@ user-invocable: false
 > このファイルは呼び出し元（多くは `/forge:*` スキル）がそのまま実行する手順書である。
 > `$ARGUMENTS`（タスク説明）に対して、以下の手順を呼び出し元自身で実行せよ。
 >
-> - ❌ 禁止: `Skill` ツールで `query-rules` / `query-specs` / `query-forge-rules` を呼ぶこと（無限再帰でハーネスが詰まる）
+> - ❌ 禁止: `Skill` ツールで `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:query-forge-rules` を呼ぶこと（無限再帰でハーネスが詰まる）
 > - ❌ 禁止: 「`/query-forge-rules` を実行します」のように、自分が呼び出されたスキルを再起動すること
 > - ✅ 必須: 下記 Procedure に従って Read 等の基本ツールで処理を完了させ、結果を返す
 

@@ -51,13 +51,11 @@ graph TD
 
 ### 1.2 ルール文書・既存仕様の取得 [MANDATORY]
 
-1. **`/doc-advisor:query-rules`** でルール文書を特定（利用可能な場合）
+1. **`/forge:query-db-rules`** でルール文書を特定
    - タスク内容: 既存アプリ解析による要件定義書作成
-   - Skill 利用不可の場合は Glob で `docs/rules/` を探索
 
-2. **`/doc-advisor:query-specs`** で既存要件定義書を確認（利用可能な場合）
+2. **`/forge:query-db-specs`** で既存要件定義書を確認
    - タスク内容: 既存アプリ解析による要件定義書作成
-   - Skill 利用不可の場合は Glob で specs 配下を探索
 
 3. 返却された文書を全文読み込み
 
@@ -259,7 +257,7 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 ### 5.3 specs ToC 更新
 
-`/doc-advisor:create-specs-toc` が利用可能であれば実行する。
+`/forge:update-db-specs` が利用可能であれば実行する。
 
 ### 5.4 commit/push 確認
 

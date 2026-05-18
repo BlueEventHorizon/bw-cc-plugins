@@ -605,7 +605,7 @@ fi
   参照更新: N ファイル
 
 次のステップ:
-  - ToC 再生成: /update-forge-toc または /doc-advisor:create-specs-toc
+  - ToC 再生成: /update-forge-toc または /forge:update-db-specs
   - commit: /anvil:commit または git commit
 ```
 
@@ -623,4 +623,4 @@ doc-advisor は Phase 0 で必須前提として確認済みのため ToC 再生
 - **区分階層に依存しない**: feature_dir.parent を main_specs_root と仮定するが、適切でなければ Phase 2 で `--main-specs-root` を明示する
 - **必須前提は Phase 0 で検査して即終了**: `.doc_structure.yaml` と doc-advisor は必須。フォールバック推測は誤動作の温床のため行わない
 - **任意ツールのみ動作分岐**: dprint (Phase 8 のみ) / anvil (Phase 9 案内に並列表記) のみ「あれば使う・なければ別手段」で対応
-- **本 skill は ToC / 検索インデックスを再生成しない**: 完了案内で別 skill (`/update-forge-toc`, `/doc-advisor:create-specs-toc` 等) を提示する。再生成は別 skill の責務
+- **本 skill は ToC / 検索インデックスを再生成しない**: 完了案内で別 skill (`/update-forge-toc`, `/forge:update-db-specs` 等) を提示する。再生成は別 skill の責務

@@ -332,11 +332,11 @@ documents:
 
 ### カテゴリ別ファイル
 
-| ファイル          | 収集対象                   | 主な取得手段                                        |
-| ----------------- | -------------------------- | --------------------------------------------------- |
-| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/doc-advisor:query-specs` or `.doc_structure.yaml` |
-| `refs/rules.yaml` | 開発ルール・規約           | `/doc-advisor:query-rules` or `.doc_structure.yaml` |
-| `refs/code.yaml`  | 関連ソースコード・テスト   | Glob / Grep 探索                                    |
+| ファイル          | 収集対象                   | 主な取得手段                                     |
+| ----------------- | -------------------------- | ------------------------------------------------ |
+| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/forge:query-db-specs` or `.doc_structure.yaml` |
+| `refs/rules.yaml` | 開発ルール・規約           | `/forge:query-db-rules` or `.doc_structure.yaml` |
+| `refs/code.yaml`  | 関連ソースコード・テスト   | Glob / Grep 探索                                 |
 
 ### refs/ がない場合の扱い
 
