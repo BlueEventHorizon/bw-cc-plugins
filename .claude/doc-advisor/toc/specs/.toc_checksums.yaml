@@ -1,10 +1,11 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-18T02:52:41Z
-file_count: 51
+generated_at: 2026-05-18T14:18:02Z
+file_count: 53
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
+  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: 69260c0aa5a42454a0620a3aa70d3ecc720a003998746e991c8f2cc094184f0c
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
   docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md: 51abbe5016ed1e2dd79156da67d5bfa184dd1d0fe48d1b7a0e0e182aa9eb6e21
@@ -34,7 +35,8 @@ checksums:
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: cd91a0dadb4eb22a5088d9ac434b1cdaa148daf4ac15acc62604292c60d1c6a9
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 7a9df6e214d2f5064c41d89595731317f8bd2381ffc654f7115aa86e140b3ad4
   docs/specs/doc-db/requirements/REQ-006_doc_db.md: 6bbb83a0609873d10ca7a184b05d6f81fcc326538fc07728a22969c8fc8379d7
-  docs/specs/forge-query/design/DES-001_forge-query_abstraction.md: 00e0e04b3589b9ad032fb9fca01e04452c412d027bfe0d599c54156daa7fb23d
+  docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md: 636564c45eaa1c3af9035a48f5861939fa51eb9d91500454f27feba0bb5d47d6
+  docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md: 9457fef2a0af8794a6e791db22e7023eea75020bad48d88910c4ceccc39a921a
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: ab46fe033f2e59baa00fa05d395e789203436f8bd8d23a57b212851efde6e450
   docs/specs/forge/design/DES-011_session_management_design.md: 7466197c7f9a0570e2ca46f0044f4b5864e06fdad290be249ac2d07cb664875e
   docs/specs/forge/design/DES-013_context_gathering_design.md: a7282f2511aa22a021f8ac65cf4625139cdb083a15d4e4fb2cb354199a1b835f

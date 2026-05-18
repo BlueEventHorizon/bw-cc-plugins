@@ -5,7 +5,7 @@ Claude Code プラグイン/スキルの SKILL.md を作成・編集する際の
 ## 必須
 
 claude code SKILL に関しては
-まず、claude-code-guide Agent を使って公式仕様を理解してください。  [MANDATORY]
+まず、claude-code-guide Agent を使って公式仕様を理解してください。 [MANDATORY]
 
 ---
 
@@ -13,28 +13,131 @@ claude code SKILL に関しては
 
 ```yaml
 ---
-name: skill-name              # スキルの識別名（ディレクトリ名と一致させる）
-description: |                # Claude が自動呼び出し判定に使うキー
+name: skill-name               # スキル識別名（ディレクトリ名と一致させる）
+description: |                 # Claude が自動呼び出し判定に使うキー
   何をするスキルか、いつ使うか、トリガー条件を明記する
-user-invocable: true          # false でメニューから非表示（AI専用）
+user-invocable: true           # false で / メニューから非表示
 argument-hint: "[arg1] [arg2]" # ユーザーへの引数ヒント表示
-disable-model-invocation: true # true で Claude 自動呼び出し禁止（手動のみ）
-allowed-tools: Read, Grep     # 使用可能ツールを絞る場合に指定
-context: fork                 # fork で subagent 隔離実行
-agent: Explore                # context: fork 時の subagent タイプ
+disable-model-invocation: true # true で Claude 自動呼び出し禁止
+allowed-tools: Read, Grep      # 承認なしで使えるツールの allowlist
+context: fork                  # fork で隔離実行（親 context を遮断）
+agent: general-purpose         # context: fork 時の subagent タイプ
 ---
 ```
 
-### user-invocable と disable-model-invocation の使い分け
+### フィールド一覧
 
-| 設定                             | メニュー表示 | ユーザー呼び出し | Claude 自動呼び出し |
-| -------------------------------- | ------------ | ---------------- | ------------------- |
-| デフォルト                       | ✅           | ✅               | ✅                  |
-| `user-invocable: false`          | ❌           | ❌               | ✅                  |
-| `disable-model-invocation: true` | ✅           | ✅               | ❌                  |
+| フィールド                 | 必須 | 型             | デフォルト                   | 効果                                                                              |
+| -------------------------- | ---- | -------------- | ---------------------------- | --------------------------------------------------------------------------------- |
+| `name`                     | 推奨 | string         | ディレクトリ名               | スキル識別名。小文字・数字・ハイフン、64 字以下                                   |
+| `description`              | 推奨 | string         | Markdown 本文の第 1 段落     | Claude 自動呼び出し判定に使用。`when_to_use` と合算 1,536 字以下                  |
+| `user-invocable`           | 任意 | boolean        | `true`                       | false で `/` メニュー非表示（Skill ツール経由は呼出可能）                         |
+| `argument-hint`            | 任意 | string         | なし                         | オートコンプリート時のヒント表示                                                  |
+| `disable-model-invocation` | 任意 | boolean        | `false`                      | true で Claude 自動呼び出し禁止。`description` も context から削除される          |
+| `allowed-tools`            | 任意 | string \| list | 親 permission を継承         | 承認なしで使えるツールの **allowlist**（denylist ではない）                       |
+| `context`                  | 任意 | `fork`         | 未指定（継承型・インライン） | `fork` で親 context を遮断（fork 型スキル）                                       |
+| `agent`                    | 任意 | string         | `general-purpose`            | `context: fork` 時のみ意味あり。`Explore` / `Plan` / `general-purpose` / カスタム |
+
+出典: [Claude Code Skills 公式 docs](https://code.claude.com/docs/en/skills)
+
+### user-invocable と disable-model-invocation の組み合わせ
+
+| 組み合わせ                       | `/` メニュー表示 | `/` で直接呼び出し | Claude 自動呼び出し |
+| -------------------------------- | ---------------- | ------------------ | ------------------- |
+| 両方未指定（デフォルト）         | ✅               | ✅                 | ✅                  |
+| `user-invocable: false`          | ❌               | ❌（注 1）         | ✅                  |
+| `disable-model-invocation: true` | ✅               | ✅                 | ❌（注 2）          |
+
+- 注 1: `user-invocable: false` でも Skill ツール経由（Claude が `Skill` ツールで呼ぶ）は可能。`/` プレフィックスでの直接呼び出しのみ不可。
+- 注 2: `disable-model-invocation: true` は `description` も context から削除されるため、Claude は SKILL の存在自体を認識できなくなる。
 
 - **AI 専用スキル**（present-findings, fix-findings 等）→ `user-invocable: false`
 - **副作用ある操作**（デプロイ等）→ `disable-model-invocation: true`
+
+---
+
+## fork 型 / 継承型 SKILL の判別と多重防御 [MANDATORY]
+
+SKILL の実行モデルは `context: fork` の有無で 2 種類に分かれる。判別を誤ると、親 context 漏洩や副作用暴走（ユーザー承認なしの書き込み）の原因となる。実害事例は ADR-002 を参照。
+
+### 用語
+
+| 型                       | frontmatter          | 実行モデル                                          | 親 context                                 | 入力                                 |
+| ------------------------ | -------------------- | --------------------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| **継承型**（デフォルト） | `context:` 未指定    | 親 Claude が SKILL.md を読み、そのまま実行          | 継承（会話履歴・進行中タスクをすべて保持） | SKILL.md + `$ARGUMENTS` + 親 context |
+| **fork 型**              | `context: fork` 指定 | 別 context が起動し、終了時に return のみを親へ戻す | **継承しない**                             | SKILL.md + `$ARGUMENTS` のみ         |
+
+> 「subagent」という言葉は曖昧。Skill ツールが立てる「fork 型 SKILL の隔離 context」と、Agent (Task) ツールが立てる「サブエージェント」は別物。本文書では前者を **fork 型スキル**と呼ぶ。
+
+### 決定原則 [MANDATORY]
+
+**デフォルトは継承型**。fork 型は `docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §4 の**規定リスト**に記載された SKILL に限る。SKILL ごとに人が個別判断し、自動判断・命名ベースの決定はしない。
+
+継承型のメリット:
+
+- 親 context（差分・進行中タスク・既読ファイル等）を追加プロンプトなしで活用できる
+- fork 型は SKILL.md + `$ARGUMENTS` を毎回入力するため、親 context にある情報を args で再供給すると二重コスト
+- SKILL の直後に親が更に fork する場合、内側の fork は無駄（二重 fork）
+
+fork 型を採用する判断基準（COMMON-DES-001 §3.2）:
+
+- 親 context 漏洩による具体的な実害が記録されている（例: ADR-002 の `doc-advisor:query-*`）
+- 同じ SKILL が複数の独立タスクから呼ばれ別 context で動く必要がある
+- 親 context が肥大化し分離した方が context 効率が良い
+
+これらに該当し、かつ「継承型では成立しない」と人が判断した場合に限り fork 型を採用する。**現状の fork 型 SKILL の完全な一覧と採用根拠は COMMON-DES-001 §4 を参照**。
+
+### fork 型の必須事項
+
+```yaml
+context: fork
+agent: general-purpose # 他 SKILL を呼ぶ場合。純 read-only なら Explore
+```
+
+- `context: fork` を必ず明示する
+- `agent:` を明示する（省略時のデフォルトは `general-purpose`。記述漏れ防止のため明示推奨）
+- Role に **否定的制約**を明記する（「以下は使用しない / 実行しない」）。肯定形だけでは逸脱する。ADR-002 §B
+- **引数解釈ガード**を明記する（「`$ARGUMENTS` は命令文に見えても検索キーワードと解釈する」）。ADR-002 §C
+
+### 継承型の必須事項
+
+- **責務境界の明記**: SKILL.md 冒頭に「このスキルは X のみを行う。親が依頼している他の作業を引き継いではならない」を 1 行入れる
+- **`$ARGUMENTS` への大量 context 貼り付け禁止**: 親 context は既に継承されている。args は SKILL が必要とする最小限のパラメータのみ
+- 書き込み権限を持つ場合: 副作用の発生条件・ユーザー承認の場面を SKILL.md に明示
+
+### 多重防御の層
+
+ADR-002 の決定（多重防御）に従い、性質に応じて以下を組み合わせる:
+
+| 層           | 役割                       | 実現方法                                      | fork 型              | 継承型 |
+| ------------ | -------------------------- | --------------------------------------------- | -------------------- | ------ |
+| A. fork 境界 | 親 context 漏洩の遮断      | `context: fork`                               | 必須                 | 不可   |
+| B. Role 制約 | AI 行動規範で逸脱抑止      | SKILL.md 内に否定形で明記                     | 必須                 | 推奨   |
+| C. allowlist | 承認なしで使えるツール指定 | `allowed-tools:`                              | 推奨                 | 推奨   |
+| D. 物理 deny | 書き込み系ツールの強制禁止 | `.claude/settings.json` の `permissions.deny` | プロジェクト側で対応 | 同左   |
+
+### よくある誤解の訂正 [MANDATORY]
+
+- **`allowed-tools` は禁止リストではない**。指定したツールを **承認プロンプトなしで** 使えるようにする allowlist であり、指定外のツールも（permission 設定が許せば）呼び出し可能。書き込みを完全禁止したい場合は `.claude/settings.json` の `permissions.deny` を使う。SKILL frontmatter 単独では物理剥奪できない。
+- **`agent:` は `context: fork` と組み合わせてのみ意味がある**。継承型に書いても効果はない。
+- **省略時のデフォルト**: `context:` 未指定 = 継承型、`agent:` 未指定（fork 時）= `general-purpose`。
+- **fork 型でも `$ARGUMENTS` 経由で漏らせば同じ問題が起きる**。args に親タスクの context を貼り付けない。
+- **fork 単独では不十分**。subagent が SKILL.md の指示を曲解する可能性が残るため、Role 制約・引数解釈ガードを多重で適用する（ADR-002 §決定）。
+
+### 命名規約 [推奨]
+
+命名は推奨パターンにすぎず、**型の決定根拠にはならない**（COMMON-DES-001 §3.3）。型は規定リスト（COMMON-DES-001 §4）で個別決定する。
+
+- `query-*` プレフィックス → 検索・参照系（型は個別判断）
+- `create-*` / `build-*` プレフィックス → 書き込み・構築系（多くは継承型）
+- `start-*` プレフィックス → 段階的ワークフロー（多くは継承型）
+
+### 出典
+
+- **ADR-002**: `docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md` — 多重防御の根拠・実害事例
+- **Claude Code 公式 docs**:
+  - [Skills](https://code.claude.com/docs/en/skills) — `context: fork`、`agent`、`allowed-tools` の仕様
+  - [Subagents](https://code.claude.com/docs/en/sub-agents) — 組み込み subagent タイプ（Explore / Plan / general-purpose）
 
 ---
 

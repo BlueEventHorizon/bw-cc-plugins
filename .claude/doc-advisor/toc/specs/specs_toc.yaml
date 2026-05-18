@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-18T02:53:24Z
-  file_count: 51
+  generated_at: 2026-05-18T14:21:01Z
+  file_count: 53
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -74,6 +74,35 @@ docs:
       - Feature Request
       - UI Issue
       - design tokens
+  docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
+    doc_type: design
+    title: COMMON-DES-001 SKILL Base Design
+    purpose: Defines SKILL execution model, fork vs inheritance type decision principles, and design rationale for fork type control to ensure parent context safety
+    content_details:
+      - SKILL execution model with fork vs inheritance types
+      - Default inheritance type principle and fork adoption criteria
+      - Fork type SKILL list with individual decision management per §4
+      - Argument transmission guidelines prohibiting parent task context in args
+      - "Multi-layer defense strategy: fork boundary, Role constraint, allowlist, physical deny"
+      - Static validation tests for SKILL.md format in tests/doc_advisor/
+      - Responsibility boundaries for inheritance type SKILLs with mandatory role statement
+    applicable_tasks:
+      - SKILL design review and governance
+      - fork type SKILL adoption decision
+      - SKILL testing and format validation
+      - Context isolation safety verification
+      - Multi-layer defense implementation
+    keywords:
+      - SKILL execution model
+      - fork type
+      - inheritance type
+      - context isolation
+      - Role constraint
+      - argument guard
+      - ADR-002
+      - multi-layer defense
+      - SoT
+      - subagent
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
     title: "COMMON-REQ-001: Phased Version Migration Requirements"
@@ -923,36 +952,65 @@ docs:
       - search quality
       - recall
       - multi-vector
-  docs/specs/forge-query/design/DES-001_forge-query_abstraction.md:
+  docs/specs/forge-query/design/ADR-001_forge_query_test_flag_policy.md:
     doc_type: design
-    title: Document Search Backend Abstraction (switch-query) Design
-    purpose: Defines dependency inversion of forge from concrete search backends (doc-db / doc-advisor) to abstract skills, enabling full operation with either backend or both installed
+    title: "ADR-001: forge:query-db-* does not accept --toc / --index flags (direct invocation policy for quality inspection flags)"
+    purpose: Defines the design decision that forge abstract SKILLs should not expose quality inspection flags and specifies which layer (forge vs doc-advisor) should handle backend-specific modes
     content_details:
-      - Backend selection logic based on available plugins and API key availability
-      - Branching tables A and B determining adopted backend and skill names
-      - Error handling for missing backends and API key issues
-      - Output contract with Required documents format
-      - "Skill mapping: query-db-rules query-db-specs update-db-rules update-db-specs"
-      - Frontend selection script select_backend.py with Python implementation
-      - Subagent isolation contracts for query skills with context fork and read-only constraints
-      - Test strategy covering unit tests for branching logic and observational validation scenarios
-      - Backward compatibility and transition from direct doc-advisor calls to abstract skills
+      - "Problem: user confusion about whether --toc/--index flags work with forge abstract SKILLs"
+      - "Decision: forge SKILLs accept only task parameter; quality inspection uses doc-advisor/doc-db directly"
+      - Three evaluated options with reasons (explicit error, mode parameter, thin wrapper approach)
+      - "Responsibility separation: forge for production, doc-advisor/doc-db for quality inspection"
+      - Impact on SKILL.md argument specifications
+      - Consistency with overall design philosophy (garbage argument handling by AI judgment)
+      - Remaining considerations for user documentation and CI automation
     applicable_tasks:
-      - Backend selection implementation
-      - forge skill modifications to use abstract skills
-      - Script development for automatic backend detection
-      - Test design and validation for all backend combinations
-      - Documentation updates for new skill usage patterns
+      - forge-query abstraction design
+      - SKILL argument specification validation
+      - Backend selection strategy documentation
+      - Quality inspection tool selection guidance
+      - Design decision documentation
+    keywords:
+      - forge
+      - abstract SKILL
+      - query
+      - backend selection
+      - responsibility separation
+      - quality inspection
+      - "--toc"
+      - "--index"
+      - thin wrapper
+      - ADR
+  docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md:
+    doc_type: design
+    title: DES-001 Document Search Backend Abstraction (switch-query) Design
+    purpose: Defines dependency inversion architecture enabling forge to automatically select between doc-db and doc-advisor backends based on installation state and API key availability, eliminating hard coupling to specific plugins
+    content_details:
+      - Backend selection decision table (both installed with API key → doc-db, both installed without API key → doc-advisor, doc-db only → doc-db, doc-advisor only → doc-advisor, neither → error)
+      - "Four abstract skills: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
+      - Backend selection script (select_backend.py) consolidating all branching logic in single Python implementation
+      - Skill-to-backend mapping table (doc-db query/update operations, doc-advisor query-rules/query-specs/create-toc operations)
+      - API key judgment criteria (OPENAI_API_DOCDB_KEY or OPENAI_API_KEY must be non-empty)
+      - Output contract with Required documents as mandatory prefix section
+      - Subagent constraints for read-only search skills (no Edit/Write/fork boundaries with doc-advisor)
+      - Argument interpretation guardrails (search keywords and task descriptions only, not parent context or instructions)
+    applicable_tasks:
+      - Backend architecture design for forge plugin system
+      - Implementation of dependency inversion between forge and doc-db/doc-advisor
+      - Setup and configuration of automated backend selection
+      - Documentation indexing strategy selection (Embedding vs Hybrid search)
+      - Feature implementation planning across multiple search backend options
     keywords:
       - dependency inversion
       - backend abstraction
       - doc-db
       - doc-advisor
       - plugin selection
-      - API key handling
-      - search indexing
-      - skill isolation
-      - select_backend.py
+      - API key resolution
+      - DES-007
+      - Hybrid search
+      - ToC
+      - forward compatibility
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* skills orchestrator design
