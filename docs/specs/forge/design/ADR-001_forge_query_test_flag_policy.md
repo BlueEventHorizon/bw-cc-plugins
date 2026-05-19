@@ -56,7 +56,7 @@ forge 抽象 SKILL の引数表（DES-001 §3.1）は `{task}` のみとし、`-
 
 ## 影響範囲
 
-- `docs/specs/forge-query/design/DES-001_forge-query_abstraction_design.md` §3.1 引数表は `{task}` のみで現状維持（本 ADR を SoT 参照する注記を追記）
+- `docs/specs/forge/design/DES-001_forge_query_abstraction_design.md` §3.1 引数表は `{task}` のみで現状維持（本 ADR を SoT 参照する注記を追記）
 - `plugins/forge/skills/query-db-rules/SKILL.md` / `plugins/forge/skills/query-db-specs/SKILL.md`（実装時）の `argument-hint` は `"task description"` のみ。`--toc` / `--index` の非対応を SKILL.md に明記しない（AI 判断）
 - `meta/test_docs/` 配下の品質評価スクリプトは本 ADR の影響を受けない（既に doc-advisor / doc-db を直接呼んでいる）
 
