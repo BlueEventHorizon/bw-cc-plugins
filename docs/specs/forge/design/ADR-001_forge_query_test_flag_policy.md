@@ -83,8 +83,8 @@ DES-001 は「何を作るか」を定義する。本 ADR は「なぜ抽象 SKI
 ## 関連
 
 - DES-001: forge-query 抽象化設計書（forge 抽象 SKILL の責務定義）
-- ADR-002（doc-advisor）: query-rules / query-specs SKILL の subagent 隔離と read-only 制約
-- FNC-001: コンテキスト外検索 要件定義書
+- doc-advisor:ADR-002: query-rules / query-specs SKILL の subagent 隔離と read-only 制約
+- doc-advisor:FNC-001: コンテキスト外検索 要件定義書
 - `meta/test_docs/README.md`: 検索品質評価の実行手順（git 管理外）
 
 ## 変更履歴
