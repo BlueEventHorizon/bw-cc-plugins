@@ -72,7 +72,7 @@ forge 抽象 SKILL の引数表（DES-001 §3.1）は `{task}` のみとし、`-
 
 ## この ADR の位置づけ
 
-本文書は DES-001（forge-query 抽象化設計書）の補遺であり、以下を記録する:
+本文書は DES-001（文書検索バックエンドの抽象化（switch-query）設計書）の補遺であり、以下を記録する:
 
 - forge 抽象 SKILL の引数仕様が `{task}` のみで完結する設計判断（responsibility separation）
 - `--toc` / `--index` を品質検査用と位置づけ、本番運用ラッパーから分離する根拠
@@ -82,9 +82,9 @@ DES-001 は「何を作るか」を定義する。本 ADR は「なぜ抽象 SKI
 
 ## 関連
 
-- DES-001: forge-query 抽象化設計書（forge 抽象 SKILL の責務定義）
-- doc-advisor:ADR-002: query-rules / query-specs SKILL の subagent 隔離と read-only 制約
-- doc-advisor:FNC-001: コンテキスト外検索 要件定義書
+- DES-001: 文書検索バックエンドの抽象化（switch-query）設計書（forge 抽象 SKILL の責務定義）
+- doc-advisor:ADR-002_query_skill_subagent_isolation: query-rules / query-specs SKILL の subagent 隔離と read-only 制約
+- doc-advisor:FNC-001_context_external_search_spec: コンテキスト外検索 要件定義書
 - `meta/test_docs/README.md`: 検索品質評価の実行手順（git 管理外）
 
 ## 変更履歴

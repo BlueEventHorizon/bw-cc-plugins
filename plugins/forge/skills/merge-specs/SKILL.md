@@ -515,7 +515,7 @@ git status --short
   リンク切れ: なし
 
 次のステップ:
-  - ToC 再生成: /doc-advisor:create-specs-toc （該当プロジェクトのみ）
+  - ToC 再生成: /forge:update-db-specs （該当プロジェクトのみ）
   - ビルド確認: プロジェクト固有のビルドコマンド （該当プロジェクトのみ）
   - commit: 各 Phase で小コミット済みなら、最後の差分のみ commit
 ```

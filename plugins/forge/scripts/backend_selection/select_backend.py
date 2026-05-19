@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""forge-query バックエンド選択スクリプト。
+"""forge 検索バックエンド選択スクリプト。
 
 DES-001 §2.3 の分岐テーブル A/B と §1.5.1 の API キー判定式を Python に集約する。
 4 つの抽象 SKILL (/forge:query-db-rules / query-db-specs / update-db-rules /

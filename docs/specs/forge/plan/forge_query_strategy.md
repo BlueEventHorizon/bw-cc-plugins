@@ -1,4 +1,6 @@
-# forge-query 実装戦略
+# forge 検索バックエンド抽象化 実装戦略
+
+> 本書は DES-027（`/forge:start-plan` への実装戦略フェーズ導入）で規定された Step 1〜4 構造に基づき、forge:DES-001_forge_query_abstraction_design / ADR-001 を入力として策定した実装戦略である。
 
 ## 全体構造分析（Step 1）
 
@@ -29,7 +31,7 @@ DES-001 / ADR-001 から把握した実装対象:
 | データ整合性       | §5.1 のエラーメッセージ全文（複数行）と `select_backend.py` の `error` フィールド出力が完全一致する必要あり。改行・空白の不一致でテストが落ち、ユーザー導線が壊れる                                                     | 中                       |
 | インテグレーション | doc-db 側 SKILL.md の Output Format 変更と forge 抽象 SKILL の出力契約が `Required documents:` 形式で噛み合う必要あり。先に doc-db を直さないと test_query_output_contract.py が落ちる                                  | 高                       |
 | 依存の複雑性       | §4.2 影響範囲が 17+ ファイル + `.claude/skills/` / `.agents/skills/` まで及ぶ。grep 漏れがあると `/doc-advisor:*` 直呼びが残存し受け入れ条件 #5 を満たせない                                                            | 高                       |
-| 副作用暴走         | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / doc-advisor:ADR-002）  | 高                       |
+| 副作用暴走         | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / doc-advisor:ADR-002_query_skill_subagent_isolation）  | 高                       |
 | 非目的の混入       | ADR-001 で「`--toc` / `--index` は forge 抽象 SKILL の正式引数として持たない」と確定。`argument-hint` への混入や SKILL.md 内バリデーション記述で抽象が崩れる                                                            | 低                       |
 | パフォーマンス     | 該当なし（Python 標準ライブラリのみ・分岐評価は O(1)）                                                                                                                                                                  | -                        |
 | バージョン関連     | `docs/rules/implementation_guidelines.md` の「バージョン関連ファイル編集禁止 [MANDATORY]」により plugin.json / marketplace.json / CHANGELOG.md / README バージョン表は本 PR 編集禁止。skill 一覧追加のみ可（§8.3 / §9） | 低（制約として常時遵守） |
@@ -55,7 +57,7 @@ DES-001 / ADR-001 から把握した実装対象:
 - **スコープ**:
   - DES-001 §7.1 / §11 手順 2: doc-db SKILL.md Output Format 書換（スクリプト本体は不変、§7.2 によりバージョン編集なし）
   - DES-001 §8.1 / §11 手順 3 / §10.3: `select_backend.py` 実装 + ユニットテスト
-  - DES-001 §1.5.1 API キー判定式（`OPENAI_API_DOCDB_KEY` / `OPENAI_API_KEY` のフォールバック、doc-advisor:DES-007 統一仕様）を Python で同等実装
+  - DES-001 §1.5.1 API キー判定式（`OPENAI_API_DOCDB_KEY` / `OPENAI_API_KEY` のフォールバック、doc-advisor:DES-007_unified_api_key_reference_design 統一仕様）を Python で同等実装
   - `tests/common/test_query_output_contract.py` 新規（§10.3）
 - **検証ポイント**:
   - `python3 -m unittest tests.forge.scripts.test_backend_selection -v` が全 13+ ケース（A 5 行 + B 8 行 + API キー判定パス + read-only 検証）で合格
@@ -69,7 +71,7 @@ DES-001 / ADR-001 から把握した実装対象:
 - **目標**:
   - `plugins/forge/skills/{query-db-rules, query-db-specs, update-db-rules, update-db-specs}/SKILL.md` 4 件が新設され、§8.1 frontmatter テンプレ通りに記述される（version 編集なし）
   - 各 SKILL.md は「available-skills を LLM が読む → Bash で `select_backend.py` 呼出 → JSON 結果を解釈し `Skill` ツールで該当バックエンド起動」のシンプル構造に統一され、SKILL.md 内に分岐テーブルを複製していない
-  - query 系 2 SKILL の SKILL.md が B 層・C 層多重防御契約（read-only 制約 / バックエンド検索 SKILL 以外の Skill 起動禁止 / `/doc-db:build-index` 等の書き込み系起動禁止 / 引数解釈 [MANDATORY] / 自己再帰禁止 / 出力契約 `Required documents:`）を doc-advisor:ADR-002 / §3.1 subagent 契約に従って明記する
+  - query 系 2 SKILL の SKILL.md が B 層・C 層多重防御契約（read-only 制約 / バックエンド検索 SKILL 以外の Skill 起動禁止 / `/doc-db:build-index` 等の書き込み系起動禁止 / 引数解釈 [MANDATORY] / 自己再帰禁止 / 出力契約 `Required documents:`）を doc-advisor:ADR-002_query_skill_subagent_isolation / §3.1 subagent 契約に従って明記する
   - 雛形は **継承型に変更済みの** `plugins/forge/skills/query-forge-rules/SKILL.md` 構造（fork 関連 frontmatter を引き継がないため）
   - `plugins/forge/.claude-plugin/plugin.json` の `skills` リストに新規 4 件が追加される（**`version` フィールドは編集しない**、§8.3）
   - `tests/common/test_query_skill_isolation.py` の `CONSTRAINT_TARGET_SKILLS` に新規 2 SKILL（query-db-rules / query-db-specs）を追加して継承型整合（`context: fork` 不在 / Role 制約文言 / 引数解釈セクション存在 / Output Format 先頭契約）を機械検証して合格する。`FORK_TARGET_SKILLS` には追加しない
@@ -78,7 +80,7 @@ DES-001 / ADR-001 から把握した実装対象:
   - DES-001 §2.2 新規 SKILL 一覧 / §3.1 query 系仕様 / §3.2 update 系仕様 / §8.1 SKILL.md 構造とテンプレ
   - DES-001 §10.3 マニフェスト整合性テスト（4 件登録チェック）と継承型整合テストの追加
   - ADR-001: query 系 SKILL.md の `argument-hint` は `"task description"` のみ、`--toc` / `--index` を SKILL.md に書かない
-  - doc-advisor:ADR-002 §B / §C: read-only 制約と引数解釈ガードの SKILL.md への明記（COMMON-DES-001 §3.1 デフォルト継承型に整合、`context: fork` を付けない）
+  - doc-advisor:ADR-002_query_skill_subagent_isolation §B / §C: read-only 制約と引数解釈ガードの SKILL.md への明記（COMMON-DES-001 §3.1 デフォルト継承型に整合、`context: fork` を付けない）
 - **検証ポイント**:
   - `python3 -m unittest discover -s tests -p 'test_*.py' -v` が全テスト通過（既存テスト破壊なし + 新規テスト合格）
   - `tests/common/` のマニフェスト整合性テスト（plugin.json への 4 件登録）が合格
