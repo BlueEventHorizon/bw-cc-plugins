@@ -134,18 +134,27 @@ BL-006 で定義された Entity 構造に基づき、DES-014 の設計を実装
 
 ---
 
-## ID 番号空間（namespace）
+## ID 番号空間（namespace）と採番
 
-ID 番号は **spec ディレクトリ単位で独立** している。プロジェクトが複数の spec ツリー（例: 配布単位ごとの `docs/specs/forge/`, `docs/specs/doc-advisor/`, `docs/specs/doc-db/`）を持つ場合、各ツリーの ID 番号空間は独立し、同じ ID が複数ツリーに同居しうる。
+### 新規 ID 採番は SKILL 経由で必須化 [MANDATORY]
 
-例:
+新規 ID は **必ず `start-requirements` / `start-design` / `start-plan` 等の forge SKILL を経由して採番する**。これらの SKILL は内部で `next-spec-id` を呼び、プロジェクトの全 spec ディレクトリ・全ブランチ（ローカル + リモート）を横断してスキャンし、プレフィックスごとの `max + 1` を返す。
 
-- `docs/specs/forge/design/DES-001_*.md`
-- `docs/specs/doc-advisor/design/DES-001_*.md`
+**意図的に番号を被せて新規ファイルを作成してはならない**。手作業で番号を選ばず、必ず SKILL 経由で採番する。
 
-両者は別物として共存する。`docs/specs/{spec-dir}/` の `{spec-dir}` が暗黙の namespace として機能する。
+### namespace は spec ディレクトリ単位
 
-**横断的に一意な ID を作りたい場合** は、プレフィックスを変える（例: `COMMON-DES-xxx` は `docs/specs/common/` 配下の横断仕様用）。
+ID 番号空間は **spec ディレクトリ単位で独立** している。プロジェクトが複数の spec ツリー（例: 配布単位ごとの `docs/specs/forge/`, `docs/specs/doc-advisor/`, `docs/specs/doc-db/`）を持つ場合、各ツリーの `docs/specs/{spec-dir}/` の `{spec-dir}` が暗黙の namespace として機能する。
+
+### 既存の同居の扱い（過去事例の容認）
+
+歴史的経緯で同じ ID が複数 spec ディレクトリに同居しているケース（例: `forge/DES-001` と `doc-advisor/DES-001`）は **過去事例として容認** する。互いに別物として共存し、`{spec-dir}` 修飾子で区別する（後述）。
+
+ただしこれは **既存の歴史的状態に対する容認** であり、新規採番では発生させない。新規 ID は前項の SKILL 経由で全 spec ディレクトリ横断の一意番号を取得する。
+
+### 横断プレフィックス
+
+複数 spec ディレクトリで共有する横断仕様には、プレフィックスを変えて表現する（例: `COMMON-DES-xxx` は `docs/specs/common/` 配下の横断仕様用）。横断プレフィックスを持つ ID はそれ自体が namespace を兼ねる。
 
 ---
 
