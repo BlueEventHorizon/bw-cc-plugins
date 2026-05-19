@@ -324,35 +324,26 @@ grep -rn -E 'query-rules|query-specs|create-rules-toc|create-specs-toc' ./
 
 > 上記コマンドはプロジェクトルート全体（`plugins/forge/skills/` / `.claude/skills/` / `.agents/skills/` / その他将来追加される箇所）を対象とする。`plugins/forge/skills/` 配下の `SKILL.md` / `docs/*.md` / `review_criteria_*.md`、`.claude/skills/`（ローカル限定 SKILL・配布対象外だが doc-advisor 借用あり）、`.agents/skills/`（agent 向け SKILL）を全て含む。
 
-判明している既知の対象:
+判明している既知の対象（本書改訂時点 2026-05-19 のスナップショット。行番号は SKILL.md 編集に伴い前後しうるため、最新は冒頭の grep コマンドで再確認）:
 
-**`plugins/forge/skills/` 配下:**
+**未置換 — 要対応:**
 
-- `plugins/forge/skills/review/SKILL.md`（L211, L213, L232, L236, L238, L652, L676）
-- `plugins/forge/skills/start-design/SKILL.md`（L281）
-- `plugins/forge/skills/start-plan/SKILL.md`（L303）
-- `plugins/forge/skills/clean-rules/SKILL.md`（L288）
-- `plugins/forge/skills/merge-specs/SKILL.md`（L64, L105-L122, L564, L570, L572, L608, L612, L624, L626）
-- `plugins/forge/skills/create-feature-from-plan/SKILL.md`
-- `plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md`
-- `plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md`
-- `plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md`
+- `plugins/forge/skills/merge-specs/SKILL.md`（L518: Phase 9 完了案内文中の `/doc-advisor:create-specs-toc`）
+- `.claude/skills/merge-specs/SKILL.md`（L506: 同上）
+
+**置換済み — 本書改訂時点で grep ヒット 0 件:**
+
+- `plugins/forge/skills/{review, start-design, start-plan, clean-rules, create-feature-from-plan}/SKILL.md`
+- `plugins/forge/skills/start-requirements/docs/{requirements_interactive_workflow, requirements_from_figma_workflow, requirements_reverse_engineering_workflow}.md`
 - `plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md`
-- `plugins/forge/skills/review/docs/review_criteria_requirement.md`
-- `plugins/forge/skills/review/docs/review_criteria_design.md`
-- `plugins/forge/skills/review/docs/review_criteria_plan.md`
-- `plugins/forge/skills/review/docs/review_criteria_code.md`
-- `plugins/forge/skills/review/docs/review_criteria_generic.md`
+- `plugins/forge/skills/review/docs/review_criteria_{requirement, design, plan, code, generic}.md`
 
-**`.claude/skills/` 配下（ローカル限定 SKILL・配布対象外だが doc-advisor 借用あり）:**
+**置換対象外 — 抽象 SKILL 経路と意図的に分離:**
 
-- `.claude/skills/update-forge-toc/SKILL.md`
-- `.claude/skills/review-skill-description/SKILL.md`
-
-**`.agents/skills/` 配下:**
-
-- `.agents/skills/update-forge-toc/SKILL.md`
-- `.agents/skills/setup-doc-structure/SKILL.md`
+- `.claude/skills/update-forge-toc/SKILL.md` / `.agents/skills/update-forge-toc/SKILL.md`: doc-advisor の `/doc-advisor:create-rules-toc` パイプラインを借用する skill。forge 内蔵知識ベース（`plugins/forge/toc/rules/rules_toc.yaml`）更新専用で、抽象 SKILL 経路（プロジェクト rules 検索）とは別経路として維持する
+- `.claude/skills/review-skill-description/SKILL.md`: 本文中の説明的言及のみで SKILL 起動なし（query-rules を例示する説明文 / 用途比較）
+- `plugins/forge/docs/{context_gathering_spec, session_format}.md`: `source: query-specs` 等は context 取得手段の識別子であり SKILL 起動文字列ではない
+- `docs/readme/guide_doc-advisor{,_ja}.md`: doc-advisor 自身のユーザーガイドで、`/doc-advisor:query-rules` 等のコマンド表記は意図的に維持
 
 `merge-specs` の Phase 0 にある「doc-advisor 必須」検査は **抽象 skill 必須検査** に置き換える（`/forge:query-db-specs` または `/forge:update-db-specs` の存在のみで判定）。
 
@@ -710,3 +701,4 @@ API キー要件の表記揺れは [#53](https://github.com/BlueEventHorizon/bw-
 | 2026-05-18 | 1.1        | forge 文書スタイル指針および ID 参照記法に整合させる文書整備（specs パス参照→ID 参照置換、見出し階層整合、コードブロック言語指定、メタデータ関連要件補完、ファイル名命名規則準拠、誤参照修正、update 系トリガー句の検索インデックス更新専用化、query-db-rules/specs argument-hint の `--top-n` / `--doc-type` 削除、トリガー句調整、§4.2 影響範囲の grep をスキル名ベース（プレフィックスあり/なし両方を捕捉）に変更しスコープをプロジェクトルート全体（`plugins/forge/skills/` / `.claude/skills/` / `.agents/skills/`）に拡張、既知対象リストを実測残存ファイルで拡充、受け入れ条件 #5 に grep ターゲット範囲を明文化、§3.1 出力変換規定を構造変換に限定するよう明確化、§5.3 文言マッピング責務との関係を注記、§3.1 引数表に `--toc` / `--index` を forge では受理しない旨と ADR-001 への参照を追記） |
 | 2026-05-18 | 1.2        | COMMON-DES-001 §3.1（デフォルト継承型 / fork は §4 規定リストに限定）に整合。`/forge:query-db-rules` / `/forge:query-db-specs` を継承型に変更し、§3.1「subagent 契約 [MANDATORY]」から `context: fork` 必須化を削除（二重 fork 回避の根拠を §3.1 に明記）、§8.1 frontmatter テンプレから `context: fork` 行を削除、§8.1 雛形指針を継承型に変更済みの `query-forge-rules` 経由に更新、§10.3 テスト項目を `FORK_TARGET_SKILLS` から `CONSTRAINT_TARGET_SKILLS` への追加に変更し fork 検証を非継承型整合検証に置換。B 層（Role 制約）・C 層（引数解釈ガード）・出力契約は維持                                                                                                                                                                                                                              |
 | 2026-05-18 | 1.3        | §3.1 subagent 契約に「呼び出し側の責務: args にプロンプトを渡してはならない [MANDATORY]」を新設。継承型のため親 context をそのまま保持する `/forge:query-db-*` を呼ぶ際、`args` は検索キーワード + 短い自然文タスク記述のみとし、Issue 本文・実装指示・差分等の親 context 貼り付けを禁止することを可否表で明示（COMMON-DES-001 §3.4 / §5.2 に整合）                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-05-19 | 1.4        | spec_format.md のクロス参照原則に整合。別 spec ディレクトリの ID 引用に `{spec-dir}:{ID}` 修飾子を付与（doc-db:FNC-006, doc-db:DES-026, doc-advisor:FNC-001, doc-advisor:ADR-002, doc-advisor:DES-006, doc-advisor:DES-007）。§4.2 既知対象リストを実測ベースで再構成（未置換 2 件 / 置換済み多数 / 借用・説明的言及・取得手段識別子は置換対象外として分類、行番号スナップショット注記を追加）                                                                                                                                                                                                                                                                                                                                                                                                                |
