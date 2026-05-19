@@ -1,4 +1,4 @@
-# DES-027 ADR: start-plan への実装戦略フェーズ導入
+# DES-027: start-plan への実装戦略フェーズ導入 (ADR)
 
 ## メタデータ
 

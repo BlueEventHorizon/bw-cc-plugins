@@ -1,13 +1,13 @@
 # doc-db checksums
 # Auto-generated - do not edit
-generated_at: 2026-05-18T22:48:02Z
+generated_at: 2026-05-19T04:38:33Z
 file_count: 23
 checksums:
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
-  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: 076eae1c52ab8e5cb2b633b6a7c2247ad2e18f10c46b042fa8b23560fddc638e
-  docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: 138d903ae299d82eff208862140b17bb4b6f76fb657fcb37624bcaa5025fa50d
+  docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md: 0f34910e8d21547b48133248887f2734c5c66ae8eefd0df31486480aaeb15e3b
+  docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md: cfb7e2aca14ec66265e7395400d35ce59a387878979808ee5540f26bdff9dec2
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md: cb6f505f6a76c03541f92633de47ebcf7a47aa5d25aecefce4b4af5c5d66c73f
   docs/specs/doc-advisor/requirements/FNC-004_unified_api_key_reference_spec.md: e81e7b601ac18514513a4e0beafd7905c7418b10e88c4033b40f793f03464696
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md: 58559880acfec8b7ae3697a28868958491430fe3561a104864e3ba01008e241a
