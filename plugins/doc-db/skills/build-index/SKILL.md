@@ -1,7 +1,8 @@
 ---
 name: build-index
 description: |
-  doc-db の index を構築・更新する薄いラッパー。
+  doc-db の検索インデックスを構築・更新する。
+  新しい文書を doc-db の検索対象に含めたいときに実行する。
   トリガー: "/doc-db:build-index", "doc-db の index を作る"
 user-invocable: true
 argument-hint: "[--category rules|specs] [--full] [--check] [--doc-type requirement,design,plan]"

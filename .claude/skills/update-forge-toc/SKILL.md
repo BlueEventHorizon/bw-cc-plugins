@@ -1,8 +1,8 @@
 ---
 name: update-forge-toc
 description: |
-  forge 内蔵ドキュメントの rules_toc.yaml を doc-advisor パイプラインで自動生成する。
-  swap-doc-config SKILL に依頼して .doc_structure.yaml を forge 用設定に差し替え、create-rules-toc を実行し、復元する。
+  forge 内蔵ドキュメントの ToC（検索インデックス）を更新する。
+  /forge:query-forge-rules の検索結果を最新化したいときに使う。
   トリガー: "forge ToC 更新", "update forge toc", "forge 内蔵ドキュメントの ToC を再生成"
 allowed-tools: Bash, Read, Write, Glob, Skill
 user-invocable: true

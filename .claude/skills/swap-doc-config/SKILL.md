@@ -1,10 +1,8 @@
 ---
 name: swap-doc-config
 description: |
-  プロジェクトルートの `.doc_structure.yaml` を一時的に別の設定ファイルへ差し替え、後で元へ戻すための独立ユーティリティ SKILL。
-  forge 内蔵 ToC 生成（update-forge-toc）、doc-advisor の SKILL レベル E2E テスト、評価実行など、
-  「現プロジェクト設定を汚さずに別設定で doc-advisor パイプラインを走らせたい」場面で再利用する。
-  単一責務: バックアップ → 差し替え → 復元。検索・生成系の処理は含まない。
+  `.doc_structure.yaml` を一時的に別設定に切り替え、作業後に確実に元へ戻す。
+  本番設定を汚さずに、別設定で doc-advisor パイプラインを試したいときに使う。
 allowed-tools: Bash
 user-invocable: true
 argument-hint: "--store|--restore --target <yaml_path> --backup-dir <backup_dir>"

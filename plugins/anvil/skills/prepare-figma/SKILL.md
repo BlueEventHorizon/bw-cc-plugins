@@ -1,6 +1,8 @@
 ---
 name: prepare-figma
-description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。/anvil:impl-issue の Phase 7 から呼び出される。
+description: |
+  Figma デザインから実装可能なデザイン仕様書を作成する。
+  画面の nodeId・トークン・コンポーネントを Figma で実際に検証してから記述するため、設計書の信頼性が高い。
 user-invocable: false
 allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill, mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---

@@ -1,8 +1,8 @@
 ---
 name: create-feature-from-plan
 description: |
-  Claude Code の plan mode が保存する plan ファイル (`~/.claude/plans/*.md`) を入口に、要件定義書 → 設計書を一気通貫で作成する。
-  forge:start-requirements → forge:start-design を順次起動し、plan を context として注入する。plan の YAML 構造（forge の plan.yaml）は対象外。
+  Claude Code plan mode で書いた plan ファイルから、要件定義書と設計書を一気通貫で作成する。
+  plan を起点にゼロから feature の仕様化を始めたいときに使う。
   トリガー: "plan から feature 作成", "plan から要件作成", "create feature from plan"
 user-invocable: true
 argument-hint: "[plan-file-path]"
