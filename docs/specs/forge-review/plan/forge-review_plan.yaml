@@ -698,7 +698,7 @@ tasks:
   - task_id: TASK-032
     title: spec_priorities_spec.md ← addendum merge
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-027
@@ -720,7 +720,7 @@ tasks:
   - task_id: TASK-033
     title: spec_design_boundary_spec.md ← addendum merge
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-032
@@ -737,7 +737,7 @@ tasks:
   - task_id: TASK-034
     title: design_principles_spec.md ← addendum merge
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-033
@@ -754,7 +754,7 @@ tasks:
   - task_id: TASK-035
     title: plan_principles_spec.md ← addendum merge
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-034
@@ -771,7 +771,7 @@ tasks:
   - task_id: TASK-036
     title: addendum 4 ファイル削除 + ToC 再生成 + REQ/DES frontmatter 整理
     priority: 30
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-032
