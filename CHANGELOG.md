@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.25] - 2026-05-21
+
+### marketplace
+
+- **chore**: forge 0.1.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.1.1] - 2026-05-21
+
+### forge
+
+- **feat(review)**: `/forge:review` パイプラインを 1 reviewer 起動原則 + criteria 固定 3 セクション構造 (SSOT参照 / チェック順 / 判定ルール) に再設計 (Issue #68 / REQ-004 / DES-028)。観点軸並列起動 (`## Perspective:` × N) と対象ファイル軸並列起動を撤廃し、P1/P2/P3 を同一 reviewer 内でチェック順に順次評価する方式に変更
+- **feat(review)**: criteria 5 種別 (`code` / `design` / `requirement` / `plan` / `uxui` / `generic`) を 3 セクション固定構造に全面置換。criteria は判断を持たず routing table + review playbook に純化
+- **feat(review)**: `recommendation: create_issue` を正式に値域追加 (FNC-406 3 条件: 該当規定なし / 再発性または客観性 / 明文化可能粒度)。present-findings に Issue 化選択肢 + `/anvil:create-issue` 経路を実装
+- **feat(review)**: priority (P1/P2/P3) × severity (🔴/🟡/🟢) の直交ラベル付与に変更。evaluator は 5 観点 × priority の直交評価、present-findings は priority 二段ソート対応
+- **refactor(scripts)**: `write_refs.py` を旧 `perspectives[]` スキーマ撤廃 + `review_packet { criteria_path / ssot_refs[] / check_order }` 検証に置換。`write_interpretation.py` を `--kind` 引数 + `review_<種別>.md` 命名に変更。`merge_evals.py` を priority ベース統合に書き換え
+- **feat(principles)**: forge 内蔵 principles 4 ファイル (`spec_priorities_spec.md` / `spec_design_boundary_spec.md` / `design_principles_spec.md` / `plan_principles_spec.md`) に重大度カタログ + グレーゾーン許容範囲 + 観点別利用ガイドを merge (FNC-411)
+- **test**: 回帰検出テスト 5 ファイルを追加 (`test_criteria_no_perspective.py` / `test_no_legacy_perspective_filename.py` / `test_review_integration.py` / `test_reviewer_single_invocation.py` / `test_resolve_review_context.py`)
+
+## [marketplace 0.1.24] - 2026-05-19
+
+### marketplace
+
+- **chore**: forge 0.1.0、anvil 0.0.8、doc-db 0.0.2 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.1.0] - 2026-05-19
+
+### forge
+
+- **feat**: forge-query 抽象 SKILL（`query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs`）を新設し、doc-advisor / doc-db バックエンドを自動選択する設計を導入（DES-001 / ADR-001）。`select_backend.py` が API キー有無と利用可能バックエンドから採用先を決定し、4 SKILL は `user-invocable: false` の内部 SKILL として動作する
+- **refactor**: forge skills 内の `/doc-advisor:*` 直呼びを `/forge:*-db-*` 抽象 SKILL に切り替え（review / start-design / start-plan / clean-rules / merge-feature-specs / create-feature-from-plan / start-requirements / start-uxui-design）
+- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加（Issue #55 / ADR-002）
+- **refactor**: start-plan SKILL に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを判断し `strategy_draft.md` を生成する
+- **refactor**: FNC-008/DES-028 を doc-advisor へ再配置し、merge-feature-specs に配置整合性検査を追加
+- **docs**: SKILL 基本設計書を新設し fork 型を規定リストで厳密管理。forge 文書スタイル指針と ID 参照記法、文書スタイル指針 (document_style_guide) を追加し DWR を整理
+
+## [anvil 0.0.8] - 2026-05-19
+
+### anvil
+
+- **docs(impl-issue)**: `/doc-advisor:query-specs` / `/doc-advisor:query-rules` への args 渡し方を、Issue タイトル・本文から抽出した短い検索キーワードまたは短い自然文のタスク記述に限定する制約を明文化（COMMON-DES-001 §3.4 [MANDATORY]）。Issue 本文の全文貼り付けを禁止
+
+## [doc-db 0.0.2] - 2026-05-19
+
+### doc-db
+
+- **update**: query SKILL の Output Format を `Required documents:` 先頭ハイブリッド形式に統一（forge-query 抽象 SKILL との互換性確保）
+
+## [marketplace 0.1.22] - 2026-05-16
+
+### marketplace
+
+- **chore**: doc-advisor 0.2.6 のリリースに伴い marketplace バージョンをバンプ
+
+## [doc-advisor 0.2.6] - 2026-05-16
+
+### doc-advisor
+
+- **fix**: query-specs / query-rules SKILL.md から `context: fork` 等の subagent 起動 frontmatter を削除し、`/doc-advisor:query-specs` が "initializing" で停止する不具合を解消。SKILL 本体を直接実行する方式に変更し、doc-db への Hybrid 検索委譲フロー（`/doc-db:build-index --check` / `/doc-db:query`）は維持
+
 ## [marketplace 0.1.21] - 2026-05-15
 
 ### marketplace

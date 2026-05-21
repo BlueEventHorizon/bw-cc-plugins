@@ -495,7 +495,7 @@ class TestNoSlashCommandRefsInScripts(unittest.TestCase):
     docstring・コメント・生成物ヘッダは除外。
     """
 
-    PLUGIN_NAMES = ('forge', 'doc-advisor', 'anvil', 'xcode', 'doc-db')
+    PLUGIN_NAMES = ('forge', 'doc-advisor', 'anvil', 'doc-db')
     SLASH_CMD_PATTERN = re.compile(
         r'/(' + '|'.join(re.escape(p) for p in PLUGIN_NAMES) + r'):[a-z]'
     )

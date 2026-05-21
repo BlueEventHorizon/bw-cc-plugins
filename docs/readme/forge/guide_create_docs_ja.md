@@ -24,7 +24,7 @@ start-requirements → start-design → start-plan → start-implement
 文書作成後は以下を順次実行する:
 
 1. `/forge:review {type} --auto` — AI レビュー + 自動修正
-2. `/doc-advisor:create-specs-toc` — ToC 更新（利用可能な場合）
+2. `/forge:update-db-specs` — ToC 更新（利用可能な場合）
 3. `/anvil:commit` — commit/push 確認
 
 ---

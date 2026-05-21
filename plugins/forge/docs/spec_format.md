@@ -100,3 +100,133 @@ specs/
 | 要件定義書 | `{REQ-ID}_{name}_spec.md`   | `SCR-001_user_list_spec.md`   |
 | 設計書     | `{DES-ID}_{name}_design.md` | `DES-001_user_list_design.md` |
 | 計画書     | `{feature}_plan.yaml`       | `user_management_plan.yaml`   |
+
+---
+
+## ID 参照記法
+
+要件定義書・設計書・計画書の中で他文書を参照するときは ID ベースで参照する。パスは記述しない（ID → パスのマッピングはプロジェクトの ToC で解決される）。
+
+| 場面                 | 形式    | 例                              |
+| -------------------- | ------- | ------------------------------- |
+| メタデータの関連要件 | ID 列挙 | `BL-017, FNC-009, SCR-016`      |
+| 説明文中             | ID のみ | `BL-006 で定義された構造を使用` |
+
+**正しい例**:
+
+```markdown
+## メタデータ
+
+| 項目     | 値                       |
+| -------- | ------------------------ |
+| 要件 ID  | BL-019                   |
+| 関連要件 | BL-017, FNC-009, SCR-016 |
+
+## 説明文中
+
+BL-006 で定義された Entity 構造に基づき、DES-014 の設計を実装する。
+```
+
+**禁止**:
+
+- `## 関連文書` セクションを設けてリンクを列挙する（冗長。メタデータの「関連要件」で十分）
+- 相対パス・絶対パスでの specs/ 文書参照（ID 体系を活用しない）
+
+---
+
+## ID 番号空間（namespace）と採番
+
+### 新規 ID 採番は SKILL 経由で必須化 [MANDATORY]
+
+新規 ID は **必ず `start-requirements` / `start-design` / `start-plan` 等の forge SKILL を経由して採番する**。これらの SKILL は内部で `next-spec-id` を呼び、プロジェクトの全 spec ディレクトリ・全ブランチ（ローカル + リモート）を横断してスキャンし、プレフィックスごとの `max + 1` を返す。
+
+**意図的に番号を被せて新規ファイルを作成してはならない**。手作業で番号を選ばず、必ず SKILL 経由で採番する。
+
+### namespace は spec ディレクトリ単位
+
+ID 番号空間は **spec ディレクトリ単位で独立** している。プロジェクトが複数の spec ツリー（例: 配布単位ごとの `docs/specs/forge/`, `docs/specs/doc-advisor/`, `docs/specs/doc-db/`）を持つ場合、各ツリーの `docs/specs/{spec-dir}/` の `{spec-dir}` が暗黙の namespace として機能する。
+
+### 既存の同居の扱い（過去事例の容認）
+
+歴史的経緯で同じ ID が複数 spec ディレクトリに同居しているケース（例: `forge/DES-001` と `doc-advisor/DES-001`）は **過去事例として容認** する。互いに別物として共存し、`{spec-dir}` 修飾子で区別する（後述）。
+
+ただしこれは **既存の歴史的状態に対する容認** であり、新規採番では発生させない。新規 ID は前項の SKILL 経由で全 spec ディレクトリ横断の一意番号を取得する。
+
+### 横断プレフィックス
+
+複数 spec ディレクトリで共有する横断仕様には、プレフィックスを変えて表現する（例: `COMMON-DES-xxx` は `docs/specs/common/` 配下の横断仕様用）。横断プレフィックスを持つ ID はそれ自体が namespace を兼ねる。
+
+---
+
+## クロス参照の原則
+
+仕様文書間の参照は **同一 spec ディレクトリ内に閉じる** ことを基本とする。spec ディレクトリ境界を跨ぐ依存は、まず **SKILL（CLI コマンド）境界**で表現し、内部 ID のクロス参照は **必須のときのみ** に限定する。
+
+### 基本: SKILL 境界で表現する
+
+別の spec ディレクトリの仕様に依存する場合、可能な限り SKILL 名（`/forge:query-db-rules`, `/forge:query-db-specs` 等）でインターフェイスを記述する。SKILL.md が公開する引数・出力契約に依拠し、内部設計 ID（その SKILL の DES/FNC/ADR）は引かない。
+
+**推奨**:
+
+```markdown
+プロジェクトのルール／仕様を参照するときは forge ラッパー (`/forge:query-db-rules` / `/forge:query-db-specs`) を呼ぶ（バックエンド選択はラッパーが内部で行う）。
+実行ロジックの詳細は `/forge:query-db-rules` の SKILL.md を参照する。
+```
+
+**非推奨**（内部 ID への直接依存）:
+
+```markdown
+forge の auto モード起動仕様は DES-006 §2 の判定ロジックに従う。
+```
+
+### 例外: 内部 ID クロス参照を許容するケース
+
+以下に該当するときに限り、別 spec ディレクトリの ID を引用する:
+
+| ケース                                       | 例                                                       |
+| -------------------------------------------- | -------------------------------------------------------- |
+| 横断規約の SoT 文書を引用                    | `COMMON-DES-001 §3.1` を SKILL 設計の規約として引用      |
+| 出力契約・引数契約の SoT を引用              | `doc-db:DES-026_doc_db_design / doc-db:FNC-006_doc_db_search_spec` を出力フォーマット根拠 |
+| ADR が他プラグインの設計判断の根拠           | `doc-advisor:ADR-002_query_skill_subagent_isolation` を暴走対策の根拠                     |
+| API 規約・前提仕様の引用                     | `doc-advisor:DES-007_unified_api_key_reference_design` を API キー解決規約として前提化    |
+
+SKILL.md の本文に該当規約が転記されていない場合、SoT として ID を引かざるをえない。これが「必須」の定義。
+
+### 修飾子記法
+
+別 spec ディレクトリの ID を引用する場合は **`{spec-dir}:{ファイル名}` 形式（フルファイル名、拡張子 `.md` なし）** で修飾する。同一 spec ディレクトリ内の参照は修飾しない（従来通り ID のみ）。
+
+| 場面                                       | 形式                          | 例                                                                                    |
+| ------------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------- |
+| 同一 spec ディレクトリ内                   | ID のみ                       | `DES-014 の設計を実装する`                                                            |
+| 別 spec ディレクトリの ID                  | `{spec-dir}:{ファイル名}`     | `doc-db:DES-026_doc_db_design の出力契約に従う`                                       |
+| 別 spec ディレクトリの ID なし文書         | `{spec-dir}:{ファイル名}`     | `forge:forge_query_strategy のフェーズ分割に従う`                                     |
+| 横断プレフィックス（既存）                 | プレフィックスのみ            | `COMMON-DES-001_skill_base_design §3.1` （`common:` を付けない）                      |
+
+#### フルファイル名形式を採用する理由
+
+- **grep 一発で命中**: 本文中の引用も、ファイル名そのものも、同一文字列で grep ヒットする
+- **ID なし文書にも適用可能**: 計画書 (`forge_query_strategy.md`) など ID を持たない ephemeral 文書も同一規約で参照できる
+- **表記揺れの防止**: タイトル（説明文）併記は引用者により揺れる。ファイル名は一意で安定
+- **ファイル命名規則との直接対応**: `{ID}_{name}_design.md` / `{ID}_{name}_spec.md` の命名規約と 1:1 対応
+
+参照形式の例:
+
+| ファイル名                                       | 修飾形式                                                       |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| `DES-001_forge_query_abstraction_design.md`      | `forge:DES-001_forge_query_abstraction_design`                 |
+| `ADR-002_query_skill_subagent_isolation.md`      | `doc-advisor:ADR-002_query_skill_subagent_isolation`           |
+| `FNC-006_doc_db_search_spec.md`                  | `doc-db:FNC-006_doc_db_search_spec`                            |
+| `COMMON-DES-001_skill_base_design.md`            | `COMMON-DES-001_skill_base_design`（修飾子なし）               |
+| `forge_query_strategy.md`（ID なし）             | `forge:forge_query_strategy`                                   |
+
+**`COMMON-DES-` / `COMMON-REQ-` 等の横断プレフィックスを持つ ID は既に namespace として機能している** ため、修飾子を二重付与しない。
+
+### メタデータの関連設計・関連要件
+
+メタデータ表に別 spec ディレクトリの ID を列挙する場合もフルファイル名形式で修飾する:
+
+```markdown
+| 関連要件 | doc-db:FNC-006_doc_db_search_spec, doc-advisor:FNC-001_context_external_search_spec |
+| 関連設計 | doc-advisor:ADR-002_query_skill_subagent_isolation, doc-advisor:DES-007_unified_api_key_reference_design, doc-db:DES-026_doc_db_design, COMMON-DES-001_skill_base_design |
+```

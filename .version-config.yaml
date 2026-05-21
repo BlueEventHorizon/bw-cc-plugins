@@ -46,21 +46,6 @@ targets:
         filter: "| **anvil**"
         optional: true
 
-  - name: xcode
-    version_file: plugins/xcode/.claude-plugin/plugin.json
-    version_path: version
-    sync_files:
-      - path: .claude-plugin/marketplace.json
-        pattern: '"version": "{version}"'
-        filter: '"name": "xcode"'
-      - path: README.md
-        pattern: "| **xcode** | {version} |"
-        filter: "| **xcode**"
-      - path: README_en.md
-        pattern: "| **xcode** | {version} |"
-        filter: "| **xcode**"
-        optional: true
-
   - name: doc-advisor
     version_file: plugins/doc-advisor/.claude-plugin/plugin.json
     version_path: version

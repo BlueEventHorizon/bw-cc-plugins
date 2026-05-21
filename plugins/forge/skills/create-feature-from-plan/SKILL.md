@@ -123,10 +123,10 @@ feature 名を確定してください
 
 ### 4.1 自動判定
 
-| 条件                                                                                                | モード  |
-| --------------------------------------------------------------------------------------------------- | ------- |
-| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/doc-advisor/xcode/common 等） | `--add` |
-| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在                | `--new` |
+| 条件                                                                                          | モード  |
+| --------------------------------------------------------------------------------------------- | ------- |
+| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/doc-advisor/common 等） | `--add` |
+| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在          | `--new` |
 
 ### 4.2 ユーザー確認
 
@@ -176,7 +176,7 @@ Skill ツールで `/forge:start-requirements` を起動する:
 | Phase 0.1（新規/追加判定）  | **スキップ** — Phase 4 で確定した `--new`/`--add` を引数で渡しているため再質問不要                                |
 | Phase 0.2（新規アプリ Q&A） | `--new` のときのみ実行。アプリ概要 / 対象ユーザー / 必須機能 / スコープ外 / 制約 を **plan から抽出して充填**     |
 | Phase 0.3（機能追加 Q&A）   | `--add` のときのみ実行。追加機能の概要 / 関連既存機能 / 新規要素の要否 / 影響範囲 を **plan から抽出して充填**    |
-| Phase 0.5（ルール文書）     | workflow の指示通りに `/doc-advisor:query-rules` 等を実行（plan で代替不可）                                      |
+| Phase 0.5（ルール文書）     | workflow の指示通りに `/forge:query-db-rules` 等を実行（plan で代替不可）                                         |
 | Phase 1（ビジョン・価値）   | 解決する課題 / 提供価値 / 成功の定義 / 主要機能 を **plan から抽出して充填**                                      |
 | Phase 2（体験フロー・構成） | 主要シナリオ / 画面・インターフェース一覧 を **plan から抽出して充填**（plan に記載がない場合のみユーザーに質問） |
 | Phase 3（詳細仕様）         | 各画面の表示要素 / 操作要件 / エラーケース を **plan から抽出して充填**                                           |

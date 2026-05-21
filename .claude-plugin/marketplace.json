@@ -2,8 +2,8 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "bw-cc-plugins",
   "metadata": {
-    "description": "Document lifecycle management, GitHub operations, Xcode build/test, and AI-searchable document indexing",
-    "version": "0.1.21"
+    "description": "Document lifecycle management, GitHub operations, and AI-searchable document indexing",
+    "version": "0.1.25"
   },
   "owner": {
     "name": "moons"
@@ -12,7 +12,7 @@
     {
       "name": "forge",
       "description": "AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.",
-      "version": "0.0.45",
+      "version": "0.1.1",
       "author": {
         "name": "moons"
       },
@@ -22,7 +22,7 @@
     {
       "name": "anvil",
       "description": "GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "author": {
         "name": "moons"
       },
@@ -30,19 +30,9 @@
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     },
     {
-      "name": "xcode",
-      "description": "Xcode build and test toolkit. Build and test iOS/macOS projects with automatic platform detection.",
-      "version": "0.0.1",
-      "author": {
-        "name": "moons"
-      },
-      "source": "./plugins/xcode",
-      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
-    },
-    {
       "name": "doc-advisor",
       "description": "AI-searchable document index (ToC) generator for Claude Code",
-      "version": "0.2.5",
+      "version": "0.3.0",
       "author": {
         "name": "moons"
       },
@@ -52,7 +42,7 @@
     {
       "name": "doc-db",
       "description": "Heading-chunk hybrid search index plugin (Embedding + Lexical + LLM Rerank)",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "author": {
         "name": "moons"
       },

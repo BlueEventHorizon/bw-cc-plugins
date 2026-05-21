@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """evaluator の結果（eval_*.json）を収集し、plan.yaml を一括更新する。
 
-各 evaluator は perspective ごとに eval_{perspective}.json を出力する。
+reviewer 1 起動原則 (REQ-004 FNC-412 / DES-028 §2.3) のもと、evaluator は
+単一 reviewer の findings を集約した 1 ファイル (eval_<種別>.json) を出力する。
 このスクリプトは:
 1. session_dir 内の eval_*.json を glob で収集
-2. plan.yaml から perspective ごとの項目 ID マッピングを動的に構築
-3. eval JSON のローカル ID → plan.yaml のグローバル ID に変換
+2. 各 finding の priority (P1|P2|P3) を検証
+3. global id をキーに plan.yaml を一括更新 (priority 順にソート)
 4. update_plan.py --batch 相当の一括更新を実行
+
+旧 perspective ベース統合 (build_perspective_id_map / _perspective キー /
+「perspective 間で判定不一致」reason) は撤廃した。reviewer は 1 起動のため
+同一 finding に対する複数 perspective からの判定衝突は発生しない。
 
 Usage:
     python3 merge_evals.py <session_dir>
 
 出力:
     stdout: {"status": "ok", "updated": [...], "fix_count": N, "skip_count": N,
-             "needs_review_count": N, "should_continue": true/false,
-             "not_auto_fixable": [...]}
+             "needs_review_count": N, "create_issue_count": N,
+             "should_continue": true/false, "not_auto_fixable": [...]}
 """
 
 import json
@@ -25,27 +30,21 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from session.update_plan import read_plan, update_items_batch, write_plan
+from session.update_plan import (
+    VALID_RECOMMENDATIONS,
+    read_plan,
+    update_items_batch,
+    write_plan,
+)
 
+# review_priorities_spec.md / DES-028 で定義された優先度値域
+VALID_PRIORITIES = ("P1", "P2", "P3")
+# 優先度ソート用の重み (P1 が最優先)
+_PRIORITY_ORDER = {"P1": 0, "P2": 1, "P3": 2}
 
-def build_perspective_id_map(items):
-    """plan.yaml の items から perspective → [global_id, ...] のマッピングを構築する。
-
-    Args:
-        items: plan.yaml の items リスト
-
-    Returns:
-        dict[str, list[int]]: perspective 名 → グローバル ID リスト(出現順)
-    """
-    mapping = {}
-    for item in items:
-        p = item.get("perspective", "")
-        if not p:
-            # perspective 未指定の item はマッピングに登録しない
-            # (空文字キーで登録すると perspective="" の eval と誤マッチする)
-            continue
-        mapping.setdefault(p, []).append(item["id"])
-    return mapping
+# update_plan.VALID_RECOMMENDATIONS への create_issue 追加 (FNC-406 / DES-028 §4.3)。
+# TASK-038 と同期する idempotent な追加。
+VALID_RECOMMENDATIONS.add("create_issue")
 
 
 def collect_eval_files(session_dir):
@@ -64,131 +63,98 @@ def collect_eval_files(session_dir):
     return evals
 
 
-def _build_entry(global_id, update, perspective):
-    """eval の update 1件を combined エントリに変換する。"""
-    entry = {
-        "id": global_id,
-        "status": update.get("status", "pending"),
-        "_perspective": perspective,
-    }
+def _build_entry(update):
+    """eval の update 1件を plan.yaml 更新用エントリに変換する。
+
+    各 finding は global id を持つ前提 (reviewer 1 起動原則)。priority は
+    P1/P2/P3 のいずれかでなければならない。
+    """
+    entry = {"id": update["id"], "status": update.get("status", "pending")}
+    if "priority" in update:
+        entry["priority"] = update["priority"]
     for key in ("recommendation", "auto_fixable", "skip_reason", "reason"):
         if key in update:
             entry[key] = update[key]
     return entry
 
 
-def _reconcile_entries(entries):
-    """同一 global_id への複数 entries を1つに統合する。
+def merge_eval_updates(evals):
+    """eval JSON の findings を集約し plan.yaml 更新用エントリに整形する。
 
-    - 全 entry の recommendation が一致 → 最後の entry をベースに reason を連結
-    - 不一致 → recommendation: needs_review / status: needs_review に
-      エスカレーションし、reason に各 perspective の判定を記録
-    """
-    if len(entries) == 1:
-        merged = dict(entries[0])
-        merged.pop("_perspective", None)
-        return merged
-
-    recs = {e.get("recommendation") for e in entries if "recommendation" in e}
-    recs.discard(None)
-
-    if len(recs) <= 1:
-        base = dict(entries[-1])
-        base.pop("_perspective", None)
-        return base
-
-    parts = []
-    for e in entries:
-        p = e.get("_perspective") or "?"
-        rec = e.get("recommendation", "(未指定)")
-        parts.append(f"{p}={rec}")
-    merged = {
-        "id": entries[0]["id"],
-        "status": "needs_review",
-        "recommendation": "needs_review",
-        "reason": "perspective 間で判定不一致: " + " / ".join(parts),
-    }
-    return merged
-
-
-def merge_eval_updates(evals, perspective_id_map):
-    """eval JSON のローカル ID を plan.yaml のグローバル ID に変換して統合する。
-
-    同一 global_id に対する複数 perspective の判定は次のルールで統合する:
-      - 全 perspective の recommendation が一致 → 最後の eval を採用
-      - 不一致 → recommendation: needs_review にエスカレーション
+    reviewer 1 起動原則のもと、各 eval JSON の updates[].id は plan.yaml の
+    global id である前提。priority は P1/P2/P3 のいずれかで、不正値や欠落は
+    dropped に記録してスキップする。
 
     Args:
-        evals: eval_*.json のパース結果リスト
-        perspective_id_map: perspective → [global_id, ...] のマッピング
+        evals: eval_*.json のパース結果リスト (各要素は {"updates": [...]})
 
     Returns:
         tuple: (combined_updates, not_auto_fixable_ids, dropped)
-            combined_updates: plan.yaml 更新用の dict リスト(global_id の重複なし)
-            not_auto_fixable_ids: auto_fixable=false かつ recommendation=fix の
-                                  グローバル ID リスト
-            dropped: ID 変換に失敗したエントリの一覧
-                {"perspective", "local_id", "reason"} の dict リスト
-                (呼び出し元が診断情報として出力するために使用)
+            combined_updates: plan.yaml 更新用エントリの list[dict]
+                              (priority 昇順 P1>P2>P3、同一 priority 内は id 昇順)
+            not_auto_fixable_ids: auto_fixable=False かつ recommendation=fix の id list
+            dropped: 検証に失敗したエントリの一覧
+                {"id", "reason"} の dict リスト
     """
-    buckets = {}  # global_id -> [entry, ...]
-    order = []  # 出現順を保持
-    dropped = []  # ID 変換失敗の診断情報
+    combined = []
+    not_auto_fixable = []
+    dropped = []
+    seen_ids = set()
 
     for eval_data in evals:
-        perspective = eval_data.get("perspective", "")
-        global_ids = perspective_id_map.get(perspective, [])
-        updates = eval_data.get("updates", [])
-
-        if not global_ids and updates:
-            # perspective が plan.yaml に存在しない(evaluator 側のバグ or 設定不整合)
-            for u in updates:
+        for update in eval_data.get("updates", []):
+            item_id = update.get("id")
+            if not isinstance(item_id, int) or item_id < 1:
                 dropped.append({
-                    "perspective": perspective,
-                    "local_id": u.get("id"),
-                    "reason": "perspective が plan.yaml に存在しない",
-                })
-            continue
-
-        for u in updates:
-            local_id = u.get("id")
-            if local_id is None or local_id < 1:
-                dropped.append({
-                    "perspective": perspective,
-                    "local_id": local_id,
-                    "reason": "local_id が未指定または 1 未満",
+                    "id": item_id,
+                    "reason": "id が未指定または不正です (1 以上の整数が必要)",
                 })
                 continue
-            idx = local_id - 1  # 0-based
-            if idx >= len(global_ids):
+            if item_id in seen_ids:
                 dropped.append({
-                    "perspective": perspective,
-                    "local_id": local_id,
+                    "id": item_id,
                     "reason": (
-                        f"local_id が範囲外: plan.yaml の {perspective} は "
-                        f"{len(global_ids)} 件"
+                        f"id={item_id} が eval 内で重複しています "
+                        f"(reviewer 1 起動原則のもとでは findings の id は一意)"
                     ),
                 })
                 continue
 
-            global_id = global_ids[idx]
-            if global_id not in buckets:
-                buckets[global_id] = []
-                order.append(global_id)
-            buckets[global_id].append(_build_entry(global_id, u, perspective))
+            priority = update.get("priority")
+            if priority not in VALID_PRIORITIES:
+                dropped.append({
+                    "id": item_id,
+                    "reason": (
+                        f"priority が不正です: {priority!r} "
+                        f"(許容値: {list(VALID_PRIORITIES)})"
+                    ),
+                })
+                continue
 
-    combined = []
-    not_auto_fixable = []
-    for global_id in order:
-        entries = buckets[global_id]
-        merged = _reconcile_entries(entries)
-        combined.append(merged)
+            recommendation = update.get("recommendation")
+            if recommendation is not None and recommendation not in VALID_RECOMMENDATIONS:
+                dropped.append({
+                    "id": item_id,
+                    "reason": (
+                        f"recommendation が不正です: {recommendation!r} "
+                        f"(許容値: {sorted(VALID_RECOMMENDATIONS)})"
+                    ),
+                })
+                continue
 
-        if (
-            merged.get("recommendation") == "fix"
-            and merged.get("auto_fixable") is False
-        ):
-            not_auto_fixable.append(global_id)
+            entry = _build_entry(update)
+            combined.append(entry)
+            seen_ids.add(item_id)
+
+            if (
+                entry.get("recommendation") == "fix"
+                and entry.get("auto_fixable") is False
+            ):
+                not_auto_fixable.append(item_id)
+
+    # priority 順 (P1 > P2 > P3) でソート。同一 priority 内は id 昇順
+    combined.sort(key=lambda e: (_PRIORITY_ORDER[e["priority"]], e["id"]))
+    not_auto_fixable.sort()
 
     return combined, not_auto_fixable, dropped
 
@@ -217,21 +183,18 @@ def main():
 
     items = plan_data.get("items", [])
 
-    # perspective → global ID マッピング構築
-    perspective_id_map = build_perspective_id_map(items)
-
     # eval_*.json 収集
     evals = collect_eval_files(session_dir)
     if not evals:
         _emit_error("eval_*.json が見つかりません")
         sys.exit(1)
 
-    # ローカル ID → グローバル ID 変換・統合
-    combined, not_auto_fixable, dropped = merge_eval_updates(evals, perspective_id_map)
+    # findings 集約・検証
+    combined, not_auto_fixable, dropped = merge_eval_updates(evals)
 
     # 空 combined の扱い:
-    #   - dropped あり → ID 変換失敗(evaluator のローカル ID 順序契約違反 / 設定不整合)。hard error
-    #   - dropped なし → 全 eval の updates が空(findings 0 件)。success 扱い (fix_count=0)
+    #   - dropped あり → 検証失敗 (priority 不正 / id 不正等)。hard error
+    #   - dropped なし → 全 eval の updates が空(findings 0 件)。success 扱い
     if not combined and dropped:
         _emit_error(
             "eval の更新を plan.yaml にマップできませんでした",
@@ -252,12 +215,17 @@ def main():
     else:
         updated_ids = []
 
-    # 統計
+    # 統計 (FNC-406: should_continue は recommendation=fix のみカウント)
     fix_count = sum(1 for u in combined if u.get("recommendation") == "fix")
     skip_count = sum(1 for u in combined if u.get("recommendation") == "skip")
     needs_review_count = sum(
         1 for u in combined if u.get("recommendation") == "needs_review"
     )
+    create_issue_count = sum(
+        1 for u in combined if u.get("recommendation") == "create_issue"
+    )
+    # should_continue: recommendation=fix が 1 件以上ある場合のみ true。
+    # create_issue / skip / needs_review は fixer の対象外のためカウントしない (FNC-406)。
     should_continue = fix_count > 0
 
     response = {
@@ -266,6 +234,7 @@ def main():
         "fix_count": fix_count,
         "skip_count": skip_count,
         "needs_review_count": needs_review_count,
+        "create_issue_count": create_issue_count,
         "should_continue": should_continue,
         "not_auto_fixable": not_auto_fixable,
     }

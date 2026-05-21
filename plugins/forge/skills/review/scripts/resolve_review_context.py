@@ -11,9 +11,18 @@
 
 Usage:
   python3 resolve_review_context.py [target1] [target2] ...
+  python3 resolve_review_context.py --files <path1> <path2> ...
+  python3 resolve_review_context.py --files path1,path2,path3
+  python3 resolve_review_context.py --diff
 
   target: ファイルパス（複数可）、ディレクトリパス、Feature名、または省略
-  フラグ（--codex, --claude, --auto-fix）は無視される
+
+  --files: 指定ファイル群を target_files として直接採用（種別解決をバイパス）
+  --diff:  現ブランチで未 commit (working tree + staged) の変更ファイルを
+           target_files に展開（TBD-401 解消: base 指定オプションは提供しない）
+  --files と --diff は同時指定不可（early validation で拒否）
+
+  その他のフラグ（--codex, --claude, --auto-fix 等）は無視される。
 
 Output (JSON):
   {
@@ -32,6 +41,7 @@ Output (JSON):
 import glob
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -170,19 +180,148 @@ def detect_features_from_doc_structure(project_root, doc_structure):
 # 共通ユーティリティ
 # ---------------------------------------------------------------------------
 
-def parse_args():
-    """引数を解析（フラグと対象を分離）"""
+def parse_args(argv=None):
+    """引数を解析（フラグと対象を分離）
+
+    認識するフラグ:
+      --files <path1> <path2> ...   または  --files path1,path2,...
+      --diff                         （現ブランチ未 commit 差分）
+
+    その他の `--xxx` フラグは無視される（後方互換: --codex / --claude / --auto-fix 等）。
+
+    Returns:
+      dict {
+        "targets": [str, ...],   # 位置引数
+        "files":   [str, ...] | None,  # --files で渡されたパス（None なら未指定）
+        "diff":    bool,         # --diff 指定の有無
+      }
+    """
+    if argv is None:
+        argv = sys.argv[1:]
+
     targets = []
-    for arg in sys.argv[1:]:
+    files = None  # None: 未指定、[]: 空指定
+    diff = False
+
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == '--files':
+            files = []
+            # 次の --xxx もしくは末尾までを files に詰める
+            j = i + 1
+            while j < len(argv) and not argv[j].startswith('--'):
+                # カンマ区切りもサポート
+                for token in argv[j].split(','):
+                    token = token.strip()
+                    if token:
+                        files.append(token)
+                j += 1
+            i = j
+            continue
+        if arg == '--diff':
+            diff = True
+            i += 1
+            continue
         if arg.startswith('--'):
+            # 未知フラグは無視（後方互換）
+            i += 1
             continue
         targets.append(arg)
-    return targets
+        i += 1
+
+    return {"targets": targets, "files": files, "diff": diff}
 
 
 def find_project_root():
     """プロジェクトルートを検出"""
     return Path(_find_project_root())
+
+
+# ---------------------------------------------------------------------------
+# --diff 経路: 現ブランチ未 commit 差分の取得
+# ---------------------------------------------------------------------------
+
+def get_uncommitted_changed_files(project_root, runner=None):
+    """現ブランチで未 commit (working tree + staged) の変更ファイルを返す。
+
+    TBD-401 解消方針: 比較基準は「現ブランチ未 commit 差分のみ」に固定。
+    base 指定オプション (--diff main / --diff HEAD~1 等) は提供しない。
+
+    内部実装は `git status --porcelain` を使用し、staged と working tree の
+    変更ファイルを列挙する。削除済みファイル (D / AD) はレビュー対象外として除外する。
+
+    Args:
+      project_root: プロジェクトルート (Path)
+      runner: テスト用に subprocess.run を差し替えるためのフック (callable)
+
+    Returns:
+      [str, ...] : project_root からの相対パス（ソート済み・重複排除済み）
+
+    Raises:
+      RuntimeError: git コマンドが失敗した場合
+    """
+    if runner is None:
+        runner = subprocess.run
+
+    try:
+        result = runner(
+            ['git', 'status', '--porcelain'],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(f"git コマンドが利用できません: {e}") from e
+
+    if result.returncode != 0:
+        stderr = (result.stderr or '').strip()
+        raise RuntimeError(f"git status の実行に失敗しました: {stderr}")
+
+    files = []
+    seen = set()
+    for line in (result.stdout or '').splitlines():
+        if not line or len(line) < 3:
+            continue
+        # porcelain v1 形式: XY <path>  ※ rename は ' -> ' 区切り
+        xy = line[:2]
+        rest = line[3:]
+        if ' -> ' in rest:
+            # rename: 新しいパスを採用
+            _, _, new_path = rest.partition(' -> ')
+            path = new_path.strip()
+        else:
+            path = rest.strip()
+
+        # ダブルクォート囲い (porcelain がエスケープした場合) を剥がす
+        if path.startswith('"') and path.endswith('"'):
+            path = path[1:-1]
+
+        # 完全削除 (' D' / 'D ' / 'DD' / 'AD' 等) はレビュー対象外
+        if xy.strip() == 'D' or xy == 'DD' or xy.endswith('D') and xy[0] in ('D', 'A', 'U', '?'):
+            # 'AD' (staged add → working delete) や 'UD' は実体無し
+            if xy in ('AD', 'DD', 'UD', ' D', 'D ', '!D'):
+                continue
+        # Untracked (??) はレビュー対象に含める
+        # path がディレクトリの場合は配下のファイルを展開
+        full = project_root / path
+        if full.is_dir():
+            for sub in sorted(full.rglob('*')):
+                if sub.is_file():
+                    rel = str(sub.relative_to(project_root))
+                    if rel not in seen:
+                        seen.add(rel)
+                        files.append(rel)
+            continue
+        if not full.exists():
+            # 削除済みファイル: スキップ
+            continue
+        if path not in seen:
+            seen.add(path)
+            files.append(path)
+
+    return sorted(files)
 
 
 # ---------------------------------------------------------------------------
@@ -442,12 +581,127 @@ def _resolve_multiple_targets(targets, doc_structure, project_root, result):
 # メイン
 # ---------------------------------------------------------------------------
 
+def _error_result(message, has_doc_structure=True):
+    """エラー JSON 構造を生成"""
+    return {
+        "status": "error",
+        "has_doc_structure": has_doc_structure,
+        "type": None,
+        "target_files": [],
+        "features": [],
+        "questions": [],
+        "error": message,
+    }
+
+
+def _resolve_files_bypass(file_args, project_root, result):
+    """--files バイパス経路: 指定ファイル群を target_files として直接採用。
+
+    種別解決 (.doc_structure.yaml 経由のディレクトリ → 種別マッピング) はバイパスする。
+    種別は呼び出し側 (SKILL / Phase 1) で確定済みの前提。
+
+    指定ファイルが存在しない場合はエラーを返す (early validation)。
+    """
+    missing = []
+    valid = []
+    for f in file_args:
+        if (project_root / f).is_file():
+            valid.append(f)
+        else:
+            missing.append(f)
+
+    if missing:
+        result.update(_error_result(
+            f"--files で指定されたファイルが見つかりません: {', '.join(missing)}"
+        ))
+        return
+
+    result["target_files"] = valid
+    # 種別解決はバイパス (type は呼び出し側で確定済みの前提)。
+    # type は None のままで返し、SKILL 側で --type 等の明示引数を採用する。
+
+
+def _resolve_diff(project_root, result):
+    """--diff 経路: 現ブランチ未 commit 差分を target_files に展開。
+
+    TBD-401 解消: 比較基準は「現ブランチ未 commit 差分のみ」に固定。
+    base 指定オプションは提供しない。
+    """
+    try:
+        files = get_uncommitted_changed_files(project_root)
+    except RuntimeError as e:
+        result.update(_error_result(str(e)))
+        return
+
+    result["target_files"] = files
+    if not files:
+        result["questions"].append({
+            "key": "target",
+            "message": "現ブランチで未 commit の変更ファイルが見つかりません。",
+            "options": [],
+        })
+
+
 def main():
-    targets = parse_args()
+    args = parse_args()
+    targets = args["targets"]
+    files_arg = args["files"]
+    diff = args["diff"]
 
     project_root = find_project_root()
 
-    # .doc_structure.yaml を読み込む（必須）
+    # --files / --diff の early validation: 同時指定不可
+    if files_arg is not None and diff:
+        print(json.dumps(_error_result(
+            "--files と --diff は同時に指定できません。"
+        ), ensure_ascii=False, indent=2))
+        return
+
+    # --files バイパス経路 (種別解決をバイパスするため doc_structure 読み込みより先に処理)
+    if files_arg is not None:
+        if len(files_arg) == 0:
+            print(json.dumps(_error_result(
+                "--files に少なくとも 1 つのファイルパスを指定してください。"
+            ), ensure_ascii=False, indent=2))
+            return
+
+        result = {
+            "status": "resolved",
+            "has_doc_structure": (project_root / '.doc_structure.yaml').is_file(),
+            "type": None,
+            "target_files": [],
+            "features": [],
+            "questions": [],
+        }
+        _resolve_files_bypass(files_arg, project_root, result)
+        if result.get("status") == "error":
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        if result["questions"]:
+            result["status"] = "needs_input"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # --diff 経路 (種別は SKILL 側で確定済みの前提)
+    if diff:
+        result = {
+            "status": "resolved",
+            "has_doc_structure": (project_root / '.doc_structure.yaml').is_file(),
+            "type": None,
+            "target_files": [],
+            "features": [],
+            "questions": [],
+        }
+        _resolve_diff(project_root, result)
+        if result.get("status") == "error":
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        if result["questions"]:
+            result["status"] = "needs_input"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # .doc_structure.yaml を読み込む（通常経路では必須）
     doc_structure = parse_doc_structure(project_root)
     has_doc_structure = doc_structure is not None
 

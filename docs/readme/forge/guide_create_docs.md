@@ -24,7 +24,7 @@ All three skills share a common context-gathering pattern. Before document creat
 After document creation, the following steps execute sequentially:
 
 1. `/forge:review {type} --auto` — AI review + auto-fix
-2. `/doc-advisor:create-specs-toc` — ToC update (when available)
+2. `/forge:update-db-specs` — ToC update (when available)
 3. `/anvil:commit` — commit/push confirmation
 
 ---

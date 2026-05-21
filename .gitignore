@@ -4,6 +4,9 @@
 .claude/settings.local.json
 .claude/.temp/
 
+# テスト用一時ディレクトリ（tempfile.mkdtemp の出力先・/tmp 不可環境のフォールバック）
+tests/**/.temp/
+
 # Python
 __pycache__/
 *.pyc

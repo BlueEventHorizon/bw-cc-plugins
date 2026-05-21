@@ -85,14 +85,14 @@ status 一覧など、`plan.yaml` が保持する review item state を複製し
 
 `session.yaml` に追加できるのは、再開判断と進行状態確認に必要な浅いフィールドに限定する。
 
-| フィールド        | 型     | 許容値 / 形式                                      | 既定値        | 説明                       |
-| ----------------- | ------ | -------------------------------------------------- | ------------- | -------------------------- |
-| `phase`           | string | 標準 phase または skill 固有文字列                 | `created`     | 粗い進行段階               |
-| `phase_status`    | string | `pending` / `in_progress` / `completed` / `failed` | `in_progress` | phase の状態               |
-| `focus`           | string | 1 行文字列                                         | `""`          | 進行状況表示用の短い焦点   |
-| `waiting_type`    | string | `none` / `user_input` / `agent` / `command`        | `none`        | 待機種別                   |
-| `waiting_reason`  | string | 1 行文字列                                         | `""`          | 待機理由                   |
-| `active_artifact` | string | session_dir 相対パスまたは project 相対パス        | `""`          | 直近更新成果物             |
+| フィールド        | 型     | 許容値 / 形式                                      | 既定値        | 説明                     |
+| ----------------- | ------ | -------------------------------------------------- | ------------- | ------------------------ |
+| `phase`           | string | 標準 phase または skill 固有文字列                 | `created`     | 粗い進行段階             |
+| `phase_status`    | string | `pending` / `in_progress` / `completed` / `failed` | `in_progress` | phase の状態             |
+| `focus`           | string | 1 行文字列                                         | `""`          | 進行状況表示用の短い焦点 |
+| `waiting_type`    | string | `none` / `user_input` / `agent` / `command`        | `none`        | 待機種別                 |
+| `waiting_reason`  | string | 1 行文字列                                         | `""`          | 待機理由                 |
+| `active_artifact` | string | session_dir 相対パスまたは project 相対パス        | `""`          | 直近更新成果物           |
 
 標準 phase は、進行状態表示とテスト安定化のために以下を優先して使う。ただし skill 固有 phase
 を追加しやすくするため、未定義 phase は保存自体を拒否しない。

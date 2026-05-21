@@ -63,14 +63,50 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/grep_docs.py" \
 1. **Hybrid 側のパス集合** `S_hybrid`: `search_index.py` の応答 JSON 内 `results[*].path` を重複なく集める。
 2. **grep 結果の処理**: 各 `grep_docs.py` 実行で得た `results` について、各行ヒットの `path` を見る。
 3. **補完候補**: grep でヒットした行のうち、`path` が `S_hybrid` に**含まれない**ものを「補完候補」としてマークする。Hybrid に既に含まれるパス上の行は、必要なら本文引用の補足として使ってよいが「漏れ補完」リストには乗せない。
-4. **ユーザーへの提示順**: まず Hybrid（意味順位・スコア付き）を提示し、続けて「全文 grep で見つかった行（インデックス候補に無かったパス）」を `(path, line, content)` で列挙する。false negative を避けるため、迷った補完候補は含める。
 
-## 4. エラー時
+## 4. Output Format
+
+出力は **先頭セクション + 後段セクション** の 2 段構成にする（DES-001 §3.1 出力契約、FNC-006 OUT-01/OUT-02、DES-026）。
+
+### 4.1 先頭セクション（必須）: Required documents
+
+`Required documents:` の行に続けて、`S_hybrid`（Hybrid 採用パス）と grep 補完候補パスを統合したパスリストを **プロジェクトルート相対パス** で出力する。重複は除く。false negative を避けるため、迷った補完候補は含める。
+
+```text
+Required documents:
+
+- docs/rules/xxx.md
+- docs/specs/yyy/requirements/zzz.md
+```
+
+### 4.2 後段セクション（必須）: Hybrid scores / grep hits
+
+`## Hybrid scores / grep hits` の見出しに続けて、ヒット理由が読み取れる詳細情報を出力する。FNC-006 OUT-01（文書パス・該当 chunk の見出し階層・該当 chunk テキスト・スコア・スコア内訳）と OUT-02（なぜヒットしたか）を満たすことが必須。
+
+- **Hybrid 側**: `search_index.py` 応答 JSON の `results[]` から、各エントリの `path` / `heading_path` / `body`（chunk テキスト）/ `score` / `breakdown`（`emb` / `lex`、rerank 採用時は rerank スコアも）を、意味順位の高い順に列挙する
+- **grep 補完候補**: §3 でマークしたパスについて、`grep_docs.py` 応答 JSON の `results[]` から `path` / `line` / `content` を列挙する。grep 由来であることが分かるよう注記する
+
+```text
+## Hybrid scores / grep hits
+
+- docs/rules/xxx.md
+  - heading: # ルール / ## セクション名
+  - score: 0.83 (emb=0.72, lex=0.41)
+  - chunk: "..."
+- docs/specs/yyy/requirements/zzz.md  (grep 補完)
+  - line=42 "..."
+```
+
+### 4.3 提示順
+
+先頭セクション → 後段セクションの順で出力する。後段セクション内は Hybrid（意味順位・スコア付き）を先、grep 補完候補を後とする。
+
+## 5. エラー時
 
 - `search_index.py` が stderr にバリデーション JSON（exit 2）を出した場合: 設計書の案内に従い `--full` や設定確認をユーザーに伝える。AskUserQuestion を使用して次のアクションを確認する。
 - `grep_docs.py` が `{"status":"error",...}` を出した場合: 原因を要約し、`.doc_structure.yaml` や引数を確認する。AskUserQuestion を使用して続行するか確認する。
 
-## 5. 注意
+## 6. 注意
 
 - 処理ロジック・正規表現の実装はスクリプトに置く。本 SKILL は **実行順序と判断基準** のみを記す（`skill_authoring_notes.md` の「AI への実行指示」の扱い）。
 - ユーザーへの選択・確認が必要なときは **AskUserQuestion** ツールを使う（プレーンテキストでの質問だけにしない）。
