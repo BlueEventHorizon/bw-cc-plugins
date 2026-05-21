@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.25] - 2026-05-21
+
+### marketplace
+
+- **chore**: forge 0.1.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.1.1] - 2026-05-21
+
+### forge
+
+- **feat(review)**: `/forge:review` パイプラインを 1 reviewer 起動原則 + criteria 固定 3 セクション構造 (SSOT参照 / チェック順 / 判定ルール) に再設計 (Issue #68 / REQ-004 / DES-028)。観点軸並列起動 (`## Perspective:` × N) と対象ファイル軸並列起動を撤廃し、P1/P2/P3 を同一 reviewer 内でチェック順に順次評価する方式に変更
+- **feat(review)**: criteria 5 種別 (`code` / `design` / `requirement` / `plan` / `uxui` / `generic`) を 3 セクション固定構造に全面置換。criteria は判断を持たず routing table + review playbook に純化
+- **feat(review)**: `recommendation: create_issue` を正式に値域追加 (FNC-406 3 条件: 該当規定なし / 再発性または客観性 / 明文化可能粒度)。present-findings に Issue 化選択肢 + `/anvil:create-issue` 経路を実装
+- **feat(review)**: priority (P1/P2/P3) × severity (🔴/🟡/🟢) の直交ラベル付与に変更。evaluator は 5 観点 × priority の直交評価、present-findings は priority 二段ソート対応
+- **refactor(scripts)**: `write_refs.py` を旧 `perspectives[]` スキーマ撤廃 + `review_packet { criteria_path / ssot_refs[] / check_order }` 検証に置換。`write_interpretation.py` を `--kind` 引数 + `review_<種別>.md` 命名に変更。`merge_evals.py` を priority ベース統合に書き換え
+- **feat(principles)**: forge 内蔵 principles 4 ファイル (`spec_priorities_spec.md` / `spec_design_boundary_spec.md` / `design_principles_spec.md` / `plan_principles_spec.md`) に重大度カタログ + グレーゾーン許容範囲 + 観点別利用ガイドを merge (FNC-411)
+- **test**: 回帰検出テスト 5 ファイルを追加 (`test_criteria_no_perspective.py` / `test_no_legacy_perspective_filename.py` / `test_review_integration.py` / `test_reviewer_single_invocation.py` / `test_resolve_review_context.py`)
+
 ## [marketplace 0.1.24] - 2026-05-19
 
 ### marketplace

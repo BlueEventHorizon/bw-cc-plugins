@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.24**
+**Marketplace version: 0.1.25**
 
 [Japanese README (README.md)](README.md)
 
@@ -35,7 +35,7 @@ flowchart LR
 
 | Plugin          | Version | Description                                                                                                                                          |
 | --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.1.0   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
+| **forge**       | 0.1.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                             |
 | **anvil**       | 0.0.8   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                 |
 | **doc-advisor** | 0.3.0   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task. |
 
@@ -88,26 +88,26 @@ flowchart LR
 
 #### Skills
 
-| Skill                                                                                  | Description                                                                                            | Trigger                        |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| [**review**](docs/readme/forge/guide_review.md)                                        | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`                                      | `"review"`                     |
-| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements)    | Create requirements via dialog, reverse-engineering, or Figma                                          | `"requirements"`               |
-| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design)                | Create design docs from requirements. Prioritizes asset reuse                                          | `"start design"`               |
-| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan)                    | Extract tasks from design docs into a YAML plan                                                        | `"start plan"`                 |
-| [**start-implement**](docs/readme/forge/guide_implement.md)                            | Select tasks from plan, implement, review, and update                                                  | `"start implement"`            |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md)                        | Create design tokens & UI specs with UX evaluation                                                     | `"UXUI design"`                |
-| **merge-specs**                                                                         | Merge two spec DIRs (base / additional) at content granularity. Additional is canonical; base is revised; pure-new parts migrate | `"merge spec"`                 |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories                                                  | `"setup"`                      |
-| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config)      | Generate/update `.version-config.yaml`                                                                 | `"version config"`             |
-| [**update-version**](docs/readme/forge/guide_setup.md#update-version)                  | Bump version across files. patch/minor/major/direct                                                    | `"version bump"`               |
-| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules)                        | Analyze and reorganize rules/ based on taxonomy                                                        | `"clean rules"`                |
-| [**help**](docs/readme/forge/guide_setup.md#help)                                      | Interactive help wizard                                                                                | `"help"`                       |
-| [_reviewer_](docs/readme/forge/guide_review.md#execution-flow)                         | Execute review for a single perspective                                                                | ※ Called by review             |
-| [_evaluator_](docs/readme/forge/guide_review.md#execution-flow)                        | Scrutinize review findings and determine fix/skip/confirm                                              | ※ Called by review             |
-| [_fixer_](docs/readme/forge/guide_review.md#execution-flow)                            | Fix issues based on review findings                                                                    | ※ Called by review             |
-| [_present-findings_](docs/readme/forge/guide_review.md#execution-flow)                 | Present review findings interactively, one item at a time                                              | ※ Called by review             |
-| [_doc-structure_](docs/readme/guide_doc_structure.md)                                  | Parse and resolve paths from `.doc_structure.yaml`                                                     | ※ Called by orchestrators      |
-| [_next-spec-id_](docs/readme/forge/guide_create_docs.md)                               | Scan all branches for spec IDs and return the next available number                                    | ※ Called by start-requirements |
+| Skill                                                                                  | Description                                                                                                                      | Trigger                        |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| [**review**](docs/readme/forge/guide_review.md)                                        | Review code & docs with 🔴🟡🟢 severity. Auto-fix with `--auto N`                                                                | `"review"`                     |
+| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements)    | Create requirements via dialog, reverse-engineering, or Figma                                                                    | `"requirements"`               |
+| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design)                | Create design docs from requirements. Prioritizes asset reuse                                                                    | `"start design"`               |
+| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan)                    | Extract tasks from design docs into a YAML plan                                                                                  | `"start plan"`                 |
+| [**start-implement**](docs/readme/forge/guide_implement.md)                            | Select tasks from plan, implement, review, and update                                                                            | `"start implement"`            |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md)                        | Create design tokens & UI specs with UX evaluation                                                                               | `"UXUI design"`                |
+| **merge-specs**                                                                        | Merge two spec DIRs (base / additional) at content granularity. Additional is canonical; base is revised; pure-new parts migrate | `"merge spec"`                 |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories                                                                            | `"setup"`                      |
+| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config)      | Generate/update `.version-config.yaml`                                                                                           | `"version config"`             |
+| [**update-version**](docs/readme/forge/guide_setup.md#update-version)                  | Bump version across files. patch/minor/major/direct                                                                              | `"version bump"`               |
+| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules)                        | Analyze and reorganize rules/ based on taxonomy                                                                                  | `"clean rules"`                |
+| [**help**](docs/readme/forge/guide_setup.md#help)                                      | Interactive help wizard                                                                                                          | `"help"`                       |
+| [_reviewer_](docs/readme/forge/guide_review.md#execution-flow)                         | Evaluate P1/P2/P3 in check order from criteria (single-launch principle)                                                         | ※ Called by review             |
+| [_evaluator_](docs/readme/forge/guide_review.md#execution-flow)                        | Scrutinize review findings and determine fix/skip/confirm                                                                        | ※ Called by review             |
+| [_fixer_](docs/readme/forge/guide_review.md#execution-flow)                            | Fix issues based on review findings                                                                                              | ※ Called by review             |
+| [_present-findings_](docs/readme/forge/guide_review.md#execution-flow)                 | Present review findings interactively, one item at a time                                                                        | ※ Called by review             |
+| [_doc-structure_](docs/readme/guide_doc_structure.md)                                  | Parse and resolve paths from `.doc_structure.yaml`                                                                               | ※ Called by orchestrators      |
+| [_next-spec-id_](docs/readme/forge/guide_create_docs.md)                               | Scan all branches for spec IDs and return the next available number                                                              | ※ Called by start-requirements |
 
 ### anvil
 
