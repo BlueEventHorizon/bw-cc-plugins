@@ -6,7 +6,7 @@
 rules / specs カテゴリのパスを読み込み、glob 展開・exclude 適用後に
 .md ファイルの一覧を JSON で出力する。
 
-DocAdvisor（/query-rules, /query-specs）が利用不可の場合のフォールバックとして使用する。
+forge ラッパー（/forge:query-db-rules, /forge:query-db-specs）が利用不可の場合のフォールバックとして使用する。
 
 注意: .doc_structure.yaml のフォーマットが旧 doc_type-centric 形式から
 config.yaml 互換形式に変更された。パース処理は resolve_doc_structure.py に委譲している。

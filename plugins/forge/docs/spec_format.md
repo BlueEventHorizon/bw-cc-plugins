@@ -164,13 +164,13 @@ ID 番号空間は **spec ディレクトリ単位で独立** している。プ
 
 ### 基本: SKILL 境界で表現する
 
-別の spec ディレクトリの仕様に依存する場合、可能な限り SKILL 名（`/doc-advisor:query-rules`, `/doc-db:query` 等）でインターフェイスを記述する。SKILL.md が公開する引数・出力契約に依拠し、内部設計 ID（その SKILL の DES/FNC/ADR）は引かない。
+別の spec ディレクトリの仕様に依存する場合、可能な限り SKILL 名（`/forge:query-db-rules`, `/forge:query-db-specs` 等）でインターフェイスを記述する。SKILL.md が公開する引数・出力契約に依拠し、内部設計 ID（その SKILL の DES/FNC/ADR）は引かない。
 
 **推奨**:
 
 ```markdown
-forge は doc-advisor を呼ぶときに `--toc` / `--index` を渡さない（フラグなし = auto）。
-auto モード起動後の実行ロジックは `/doc-advisor:query-rules` の SKILL.md を参照する。
+プロジェクトのルール／仕様を参照するときは forge ラッパー (`/forge:query-db-rules` / `/forge:query-db-specs`) を呼ぶ（バックエンド選択はラッパーが内部で行う）。
+実行ロジックの詳細は `/forge:query-db-rules` の SKILL.md を参照する。
 ```
 
 **非推奨**（内部 ID への直接依存）:
