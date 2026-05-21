@@ -5,7 +5,7 @@ requirements_traceability:
   - requirement_id: REQ-004
     title: レビューポリシー要件 (Issue #68 軽量化 + criteria 判断除去 + reviewer 1 起動原則)
     design_id: DES-028
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: DES-028
