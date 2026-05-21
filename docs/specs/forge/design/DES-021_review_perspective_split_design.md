@@ -78,7 +78,7 @@ perspectives:
   - name: project-rules
     criteria_path: "docs/rules/coding_standards.md"
     section: null
-    output_path: review_project_rules.md
+    output_path: review_project-rules.md
 ```
 
 `section: null` の場合、agent はファイル全体を観点として使用する。
