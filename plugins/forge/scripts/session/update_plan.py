@@ -34,7 +34,7 @@ VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
 
 # plan.yaml items のフィールド出力順序
 ITEM_FIELD_ORDER = [
-    "id", "severity", "title", "status",
+    "id", "priority", "severity", "title", "status",
     "recommendation", "auto_fixable", "reason",
     "fixed_at", "files_modified", "skip_reason",
 ]
@@ -87,6 +87,8 @@ def update_item(items, item_id, updates):
         if item.get("id") == item_id:
             if status:
                 item["status"] = status
+            if "priority" in updates:
+                item["priority"] = updates["priority"]
             if "recommendation" in updates:
                 item["recommendation"] = updates["recommendation"]
             if "auto_fixable" in updates:

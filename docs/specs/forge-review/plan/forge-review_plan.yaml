@@ -80,7 +80,7 @@ tasks:
   - task_id: TASK-002
     title: forge_anti_patterns.md 空ファイル新設
     priority: 88
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on: []
     group_id: null
@@ -97,7 +97,7 @@ tasks:
   - task_id: TASK-003
     title: review_criteria_code.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -255,7 +255,7 @@ tasks:
   - task_id: TASK-011
     title: merge_evals.py を priority ベース統合に置換 + unittest
     priority: 88
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -805,10 +805,10 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - 'REQ-004 FNC-408 を満たすため `/forge:review` 初回実行時の案内表示ロジックを SKILL Phase 1 直前に追加'
-      - '案内表示は `.claude/.temp/.forge_review_announce_shown` フラグで 1 回のみ抑制 (実装は session_manager 周辺に寄せる)'
-      - '`/forge:update-version` に渡す周知文 (CHANGELOG / リリースノート断片) のドラフトを `docs/readme/forge/migration_notes/forge_review_v0.2.md` に作成'
-      - '案内文には「固有 perspective 廃止 + デフォルト挙動変更が破壊的変更である旨」を明示'
+      - "REQ-004 FNC-408 を満たすため `/forge:review` 初回実行時の案内表示ロジックを SKILL Phase 1 直前に追加"
+      - "案内表示は `.claude/.temp/.forge_review_announce_shown` フラグで 1 回のみ抑制 (実装は session_manager 周辺に寄せる)"
+      - "`/forge:update-version` に渡す周知文 (CHANGELOG / リリースノート断片) のドラフトを `docs/readme/forge/migration_notes/forge_review_v0.2.md` に作成"
+      - "案内文には「固有 perspective 廃止 + デフォルト挙動変更が破壊的変更である旨」を明示"
     acceptance_criteria: |
       (1) plugins/forge/skills/review/SKILL.md に初回案内ロジックの記述がある
       (2) docs/readme/forge/migration_notes/forge_review_v0.2.md が存在し FNC-408 周知文が含まれる
@@ -828,8 +828,8 @@ tasks:
     build_check: per_task
     description:
       - 'plugins/forge/scripts/session/update_plan.py の VALID_RECOMMENDATIONS に "create_issue" を追加'
-      - 'VALID_STATUSES に必要なら create_issue 派生状態を追加 (recommendation と status の関係は DES-028 §3.6 を踏襲)'
-      - 'tests/forge/scripts/session/test_update_plan.py を更新し create_issue が受理されることをアサート'
+      - "VALID_STATUSES に必要なら create_issue 派生状態を追加 (recommendation と status の関係は DES-028 §3.6 を踏襲)"
+      - "tests/forge/scripts/session/test_update_plan.py を更新し create_issue が受理されることをアサート"
       - '旧体系の "fix / skip / needs_review" のみ受理だったテストを書き換え'
     acceptance_criteria: update_plan.py が recommendation=create_issue を受理し、test_update_plan.py が pass
     required_reading:
