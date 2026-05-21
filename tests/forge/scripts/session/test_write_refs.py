@@ -586,5 +586,113 @@ class TestCLI(_FsTestCase):
         self.assertNotEqual(proc.returncode, 0)
 
 
+# ---------------------------------------------------------------------------
+# TASK-028 回帰防止: 旧 perspectives キー拒否を subprocess 経由で確認
+# ---------------------------------------------------------------------------
+
+
+class TestRejectLegacyPerspectivesRegression(_FsTestCase):
+    """TASK-028 回帰防止テスト。
+
+    DES-028 §2.3 / REQ-004 FNC-412 により、refs.yaml の旧スキーマ
+    (perspectives[]) は完全撤廃されている (TASK-009 で write_refs.py に
+    拒否ロジック実装済み)。本テストはその拒否ロジックが回帰しないよう
+    subprocess 経由で実際の振る舞い (終了コード / 標準エラー /
+    refs.yaml 非生成) を検証する。
+    """
+
+    # 旧スキーマの典型 perspectives エントリ (DES-021 当時の構造)
+    LEGACY_PERSPECTIVE = {
+        "name": "logic",
+        "criteria_path": "review/docs/review_criteria_code.md",
+        "section": "Perspective: logic",
+        "output_path": "review_logic.md",
+    }
+
+    def _run_cli(self, payload):
+        return subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir)],
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+        )
+
+    def test_legacy_perspectives_exits_nonzero(self):
+        """旧 perspectives キーが含まれる入力では CLI が非 0 終了する。"""
+        payload = _base_data()
+        payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
+
+        proc = self._run_cli(payload)
+
+        self.assertNotEqual(
+            proc.returncode, 0,
+            f"perspectives キー入力で 0 終了は不可: stdout={proc.stdout!r}",
+        )
+
+    def test_legacy_perspectives_error_message_mentions_key_and_deprecation(self):
+        """エラーメッセージに「perspectives」キー名と廃止文言・新スキーマ案内を含む。"""
+        payload = _base_data()
+        payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
+
+        proc = self._run_cli(payload)
+
+        # write_refs.py は stderr に JSON 形式でエラーを出す
+        self.assertTrue(proc.stderr, "stderr が空: エラーメッセージ未出力")
+        try:
+            err = json.loads(proc.stderr)
+        except json.JSONDecodeError:
+            self.fail(
+                f"stderr が JSON 形式でない (write_refs.py 仕様違反): {proc.stderr!r}"
+            )
+        self.assertEqual(err.get("status"), "error")
+        msg = err.get("error", "")
+        # キー名「perspectives」を含む
+        self.assertIn(
+            "perspectives", msg,
+            f"エラーメッセージにキー名 'perspectives' が無い: {msg!r}",
+        )
+        # 廃止 / 撤廃 / 使用不可 のいずれかを含む (TASK-009 実装文言「撤廃」に対応)
+        self.assertTrue(
+            any(token in msg for token in ("撤廃", "廃止", "使用不可", "deprecated")),
+            f"エラーメッセージに廃止文言が無い: {msg!r}",
+        )
+        # 新スキーマ (review_packet) への移行案内を含む
+        self.assertIn(
+            "review_packet", msg,
+            f"エラーメッセージに新スキーマ案内 'review_packet' が無い: {msg!r}",
+        )
+
+    def test_legacy_perspectives_does_not_create_refs_yaml(self):
+        """拒否時に refs.yaml が生成されないこと。"""
+        payload = _base_data()
+        payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
+        refs_path = self.session_dir / "refs.yaml"
+        self.assertFalse(refs_path.exists(), "前提: refs.yaml は事前に存在しない")
+
+        proc = self._run_cli(payload)
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertFalse(
+            refs_path.exists(),
+            "旧スキーマ拒否時に refs.yaml が生成されてはならない",
+        )
+
+    def test_new_schema_succeeds_and_creates_refs_yaml(self):
+        """対照ケース: perspectives 不在の新スキーマ単体では正常生成。"""
+        payload = _base_data()
+        # perspectives キーが存在しないことを明示
+        self.assertNotIn("perspectives", payload)
+        refs_path = self.session_dir / "refs.yaml"
+
+        proc = self._run_cli(payload)
+
+        self.assertEqual(proc.returncode, 0, f"stderr={proc.stderr!r}")
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "ok")
+        self.assertTrue(refs_path.exists(), "新スキーマでは refs.yaml が生成される")
+        # 生成内容にも perspectives が含まれないことを確認 (二重防衛)
+        self.assertNotIn("perspectives:", refs_path.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -104,7 +104,7 @@ test -f .claude/.temp/.forge_review_announce_shown && echo "shown" || echo "not_
    - finding に severity_source フィールド追加
 
 7. 出力ファイル名規約
-   - 旧: review_<perspective>.md (例: review_logic.md)
+   - 旧: review_<perspective>.md (perspective ベース命名)
    - 新: review_<種別>.md (例: review_code.md)
 
 詳細・移行手順:

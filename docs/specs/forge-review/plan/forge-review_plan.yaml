@@ -616,7 +616,7 @@ tasks:
   - task_id: TASK-028
     title: 回帰防止テスト refs.yaml 旧 perspectives キー拒否
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-009
@@ -632,7 +632,7 @@ tasks:
   - task_id: TASK-029
     title: 回帰防止テスト 旧 perspective 名のファイル名残検出
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-015
@@ -651,7 +651,7 @@ tasks:
   - task_id: TASK-030
     title: 統合テスト DES-028 §7.2 全項目
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-015
@@ -675,7 +675,7 @@ tasks:
   - task_id: TASK-031
     title: 静的検査テスト reviewer 1 起動原則の回帰防止
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-015
