@@ -1,8 +1,8 @@
 ---
 name: query
 description: |
-  doc-db index を検索する。Hybrid / Rerank に加え、ID・固有名詞がある場合は grep で全文行検索し結果を統合する。
-  トリガー: "/doc-db:query", "doc-db で検索"
+  プロジェクトの様々な文書を、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
+  プロジェクトの作業のあらゆる場面で、文書を参照したいときに使う。
 user-invocable: true
 argument-hint: "--category rules|specs --query <text> [--mode emb|lex|hybrid|rerank] [--top-n N] [--doc-type ...]"
 allowed-tools: Bash, AskUserQuestion

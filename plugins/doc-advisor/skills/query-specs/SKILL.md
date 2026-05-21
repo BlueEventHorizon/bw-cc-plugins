@@ -1,12 +1,8 @@
 ---
 name: query-specs
 description: |
-  forge のクエリエントリスキル（switch-query DES-001 で導入予定）から内部的に呼ばれる、または明示的にバックエンドを固定したい場合に直接呼ぶ。
-  ユーザーの依頼や現在の作業に関連する要件定義書・設計書・計画書を docs/specs/ から見落としなく特定する。
-  要件作成・設計・計画・実装・レビュー・仕様変更・既存仕様の確認など、プロジェクト仕様を参照するあらゆる場面で使用（特定フェーズに限定されない）。
-  デフォルト (auto) は ToC キーワード検索を常時実行し、API キー（`OPENAI_API_DOCDB_KEY` または `OPENAI_API_KEY`）が設定されている場合のみ doc-advisor 内蔵の Embedding Index 検索も並列実行して結果をマージする。
-  `--toc` で ToC キーワード検索のみ、`--index` で Embedding Index 検索のみ（API キー必須）に固定可能。
-  対象範囲: docs/specs/（ルールは /doc-advisor:query-rules、forge 内部仕様は /forge:query-forge-rules）。
+  プロジェクトの様々な仕様書を、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
+  設計・実装・コーディング・レビュー等、開発作業のあらゆる場面で仕様を参照したいときに使う。
 user-invocable: true
 context: fork
 argument-hint: "[--toc|--index] task description"

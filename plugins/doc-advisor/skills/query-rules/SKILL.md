@@ -1,11 +1,8 @@
 ---
 name: query-rules
 description: |
-  forge のクエリエントリスキル（switch-query DES-001 で導入予定）から内部的に呼ばれる、または明示的にバックエンドを固定したい場合に直接呼ぶ。
-  プロジェクトルール（コーディング規約・命名規則・設計原則・アーキテクチャ規約等）を docs/rules/ から見落としなく特定する。
-  デフォルト (auto) は ToC キーワード検索を常時実行し、API キー（`OPENAI_API_DOCDB_KEY` または `OPENAI_API_KEY`）が設定されている場合のみ doc-advisor 内蔵の Embedding Index 検索も並列実行して結果をマージする。
-  `--toc` で ToC キーワード検索のみ、`--index` で Embedding Index 検索のみ（API キー必須）に固定可能。
-  対象範囲: docs/rules/（仕様書は /doc-advisor:query-specs、forge 内部仕様は /forge:query-forge-rules）。
+  プロジェクトの様々なルールを、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
+  設計・実装・コーディング・レビュー等、開発作業のあらゆる場面でルールを参照したいときに使う。
 user-invocable: true
 context: fork
 argument-hint: "[--toc|--index] task description"
