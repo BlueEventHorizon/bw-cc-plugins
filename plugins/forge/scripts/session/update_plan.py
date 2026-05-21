@@ -30,7 +30,10 @@ from session.store import SessionStore
 from session.yaml_utils import read_yaml, now_iso
 
 VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
-VALID_RECOMMENDATIONS = {"fix", "skip", "needs_review"}
+# DES-028 §3.3 判定ルール / REQ-004 FNC-406: recommendation 値域は
+# fix / skip / create_issue / needs_review。create_issue は FNC-406 の 3 条件
+# (該当規定なし / 再発性または客観性 / 明文化可能粒度) を満たす場合に付与する。
+VALID_RECOMMENDATIONS = {"fix", "skip", "create_issue", "needs_review"}
 
 # plan.yaml items のフィールド出力順序
 ITEM_FIELD_ORDER = [
@@ -190,7 +193,7 @@ def main():
                         help="修正ファイルパス一覧")
     parser.add_argument("--skip-reason", help="スキップ理由")
     parser.add_argument("--recommendation",
-                        help="evaluator の推奨（fix / skip / needs_review）")
+                        help="evaluator の推奨（fix / skip / create_issue / needs_review）")
     parser.add_argument("--auto-fixable", type=str,
                         help="自動修正可能か（true / false）")
     parser.add_argument("--reason", help="evaluator の判定理由")

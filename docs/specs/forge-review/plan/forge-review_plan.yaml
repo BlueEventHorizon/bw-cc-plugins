@@ -276,7 +276,7 @@ tasks:
   - task_id: TASK-012
     title: findings_parser.py に priority パースを追加 + unittest
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -294,7 +294,7 @@ tasks:
   - task_id: TASK-013
     title: findings_renderer.py に priority セクション見出しを追加 + unittest
     priority: 73
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -312,7 +312,7 @@ tasks:
   - task_id: TASK-014
     title: summarize_plan.py に create_issue 状態を追加 + unittest
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -820,7 +820,7 @@ tasks:
   - task_id: TASK-038
     title: update_plan.py の VALID_RECOMMENDATIONS に create_issue を追加 + unittest
     priority: 78
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001

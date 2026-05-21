@@ -20,6 +20,14 @@ FINDING_PATTERN = re.compile(
 # 箇所行のパターン（例: "   - 箇所: path/to/file.py:42"）
 LOCATION_PATTERN = re.compile(r"^\s+-\s+箇所\s*[:：]\s*(.*)")
 
+# priority 行のパターン（例: "   - priority: P1" / "priority: P2"）
+# DES-028 §4.2 / FNC-412 で reviewer 出力に finding 単位で付与される
+# priority と severity は独立軸 (DES-028 §4.1) のため、severity から推定しない
+PRIORITY_PATTERN = re.compile(
+    r"^\s*-?\s*priority\s*[:：]\s*(P[123])\b",
+    re.IGNORECASE,
+)
+
 
 def extract_findings(content):
     """review.md から指摘事項を抽出する。"""
@@ -63,6 +71,7 @@ def extract_findings(content):
         findings.append({
             "id": finding_id,
             "severity": severity,
+            "priority": None,
             "title": title,
             "location": "",
             "status": "pending",
@@ -106,6 +115,14 @@ def extract_findings(content):
         loc_match = LOCATION_PATTERN.match(line)
         if loc_match and findings:
             findings[-1]["location"] = loc_match.group(1).strip()
+            body_lines.append(line)
+            continue
+
+        prio_match = PRIORITY_PATTERN.match(line)
+        if prio_match and findings and not findings[-1].get("_body_closed"):
+            # 既に priority が設定されていれば上書きしない (最初の出現を採用)
+            if findings[-1].get("priority") is None:
+                findings[-1]["priority"] = prio_match.group(1).upper()
             body_lines.append(line)
             continue
 
