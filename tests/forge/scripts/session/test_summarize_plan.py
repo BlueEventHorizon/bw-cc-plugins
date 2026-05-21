@@ -70,7 +70,11 @@ class TestSummarizePending(_FsTestCase):
         ])
         result = summarize_pending(self.session_dir / "plan.yaml")
 
-        self.assertEqual(result["by_status"], {"pending": 2, "needs_review": 1})
+        # create_issue は 0 件でもキーが存在する (DES-028 §3.6 / REQ-004 FNC-406)
+        self.assertEqual(
+            result["by_status"],
+            {"pending": 2, "needs_review": 1, "create_issue": 0},
+        )
 
     def test_fixed_and_skipped_not_counted(self):
         """fixed と skipped は未処理にカウントしない。"""
@@ -121,7 +125,11 @@ class TestSummarizePending(_FsTestCase):
         self.assertEqual(result["fixed"], 0)
         self.assertEqual(result["skipped"], 0)
         self.assertEqual(result["by_severity"], {"critical": 0, "major": 0, "minor": 0})
-        self.assertEqual(result["by_status"], {"pending": 0, "needs_review": 0})
+        self.assertEqual(
+            result["by_status"],
+            {"pending": 0, "needs_review": 0, "create_issue": 0},
+        )
+        self.assertEqual(result["create_issue"], 0)
         self.assertEqual(result["unprocessed_ids"], [])
         self.assertEqual(result["titles"], [])
 
@@ -141,6 +149,62 @@ class TestSummarizePending(_FsTestCase):
 
         self.assertEqual(result["unprocessed_total"], 2)
         self.assertEqual(result["by_severity"], {"critical": 0, "major": 1, "minor": 0})
+
+    def test_create_issue_counted_in_by_status(self):
+        """create_issue 状態の指摘が by_status.create_issue にカウントされる。
+
+        DES-028 §3.6 / REQ-004 FNC-406: create_issue は外部 Issue 化で決着扱い。
+        """
+        self._write_plan([
+            {"id": 1, "severity": "major", "title": "A", "status": "create_issue"},
+            {"id": 2, "severity": "minor", "title": "B", "status": "create_issue"},
+            {"id": 3, "severity": "critical", "title": "C", "status": "pending"},
+        ])
+        result = summarize_pending(self.session_dir / "plan.yaml")
+
+        self.assertEqual(result["by_status"]["create_issue"], 2)
+        self.assertEqual(result["create_issue"], 2)
+
+    def test_create_issue_excluded_from_unprocessed(self):
+        """create_issue は unprocessed_total / unprocessed_ids に含めない (decided 扱い)。
+
+        DES-028 §3.6 終了判定: 全指摘が fixed / skipped / create_issue で決着すれば
+        unprocessed_total = 0 となり終了可能。
+        """
+        self._write_plan([
+            {"id": 1, "severity": "critical", "title": "A", "status": "fixed"},
+            {"id": 2, "severity": "major", "title": "B", "status": "skipped"},
+            {"id": 3, "severity": "minor", "title": "C", "status": "create_issue"},
+        ])
+        result = summarize_pending(self.session_dir / "plan.yaml")
+
+        # 全件 decided 扱いのため unprocessed は 0
+        self.assertEqual(result["unprocessed_total"], 0)
+        self.assertEqual(result["unprocessed_ids"], [])
+        # 個別カウントは保持
+        self.assertEqual(result["fixed"], 1)
+        self.assertEqual(result["skipped"], 1)
+        self.assertEqual(result["create_issue"], 1)
+        self.assertEqual(result["by_status"]["create_issue"], 1)
+
+    def test_create_issue_zero_when_absent(self):
+        """create_issue が 0 件の場合の挙動 (回帰防止)。
+
+        既存ケース (pending / needs_review のみ) で create_issue キーは存在し値は 0、
+        unprocessed_total は従来どおり pending + needs_review の合計のままであることを確認。
+        """
+        self._write_plan([
+            {"id": 1, "severity": "critical", "title": "A", "status": "pending"},
+            {"id": 2, "severity": "major", "title": "B", "status": "needs_review"},
+            {"id": 3, "severity": "minor", "title": "C", "status": "fixed"},
+        ])
+        result = summarize_pending(self.session_dir / "plan.yaml")
+
+        self.assertEqual(result["unprocessed_total"], 2)
+        self.assertEqual(result["create_issue"], 0)
+        self.assertEqual(result["by_status"]["create_issue"], 0)
+        self.assertEqual(result["by_status"]["pending"], 1)
+        self.assertEqual(result["by_status"]["needs_review"], 1)
 
 
 class TestCLI(_FsTestCase):

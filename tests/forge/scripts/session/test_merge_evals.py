@@ -1,4 +1,10 @@
-"""merge_evals のテスト。"""
+"""merge_evals のテスト (priority ベース単一 reviewer 出力集約)。
+
+reviewer 1 起動原則 (REQ-004 FNC-412 / DES-028 §2.3) のもと、evaluator は
+単一 reviewer の findings を 1 ファイル (eval_<種別>.json) に集約して出力する。
+findings には priority (P1|P2|P3) と recommendation (fix|skip|create_issue|needs_review)
+が付く前提。
+"""
 
 import json
 import shutil
@@ -13,12 +19,12 @@ sys.path.insert(
     str(Path(__file__).resolve().parents[4] / "plugins" / "forge" / "scripts"),
 )
 
-from session.merge_evals import (
-    build_perspective_id_map,
+from session.merge_evals import (  # noqa: E402
+    VALID_PRIORITIES,
     collect_eval_files,
     merge_eval_updates,
 )
-from session.yaml_utils import read_yaml, write_nested_yaml
+from session.yaml_utils import read_yaml, write_nested_yaml  # noqa: E402
 
 SCRIPT = str(
     Path(__file__).resolve().parents[4]
@@ -42,12 +48,12 @@ class _FsTestCase(unittest.TestCase):
             [("items", items)],
         )
 
-    def _write_eval(self, perspective, updates):
-        """テスト用の eval_*.json を書き出す。"""
-        path = self.session_dir / f"eval_{perspective}.json"
+    def _write_eval(self, kind, updates):
+        """テスト用の eval_<種別>.json を書き出す。"""
+        path = self.session_dir / f"eval_{kind}.json"
         path.write_text(
             json.dumps(
-                {"perspective": perspective, "updates": updates},
+                {"kind": kind, "updates": updates},
                 ensure_ascii=False,
             ),
             encoding="utf-8",
@@ -55,80 +61,58 @@ class _FsTestCase(unittest.TestCase):
 
 
 def _sample_plan_items():
-    """3 perspective × 2 items = 6 items の plan.yaml。"""
+    """priority 混在の plan.yaml サンプル (global id 1..6)。"""
     return [
-        {"id": 1, "severity": "major", "title": "A-1",
-         "status": "pending", "perspective": "alignment"},
-        {"id": 2, "severity": "minor", "title": "A-2",
-         "status": "pending", "perspective": "alignment"},
-        {"id": 3, "severity": "major", "title": "B-1",
-         "status": "pending", "perspective": "architecture"},
-        {"id": 4, "severity": "major", "title": "B-2",
-         "status": "pending", "perspective": "architecture"},
-        {"id": 5, "severity": "major", "title": "C-1",
-         "status": "pending", "perspective": "resilience"},
-        {"id": 6, "severity": "minor", "title": "C-2",
-         "status": "pending", "perspective": "resilience"},
+        {"id": 1, "priority": "P1", "severity": "major", "title": "A-1",
+         "status": "pending"},
+        {"id": 2, "priority": "P1", "severity": "minor", "title": "A-2",
+         "status": "pending"},
+        {"id": 3, "priority": "P2", "severity": "major", "title": "B-1",
+         "status": "pending"},
+        {"id": 4, "priority": "P2", "severity": "major", "title": "B-2",
+         "status": "pending"},
+        {"id": 5, "priority": "P3", "severity": "major", "title": "C-1",
+         "status": "pending"},
+        {"id": 6, "priority": "P3", "severity": "minor", "title": "C-2",
+         "status": "pending"},
     ]
 
 
 # ---------------------------------------------------------------------------
-# build_perspective_id_map のテスト
+# VALID_PRIORITIES の定義値域
 # ---------------------------------------------------------------------------
 
-class TestBuildPerspectiveIdMap(unittest.TestCase):
-    def test_basic(self):
-        items = _sample_plan_items()
-        mapping = build_perspective_id_map(items)
-        self.assertEqual(mapping["alignment"], [1, 2])
-        self.assertEqual(mapping["architecture"], [3, 4])
-        self.assertEqual(mapping["resilience"], [5, 6])
 
-    def test_empty(self):
-        mapping = build_perspective_id_map([])
-        self.assertEqual(mapping, {})
-
-    def test_single_perspective(self):
-        items = [
-            {"id": 10, "perspective": "logic"},
-            {"id": 20, "perspective": "logic"},
-        ]
-        mapping = build_perspective_id_map(items)
-        self.assertEqual(mapping, {"logic": [10, 20]})
-
-    def test_missing_perspective_not_registered(self):
-        """perspective 未指定 (空文字 or 欠落) の item はマッピングに登録されない。"""
-        items = [
-            {"id": 1, "perspective": "logic"},
-            {"id": 2},  # perspective 欠落
-            {"id": 3, "perspective": ""},  # 空文字
-        ]
-        mapping = build_perspective_id_map(items)
-        # 空文字キーで登録されていない
-        self.assertNotIn("", mapping)
-        self.assertEqual(mapping["logic"], [1])
-        # id=2,3 はどのキーにも登録されない
-        all_ids = [gid for ids in mapping.values() for gid in ids]
-        self.assertEqual(sorted(all_ids), [1])
+class TestValidPriorities(unittest.TestCase):
+    def test_valid_priorities_are_p1_p2_p3(self):
+        """priority の値域は P1/P2/P3 の 3 値のみ (REQ-004 FNC-401)。"""
+        self.assertEqual(set(VALID_PRIORITIES), {"P1", "P2", "P3"})
 
 
 # ---------------------------------------------------------------------------
 # collect_eval_files のテスト
 # ---------------------------------------------------------------------------
 
+
 class TestCollectEvalFiles(_FsTestCase):
     def test_collects_eval_json(self):
-        self._write_eval("alignment", [{"id": 1, "status": "pending"}])
-        self._write_eval("architecture", [{"id": 1, "status": "pending"}])
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix"},
+        ])
+        self._write_eval("code", [
+            {"id": 2, "priority": "P2", "status": "pending",
+             "recommendation": "skip"},
+        ])
         evals = collect_eval_files(str(self.session_dir))
         self.assertEqual(len(evals), 2)
-        perspectives = {e["perspective"] for e in evals}
-        self.assertEqual(perspectives, {"alignment", "architecture"})
 
     def test_ignores_non_eval_files(self):
-        self._write_eval("alignment", [{"id": 1, "status": "pending"}])
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending"},
+        ])
         # eval_ プレフィックスなしのファイル
-        (self.session_dir / "review_alignment.md").write_text("test")
+        (self.session_dir / "review_design.md").write_text("test")
         evals = collect_eval_files(str(self.session_dir))
         self.assertEqual(len(evals), 1)
 
@@ -141,404 +125,426 @@ class TestCollectEvalFiles(_FsTestCase):
 # merge_eval_updates のテスト
 # ---------------------------------------------------------------------------
 
+
 class TestMergeEvalUpdates(unittest.TestCase):
-    def test_basic_mapping(self):
-        """ローカル ID がグローバル ID に正しく変換される。"""
-        id_map = {"alignment": [1, 2], "architecture": [3, 4]}
+    def test_single_reviewer_output_aggregated(self):
+        """単一 reviewer 出力 (eval ファイル 1 個) の findings が集約される。"""
         evals = [
-            {"perspective": "alignment", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix"},
-                {"id": 2, "status": "skipped", "recommendation": "skip",
-                 "skip_reason": "対象外"},
-            ]},
-            {"perspective": "architecture", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True},
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "status": "pending",
+                 "recommendation": "fix", "auto_fixable": True},
+                {"id": 3, "priority": "P2", "status": "skipped",
+                 "recommendation": "skip", "skip_reason": "許容範囲内"},
+                {"id": 5, "priority": "P3", "status": "pending",
+                 "recommendation": "fix", "auto_fixable": True},
             ]},
         ]
-        combined, not_auto, _dropped = merge_eval_updates(evals, id_map)
+        combined, not_auto, dropped = merge_eval_updates(evals)
 
-        # グローバル ID の確認
+        # 全件正常マージ
+        self.assertEqual(len(combined), 3)
+        self.assertEqual(dropped, [])
+        self.assertEqual(not_auto, [])
+
+        # priority 順 (P1 → P2 → P3) でソート
+        priorities = [u["priority"] for u in combined]
+        self.assertEqual(priorities, ["P1", "P2", "P3"])
+
+        # recommendation が保持されている
+        recs = {u["id"]: u["recommendation"] for u in combined}
+        self.assertEqual(recs, {1: "fix", 3: "skip", 5: "fix"})
+
+    def test_priority_sort_within_same_priority_by_id(self):
+        """同一 priority 内では id 昇順でソートされる。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"id": 5, "priority": "P3", "status": "pending",
+                 "recommendation": "fix"},
+                {"id": 2, "priority": "P1", "status": "pending",
+                 "recommendation": "fix"},
+                {"id": 1, "priority": "P1", "status": "pending",
+                 "recommendation": "fix"},
+                {"id": 3, "priority": "P2", "status": "pending",
+                 "recommendation": "fix"},
+            ]},
+        ]
+        combined, _, _ = merge_eval_updates(evals)
         ids = [u["id"] for u in combined]
-        self.assertEqual(ids, [1, 2, 3])
+        # P1: [1, 2] → P2: [3] → P3: [5]
+        self.assertEqual(ids, [1, 2, 3, 5])
 
-        # recommendation の確認
-        self.assertEqual(combined[0]["recommendation"], "fix")
-        self.assertEqual(combined[1]["recommendation"], "skip")
-        self.assertEqual(combined[2]["recommendation"], "fix")
+    def test_invalid_priority_rejected(self):
+        """priority が P4 等の不正値の場合は dropped に記録され弾かれる。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P4", "status": "pending",
+                 "recommendation": "fix"},
+                {"id": 2, "priority": "p1", "status": "pending",
+                 "recommendation": "fix"},  # 小文字も不正
+                {"id": 3, "priority": "", "status": "pending",
+                 "recommendation": "fix"},
+                {"id": 4, "status": "pending",
+                 "recommendation": "fix"},  # priority 欠落
+                {"id": 5, "priority": "P2", "status": "pending",
+                 "recommendation": "fix"},  # 正常
+            ]},
+        ]
+        combined, _, dropped = merge_eval_updates(evals)
 
-        # not_auto_fixable は空（全て auto_fixable=True or 未指定）
+        # 正常な 1 件 (id=5) だけが combined に入る
+        self.assertEqual(len(combined), 1)
+        self.assertEqual(combined[0]["id"], 5)
+        self.assertEqual(combined[0]["priority"], "P2")
+
+        # 4 件 dropped
+        self.assertEqual(len(dropped), 4)
+        for d in dropped:
+            self.assertIn("priority", d["reason"])
+
+    def test_create_issue_recommendation_accepted(self):
+        """recommendation: create_issue を含む eval が正しく扱われる (FNC-406)。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "status": "pending",
+                 "recommendation": "create_issue",
+                 "reason": "ルール未整備"},
+            ]},
+        ]
+        combined, not_auto, dropped = merge_eval_updates(evals)
+        self.assertEqual(dropped, [])
+        self.assertEqual(len(combined), 1)
+        self.assertEqual(combined[0]["recommendation"], "create_issue")
+        # create_issue は auto_fixable に該当しない
         self.assertEqual(not_auto, [])
 
     def test_not_auto_fixable_detected(self):
-        """auto_fixable=false の fix 推奨項目が検出される。"""
-        id_map = {"alignment": [1, 2]}
+        """auto_fixable=False かつ recommendation=fix の id が検出される。"""
         evals = [
-            {"perspective": "alignment", "updates": [
-                {"id": 1, "recommendation": "fix", "auto_fixable": False,
-                 "status": "pending"},
-                {"id": 2, "recommendation": "fix", "auto_fixable": True,
-                 "status": "pending"},
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "recommendation": "fix",
+                 "auto_fixable": False, "status": "pending"},
+                {"id": 2, "priority": "P1", "recommendation": "fix",
+                 "auto_fixable": True, "status": "pending"},
+                {"id": 3, "priority": "P2", "recommendation": "fix",
+                 "auto_fixable": False, "status": "pending"},
             ]},
         ]
-        _, not_auto, _dropped = merge_eval_updates(evals, id_map)
-        self.assertEqual(not_auto, [1])
+        _, not_auto, _ = merge_eval_updates(evals)
+        self.assertEqual(not_auto, [1, 3])
 
     def test_skip_not_in_not_auto_fixable(self):
-        """auto_fixable=false でも recommendation=skip なら not_auto_fixable に含まれない。"""
-        id_map = {"alignment": [1]}
+        """auto_fixable=False でも recommendation=skip なら not_auto_fixable に含まれない。"""
         evals = [
-            {"perspective": "alignment", "updates": [
-                {"id": 1, "recommendation": "skip", "auto_fixable": False,
-                 "status": "skipped", "skip_reason": "対象外"},
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "recommendation": "skip",
+                 "auto_fixable": False, "status": "skipped",
+                 "skip_reason": "許容範囲内"},
             ]},
         ]
-        _, not_auto, _dropped = merge_eval_updates(evals, id_map)
+        _, not_auto, _ = merge_eval_updates(evals)
         self.assertEqual(not_auto, [])
 
-    def test_out_of_range_local_id_skipped(self):
-        """ローカル ID が範囲外の場合はスキップされ、dropped に記録される。"""
-        id_map = {"alignment": [1]}
+    def test_create_issue_not_in_not_auto_fixable(self):
+        """recommendation=create_issue は not_auto_fixable に含まれない (FNC-406)。"""
         evals = [
-            {"perspective": "alignment", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix"},
-                {"id": 99, "status": "pending", "recommendation": "fix"},
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "recommendation": "create_issue",
+                 "auto_fixable": False, "status": "pending"},
             ]},
         ]
-        combined, _, dropped = merge_eval_updates(evals, id_map)
+        _, not_auto, _ = merge_eval_updates(evals)
+        self.assertEqual(not_auto, [])
+
+    def test_invalid_id_recorded(self):
+        """id が未指定・0・負値・非整数の場合は dropped に記録される。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"priority": "P1", "recommendation": "fix",
+                 "status": "pending"},  # id 欠落
+                {"id": 0, "priority": "P1", "recommendation": "fix",
+                 "status": "pending"},
+                {"id": -1, "priority": "P1", "recommendation": "fix",
+                 "status": "pending"},
+                {"id": "1", "priority": "P1", "recommendation": "fix",
+                 "status": "pending"},  # 文字列は不正
+                {"id": 1, "priority": "P1", "recommendation": "fix",
+                 "status": "pending"},  # 正常
+            ]},
+        ]
+        combined, _, dropped = merge_eval_updates(evals)
         self.assertEqual(len(combined), 1)
-        self.assertEqual(combined[0]["id"], 1)
-
-        # 範囲外 ID は dropped に記録される
-        self.assertEqual(len(dropped), 1)
-        self.assertEqual(dropped[0]["perspective"], "alignment")
-        self.assertEqual(dropped[0]["local_id"], 99)
-        self.assertIn("範囲外", dropped[0]["reason"])
-
-    def test_unknown_perspective_skipped(self):
-        """plan.yaml に存在しない perspective の eval はスキップされ dropped に記録される。"""
-        id_map = {"alignment": [1]}
-        evals = [
-            {"perspective": "unknown_perspective", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix"},
-            ]},
-        ]
-        combined, _, dropped = merge_eval_updates(evals, id_map)
-        self.assertEqual(combined, [])
-
-        # 未知 perspective も dropped に記録
-        self.assertEqual(len(dropped), 1)
-        self.assertEqual(dropped[0]["perspective"], "unknown_perspective")
-        self.assertIn("plan.yaml に存在しない", dropped[0]["reason"])
-
-    def test_invalid_local_id_recorded(self):
-        """local_id が未指定・0・負値の場合も dropped に記録される。"""
-        id_map = {"alignment": [1, 2]}
-        evals = [
-            {"perspective": "alignment", "updates": [
-                {"id": 1, "recommendation": "fix", "status": "pending"},
-                {"recommendation": "fix", "status": "pending"},  # id 欠落
-                {"id": 0, "recommendation": "fix", "status": "pending"},
-                {"id": -5, "recommendation": "fix", "status": "pending"},
-            ]},
-        ]
-        combined, _, dropped = merge_eval_updates(evals, id_map)
-        self.assertEqual(len(combined), 1)
-        # 無効 ID 3 件が dropped に記録
-        self.assertEqual(len(dropped), 3)
+        self.assertEqual(len(dropped), 4)
         for d in dropped:
-            self.assertIn("未指定または 1 未満", d["reason"])
+            self.assertIn("id", d["reason"])
+
+    def test_duplicate_id_in_eval_recorded(self):
+        """同一 id が複数回現れた場合は 2 回目以降を dropped に記録 (reviewer 1 起動原則)。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "recommendation": "fix",
+                 "status": "pending"},
+                {"id": 1, "priority": "P2", "recommendation": "skip",
+                 "status": "skipped"},
+            ]},
+        ]
+        combined, _, dropped = merge_eval_updates(evals)
+        # 最初の 1 件だけ combined に入る
+        self.assertEqual(len(combined), 1)
+        self.assertEqual(combined[0]["recommendation"], "fix")
+        self.assertEqual(len(dropped), 1)
+        self.assertEqual(dropped[0]["id"], 1)
+        self.assertIn("重複", dropped[0]["reason"])
+
+    def test_invalid_recommendation_rejected(self):
+        """recommendation が未知の値の場合は dropped に記録される。"""
+        evals = [
+            {"kind": "design", "updates": [
+                {"id": 1, "priority": "P1", "recommendation": "unknown",
+                 "status": "pending"},
+            ]},
+        ]
+        combined, _, dropped = merge_eval_updates(evals)
+        self.assertEqual(combined, [])
+        self.assertEqual(len(dropped), 1)
+        self.assertIn("recommendation", dropped[0]["reason"])
 
     def test_empty_updates_no_dropped(self):
         """eval の updates が空なら combined も dropped も空 (findings 0 件は正常)。"""
-        id_map = {"alignment": [1, 2]}
-        evals = [
-            {"perspective": "alignment", "updates": []},
-        ]
-        combined, not_auto, dropped = merge_eval_updates(evals, id_map)
+        evals = [{"kind": "design", "updates": []}]
+        combined, not_auto, dropped = merge_eval_updates(evals)
         self.assertEqual(combined, [])
         self.assertEqual(not_auto, [])
         self.assertEqual(dropped, [])
-
-    def test_shared_item_consistent_recommendation(self):
-        """同一 global_id に複数 perspective から一致判定が来た場合、最後の評価が採用される。"""
-        # id_map 上で global_id=2 が両 perspective に登録されている防御的ケース
-        # (通常フローでは発生しないが merge_eval_updates は安全装置として統合を行う)
-        id_map = {"logic": [1, 2], "resilience": [2, 3]}
-        evals = [
-            {"perspective": "logic", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True, "reason": "logic 理由"},
-                {"id": 2, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True, "reason": "logic: 共通問題"},
-            ]},
-            {"perspective": "resilience", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True, "reason": "resilience: 共通問題"},
-                {"id": 2, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": False, "reason": "resilience 理由"},
-            ]},
-        ]
-        combined, not_auto, _dropped = merge_eval_updates(evals, id_map)
-
-        # global_id ごとに 1 エントリに統合される(global_id=2 の重複が消える)
-        ids = [u["id"] for u in combined]
-        self.assertEqual(sorted(ids), [1, 2, 3])
-        self.assertEqual(len(ids), len(set(ids)), "global_id が重複していない")
-
-        by_id = {u["id"]: u for u in combined}
-
-        # global_id=2 は両 perspective とも recommendation=fix で一致
-        # → 最後のエントリ(resilience)が採用される
-        self.assertEqual(by_id[2]["recommendation"], "fix")
-        self.assertEqual(by_id[2]["reason"], "resilience: 共通問題")
-
-        # _perspective メタフィールドは出力に残っていない
-        for entry in combined:
-            self.assertNotIn("_perspective", entry)
-
-        # not_auto_fixable: global_id=3 は resilience だけ auto_fixable=False → 含まれる
-        self.assertEqual(not_auto, [3])
-
-    def test_shared_item_conflicting_recommendation_escalates(self):
-        """同一 global_id への fix / skip 不一致は needs_review にエスカレーションされる。"""
-        id_map = {"logic": [1, 2], "resilience": [2, 3]}
-        evals = [
-            {"perspective": "logic", "updates": [
-                {"id": 2, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True, "reason": "logic: 修正が必要"},
-            ]},
-            {"perspective": "resilience", "updates": [
-                {"id": 1, "status": "skipped", "recommendation": "skip",
-                 "skip_reason": "resilience: 対象外"},
-            ]},
-        ]
-        combined, not_auto, _dropped = merge_eval_updates(evals, id_map)
-
-        by_id = {u["id"]: u for u in combined}
-
-        # global_id=2 は両 perspective で fix / skip 不一致 → needs_review
-        self.assertEqual(by_id[2]["recommendation"], "needs_review")
-        self.assertEqual(by_id[2]["status"], "needs_review")
-        self.assertIn("perspective 間で判定不一致", by_id[2]["reason"])
-        self.assertIn("logic=fix", by_id[2]["reason"])
-        self.assertIn("resilience=skip", by_id[2]["reason"])
-
-        # needs_review に昇格した項目は not_auto_fixable に含めない(fix ではないため)
-        self.assertNotIn(2, not_auto)
-
-    def test_shared_item_single_perspective_no_escalation(self):
-        """perspectives 持ちでも 1 perspective しか eval が来なければエスカレートしない。"""
-        id_map = {"logic": [1], "resilience": [1]}  # 同一 global_id=1 が両方に属する
-        evals = [
-            {"perspective": "logic", "updates": [
-                {"id": 1, "status": "pending", "recommendation": "fix",
-                 "auto_fixable": True, "reason": "logic 理由"},
-            ]},
-        ]
-        combined, _, _dropped = merge_eval_updates(evals, id_map)
-        self.assertEqual(len(combined), 1)
-        self.assertEqual(combined[0]["id"], 1)
-        self.assertEqual(combined[0]["recommendation"], "fix")
-        self.assertEqual(combined[0]["reason"], "logic 理由")
-
-    def test_shared_item_three_way_split_escalates(self):
-        """3 perspective 間で判定が割れた場合も needs_review にエスカレーション。"""
-        id_map = {"a": [1], "b": [1], "c": [1]}
-        evals = [
-            {"perspective": "a", "updates": [
-                {"id": 1, "recommendation": "fix", "status": "pending"},
-            ]},
-            {"perspective": "b", "updates": [
-                {"id": 1, "recommendation": "skip", "status": "skipped",
-                 "skip_reason": "b の理由"},
-            ]},
-            {"perspective": "c", "updates": [
-                {"id": 1, "recommendation": "needs_review", "status": "pending"},
-            ]},
-        ]
-        combined, _, _dropped = merge_eval_updates(evals, id_map)
-        self.assertEqual(len(combined), 1)
-        self.assertEqual(combined[0]["recommendation"], "needs_review")
-        reason = combined[0]["reason"]
-        self.assertIn("a=fix", reason)
-        self.assertIn("b=skip", reason)
-        self.assertIn("c=needs_review", reason)
 
 
 # ---------------------------------------------------------------------------
 # CLI E2E テスト
 # ---------------------------------------------------------------------------
 
+
 class TestMergeEvalsCli(_FsTestCase):
+    def _run(self):
+        return subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir)],
+            capture_output=True, text=True,
+        )
+
     def test_basic_e2e(self):
-        """CLI 経由で eval_*.json → plan.yaml 更新が動作する。"""
+        """CLI 経由で priority 付き eval_*.json → plan.yaml 更新が動作する。"""
         (self.session_dir / "session.yaml").write_text(
             "status: active\nskill: review\n", encoding="utf-8"
         )
         self._write_plan(_sample_plan_items())
-        self._write_eval("alignment", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "修正理由A"},
-            {"id": 2, "status": "skipped", "recommendation": "skip",
-             "skip_reason": "対象外"},
-        ])
-        self._write_eval("architecture", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": False, "reason": "修正理由B"},
-            {"id": 2, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "修正理由C"},
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True,
+             "reason": "ルール違反"},
+            {"id": 2, "priority": "P1", "status": "skipped",
+             "recommendation": "skip", "skip_reason": "対象外"},
+            {"id": 3, "priority": "P2", "status": "pending",
+             "recommendation": "fix", "auto_fixable": False,
+             "reason": "矛盾"},
+            {"id": 5, "priority": "P3", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True,
+             "reason": "複雑化"},
         ])
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertEqual(result.returncode, 0, result.stderr)
 
         output = json.loads(result.stdout)
         self.assertEqual(output["status"], "ok")
         self.assertEqual(output["fix_count"], 3)
         self.assertEqual(output["skip_count"], 1)
+        self.assertEqual(output["needs_review_count"], 0)
+        self.assertEqual(output["create_issue_count"], 0)
         self.assertEqual(output["should_continue"], True)
-        self.assertEqual(output["not_auto_fixable"], [3])  # architecture id=1 → global 3
+        # auto_fixable=False かつ fix なのは id=3 だけ
+        self.assertEqual(output["not_auto_fixable"], [3])
+
+    def test_create_issue_excluded_from_should_continue(self):
+        """recommendation=create_issue は should_continue=true をトリガーしない (FNC-406)。"""
+        self._write_plan(_sample_plan_items())
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "create_issue",
+             "reason": "ルール未整備"},
+            {"id": 3, "priority": "P2", "status": "skipped",
+             "recommendation": "skip", "skip_reason": "許容範囲内"},
+            {"id": 5, "priority": "P3", "status": "needs_review",
+             "recommendation": "needs_review",
+             "reason": "判断保留"},
+        ])
+
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        output = json.loads(result.stdout)
+        self.assertEqual(output["fix_count"], 0)
+        self.assertEqual(output["skip_count"], 1)
+        self.assertEqual(output["needs_review_count"], 1)
+        self.assertEqual(output["create_issue_count"], 1)
+        # fix が 0 件なので should_continue=false
+        self.assertEqual(output["should_continue"], False)
+
+    def test_fix_triggers_should_continue(self):
+        """recommendation=fix が 1 件でもあれば should_continue=true。"""
+        self._write_plan(_sample_plan_items())
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True},
+            {"id": 3, "priority": "P2", "status": "pending",
+             "recommendation": "create_issue"},
+        ])
+
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        output = json.loads(result.stdout)
+        self.assertEqual(output["fix_count"], 1)
+        self.assertEqual(output["create_issue_count"], 1)
+        self.assertEqual(output["should_continue"], True)
 
     def test_no_eval_files(self):
         """eval_*.json が存在しない場合はエラーを stderr に出力。"""
         self._write_plan(_sample_plan_items())
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertNotEqual(result.returncode, 0)
-        # error JSON は stderr に出力 (update_plan.py / write_interpretation.py と統一)
         self.assertEqual(result.stdout.strip(), "")
-        self.assertTrue(result.stderr.strip())
         err = json.loads(result.stderr)
         self.assertEqual(err["status"], "error")
         self.assertIn("eval_*.json", err["error"])
 
     def test_error_json_goes_to_stderr_on_missing_plan(self):
         """plan.yaml 不在時も error JSON を stderr に出力する。"""
-        # plan.yaml を書かずに eval だけ置く
-        self._write_eval("alignment", [
-            {"id": 1, "status": "pending", "recommendation": "fix"},
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix"},
         ])
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout.strip(), "")
         err = json.loads(result.stderr)
         self.assertEqual(err["status"], "error")
 
     def test_all_dropped_is_error_with_diagnostics(self):
-        """全 eval が mapping 失敗(combined=[]) なら error + dropped 診断情報を返す。"""
+        """全 finding が検証失敗 (combined=[]) なら error + dropped 診断情報を返す。"""
         self._write_plan(_sample_plan_items())
-        # plan.yaml に存在しない perspective で eval を書く
-        self._write_eval("ghost_perspective", [
-            {"id": 1, "status": "pending", "recommendation": "fix"},
+        # 全件 priority 不正
+        self._write_eval("design", [
+            {"id": 1, "priority": "P4", "status": "pending",
+             "recommendation": "fix"},
         ])
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertNotEqual(result.returncode, 0)
         err = json.loads(result.stderr)
         self.assertEqual(err["status"], "error")
         self.assertIn("マップできませんでした", err["error"])
         self.assertIn("dropped", err)
         self.assertEqual(len(err["dropped"]), 1)
-        self.assertEqual(err["dropped"][0]["perspective"], "ghost_perspective")
 
     def test_empty_updates_succeeds_with_zero_counts(self):
         """eval の updates が全て空なら success (fix_count=0)。diagnostics なし。"""
         self._write_plan(_sample_plan_items())
-        self._write_eval("alignment", [])  # updates 空(findings 0 件)
+        self._write_eval("design", [])
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads(result.stdout)
         self.assertEqual(output["status"], "ok")
         self.assertEqual(output["fix_count"], 0)
         self.assertEqual(output["skip_count"], 0)
         self.assertEqual(output["needs_review_count"], 0)
+        self.assertEqual(output["create_issue_count"], 0)
         self.assertEqual(output["should_continue"], False)
         self.assertEqual(output["updated"], [])
         self.assertNotIn("dropped", output)
 
     def test_partial_dropped_reported_in_success(self):
-        """一部 mapping 失敗があっても combined>0 なら success + dropped 診断を含む。"""
+        """一部 finding が検証失敗でも combined>0 なら success + dropped 診断を含む。"""
         self._write_plan(_sample_plan_items())
-        # alignment は local_id 1,2 が有効、local_id 99 は範囲外
-        self._write_eval("alignment", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "有効"},
-            {"id": 99, "status": "pending", "recommendation": "fix"},
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True,
+             "reason": "有効"},
+            {"id": 2, "priority": "BAD", "status": "pending",
+             "recommendation": "fix"},
         ])
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
         self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads(result.stdout)
         self.assertEqual(output["status"], "ok")
         self.assertEqual(output["fix_count"], 1)
         self.assertIn("dropped", output)
         self.assertEqual(len(output["dropped"]), 1)
-        self.assertEqual(output["dropped"][0]["local_id"], 99)
+        self.assertEqual(output["dropped"][0]["id"], 2)
 
     def test_all_skip(self):
         """全件スキップの場合 should_continue=false。"""
         self._write_plan(_sample_plan_items())
-        self._write_eval("alignment", [
-            {"id": 1, "status": "skipped", "recommendation": "skip",
-             "skip_reason": "対象外"},
-            {"id": 2, "status": "skipped", "recommendation": "skip",
-             "skip_reason": "対象外"},
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "skipped",
+             "recommendation": "skip", "skip_reason": "対象外"},
+            {"id": 2, "priority": "P1", "status": "skipped",
+             "recommendation": "skip", "skip_reason": "対象外"},
         ])
 
-        result = subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0)
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads(result.stdout)
         self.assertEqual(output["should_continue"], False)
         self.assertEqual(output["fix_count"], 0)
+        self.assertEqual(output["skip_count"], 2)
 
-    def test_plan_updated(self):
-        """plan.yaml が実際に更新されていることを確認。"""
+    def test_plan_updated_with_priority(self):
+        """plan.yaml の各 item に priority が反映される (id ベース更新)。"""
         self._write_plan(_sample_plan_items())
-        self._write_eval("resilience", [
-            {"id": 1, "status": "pending", "recommendation": "fix",
-             "auto_fixable": True, "reason": "テスト理由"},
-            {"id": 2, "status": "skipped", "recommendation": "skip",
-             "skip_reason": "改善提案"},
+        self._write_eval("design", [
+            {"id": 5, "priority": "P3", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True,
+             "reason": "テスト理由"},
+            {"id": 6, "priority": "P3", "status": "skipped",
+             "recommendation": "skip", "skip_reason": "改善提案"},
         ])
 
-        subprocess.run(
-            [sys.executable, SCRIPT, str(self.session_dir)],
-            capture_output=True, text=True,
-        )
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
 
         # plan.yaml を読み直して検証
         plan = read_yaml(str(self.session_dir / "plan.yaml"))
         items = plan["items"]
 
-        # resilience の item (id=5, 6) が更新されている
         item5 = next(i for i in items if i["id"] == 5)
+        self.assertEqual(item5["priority"], "P3")
         self.assertEqual(item5["recommendation"], "fix")
+        self.assertEqual(item5["status"], "pending")
 
         item6 = next(i for i in items if i["id"] == 6)
+        self.assertEqual(item6["priority"], "P3")
         self.assertEqual(item6["status"], "skipped")
+
+    def test_multiple_eval_files_aggregated(self):
+        """複数の eval_*.json も集約される (将来複数種別の同時実行に備える)。"""
+        self._write_plan(_sample_plan_items())
+        # 各ファイルは別 id を持つ前提 (reviewer 1 起動原則のもとでは
+        # 通常 1 ファイルだが、scan 仕様として複数ファイル集約も担保)
+        self._write_eval("design", [
+            {"id": 1, "priority": "P1", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True},
+        ])
+        self._write_eval("code", [
+            {"id": 3, "priority": "P2", "status": "pending",
+             "recommendation": "fix", "auto_fixable": True},
+        ])
+
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+        self.assertEqual(output["fix_count"], 2)
+        self.assertEqual(sorted(output["updated"]), [1, 3])
 
 
 if __name__ == "__main__":

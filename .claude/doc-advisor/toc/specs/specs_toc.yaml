@@ -4,8 +4,8 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-19T04:40:44Z
-  file_count: 52
+  generated_at: 2026-05-20T17:56:10Z
+  file_count: 55
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -946,6 +946,98 @@ docs:
       - search quality
       - recall
       - multi-vector
+  docs/specs/forge-review/design/DES-028_review_policy_design.md:
+    doc_type: design
+    title: Review Policy Design (DES-028) — Differential Design
+    purpose: Specifies the differential design for review pipeline changes based on REQ-004. Defines new policy files, SKILL modifications, and implementation details for priority-based review system with single reviewer execution and P1/P2/P3 labeling.
+    content_details:
+      - CLI argument structure (--diff/--files/--interactive/--auto-critical/--auto)
+      - Priority axes (P1=rule matching, P2=contradiction detection, P3=simplicity checks)
+      - Severity and priority as independent axes with severity SoT in principles documents
+      - Review packet structure (criteria_path + ssot_refs + check_order)
+      - Single reviewer execution principle with P1/P2/P3 evaluation sequence
+      - Policy file changes (review_priorities_spec.md new, review_criteria_*.md full replacement, principles documents enrichment)
+      - SKILL modifications across /forge:review, reviewer, evaluator, present-findings, fixer
+      - "Append A: 18-item principles expansion catalog from Issue #74"
+      - refs.yaml new schema with review_packet sections replacing perspectives
+    applicable_tasks:
+      - Review policy implementation and verification
+      - Policy file updates (principles enrichment with severity catalogs)
+      - SKILL.md modifications for new CLI structure and 1-reviewer execution
+      - Test design for differential changes
+      - Review pipeline quality assurance
+      - Integration of review findings with /anvil:create-issue flow
+    keywords:
+      - forge-review feature
+      - review policy
+      - priority (P1/P2/P3)
+      - severity
+      - review packet
+      - SSOT (single source of truth)
+      - reviewer 1 execution
+      - criteria (routing + playbook)
+      - principles enrichment
+      - "Issue #68 (complexity reduction)"
+  docs/specs/forge-review/plan/forge-review_strategy.md:
+    doc_type: plan
+    title: forge-review Implementation Strategy
+    purpose: Defines the phased implementation strategy for forge-review feature, including policy layer consolidation, schema transformation, SKILL modifications, testing framework, and addendum merge process
+    content_details:
+      - Bottom-up with risk-driven approach
+      - "Five phases with strict dependencies: policy layer, schema transformation, SKILL modifications, test integration, and addendum merge"
+      - "Constraints and standards: frontmatter rules, YAML plan format, mandatory unit testing"
+      - Risk mitigation strategies for FNC-412 reviewer 1 launch principle and refs.yaml schema compatibility
+      - "Task granularity guidelines: 5-10 items per agent execution, estimated 34-38 total tasks"
+      - Deprecation of perspectives[] schema in favor of review_packet structure
+      - Regression test requirements including criteria perspective elimination and old schema rejection
+    applicable_tasks:
+      - forge-review implementation planning
+      - Phase sequencing and dependency validation
+      - Task breakdown and granularity calibration
+      - Review criteria updates and schema migration
+      - Test framework design for phased implementation
+      - Risk assessment and mitigation planning
+    keywords:
+      - forge-review
+      - implementation strategy
+      - phased approach
+      - refs.yaml schema
+      - review_packet
+      - perspectives elimination
+      - FNC-412
+      - regression testing
+      - addendum merge
+      - risk-driven
+  docs/specs/forge-review/requirements/REQ-004_review_policy.md:
+    doc_type: requirement
+    title: Review Policy Requirements
+    purpose: Defines lightweight review framework with 3 priority levels, pure rules-based criteria structure, and 1 reviewer per execution to reduce AI reviewer complexity
+    content_details:
+      - Review observation priorities (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
+      - Criteria structure purification - perspective abolition and judgment removal
+      - "CLI interface with 2-axis flags (target axis: --diff or --files, intervention axis: --interactive, --auto-critical, --auto)"
+      - Reviewer single-execution mandate (FNC-412) - no parallel reviewer spawning across priorities or files
+      - Principles augmentation (severity cataloging and gray zone tolerance definition)
+      - Rule gap discovery Issue creation flow with 3 mandatory conditions
+      - forge built-in rule fallback mechanism
+      - Default behavior specification (--diff --interactive equivalence)
+    applicable_tasks:
+      - Review policy implementation
+      - forge review command architecture
+      - reviewer and evaluator logic redesign
+      - principles document expansion
+      - criteria reformation
+      - anti-pattern repository setup
+    keywords:
+      - review
+      - priority levels
+      - document-driven
+      - criteria
+      - reviewer
+      - complexity reduction
+      - rule compliance
+      - SDD
+      - "Issue #68"
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md:
     doc_type: design
     title: "ADR-001: forge:query-db-* Query Flag Policy"

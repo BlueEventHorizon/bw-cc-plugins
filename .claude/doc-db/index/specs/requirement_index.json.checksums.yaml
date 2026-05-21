@@ -1,7 +1,7 @@
 # doc-db checksums
 # Auto-generated - do not edit
-generated_at: 2026-05-19T04:38:33Z
-file_count: 23
+generated_at: 2026-05-20T17:56:37Z
+file_count: 24
 checksums:
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
@@ -24,5 +24,6 @@ checksums:
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: cd91a0dadb4eb22a5088d9ac434b1cdaa148daf4ac15acc62604292c60d1c6a9
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 7a9df6e214d2f5064c41d89595731317f8bd2381ffc654f7115aa86e140b3ad4
   docs/specs/doc-db/requirements/REQ-006_doc_db.md: 6bbb83a0609873d10ca7a184b05d6f81fcc326538fc07728a22969c8fc8379d7
+  docs/specs/forge-review/requirements/REQ-004_review_policy.md: 58f4e844f9a6b9bef2ec495476be20a9ddd4129ed4b5edfe3e8d0c801f7ee27a
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 8abf0c945e48a1b0d6be922c6e7c63da0c6bf516b30876a66e1679e3a2223365
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 61c41caf741b964dfbbe8a798ce6236eb14abd3102180362c737895042d9ea33
