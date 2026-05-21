@@ -411,7 +411,7 @@ perspectives:
   - name: project-rules
     criteria_path: "docs/rules/implementation_guidelines.md"
     section: null
-    output_path: review_project_rules.md
+    output_path: review_project-rules.md
 
 related_code:
   - path: plugins/forge/skills/reviewer/SKILL.md
