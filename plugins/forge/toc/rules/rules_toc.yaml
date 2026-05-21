@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-21T07:35:18Z
+  generated_at: 2026-05-21T11:21:41Z
   file_count: 36
 
 docs:
@@ -324,36 +324,33 @@ docs:
   plugins/forge/docs/review_priorities_spec.md:
     doc_type: rule
     title: Review Priorities Specification
-    purpose: Defines the priority system (P1/P2/P3), the relationship between priority and severity, and the fixed 3-section structure of review_criteria_*.md as the MANDATORY base policy referenced by all /forge:review SKILLs and criteria files
+    purpose: Defines the priority system for review perspectives and the determination of severity levels and edge cases in forge review workflows
     content_details:
-      - "Priority definition: P1 (rule matching), P2 (contradiction), P3 (unnecessary complication)"
-      - priority and severity as independent axes (priority = observation source, severity = fix urgency)
-      - severity SoT located in delegated principles (FNC-411 catalog), not in criteria
-      - "Exclusions: P2 omits missing/lacking detection, P3 omits subjective evaluation (Goodhart trap)"
-      - criteria do not declare severity nor gray-zone judgment
-      - "recommendation: create_issue 3 conditions (no applicable rule / recurrence or objectivity / written rule granularity)"
-      - Fixed 3-section structure for review_criteria_*.md (SSOT references / check order / decision rules)
-      - Template skeleton for criteria files
-      - Cross-SoT priority order (project rules > project specs > forge principles > forge format) referencing DES-028 3.4.1
-      - Deprecated sections (Perspective blocks / severity tables / false positive warnings)
+      - Review priority definitions (P1 Rule Compliance, P2 Contradiction Detection, P3 Unnecessary Complexity)
+      - Relationship between priority and severity axes
+      - Severity source of truth delegation to principles documents
+      - Three-condition framework for create_issue recommendations
+      - Fixed three-section structure for review_criteria files (SSOT References, Check Order, Decision Rules)
+      - Exclusion rules for missing elements, subjective evaluations, and custom perspectives
+      - Principles delegation model for severity mapping and edge case tolerance ranges
     applicable_tasks:
-      - Authoring review_criteria_*.md
-      - Designing /forge:review SKILL chain (review / reviewer / evaluator / present-findings / fixer)
-      - Determining create_issue eligibility
-      - Removing judgment from criteria
-      - Aligning principles severity catalogs with criteria
-      - Verifying review priority compliance during AI review
+      - Review criteria creation
+      - Review workflow design
+      - Severity determination in code reviews
+      - Edge case handling guidance
+      - Issue creation recommendation evaluation
+      - forge review SKILL development
+      - Review standard enforcement
     keywords:
-      - review priorities
+      - review priority
       - P1 P2 P3
-      - severity catalog
-      - criteria structure
-      - create_issue
-      - SSOT references
-      - check order
-      - decision rules
-      - FNC-401
-      - FNC-411
+      - severity
+      - SSOT
+      - principles
+      - review criteria
+      - forge-review
+      - rule compliance
+      - contradiction detection
   plugins/forge/docs/session_format.md:
     doc_type: rule
     title: Session Directory Specification
@@ -423,35 +420,36 @@ docs:
       - traceability
   plugins/forge/docs/spec_format.md:
     doc_type: rule
-    title: Specification ID Classification Catalog
-    purpose: Defines specification format standards including requirement IDs, design IDs, task IDs, priority ranges, and file naming conventions for specification-driven development
+    title: Specification Format and ID Catalog
+    purpose: Defines specification structure, ID classification system, naming conventions, and cross-reference rules for organizing requirement, design, and plan documents across specification directories
     content_details:
-      - ID classification system
-      - Feature grouping patterns
+      - Feature definition and usage patterns
       - Requirement ID catalog (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG)
-      - Design ID catalog
-      - Task ID catalog
-      - Priority range definition
-      - File naming conventions
-      - frontmatter type usage for temporary feature documents
+      - Design ID catalog (DES prefix)
+      - Task ID catalog (TASK prefix)
+      - Priority ranges (70-99 high, 40-69 medium, 1-39 low)
+      - File naming conventions for specs
+      - ID reference notation (ID enumeration and inline references)
+      - ID numbering namespace (spec directory unit, multi-spec trees)
+      - Cross-directory reference principles and modifier notation
+      - Spec directory boundary crossing guidelines
     applicable_tasks:
-      - Specification document structure setup
-      - Requirement ID assignment
-      - Design document organization
-      - Specification format standardization
-      - Document naming rule enforcement
-      - Feature ID allocation
+      - Specification document creation
+      - Specification organization and structure
+      - Specification cross-reference design
+      - Specification ID adoption and numbering
+      - Multi-spec directory coordination
     keywords:
+      - spec ID
       - specification format
-      - ID catalog
+      - naming convention
+      - cross-reference
+      - namespace
+      - Feature
       - requirement ID
       - design ID
-      - task ID
-      - naming convention
-      - document structure
-      - feature
-      - priority
-      - frontmatter type
+      - modifier notation
+      - feature development
   plugins/forge/docs/spec_priorities_spec.md:
     doc_type: rule
     title: Specification Priorities Spec

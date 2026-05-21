@@ -1,6 +1,6 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-21T07:30:17Z
+generated_at: 2026-05-21T11:20:55Z
 file_count: 36
 checksums:
   plugins/forge/docs/additive_development_spec.md: 9a0ddd05ce4f9ebe7051f89ae6bd9ece2a040af98398fbb9c136ae3e4456cb3f
@@ -13,10 +13,10 @@ checksums:
   plugins/forge/docs/plan_format.md: 9fb0cf28fd0bfaf5a8d7e57ff621e71e842450318567241852733769f7d3c09d
   plugins/forge/docs/plan_principles_spec.md: 0a1b8f90af0b5646203b7d0e344736f6140c4d61eabf2f6c8a26cf98551d794e
   plugins/forge/docs/requirement_format.md: d8027a308854681f225faddbbe17b204d460cf5a2e7b82064691499309d109a9
-  plugins/forge/docs/review_priorities_spec.md: 2f2a2c6a9bdb8d51673269d10469058d2e224e6680057bf0338f787200ef4ed2
+  plugins/forge/docs/review_priorities_spec.md: a74f3bd349bdc72aa68c795ad6e9a94b67c83f40c9484ee989230ea891d94520
   plugins/forge/docs/session_format.md: cec14f08027f56fc6cc14c8bba419c584d882d42f4c5a2fc20ffab19b90be023
   plugins/forge/docs/spec_design_boundary_spec.md: e13bf013b1c71ae584ba41a8ad341c8bb6a5d718d8c32834d758b9189cb02e03
-  plugins/forge/docs/spec_format.md: 13f3ec266ccfa90d7f1e52d865566b12bbae6ebf584d3fe3d2468bfa44702311
+  plugins/forge/docs/spec_format.md: a9d2340c92b4d5899cd8516557117f834f239cfbaea7ce8679dcf00548574c1e
   plugins/forge/docs/spec_priorities_spec.md: 005af0ab77b406800d06fd37799a5331e89baa91e859016604ba0e85a3b47b12
   plugins/forge/docs/strategy_formulation_spec.md: b62d6bf4562fdd5e6a0cabbf1bd00a91339f229ccf7f2536133cfe6863396b67
   plugins/forge/docs/task_execution_spec.md: 7d373c42062812c25873dc7bd14ecdd9e3447d72fdca91a12db17221976ca0fb
