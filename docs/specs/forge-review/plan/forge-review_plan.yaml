@@ -334,7 +334,7 @@ tasks:
   - task_id: TASK-015
     title: /forge:review SKILL.md 改修 (引数体系 + 1 起動原則)
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-003
@@ -370,7 +370,7 @@ tasks:
   - task_id: TASK-016
     title: resolve_review_context.py の --files バイパス + unittest
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-009
@@ -389,7 +389,7 @@ tasks:
   - task_id: TASK-017
     title: init_session.py の --files 対応 + unittest
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-009
@@ -408,7 +408,7 @@ tasks:
   - task_id: TASK-018
     title: /forge:reviewer SKILL.md 1 起動原則 + review_packet 入力契約
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-003
