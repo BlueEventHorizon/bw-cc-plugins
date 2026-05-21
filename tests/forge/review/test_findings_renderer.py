@@ -20,10 +20,13 @@ def _f(
     *,
     priority=None,
     location="",
-    perspective=None,
     status="pending",
 ):
-    """test fixture finding 辞書を生成する。"""
+    """test fixture finding 辞書を生成する。
+
+    新体系 (DES-028) に基づき、観点軸は priority (P1/P2/P3) で表現する。
+    旧 `perspective` 軸 (logic/resilience 等) は撤廃済みのため fixture からも除去。
+    """
     d = {
         "id": finding_id,
         "severity": severity,
@@ -33,20 +36,18 @@ def _f(
     }
     if priority is not None:
         d["priority"] = priority
-    if perspective is not None:
-        d["perspective"] = perspective
     return d
 
 
 class TestFindingsRenderer(unittest.TestCase):
     def test_generate_plan_yaml(self):
         yaml_text = generate_plan_yaml([
-            _f(1, "critical", "path: 問題", priority="P1", perspective="logic"),
+            _f(1, "critical", "path: 問題", priority="P1"),
         ])
 
         self.assertIn("items:", yaml_text)
         self.assertIn('title: "path: 問題"', yaml_text)
-        self.assertIn("perspective: logic", yaml_text)
+        self.assertIn("severity: critical", yaml_text)
         self.assertIn("priority: P1", yaml_text)
 
     def test_generate_plan_yaml_preserves_input_order(self):
@@ -73,13 +74,13 @@ class TestFindingsRenderer(unittest.TestCase):
 
     def test_generate_review_md_and_summary(self):
         findings = [
-            _f(1, "critical", "問題A", priority="P1", location="a.py:1", perspective="logic"),
+            _f(1, "critical", "問題A", priority="P1", location="a.py:1"),
             _f(2, "minor", "改善B", priority="P3"),
         ]
 
         md = generate_review_md(findings)
         self.assertIn("# 統合レビュー結果", md)
-        self.assertIn("[logic]", md)
+        self.assertIn("**問題A**", md)
         self.assertIn("箇所: a.py:1", md)
         self.assertEqual(
             summarize(findings),

@@ -443,7 +443,7 @@ tasks:
   - task_id: TASK-019
     title: reviewer/templates/review.md に priority 行を追加
     priority: 55
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-018
@@ -460,7 +460,7 @@ tasks:
   - task_id: TASK-020
     title: /forge:evaluator SKILL.md に create_issue + 5観点直交を実装
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-018
@@ -563,7 +563,7 @@ tasks:
   - task_id: TASK-025
     title: 既存 test_findings_parser.py を新体系に書き換え
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-012
@@ -578,7 +578,7 @@ tasks:
   - task_id: TASK-026
     title: 既存 test_findings_renderer.py を新体系に書き換え
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-013
@@ -798,7 +798,7 @@ tasks:
   - task_id: TASK-037
     title: FNC-408 デフォルト変更周知 (初回案内 + リリースノート用周知文作成)
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-015
