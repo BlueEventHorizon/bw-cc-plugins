@@ -485,7 +485,7 @@ tasks:
   - task_id: TASK-021
     title: /forge:present-findings SKILL.md に Issue 化選択肢を追加
     priority: 55
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-020
@@ -509,7 +509,7 @@ tasks:
   - task_id: TASK-022
     title: /forge:fixer SKILL.md を review_<種別>.md 抜粋に対応
     priority: 55
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-020
@@ -531,7 +531,7 @@ tasks:
   - task_id: TASK-023
     title: 既存 test_init_session.py を新体系に書き換え
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-017
@@ -547,7 +547,7 @@ tasks:
   - task_id: TASK-024
     title: 既存 test_resolve_review_context.py を新体系に書き換え
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-016
@@ -593,7 +593,7 @@ tasks:
   - task_id: TASK-027
     title: 回帰防止テスト criteria に Perspective がない (grep test)
     priority: 45
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-003
