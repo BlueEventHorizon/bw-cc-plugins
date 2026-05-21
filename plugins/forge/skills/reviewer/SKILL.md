@@ -2,9 +2,8 @@
 name: reviewer
 user-invocable: false
 description: |
-  review_packet (criteria_path + ssot_refs[] + check_order) に基づき、
-  P1 (ルール合致) → P2 (矛盾・齟齬) → P3 (不要な複雑化) を順次評価し
-  指摘事項を 1 ファイルに書き出す。/forge:review から **1 体のみ起動**される。
+  与えられた検査基準と参考文書に基づき、コード・文書の品質問題を重大度付きで指摘する評価エンジン。
+  /forge:review から呼び出される。
 argument-hint: "<種別> [--エンジン]"
 allowed-tools: Read, Write, Bash
 ---

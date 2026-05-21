@@ -2,9 +2,8 @@
 name: evaluator
 user-invocable: false
 description: |
-  reviewer が生成した finding (priority: P1/P2/P3 付き) を 5 観点で精査し、
-  recommendation を fix / create_issue / skip / needs_review のいずれかに判定する。
-  /forge:review から **1 体のみ起動**される (reviewer 1 起動原則 FNC-412 と同一思想)。
+  レビュー指摘事項を精査し、修正・Issue 化・スキップ・要再検討のいずれかに方針判定する。
+  /forge:review から呼び出される判定エンジン。
 argument-hint: "(内部使用)"
 allowed-tools: Read, Write, Bash
 ---

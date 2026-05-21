@@ -1,6 +1,8 @@
 ---
 name: resolve-figma-node
-description: Figma nodeId の発見・検証スキル。画面名/ID から Figma 内の正しい nodeId と URL を特定・検証する。画面設計書の nodeId を信頼せず、PAT（REST API）で Figma 側を実際に確認する。MCP は使用しない。
+description: |
+  画面名や ID から Figma 内の正しい nodeId と URL を発見・検証する。
+  画面設計書の nodeId を信頼せず、Figma 側で実在を確かめてから使いたいときに用いる。
 user-invocable: false
 allowed-tools: Bash(curl -s -H *api.figma.com*), Bash(echo *), Bash(python3 *), Read, Glob, Grep, AskUserQuestion
 ---

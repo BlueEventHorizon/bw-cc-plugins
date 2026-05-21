@@ -2,9 +2,8 @@
 name: fixer
 user-invocable: false
 description: |
-  evaluator が判定済みの `recommendation: fix` 項目のみを対象に、コード・文書を修正する。
-  /forge:present-findings からの対話的修正と /forge:review の --auto / --auto-critical
-  からの自動修正で使用される。create_issue / skip / needs_review は対象外。
+  レビュー指摘のうち修正対象と判定された項目を、実際にコード・文書に反映する。
+  /forge:review の自動修正と /forge:present-findings の対話的修正から呼び出される。
 argument-hint: "<修正モード> (--single | --batch | --diff-only)"
 allowed-tools: Read, Write, Edit, Bash
 ---
