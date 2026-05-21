@@ -118,7 +118,7 @@ tasks:
   - task_id: TASK-004
     title: review_criteria_design.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -137,7 +137,7 @@ tasks:
   - task_id: TASK-005
     title: review_criteria_requirement.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -155,7 +155,7 @@ tasks:
   - task_id: TASK-006
     title: review_criteria_plan.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -173,7 +173,7 @@ tasks:
   - task_id: TASK-007
     title: review_criteria_uxui.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
@@ -192,7 +192,7 @@ tasks:
   - task_id: TASK-008
     title: review_criteria_generic.md 3 セクション固定構造に全面置換
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-028
     depends_on:
       - TASK-001
