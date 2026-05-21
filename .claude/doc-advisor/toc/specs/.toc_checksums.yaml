@@ -1,7 +1,7 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-19T04:39:14Z
-file_count: 52
+generated_at: 2026-05-20T17:55:23Z
+file_count: 55
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
@@ -35,6 +35,9 @@ checksums:
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: cd91a0dadb4eb22a5088d9ac434b1cdaa148daf4ac15acc62604292c60d1c6a9
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 7a9df6e214d2f5064c41d89595731317f8bd2381ffc654f7115aa86e140b3ad4
   docs/specs/doc-db/requirements/REQ-006_doc_db.md: 6bbb83a0609873d10ca7a184b05d6f81fcc326538fc07728a22969c8fc8379d7
+  docs/specs/forge-review/design/DES-028_review_policy_design.md: a31f046ac7d1b585ad2c9b0f614a137dbf82327b05e9f7d8f34d89cab6001fc4
+  docs/specs/forge-review/plan/forge-review_strategy.md: b4f84dd906da8550fdf10291f6a83cff2c7a81523e5f60225d6ba597914d90fb
+  docs/specs/forge-review/requirements/REQ-004_review_policy.md: 58f4e844f9a6b9bef2ec495476be20a9ddd4129ed4b5edfe3e8d0c801f7ee27a
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md: 4e21025ed3bc4923e319cd63421624330d39dea7fbde470b21b912d692b599c2
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 49d04ccab2940d2192eb9e2db969c827678ae391a4048d3ec7b878ad6f442b34
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: ab46fe033f2e59baa00fa05d395e789203436f8bd8d23a57b212851efde6e450

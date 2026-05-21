@@ -1,7 +1,7 @@
 # doc-db checksums
 # Auto-generated - do not edit
-generated_at: 2026-05-19T04:38:30Z
-file_count: 28
+generated_at: 2026-05-20T17:56:34Z
+file_count: 29
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 57e5fa707e66e99c019a1bbdc0d05b45e1414e3c128f03c7fe678aefde6cfdd7
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: 42035d3a6ab04636378aedcb5b12c920e65dbe8aadd1eb6caf7f6205bd4a37f9
@@ -14,6 +14,7 @@ checksums:
   docs/specs/doc-advisor/design/DES-007_unified_api_key_reference_design.md: 958da88d30f924df0779c164671284e859ec7558d874e529bbf7ae9e43d996cf
   docs/specs/doc-db/design/ADR-001_build_search_io_separation.md: 3af7c37c8175be178ac33c5802f8e6789bdf8be756e15f5ca0b66dbce4e452d5
   docs/specs/doc-db/design/DES-026_doc_db_design.md: 2fecd95637a894f1040f848572afe897e62b637ca38f2fe32a87e8fbf542f148
+  docs/specs/forge-review/design/DES-028_review_policy_design.md: a31f046ac7d1b585ad2c9b0f614a137dbf82327b05e9f7d8f34d89cab6001fc4
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md: 4e21025ed3bc4923e319cd63421624330d39dea7fbde470b21b912d692b599c2
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 49d04ccab2940d2192eb9e2db969c827678ae391a4048d3ec7b878ad6f442b34
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: ab46fe033f2e59baa00fa05d395e789203436f8bd8d23a57b212851efde6e450

@@ -10,19 +10,27 @@ Feature 検出、exclude 判定をテストする。
   python3 -m unittest tests.forge.review.test_resolve_review_context -v
 """
 
+import io
+import json
 import os
 import sys
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
                        / 'plugins' / 'forge' / 'skills' / 'review' / 'scripts'))
 
+import resolve_review_context as rrc
 from resolve_review_context import (
     parse_doc_structure,
+    parse_args,
+    get_uncommitted_changed_files,
     _is_excluded,
     _get_all_excludes,
     _doc_type_to_review_type,
@@ -758,6 +766,318 @@ class TestDetectTypeFromDir(_YamlFileTestCase):
         review_type, files = detect_type_from_dir('nonexistent', ds, self.tmpdir)
         self.assertIsNone(review_type)
         self.assertEqual(files, [])
+
+
+# =========================================================================
+# 7. parse_args テスト (--files / --diff バイパス経路)
+# =========================================================================
+
+class TestParseArgs(unittest.TestCase):
+    """parse_args のテスト (TASK-016: --files / --diff)"""
+
+    def test_no_args(self):
+        result = parse_args([])
+        self.assertEqual(result["targets"], [])
+        self.assertIsNone(result["files"])
+        self.assertFalse(result["diff"])
+
+    def test_positional_targets(self):
+        result = parse_args(['a.md', 'b.md'])
+        self.assertEqual(result["targets"], ['a.md', 'b.md'])
+        self.assertIsNone(result["files"])
+        self.assertFalse(result["diff"])
+
+    def test_unknown_flag_ignored(self):
+        """未知フラグ (--codex / --claude 等) は無視される (後方互換)"""
+        result = parse_args(['--codex', 'a.md', '--auto-fix'])
+        self.assertEqual(result["targets"], ['a.md'])
+        self.assertIsNone(result["files"])
+        self.assertFalse(result["diff"])
+
+    def test_files_multiple_args(self):
+        """--files で複数パスを空白区切りで指定"""
+        result = parse_args(['--files', 'a.md', 'b.md', 'c.md'])
+        self.assertEqual(result["files"], ['a.md', 'b.md', 'c.md'])
+        self.assertEqual(result["targets"], [])
+
+    def test_files_comma_separated(self):
+        """--files でカンマ区切り指定"""
+        result = parse_args(['--files', 'a.md,b.md,c.md'])
+        self.assertEqual(result["files"], ['a.md', 'b.md', 'c.md'])
+
+    def test_files_mixed_comma_and_space(self):
+        """カンマ区切りと空白区切りの混在も対応"""
+        result = parse_args(['--files', 'a.md,b.md', 'c.md'])
+        self.assertEqual(result["files"], ['a.md', 'b.md', 'c.md'])
+
+    def test_files_empty(self):
+        """--files の後にパスがない場合は空リスト"""
+        result = parse_args(['--files'])
+        self.assertEqual(result["files"], [])
+
+    def test_files_terminates_at_flag(self):
+        """--files の収集は次の -- フラグで終わる"""
+        result = parse_args(['--files', 'a.md', 'b.md', '--diff'])
+        self.assertEqual(result["files"], ['a.md', 'b.md'])
+        self.assertTrue(result["diff"])
+
+    def test_diff_flag(self):
+        result = parse_args(['--diff'])
+        self.assertTrue(result["diff"])
+        self.assertIsNone(result["files"])
+        self.assertEqual(result["targets"], [])
+
+
+# =========================================================================
+# 8. get_uncommitted_changed_files テスト (--diff 経路の内部実装)
+# =========================================================================
+
+class TestGetUncommittedChangedFiles(unittest.TestCase):
+    """get_uncommitted_changed_files のテスト (TASK-016: --diff)"""
+
+    def setUp(self):
+        self.tmpdir = Path(os.path.realpath(tempfile.mkdtemp()))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _mock_runner(self, stdout, returncode=0, stderr=''):
+        """subprocess.run を差し替えるための fake runner"""
+        def runner(cmd, **kwargs):
+            return SimpleNamespace(
+                stdout=stdout, stderr=stderr, returncode=returncode
+            )
+        return runner
+
+    def test_working_tree_modified(self):
+        """working tree の変更 (M) を検出"""
+        (self.tmpdir / 'a.md').write_text('a')
+        runner = self._mock_runner(' M a.md\n')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['a.md'])
+
+    def test_staged_modified(self):
+        """staged の変更 (M ) を検出"""
+        (self.tmpdir / 'b.md').write_text('b')
+        runner = self._mock_runner('M  b.md\n')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['b.md'])
+
+    def test_untracked(self):
+        """untracked file (??) も検出"""
+        (self.tmpdir / 'new.md').write_text('new')
+        runner = self._mock_runner('?? new.md\n')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['new.md'])
+
+    def test_mixed_staged_and_working(self):
+        """staged + working tree + untracked の混在"""
+        (self.tmpdir / 'a.md').write_text('a')
+        (self.tmpdir / 'b.md').write_text('b')
+        (self.tmpdir / 'c.md').write_text('c')
+        runner = self._mock_runner(
+            'M  a.md\n'
+            ' M b.md\n'
+            '?? c.md\n'
+        )
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['a.md', 'b.md', 'c.md'])
+
+    def test_deleted_file_skipped(self):
+        """削除済みファイル (実体無し) はスキップ"""
+        # ファイルを作らず、porcelain だけ ' D' を返す
+        runner = self._mock_runner(' D removed.md\n')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, [])
+
+    def test_rename_uses_new_path(self):
+        """rename (R) は新しいパスを採用"""
+        (self.tmpdir / 'new_name.md').write_text('content')
+        runner = self._mock_runner('R  old_name.md -> new_name.md\n')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['new_name.md'])
+
+    def test_empty_status(self):
+        """変更なし"""
+        runner = self._mock_runner('')
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, [])
+
+    def test_git_failure_raises(self):
+        """git 失敗 (returncode != 0) は RuntimeError"""
+        runner = self._mock_runner('', returncode=128, stderr='fatal: not a git repository')
+        with self.assertRaises(RuntimeError):
+            get_uncommitted_changed_files(self.tmpdir, runner=runner)
+
+    def test_sorted_and_dedup(self):
+        """ソート済み・重複排除"""
+        (self.tmpdir / 'a.md').write_text('a')
+        (self.tmpdir / 'b.md').write_text('b')
+        runner = self._mock_runner(
+            ' M b.md\n'
+            'M  a.md\n'
+            ' M b.md\n'  # 重複
+        )
+        files = get_uncommitted_changed_files(self.tmpdir, runner=runner)
+        self.assertEqual(files, ['a.md', 'b.md'])
+
+
+# =========================================================================
+# 9. main() の --files / --diff バイパス経路統合テスト
+# =========================================================================
+
+class _MainBypassTestCase(unittest.TestCase):
+    """main() を呼び出して JSON 出力を検証する基底クラス"""
+
+    def setUp(self):
+        self.tmpdir = Path(os.path.realpath(tempfile.mkdtemp()))
+        # find_project_root を tmpdir に固定
+        self._patch_root = mock.patch.object(
+            rrc, 'find_project_root', return_value=self.tmpdir
+        )
+        self._patch_root.start()
+
+    def tearDown(self):
+        self._patch_root.stop()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _run_main(self, argv):
+        """sys.argv を差し替えて main() を実行し、JSON dict を返す"""
+        buf = io.StringIO()
+        with mock.patch.object(sys, 'argv', ['resolve_review_context.py'] + argv):
+            with redirect_stdout(buf):
+                rrc.main()
+        out = buf.getvalue().strip()
+        return json.loads(out) if out else None
+
+
+class TestMainFilesBypass(_MainBypassTestCase):
+    """--files バイパス経路のテスト (TASK-016)"""
+
+    def test_files_single(self):
+        (self.tmpdir / 'a.md').write_text('a')
+        result = self._run_main(['--files', 'a.md'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md'])
+        # 種別解決はバイパスされるため type は None
+        self.assertIsNone(result["type"])
+
+    def test_files_multiple(self):
+        (self.tmpdir / 'a.md').write_text('a')
+        (self.tmpdir / 'b.md').write_text('b')
+        result = self._run_main(['--files', 'a.md', 'b.md'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md', 'b.md'])
+
+    def test_files_comma_separated(self):
+        (self.tmpdir / 'a.md').write_text('a')
+        (self.tmpdir / 'b.md').write_text('b')
+        result = self._run_main(['--files', 'a.md,b.md'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md', 'b.md'])
+
+    def test_files_missing_is_error(self):
+        """指定ファイルが存在しない場合は error (early validation)"""
+        result = self._run_main(['--files', 'nonexistent.md'])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("nonexistent.md", result["error"])
+
+    def test_files_empty_is_error(self):
+        """--files が空指定の場合は error"""
+        result = self._run_main(['--files'])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("少なくとも 1 つ", result["error"])
+
+    def test_files_bypasses_doc_structure(self):
+        """.doc_structure.yaml が無くても --files は動作する (バイパス)"""
+        (self.tmpdir / 'a.md').write_text('a')
+        # .doc_structure.yaml を作らずに実行
+        result = self._run_main(['--files', 'a.md'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md'])
+
+    def test_files_and_diff_conflict(self):
+        """--files と --diff の同時指定は error (early validation)"""
+        (self.tmpdir / 'a.md').write_text('a')
+        result = self._run_main(['--files', 'a.md', '--diff'])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("同時に指定できません", result["error"])
+
+
+class TestMainDiff(_MainBypassTestCase):
+    """--diff バイパス経路のテスト (TASK-016 / TBD-401)"""
+
+    def _patch_git(self, stdout, returncode=0, stderr=''):
+        def fake_runner(cmd, **kwargs):
+            return SimpleNamespace(
+                stdout=stdout, stderr=stderr, returncode=returncode
+            )
+        return mock.patch.object(rrc.subprocess, 'run', side_effect=fake_runner)
+
+    def test_diff_collects_working_and_staged(self):
+        """working tree + staged + untracked の変更が target_files に入る"""
+        (self.tmpdir / 'a.md').write_text('a')
+        (self.tmpdir / 'b.md').write_text('b')
+        (self.tmpdir / 'c.md').write_text('c')
+        porcelain = (
+            'M  a.md\n'
+            ' M b.md\n'
+            '?? c.md\n'
+        )
+        with self._patch_git(porcelain):
+            result = self._run_main(['--diff'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md', 'b.md', 'c.md'])
+
+    def test_diff_empty_yields_needs_input(self):
+        """変更なしの場合は needs_input で質問を返す"""
+        with self._patch_git(''):
+            result = self._run_main(['--diff'])
+        self.assertEqual(result["status"], "needs_input")
+        self.assertTrue(any(q["key"] == "target" for q in result["questions"]))
+
+    def test_diff_git_failure_is_error(self):
+        """git status 失敗時は error"""
+        with self._patch_git('', returncode=128, stderr='fatal'):
+            result = self._run_main(['--diff'])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("git status", result["error"])
+
+    def test_diff_bypasses_doc_structure(self):
+        """.doc_structure.yaml が無くても --diff は動作する"""
+        (self.tmpdir / 'a.md').write_text('a')
+        with self._patch_git(' M a.md\n'):
+            result = self._run_main(['--diff'])
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(result["target_files"], ['a.md'])
+
+
+# =========================================================================
+# 10. 後方互換テスト (既存経路を破壊していないか)
+# =========================================================================
+
+class TestMainLegacyPath(_MainBypassTestCase):
+    """通常経路 (位置引数 / 引数なし) が引き続き動作することを確認"""
+
+    def _write_doc_structure(self, content):
+        (self.tmpdir / '.doc_structure.yaml').write_text(content, encoding='utf-8')
+
+    def test_no_doc_structure_yields_error(self):
+        """.doc_structure.yaml なしの通常経路はエラー (既存挙動維持)"""
+        result = self._run_main([])
+        self.assertEqual(result["status"], "error")
+        self.assertIn(".doc_structure.yaml", result["error"])
+
+    def test_positional_file_target(self):
+        """位置引数 (単一ファイル) の通常経路が動作する"""
+        self._write_doc_structure(CONFIG_FLAT)
+        (self.tmpdir / 'rules').mkdir(exist_ok=True)
+        (self.tmpdir / 'rules' / 'guide.md').write_text('rules')
+        result = self._run_main(['rules/guide.md'])
+        # 通常経路を通っているので features (空でも) + has_doc_structure True
+        self.assertTrue(result["has_doc_structure"])
+        self.assertEqual(result["target_files"], ['rules/guide.md'])
+        self.assertEqual(result["type"], "generic")
 
 
 if __name__ == '__main__':

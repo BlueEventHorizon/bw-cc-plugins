@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
-"""evaluator の整形結果で `review_{perspective}.md` を全面書き換えする。
+"""evaluator の整形結果で `review_{kind}.md` を全面書き換えする。
 
 evaluator から呼ばれ、reviewer 原文を `.raw.md` にバックアップしてから
-stdin の Markdown で `review_{perspective}.md` を全面上書きする。
+stdin の Markdown で `review_{kind}.md` を全面上書きする。
 present-findings もユーザー対話後の更新で呼び出す(その際 `.raw.md` は保護される)。
 
 Usage:
-    cat <<'EOF' | python3 write_interpretation.py <session_dir> --perspective <name>
+    cat <<'EOF' | python3 write_interpretation.py <session_dir> --kind <value>
     # evaluator 評価(...)
     (本文)
     EOF
 
+`--kind` の値域 (REQ-004 / DES-028 §2.4 の種別と一致):
+    code / design / requirement / plan / uxui / generic
+
 動作:
-    1. {session_dir}/review_{perspective}.md が存在しない場合はエラー
-    2. {session_dir}/review_{perspective}.raw.md が存在しない場合:
-       - review_{perspective}.md を .raw.md にコピー(初回バックアップ)
+    1. {session_dir}/review_{kind}.md が存在しない場合はエラー
+    2. {session_dir}/review_{kind}.raw.md が存在しない場合:
+       - review_{kind}.md を .raw.md にコピー(初回バックアップ)
        - backup_created = true
     3. 既に .raw.md が存在する場合:
        - .raw.md は保護(再作成しない)
        - backup_created = false
-    4. stdin の内容で review_{perspective}.md を上書き
+    4. stdin の内容で review_{kind}.md を上書き
 
 出力 (stdout JSON):
-    {"status": "ok", "path": ".../review_{perspective}.md",
-     "backup_path": ".../review_{perspective}.raw.md", "backup_created": true|false}
+    {"status": "ok", "path": ".../review_{kind}.md",
+     "backup_path": ".../review_{kind}.raw.md", "backup_created": true|false}
 """
 
 import argparse
@@ -37,33 +40,36 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 
 from session.store import SessionStore  # noqa: E402
 
+# DES-028 §2.4 / REQ-004 FNC-410 の種別と一致 (位置引数 <種別> の値域)
+KIND_CHOICES = ("code", "design", "requirement", "plan", "uxui", "generic")
 
-def write_interpretation(session_dir, perspective, content):
-    """review_{perspective}.md を全面書き換えする。
+
+def write_interpretation(session_dir, kind, content):
+    """review_{kind}.md を全面書き換えする。
 
     Args:
         session_dir: セッションディレクトリパス
-        perspective: perspective 名
+        kind: 種別 (code / design / requirement / plan / uxui / generic)
         content: 書き込む Markdown 本文
 
     Returns:
         dict: {"path", "backup_path", "backup_created"}
 
     Raises:
-        FileNotFoundError: review_{perspective}.md が存在しない
+        FileNotFoundError: review_{kind}.md が存在しない
         ValueError: content が空
     """
     if not content:
         raise ValueError("stdin の内容が空です")
 
     session_path = Path(session_dir)
-    target = session_path / f"review_{perspective}.md"
-    backup = session_path / f"review_{perspective}.raw.md"
+    target = session_path / f"review_{kind}.md"
+    backup = session_path / f"review_{kind}.raw.md"
     store = SessionStore(session_path)
 
     if not target.exists():
         raise FileNotFoundError(
-            f"review_{perspective}.md が見つかりません: {target}"
+            f"review_{kind}.md が見つかりません: {target}"
         )
 
     backup_created = False
@@ -86,17 +92,21 @@ def write_interpretation(session_dir, perspective, content):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="review_{perspective}.md を evaluator の整形結果で全面書き換えする"
+        description="review_{kind}.md を evaluator の整形結果で全面書き換えする"
     )
     parser.add_argument("session_dir", help="セッションディレクトリパス")
-    parser.add_argument("--perspective", required=True,
-                        help="perspective 名(例: logic / resilience)")
+    parser.add_argument(
+        "--kind",
+        required=True,
+        choices=KIND_CHOICES,
+        help="種別 (code / design / requirement / plan / uxui / generic)",
+    )
     args = parser.parse_args()
 
     content = sys.stdin.read()
 
     try:
-        result = write_interpretation(args.session_dir, args.perspective, content)
+        result = write_interpretation(args.session_dir, args.kind, content)
     except FileNotFoundError as e:
         json.dump({"status": "error", "error": str(e)}, sys.stderr,
                   ensure_ascii=False)

@@ -4,8 +4,8 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-06T00:33:54Z
-  file_count: 32
+  generated_at: 2026-05-21T07:35:18Z
+  file_count: 36
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
@@ -18,17 +18,23 @@ docs:
       - File separation guidelines during implementation
       - Merge timing and procedure
       - Temporary document lifecycle management
+      - frontmatter type usage (temporary-feature-requirement / temporary-feature-design)
+      - Post-merge cleanup steps (addendum deletion / revision history records)
+      - Cross references with forge-review feature merge process
     applicable_tasks:
       - Feature addition implementation planning
       - Requirement document creation for new features
       - Merge and specification consolidation
       - Design and specification review
+      - Addendum lifecycle management
     keywords:
       - additive development
       - feature addition
       - temporary feature requirement
       - specification merge
       - new file separation
+      - frontmatter type
+      - addendum lifecycle
   plugins/forge/docs/context_gathering_spec.md:
     doc_type: rule
     title: Context Gathering Specification
@@ -39,6 +45,8 @@ docs:
       - Implementation rule research using doc-advisor query-rules skill
       - Similar PR investigation using GitHub CLI with merged PR search
       - Existing code exploration and categorization by relationship type
+      - Output structure as refs/ entries
+      - Integration with /forge:review per-flow orchestrator pattern
     applicable_tasks:
       - Context gathering orchestration
       - Pre-implementation research execution
@@ -53,6 +61,8 @@ docs:
       - code exploration
       - doc-advisor
       - GitHub CLI
+      - refs
+      - per-flow orchestrator
   plugins/forge/docs/design_format.md:
     doc_type: rule
     title: Design Document Default Format
@@ -66,6 +76,7 @@ docs:
       - Existing component references table
       - Test design planning for unit and integration tests
       - Change history tracking table
+      - frontmatter type for temporary feature designs
     applicable_tasks:
       - Design document creation
       - Design format definition
@@ -82,21 +93,26 @@ docs:
       - class diagram
       - sequence diagram
       - design ID
+      - frontmatter
   plugins/forge/docs/design_principles_spec.md:
     doc_type: rule
     title: Design Principles Specification
-    purpose: Defines design document creation principles, structure requirements, and methodology to ensure comprehensive and implementable design documentation
+    purpose: Defines design document creation principles, structure requirements, and methodology to ensure comprehensive and implementable design documentation; merged with addendum covering architecture dependency direction, responsibility separation, availability/SPOF norms, and severity catalog with scope-conditional necessary elements
     content_details:
       - Design document basic principles (What vs How separation)
-      - Mandatory structural elements (module list, component/class diagram, use cases, sequence diagram)
+      - Mandatory structural elements (module list, component/class diagram, use cases, sequence diagram) with scope conditions
       - Content inclusion requirements (implementation details, technical specifics, data flow, test design)
       - Prohibited content (extensive source code, unexplained technology choices)
       - Judgment criteria for content assessment
       - Hierarchical structure guidelines for large designs
       - File naming convention (design ID prefix, snake_case, _design.md suffix)
       - Optional sections (data flow design, state management, error handling, performance, security)
-      - Mermaid diagram usage guidelines (flowchart, class diagram, sequence diagram)
+      - Mermaid diagram usage guidelines
       - Common failure patterns and mitigation strategies
+      - Architecture dependency direction norm (no circular dependency, layered direction)
+      - Responsibility separation and cohesion norm
+      - Availability and SPOF design norms with severity catalog
+      - Severity mapping for design violations (FNC-411)
     applicable_tasks:
       - Design document creation
       - Design review
@@ -104,17 +120,21 @@ docs:
       - Module/component design
       - Screen and feature design documentation
       - Design structure planning
+      - Severity assignment for design AI review
+      - Architecture dependency check
+      - Availability and SPOF review
     keywords:
       - design principles
       - design methodology
       - Mermaid diagrams
-      - sequence diagram
       - module design
       - implementation details
       - design ID
-      - design documentation
       - hierarchical design
-      - state management design
+      - architecture dependency
+      - responsibility separation
+      - availability SPOF
+      - severity catalog
   plugins/forge/docs/doc_structure_format.md:
     doc_type: rule
     title: .doc_structure.yaml Format Specification
@@ -143,6 +163,67 @@ docs:
       - path resolution
       - configuration
       - feature-based structure
+  plugins/forge/docs/document_style_guide.md:
+    doc_type: rule
+    title: Document Style Guide
+    purpose: "Defines universal writing style guidelines for documents generated by forge (requirements, design, plan): tag usage, heading levels, emphasis notation, list formatting, table layout, code blocks, image placement, and revision history conventions"
+    content_details:
+      - Tag types and placement rules ([MANDATORY] / [CRITICAL] / [IMPORTANT])
+      - Signal value preservation principle for MANDATORY usage (0-3 per document)
+      - "Heading levels limited to # through #### with restructuring guidance"
+      - Emphasis phrases using English (NEVER / MUST / DO NOT / ALWAYS)
+      - Bullet and numbered list conventions
+      - Table formatting with header alignment
+      - Code block language specification
+      - Image placement and alt-text rules
+      - Revision history table format
+      - Cross-document reference conventions
+    applicable_tasks:
+      - Document creation by forge skills
+      - Style consistency review
+      - Markdown formatting standardization
+      - Tag policy enforcement
+      - Document quality assurance
+    keywords:
+      - document style
+      - writing guide
+      - MANDATORY tag
+      - CRITICAL tag
+      - IMPORTANT tag
+      - markdown convention
+      - heading level
+      - emphasis notation
+      - code block
+      - revision history
+  plugins/forge/docs/forge_anti_patterns.md:
+    doc_type: rule
+    title: Forge Anti-Patterns Catalog (Skeleton)
+    purpose: Skeleton catalog of industry-standard anti-patterns referenced as P1 (rule matching) fallback by /forge:review when project-specific rules are absent; initial content is headings only with AI auto-update prohibited
+    content_details:
+      - Purpose as P1 fallback for /forge:review when docs/rules/ are insufficient
+      - AI auto-update prohibition policy (MANDATORY) requiring create_issue route via FNC-406
+      - "Procedure: evaluator create_issue -> present-findings -> /anvil:create-issue -> manual PR flow"
+      - Category placeholders for code anti-patterns (God Object, hard-coded secrets, SQL injection)
+      - Category placeholders for design anti-patterns (circular dependency, tight coupling)
+      - Category placeholders for plan anti-patterns
+      - Category placeholders for document anti-patterns
+      - Related documents (REQ-004 / DES-028 / review_priorities_spec)
+    applicable_tasks:
+      - Review fallback when project rules are incomplete
+      - Anti-pattern Issue creation via create_issue recommendation
+      - Industry-standard pattern reference
+      - Forge distribution policy compliance
+    keywords:
+      - anti-pattern
+      - forge review
+      - P1 fallback
+      - AI auto-update prohibited
+      - create_issue
+      - REQ-004
+      - DES-028
+      - God Object
+      - SQL injection
+      - circular dependency
   plugins/forge/docs/plan_format.md:
     doc_type: rule
     title: Plan Format Definition
@@ -179,15 +260,20 @@ docs:
   plugins/forge/docs/plan_principles_spec.md:
     doc_type: rule
     title: Plan Creation Principles
-    purpose: Defines universal principles for plan document creation, structure, task granularity, and traceability matrix format when project-specific rules are not available
+    purpose: Defines universal principles for plan document creation, structure, task granularity, and traceability matrix format; merged with addendum covering task acceptance criteria, mandatory test tasks, implicit dependency detection, traceability norms, and severity catalog
     content_details:
       - Plan structure rules (requirements_traceability, design_traceability, tasks, revision_history sections)
       - Task granularity criteria (agent execution unit, 5-10 items scope, build success requirement)
-      - Content documentation principles (avoid implementation details duplication with design documents)
+      - Content documentation principles (avoid implementation details duplication with design)
       - Required reading document specification format and path examples
-      - Task grouping mechanism (group_id, build_check fields for interdependent tasks)
+      - Task grouping mechanism (group_id, build_check fields)
       - Dependency management (no circular dependencies, parallel execution identification)
       - Group size limits and build verification strategy
+      - Task acceptance criteria field requirement (Appendix A.12)
+      - Mandatory test tasks norm
+      - Implicit dependency typical patterns (Appendix A.14)
+      - Traceability norm for plan tasks (Appendix A.11)
+      - Severity catalog for plan norms (FNC-411)
     applicable_tasks:
       - Plan document creation
       - Task breakdown and granularity refinement
@@ -195,6 +281,9 @@ docs:
       - Design and requirements traceability matrix setup
       - Task grouping and dependency analysis
       - Agent task execution planning
+      - Severity assignment for plan AI review
+      - Acceptance criteria verification
+      - Implicit dependency detection
     keywords:
       - plan
       - task granularity
@@ -204,28 +293,67 @@ docs:
       - dependency management
       - group_id
       - YAML structure
-      - project planning
-      - task execution
+      - acceptance criteria
+      - test task
+      - implicit dependency
+      - severity catalog
   plugins/forge/docs/requirement_format.md:
     doc_type: rule
     title: Requirement Definition Document Default Format
     purpose: Specifies the default format for requirement definition documents when project-specific spec_format.md is not available
     content_details:
       - Frontmatter for additional features with type notes and metadata declarations
-      - "Required sections: Overview Prerequisites Requirements list"
-      - "Requirements subsections: Display requirements Operation requirements Error cases"
-      - Unresolved issues tracking table with ID content deadline
-      - Change history table with date author content
+      - "Required sections: Overview, Prerequisites, Requirements list"
+      - "Requirements subsections: Display requirements, Operation requirements, Error cases"
+      - Non-functional requirement categories (performance, availability, security, operability)
+      - Unresolved issues tracking table with ID, content, deadline
+      - Change history table with date, author, content
+      - Cross-reference to spec_priorities_spec for non-functional coverage
     applicable_tasks:
       - Requirement definition document creation
       - Feature requirement specification
       - Additive feature implementation preparation
+      - Non-functional requirement coverage check
     keywords:
       - requirement format
       - frontmatter
       - feature requirement
       - specification
       - document structure
+      - non-functional requirements
+  plugins/forge/docs/review_priorities_spec.md:
+    doc_type: rule
+    title: Review Priorities Specification
+    purpose: Defines the priority system (P1/P2/P3), the relationship between priority and severity, and the fixed 3-section structure of review_criteria_*.md as the MANDATORY base policy referenced by all /forge:review SKILLs and criteria files
+    content_details:
+      - "Priority definition: P1 (rule matching), P2 (contradiction), P3 (unnecessary complication)"
+      - priority and severity as independent axes (priority = observation source, severity = fix urgency)
+      - severity SoT located in delegated principles (FNC-411 catalog), not in criteria
+      - "Exclusions: P2 omits missing/lacking detection, P3 omits subjective evaluation (Goodhart trap)"
+      - criteria do not declare severity nor gray-zone judgment
+      - "recommendation: create_issue 3 conditions (no applicable rule / recurrence or objectivity / written rule granularity)"
+      - Fixed 3-section structure for review_criteria_*.md (SSOT references / check order / decision rules)
+      - Template skeleton for criteria files
+      - Cross-SoT priority order (project rules > project specs > forge principles > forge format) referencing DES-028 3.4.1
+      - Deprecated sections (Perspective blocks / severity tables / false positive warnings)
+    applicable_tasks:
+      - Authoring review_criteria_*.md
+      - Designing /forge:review SKILL chain (review / reviewer / evaluator / present-findings / fixer)
+      - Determining create_issue eligibility
+      - Removing judgment from criteria
+      - Aligning principles severity catalogs with criteria
+      - Verifying review priority compliance during AI review
+    keywords:
+      - review priorities
+      - P1 P2 P3
+      - severity catalog
+      - criteria structure
+      - create_issue
+      - SSOT references
+      - check order
+      - decision rules
+      - FNC-401
+      - FNC-411
   plugins/forge/docs/session_format.md:
     doc_type: rule
     title: Session Directory Specification
@@ -235,16 +363,18 @@ docs:
       - Directory structure and paths
       - session.yaml common metadata fields (skill / started_at / last_updated / status)
       - Context collection results in refs/
-      - review skill specific files (refs.yaml, review.md, plan.yaml)
+      - review skill specific files (refs.yaml with review_packet, review.md, plan.yaml)
       - start-implement executor result files
       - Session manager CLI (init, find, cleanup)
       - Writer scripts for YAML operations
+      - refs.yaml new schema with review_packet (criteria_path / ssot_refs / check_order / severity_source / output_path)
     applicable_tasks:
       - Session initialization and lifecycle management
       - Context reference collection and storage
       - Review orchestration and multi-cycle management
       - Implementation executor result collection
       - Session resumption and recovery
+      - review_packet construction
     keywords:
       - session
       - temporary directory
@@ -255,38 +385,45 @@ docs:
       - YAML
       - session_manager.py
       - review
+      - review_packet
       - context collection
   plugins/forge/docs/spec_design_boundary_spec.md:
     doc_type: rule
     title: Specification and Design Boundary Guide
-    purpose: Clarifies the boundary between requirements specification documents (What) and design documents (How) to guide content placement decisions
+    purpose: Clarifies the boundary between requirements (What) and design (How) documents to guide content placement decisions; merged with addendum content covering severity catalog, gray-zone allowance assertions, and lightweight traceability norms
     content_details:
       - Core principles for What vs How distinction
       - Decision criteria with user manual test as primary filter
-      - Category-specific guidelines for data, state, processing, business rules, tests, and quantitative goals
+      - Category-specific guidelines for data, state, processing, business rules, tests, quantitative goals
       - Examples of correct and incorrect placement in each category
       - Gray zone handling including data model types and diagrams
       - Decision flowchart for content categorization
+      - Severity catalog mapping each category to critical/major/minor (FNC-411)
+      - Gray zone allowances in assertive form (allowed vs not allowed)
+      - Lightweight traceability norms (Appendix A.11 derived)
     applicable_tasks:
       - Documentation structure review
       - Requirements document creation and validation
       - Design document creation and validation
       - Boundary violation detection in specification documents
       - Content placement determination for mixed documentation
+      - Severity assignment during design/requirement AI review
+      - Traceability verification across requirements and design
     keywords:
       - specification
       - design
       - boundary
-      - requirements
       - What vs How
       - user manual
-      - implementation methods
       - data flow
       - business rules
       - state management
+      - severity catalog
+      - gray zone allowance
+      - traceability
   plugins/forge/docs/spec_format.md:
     doc_type: rule
-    title: ID Classification Catalog
+    title: Specification ID Classification Catalog
     purpose: Defines specification format standards including requirement IDs, design IDs, task IDs, priority ranges, and file naming conventions for specification-driven development
     content_details:
       - ID classification system
@@ -296,40 +433,50 @@ docs:
       - Task ID catalog
       - Priority range definition
       - File naming conventions
+      - frontmatter type usage for temporary feature documents
     applicable_tasks:
       - Specification document structure setup
       - Requirement ID assignment
       - Design document organization
       - Specification format standardization
       - Document naming rule enforcement
+      - Feature ID allocation
     keywords:
       - specification format
       - ID catalog
       - requirement ID
       - design ID
+      - task ID
       - naming convention
       - document structure
       - feature
       - priority
+      - frontmatter type
   plugins/forge/docs/spec_priorities_spec.md:
     doc_type: rule
-    title: Specification Priorities
-    purpose: Defines priority principles for requirement and design documents, establishing what must be prioritized (structural design principles) and what must not be primary goals (quantification, KPIs)
+    title: Specification Priorities Spec
+    purpose: Defines priority principles for requirement and design documents (single responsibility, boundary setting, dependency direction) and prohibits quantification of structural quality or KPI-driven primary goals; merged with addendum content covering perspective-by-perspective usage guide, severity catalog, gray-zone allowances, and non-functional requirement coverage
     content_details:
-      - Single responsibility principle
-      - Boundary setting between modules
-      - Dependency direction and circular dependency avoidance
+      - Single responsibility principle for modules and components
+      - Boundary setting between modules with no gaps or overlaps
+      - Dependency direction one-way and no circular dependency
       - Quality characteristics as results not direct goals
-      - Prohibition of structural quality quantification
-      - Prohibition of KPI and achievement rate targets
-      - Typical inversion patterns and anti-patterns
-      - Judgment criteria for design decisions
+      - "Prohibition of structural quality quantification (Goodhart's law)"
+      - Prohibition of KPI and achievement rate primary goals
+      - Typical inversion and anti-patterns (story-first, KPI-first)
+      - Yes/No decision criteria
+      - Perspective-by-perspective usage guide for P1/P2/P3 routing (FNC-401)
+      - Severity catalog mapping each norm to critical/major/minor (FNC-411)
+      - Gray zone allowances clarifying what is allowed vs not allowed
+      - Non-functional requirement category coverage with scope-based critical/major branching
     applicable_tasks:
-      - Design review
-      - Requirement review
+      - Requirement and design review
       - Architecture review
       - Design quality validation
       - Specification creation
+      - Severity assignment during AI review
+      - P1/P2/P3 routing decision in /forge:review
+      - Non-functional requirement completeness check
     keywords:
       - responsibility
       - boundary
@@ -337,8 +484,42 @@ docs:
       - structural quality
       - "Goodhart's law"
       - quantification
-      - design principles
-      - quality characteristics
+      - severity catalog
+      - gray zone
+      - non-functional requirements
+      - perspective usage guide
+  plugins/forge/docs/strategy_formulation_spec.md:
+    doc_type: rule
+    title: Implementation Strategy Formulation Specification
+    purpose: Self-contained instruction document handed by the start-plan orchestrator to the strategy agent, defining how to analyze design documents, perform risk analysis, choose an implementation approach, and produce strategy_draft.md
+    content_details:
+      - "Input parameters: session_dir, spec path, feature, design_docs, optional rules_docs"
+      - "Prerequisites: full design document reading, rules_docs may be empty"
+      - "Step 1: structural analysis of design documents (modules, dependencies, complexity, test coverage)"
+      - "Step 2: risk analysis across technical uncertainty, dependency complexity, integration points, data integrity, performance"
+      - "Step 3: approach selection (bottom-up / skeleton-first / risk-driven / feature-slice) with rationale"
+      - Decision criteria mapping design characteristics to approaches
+      - Combination of multiple approaches with justification
+      - Output written to {session_dir}/strategy_draft.md
+      - Quality requirements for the strategy draft
+      - Handoff to subsequent plan creation phases
+    applicable_tasks:
+      - Implementation strategy formulation
+      - start-plan orchestrator agent invocation
+      - Risk analysis from design documents
+      - Implementation approach selection
+      - Strategy draft generation
+    keywords:
+      - strategy formulation
+      - start-plan
+      - implementation approach
+      - risk analysis
+      - bottom-up
+      - skeleton-first
+      - risk-driven
+      - feature-slice
+      - strategy_draft
+      - orchestrator agent
   plugins/forge/docs/task_execution_spec.md:
     doc_type: rule
     title: Task Execution Guide for Executor Agent
@@ -427,181 +608,195 @@ docs:
       - Project-defined
   plugins/forge/skills/review/docs/review_criteria_code.md:
     doc_type: rule
-    title: Code Review Criteria
-    purpose: Defines default code review perspectives and criteria for logic accuracy, resilience, and maintainability when project-specific rules are unavailable
+    title: Code Review Criteria (routing table)
+    purpose: Routing table for code review specifying SSOT references (project rules, related design specs, forge anti-patterns), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402
     content_details:
-      - "Logic accuracy: logic errors, edge cases, boundary conditions, data loss risks, design-specification alignment"
-      - "Resilience: security vulnerabilities, authentication and authorization, error handling, resource management"
-      - "Maintainability: coding standards compliance, readability, testability, test coverage, performance optimization"
-      - "Critical issues detection: fatal logic errors, data loss risks, security flaws, missing authentication"
-      - "Quality improvement levels: critical (red), quality issues (yellow), improvement proposals (green)"
+      - SSOT references with priority (P1/P2/P3), path, doc_type, role
+      - "P1 references: docs/rules/implementation_guidelines.md, docs/rules/cli_output_formatting.md, related design specs"
+      - "P2: contradiction between design specs and target code"
+      - "P3: forge_anti_patterns.md as Yes/No complexity reference"
+      - "Check order: P1 rule matching -> P2 contradiction -> P3 unnecessary complication"
+      - Decision rules with fix / create_issue / skip recommendations
+      - "create_issue 3 conditions (FNC-406): no rule / recurrence or objectivity / written rule granularity"
+      - Fallback to forge built-in rules when project rules absent (FNC-405)
+      - Cross-SoT priority order via DES-028 3.4.1
+      - No severity declaration in this file (FNC-402)
     applicable_tasks:
-      - Code review execution
-      - Security vulnerability detection
-      - Performance analysis
-      - Design specification compliance verification
-      - Testability and maintainability assessment
+      - Code review routing
+      - /forge:review code invocation
+      - P1/P2/P3 SSOT selection for code review
+      - create_issue eligibility check for code findings
+      - Forge built-in fallback selection
     keywords:
       - code review
-      - logic accuracy
-      - resilience
-      - maintainability
-      - security
-      - error handling
-      - testing
-      - refactoring
+      - review criteria
+      - routing table
+      - SSOT references
+      - check order
+      - decision rules
+      - P1 P2 P3
+      - create_issue
+      - FNC-402
+      - forge_anti_patterns
   plugins/forge/skills/review/docs/review_criteria_design.md:
     doc_type: rule
-    title: Design Review Perspectives
-    purpose: Provides default design review criteria for the forge plugin, including perspectives for alignment, architecture, resilience, and priorities with evaluation criteria at critical, quality, and improvement levels
+    title: Design Review Criteria (routing table)
+    purpose: Routing table for design review specifying SSOT references (spec_design_boundary_spec, design_principles_spec, project architecture rules), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402
     content_details:
-      - "Perspective: alignment - requirement consistency, data flow integrity, external interface compatibility"
-      - "Perspective: architecture - responsibility division, architecture principles compliance, extensibility and maintainability"
-      - "Perspective: resilience - security issues, error handling, observability including logging and tracing"
-      - "Perspective: priorities - quantitative goal guarantees, structural quality quantification, evaluation table purpose drift"
-      - Critical issues classification with judgment criteria and false positive considerations
-      - Quality issues with specific examples and detection methods
-      - Improvement suggestions for each perspective
+      - SSOT references for design review with priority, path, doc_type
+      - "P1 references: spec_design_boundary_spec.md, design_principles_spec.md, project architecture rules"
+      - "P2: contradiction between requirement and design documents"
+      - "P3: spec_priorities_spec gray-zone allowance application"
+      - "Check order: P1 rule matching -> P2 contradiction -> P3 unnecessary complication"
+      - Decision rules with fix / create_issue / skip recommendations
+      - create_issue 3 conditions (FNC-406)
+      - Fallback to forge built-in rules when project architecture rules absent
+      - Cross-SoT priority order via DES-028 3.4.1
+      - Severity sourced from principles severity catalog
     applicable_tasks:
-      - Design document review
-      - Format compliance validation
-      - Design principle and requirements boundary assessment
-      - Design decision rationale verification
-      - Data flow consistency validation
-      - Architecture pattern compliance check
+      - Design review routing
+      - /forge:review design invocation
+      - P1/P2/P3 SSOT selection for design review
+      - create_issue eligibility check for design findings
+      - Architecture rule matching
     keywords:
       - design review
-      - alignment
+      - review criteria
+      - routing table
+      - SSOT references
+      - check order
+      - decision rules
+      - spec_design_boundary
+      - design_principles
       - architecture
-      - resilience
-      - priorities
-      - requirements mapping
-      - data flow
-      - security
-      - error handling
-      - traceability
+      - FNC-402
   plugins/forge/skills/review/docs/review_criteria_generic.md:
     doc_type: rule
-    title: Review Criteria - Generic
-    purpose: Defines default review perspectives and quality criteria for document review when project-specific rules are unavailable
+    title: Generic Review Criteria (routing table)
+    purpose: Routing table for generic document review specifying SSOT references (document_style_guide, document_writing_rules), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402
     content_details:
-      - "Factual errors: objective information inconsistency (versions, APIs, dates)"
-      - "Logical contradictions: conflicting statements within the document"
-      - "Broken references: invalid links, missing files, unreachable commands"
-      - "Missing required information: essential content gaps for document purpose"
-      - "Logic consistency: natural section order and clear conceptual flow"
-      - "Terminology consistency: unified naming for same concepts"
-      - "Content duplication: redundant information across sections"
-      - "Verbosity: unnecessary or unrelated information"
-      - Expression clarity improvements
-      - Structural improvements and visualization suggestions
+      - SSOT references for generic document review
+      - "P1 references: document_style_guide.md, docs/rules/document_writing_rules.md"
+      - "P2: contradiction within document content"
+      - "P3: unnecessary verbosity / complexity (Yes/No)"
+      - "Check order: style guide first, then contradiction, then complexity"
+      - Decision rules with fix / create_issue / skip recommendations
+      - create_issue 3 conditions (FNC-406)
+      - Cross-SoT priority order via DES-028 3.4.1
+      - No judgment in criteria (FNC-402)
     applicable_tasks:
-      - Document review
-      - Content quality validation
-      - Requirement and design document review
-      - Generic documentation assessment
-      - Specification verification
+      - Generic document review routing
+      - /forge:review generic invocation
+      - Document style verification
+      - create_issue eligibility check for generic findings
     keywords:
+      - generic review
       - review criteria
-      - perspective
-      - factual accuracy
-      - logical consistency
-      - documentation quality
-      - requirements
-      - specifications
+      - routing table
+      - SSOT references
+      - document_style_guide
+      - document_writing_rules
+      - check order
+      - decision rules
+      - FNC-402
   plugins/forge/skills/review/docs/review_criteria_plan.md:
     doc_type: rule
-    title: Plan Review Criteria
-    purpose: Defines default review perspectives for plan documents, covering alignment verification with requirements and design, task completeness, dependency relationships, and feasibility assessment including task granularity, risk management, and acceptance criteria clarity
+    title: Plan Review Criteria (routing table)
+    purpose: Routing table for plan document review specifying SSOT references (plan_format, plan_principles_spec, dependency rules), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402
     content_details:
-      - Alignment perspective for requirement and design consistency
-      - Missing mandatory tasks detection
-      - Task dependency contradiction checking
-      - Unfeasible task identification
-      - Acceptance criteria validation
-      - Task granularity and size consistency assessment
-      - Risk mitigation adequacy evaluation
-      - Bottleneck and critical path analysis
-      - Priority justification based on business value and risk
-      - Fallback knowledge base references for plan format specifications
+      - SSOT references for plan review
+      - "P1 references: plan_format.md, plan_principles_spec.md, dependency rules"
+      - "P2: contradiction between plan and design/requirement"
+      - "P3: unnecessary task multiplication or over-decomposition (Yes/No)"
+      - "Check order: plan structure rule -> alignment contradiction -> task complexity"
+      - Decision rules with fix / create_issue / skip recommendations
+      - create_issue 3 conditions (FNC-406)
+      - Cross-SoT priority order via DES-028 3.4.1
+      - Task acceptance criteria and test task verification routing
+      - No judgment in criteria (FNC-402)
     applicable_tasks:
-      - Plan document review
-      - Task structure and dependency validation
-      - YAML format compliance verification
-      - Feasibility and risk assessment
-      - Acceptance criteria definition review
-      - Task prioritization evaluation
-      - Cross-document traceability verification
+      - Plan review routing
+      - /forge:review plan invocation
+      - Task structure verification
+      - create_issue eligibility check for plan findings
+      - Traceability matrix verification
     keywords:
-      - plan
+      - plan review
       - review criteria
-      - alignment
-      - feasibility
+      - routing table
+      - SSOT references
+      - plan_format
+      - plan_principles_spec
       - task dependency
       - acceptance criteria
-      - risk management
-      - bottleneck
-      - critical path
-      - task granularity
+      - check order
+      - FNC-402
   plugins/forge/skills/review/docs/review_criteria_requirement.md:
     doc_type: rule
-    title: Requirements Document Review Criteria
-    purpose: Defines default review perspectives and evaluation criteria for requirements document reviews covering completeness, consistency, verifiability, and priorities
+    title: Requirement Review Criteria (routing table)
+    purpose: Routing table for requirement document review specifying SSOT references (requirement_format, spec_priorities_spec, document_writing_rules), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402
     content_details:
-      - Completeness perspective covering mandatory requirements coverage, non-functional requirements adequacy, and exception handling
-      - Consistency perspective covering requirement conflicts, business goal alignment, and terminology unification
-      - Verifiability perspective covering acceptance criteria clarity, quantitative specifications, and scope definition
-      - Priorities perspective covering responsibility division, structural quality boundaries, and implementation means exclusion
-      - Severity levels including fatal issues and quality concerns with actionable recommendations
+      - SSOT references for requirement review
+      - "P1 references: requirement_format.md, spec_priorities_spec.md, docs/rules/document_writing_rules.md"
+      - "P2: contradiction within requirement document"
+      - "P3: unnecessary complexity / over-specification (Yes/No)"
+      - "Check order: requirement format compliance -> contradiction -> complexity"
+      - Decision rules with fix / create_issue / skip recommendations
+      - create_issue 3 conditions (FNC-406)
+      - Non-functional requirement coverage via spec_priorities_spec section (TBD-410 absorbed)
+      - Cross-SoT priority order via DES-028 3.4.1
+      - No judgment in criteria (FNC-402)
     applicable_tasks:
-      - Requirements document review and quality assessment
-      - Design specification validation
-      - Traceability verification across business goals and requirements
-      - Non-functional requirements completeness check
-      - Acceptance criteria clarity evaluation
+      - Requirement review routing
+      - /forge:review requirement invocation
+      - Non-functional requirement coverage check
+      - create_issue eligibility check for requirement findings
+      - Requirement format compliance verification
     keywords:
+      - requirement review
       - review criteria
-      - completeness
-      - consistency
-      - verifiability
-      - priorities
+      - routing table
+      - SSOT references
+      - requirement_format
+      - spec_priorities_spec
       - non-functional requirements
-      - traceability
-      - acceptance criteria
+      - check order
+      - decision rules
+      - FNC-402
   plugins/forge/skills/review/docs/review_criteria_uxui.md:
     doc_type: rule
-    title: UX/UI Design Review Criteria
-    purpose: Defines review perspectives, priority framework, and evaluation criteria for UX/UI design quality assessment across Apple HIG compliance, usability, visual system, and distinctiveness dimensions
+    title: UX/UI Review Criteria (routing table)
+    purpose: Routing table for UX/UI design review specifying SSOT references (HIG, project-specific design system rules), check order across P1/P2/P3, and decision rules; carries no judgment - severity is sourced from delegated principles per FNC-402 (TBD-409 dependent on HIG/design-system rule maturity)
     content_details:
-      - HIG compliance (Clarity, Deference, Depth, Consistency)
-      - Nielsen usability heuristics (10 principles)
-      - Visual system (Gestalt principles, 8pt grid, typography hierarchy)
-      - Distinctiveness and memorability (design intent, signature elements, anti-goals)
-      - Perspective priority ranking
-      - Design intent acquisition methods
-      - Light/Dark mode semantic colors
-      - Interaction target sizing requirements
-      - Color contrast accessibility standards (WCAG 4.5:1)
-      - Error prevention and error message design
+      - SSOT references for UX/UI review
+      - "P1 references: HIG documents and project-specific design system rules (TBD-409)"
+      - "P2: contradiction between design tokens and components"
+      - "P3: unnecessary visual complexity / token violation (Yes/No)"
+      - "Check order: HIG compliance -> token coherence -> accessibility"
+      - Decision rules with fix / create_issue / skip recommendations
+      - create_issue 3 conditions (FNC-406)
+      - "TBD-409: integration with HIG / design-system rule scope"
+      - Cross-SoT priority order via DES-028 3.4.1
+      - No judgment in criteria (FNC-402)
     applicable_tasks:
-      - UX/UI design review
-      - Design token quality assessment
-      - Component specification review
-      - HIG compliance validation
-      - Accessibility audit
-      - Visual system consistency check
-      - Design intent documentation review
+      - UX/UI review routing
+      - /forge:review uxui invocation
+      - HIG compliance routing
+      - Design token verification
+      - Accessibility audit routing
+      - create_issue eligibility check for UX/UI findings
     keywords:
+      - UXUI review
+      - review criteria
+      - routing table
+      - SSOT references
       - HIG
-      - usability heuristics
-      - design token
+      - design system
       - accessibility
-      - contrast ratio
-      - interaction target
-      - visual hierarchy
-      - Gestalt principles
-      - design intent
-      - distinctiveness
+      - design token
+      - check order
+      - FNC-402
+      - TBD-409
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     doc_type: rule
     title: Application Overview Requirements Writing Standard
@@ -949,4 +1144,3 @@ docs:
       - HIG principles
       - Design workflow
       - Distinctiveness
-      - Signature design

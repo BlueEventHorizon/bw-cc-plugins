@@ -130,6 +130,24 @@ class TestUpdateItem(unittest.TestCase):
         self.assertFalse(items[2]["auto_fixable"])
         self.assertEqual(items[2]["reason"], "確認が必要")
 
+    def test_update_recommendation_create_issue(self):
+        """DES-028 §3.3 / REQ-004 FNC-406: create_issue が受理される。
+
+        ルール未整備の指摘を Issue 化対象として記録するフロー。
+        status は skipped (fixer 対象外として扱う) を想定。
+        """
+        items = _sample_items()
+        result = update_item(items, 2, {
+            "status": "skipped",
+            "recommendation": "create_issue",
+            "auto_fixable": False,
+            "reason": "P1 SSOT に該当規定なし。再発性あり。明文化可能粒度。",
+        })
+        self.assertTrue(result)
+        self.assertEqual(items[1]["recommendation"], "create_issue")
+        self.assertFalse(items[1]["auto_fixable"])
+        self.assertIn("該当規定なし", items[1]["reason"])
+
     def test_invalid_status(self):
         items = _sample_items()
         with self.assertRaises(ValueError):
@@ -372,6 +390,29 @@ class TestCLI(_FsTestCase):
         self.assertEqual(item1["recommendation"], "fix")
         self.assertTrue(item1["auto_fixable"])
         self.assertEqual(item1["reason"], "テスト理由")
+
+    def test_cli_recommendation_create_issue(self):
+        """CLI で --recommendation create_issue が受理され plan.yaml に反映される。
+
+        DES-028 §3.3 / REQ-004 FNC-406 で recommendation 値域に追加された
+        新値の CLI 受理確認。
+        """
+        self._write_plan(_sample_items())
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir),
+             "--id", "1", "--status", "skipped",
+             "--recommendation", "create_issue",
+             "--reason", "ルール未整備"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["status"], "ok")
+
+        plan_data = read_plan(str(self.session_dir))
+        item1 = plan_data["items"][0]
+        self.assertEqual(item1["recommendation"], "create_issue")
+        self.assertEqual(item1["reason"], "ルール未整備")
 
     def test_cli_invalid_recommendation(self):
         """CLI で --recommendation に不正な値を渡すと exit 1 になる。"""

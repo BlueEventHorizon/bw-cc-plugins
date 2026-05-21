@@ -6,7 +6,8 @@
 
 「未処理」の定義:
     status が pending / needs_review の指摘。
-    fixed / skipped は決着済みなので未処理ではない。
+    fixed / skipped / create_issue は決着済みなので未処理ではない。
+    （create_issue は外部 Issue 化で決着扱い: DES-028 §3.6 / REQ-004 FNC-406）
 
 Usage:
     python3 summarize_plan.py <session_dir>
@@ -17,9 +18,10 @@ Usage:
       "total": 全件数,
       "fixed": 修正済み件数,
       "skipped": 対応しない件数,
-      "unprocessed_total": 未処理件数,
+      "create_issue": Issue 化で決着した件数,
+      "unprocessed_total": 未処理件数（create_issue は含めない）,
       "by_severity": {"critical": N, "major": N, "minor": N},
-      "by_status": {"pending": N, "needs_review": N},
+      "by_status": {"pending": N, "needs_review": N, "create_issue": N},
       "unprocessed_ids": [未処理の id 一覧],
       "titles": [未処理タイトルの先頭10件]
     }
@@ -68,7 +70,9 @@ def summarize_pending(plan_path):
     ]
 
     by_severity = {"critical": 0, "major": 0, "minor": 0}
-    by_status = {"pending": 0, "needs_review": 0}
+    # by_status は未処理 (pending / needs_review) に加え、decided 扱いの create_issue も集計する
+    # （DES-028 §3.6 / REQ-004 FNC-406: create_issue は Issue 化で決着）
+    by_status = {"pending": 0, "needs_review": 0, "create_issue": 0}
     for item in unprocessed:
         sev = item.get("severity")
         if sev in by_severity:
@@ -79,11 +83,15 @@ def summarize_pending(plan_path):
 
     fixed = sum(1 for i in items if i.get("status") == "fixed")
     skipped = sum(1 for i in items if i.get("status") == "skipped")
+    create_issue = sum(1 for i in items if i.get("status") == "create_issue")
+    # create_issue は unprocessed に含まれないため、ここで by_status に直接加算する
+    by_status["create_issue"] = create_issue
 
     return {
         "total": len(items),
         "fixed": fixed,
         "skipped": skipped,
+        "create_issue": create_issue,
         "unprocessed_total": len(unprocessed),
         "by_severity": by_severity,
         "by_status": by_status,
