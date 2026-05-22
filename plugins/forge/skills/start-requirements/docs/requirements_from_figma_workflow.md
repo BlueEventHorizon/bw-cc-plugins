@@ -238,7 +238,7 @@ Figma から抽出した画像の扱い:
 ### 5.6 セッション削除
 
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 ### 5.7 完了案内

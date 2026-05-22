@@ -159,10 +159,10 @@ flowchart TD
         P2 --> PN[Phase N]
     end
 
-    Phases --> Delete[セッション削除<br/>rm -rf session_dir]
+    Phases --> Delete[セッション削除<br/>session_manager.py cleanup]
     Delete --> End([完了])
 
-    Phases -.->|中断| Remain[session_dir 残存<br/>次回検出される]
+    Phases -.->|中断| Remain[session_dir 残存<br/>次回検出 or cleanup-stale]
 
     style Phases fill:#f0f8ff,stroke:#4682b4
     style Remain fill:#fff3cd,stroke:#ffc107
@@ -170,12 +170,12 @@ flowchart TD
 
 ### 作成から削除まで
 
-| タイミング   | 操作                                                                    |
-| ------------ | ----------------------------------------------------------------------- |
-| スキル開始時 | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
-| 各フェーズ   | エージェントやサブスキルがファイルを読み書き                            |
-| 正常完了時   | オーケストレーターがディレクトリを削除（`rm -rf {session_dir}`）        |
-| 中断時       | ディレクトリが残存（次回起動時に検出）                                  |
+| タイミング   | 操作                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| スキル開始時 | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化                      |
+| 各フェーズ   | エージェントやサブスキルがファイルを読み書き                                                 |
+| 正常完了時   | オーケストレーターが `session_manager.py cleanup {session_dir}` でディレクトリを削除         |
+| 中断時       | ディレクトリが残存（次回起動時に検出、または `session_manager.py cleanup-stale` で一括回収） |
 
 ### 残存セッション検出
 
@@ -293,6 +293,42 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```json
 { "status": "deleted", "session_dir": ".claude/.temp/start-design-a3f7b2" }
 ```
+
+#### `cleanup-stale` — 期限切れセッションの一括回収
+
+中断・クラッシュ・AI の流れ離脱などで残骸となったセッションを、時間ベースで一括回収する。各オーケストレーターの正常完了パスとは独立した「ゴミ掃除コマンド」。
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup-stale \
+  [--older-than-hours N] [--skill {skill_name}] [--dry-run]
+```
+
+| 引数                 | 必須 | デフォルト | 説明                                                                                |
+| -------------------- | ---- | ---------- | ----------------------------------------------------------------------------------- |
+| `--older-than-hours` | -    | `48`       | この時間より古いセッションを削除対象とする。`0` で全 `in_progress` セッションを対象 |
+| `--skill`            | -    | -          | 特定スキル名のセッションのみを対象にする（省略時は全スキル）                        |
+| `--dry-run`          | -    | -          | 削除せず、対象となるセッション一覧のみを出力する                                    |
+
+**処理内容**: `.claude/.temp/*/session.yaml` を走査し、`started_at` と `last_updated` のうち新しい方が `--older-than-hours` 以前のセッションを `shutil.rmtree()` で削除する。タイムスタンプ不正・パス検証失敗のものは削除せず `skipped` に分類する。
+
+**出力** (JSON):
+
+```json
+{
+  "status": "ok",
+  "cutoff_hours": 48,
+  "deleted": [
+    {
+      "path": ".claude/.temp/start-implement-b97398",
+      "skill": "start-implement",
+      "age_hours": 67.3
+    }
+  ],
+  "skipped": []
+}
+```
+
+`--dry-run` 時は `"status": "dry-run"` を返し、`deleted` フィールドには削除されなかった「削除予定」のリストが入る。
 
 ---
 

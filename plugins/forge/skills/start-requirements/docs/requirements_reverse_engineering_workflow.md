@@ -266,7 +266,7 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 ### 5.5 セッション削除
 
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 ### 5.6 完了案内

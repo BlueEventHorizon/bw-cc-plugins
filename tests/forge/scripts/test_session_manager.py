@@ -26,6 +26,7 @@ from session_manager import (
     SESSION_FIELD_ORDER,
     TEMP_BASE,
     cmd_cleanup,
+    cmd_cleanup_stale,
     cmd_find,
     cmd_init,
     generate_session_name,
@@ -376,6 +377,127 @@ class TestCmdCleanup(_FsTestCase):
         result = cmd_cleanup(self._make_args(
             os.path.join(TEMP_BASE, "..", "..", "etc")))
         self.assertEqual(result["status"], "error")
+
+
+# =========================================================================
+# 5b. cmd_cleanup_stale
+# =========================================================================
+
+class TestCmdCleanupStale(_FsTestCase):
+    """cmd_cleanup_stale のテスト"""
+
+    def _make_args(self, older_than_hours=48, skill=None, dry_run=False):
+        class Args:
+            pass
+        a = Args()
+        a.older_than_hours = older_than_hours
+        a.skill = skill
+        a.dry_run = dry_run
+        return a
+
+    def _create_session(self, skill, name, hours_ago):
+        """指定スキルで hours_ago 時間前のセッションを作成する"""
+        from datetime import datetime, timedelta, timezone
+        session_dir = os.path.join(TEMP_BASE, name)
+        os.makedirs(session_dir, exist_ok=True)
+        past = (datetime.now(timezone.utc)
+                - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {
+                "skill": skill,
+                "started_at": past,
+                "last_updated": past,
+                "status": "in_progress",
+            },
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
+
+    def test_deletes_only_stale(self):
+        """期限超過セッションのみ削除される"""
+        fresh = self._create_session("start-design", "start-design-fresh", hours_ago=1)
+        stale = self._create_session("start-design", "start-design-stale", hours_ago=100)
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+
+        self.assertEqual(result["status"], "ok")
+        deleted_paths = [d["path"] for d in result["deleted"]]
+        self.assertIn(stale, deleted_paths)
+        self.assertNotIn(fresh, deleted_paths)
+        self.assertTrue(os.path.exists(fresh))
+        self.assertFalse(os.path.exists(stale))
+
+    def test_dry_run_does_not_delete(self):
+        """--dry-run では削除されない"""
+        stale = self._create_session("start-plan", "start-plan-stale", hours_ago=100)
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48, dry_run=True))
+
+        self.assertEqual(result["status"], "dry-run")
+        self.assertEqual(len(result["deleted"]), 1)
+        # 物理削除されていない
+        self.assertTrue(os.path.exists(stale))
+
+    def test_skill_filter(self):
+        """--skill 指定で他スキルの古いセッションは残る"""
+        design = self._create_session("start-design", "start-design-stale", hours_ago=100)
+        plan = self._create_session("start-plan", "start-plan-stale", hours_ago=100)
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48, skill="start-design"))
+
+        self.assertEqual(result["status"], "ok")
+        deleted_paths = [d["path"] for d in result["deleted"]]
+        self.assertIn(design, deleted_paths)
+        self.assertNotIn(plan, deleted_paths)
+        self.assertFalse(os.path.exists(design))
+        self.assertTrue(os.path.exists(plan))
+
+    def test_zero_hours_deletes_all(self):
+        """--older-than-hours 0 で全 in_progress セッションが対象"""
+        # 30 分前のセッションでも 0 時間以上なので削除対象
+        recent = self._create_session("review", "review-stale", hours_ago=0.5)
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=0))
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(len(result["deleted"]), 1)
+        self.assertFalse(os.path.exists(recent))
+
+    def test_negative_hours_rejected(self):
+        """--older-than-hours が負数なら error"""
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=-1))
+        self.assertEqual(result["status"], "error")
+
+    def test_invalid_timestamp_skipped(self):
+        """タイムスタンプが不正な session.yaml は skipped に分類"""
+        session_dir = os.path.join(TEMP_BASE, "start-design-broken")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {
+                "skill": "start-design",
+                "started_at": "not-a-date",
+                "last_updated": "not-a-date",
+                "status": "in_progress",
+            },
+            field_order=SESSION_FIELD_ORDER,
+        )
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=0))
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(len(result["deleted"]), 0)
+        skipped_paths = [s["path"] for s in result["skipped"]]
+        self.assertIn(session_dir, skipped_paths)
+        # 安全側に倒し、削除されない
+        self.assertTrue(os.path.exists(session_dir))
+
+    def test_no_sessions(self):
+        """対象ディレクトリが空でも例外を出さない"""
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["deleted"], [])
 
 
 # =========================================================================

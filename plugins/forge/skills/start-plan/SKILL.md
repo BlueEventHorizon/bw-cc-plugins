@@ -312,7 +312,7 @@ Skill が失敗した場合は Phase 4.4 のチェック項目を手動で確認
 セッションディレクトリを削除する:
 
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 ### 完了案内
