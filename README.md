@@ -28,12 +28,12 @@
 ```mermaid
 flowchart LR
     subgraph forge
-        R([要件定義]) --> D([設計]) --> P([計画]) --> I([実装]) --> RF([レビュー / 修正])
+        R(["要件定義"]) --> D(["設計"]) --> P(["計画"]) --> I(["実装"]) --> RF(["レビュー / 修正"])
     end
-    RF --> DL([成果物])
-    DA[doc-advisor] -. コンテキスト収集 .-> forge
-    DB[doc-db] -. chunk Hybrid 検索 .-> forge
-    AV[anvil] -- コミット & PR --> DL
+    RF --> DL(["成果物"])
+    DA[doc-advisor] -. "コンテキスト収集" .-> forge
+    DB[doc-db] -. "chunk Hybrid 検索" .-> forge
+    AV[anvil] -- "コミット & PR" --> DL
 ```
 
 ## プラグイン一覧
@@ -64,7 +64,7 @@ flowchart LR
     REQ --> UXUI -.->|optional| DES --> PLAN --> IMPL
 
     REV["review<br/>(全ステージで利用可)"]
-    REQ & DES & PLAN & IMPL -.->|随時| REV
+    REQ & DES & PLAN & IMPL -.->|"随時"| REV
 ```
 
 | 段階          | スキル             | 入力                        | 出力                       |
