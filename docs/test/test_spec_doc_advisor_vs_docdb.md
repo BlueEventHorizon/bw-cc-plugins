@@ -137,7 +137,7 @@ python3 meta/test_docs/evaluate_toc_results.py bw-cc-plugins docdb_results.json 
 
 ## 前提条件
 
-- `OPENAI_API_KEY` 環境変数が設定されていること（doc-advisor 内蔵の Embedding 利用のため）
+- API キー環境変数が設定されていること（doc-advisor 内蔵の Embedding 利用のため）。`OPENAI_API_DOCDB_KEY` を優先参照し、未設定時は `OPENAI_API_KEY` にフォールバック（DES-007 統一仕様）
 - Golden Set が `meta/test_docs/bw-cc-plugins/test_manage/queries.yaml` に存在すること
 
 ## 関連ドキュメント

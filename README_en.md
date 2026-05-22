@@ -36,12 +36,12 @@ flowchart LR
 
 ## Plugins
 
-| Plugin          | Version | Description                                                                                                                                                                                       |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.1.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                                                                          |
-| **anvil**       | 0.0.8   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                                                              |
-| **doc-advisor** | 0.3.0   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task.                                              |
-| **doc-db**      | 0.0.2   | Heading-chunk Hybrid search (Embedding + Lexical) with LLM Rerank. Grep results for IDs / proper nouns are merged in to reduce misses (used together with and complementary to doc-advisor).      |
+| Plugin          | Version | Description                                                                                                                                                                                  |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **forge**       | 0.1.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                                                                     |
+| **anvil**       | 0.0.8   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                                                         |
+| **doc-advisor** | 0.3.0   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task.                                         |
+| **doc-db**      | 0.0.2   | Heading-chunk Hybrid search (Embedding + Lexical) with LLM Rerank. Grep results for IDs / proper nouns are merged in to reduce misses (used together with and complementary to doc-advisor). |
 
 ## Skills
 
@@ -117,12 +117,12 @@ flowchart LR
 
 > [Detailed Guide](docs/readme/guide_anvil.md) — Usage and examples
 
-| Skill                                                 | Description                                                                                       | Trigger              |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------- |
-| [**commit**](docs/readme/guide_anvil.md#commit)       | Generate commit message from changes, commit & push                                               | `"commit"`           |
-| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body                                           | `"create-pr"`        |
-| **create-issue**                                      | Organize problem, background, and root cause into a GitHub Issue (resolution handled by impl-issue) | `"create issue"`     |
-| **impl-issue**                                        | Run end-to-end from a GitHub Issue: plan, branch, implement, PR (UI Issue supported)              | `"implement issue"`  |
+| Skill                                                 | Description                                                                                         | Trigger             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------- |
+| [**commit**](docs/readme/guide_anvil.md#commit)       | Generate commit message from changes, commit & push                                                 | `"commit"`          |
+| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body                                             | `"create-pr"`       |
+| **create-issue**                                      | Organize problem, background, and root cause into a GitHub Issue (resolution handled by impl-issue) | `"create issue"`    |
+| **impl-issue**                                        | Run end-to-end from a GitHub Issue: plan, branch, implement, PR (UI Issue supported)                | `"implement issue"` |
 
 ### doc-advisor
 
@@ -139,10 +139,10 @@ flowchart LR
 
 > Detailed Guide: [Japanese](docs/readme/guide_doc-db_ja.md) (en TBD) — Usage, examples, and how it complements doc-advisor
 
-| Skill                                                            | Description                                                                                       | Trigger             |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
-| [**build-index**](docs/readme/guide_doc-db_ja.md#build-index)    | Build/update the heading-chunk Index (rules / specs, `--full`, etc.)                              | `"build doc-db"`    |
-| [**query**](docs/readme/guide_doc-db_ja.md#query)                | Hybrid / Rerank search. Optionally augments results with full-text grep                           | `"search doc-db"`   |
+| Skill                                                         | Description                                                             | Trigger           |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------- |
+| [**build-index**](docs/readme/guide_doc-db_ja.md#build-index) | Build/update the heading-chunk Index (rules / specs, `--full`, etc.)    | `"build doc-db"`  |
+| [**query**](docs/readme/guide_doc-db_ja.md#query)             | Hybrid / Rerank search. Optionally augments results with full-text grep | `"search doc-db"` |
 
 > **Bold** = user-invocable, _Italic_ = AI-only (called internally by other skills)
 
@@ -199,8 +199,8 @@ On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and 
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
-- OpenAI API key (for doc-advisor embedding features; set `OPENAI_API_KEY`)
-- OpenAI API key (for doc-db index build / search / rerank; set `OPENAI_API_DOCDB_KEY`)
+- OpenAI API key (for doc-advisor embedding features; `OPENAI_API_DOCDB_KEY` recommended, falls back to `OPENAI_API_KEY` if unset; per DES-007 unified spec)
+- OpenAI API key (for doc-db index build / search / rerank; `OPENAI_API_DOCDB_KEY` recommended, falls back to `OPENAI_API_KEY` if unset; per DES-007 unified spec)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 
 ## License

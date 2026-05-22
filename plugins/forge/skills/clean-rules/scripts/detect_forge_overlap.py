@@ -18,7 +18,6 @@ Usage:
 import argparse
 import json
 import math
-import os
 import re
 import sys
 from pathlib import Path
@@ -30,7 +29,7 @@ _DOC_ADVISOR_SCRIPTS = str(
 if _DOC_ADVISOR_SCRIPTS not in sys.path:
     sys.path.insert(0, _DOC_ADVISOR_SCRIPTS)
 
-from embedding_api import EMBEDDING_BATCH_SIZE, call_embedding_api
+from embedding_api import EMBEDDING_BATCH_SIZE, call_embedding_api, get_api_key
 
 
 # ---------------------------------------------------------------------------
@@ -248,12 +247,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    # API キーの取得（FNC-004 KEY-01 / DES-007 §2.2: OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY にフォールバック）
+    api_key = get_api_key()
     if not api_key:
         print(json.dumps({
             "status": "error",
-            "error": "OPENAI_API_KEY not set. Set it with: export OPENAI_API_KEY=sk-...",
-        }))
+            "error": (
+                "OPENAI_API_DOCDB_KEY（または OPENAI_API_KEY）が設定されていません。"
+                "export OPENAI_API_DOCDB_KEY='your-api-key' を実行してください。"
+            ),
+        }, ensure_ascii=False))
         sys.exit(1)
 
     _log("Phase 1: セクション分割...")

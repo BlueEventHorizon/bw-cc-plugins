@@ -43,4 +43,4 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category {category}
   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/embed_docs.py --category {category} --full
   ```
   成功後、Procedure の Step 1 をリトライ
-- **"API error"** / **"OPENAI_API_KEY not set"** → 候補なし（空リスト）として返す。エラーにしない
+- **"API error"** / **"OPENAI_API_DOCDB_KEY（または OPENAI_API_KEY）が設定されていません"** → 候補なし（空リスト）として返す。エラーにしない（DES-007 統一エラー文言）
