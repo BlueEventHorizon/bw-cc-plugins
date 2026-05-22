@@ -21,6 +21,7 @@ import json
 import os
 import shutil
 import sys
+from datetime import datetime, timezone
 
 from session.yaml_utils import now_iso, read_yaml, write_flat_yaml
 
@@ -162,6 +163,95 @@ def cmd_cleanup(args):
     return {"status": "deleted", "session_dir": session_dir}
 
 
+def _parse_iso_ts(ts):
+    """ISO 8601 (Z 表記または +00:00 表記) を aware datetime に変換する。
+
+    yaml_utils.now_iso() の出力 (`%Y-%m-%dT%H:%M:%SZ`) との往復に加え、
+    手書きセッションへの後方互換として `+00:00` も受理する。
+    """
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def cmd_cleanup_stale(args):
+    """期限切れの in_progress セッションを一括削除する。
+
+    `started_at` と `last_updated` のうち新しい方を基準とし、
+    `--older-than-hours N` より古いセッションを削除する。
+    `--skill` 指定時は該当スキルのみが対象。
+    `--dry-run` 時は削除予定一覧のみを返す。
+    """
+    cutoff_hours = args.older_than_hours
+    skill_filter = args.skill
+    dry_run = args.dry_run
+
+    if cutoff_hours < 0:
+        return {
+            "status": "error",
+            "error": f"--older-than-hours は 0 以上を指定してください: {cutoff_hours}",
+        }
+
+    now = datetime.now(timezone.utc)
+    pattern = os.path.join(TEMP_BASE, "*", "session.yaml")
+    deleted = []
+    skipped = []
+
+    for yaml_path in sorted(glob.glob(pattern)):
+        session_dir = os.path.dirname(yaml_path)
+        try:
+            data = read_yaml(yaml_path)
+        except (IOError, OSError) as e:
+            skipped.append({"path": session_dir, "reason": f"読み込み失敗: {e}"})
+            continue
+
+        if skill_filter and data.get("skill") != skill_filter:
+            continue
+
+        ts_started = _parse_iso_ts(data.get("started_at"))
+        ts_updated = _parse_iso_ts(data.get("last_updated"))
+        candidates = [t for t in (ts_started, ts_updated) if t is not None]
+        if not candidates:
+            skipped.append({"path": session_dir, "reason": "タイムスタンプ不正"})
+            continue
+        latest = max(candidates)
+
+        age_hours = (now - latest).total_seconds() / 3600.0
+        if age_hours < cutoff_hours:
+            continue
+
+        if not validate_temp_path(session_dir):
+            skipped.append({"path": session_dir, "reason": "安全でないパス"})
+            continue
+
+        entry = {
+            "path": session_dir,
+            "skill": data.get("skill", ""),
+            "age_hours": round(age_hours, 2),
+        }
+
+        if dry_run:
+            deleted.append(entry)
+            continue
+
+        try:
+            shutil.rmtree(session_dir)
+        except OSError as e:
+            skipped.append({"path": session_dir, "reason": f"削除失敗: {e}"})
+            continue
+        deleted.append(entry)
+
+    return {
+        "status": "dry-run" if dry_run else "ok",
+        "cutoff_hours": cutoff_hours,
+        "deleted": deleted,
+        "skipped": skipped,
+    }
+
+
 # ---------------------------------------------------------------------------
 # メイン
 # ---------------------------------------------------------------------------
@@ -182,6 +272,28 @@ def main():
     cleanup_parser = subparsers.add_parser("cleanup", help="セッション削除")
     cleanup_parser.add_argument("session_dir", help="削除するセッションディレクトリパス")
 
+    # cleanup-stale サブコマンド
+    stale_parser = subparsers.add_parser(
+        "cleanup-stale",
+        help="期限切れセッションを一括削除（中断・クラッシュ後の残骸を回収）",
+    )
+    stale_parser.add_argument(
+        "--older-than-hours",
+        type=int,
+        default=48,
+        help="この時間 (時間単位) より古いセッションを削除対象とする。デフォルト 48",
+    )
+    stale_parser.add_argument(
+        "--skill",
+        default=None,
+        help="特定スキルのセッションのみ対象にする（省略時は全スキル）",
+    )
+    stale_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="削除せず、削除予定の一覧のみを出力する",
+    )
+
     # parse_known_args で init の任意フィールドに対応
     args, remaining = parser.parse_known_args()
 
@@ -195,6 +307,8 @@ def main():
         result = cmd_find(args)
     elif args.command == "cleanup":
         result = cmd_cleanup(args)
+    elif args.command == "cleanup-stale":
+        result = cmd_cleanup_stale(args)
     else:
         parser.print_help()
         sys.exit(1)

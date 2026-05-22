@@ -364,7 +364,7 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 全フェーズ正常完了後、セッションディレクトリを削除する:
 
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
 
 ### 4.8 完了案内
