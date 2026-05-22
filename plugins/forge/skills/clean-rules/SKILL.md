@@ -88,7 +88,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/detect_forge_overlap.py" \
 ```
 
 - `status: "ok"` → `overlaps` リストを Phase 2 に渡す
-- `status: "error"` → エラー内容を報告。`OPENAI_API_KEY` 未設定の場合はユーザーに設定を案内
+- `status: "error"` → エラー内容を報告。API キー未設定の場合は `OPENAI_API_DOCDB_KEY`（推奨。未設定時は `OPENAI_API_KEY` にフォールバック。DES-007 統一仕様）の設定をユーザーに案内
 
 #### Step 5: 分類学定義の読み込み [MANDATORY]
 

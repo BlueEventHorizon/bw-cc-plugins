@@ -129,7 +129,7 @@ python3 detect_forge_overlap.py \
 
 ### 前提条件
 
-- `OPENAI_API_KEY` 環境変数が必須。未設定時はエラー終了
+- API キー環境変数が必須。`OPENAI_API_DOCDB_KEY` を優先参照し、未設定時は `OPENAI_API_KEY` にフォールバック（doc-advisor:DES-007_unified_api_key_reference_design / FNC-004 KEY-01 統一仕様）。両方未設定時はエラー終了
 
 ---
 
