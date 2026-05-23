@@ -265,9 +265,14 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 ### 5.5 セッション削除
 
+正常完了処理は **complete → cleanup の 2 段** で行う:
+
 ```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
+
+`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
 
 ### 5.6 完了案内
 

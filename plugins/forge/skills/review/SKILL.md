@@ -397,14 +397,40 @@ related_code:
 
 ### Step 1: 残存セッション確認
 
+#### 1-1. 自スキル残骸の検出
+
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 ```
 
-- `status: "none"` → Step 2 へ
-- `status: "found"` → AskUserQuestion で「前回の未完了セッションがあります。再開しますか?」を確認
-  - **再開する** → 既存 `session_dir` を使用
-  - **破棄する** → `session_manager.py cleanup` で削除後、新規作成
+- `status: "none"` → 「1-2. 他スキル残骸の通告」へ
+- `status: "found"` の場合、`sessions[]` を以下のルールで処理する:
+  - **`status: "completed"`** → 正常完了したのに cleanup されなかった残骸として AskUserQuestion なしで自動 cleanup する:
+    ```bash
+    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {completed_session_path}
+    ```
+  - **`status: "in_progress"`** が残る場合 → AskUserQuestion で「前回の未完了セッションがあります。再開しますか?」を確認
+    - **再開する** → 既存 `session_dir` を使用
+    - **破棄する** → `session_manager.py cleanup` で削除後、Step 2 で新規作成
+
+#### 1-2. 他スキル残骸の通告
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py --all-skills
+```
+
+返却された `sessions[]` から自スキル分（既に処理済み）を除外し、`status: "completed"` は自動 cleanup する。残った `status: "in_progress"` が存在する場合は AskUserQuestion:「他スキルの残骸が N 件あります。今クリーンアップしますか？」
+
+- **はい** → 各セッションを cleanup
+- **いいえ** → そのまま Step 2 へ進む
+
+#### 1-3. Phase 切替時の touch [MANDATORY]
+
+Phase 4 以降の各段階（reviewer 起動前 / evaluator 起動前 / fixer 起動前 / 終了処理前）の冒頭で session.yaml の `last_updated` を更新する。これにより長時間 reviewer が走っている間も `cleanup-stale` が誤削除しない。
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py touch {session_dir}
+```
 
 ### Step 2: reviewer 起動 (Codex / Claude いずれも 1 プロセスのみ)
 
@@ -606,10 +632,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/summarize_plan.py {session_dir}
 - `unprocessed_total: 0` → session_dir を削除して終了
 - `unprocessed_total > 0` → AskUserQuestion で決着方法を確認 (`個別に判定する` / `全件「対応しない」として終了`)。「残す」選択肢は提示しない
 
+正常完了処理は **complete → cleanup の 2 段** で行う:
+
 ```bash
-# 未処理 0 件のクリーンアップ
+# 未処理 0 件のクリーンアップ (complete → cleanup の 2 段)
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
+
+`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回 `/forge:review` 起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
 
 > **なぜ「残す」を選択肢に入れないか**: 終了条件を満たさないまま意図的に session を残すと、「終わったのか終わっていないのか」が曖昧になる。クラッシュ等で未完のまま残った session は、次回 `/forge:review` 起動時の残存セッション検出で再開対象となる。
 

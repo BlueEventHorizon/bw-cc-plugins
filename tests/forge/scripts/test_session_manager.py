@@ -27,8 +27,10 @@ from session_manager import (
     TEMP_BASE,
     cmd_cleanup,
     cmd_cleanup_stale,
+    cmd_complete,
     cmd_find,
     cmd_init,
+    cmd_touch,
     generate_session_name,
     parse_extra_args,
     validate_temp_path,
@@ -295,11 +297,12 @@ class TestCmdInit(_FsTestCase):
 class TestCmdFind(_FsTestCase):
     """cmd_find のテスト"""
 
-    def _make_args(self, skill):
+    def _make_args(self, skill=None, all_skills=False):
         class Args:
             pass
         a = Args()
         a.skill = skill
+        a.all_skills = all_skills
         return a
 
     def _create_session(self, skill, name=None):
@@ -319,28 +322,53 @@ class TestCmdFind(_FsTestCase):
 
     def test_find_matching(self):
         self._create_session("start-design")
-        result = cmd_find(self._make_args("start-design"))
+        result = cmd_find(self._make_args(skill="start-design"))
         self.assertEqual(result["status"], "found")
         self.assertEqual(len(result["sessions"]), 1)
         self.assertEqual(result["sessions"][0]["skill"], "start-design")
 
     def test_find_no_match(self):
         self._create_session("start-design")
-        result = cmd_find(self._make_args("review"))
+        result = cmd_find(self._make_args(skill="review"))
         self.assertEqual(result["status"], "none")
 
     def test_find_multiple(self):
         self._create_session("start-design", "start-design-aaaaaa")
         self._create_session("start-design", "start-design-bbbbbb")
-        result = cmd_find(self._make_args("start-design"))
+        result = cmd_find(self._make_args(skill="start-design"))
         self.assertEqual(result["status"], "found")
         self.assertEqual(len(result["sessions"]), 2)
 
     def test_find_ignores_other_skills(self):
         self._create_session("start-design", "start-design-aaaaaa")
         self._create_session("start-plan", "start-plan-bbbbbb")
-        result = cmd_find(self._make_args("start-design"))
+        result = cmd_find(self._make_args(skill="start-design"))
         self.assertEqual(len(result["sessions"]), 1)
+
+    def test_find_returns_last_updated(self):
+        """sessions[] エントリに last_updated が含まれること"""
+        self._create_session("start-design")
+        result = cmd_find(self._make_args(skill="start-design"))
+        self.assertIn("last_updated", result["sessions"][0])
+        self.assertEqual(
+            result["sessions"][0]["last_updated"], "2026-03-13T18:00:00Z"
+        )
+
+    def test_find_all_skills_returns_all(self):
+        """--all-skills で全スキルのセッションを返す"""
+        self._create_session("start-design", "start-design-aaaaaa")
+        self._create_session("start-plan", "start-plan-bbbbbb")
+        self._create_session("review", "review-cccccc")
+        result = cmd_find(self._make_args(all_skills=True))
+        self.assertEqual(result["status"], "found")
+        self.assertEqual(len(result["sessions"]), 3)
+        skills_seen = {s["skill"] for s in result["sessions"]}
+        self.assertEqual(skills_seen, {"start-design", "start-plan", "review"})
+
+    def test_find_all_skills_none(self):
+        """--all-skills でセッションが無い場合は status: none"""
+        result = cmd_find(self._make_args(all_skills=True))
+        self.assertEqual(result["status"], "none")
 
 
 # =========================================================================
@@ -380,6 +408,168 @@ class TestCmdCleanup(_FsTestCase):
 
 
 # =========================================================================
+# 5a-1. cmd_touch
+# =========================================================================
+
+class TestCmdTouch(_FsTestCase):
+    """cmd_touch のテスト"""
+
+    def _make_args(self, session_dir):
+        class Args:
+            pass
+        a = Args()
+        a.session_dir = session_dir
+        return a
+
+    def _create_session(self, skill, name, started_at):
+        session_dir = os.path.join(TEMP_BASE, name)
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {
+                "skill": skill,
+                "started_at": started_at,
+                "last_updated": started_at,
+                "status": "in_progress",
+            },
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
+
+    def test_updates_last_updated(self):
+        """last_updated が現在時刻に更新される"""
+        session_dir = self._create_session(
+            "start-design", "start-design-aaaaaa", "2026-01-01T00:00:00Z"
+        )
+        result = cmd_touch(self._make_args(session_dir))
+        self.assertEqual(result["status"], "ok")
+        # 戻り値の last_updated が更新されている
+        self.assertNotEqual(result["last_updated"], "2026-01-01T00:00:00Z")
+        self.assertRegex(
+            result["last_updated"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
+        )
+        # session.yaml も更新されている
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["last_updated"], result["last_updated"])
+
+    def test_started_at_preserved(self):
+        """touch しても started_at は変わらない"""
+        session_dir = self._create_session(
+            "start-design", "start-design-aaaaaa", "2026-01-01T00:00:00Z"
+        )
+        cmd_touch(self._make_args(session_dir))
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["started_at"], "2026-01-01T00:00:00Z")
+
+    def test_status_preserved(self):
+        """touch しても status は変わらない"""
+        session_dir = self._create_session(
+            "start-design", "start-design-aaaaaa", "2026-01-01T00:00:00Z"
+        )
+        cmd_touch(self._make_args(session_dir))
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["status"], "in_progress")
+
+    def test_extra_fields_preserved(self):
+        """touch してもスキル固有フィールドは保持される"""
+        session_dir = os.path.join(TEMP_BASE, "start-design-bbbbbb")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {
+                "skill": "start-design",
+                "started_at": "2026-01-01T00:00:00Z",
+                "last_updated": "2026-01-01T00:00:00Z",
+                "status": "in_progress",
+                "feature": "login",
+                "mode": "new",
+            },
+            field_order=SESSION_FIELD_ORDER,
+        )
+        cmd_touch(self._make_args(session_dir))
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["feature"], "login")
+        self.assertEqual(data["mode"], "new")
+
+    def test_rejects_unsafe_path(self):
+        result = cmd_touch(self._make_args("/tmp/dangerous"))
+        self.assertEqual(result["status"], "error")
+
+    def test_missing_session_yaml(self):
+        """session.yaml がないディレクトリは error"""
+        session_dir = os.path.join(TEMP_BASE, "start-design-empty")
+        os.makedirs(session_dir, exist_ok=True)
+        result = cmd_touch(self._make_args(session_dir))
+        self.assertEqual(result["status"], "error")
+
+
+# =========================================================================
+# 5a-2. cmd_complete
+# =========================================================================
+
+class TestCmdComplete(_FsTestCase):
+    """cmd_complete のテスト"""
+
+    def _make_args(self, session_dir):
+        class Args:
+            pass
+        a = Args()
+        a.session_dir = session_dir
+        return a
+
+    def _create_session(self, skill, name):
+        session_dir = os.path.join(TEMP_BASE, name)
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {
+                "skill": skill,
+                "started_at": "2026-01-01T00:00:00Z",
+                "last_updated": "2026-01-01T00:00:00Z",
+                "status": "in_progress",
+            },
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
+
+    def test_transitions_to_completed(self):
+        """status が completed に遷移する"""
+        session_dir = self._create_session("start-design", "start-design-aaaaaa")
+        result = cmd_complete(self._make_args(session_dir))
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["session_status"], "completed")
+        data = read_yaml(os.path.join(session_dir, "session.yaml"))
+        self.assertEqual(data["status"], "completed")
+
+    def test_updates_last_updated(self):
+        """complete でも last_updated が更新される"""
+        session_dir = self._create_session("start-design", "start-design-aaaaaa")
+        result = cmd_complete(self._make_args(session_dir))
+        self.assertNotEqual(result["last_updated"], "2026-01-01T00:00:00Z")
+        self.assertRegex(
+            result["last_updated"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
+        )
+
+    def test_idempotent(self):
+        """既に completed のセッションに complete を呼んでも問題ない"""
+        session_dir = self._create_session("start-design", "start-design-aaaaaa")
+        cmd_complete(self._make_args(session_dir))
+        result = cmd_complete(self._make_args(session_dir))
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["session_status"], "completed")
+
+    def test_rejects_unsafe_path(self):
+        result = cmd_complete(self._make_args("/tmp/dangerous"))
+        self.assertEqual(result["status"], "error")
+
+    def test_missing_session_yaml(self):
+        session_dir = os.path.join(TEMP_BASE, "start-design-empty")
+        os.makedirs(session_dir, exist_ok=True)
+        result = cmd_complete(self._make_args(session_dir))
+        self.assertEqual(result["status"], "error")
+
+
+# =========================================================================
 # 5b. cmd_cleanup_stale
 # =========================================================================
 
@@ -395,7 +585,7 @@ class TestCmdCleanupStale(_FsTestCase):
         a.dry_run = dry_run
         return a
 
-    def _create_session(self, skill, name, hours_ago):
+    def _create_session(self, skill, name, hours_ago, status="in_progress"):
         """指定スキルで hours_ago 時間前のセッションを作成する"""
         from datetime import datetime, timedelta, timezone
         session_dir = os.path.join(TEMP_BASE, name)
@@ -408,7 +598,7 @@ class TestCmdCleanupStale(_FsTestCase):
                 "skill": skill,
                 "started_at": past,
                 "last_updated": past,
-                "status": "in_progress",
+                "status": status,
             },
             field_order=SESSION_FIELD_ORDER,
         )
@@ -499,6 +689,36 @@ class TestCmdCleanupStale(_FsTestCase):
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["deleted"], [])
 
+    def test_completed_sessions_deleted_regardless_of_age(self):
+        """status: completed のセッションは cutoff_hours に関わらず削除される"""
+        fresh_completed = self._create_session(
+            "start-design", "start-design-done", hours_ago=0.1, status="completed",
+        )
+        fresh_in_progress = self._create_session(
+            "start-plan", "start-plan-running", hours_ago=0.1, status="in_progress",
+        )
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+
+        self.assertEqual(result["status"], "ok")
+        deleted_paths = [d["path"] for d in result["deleted"]]
+        # completed は即削除
+        self.assertIn(fresh_completed, deleted_paths)
+        self.assertFalse(os.path.exists(fresh_completed))
+        # in_progress でまだ若いセッションは残る
+        self.assertNotIn(fresh_in_progress, deleted_paths)
+        self.assertTrue(os.path.exists(fresh_in_progress))
+
+    def test_completed_entry_includes_status(self):
+        """deleted エントリに session_status フィールドが含まれる"""
+        self._create_session(
+            "start-design", "start-design-done", hours_ago=0.1, status="completed",
+        )
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48, dry_run=True))
+        self.assertEqual(result["status"], "dry-run")
+        self.assertEqual(len(result["deleted"]), 1)
+        self.assertEqual(result["deleted"][0]["session_status"], "completed")
+
 
 # =========================================================================
 # 6. CLI 統合テスト
@@ -560,6 +780,63 @@ class TestCLI(_FsTestCase):
 
     def test_no_command_shows_help(self):
         r = self._run()
+        self.assertNotEqual(r.returncode, 0)
+
+    def test_touch_cli(self):
+        """init → touch → find で last_updated が反映される"""
+        r = self._run("init", "--skill", "start-design")
+        self.assertEqual(r.returncode, 0)
+        session_dir = json.loads(r.stdout)["session_dir"]
+        initial_data = json.loads(self._run(
+            "find", "--skill", "start-design",
+        ).stdout)
+        initial_last_updated = initial_data["sessions"][0]["last_updated"]
+
+        # touch
+        import time
+        time.sleep(1)
+        r = self._run("touch", session_dir)
+        self.assertEqual(r.returncode, 0)
+        touch_data = json.loads(r.stdout)
+        self.assertEqual(touch_data["status"], "ok")
+        self.assertNotEqual(touch_data["last_updated"], initial_last_updated)
+
+    def test_complete_cli(self):
+        """init → complete で status が completed に遷移する"""
+        r = self._run("init", "--skill", "start-design")
+        self.assertEqual(r.returncode, 0)
+        session_dir = json.loads(r.stdout)["session_dir"]
+
+        r = self._run("complete", session_dir)
+        self.assertEqual(r.returncode, 0)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["session_status"], "completed")
+
+        # find で見たときも completed になっている
+        r = self._run("find", "--skill", "start-design")
+        find_data = json.loads(r.stdout)
+        self.assertEqual(find_data["sessions"][0]["status"], "completed")
+
+    def test_find_all_skills_cli(self):
+        """--all-skills で全スキルのセッションを取得する"""
+        self._run("init", "--skill", "start-design")
+        self._run("init", "--skill", "start-plan")
+
+        r = self._run("find", "--all-skills")
+        self.assertEqual(r.returncode, 0)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["status"], "found")
+        self.assertEqual(len(data["sessions"]), 2)
+
+    def test_find_requires_skill_or_all_skills(self):
+        """find に --skill / --all-skills のどちらも指定しないとエラー"""
+        r = self._run("find")
+        self.assertNotEqual(r.returncode, 0)
+
+    def test_find_skill_and_all_skills_mutually_exclusive(self):
+        """--skill と --all-skills を同時に指定するとエラー"""
+        r = self._run("find", "--skill", "start-design", "--all-skills")
         self.assertNotEqual(r.returncode, 0)
 
 
