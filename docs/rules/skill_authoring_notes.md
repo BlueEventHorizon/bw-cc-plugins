@@ -7,6 +7,8 @@ Claude Code プラグイン/スキルの SKILL.md を作成・編集する際の
 claude code SKILL に関しては
 まず、claude-code-guide Agent を使って公式仕様を理解してください。 [MANDATORY]
 
+加えて、`docs/rules/skill_launch_paths_definitions.md` を読み、起動経路の **公式短縮名称** (継承型 SKILL / fork 型 SKILL / 汎用 Agent / カスタム Agent / Bash subprocess) に従って SKILL.md を記述してください。[MANDATORY]
+
 ---
 
 ## frontmatter フィールド
