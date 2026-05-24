@@ -96,9 +96,12 @@ orchestrator
 
 ## 4. 適用例
 
-### 4.1 review パイプライン — reviewer
+### 4.1 review パイプライン — reviewer (歴史的例)
+
+> 注: 現行 reviewer は **1 起動原則** (DES-028 / REQ-004 FNC-412) に統一されており、観点軸での並列分割は撤廃されている。以下は本設計が制定された当時の例示として保存する。並列出力契約の 3 原則 (個別書き込み / 完了通知のみ / オーケストレータ一括更新) 自体は現行でも有効。
 
 ```
+(旧設計の例)
 review orchestrator
   ├─ reviewer(logic)          → review_logic.md
   ├─ reviewer(resilience)     → review_resilience.md
@@ -108,9 +111,14 @@ review orchestrator
   extract_review_findings.py → review.md + plan.yaml
 ```
 
-### 4.2 review パイプライン — evaluator
+現行の review パイプラインは reviewer 1 起動 → `review_<種別>.md` を 1 ファイルに出力する。
+
+### 4.2 review パイプライン — evaluator (歴史的例)
+
+> 注: 現行 evaluator も reviewer の 1 起動に対応して 1 起動で動作する (DES-028 §4.3)。以下は本設計当時の例示として保存する。
 
 ```
+(旧設計の例)
 review orchestrator
   ├─ evaluator(logic)          → eval_logic.json
   ├─ evaluator(resilience)     → eval_resilience.json
