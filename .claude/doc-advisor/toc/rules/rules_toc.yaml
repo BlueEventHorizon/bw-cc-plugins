@@ -4,8 +4,8 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-18T13:57:09Z
-  file_count: 5
+  generated_at: 2026-05-24T11:14:54Z
+  file_count: 6
 
 docs:
   docs/rules/cli_output_formatting.md:
@@ -93,36 +93,59 @@ docs:
       - dead code
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
-    title: SKILL.md Authoring Notes
-    purpose: Guidance for creating and editing Claude Code plugin skill manifest files, including frontmatter fields, fork vs inheritance execution models, and context safety requirements
+    title: SKILL Authoring Notes
+    purpose: Provides guidelines and best practices for creating and editing Claude Code plugin SKILL.md files, including frontmatter fields, fork vs inheritance patterns, and multi-layered security controls
     content_details:
-      - Frontmatter field definitions and validation rules
-      - Fork type vs inheritance type skill execution models
-      - Multi-layer defense architecture for context isolation
-      - Description writing guidelines for auto-invocation
-      - Argument referencing and available variables
-      - Cross-skill invocation patterns and recursion prevention
-      - Directory structure and file splitting conventions
-      - User interaction via AskUserQuestion tool
-      - Project-specific authoring rules
-      - Common misconceptions and compliance checklist
+      - Frontmatter field reference (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
+      - Fork vs inheritance SKILL decision principles and multi-defense layers
+      - Fork SKILL mandatory requirements (explicit context, agent specification, Role constraints, argument interpretation guards)
+      - Inheritance SKILL mandatory requirements (responsibility boundary, large context prohibition, write permission conditions)
+      - Description writing patterns and clarity guidelines
+      - Argument reference syntax ($ARGUMENTS, $0, $1, environment variables)
+      - Inter-SKILL invocation patterns and self-recursion prohibition
+      - Directory structure and SKILL.md split criteria
+      - User question handling (AskUserQuestion tool requirement)
+      - Project-specific authoring rules (Japanese documentation, user-invocable defaults, script path references)
     applicable_tasks:
-      - SKILL.md creation and review
-      - Plugin development and maintenance
-      - Context safety audits
-      - Security validation for context inheritance
-      - Auto-invocation mechanism tuning
+      - SKILL.md creation and editing
+      - Security design review for SKILL definitions
+      - Fork vs inheritance pattern decision
+      - SKILL refactoring and structure optimization
+      - Frontmatter validation
     keywords:
       - SKILL.md
-      - frontmatter
-      - fork
-      - context isolation
+      - fork context
       - inheritance model
-      - auto-invocation
-      - subagent
+      - frontmatter
       - allowed-tools
-      - permission
+      - Context isolation
+      - Multi-defense layers
+      - Self-recursion
+      - AskUserQuestion
       - Claude Code
+  docs/rules/skill_launch_paths_definitions.md:
+    doc_type: rule
+    title: SKILL / Agent / subagent Launch Paths and Definitions
+    purpose: Defines the 5 launch paths for delegating processing in Claude Code, their proper terminology, and naming conventions to prevent ambiguity across documentation
+    content_details:
+      - "5 launch paths: inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess"
+      - Context inheritance vs isolation patterns
+      - Launch tool specifications and context behavior
+      - Subagent terminology unification rules and proper usage
+      - Invalid subagent_type values and common mistakes
+    applicable_tasks:
+      - SKILL authoring and documentation
+      - Agent definition creation
+      - Documentation writing for Claude Code integrations
+      - Architecture review for delegation patterns
+    keywords:
+      - SKILL
+      - Agent
+      - subagent_type
+      - context fork
+      - launch path
+      - delegation
+      - terminology
   docs/rules/version_migration_design.md:
     doc_type: rule
     title: Version Migration Design Rule
