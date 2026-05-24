@@ -488,11 +488,62 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 各セクション内では priority 順 (P1 → P2 → P3) でソートする [DES-028 §4.4]。
 
-#### `--auto-critical`
+#### `--auto-critical` / `--auto` 共通: 軽量経路判定 [REQ-004 FNC-413] [MANDATORY]
+
+`--auto-critical` / `--auto` で fixer を呼び出す直前に、orchestrator が plan.yaml の集計から「軽量経路で済むか」を判定する。判定段階では **`review_<種別>.md` は読まない** (判定コストで context を肥大化させないため)。
+
+**判定アルゴリズム**:
+
+1. plan.yaml を Read (Phase 4 で読み込み済みのため再 Read 不要)
+2. `recommendation: fix` AND `status ∈ {pending, in_progress}` の項目を抽出
+3. `--auto-critical` の場合は `severity: critical` でさらに絞り込む
+4. 抽出件数が **3 以下** AND 全項目が `auto_fixable: true` → **軽量経路** (下記 Step 2-A)
+5. それ以外 → **fixer 経路** (下記 Step 2-B)
+
+判定結果を出力する:
+
+```
+### 🔍 軽量経路判定 (FNC-413)
+
+| 項目                                                          | 値    |
+|---------------------------------------------------------------|-------|
+| `recommendation: fix` AND `pending/in_progress` (severity 絞り込み後) | N 件 |
+| 全件 `auto_fixable: true`                                      | yes/no |
+| 判定結果                                                       | 軽量経路 / fixer 経路 |
+```
+
+#### Step 2-A: 軽量経路 (FNC-413) — orchestrator 直接修正
+
+軽量経路と判定した場合、orchestrator (この SKILL を実行している親 Claude) が直接修正する。fixer (subagent) は呼び出さない。
+
+抽出した finding 1 件ごとに以下を順に実行する:
+
+1. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/present-findings/scripts/mark_in_progress.py {session_dir} {id}` を呼び、plan.yaml の該当項目を `status: in_progress` に遷移させる
+2. `{session_dir}/review_<種別>.md` から **該当 finding の修正案セクションのみ** を Read で抜粋する (全文 Read ではなく必要部分のみ)
+3. 抜粋した修正案に従い `Edit` ツールで対象ファイルを直接修正する
+4. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}` を呼び、plan.yaml を `status: fixed` に更新する
+
+全件処理完了後、修正サマリを以下のフォーマットで出力する:
+
+```
+### ✅ 軽量経路 完了 — orchestrator 直接修正
+
+| id  | priority | severity | 問題名                  | 修正ファイル                |
+|-----|----------|----------|-------------------------|-----------------------------|
+| 3   | P1       | critical | <問題名>                | <修正したファイルパス>      |
+```
+
+その後、Step 3 (単独修正レビュー) に進む。**Step 3 はスキップしない**: 軽量経路でも reviewer による副作用確認 (`--diff-only`) は必須。
+
+#### Step 2-B: fixer 経路 (従来動作)
+
+軽量経路に当てはまらない場合、従来どおり fixer (subagent) に修正を委譲する。
+
+##### `--auto-critical`
 
 `/forge:fixer --batch` を Agent ツール (general-purpose) で起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
 
-#### `--auto`
+##### `--auto`
 
 `/forge:fixer --batch` を起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
 
