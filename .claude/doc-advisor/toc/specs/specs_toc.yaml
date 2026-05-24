@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-20T17:56:10Z
+  generated_at: 2026-05-24T04:06:33Z
   file_count: 55
 
 docs:
@@ -76,33 +76,33 @@ docs:
       - design tokens
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
     doc_type: design
-    title: COMMON-DES-001 SKILL Base Design
-    purpose: Defines the foundational design for SKILL execution models, including context inheritance vs fork decisions, isolation principles, and governance for all plugins in bw-cc-plugins
+    title: SKILL Base Design
+    purpose: Defines the design principles, execution models, and governance rules for SKILL creation in the bw-cc-plugins project, including fork vs inheritance decision criteria and multi-layered defense strategy.
     content_details:
-      - SKILL execution models (inherited vs fork type)
-      - Fork type adoption criteria and judgment principles
-      - Default inheritance model with explicit fork list management
-      - Fork type SKILL list and multi-defense layers
-      - Argument guard principles for both inherited and fork type SKILLS
-      - Role constraints and capability restrictions
-      - Test and governance procedures
-      - Reclassification of previously fork-type SKILLS
+      - SKILL execution models (inheritance vs fork type)
+      - Default inheritance principle and individual decision criteria for fork adoption
+      - Multi-decision framework based on concrete harm records
+      - Designated fork-type SKILL list with adoption rationale
+      - Responsibility boundaries for inheritance-type SKILLs
+      - Argument validation rules prohibiting parent task context injection
+      - Static verification and governance requirements
+      - Multi-layered defense layers (fork boundary, Role constraints, allowlist, physical deny)
     applicable_tasks:
-      - SKILL authoring and design review
-      - SKILL fork type evaluation
-      - Adding or modifying SKILLS
-      - Context isolation and safety assessment
-      - SKILL integration testing
-      - Architecture review for SKILL execution
+      - SKILL creation and design
+      - fork vs inheritance type determination
+      - Context isolation implementation
+      - SKILL governance and verification
+      - Risk assessment for parent context leakage
+      - Design decision documentation
     keywords:
       - SKILL
-      - fork
-      - context inheritance
-      - subagent isolation
-      - multi-defense
+      - fork type
+      - inheritance type
+      - context isolation
       - role constraints
-      - argument guard
-      - bw-cc-plugins
+      - subagent
+      - multi-layered defense
+      - ADR-002
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
     title: "COMMON-REQ-001: Phased Version Migration Requirements"
@@ -169,27 +169,32 @@ docs:
       - IOError
   docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md:
     doc_type: design
-    title: "ADR-002: Query Skill Subagent Isolation and Read-Only Constraints"
-    purpose: Defines architectural decision and safeguards for query-rules/query-specs skills to prevent unauthorized write operations through subagent context inheritance
+    title: "ADR-002: query-rules / query-specs SKILL Subagent Isolation and Read-Only Constraint"
+    purpose: "Describes the design decision to isolate query-rules and query-specs SKILLs with context: fork, read-only constraints, and argument interpretation guards to prevent unintended subagent writes and maintain system stability"
     content_details:
-      - Context inheritance vulnerability and event analysis
-      - "Multi-layered prevention strategy: context forking, role constraints, argument interpretation guards"
-      - Required SKILL.md modifications (frontmatter, Role section, argument interpretation)
-      - Test coverage requirements for regression prevention
-      - Remaining platform-level design decisions and future read-only skill patterns
+      - "Issue #54 and #55 incident description with root cause analysis (5 factors)"
+      - "Context: fork configuration in SKILL.md frontmatter"
+      - Read-only constraint specification with prohibited tools (Edit, Write, MultiEdit, git operations)
+      - Argument interpretation guidance table
+      - Application to forge:query-forge-rules SKILL
+      - Regression prevention test requirements
+      - Decision matrix comparing 4 alternative approaches
+      - Impact scope and remaining judgment items
     applicable_tasks:
-      - doc-advisor SKILL implementation and review
-      - Security and isolation architecture review
-      - Subagent design patterns and guardrails
-      - Test strategy for read-only constraints
+      - doc-advisor query SKILL implementation and review
+      - query-rules and query-specs SKILL development
+      - Subagent isolation and context boundary design
+      - Read-only constraint enforcement in search SKILLs
+      - Test design for SKILL security constraints
     keywords:
+      - subagent isolation
       - context fork
       - read-only constraint
-      - subagent isolation
-      - Role guardrails
-      - tool permissions
-      - write-side effects
-      - vulnerability mitigation
+      - query-rules
+      - query-specs
+      - write prevention
+      - tool constraint
+      - ADR
   docs/specs/doc-advisor/design/DES-001_plugin_migration_design.md:
     doc_type: design
     title: "DES-001: DocAdvisor Plugin Migration Design"
@@ -321,38 +326,39 @@ docs:
       - orchestrator
   docs/specs/doc-advisor/design/DES-006_semantic_search_design.md:
     doc_type: design
-    title: Semantic Search Design
-    purpose: Defines semantic search architecture for doc-advisor with 3-mode search (ToC keyword, Embedding, auto hybrid), embedding index construction, and search algorithms
+    title: Semantic Search Architecture and Implementation Design
+    purpose: "Specifies doc-advisor's three-mode search architecture (ToC-only, Embedding-only, auto), module design, and implementation for hybrid keyword and semantic search with OpenAI Embeddings"
     content_details:
-      - 3-mode search architecture (ToC, Index, auto)
-      - doc-advisor Embedding index construction with OpenAI API
-      - "Search modules: embed_docs.py, search_docs.py, grep_docs.py"
-      - Cosine similarity calculation for semantic search
-      - Subagent context fork workflow with ToC + Embedding parallel execution
-      - Auto mode union merging of ToC and Embedding results
-      - Filtered ToC mechanism for 100+ entries
-      - API key reference conventions
-      - Error handling and fallback strategies
-      - Index JSON schema and metadata structure
+      - Three-mode search architecture (--toc, --index, auto)
+      - ToC YAML as primary search method with AI keyword matching
+      - doc-advisor Embedding Index based on OpenAI text-embedding-3-small
+      - Subagent fork context for isolated search pipeline
+      - "Auto mode: ToC always executes, Embedding parallel if API key available"
+      - Embedding vector storage in JSON format with checksums
+      - Cosine similarity search implementation
+      - Full-text grep search for named entities
+      - Filtered ToC mechanism for 100+ entry projects
+      - API key fallback strategy (OPENAI_API_DOCDB_KEY primary, OPENAI_API_KEY fallback)
     applicable_tasks:
       - Semantic search implementation
-      - doc-advisor plugin architecture design
-      - Embedding index construction
-      - Search backend selection design
-      - Integration with forge query abstraction
-      - ToC and Index hybrid search implementation
-      - Query API design
+      - Embedding index construction and updates
+      - Search quality assurance
+      - API integration for document search
+      - Multi-mode search architecture selection
+      - Stale index detection
+      - Error handling for search failures
+      - ToC-Embedding hybrid result merging
     keywords:
       - semantic search
       - Embedding
       - OpenAI API
-      - cosine similarity
-      - ToC
-      - Index
-      - hybrid search
-      - subagent
-      - union merge
-      - context fork
+      - cosineSimilarity
+      - three-mode search
+      - auto mode
+      - ToC YAML
+      - fork context
+      - Index JSON
+      - API KEY fallback
   docs/specs/doc-advisor/design/DES-007_unified_api_key_reference_design.md:
     doc_type: design
     title: Unified API Key Reference Design
@@ -381,67 +387,62 @@ docs:
       - fallback resolution
   docs/specs/doc-advisor/requirements/FNC-001_context_external_search_spec.md:
     doc_type: requirement
-    title: FNC-001 Context External Search Specification
-    purpose: "Defines requirements for executing document search outside AI context window with three search modes: ToC keyword matching, Embedding search, and auto mode combining both with union merge"
+    title: FNC-001 External Context Search Specification
+    purpose: Defines requirements for doc-advisor search processing outside AI context window with three modes (--toc, --index, auto) and result output specifications
     content_details:
-      - Three search modes (--toc, --index, auto)
-      - ToC keyword search with AI context consumption
-      - Embedding search outside context via doc-advisor
-      - Auto mode doc-advisor standalone completion with ToC and parallel Embedding if API key available
-      - Union merge strategy for combining search results
-      - Error handling with silent fallback on API failure
-      - Context cost reduction strategy
-      - Search input as natural language task description
-      - Output as candidate document path list
-      - Prerequisite conditions and test requirements
+      - Search processing outside AI context window
+      - Three search modes (--toc keyword, --index Embedding, auto with union merge)
+      - Subagent fork-based execution flow
+      - Input/output specifications
+      - Error handling for missing index, empty query, zero results, API key, and Embedding failures
+      - Fallback behavior for auto mode without API key or doc-db plugin
+      - Related requirements and test requirements
     applicable_tasks:
-      - Implementing doc-advisor search functionality
-      - Integrating search modes into query-specs and query-rules skills
-      - Configuring API key handling for search
-      - Error handling and fallback behavior design
-      - Performance optimization for context-external search
+      - Search feature implementation
+      - Query mode design and validation
+      - Context reduction optimization
+      - API key integration
+      - Error handling specification
+      - Plugin interaction design
     keywords:
-      - context external search
-      - doc-advisor
-      - search modes
-      - ToC keyword matching
+      - external context search
+      - ToC keyword search
       - Embedding search
-      - auto mode
+      - API key configuration
+      - Subagent execution
       - union merge
-      - API key
-      - subagent
-      - fork context
+      - fallback behavior
   docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md:
     doc_type: requirement
-    title: Zero-Miss Search Accuracy Specification (FNC-002)
-    purpose: Defines requirements for achieving 100% precision search that never misses relevant documents across rules and specs categories
+    title: FNC-002 Zero-Miss Search Accuracy Requirements Specification
+    purpose: Defines requirements for achieving zero false negatives in document search through golden test set validation and recall measurement against AI ToC baseline
     content_details:
-      - Search precision requirements (no false negatives)
-      - Searchable fields (title, purpose, content_details, applicable_tasks, keywords)
-      - Category separation requirements (rules and specs independent)
-      - Golden test set design (43 queries across 6 types)
-      - Quality test results for v0.2.0 (ToC > Index > auto mode accuracy)
-      - v0.3.x quality criteria (auto mode = doc-advisor standalone with ToC + Embedding union)
-      - Recall equivalence requirement versus ToC single mode
-      - Error handling for stale indexes
-      - Threshold adjustment methodology
+      - Accuracy requirements with zero false negatives and no result limits
+      - Search field definitions covering title purpose content_details applicable_tasks and keywords
+      - Category separation requirements for rules and specs
+      - Golden test set methodology with 43 queries across 6 types
+      - Quality test results showing ToC higher precision than embedding
+      - v0.3.x auto mode standards defining ToC plus embedding union strategy
+      - Recall measurement baseline using --toc mode as reference implementation
+      - Error handling for stale indexes with warnings and regeneration guidance
     applicable_tasks:
-      - Search accuracy evaluation
-      - ToC metadata quality assurance
-      - Embedding threshold tuning
-      - Index staleness detection
-      - Recall measurement against golden set
-      - Auto mode quality validation
+      - Search accuracy verification and measurement
+      - Golden test set creation and validation
+      - ToC metadata quality assessment and improvement
+      - Embedding score threshold optimization
+      - Search recall baseline establishment and monitoring
+      - Index staleness detection and handling
     keywords:
       - zero-miss search
       - false negatives
-      - recall
+      - recall measurement
       - golden test set
-      - ToC union
-      - Embedding
-      - search precision
-      - doc-advisor
-      - FNC-002
+      - ToC accuracy
+      - embedding precision
+      - search index
+      - index staleness
+      - union strategy
+      - doc-advisor accuracy
   docs/specs/doc-advisor/requirements/FNC-003_fast_index_generation_spec.md:
     doc_type: requirement
     title: FNC-003 Fast Index Generation Specification
@@ -500,25 +501,27 @@ docs:
   docs/specs/doc-advisor/requirements/NFR-001_context_cost_reduction_spec.md:
     doc_type: requirement
     title: NFR-001 Context Cost Reduction Specification
-    purpose: Specifies context window cost reduction requirements for document search, defining three operational modes with varying context consumption levels and accuracy trade-offs
+    purpose: Defines non-functional requirements for reducing AI context window consumption during document search by eliminating the need to load full ToC YAML
     content_details:
-      - "Three operation modes with cost reduction targets (index: 50%+ reduction, toc: no reduction, auto: adaptive)"
-      - Cost measurement methodology using token count with fixed query set
-      - Context consumption patterns for each mode depending on ToC entry count
-      - Error handling for unavailable search index or missing ToC
-      - "Threshold-based strategy: full ToC for ≤100 entries, filtered ToC for >100 entries"
+      - Three-mode cost reduction strategy (index, toc, auto modes)
+      - Mode-specific context consumption targets (50% minimum reduction for index mode)
+      - Measurement methodology using token count on fixed query set
+      - Error handling and fallback behavior for missing index or ToC
+      - 100-item threshold for auto mode to switch between full ToC and filtered ToC
+      - API key configuration (OPENAI_API_DOCDB_KEY priority, OPENAI_API_KEY fallback)
     applicable_tasks:
-      - Context cost optimization for document search
-      - Search mode selection and configuration
-      - Performance measurement and validation
-      - Error handling implementation for search fallback scenarios
+      - Document search performance optimization
+      - Context cost measurement and reporting
+      - Search mode selection and fallback handling
+      - Non-functional requirement validation
     keywords:
-      - context cost
-      - token count
+      - context cost reduction
+      - token consumption
       - search index
+      - ToC loading
       - auto mode
+      - search performance
       - threshold
-      - cost reduction
   docs/specs/doc-advisor/requirements/NFR-002_yaml_toc_abolition_spec.md:
     doc_type: requirement
     title: YAML ToC Abolition Specification
@@ -948,96 +951,105 @@ docs:
       - multi-vector
   docs/specs/forge-review/design/DES-028_review_policy_design.md:
     doc_type: design
-    title: Review Policy Design (DES-028) — Differential Design
-    purpose: Specifies the differential design for review pipeline changes based on REQ-004. Defines new policy files, SKILL modifications, and implementation details for priority-based review system with single reviewer execution and P1/P2/P3 labeling.
+    title: Review Policy Design (DES-028)
+    purpose: Differential design for forge-review feature redefining review judgment criteria by consolidating decision-making into principles documents and establishing single-reviewer evaluation model to prevent AI complexity growth
     content_details:
-      - CLI argument structure (--diff/--files/--interactive/--auto-critical/--auto)
-      - Priority axes (P1=rule matching, P2=contradiction detection, P3=simplicity checks)
-      - Severity and priority as independent axes with severity SoT in principles documents
-      - Review packet structure (criteria_path + ssot_refs + check_order)
-      - Single reviewer execution principle with P1/P2/P3 evaluation sequence
-      - Policy file changes (review_priorities_spec.md new, review_criteria_*.md full replacement, principles documents enrichment)
-      - SKILL modifications across /forge:review, reviewer, evaluator, present-findings, fixer
-      - "Append A: 18-item principles expansion catalog from Issue #74"
-      - refs.yaml new schema with review_packet sections replacing perspectives
+      - Policy file changes including new review_priorities_spec.md and restructured review_criteria files
+      - 3-section fixed structure for criteria (SSOT references, check order, judgment rules) with no judgment declarations
+      - Reviewer 1-startup principle eliminating perspective-axis parallel operation
+      - Severity catalog and gray-zone tolerance range in principles documents (FNC-411 expansion)
+      - refs.yaml schema change from perspectives[] to review_packet structure
+      - SKILL.md modifications across review, reviewer, evaluator, present-findings, fixer with new create_issue recommendation and lightweight fix path (FNC-413)
+      - Early validation rejecting dropped flags and detecting target-axis double-specification
+      - P1/P2/P3 priority labeling independent of severity axis
+      - SSOT document selection with 6-8 document limit and priority adoption order
+      - "Integration test coverage for 1-reviewer startup principle (Issue #68 regression prevention)"
     applicable_tasks:
-      - Review policy implementation and verification
-      - Policy file updates (principles enrichment with severity catalogs)
-      - SKILL.md modifications for new CLI structure and 1-reviewer execution
-      - Test design for differential changes
-      - Review pipeline quality assurance
-      - Integration of review findings with /anvil:create-issue flow
+      - Review policy implementation planning
+      - Design document specification updates for criteria restructuring
+      - Reviewer agent consolidation from multi-instance to single-startup model
+      - SKILL file updates for Phase 1-5 pipeline modifications
+      - Principles document enrichment with severity catalogs and tolerance ranges
+      - Test case design for new review criteria format and lightweight fix path
+      - Flags deprecation and early validation implementation for CLI arguments
+      - Integration testing for reviewer 1-startup principle regression prevention
+      - "Issue #68 complexity reduction in reviewer parallel operation"
     keywords:
-      - forge-review feature
       - review policy
-      - priority (P1/P2/P3)
-      - severity
-      - review packet
-      - SSOT (single source of truth)
-      - reviewer 1 execution
-      - criteria (routing + playbook)
-      - principles enrichment
-      - "Issue #68 (complexity reduction)"
+      - differential design
+      - single reviewer startup
+      - severity catalog
+      - principles delegation
+      - review criteria restructuring
+      - P1/P2/P3 priority
+      - SSOT references
+      - reviewer consolidation
+      - lightweight fix path
+      - FNC-411
+      - FNC-412
+      - FNC-413
   docs/specs/forge-review/plan/forge-review_strategy.md:
     doc_type: plan
     title: forge-review Implementation Strategy
-    purpose: Defines the phased implementation strategy for forge-review feature, including policy layer consolidation, schema transformation, SKILL modifications, testing framework, and addendum merge process
+    purpose: Defines implementation approach for forge-review feature with phase-based roadmap, risk-driven schema migration strategy, and integrated test plan
     content_details:
-      - Bottom-up with risk-driven approach
-      - "Five phases with strict dependencies: policy layer, schema transformation, SKILL modifications, test integration, and addendum merge"
-      - "Constraints and standards: frontmatter rules, YAML plan format, mandatory unit testing"
-      - Risk mitigation strategies for FNC-412 reviewer 1 launch principle and refs.yaml schema compatibility
-      - "Task granularity guidelines: 5-10 items per agent execution, estimated 34-38 total tasks"
-      - Deprecation of perspectives[] schema in favor of review_packet structure
-      - Regression test requirements including criteria perspective elimination and old schema rejection
+      - Bottom-up plus risk-driven approach
+      - Five implementation phases with dependencies
+      - review_packet schema redesign and refs.yaml transformation
+      - Criteria standardization to three-section fixed structure
+      - Reviewer single-instance invocation principle (FNC-412)
+      - Addendum merge as final step after all phases
+      - Risk assessment table with mitigation strategies
+      - Test coverage requirements and regression prevention
+      - Task granularity guidelines for individual agent execution
     applicable_tasks:
-      - forge-review implementation planning
-      - Phase sequencing and dependency validation
-      - Task breakdown and granularity calibration
-      - Review criteria updates and schema migration
-      - Test framework design for phased implementation
-      - Risk assessment and mitigation planning
+      - forge-review feature implementation planning
+      - Review criteria redesign and standardization
+      - refs.yaml schema migration implementation
+      - Test strategy design and execution
+      - Risk mitigation and regression testing
+      - Phase dependency validation
     keywords:
       - forge-review
       - implementation strategy
-      - phased approach
-      - refs.yaml schema
       - review_packet
-      - perspectives elimination
-      - FNC-412
-      - regression testing
-      - addendum merge
+      - refs.yaml
+      - reviewer 1-instance principle
+      - criteria
+      - phase planning
       - risk-driven
   docs/specs/forge-review/requirements/REQ-004_review_policy.md:
     doc_type: requirement
     title: Review Policy Requirements
-    purpose: Defines lightweight review framework with 3 priority levels, pure rules-based criteria structure, and 1 reviewer per execution to reduce AI reviewer complexity
+    purpose: Defines review policy framework with priority levels, target specification, intervention modes, and principles for forge-review feature
     content_details:
-      - Review observation priorities (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
-      - Criteria structure purification - perspective abolition and judgment removal
-      - "CLI interface with 2-axis flags (target axis: --diff or --files, intervention axis: --interactive, --auto-critical, --auto)"
-      - Reviewer single-execution mandate (FNC-412) - no parallel reviewer spawning across priorities or files
-      - Principles augmentation (severity cataloging and gray zone tolerance definition)
-      - Rule gap discovery Issue creation flow with 3 mandatory conditions
-      - forge built-in rule fallback mechanism
-      - Default behavior specification (--diff --interactive equivalence)
+      - Priority 1 (Rule Compliance)
+      - Priority 2 (Contradiction Detection)
+      - Priority 3 (Unnecessary Complexity)
+      - Target axis (--diff vs --files)
+      - Interaction axis (--interactive / --auto-critical / --auto)
+      - Lightweight modification pathway (FNC-413)
+      - Rule omission discovery to Issue creation
+      - Criteria structure (SSOT reference / Check order / Decision rules)
+      - Principles enhancement (Severity catalog / Gray zone tolerance)
     applicable_tasks:
-      - Review policy implementation
-      - forge review command architecture
-      - reviewer and evaluator logic redesign
-      - principles document expansion
-      - criteria reformation
-      - anti-pattern repository setup
+      - Review feature implementation
+      - Review policy refinement
+      - Criteria redesign
+      - Principles document enhancement
+      - fixer optimization with lightweight path evaluation
+      - Issue creation workflow for rule gaps
     keywords:
-      - review
-      - priority levels
-      - document-driven
-      - criteria
-      - reviewer
-      - complexity reduction
-      - rule compliance
-      - SDD
-      - "Issue #68"
+      - review policy
+      - priority level
+      - orchestrator pattern
+      - interaction mode
+      - SSOT (Single Source of Truth)
+      - auto-fixable
+      - create-issue recommendation
+      - severity catalog
+      - gray zone tolerance
+      - forge-review feature
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md:
     doc_type: design
     title: "ADR-001: forge:query-db-* Query Flag Policy"
@@ -1067,68 +1079,72 @@ docs:
       - wrapper design
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     doc_type: design
-    title: DES-001 forge Query Abstraction Design
-    purpose: Inverts forge dependency from concrete doc-advisor/doc-db plugins to abstract search backend interface; enables complete forge operation with doc-db only, doc-advisor only, or both installed.
+    title: Document Search Backend Abstraction Design
+    purpose: Specifies forge abstraction layer for unified backend selection between doc-db and doc-advisor search engines, with API key-driven routing logic and error handling contracts
     content_details:
-      - Backend selection logic based on installed plugins and API key availability
-      - Abstraction skill definitions for rules and specs search
-      - Abstraction skill definitions for index updates
-      - API key resolution strategy following DES-007 unified key reference
-      - Error handling contracts for missing backend and API keys
-      - Output contract standardization with required documents section
-      - Read-only subagent isolation constraints and guardrails
-      - Dependency mapping from doc-advisor direct calls to abstract skills
-      - Changes to forge, doc-db, and marketplace manifests
-      - Test strategy with unit tests and observational verification
+      - Backend selection rules based on installation state and API key availability
+      - Branching table A for adopted backend decision
+      - Branching table B for backend-category-operation mapping
+      - Query skill output contract with Required documents format
+      - Update skill flow for index rebuilding
+      - Error handling for missing backends and API key setup
+      - API key resolution following unified specification (DES-007)
+      - Subagent isolation contract for read-only query skills
+      - Abstract skill frontmatter template and forbidden arguments
+      - Test strategy for select_backend.py with table coverage
     applicable_tasks:
-      - Implement forge backend abstraction layer
-      - Create abstract query and update skills
-      - Develop backend selection Python script
-      - Write unit tests for selection logic
-      - Update existing forge skills to use abstraction
-      - Refactor doc-db query output format
-      - Verify backward compatibility with both backends
-      - Test API key resolution in multiple scenarios
-      - Update project documentation and guides
+      - Backend integration planning for search functionality
+      - Query skill implementation in forge layer
+      - Update skill implementation for index rebuilding
+      - API key handling validation
+      - Search result output format standardization
+      - Subagent isolation validation in skill inheritance
+      - Select backend script testing and validation
+      - Search backend compatibility testing
     keywords:
-      - backend abstraction
-      - dependency inversion
+      - backend selection
       - doc-db
       - doc-advisor
-      - skill isolation
-      - API key resolution
-      - select_backend.py
-      - required documents format
-      - subagent contracts
+      - API key
+      - abstraction layer
+      - branching table
+      - search engine
+      - query skill
+      - inheritance model
+      - subagent isolation
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
-    title: DES-010 create-* skills orchestrator design
-    purpose: Defines architectural refactoring to convert start-design, start-plan, and start-requirements skills from God-Skill monolithic pattern to orchestrator pattern with parallel context collection and modular responsibility distribution
+    title: DES-010 create-* Skills Orchestrator Design
+    purpose: Defines orchestrator pattern architecture for start-design, start-plan, and start-requirements skills with unified context gathering framework, session lifecycle management, and responsibility distribution between orchestrator and subagents
     content_details:
-      - Context gathering framework for specs/rules/code parallel collection
-      - Session directory structure and session.yaml schema for create-* skills
-      - "Orchestrator pattern for start-design with 4 phases: requirement analysis, design creation, AI review, quality assurance"
-      - "Orchestrator pattern for start-plan with 3 phases: document retrieval, planning, AI review"
-      - Orchestrator pattern for start-requirements with mode-dependent context collection (interactive, reverse-engineering, from-figma)
-      - Integration of refs/ collected documents with unified display
-      - Session lifecycle management delegating to session_manager.py
-      - Failure handling for parallel agent execution when refs files are missing
+      - Orchestrator structure and responsibility distribution
+      - Unified context gathering framework with specs/rules/code agents
+      - Session directory structure and session.yaml schema
+      - Parallel execution of subagent context collection
+      - Phase structures for start-design skill
+      - Phase structures for start-plan skill
+      - Phase structures for start-requirements skill with interactive/reverse-engineering/from-figma modes
+      - Integration and display of collected references
+      - Session lifecycle management and resume policy
+      - Existing components and reusable patterns
     applicable_tasks:
-      - Orchestrator skill implementation
-      - start-design skill refactoring
-      - start-plan skill refactoring
-      - start-requirements skill refactoring
-      - Context gathering framework design
+      - Skills orchestrator implementation
+      - Context gathering agent design
+      - Parallel subagent coordination
       - Session management implementation
-      - Parallel execution pattern review
+      - Create-* skill architecture design
+      - AI review integration
+      - ToC generation workflow
     keywords:
-      - orchestrator pattern
-      - context collection
-      - parallel execution
+      - orchestrator
+      - context gathering
+      - subagent
+      - start-design
+      - start-plan
+      - start-requirements
       - session management
-      - God-Skill
       - refs schema
-      - subagent coordination
+      - parallel execution
       - DES-010
   docs/specs/forge/design/DES-011_session_management_design.md:
     doc_type: design
@@ -1363,63 +1379,59 @@ docs:
       - phase workflow
   docs/specs/forge/design/DES-020_clean_rules_design.md:
     doc_type: design
-    title: Clean-rules Skill Design (DES-020)
-    purpose: Defines design for the clean-rules skill that analyzes project rules, detects and removes duplicates with forge built-in docs, and systematically reconstructs remaining documents using taxonomy-based classification
+    title: Clean-rules Skill Design
+    purpose: Designs the clean-rules skill that analyzes project rules against forge built-in documentation, detects and removes overlaps while systematically reconstructing the rules structure based on documentation taxonomy.
     content_details:
-      - Taxonomy-based content classification (Constraint, Convention, Format, Process, Decision, Reference)
-      - Authority source separation (Tool-provided, Project-defined, External standard)
-      - Embedding cosine similarity-based duplicate detection script
-      - Three operation modes with safety features (analysis, delete, rebuild)
-      - Safe workflow with git stash and user confirmation
-      - Phase 1-5 workflow from information gathering through completion
-      - Responsibility separation between forge and project-defined rules
+      - Three-mode operation design (analyze, delete, rebuild)
+      - Documentation taxonomy dimensions (Content Type, Authority Source)
+      - Embedding-based overlap detection algorithm
+      - Five-phase workflow (collection, classification, safety, execution, completion)
+      - Responsibility separation between forge and project documentation
+      - File structure and related modules
     applicable_tasks:
-      - Project rules cleanup and restructuring
-      - Duplicate detection between project and forge documentation
-      - Rules taxonomy analysis and classification
-      - Documentation organization optimization
-      - Archive management for deprecated rules
+      - Documentation cleanup and deduplication
+      - Forge plugin integration planning
+      - Project rules structure design
+      - Technical documentation taxonomy definition
+      - Version management of embedded documentation
     keywords:
       - clean-rules
       - taxonomy
-      - duplicate detection
-      - embedding
-      - cosine similarity
-      - forge
-      - rules restructuring
-      - tool-provided vs project-defined
+      - deduplication
+      - forge documentation
+      - embedding similarity
+      - content classification
+      - documentation structure
   docs/specs/forge/design/DES-021_review_perspective_split_design.md:
     doc_type: design
-    title: DES-021 Reviewer Perspective Split Design
-    purpose: Defines design for splitting reviewer criteria by perspective and running multiple specialist agents in parallel to improve code review quality by addressing severity bias and context conflicts
+    title: Review Perspective Split Design
+    purpose: Describes the redesign of the forge reviewer to split review criteria into perspectives and execute multiple specialized reviewer agents in parallel to improve review quality.
     content_details:
-      - Perspective-based criteria splitting (logic, resilience, maintainability, architecture, alignment, completeness, consistency, verifiability)
-      - refs.yaml extension with perspectives array schema and validation
-      - Multiple reviewer agent parallel execution with output to review_*.md files
-      - Multiple result management with plan.yaml schema changes (recommendation, auto_fixable, reason, perspective fields)
-      - Evaluator parallel execution with eval_{perspective}.json output files and batch merge
-      - extract_review_findings.py multi-file merge with deduplication by title similarity and location
-      - "Perspective distribution: requirement (3), design (3), plan (2), code (3), generic (1)"
-      - Implementation order across session_format.md, review_criteria files, SKILL.md, and scripts
+      - Perspective-based splitting of review criteria
+      - Multiple reviewer agent parallel execution
+      - perspectives array schema (name, criteria_path, section, output_path)
+      - plan.yaml schema extension (recommendation, auto_fixable, reason, perspective fields)
+      - Codex parallel execution strategy via run_review_engine.sh
+      - Parallel evaluator execution pattern with eval_{perspective}.json output
+      - extract_review_findings.py multi-file merge capability
+      - Perspective definitions for requirement/design/plan/code/generic types
+      - Implementation ordering for schema and SKILL updates
     applicable_tasks:
-      - Review skill orchestration design
-      - Reviewer agent perspective-based implementation
-      - Evaluator parallel execution and output contract design
-      - extract_review_findings.py multi-file merge enhancement
-      - Session format schema updates for perspectives
-      - refs.yaml schema validation implementation
-      - Plan.yaml field extension for perspective tracking
+      - Review perspective definition extraction
+      - Review criteria split design review
+      - Reviewer parallel execution implementation
+      - Evaluator parallel design review
+      - Plan.yaml schema extension implementation
+      - Extract review findings multi-file merge implementation
     keywords:
-      - reviewer
-      - perspective
-      - parallel agents
-      - review criteria
-      - refs.yaml
-      - deduplication
-      - evaluator
+      - perspective split
+      - parallel reviewer
+      - review criteria separation
+      - evaluator parallelization
+      - Codex execution strategy
+      - multi-file merge
       - session_dir
-      - plan.yaml
-      - orchestrator
+      - plan.yaml schema
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     doc_type: design
     title: Parallel Agent Output Contract Pattern Design
@@ -1541,31 +1553,29 @@ docs:
       - strategy documentation
   docs/specs/forge/plan/forge_query_strategy.md:
     doc_type: plan
-    title: Forge Query Backend Abstraction Implementation Strategy
-    purpose: Specifies the implementation strategy for abstracting forge query backends with four phases covering system analysis, risk management, approach selection, and detailed phase execution plans
+    title: forge Query Strategy Implementation Plan
+    purpose: Defines the implementation strategy for backend abstraction in forge query system with phased execution plan, risk analysis, and verification checkpoints
     content_details:
-      - System structure analysis and five new implementation targets
-      - Risk analysis with eight risk categories and mitigation strategies
-      - Approach selection rationale combining bottom-up and risk-driven methods
-      - "Phase 1: Output contract alignment and backend selection logic (foundation establishment)"
-      - "Phase 2: Four new skills and full-layer integration (core functionality)"
-      - "Phase 3: Reference replacement and documentation updates (finalization)"
-      - Implementation dependencies and validation checkpoints for each phase
+      - Overall structure analysis of 5 new modules and 17+ file reference replacements
+      - Risk analysis with 7 risk categories (technical uncertainty, data integrity, integration, dependency complexity, side effects, non-target mixing, version management)
+      - Bottom-up + risk-driven approach combining shallow dependency graph with risk-driven sequencing
+      - "Phase 1: Output contract alignment and backend selection logic (doc-db SKILL.md output format, select_backend.py implementation, error message testing)"
+      - "Phase 2: Four abstract skills for backend abstraction (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with isolation constraints"
+      - "Phase 3: Reference replacement in 17+ existing forge files and documentation updates (grep verification, version freeze requirement)"
     applicable_tasks:
-      - Implementation strategy planning for backend abstraction
-      - Skill development coordination for query-db-rules and query-db-specs
-      - Risk assessment and mitigation for integration tasks
-      - Phase-based execution planning and milestone tracking
-      - Test specification and verification point documentation
+      - forge query system backend abstraction implementation
+      - Three-phase development execution planning and coordination
+      - Risk mitigation for integration and skill isolation
+      - Reference replacement and documentation update management
     keywords:
       - backend abstraction
       - query strategy
-      - skill isolation
+      - select_backend.py
+      - skill inheritance
+      - integration testing
+      - reference replacement
       - output contract
-      - doc-db
-      - doc-advisor
-      - implementation phases
-      - risk-driven development
+      - phased implementation
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     doc_type: requirement
     title: REQ-001 Orchestrator Pattern Requirements
