@@ -9,7 +9,7 @@ allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(mkd
 
 # prepare-figma
 
-Figma デザインからデザイン仕様書（What: 何を作るか）を作成する subagent スキル。
+Figma デザインからデザイン仕様書（What: 何を作るか）を作成する Skill（汎用 Agent 経由で実行される）。
 
 **作成するもの**: デザイン仕様書（`specs/design/{id}_デザイン仕様書.md`）
 **作成しないもの**: 実装設計書（How: どう作るか）— ルール文書・類似PR・既存コードの調査後に作成するため

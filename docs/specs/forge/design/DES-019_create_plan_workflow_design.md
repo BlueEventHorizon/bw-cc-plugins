@@ -18,13 +18,13 @@
 `/forge:start-plan` は設計書から実装戦略を策定し、タスクを抽出して計画書を作成するオーケストレータスキル。
 文書取得 → 実装戦略策定 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
 
-### SubAgent への委譲
+### 汎用 Agent への委譲
 
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程を subagent に委譲している:
+以下の工程を汎用 Agent (general-purpose) に委譲している:
 
-- 要件定義書・設計書・ルールの収集（コンテキスト収集 agent）
-- 実装戦略の策定（実装戦略 agent — `strategy_formulation_spec.md`）
+- 要件定義書・設計書・ルールの収集（コンテキスト収集 Agent）
+- 実装戦略の策定（実装戦略 Agent — `strategy_formulation_spec.md`）
 - AIレビュー（`/forge:review plan`）
 
 ---

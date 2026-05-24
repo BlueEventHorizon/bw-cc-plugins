@@ -4,7 +4,7 @@
 
 doc-advisor の文書検索（query-specs / query-rules）において、検索処理を AI のコンテキストウィンドウの外で実行し、AI には検索結果（候補パスのリスト）のみを渡す。
 
-`query-specs` / `query-rules` SKILL は `context: fork` の subagent として実行され、subagent は fork 内で検索を完結させ、最終結果のみを親 Claude に return する（subagent 内完結フロー、DES-006 §2.4 参照）。
+`query-specs` / `query-rules` SKILL は fork 型 SKILL (`context: fork`) として実行され、fork 型 SKILL は fork 内で検索を完結させ、最終結果のみを親 Claude に return する（fork 型 SKILL 内完結フロー、DES-006 §2.4 参照）。
 
 ## 前提条件
 

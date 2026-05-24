@@ -178,7 +178,7 @@ gh repo view --json nameWithOwner --jq '.nameWithOwner'
 
 **条件**: Phase 2 で UI Issue と判定された場合のみ実行。それ以外はスキップして Phase 9 へ。
 
-`/anvil:prepare-figma` スキルを **subagent（Agent tool）** で実行する。
+`/anvil:prepare-figma` スキルを **汎用 Agent（Agent ツール、subagent_type: general-purpose）** で実行する。
 メインコンテキストで Figma MCP は呼ばない（コンテキスト効率のため）。
 
 Phase 3 で収集した画面設計書情報を渡す：

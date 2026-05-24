@@ -26,7 +26,7 @@ start-requirements → start-uxui-design → start-design → start-plan → sta
 ## コンテキスト管理 [MANDATORY]
 
 知識ベースは **`/forge:query-forge-rules`** 経由で Phase 別に取得する。全ファイルを一括読み込みしない。
-サブエージェントは使用しない（Phase 2 で選択した哲学的立場を全 Phase で参照するため）。
+汎用 Agent / カスタム Agent は使用しない（Phase 2 で選択した哲学的立場を全 Phase で参照するため）。
 
 ### 常駐（SKILL.md で読み込み済み — 全 Phase で参照）
 

@@ -160,7 +160,7 @@ target_files の実用上限は **3〜5 件** (reviewer 1 起動の原則から)
 
 ### Step 4: 関連コード探索 [MANDATORY]
 
-レビュー・修正の参考にするため、target_files に関連する既存実装を探索する。general-purpose subagent を起動して探索を委譲する。
+レビュー・修正の参考にするため、target_files に関連する既存実装を探索する。汎用 Agent (general-purpose) を起動して探索を委譲する。
 
 ```
 subagent_type: general-purpose
@@ -396,7 +396,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh \
 
 #### Claude エンジン
 
-Agent ツール (general-purpose) で **1 体のみ** 起動する。subagent prompt の冒頭に必ず以下を含める:
+汎用 Agent (general-purpose) を **1 体のみ** 起動する。汎用 Agent の prompt 冒頭に必ず以下を含める:
 
 ```
 あなたは /forge:reviewer として動作します。
@@ -457,7 +457,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ### Step 1: evaluator 起動 (1 体のみ)
 
-evaluator も **1 起動**で動作する。Agent ツール (general-purpose) で 1 体起動し、以下を渡す:
+evaluator も **1 起動**で動作する。汎用 Agent (general-purpose) を 1 体起動し、以下を渡す:
 
 - `session_dir`
 - レビュー種別
@@ -514,7 +514,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 #### Step 2-A: 軽量経路 (FNC-413) — orchestrator 直接修正
 
-軽量経路と判定した場合、orchestrator (この SKILL を実行している親 Claude) が直接修正する。fixer (subagent) は呼び出さない。
+軽量経路と判定した場合、orchestrator (この SKILL を実行している親 Claude) が直接修正する。fixer (汎用 Agent) は呼び出さない。
 
 抽出した finding 1 件ごとに以下を順に実行する:
 
@@ -537,15 +537,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 #### Step 2-B: fixer 経路 (従来動作)
 
-軽量経路に当てはまらない場合、従来どおり fixer (subagent) に修正を委譲する。
+軽量経路に当てはまらない場合、従来どおり fixer (汎用 Agent) に修正を委譲する。
 
 ##### `--auto-critical`
 
-`/forge:fixer --batch` を Agent ツール (general-purpose) で起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
+`/forge:fixer --batch` を汎用 Agent (general-purpose) として起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
 
 ##### `--auto`
 
-`/forge:fixer --batch` を起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
+`/forge:fixer --batch` を汎用 Agent (general-purpose) として起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
 
 ```
 ⚠️ --auto は全件自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。

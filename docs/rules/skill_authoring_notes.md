@@ -23,7 +23,7 @@ argument-hint: "[arg1] [arg2]" # ユーザーへの引数ヒント表示
 disable-model-invocation: true # true で Claude 自動呼び出し禁止
 allowed-tools: Read, Grep      # 承認なしで使えるツールの allowlist
 context: fork                  # fork で隔離実行（親 context を遮断）
-agent: general-purpose         # context: fork 時の subagent タイプ
+agent: general-purpose         # context: fork 時の Agent タイプ
 ---
 ```
 
@@ -69,7 +69,7 @@ SKILL の実行モデルは `context: fork` の有無で 2 種類に分かれる
 | **継承型**（デフォルト） | `context:` 未指定    | 親 Claude が SKILL.md を読み、そのまま実行          | 継承（会話履歴・進行中タスクをすべて保持） | SKILL.md + `$ARGUMENTS` + 親 context |
 | **fork 型**              | `context: fork` 指定 | 別 context が起動し、終了時に return のみを親へ戻す | **継承しない**                             | SKILL.md + `$ARGUMENTS` のみ         |
 
-> 「subagent」という言葉は曖昧。Skill ツールが立てる「fork 型 SKILL の隔離 context」と、Agent (Task) ツールが立てる「サブエージェント」は別物。本文書では前者を **fork 型スキル**と呼ぶ。
+> 用語と起動経路の正式定義は `docs/rules/skill_launch_paths_definitions.md` を参照する。本文書では **継承型 SKILL** / **fork 型 SKILL** / **汎用 Agent** / **カスタム Agent** / **Bash subprocess** の短縮名称を使う。
 
 ### 決定原則 [MANDATORY]
 
@@ -124,7 +124,7 @@ ADR-002 の決定（多重防御）に従い、性質に応じて以下を組み
 - **`agent:` は `context: fork` と組み合わせてのみ意味がある**。継承型に書いても効果はない。
 - **省略時のデフォルト**: `context:` 未指定 = 継承型、`agent:` 未指定（fork 時）= `general-purpose`。
 - **fork 型でも `$ARGUMENTS` 経由で漏らせば同じ問題が起きる**。args に親タスクの context を貼り付けない。
-- **fork 単独では不十分**。subagent が SKILL.md の指示を曲解する可能性が残るため、Role 制約・引数解釈ガードを多重で適用する（ADR-002 §決定）。
+- **fork 単独では不十分**。fork 型 SKILL が SKILL.md の指示を曲解する可能性が残るため、Role 制約・引数解釈ガードを多重で適用する（ADR-002 §決定）。
 
 ### 命名規約 [推奨]
 
@@ -139,7 +139,7 @@ ADR-002 の決定（多重防御）に従い、性質に応じて以下を組み
 - **ADR-002**: `docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md` — 多重防御の根拠・実害事例
 - **Claude Code 公式 docs**:
   - [Skills](https://code.claude.com/docs/en/skills) — `context: fork`、`agent`、`allowed-tools` の仕様
-  - [Subagents](https://code.claude.com/docs/en/sub-agents) — 組み込み subagent タイプ（Explore / Plan / general-purpose）
+  - [Subagents](https://code.claude.com/docs/en/sub-agents) — 汎用 Agent の組み込みタイプ（Explore / Plan / general-purpose）およびカスタム Agent の定義
 
 ---
 
@@ -193,7 +193,7 @@ $ARGUMENTS[0] # $0 と同等
 - `/kaizen:fix-findings --batch` を呼び出し、🔴問題を修正する
 ```
 
-- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。`context: fork` の subagent 内からも同様（例: `create-feature-from-plan` → `/forge:start-*`、query-specs / query-rules → `/doc-db:*`）
+- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。fork 型 SKILL 内からも同様（例: `create-feature-from-plan` → `/forge:start-*`、query-specs / query-rules → `/doc-db:*`）
 - ❌ 自己再帰禁止（下記）
 
 ### 自己再帰禁止 [MANDATORY]
