@@ -25,16 +25,16 @@ DES-001 / ADR-001 から把握した実装対象:
 
 ## リスク分析（Step 2）
 
-| リスクカテゴリ     | リスク                                                                                                                                                                                                                  | 影響度                   |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| 技術的不確実性     | available-skills を Python から取得する API が存在せず、SKILL.md 側で LLM が組立てる必要がある（§10.1）。SKILL.md と `select_backend.py` の責務分割を誤ると分岐表が SKILL.md に流出して SoT 多重化する                  | 中                       |
-| データ整合性       | §5.1 のエラーメッセージ全文（複数行）と `select_backend.py` の `error` フィールド出力が完全一致する必要あり。改行・空白の不一致でテストが落ち、ユーザー導線が壊れる                                                     | 中                       |
-| インテグレーション | doc-db 側 SKILL.md の Output Format 変更と forge 抽象 SKILL の出力契約が `Required documents:` 形式で噛み合う必要あり。先に doc-db を直さないと test_query_output_contract.py が落ちる                                  | 高                       |
-| 依存の複雑性       | §4.2 影響範囲が 17+ ファイル + `.claude/skills/` / `.agents/skills/` まで及ぶ。grep 漏れがあると `/doc-advisor:*` 直呼びが残存し受け入れ条件 #5 を満たせない                                                            | 高                       |
-| 副作用暴走         | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / doc-advisor:ADR-002_query_skill_subagent_isolation）  | 高                       |
-| 非目的の混入       | ADR-001 で「`--toc` / `--index` は forge 抽象 SKILL の正式引数として持たない」と確定。`argument-hint` への混入や SKILL.md 内バリデーション記述で抽象が崩れる                                                            | 低                       |
-| パフォーマンス     | 該当なし（Python 標準ライブラリのみ・分岐評価は O(1)）                                                                                                                                                                  | -                        |
-| バージョン関連     | `docs/rules/implementation_guidelines.md` の「バージョン関連ファイル編集禁止 [MANDATORY]」により plugin.json / marketplace.json / CHANGELOG.md / README バージョン表は本 PR 編集禁止。skill 一覧追加のみ可（§8.3 / §9） | 低（制約として常時遵守） |
+| リスクカテゴリ     | リスク                                                                                                                                                                                                                                                            | 影響度                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 技術的不確実性     | available-skills を Python から取得する API が存在せず、SKILL.md 側で LLM が組立てる必要がある（§10.1）。SKILL.md と `select_backend.py` の責務分割を誤ると分岐表が SKILL.md に流出して SoT 多重化する                                                            | 中                       |
+| データ整合性       | §5.1 のエラーメッセージ全文（複数行）と `select_backend.py` の `error` フィールド出力が完全一致する必要あり。改行・空白の不一致でテストが落ち、ユーザー導線が壊れる                                                                                               | 中                       |
+| インテグレーション | doc-db 側 SKILL.md の Output Format 変更と forge 抽象 SKILL の出力契約が `Required documents:` 形式で噛み合う必要あり。先に doc-db を直さないと test_query_output_contract.py が落ちる                                                                            | 高                       |
+| 依存の複雑性       | §4.2 影響範囲が 17+ ファイル + `.claude/skills/` / `.agents/skills/` まで及ぶ。grep 漏れがあると `/doc-advisor:*` 直呼びが残存し受け入れ条件 #5 を満たせない                                                                                                      | 高                       |
+| 副作用暴走         | 新規 query 系 2 SKILL は継承型のため fork 境界による親 context 漏洩遮断がない。Role 制約（B 層）と引数解釈ガード（C 層）の明記漏れで write 系操作・自己再帰・ゴミ引数解釈が起こり得る（COMMON-DES-001 §3.1 / doc-advisor:ADR-002_query_skill_subagent_isolation） | 高                       |
+| 非目的の混入       | ADR-001 で「`--toc` / `--index` は forge 抽象 SKILL の正式引数として持たない」と確定。`argument-hint` への混入や SKILL.md 内バリデーション記述で抽象が崩れる                                                                                                      | 低                       |
+| パフォーマンス     | 該当なし（Python 標準ライブラリのみ・分岐評価は O(1)）                                                                                                                                                                                                            | -                        |
+| バージョン関連     | `docs/rules/implementation_guidelines.md` の「バージョン関連ファイル編集禁止 [MANDATORY]」により plugin.json / marketplace.json / CHANGELOG.md / README バージョン表は本 PR 編集禁止。skill 一覧追加のみ可（§8.3 / §9）                                           | 低（制約として常時遵守） |
 
 ## アプローチ（Step 3）
 
