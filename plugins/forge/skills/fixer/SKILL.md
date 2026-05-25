@@ -248,7 +248,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/mark_fixed.py {session_dir} {修正した指
    - 影響: [他に確認が必要な箇所があれば記載、なければ「なし」]
 ```
 
-> `--batch` では「修正方針」セクションを省略する代わりに、各指摘に `auto_fixable` フラグと evaluator の `reason` を付与して渡す。`recommendation: fix` の **全件** が対象であり、`auto_fixable: false` の指摘も除外しない — `auto_fixable` は呼び出し元（軽量経路・present-findings 表示）のフィルタであり、fixer への投入ゲートではない (REQ-004:392 / DES-028 §4.5)。`auto_fixable: false` の指摘は evaluator の `reason` を根拠に fixer が自律判断して修正する。
+> `--batch` では「修正方針」セクションを省略する代わりに、各指摘に `auto_fixable` フラグと evaluator の `reason` を付与して渡す。呼び出し元から渡された指摘は `auto_fixable` の値によらず **全件修正する** — `auto_fixable` は呼び出し元（軽量経路フィルタ / present-findings の ✅ 表示）のための情報であり、fixer への投入ゲートではない (REQ-004 FNC-413 / DES-028 §4.5)。`auto_fixable: false` の指摘は evaluator の `reason` を根拠に fixer が自律判断して修正する。`--single` には `auto_fixable` / `reason` を含めない（present-findings でユーザーが修正方針を選択済みのため）。
 
 ### `--batch` モード (一括修正)
 
