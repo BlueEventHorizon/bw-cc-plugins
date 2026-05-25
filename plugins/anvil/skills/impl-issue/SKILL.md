@@ -146,13 +146,13 @@ gh repo view --json nameWithOwner --jq '.nameWithOwner'
 
 ### Phase 3: 仕様書を調査する
 
-`/doc-advisor:query-specs` を使い、Issue のタイトル・本文から **抽出した検索キーワード** または **短い自然文のタスク記述** を `args` として渡して関連仕様書を特定する。Issue 本文をそのまま貼り付けない（COMMON-DES-001 §3.4 [MANDATORY]）。
+`/doc-advisor:query-specs` を使い、Issue のタイトル・本文から **抽出した検索キーワード** または **短い自然文のタスク記述** を `args` として渡して関連仕様書を特定する。Issue 本文をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
 
 **詳細は [references/phase-03-spec-investigation.md](references/phase-03-spec-investigation.md) を参照。**
 
 ### Phase 4: 実装ルールを調査する
 
-`/doc-advisor:query-rules` を使い、タスクに関連するルール文書を特定する。`args` は Issue 本文から **抽出した検索キーワード** または **短い自然文のタスク記述** に限定し、Issue 本文・実装手順をそのまま貼り付けない（COMMON-DES-001 §3.4 [MANDATORY]）。
+`/doc-advisor:query-rules` を使い、タスクに関連するルール文書を特定する。`args` は Issue 本文から **抽出した検索キーワード** または **短い自然文のタスク記述** に限定し、Issue 本文・実装手順をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
 
 **必須ルール**:
 
