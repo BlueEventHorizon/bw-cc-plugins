@@ -5,7 +5,7 @@ requirements_traceability:
   - requirement_id: SUBAGENT-REQ-001
     title: SKILL / Agent / subagent 起動契約 整理要件
     design_id: SUBAGENT-DES-001
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: SUBAGENT-DES-001
@@ -322,7 +322,7 @@ tasks:
   - task_id: TASK-014
     title: DES-015 への修正経路分岐表追記
     priority: 50
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008
@@ -341,7 +341,7 @@ tasks:
   - task_id: TASK-015
     title: DES-028 の軽量経路手順 Step 4 を新 fixed 遷移契約に更新
     priority: 50
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008
@@ -362,7 +362,7 @@ tasks:
   - task_id: TASK-016
     title: SUBAGENT-REQ-001 の TBD-002〜005 解消
     priority: 30
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-010
