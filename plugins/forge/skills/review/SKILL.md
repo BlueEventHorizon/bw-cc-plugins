@@ -521,7 +521,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 1. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/present-findings/scripts/mark_in_progress.py {session_dir} {id}` を呼び、plan.yaml の該当項目を `status: in_progress` に遷移させる
 2. `{session_dir}/review_<種別>.md` から **該当 finding の修正案セクションのみ** を Read で抜粋する (全文 Read ではなく必要部分のみ)
 3. 抜粋した修正案に従い `Edit` ツールで対象ファイルを直接修正する
-4. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}` を呼び、plan.yaml を `status: fixed` に更新する
+
+> **`mark_fixed.py` はここで呼ばない。** plan.yaml の `status: fixed` への遷移は、全件修正完了後に
+> Step 3 (単独修正レビュー) が完了してから orchestrator が呼ぶ責務。
 
 全件処理完了後、修正サマリを以下のフォーマットで出力する:
 
@@ -556,7 +558,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 fixer が修正した変更差分のみを対象に `/forge:reviewer` を **1 体のみ** 起動して再レビューする (`--diff-only` モード)。
 
 - 修正起因の問題が見つかった場合 → fixer を再起動して修正 (上限 3 回)
-- 問題なし → Step 4 へ
+- 問題なし → 以下の通り plan.yaml を `fixed` に更新してから Step 4 へ
+
+単独修正レビュー完了後、修正が成功した各 finding に対して `mark_fixed.py` を呼ぶ:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}
+```
+
+- 軽量経路 (Step 2-A) の場合: 修正した finding の id と修正ファイルパス一覧を渡す
+- fixer 経路 (Step 2-B) の場合: `patch_result.json` の `patched_ids` と `files_modified` を参照して渡す
 
 ### Step 4: 終了処理
 

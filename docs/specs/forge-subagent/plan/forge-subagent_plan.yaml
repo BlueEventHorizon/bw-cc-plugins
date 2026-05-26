@@ -125,7 +125,7 @@ tasks:
   - task_id: TASK-005
     title: reviewer/SKILL.md 誤読源文言削除（Issue #32 対策、設計原則セクション更新）
     priority: 80
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-002
@@ -145,7 +145,7 @@ tasks:
   - task_id: TASK-006
     title: evaluator/SKILL.md 誤読源文言削除（設計原則セクション更新）
     priority: 80
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-003
@@ -166,7 +166,7 @@ tasks:
   - task_id: TASK-007
     title: mark_fixed.py 責務移転（fixer / review / present-findings の 3 ファイルを同時変更）
     priority: 80
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-004
