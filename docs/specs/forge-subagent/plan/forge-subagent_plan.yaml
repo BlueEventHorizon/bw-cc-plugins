@@ -54,7 +54,7 @@ tasks:
   - task_id: TASK-002
     title: reviewer/SKILL.md fork 安全機能全適用（§6.1〜§6.4）
     priority: 90
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-001
@@ -77,7 +77,7 @@ tasks:
   - task_id: TASK-003
     title: evaluator/SKILL.md fork 安全機能全適用（§6.1〜§6.4）
     priority: 90
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-001
@@ -100,7 +100,7 @@ tasks:
   - task_id: TASK-004
     title: fixer/SKILL.md fork 安全機能全適用（§6.1〜§6.4、Edit/Write 除外ルール適用）
     priority: 90
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-001
