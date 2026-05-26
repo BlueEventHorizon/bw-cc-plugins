@@ -5,27 +5,28 @@
 ## review
 
 ```
-/forge:review <種別> [対象] [--codex|--claude] [--auto [N]] [--auto-critical]
+/forge:review <種別> [--diff | --files path[,path...]] [--codex|--claude] [--interactive|--auto|--auto-critical]
 ```
 
 | 引数                   | 説明                                                                |
 | ---------------------- | ------------------------------------------------------------------- |
 | `種別`                 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`     |
-| `対象`                 | ファイルパス / ディレクトリ / Feature 名 / 省略（= 対話で決定）     |
+| `--diff` / `--files`   | 現ブランチ差分 / 明示したファイル・ディレクトリ一覧                 |
 | `--codex` / `--claude` | エンジン選択（デフォルト: Codex。不在時は Claude にフォールバック） |
-| `--auto [N]`           | 🔴 + 🟡 を N サイクル自動修正（省略時 N=1）                         |
-| `--auto-critical`      | 🔴 のみを 1 サイクル自動修正                                        |
+| `--interactive`        | 指摘を提示し、人間が修正可否を判断                                  |
+| `--auto`               | 🔴 + 🟡 を自動修正。🟢 minor は対象外                               |
+| `--auto-critical`      | 🔴 のみを自動修正                                                   |
 
 ### 使用例
 
 ```bash
-/forge:review code src/                        # 対話モード
-/forge:review code src/ --auto 3               # 3 サイクル自動修正
-/forge:review code src/ --auto-critical        # 致命的のみ自動修正
-/forge:review requirement login                # Feature 名で指定
-/forge:review design specs/login/design.md     # ファイル直接指定
-/forge:review generic README.md                # 任意の文書
-/forge:review code src/ --claude               # Claude エンジン指定
+/forge:review code --diff --interactive                     # 現ブランチ差分
+/forge:review code --files src/ --auto                      # critical+major 自動修正
+/forge:review code --files src/ --auto-critical             # 致命的のみ自動修正
+/forge:review requirement --files docs/specs/login_req.md   # 要件定義書
+/forge:review design --files specs/login/design.md          # ファイル直接指定
+/forge:review generic --files README.md                     # 任意の文書
+/forge:review code --files src/ --claude                    # Claude エンジン指定
 ```
 
 ### いつ使うか

@@ -24,12 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills'
 
 # "subagent" が単独で使われているパターン
-# subagent_type / SubAgent (先頭大文字) / sub-agent 等の複合形は除外
+# subagent_type / SUBAGENT-DES-001 のような仕様 ID / sub-agent 等の複合形は除外
 _STANDALONE_RE = re.compile(r'\bsubagent\b(?!_type)', re.IGNORECASE)
 
-# baseline 警告数 (2026-05-26 時点で 8 件)。違反を解消したらこの値を下げる。
-# 新規違反が混入して警告数がこれを超えると fail する (回帰防止)。
-EXPECTED_MAX_WARNINGS = 8
+# baseline 警告数 (2026-05-26 時点で 0 件)。仕様 ID は検査対象外。
+EXPECTED_MAX_WARNINGS = 0
 
 # fenced コードブロック内は除外
 def _strip_code_blocks(body: str) -> str:
@@ -60,7 +59,8 @@ def _collect_warnings(skill_path: Path) -> list[str]:
     filtered = _strip_code_blocks(body)
     warnings = []
     for lineno, line in enumerate(filtered.split('\n'), 1):
-        if _STANDALONE_RE.search(line):
+        matches = [m.group(0) for m in _STANDALONE_RE.finditer(line)]
+        if any(not token.isupper() for token in matches):
             warnings.append(
                 f'{skill_path.relative_to(REPO_ROOT)} L{lineno}: '
                 f'"subagent" の単独使用: {line.strip()[:80]}'

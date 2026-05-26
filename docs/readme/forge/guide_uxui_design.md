@@ -104,10 +104,10 @@ When `/forge:review uxui` runs without prior start-uxui-design output, Design In
 
 ```bash
 # Review design tokens and component specs
-/forge:review uxui specs/user-auth/design/
+/forge:review uxui --files specs/user-auth/design/
 
 # With auto-fix
-/forge:review uxui specs/user-auth/design/ --auto
+/forge:review uxui --files specs/user-auth/design/ --auto
 ```
 
 ---

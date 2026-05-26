@@ -5,27 +5,28 @@ AI reviews code and documents, scrutinizes findings, and fixes issues in a singl
 ## review
 
 ```
-/forge:review <type> [target] [--codex|--claude] [--auto [N]] [--auto-critical]
+/forge:review <type> [--diff | --files path[,path...]] [--codex|--claude] [--interactive|--auto|--auto-critical]
 ```
 
 | Argument               | Description                                                            |
 | ---------------------- | ---------------------------------------------------------------------- |
 | `type`                 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`        |
-| `target`               | File path / directory / Feature name / omit for interactive            |
+| `--diff` / `--files`   | Current branch diff / explicit file or directory list                  |
 | `--codex` / `--claude` | Engine selection (default: Codex; falls back to Claude if unavailable) |
-| `--auto [N]`           | Auto-fix 🔴 + 🟡 for N cycles (default N=1)                            |
-| `--auto-critical`      | Auto-fix 🔴 only for 1 cycle                                           |
+| `--interactive`        | Present findings for human decision-making                             |
+| `--auto`               | Auto-fix 🔴 + 🟡; 🟢 minor findings are excluded                       |
+| `--auto-critical`      | Auto-fix 🔴 only                                                       |
 
 ### Usage Examples
 
 ```bash
-/forge:review code src/                        # Interactive mode
-/forge:review code src/ --auto 3               # 3 auto-fix cycles
-/forge:review code src/ --auto-critical        # Critical only
-/forge:review requirement login                # By feature name
-/forge:review design specs/login/design.md     # Direct file path
-/forge:review generic README.md                # Any document
-/forge:review code src/ --claude               # Claude engine
+/forge:review code --diff --interactive                     # Current branch diff
+/forge:review code --files src/ --auto                      # Auto-fix critical+major
+/forge:review code --files src/ --auto-critical             # Critical only
+/forge:review requirement --files docs/specs/login_req.md   # Requirement file
+/forge:review design --files specs/login/design.md          # Direct file path
+/forge:review generic --files README.md                     # Any document
+/forge:review code --files src/ --claude                    # Claude engine
 ```
 
 ### When to Use

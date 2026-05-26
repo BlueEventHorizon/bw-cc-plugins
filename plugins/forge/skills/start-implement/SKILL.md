@@ -361,7 +361,7 @@ executor は以下のステータスで報告する:
 
 #### 単一タスク実行時
 
-executor が作成・変更したファイル（差分のみ）に対して `/forge:review code` を `--auto` モードで実行する:
+executor が作成・変更したファイル（差分のみ）に対して Skill ツールで `/forge:review code` を `--auto` モードで実行する:
 
 ```
 /forge:review code --files {変更ファイル一覧(カンマ区切り)} --auto
@@ -372,7 +372,7 @@ executor が作成・変更したファイル（差分のみ）に対して `/fo
 全 executor 完了後、SUCCESS のタスクについて**逐次的に**レビューを実施する:
 
 1. `exec_*.json` から `status: SUCCESS` のタスクを収集する
-2. 各タスクの `files_modified` に対して `/forge:review code --files {files} --auto` を逐次実行する
+2. 各タスクの `files_modified` に対して Skill ツールで `/forge:review code --files {files} --auto` を逐次実行する
 3. タスク間でファイルが重複する場合、重複ファイルは最初のレビューで対応し、以降はスキップする
 
 > **レビューの並列実行は行わない。** `/forge:review` 自体が内部で並列 agent を使用するため、レビューを更に並列化するとリソース競合が発生する。

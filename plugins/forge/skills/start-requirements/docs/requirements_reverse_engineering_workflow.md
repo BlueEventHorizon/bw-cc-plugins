@@ -249,6 +249,8 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 ### 5.2 AI レビュー実施 [MANDATORY]
 
+Skill ツールで `/forge:review` を起動する:
+
 ```
 /forge:review requirement --files {作成ファイルパス} --auto
 ```

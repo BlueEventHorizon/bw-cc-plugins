@@ -343,7 +343,7 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 ### 4.4 AI レビュー実施 [MANDATORY]
 
-作成した要件定義書に対して `/forge:review` を `--auto` モードで実行する:
+作成した要件定義書に対して Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
 ```
 /forge:review requirement --files {作成ファイルパス} --auto
