@@ -6,6 +6,9 @@
 
 **主目的は名称の統一**。「subagent」「general-purpose subagent」等の曖昧語による誤読 (例: Issue #32 で `subagent_type: "forge:fixer"` と誤指定された事例) を防ぐため、起動経路 5 種に **公式の短縮名称** を定める。SKILL.md / 設計書 / ガイド文書はこの名称に従って記述する。
 
+> 機械可読 subset: `docs/rules/skill_launch_terms.toml`
+> subset には短縮名称に加えて、起動ツール説明で使う `Skill ツール` / `Agent ツール` も含む。
+
 ### 必読 (本文書を読む前提)
 
 本文書の表は Claude Code 公式仕様の用語 (`context: fork` / `agent` / `subagent_type` / `allowed-tools`) を前提とする。以下を未読の場合は先に読むこと:

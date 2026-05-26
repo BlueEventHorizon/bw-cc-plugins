@@ -16,6 +16,8 @@ import unittest
 from dataclasses import dataclass
 from pathlib import Path
 
+from tests.forge.subagent.skill_launch_terms import load_terms
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 CHECKED_PATH_PREFIXES = (
@@ -35,14 +37,14 @@ _OLD_REVIEW_TARGET_RE = re.compile(
 )
 _SLASH_COMMAND_RE = re.compile(r'/(forge|anvil):[a-z][a-z0-9-]*')
 
-_LAUNCH_CONTEXT_PATTERNS = [
-    re.compile(r'汎用 Agent'),
-    re.compile(r'継承型 SKILL'),
-    re.compile(r'fork 型 SKILL'),
-    re.compile(r'Bash subprocess'),
-    re.compile(r'Skill ツール'),
-    re.compile(r'Agent ツール'),
-]
+
+def _compile_literal_patterns(values: list[str]) -> list[re.Pattern[str]]:
+    return [re.compile(re.escape(value)) for value in values]
+
+
+_LAUNCH_CONTEXT_PATTERNS = _compile_literal_patterns(
+    load_terms()['launch_context']['terms']
+)
 _USER_EXAMPLE_PATTERNS = [
     re.compile(r'使い方'),
     re.compile(r'使用例'),
