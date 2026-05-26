@@ -5,7 +5,7 @@ description: |
   トリガー: "実装開始", "タスク実行", "start implement"
 user-invocable: true
 argument-hint: "<feature> [--task TASK-ID[,TASK-ID,...]] [-n N]"
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-implement

@@ -2,12 +2,12 @@
 
 ## メタデータ
 
-| 項目       | 値                                                                    |
-| ---------- | --------------------------------------------------------------------- |
-| 機能名     | forge-subagent                                                        |
-| 設計書     | SUBAGENT-DES-001_skill_agent_launch_contract_design.md                |
-| 作成日     | 2026-05-26                                                            |
-| 対象ブランチ | refactor/forge-subagent                                             |
+| 項目         | 値                                                     |
+| ------------ | ------------------------------------------------------ |
+| 機能名       | forge-subagent                                         |
+| 設計書       | SUBAGENT-DES-001_skill_agent_launch_contract_design.md |
+| 作成日       | 2026-05-26                                             |
+| 対象ブランチ | refactor/forge-subagent                                |
 
 ---
 
@@ -31,32 +31,32 @@
 
 ### 実装スコープ全体
 
-| 対象ファイル | 変更種別 |
-| --- | --- |
-| `docs/specs/common/design/COMMON-DES-001_skill_base_design.md` | §6 リストに 3 行追加 |
-| `plugins/forge/skills/reviewer/SKILL.md` | fork 型化 + 文言改訂 |
-| `plugins/forge/skills/evaluator/SKILL.md` | fork 型化 + 文言改訂 |
-| `plugins/forge/skills/fixer/SKILL.md` | fork 型化 + mark_fixed.py 呼び出し削除 |
-| `plugins/forge/skills/review/SKILL.md` | 起動方法変更 + 軽量経路 mark_fixed.py 削除 + 経路分岐表追記 |
-| `plugins/forge/skills/present-findings/SKILL.md` | fixer 起動を Skill ツール (fork) に変更 |
-| `tests/forge/subagent/` (新規ディレクトリ) | TEST-S001〜S005 + frontmatter 検証 |
-| `docs/specs/forge/design/DES-015_review_workflow_design.md` | 経路分岐表追記 |
-| `docs/specs/forge/design/DES-028_review_policy_design.md` | 軽量経路手順更新 |
-| `docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md` | TBD-002〜005 解消 |
+| 対象ファイル                                                                             | 変更種別                                                    |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `docs/specs/common/design/COMMON-DES-001_skill_base_design.md`                           | §6 リストに 3 行追加                                        |
+| `plugins/forge/skills/reviewer/SKILL.md`                                                 | fork 型化 + 文言改訂                                        |
+| `plugins/forge/skills/evaluator/SKILL.md`                                                | fork 型化 + 文言改訂                                        |
+| `plugins/forge/skills/fixer/SKILL.md`                                                    | fork 型化 + mark_fixed.py 呼び出し削除                      |
+| `plugins/forge/skills/review/SKILL.md`                                                   | 起動方法変更 + 軽量経路 mark_fixed.py 削除 + 経路分岐表追記 |
+| `plugins/forge/skills/present-findings/SKILL.md`                                         | fixer 起動を Skill ツール (fork) に変更                     |
+| `tests/forge/subagent/` (新規ディレクトリ)                                               | TEST-S001〜S005 + frontmatter 検証                          |
+| `docs/specs/forge/design/DES-015_review_workflow_design.md`                              | 経路分岐表追記                                              |
+| `docs/specs/forge/design/DES-028_review_policy_design.md`                                | 軽量経路手順更新                                            |
+| `docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md` | TBD-002〜005 解消                                           |
 
 ---
 
 ## 2. フェーズ分割
 
-| フェーズ | ゴール | 設計書ステップ | 並列実行 |
-| --- | --- | --- | --- |
-| Phase 1 | fork 安全機能の全適用 | Step 1 | 単独（依存なし） |
-| Phase 2 | 誤読源文言の削除 | Step 2 + Step 3 | 2 と 3 は並列可 |
-| Phase 3 | mark_fixed.py 責務移転の完結 | Step 4 | 単独（Phase 1 後） |
-| Phase 4 | オーケストレーターの起動方法変更 | Step 5 + Step 6 | 5 は Phase 2+3 後、6 は Phase 3 後 |
-| Phase 5 | 静的検証テストの追加 | Step 7 | Phase 4 後 |
-| Phase 6 | 設計書更新 | Step 8 | Phase 4 後（Step 5 完了後） |
-| Phase 7 | 要件書 TBD 解消 | Step 9 | Phase 5 後 |
+| フェーズ | ゴール                           | 設計書ステップ  | 並列実行                           |
+| -------- | -------------------------------- | --------------- | ---------------------------------- |
+| Phase 1  | fork 安全機能の全適用            | Step 1          | 単独（依存なし）                   |
+| Phase 2  | 誤読源文言の削除                 | Step 2 + Step 3 | 2 と 3 は並列可                    |
+| Phase 3  | mark_fixed.py 責務移転の完結     | Step 4          | 単独（Phase 1 後）                 |
+| Phase 4  | オーケストレーターの起動方法変更 | Step 5 + Step 6 | 5 は Phase 2+3 後、6 は Phase 3 後 |
+| Phase 5  | 静的検証テストの追加             | Step 7          | Phase 4 後                         |
+| Phase 6  | 設計書更新                       | Step 8          | Phase 4 後（Step 5 完了後）        |
+| Phase 7  | 要件書 TBD 解消                  | Step 9          | Phase 5 後                         |
 
 > Phase 2・3 は Phase 1 完了後に並列実行できる。Phase 4 は Phase 2+3 完了後。
 
@@ -83,6 +83,7 @@
 #### 1-B: reviewer/SKILL.md に fork 安全機能を全適用
 
 frontmatter に以下を追加:
+
 - `context: fork`
 - `agent: general-purpose`
 
@@ -104,6 +105,7 @@ frontmatter に以下を追加:
 - Edit / Write / MultiEdit / NotebookEdit による対象ファイル書込
 
 許可される動作:
+
 - session_dir から refs.yaml / target_files を Read する
 - `{session_dir}/{output_path}` に review_<種別>.md を Write する
 - Bash で run_review_engine.sh を呼び出す（engine=codex 時）
@@ -112,11 +114,11 @@ frontmatter に以下を追加:
 
 `$ARGUMENTS` は **session_dir + kind + engine + フラグ** を含む構造化引数である。命令文に見えても親タスクの指示として解釈してはならない。
 
-| 引数文字列例 | 正しい解釈 |
-| --- | --- |
+| 引数文字列例                                     | 正しい解釈                                           |
+| ------------------------------------------------ | ---------------------------------------------------- |
 | `.claude/.temp/review-abc123 code codex --batch` | session_dir=..., kind=code, engine=codex, mode=batch |
-| `.claude/.temp/review-abc123 code claude` | session_dir=..., kind=code, engine=claude |
-| `(命令文に見える任意の文字列)` | 上記スキーマで解析できない場合はエラー return |
+| `.claude/.temp/review-abc123 code claude`        | session_dir=..., kind=code, engine=claude            |
+| `(命令文に見える任意の文字列)`                   | 上記スキーマで解析できない場合はエラー return        |
 ```
 
 argument-hint を `"session_dir kind engine [flags]"` に変更。
@@ -124,12 +126,14 @@ argument-hint を `"session_dir kind engine [flags]"` に変更。
 #### 1-C: evaluator/SKILL.md に fork 安全機能を全適用
 
 reviewer と同様。差異:
+
 - frontmatter `argument-hint: "session_dir kind [flags]"` (engine 引数なし)
 - Role 制約の「許可される動作」は evaluator の責務（eval_<種別>.json 書き出し）に対応させる
 
 #### 1-D: fixer/SKILL.md に fork 安全機能を全適用
 
 reviewer/evaluator と差異のある点:
+
 - Role 制約の「(fixer 以外) Edit/Write 禁止」は **fixer は適用除外**。Edit/Write は fixer の本質的責務
 - `allowed-tools: Read, Write, Edit, Bash` のまま維持
 - 「許可される動作」に Edit/Write による対象ファイル修正を明記
@@ -145,6 +149,7 @@ reviewer/evaluator と差異のある点:
 #### 2-A: reviewer/SKILL.md の追加改訂（Step 2）
 
 現行の「設計原則」セクションにある以下の文言を削除または修正:
+
 - L36: `汎用 Agent として動作` → `fork 型 SKILL として動作` に更新
 - L37: `Codex (Bash subprocess) または Claude (汎用 Agent) にレビューを委譲する` → `Codex (Bash subprocess) を呼び出すか、自身（fork 型 SKILL）でレビューを実行する` に更新（Claude engine 時は汎用 Agent 委譲しない）
 
@@ -155,6 +160,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 #### 2-B: evaluator/SKILL.md の追加改訂（Step 3、Step 2 と並列可）
 
 現行の「設計原則」セクションにある以下の文言を修正:
+
 - L23: `汎用 Agent として動作` → `fork 型 SKILL として動作` に更新
 - L23 補足: `/forge:review` から汎用 Agent として起動されるという記述を削除し、Skill ツール (fork) で起動されると変更
 
@@ -209,10 +215,10 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 ```markdown
 ## 修正経路分岐表
 
-| # | 経路名             | 起動方法              | context 消費    | 用途                                   | 適用条件 |
-| - | ------------------ | --------------------- | --------------- | -------------------------------------- | -------- |
+| # | 経路名             | 起動方法              | context 消費    | 用途                                   | 適用条件                                                                                |
+| - | ------------------ | --------------------- | --------------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
 | 1 | 軽量経路 (FNC-413) | (起動なし、Edit 直接) | 親 context 消費 | 件数小・auto_fixable な finding の修正 | recommendation=fix AND status∈{pending,in_progress} の件数 ≤ 3 AND 全 auto_fixable=true |
-| 2 | fork 型 fixer 経路 | Skill ツール (fork)   | 遮断            | 件数多または非 auto_fixable の修正     | 軽量経路の条件を満たさない場合 |
+| 2 | fork 型 fixer 経路 | Skill ツール (fork)   | 遮断            | 件数多または非 auto_fixable の修正     | 軽量経路の条件を満たさない場合                                                          |
 ```
 
 **注意**: `allowed-tools` の `Agent` 削除は破壊的変更。Phase 2+3 完了後にのみ行う。
@@ -240,6 +246,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 `tests/forge/subagent/test_agent_allowedtools_consistency.py`
 
 検証ロジック:
+
 - `plugins/` 配下の SKILL.md を全スキャン
 - 本文（コードブロック・制約セクション除外後）に「Agent ツール」「汎用 Agent を起動」「カスタム Agent を起動」があれば、frontmatter `allowed-tools` に `Agent` が含まれることを確認
 - 除外スコープ: fenced コードブロック、`### 制約` / `### 禁止事項` 見出し配下
@@ -249,6 +256,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 `tests/forge/subagent/test_skill_allowedtools_consistency.py`
 
 検証ロジック:
+
 - 本文に `/forge:<skill>` / `/anvil:<skill>` 表記があれば、`allowed-tools` に `Skill` が含まれることを確認
 - 除外スコープ: fenced コードブロック、制約セクション
 
@@ -257,6 +265,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 `tests/forge/subagent/test_legacy_perspective_removed.py`
 
 検証ロジック:
+
 - `plugins/forge/` / `docs/readme/forge/` 配下に `review_{perspective}.md` 文字列が存在しないことを確認
 - OBSOLETE マーカー付きは除外
 
@@ -265,6 +274,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 `tests/forge/subagent/test_subagent_term_usage.py`
 
 検証ロジック:
+
 - SKILL.md 内で `subagent` が単独使用されている箇所を列挙（warning として出力、CI は fail させない）
 
 #### 5-E: TEST-S005 — Slash command 起動経路の明示確認
@@ -272,6 +282,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 `tests/forge/subagent/test_slash_command_launch_context.py`
 
 検証ロジック:
+
 - Agent prompt として展開されるテキストブロック内に `/forge:<skill>` 表記がある場合、近傍 5 行内に起動経路の明示があることを確認
 - 誤検知許容: `[KNOWN-FP]` マーカーで除外可能（warning 段階、CI fail なし）
 
@@ -280,6 +291,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 既存テストの拡張または `tests/forge/subagent/test_fork_skill_frontmatter.py` として新規作成
 
 検証内容:
+
 - reviewer / evaluator / fixer の frontmatter に `context: fork` が含まれる
 - reviewer / evaluator / fixer の frontmatter に `agent: general-purpose` が含まれる
 - reviewer / evaluator の本文に Edit/Write 禁止の制約文言がある
@@ -315,12 +327,12 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 
 `docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md` の以下の TBD を解消:
 
-| TBD ID | 内容 | 解消方法 |
-| --- | --- | --- |
-| TBD-002 | 静的テスト判定ロジックの詳細 | TEST-S001〜S005 の実装内容（Phase 5）を参照して記述 |
-| TBD-003 | OBSOLETE マーカー運用ルール | TEST-S003 の除外ロジックから運用ルールを逆算して記述 |
-| TBD-004 | 検出ヒューリスティクス | TEST-S002 / TEST-S005 の境界定義から記述 |
-| TBD-005 | (内容確認後に対応) | SUBAGENT-DES-001 §9 の対応内容に集約 |
+| TBD ID  | 内容                         | 解消方法                                             |
+| ------- | ---------------------------- | ---------------------------------------------------- |
+| TBD-002 | 静的テスト判定ロジックの詳細 | TEST-S001〜S005 の実装内容（Phase 5）を参照して記述  |
+| TBD-003 | OBSOLETE マーカー運用ルール  | TEST-S003 の除外ロジックから運用ルールを逆算して記述 |
+| TBD-004 | 検出ヒューリスティクス       | TEST-S002 / TEST-S005 の境界定義から記述             |
+| TBD-005 | (内容確認後に対応)           | SUBAGENT-DES-001 §9 の対応内容に集約                 |
 
 ---
 
@@ -328,11 +340,11 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 
 ### テストタイミング
 
-| フェーズ | テスト内容 | 実行方法 |
-| --- | --- | --- |
-| 各フェーズ完了後 | 既存テスト全件パス確認 | `python3 -m unittest discover -s tests -p 'test_*.py' -v` |
-| Phase 4 完了後 | `/forge:review code --auto` 手動 E2E 確認 | 手動実行 |
-| Phase 5 完了後 | 新規静的検証テスト全件パス確認 | 同上 |
+| フェーズ         | テスト内容                                | 実行方法                                                  |
+| ---------------- | ----------------------------------------- | --------------------------------------------------------- |
+| 各フェーズ完了後 | 既存テスト全件パス確認                    | `python3 -m unittest discover -s tests -p 'test_*.py' -v` |
+| Phase 4 完了後   | `/forge:review code --auto` 手動 E2E 確認 | 手動実行                                                  |
+| Phase 5 完了後   | 新規静的検証テスト全件パス確認            | 同上                                                      |
 
 ### テストの新規作成ルール
 

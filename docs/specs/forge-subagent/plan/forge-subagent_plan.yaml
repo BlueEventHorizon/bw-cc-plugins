@@ -235,7 +235,7 @@ tasks:
   - task_id: TASK-010
     title: TEST-S001 + TEST-S002 実装（allowed-tools 整合性テスト 2 種）
     priority: 60
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008
@@ -256,7 +256,7 @@ tasks:
   - task_id: TASK-011
     title: TEST-S003 実装（旧 perspective 文字列の除去確認テスト）
     priority: 60
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008
@@ -276,7 +276,7 @@ tasks:
   - task_id: TASK-012
     title: TEST-S004 + TEST-S005 実装（Warning テスト 2 種）
     priority: 60
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008
@@ -297,7 +297,7 @@ tasks:
   - task_id: TASK-013
     title: fork 型 SKILL frontmatter 検証テスト実装（§9.2 拡張）
     priority: 60
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-008

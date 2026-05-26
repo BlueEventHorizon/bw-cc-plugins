@@ -5,7 +5,7 @@ description: |
   トリガー: "設計書作成", "設計開始", "start design"
 user-invocable: true
 argument-hint: "<feature>"
-allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
+allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-design

@@ -5,7 +5,7 @@ description: |
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature>"
-allowed-tools: Bash, Read, Write, Glob, Grep, Agent, AskUserQuestion
+allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-plan
