@@ -687,11 +687,11 @@ items:
 
 #### 読み取り契約
 
-| スキル                      | 読み取るフィールド                         | 用途                                                             |
-| --------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
-| `present-findings`          | `recommendation`, `auto_fixable`, `reason` | AI 推奨の表示、修正可否マーク判定                                |
-| `fixer`                     | `recommendation`, `auto_fixable`           | 修正対象の判定（`fix` かつ `auto_fixable: true` で自動修正対象） |
-| `review` オーケストレーター | `recommendation`                           | `should_continue` 判定（`fix` が 0 件なら終了）                  |
+| スキル                      | 読み取るフィールド                         | 用途                                                                                                                                                                            |
+| --------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `present-findings`          | `recommendation`, `auto_fixable`, `reason` | AI 推奨の表示、修正可否マーク判定                                                                                                                                               |
+| `fixer`                     | `recommendation`, `auto_fixable`, `reason` | 修正対象の判定（`recommendation: fix` の全件）。`auto_fixable` は軽量経路・表示フィルタのメタデータ（投入ゲートではない）。`reason` は `auto_fixable: false` 時の修正方針の根拠 |
+| `review` オーケストレーター | `recommendation`                           | `should_continue` 判定（`fix` が 0 件なら終了）                                                                                                                                 |
 
 #### 読み書き
 
