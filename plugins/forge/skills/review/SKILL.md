@@ -6,7 +6,7 @@ description: |
   トリガー: "レビュー", "review", "レビューして", "確認して"
 user-invocable: true
 argument-hint: "<種別> [--diff | --files a.md,b.md] [--interactive | --auto-critical | --auto] [--codex | --claude]"
-allowed-tools: Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill, Agent
+allowed-tools: Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill
 hooks:
   Stop:
     - hooks:
@@ -396,21 +396,17 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh \
 
 #### Claude エンジン
 
-汎用 Agent (general-purpose) を **1 体のみ** 起動する。汎用 Agent の prompt 冒頭に必ず以下を含める:
+`/forge:reviewer` を Skill ツール (fork) で **1 体のみ** 起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
 
 ```
-あなたは /forge:reviewer として動作します。
-まず `plugins/forge/skills/reviewer/SKILL.md` を Read し、そこに記述されたワークフローと出力フォーマットに厳密に従ってください。
+args: "{session_dir} {review_type} claude"
 ```
 
-加えて、以下の情報を渡す:
+- `session_dir`: Phase 3 で確定したセッションディレクトリパス
+- `review_type`: `code` / `design` / `requirement` / `plan` / `uxui` / `generic` のいずれか
+- `engine`: `claude` (Claude エンジン選択時固定)
 
-- `session_dir`
-- レビュー種別 (`code` / `design` / ...)
-- review_packet (criteria_path + ssot_refs[] + check_order + target_files[])
-- `output_path: review_<種別>.md`
-
-> **なぜ reviewer SKILL.md を読ませるか**: reviewer SKILL.md には出力フォーマットの厳密な仕様 (`1. **[問題名]**: 説明` 形式、`priority: P1/P2/P3` ラベル) が定義されており、このフォーマットに従わないと後続の `extract_review_findings.py` がパースに失敗して指摘事項が 0 件になる。
+reviewer (fork 型 SKILL) は refs.yaml (review_packet) を session_dir から自力 Read し、findings を `review_<種別>.md` に書き出す。
 
 ### Step 3: レビュー結果の統合
 
@@ -457,10 +453,14 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ### Step 1: evaluator 起動 (1 体のみ)
 
-evaluator も **1 起動**で動作する。汎用 Agent (general-purpose) を 1 体起動し、以下を渡す:
+evaluator も **1 起動**で動作する。`/forge:evaluator` を Skill ツール (fork) で 1 体起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
 
-- `session_dir`
-- レビュー種別
+```
+args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
+```
+
+- `session_dir`: セッションディレクトリパス
+- `review_type`: レビュー種別
 - 介入軸フラグ (`--interactive` / `--auto-critical` / `--auto`)
 
 evaluator は以下を必ず実行する:
@@ -487,6 +487,17 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 `/forge:present-findings {session_dir}` を呼び出す。present-findings が plan.yaml を読み、findings を **severity 順 (🔴 → 🟡 → 🟢)** で 1 件ずつ提示し、人間判断 (修正する / スキップ / Issue 化) を仲介する。
 
 各セクション内では priority 順 (P1 → P2 → P3) でソートする [DES-028 §4.4]。
+
+### 修正経路分岐表 [SUBAGENT-DES-001 §7]
+
+> **前提**: 本表は **介入軸 `--auto` / `--auto-critical`** での review orchestrator 直接経路を扱う。`--interactive` モードでは present-findings から軽量経路または fork 型 fixer に分岐する。
+
+| # | 経路名             | 起動方法              | context 消費    | 用途                                                 | 適用条件                                                                                           |
+| - | ------------------ | --------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1 | 軽量経路 (FNC-413) | (起動なし、Edit 直接) | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 AND 全 `auto_fixable: true` |
+| 2 | fork 型 fixer 経路 | Skill ツール (fork)   | 遮断            | 件数多 (≥ 4) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
+
+旧経路 (汎用 Agent 起動による fixer) は **廃止**。修正経路は上記 2 種に縮約される。
 
 #### `--auto-critical` / `--auto` 共通: 軽量経路判定 [REQ-004 FNC-413] [MANDATORY]
 
@@ -537,17 +548,25 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 その後、Step 3 (単独修正レビュー) に進む。**Step 3 はスキップしない**: 軽量経路でも reviewer による副作用確認 (`--diff-only`) は必須。
 
-#### Step 2-B: fixer 経路 (従来動作)
+#### Step 2-B: fixer 経路 (fork 型 fixer 経路)
 
-軽量経路に当てはまらない場合、従来どおり fixer (汎用 Agent) に修正を委譲する。
+軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
+
+```
+args: "{session_dir} {review_type} --batch"
+```
+
+- `session_dir`: セッションディレクトリパス
+- `review_type`: レビュー種別
+- `--batch`: 複数件まとめて修正するモードフラグ
 
 ##### `--auto-critical`
 
-`/forge:fixer --batch` を汎用 Agent (general-purpose) として起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
+`/forge:fixer` を Skill ツール (fork) として起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
 
 ##### `--auto`
 
-`/forge:fixer --batch` を汎用 Agent (general-purpose) として起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
+`/forge:fixer` を Skill ツール (fork) として起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
 
 ```
 ⚠️ --auto は全件自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。

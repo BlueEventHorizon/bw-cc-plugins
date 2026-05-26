@@ -190,7 +190,7 @@ tasks:
   - task_id: TASK-008
     title: review/SKILL.md 起動方法変更（Skill ツール (fork) 化・経路分岐表追記・allowed-tools Agent 削除）
     priority: 70
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-005
@@ -213,7 +213,7 @@ tasks:
   - task_id: TASK-009
     title: present-findings/SKILL.md 残り改訂（fixer 起動を Skill ツール (fork) に変更）
     priority: 70
-    status: pending
+    status: completed
     design_id: SUBAGENT-DES-001
     depends_on:
       - TASK-007
