@@ -5,7 +5,7 @@ description: |
   レビュー結果や調査結果を1件ずつ段階的に提示し、ユーザーの判断を仰ぐ。
   /forge:review の対話モードまたは --inline で呼び出される。
 argument-hint: "<session_dir> | --inline"
-allowed-tools: Read, Write, Bash, AskUserQuestion, Skill
+allowed-tools: Read, Write, Edit, Bash, AskUserQuestion, Skill
 ---
 
 # /present-findings Skill
@@ -208,8 +208,7 @@ DES-028 §3.5 / §4.1 / REQ-004 FNC-401 に従い、finding は **第一キー: 
 
 ### Step 1.5: 意味的重複の自動統合 [MANDATORY]
 
-reviewer は perspective ごとに独立実行されるため、同じ問題を**異なる文言**で複数項目として
-指摘することがある（例: logic が「null チェック漏れ」、resilience が「防御的プログラミング不足」）。
+reviewer は 1 起動原則 (FNC-412) に従い 1 体のみが動作するが、同一 reviewer 内で観点 (P1/P2/P3) を順次評価するため、同じ箇所を**異なる priority・異なる文言**で複数項目として指摘することがある（例: P1 が「ルール違反: null チェック漏れ」、P2 が「設計矛盾: 防御的プログラミング不足」）。
 機械的な重複検出（title / location 一致）は信頼できないため、**Claude が意味的に判定して自動統合する**。
 
 > **ユーザー確認は行わない**。判定基準を厳格にして false positive を避けているため、
@@ -234,7 +233,7 @@ reviewer は perspective ごとに独立実行されるため、同じ問題を*
 - 表面的なキーワード類似ではなく**実施すべき修正が一致**する
 
 > 判定に迷う場合は**重複としない**（false positive より false negative を許容）。
-> perspective が異なる = 視点が異なるので、同じ箇所でも別問題であることが多い。
+> priority (P1/P2/P3) が異なる = 観点が異なるので、同じ箇所でも別問題であることが多い。
 > 誤統合は情報損失につながるため、判定は保守的に倒す。
 
 #### 代表項目の選定

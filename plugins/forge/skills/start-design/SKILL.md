@@ -281,7 +281,7 @@ JSON 出力の `next_id` をファイル名・設計 ID として使用する。
 作成した設計書に対して `/forge:review` を `--auto` モードで実行する:
 
 ```
-/forge:review design {作成ファイルパス} --auto
+/forge:review design --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

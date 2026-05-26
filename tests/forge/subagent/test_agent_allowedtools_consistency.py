@@ -14,10 +14,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills'
 
-AGENT_TRIGGERS = [
-    'Agent ツール',
-    '汎用 Agent を起動',
-    'カスタム Agent を起動',
+# Agent ツール / 汎用 Agent / カスタム Agent の起動を表す正規表現パターン。
+# 「汎用 Agent (general-purpose) を起動」のように括弧注記が間に入っても検出するため、
+# substring 一致ではなく正規表現で間に任意のテキストが入ることを許容する。
+AGENT_TRIGGER_PATTERNS = [
+    re.compile(r'Agent ツール'),
+    re.compile(r'汎用 Agent\b[^\n]{0,40}?を起動'),
+    re.compile(r'カスタム Agent\b[^\n]{0,40}?を起動'),
+    re.compile(r'general-purpose\b[^\n]{0,40}?を起動'),
 ]
 
 
@@ -95,12 +99,13 @@ def _check_skill(skill_path: Path) -> list[str]:
     filtered = _strip_exclusions(body)
     violations = []
     for lineno, line in enumerate(filtered.split('\n'), 1):
-        for trigger in AGENT_TRIGGERS:
-            if trigger in line:
+        for pattern in AGENT_TRIGGER_PATTERNS:
+            match = pattern.search(line)
+            if match:
                 if not has_agent:
                     violations.append(
                         f'{skill_path.relative_to(REPO_ROOT)} L{lineno}: '
-                        f'"{trigger}" が本文にあるが allowed-tools に Agent がない'
+                        f'"{match.group(0)}" が本文にあるが allowed-tools に Agent がない'
                     )
                 break
 

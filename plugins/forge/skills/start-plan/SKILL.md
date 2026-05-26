@@ -313,7 +313,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 <!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、start-plan のセッションとは干渉しない -->
 
 ```
-/forge:review plan {作成した計画書のファイルパス} --auto
+/forge:review plan --files {作成した計画書のファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

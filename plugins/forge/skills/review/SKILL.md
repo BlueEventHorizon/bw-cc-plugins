@@ -6,7 +6,7 @@ description: |
   トリガー: "レビュー", "review", "レビューして", "確認して"
 user-invocable: true
 argument-hint: "<種別> [--diff | --files a.md,b.md] [--interactive | --auto-critical | --auto] [--codex | --claude]"
-allowed-tools: Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Skill, Agent
 hooks:
   Stop:
     - hooks:
@@ -28,12 +28,12 @@ hooks:
 /forge:review <種別> [--diff | --files a.md,b.md,...] [--interactive | --auto-critical | --auto] [--codex | --claude]
 ```
 
-| 軸              | フラグ                                                          | 既定値          | 役割                                          |
-| --------------- | --------------------------------------------------------------- | --------------- | --------------------------------------------- |
-| 種別 (位置引数) | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | レビュー種別 (1 個のみ)                       |
-| 対象軸          | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文 |
-| 介入軸          | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 全件自動修正   |
-| エンジン軸      | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                         |
+| 軸              | フラグ                                                          | 既定値          | 役割                                                               |
+| --------------- | --------------------------------------------------------------- | --------------- | ------------------------------------------------------------------ |
+| 種別 (位置引数) | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | レビュー種別 (1 個のみ)                                            |
+| 対象軸          | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文                      |
+| 介入軸          | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 🔴🟡 を自動修正 (🟢 minor は対象外) |
+| エンジン軸      | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                                              |
 
 省略形と明示形は等価。例: `/forge:review code` と `/forge:review code --diff --interactive --codex` は同じ動作。
 
@@ -550,26 +550,35 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 #### Step 2-B: fixer 経路 (fork 型 fixer 経路)
 
-軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
+軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す。**介入軸フラグ (`--auto-critical` / `--auto`) は必ず付与する** (Phase 1 で確定した値を透過する):
 
 ```
-args: "{session_dir} {review_type} --batch"
+args: "{session_dir} {review_type} --batch {介入軸フラグ}"
 ```
 
 - `session_dir`: セッションディレクトリパス
 - `review_type`: レビュー種別
 - `--batch`: 複数件まとめて修正するモードフラグ
+- 介入軸フラグ: `--auto-critical` または `--auto`。フラグ未指定で fixer を起動すると `(critical + major + minor)` が対象になり意図と食い違うため必須
 
 ##### `--auto-critical`
 
-`/forge:fixer` を Skill ツール (fork) として起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
+```
+args: "{session_dir} {review_type} --batch --auto-critical"
+```
+
+fixer は `severity: critical` AND `recommendation: fix` の指摘のみを自動修正する (fixer SKILL.md §介入軸フラグ表)。
 
 ##### `--auto`
 
-`/forge:fixer` を Skill ツール (fork) として起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
+```
+args: "{session_dir} {review_type} --batch --auto"
+```
+
+fixer は `severity: critical` または `major` の `recommendation: fix` を自動修正する。**`minor` は対象外** (fixer SKILL.md §介入軸フラグ表)。高リスク・明示警告を表示してから実行する:
 
 ```
-⚠️ --auto は全件自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。
+⚠️ --auto は critical / major の自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。
 ```
 
 ### Step 3: 単独修正レビュー (--auto / --auto-critical のみ)
