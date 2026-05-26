@@ -4,7 +4,7 @@
 
 metadata:
   name: Development Document Search Index
-  generated_at: 2026-05-24T11:14:54Z
+  generated_at: 2026-05-26T16:58:41Z
   file_count: 6
 
 docs:
@@ -93,59 +93,65 @@ docs:
       - dead code
   docs/rules/skill_authoring_notes.md:
     doc_type: rule
-    title: SKILL Authoring Notes
-    purpose: Provides guidelines and best practices for creating and editing Claude Code plugin SKILL.md files, including frontmatter fields, fork vs inheritance patterns, and multi-layered security controls
+    title: SKILL.md Authoring Notes
+    purpose: Defines guidelines and best practices for creating Claude Code plugin/skill SKILL.md files, including frontmatter fields, fork vs inheritance decision criteria, and security considerations
     content_details:
-      - Frontmatter field reference (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
-      - Fork vs inheritance SKILL decision principles and multi-defense layers
-      - Fork SKILL mandatory requirements (explicit context, agent specification, Role constraints, argument interpretation guards)
-      - Inheritance SKILL mandatory requirements (responsibility boundary, large context prohibition, write permission conditions)
-      - Description writing patterns and clarity guidelines
-      - Argument reference syntax ($ARGUMENTS, $0, $1, environment variables)
-      - Inter-SKILL invocation patterns and self-recursion prohibition
-      - Directory structure and SKILL.md split criteria
-      - User question handling (AskUserQuestion tool requirement)
-      - Project-specific authoring rules (Japanese documentation, user-invocable defaults, script path references)
+      - SKILL.md frontmatter fields (name, description, user-invocable, disable-model-invocation, allowed-tools, context, agent)
+      - "Fork vs inheritance type decision (context: fork requirement, parent context inheritance, decision principles)"
+      - Multi-layer defense strategy (fork boundary, Role constraints, allowlist, physical deny via settings)
+      - Required elements for fork-type skills (negative constraints in Role, argument interpretation guards)
+      - Description writing guidelines (what to do, when to use, trigger conditions)
+      - Mandatory constraints on recursive calls (prohibit self-recursion in query-rules, query-specs, query-forge-rules)
+      - AskUserQuestion tool requirement for user prompts and confirmations
+      - Project conventions (Japanese documentation, user-invocable false for AI-only skills, MANDATORY markers)
     applicable_tasks:
       - SKILL.md creation and editing
-      - Security design review for SKILL definitions
-      - Fork vs inheritance pattern decision
-      - SKILL refactoring and structure optimization
-      - Frontmatter validation
+      - Frontmatter field configuration
+      - Fork vs inheritance type decision
+      - Security and isolation design review
+      - Claude automatic invocation tuning
+      - Subagent skill authoring
     keywords:
       - SKILL.md
-      - fork context
-      - inheritance model
       - frontmatter
+      - context fork
+      - inheritance type
+      - parent context
       - allowed-tools
-      - Context isolation
-      - Multi-defense layers
-      - Self-recursion
-      - AskUserQuestion
-      - Claude Code
+      - user-invocable
+      - disable-model-invocation
+      - multi-layer defense
+      - ADR-002
   docs/rules/skill_launch_paths_definitions.md:
     doc_type: rule
-    title: SKILL / Agent / subagent Launch Paths and Definitions
-    purpose: Defines the 5 launch paths for delegating processing in Claude Code, their proper terminology, and naming conventions to prevent ambiguity across documentation
+    title: SKILL / Agent / Subagent Launch Paths and Terminology Definitions
+    purpose: Defines official terminology and classification system for five skill/agent launch paths to ensure consistent naming and prevent terminology confusion
     content_details:
-      - "5 launch paths: inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess"
-      - Context inheritance vs isolation patterns
-      - Launch tool specifications and context behavior
-      - Subagent terminology unification rules and proper usage
-      - Invalid subagent_type values and common mistakes
+      - Five launch path types with unified short names
+      - Inheritance vs. fork context models
+      - Subagent terminology usage rules
+      - subagent_type parameter value domain
+      - Invalid subagent_type values and examples
+      - Launch path selection decision framework
+      - Relationships between different launch mechanisms
     applicable_tasks:
       - SKILL authoring and documentation
-      - Agent definition creation
-      - Documentation writing for Claude Code integrations
-      - Architecture review for delegation patterns
+      - System design with multiple execution paths
+      - Terminology standardization and documentation
+      - Agent tool configuration and naming
+      - Launch path selection in implementation
+      - Documentation review for consistent terminology
     keywords:
       - SKILL
       - Agent
-      - subagent_type
-      - context fork
+      - subagent
       - launch path
-      - delegation
+      - context fork
+      - subagent_type
       - terminology
+      - fork context
+      - general-purpose Agent
+      - custom Agent
   docs/rules/version_migration_design.md:
     doc_type: rule
     title: Version Migration Design Rule
