@@ -6,7 +6,7 @@ description: |
   トリガー: "レビュー", "review", "レビューして", "確認して"
 user-invocable: true
 argument-hint: "<種別> [--diff | --files a.md,b.md] [--interactive | --auto-critical | --auto] [--codex | --claude]"
-allowed-tools: Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill, Agent
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Skill, Agent
 hooks:
   Stop:
     - hooks:
@@ -28,12 +28,12 @@ hooks:
 /forge:review <種別> [--diff | --files a.md,b.md,...] [--interactive | --auto-critical | --auto] [--codex | --claude]
 ```
 
-| 軸              | フラグ                                                          | 既定値          | 役割                                          |
-| --------------- | --------------------------------------------------------------- | --------------- | --------------------------------------------- |
-| 種別 (位置引数) | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | レビュー種別 (1 個のみ)                       |
-| 対象軸          | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文 |
-| 介入軸          | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 全件自動修正   |
-| エンジン軸      | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                         |
+| 軸              | フラグ                                                          | 既定値          | 役割                                                               |
+| --------------- | --------------------------------------------------------------- | --------------- | ------------------------------------------------------------------ |
+| 種別 (位置引数) | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | レビュー種別 (1 個のみ)                                            |
+| 対象軸          | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文                      |
+| 介入軸          | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 🔴🟡 を自動修正 (🟢 minor は対象外) |
+| エンジン軸      | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                                              |
 
 省略形と明示形は等価。例: `/forge:review code` と `/forge:review code --diff --interactive --codex` は同じ動作。
 
@@ -44,7 +44,7 @@ hooks:
 /forge:review code --diff --interactive            # 上の明示形
 /forge:review design --files specs/login_design.md # 指定ファイル全文 × 段階的提示
 /forge:review code --auto-critical                 # 🔴致命的のみ自動修正
-/forge:review code --files src/foo.py,src/bar.py --auto  # 指定ファイル全件自動修正
+/forge:review code --files src/foo.py,src/bar.py --auto  # 指定ファイル × critical+major 自動修正 (minor は対象外)
 /forge:review requirement --files login_req.md --claude  # Claude エンジン
 ```
 
@@ -92,7 +92,7 @@ CLI の位置引数は **種別 1 個のみ**。Feature 名・ディレクトリ
 | **DROP 済みフラグ**: `--section` / `--scope` / `--depth` / `--auto N` (件数指定)     | `<flag> は DROP 済みのフラグです。DES-028 §2.2 / REQ-004 FNC-410 を参照してください`         |
 | **未知の種別**: 位置引数が 6 種別 (code/design/requirement/plan/uxui/generic) 以外   | `不明な種別です。code/design/requirement/plan/uxui/generic から選んでください`               |
 
-> **注意**: `--auto N` (件数指定) は REQ-004 FNC-404 で **仕様 DROP** された。介入モードは「対話 / 🔴 のみ / 全件」の 3 つに限定する。
+> **注意**: `--auto N` (件数指定) は REQ-004 FNC-404 で **仕様 DROP** された。介入モードは「対話 (`--interactive`) / 🔴 のみ (`--auto-critical`) / 🔴🟡 (`--auto`, minor は対象外)」の 3 つに限定する。
 
 #### ブランチ確認 [MANDATORY]
 
@@ -160,7 +160,7 @@ target_files の実用上限は **3〜5 件** (reviewer 1 起動の原則から)
 
 ### Step 4: 関連コード探索 [MANDATORY]
 
-レビュー・修正の参考にするため、target_files に関連する既存実装を探索する。general-purpose subagent を起動して探索を委譲する。
+レビュー・修正の参考にするため、target_files に関連する既存実装を探索する。汎用 Agent (general-purpose) を起動して探索を委譲する。
 
 ```
 subagent_type: general-purpose
@@ -396,21 +396,17 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh \
 
 #### Claude エンジン
 
-Agent ツール (general-purpose) で **1 体のみ** 起動する。subagent prompt の冒頭に必ず以下を含める:
+`/forge:reviewer` を Skill ツール (fork) で **1 体のみ** 起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
 
 ```
-あなたは /forge:reviewer として動作します。
-まず `plugins/forge/skills/reviewer/SKILL.md` を Read し、そこに記述されたワークフローと出力フォーマットに厳密に従ってください。
+args: "{session_dir} {review_type} claude"
 ```
 
-加えて、以下の情報を渡す:
+- `session_dir`: Phase 3 で確定したセッションディレクトリパス
+- `review_type`: `code` / `design` / `requirement` / `plan` / `uxui` / `generic` のいずれか
+- `engine`: `claude` (Claude エンジン選択時固定)
 
-- `session_dir`
-- レビュー種別 (`code` / `design` / ...)
-- review_packet (criteria_path + ssot_refs[] + check_order + target_files[])
-- `output_path: review_<種別>.md`
-
-> **なぜ reviewer SKILL.md を読ませるか**: reviewer SKILL.md には出力フォーマットの厳密な仕様 (`1. **[問題名]**: 説明` 形式、`priority: P1/P2/P3` ラベル) が定義されており、このフォーマットに従わないと後続の `extract_review_findings.py` がパースに失敗して指摘事項が 0 件になる。
+reviewer (fork 型 SKILL) は refs.yaml (review_packet) を session_dir から自力 Read し、findings を `review_<種別>.md` に書き出す。
 
 ### Step 3: レビュー結果の統合
 
@@ -449,18 +445,22 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ### 介入軸による分岐 [DES-028 §2.2 / REQ-004 FNC-404]
 
-| 介入軸            | 動作                                                 |
-| ----------------- | ---------------------------------------------------- |
-| `--interactive`   | evaluator → present-findings (段階的提示・人間判断)  |
-| `--auto-critical` | evaluator → fixer (🔴 critical のみ自動修正)         |
-| `--auto`          | evaluator → fixer (全件自動修正・高リスク警告を表示) |
+| 介入軸            | 動作                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `--interactive`   | evaluator → present-findings (段階的提示・人間判断)                                          |
+| `--auto-critical` | evaluator → fixer (🔴 critical のみ自動修正)                                                 |
+| `--auto`          | evaluator → fixer (🔴 critical + 🟡 major を自動修正・🟢 minor は対象外・高リスク警告を表示) |
 
 ### Step 1: evaluator 起動 (1 体のみ)
 
-evaluator も **1 起動**で動作する。Agent ツール (general-purpose) で 1 体起動し、以下を渡す:
+evaluator も **1 起動**で動作する。`/forge:evaluator` を Skill ツール (fork) で 1 体起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
 
-- `session_dir`
-- レビュー種別
+```
+args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
+```
+
+- `session_dir`: セッションディレクトリパス
+- `review_type`: レビュー種別
 - 介入軸フラグ (`--interactive` / `--auto-critical` / `--auto`)
 
 evaluator は以下を必ず実行する:
@@ -488,6 +488,17 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 各セクション内では priority 順 (P1 → P2 → P3) でソートする [DES-028 §4.4]。
 
+### 修正経路分岐表 [SUBAGENT-DES-001 §7]
+
+> **前提**: 本表は **介入軸 `--auto` / `--auto-critical`** での review orchestrator 直接経路を扱う。`--interactive` モードでは present-findings から軽量経路または fork 型 fixer に分岐する。
+
+| # | 経路名             | 起動方法              | context 消費    | 用途                                                 | 適用条件                                                                                           |
+| - | ------------------ | --------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1 | 軽量経路 (FNC-413) | (起動なし、Edit 直接) | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 AND 全 `auto_fixable: true` |
+| 2 | fork 型 fixer 経路 | Skill ツール (fork)   | 遮断            | 件数多 (≥ 4) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
+
+旧経路 (汎用 Agent 起動による fixer) は **廃止**。修正経路は上記 2 種に縮約される。
+
 #### `--auto-critical` / `--auto` 共通: 軽量経路判定 [REQ-004 FNC-413] [MANDATORY]
 
 `--auto-critical` / `--auto` で fixer を呼び出す直前に、orchestrator が plan.yaml の集計から「軽量経路で済むか」を判定する。判定段階では **`review_<種別>.md` は読まない** (判定コストで context を肥大化させないため)。
@@ -514,14 +525,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 #### Step 2-A: 軽量経路 (FNC-413) — orchestrator 直接修正
 
-軽量経路と判定した場合、orchestrator (この SKILL を実行している親 Claude) が直接修正する。fixer (subagent) は呼び出さない。
+軽量経路と判定した場合、orchestrator (この SKILL を実行している親 Claude) が直接修正する。fixer (汎用 Agent) は呼び出さない。
 
 抽出した finding 1 件ごとに以下を順に実行する:
 
 1. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/present-findings/scripts/mark_in_progress.py {session_dir} {id}` を呼び、plan.yaml の該当項目を `status: in_progress` に遷移させる
 2. `{session_dir}/review_<種別>.md` から **該当 finding の修正案セクションのみ** を Read で抜粋する (全文 Read ではなく必要部分のみ)
 3. 抜粋した修正案に従い `Edit` ツールで対象ファイルを直接修正する
-4. `python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}` を呼び、plan.yaml を `status: fixed` に更新する
+
+> **`mark_fixed.py` はここで呼ばない。** plan.yaml の `status: fixed` への遷移は、全件修正完了後に
+> Step 3 (単独修正レビュー) が完了してから orchestrator が呼ぶ責務。
 
 全件処理完了後、修正サマリを以下のフォーマットで出力する:
 
@@ -535,20 +548,37 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 その後、Step 3 (単独修正レビュー) に進む。**Step 3 はスキップしない**: 軽量経路でも reviewer による副作用確認 (`--diff-only`) は必須。
 
-#### Step 2-B: fixer 経路 (従来動作)
+#### Step 2-B: fixer 経路 (fork 型 fixer 経路)
 
-軽量経路に当てはまらない場合、従来どおり fixer (subagent) に修正を委譲する。
+軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す。**介入軸フラグ (`--auto-critical` / `--auto`) は必ず付与する** (Phase 1 で確定した値を透過する):
+
+```
+args: "{session_dir} {review_type} --batch {介入軸フラグ}"
+```
+
+- `session_dir`: セッションディレクトリパス
+- `review_type`: レビュー種別
+- `--batch`: 複数件まとめて修正するモードフラグ
+- 介入軸フラグ: `--auto-critical` または `--auto`。フラグ未指定で fixer を起動すると `(critical + major + minor)` が対象になり意図と食い違うため必須
 
 ##### `--auto-critical`
 
-`/forge:fixer --batch` を Agent ツール (general-purpose) で起動し、`severity: critical` AND `recommendation: fix` の指摘のみを自動修正する。
+```
+args: "{session_dir} {review_type} --batch --auto-critical"
+```
+
+fixer は `severity: critical` AND `recommendation: fix` の指摘のみを自動修正する (fixer SKILL.md §介入軸フラグ表)。
 
 ##### `--auto`
 
-`/forge:fixer --batch` を起動し、`recommendation: fix` の全件を自動修正する。**高リスク・明示警告を表示**してから実行する:
+```
+args: "{session_dir} {review_type} --batch --auto"
+```
+
+fixer は `severity: critical` または `major` の `recommendation: fix` を自動修正する。**`minor` は対象外** (fixer SKILL.md §介入軸フラグ表)。高リスク・明示警告を表示してから実行する:
 
 ```
-⚠️ --auto は全件自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。
+⚠️ --auto は critical / major の自動修正モードです。修正範囲が広いため、十分な動作確認を推奨します。
 ```
 
 ### Step 3: 単独修正レビュー (--auto / --auto-critical のみ)
@@ -556,7 +586,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 fixer が修正した変更差分のみを対象に `/forge:reviewer` を **1 体のみ** 起動して再レビューする (`--diff-only` モード)。
 
 - 修正起因の問題が見つかった場合 → fixer を再起動して修正 (上限 3 回)
-- 問題なし → Step 4 へ
+- 問題なし → 以下の通り plan.yaml を `fixed` に更新してから Step 4 へ
+
+単独修正レビュー完了後、修正が成功した各 finding に対して `mark_fixed.py` を呼ぶ:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}
+```
+
+- 軽量経路 (Step 2-A) の場合: 修正した finding の id と修正ファイルパス一覧を渡す
+- fixer 経路 (Step 2-B) の場合: `patch_result.json` の `patched_ids` と `files_modified` を参照して渡す
 
 ### Step 4: 終了処理
 

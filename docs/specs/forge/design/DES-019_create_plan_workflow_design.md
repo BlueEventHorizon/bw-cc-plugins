@@ -18,13 +18,13 @@
 `/forge:start-plan` は設計書から実装戦略を策定し、タスクを抽出して計画書を作成するオーケストレータスキル。
 文書取得 → 実装戦略策定 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
 
-### SubAgent への委譲
+### 汎用 Agent への委譲
 
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程を subagent に委譲している:
+以下の工程を汎用 Agent (general-purpose) に委譲している:
 
-- 要件定義書・設計書・ルールの収集（コンテキスト収集 agent）
-- 実装戦略の策定（実装戦略 agent — `strategy_formulation_spec.md`）
+- 要件定義書・設計書・ルールの収集（コンテキスト収集 Agent）
+- 実装戦略の策定（実装戦略 Agent — `strategy_formulation_spec.md`）
 - AIレビュー（`/forge:review plan`）
 
 ---
@@ -113,7 +113,7 @@ flowchart TD
 
 | Step | 内容                                                         | 実行者       |
 | ---- | ------------------------------------------------------------ | ------------ |
-| 3.1  | strategy agent 起動（`strategy_formulation_spec.md` を渡す） | SubAgent     |
+| 3.1  | strategy Agent 起動（`strategy_formulation_spec.md` を渡す） | 汎用 Agent   |
 | 3.2  | `strategy_draft.md` を Read してユーザーに提示・承認を取得   | orchestrator |
 | 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置   | orchestrator |
 
@@ -144,9 +144,9 @@ flowchart TD
 
 ### Phase 5: AIレビュー
 
-| Step | 内容                                                            | 実行者              |
-| ---- | --------------------------------------------------------------- | ------------------- |
-| 5.1  | `/forge:review plan {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| Step | 内容                                                                    | 実行者              |
+| ---- | ----------------------------------------------------------------------- | ------------------- |
+| 5.1  | `/forge:review plan --files {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
 
 ### 完了処理
 
@@ -191,20 +191,20 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                     | 説明                         |
-| ------------------------------------------------------------ | ---------------------------- |
-| `plugins/forge/skills/start-plan/SKILL.md`                   | スキル仕様                   |
-| `plugins/forge/docs/strategy_formulation_spec.md`            | 実装戦略 SubAgent 作業指示書 |
-| `plugins/forge/docs/plan_format.md`                          | 計画書テンプレート           |
-| `plugins/forge/docs/plan_principles_spec.md`                 | 計画書作成原則ガイド         |
-| `plugins/forge/docs/spec_format.md`                          | ID分類カタログ               |
-| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md` | ADR: 実装戦略フェーズ導入    |
+| ファイル                                                     | 説明                      |
+| ------------------------------------------------------------ | ------------------------- |
+| `plugins/forge/skills/start-plan/SKILL.md`                   | スキル仕様                |
+| `plugins/forge/docs/strategy_formulation_spec.md`            | 実装戦略 Agent 作業指示書 |
+| `plugins/forge/docs/plan_format.md`                          | 計画書テンプレート        |
+| `plugins/forge/docs/plan_principles_spec.md`                 | 計画書作成原則ガイド      |
+| `plugins/forge/docs/spec_format.md`                          | ID分類カタログ            |
+| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md` | ADR: 実装戦略フェーズ導入 |
 
 ---
 
 ## 改定履歴
 
-| 日付       | 内容                                                                |
-| ---------- | ------------------------------------------------------------------- |
-| 2026-03-14 | 初版作成                                                            |
-| 2026-05-09 | Phase 3（実装戦略策定 SubAgent）追加、Phase 番号繰り下げ（DES-027） |
+| 日付       | 内容                                                             |
+| ---------- | ---------------------------------------------------------------- |
+| 2026-03-14 | 初版作成                                                         |
+| 2026-05-09 | Phase 3（実装戦略策定 Agent）追加、Phase 番号繰り下げ（DES-027） |

@@ -375,13 +375,13 @@ writer script は、成果物ファイルの保存に成功した後で必要に
 
 writer 別の標準更新内容:
 
-| writer / 処理                | 更新タイミング                           | updates                                                                          |
-| ---------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
-| `write_refs.py`              | `refs.yaml` 書き込み成功後               | `phase=context_ready`, `phase_status=completed`, `active_artifact=refs.yaml`     |
-| `extract_review_findings.py` | `review.md` / `plan.yaml` 生成後         | `phase=review_extracted`, `phase_status=completed`, `active_artifact=review.md`  |
-| `merge_evals.py`             | evaluator 結果 merge 成功後              | `phase=evaluation_merged`, `phase_status=completed`, `active_artifact=plan.yaml` |
-| `update_plan.py`             | `plan.yaml` 更新成功後                   | `active_artifact=plan.yaml`                                                      |
-| `write_interpretation.py`    | `review_{perspective}.md` 書き込み成功後 | `active_artifact=review_{perspective}.md`                                        |
+| writer / 処理                | 更新タイミング                    | updates                                                                          |
+| ---------------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `write_refs.py`              | `refs.yaml` 書き込み成功後        | `phase=context_ready`, `phase_status=completed`, `active_artifact=refs.yaml`     |
+| `extract_review_findings.py` | `review.md` / `plan.yaml` 生成後  | `phase=review_extracted`, `phase_status=completed`, `active_artifact=review.md`  |
+| `merge_evals.py`             | evaluator 結果 merge 成功後       | `phase=evaluation_merged`, `phase_status=completed`, `active_artifact=plan.yaml` |
+| `update_plan.py`             | `plan.yaml` 更新成功後            | `active_artifact=plan.yaml`                                                      |
+| `write_interpretation.py`    | `review_<種別>.md` 書き込み成功後 | `active_artifact=review_<種別>.md`                                               |
 
 ### 6.3 session 読み取りの共通化
 

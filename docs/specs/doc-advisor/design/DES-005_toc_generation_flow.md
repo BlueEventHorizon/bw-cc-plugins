@@ -52,12 +52,12 @@ flowchart LR
 
 ### モード一覧
 
-| モード         | トリガー                                             | 動作                             |
-| -------------- | ---------------------------------------------------- | -------------------------------- |
-| `full`         | `--full` オプション または ToC 未存在                | 全ファイルスキャン、ToC 新規生成 |
-| `incremental`  | デフォルト                                           | 変更ファイルのみ処理、差分マージ |
-| `continuation` | `.claude/doc-advisor/toc/{target}/.toc_work/` が存在 | 中断された処理を再開             |
-| `delete-only`  | 変更0件、削除あり                                    | 削除のみ反映（subagent 不要）    |
+| モード         | トリガー                                             | 動作                                |
+| -------------- | ---------------------------------------------------- | ----------------------------------- |
+| `full`         | `--full` オプション または ToC 未存在                | 全ファイルスキャン、ToC 新規生成    |
+| `incremental`  | デフォルト                                           | 変更ファイルのみ処理、差分マージ    |
+| `continuation` | `.claude/doc-advisor/toc/{target}/.toc_work/` が存在 | 中断された処理を再開                |
+| `delete-only`  | 変更0件、削除あり                                    | 削除のみ反映（カスタム Agent 不要） |
 
 ### モード判定フロー
 
@@ -223,7 +223,7 @@ def calculate_file_hash(filepath):
 | -------- | ---------------------------------------------- |
 | N=0, M=0 | 処理終了（変更なし）                           |
 | N=0, M>0 | delete-only モード（マージスクリプトのみ実行） |
-| N>0      | pending YAML 生成 → subagent → マージ          |
+| N>0      | pending YAML 生成 → カスタム Agent → マージ    |
 
 **N** = 新規 + 変更ファイル数、**M** = 削除ファイル数
 
@@ -233,8 +233,8 @@ def calculate_file_hash(filepath):
 
 ### 設計思想
 
-1. **1ファイル = 1 subagent**: 各ドキュメントを独立して処理
-2. **永続的成果物**: subagent の出力をファイルとして保存
+1. **1ファイル = 1 カスタム Agent**: 各ドキュメントを `doc-advisor:toc-updater` カスタム Agent で独立処理
+2. **永続的成果物**: カスタム Agent の出力をファイルとして保存
 3. **中断耐性**: 完了分は保持、未完了分から再開可能
 4. **並列効率**: 最大5並列で処理時間を短縮
 
@@ -274,7 +274,7 @@ _meta:
   status: pending # pending | completed
   updated_at: null # 完了時刻
 
-# 以下は subagent が埋める
+# 以下はカスタム Agent (toc-updater) が埋める
 title: null
 purpose: null
 content_details: []
@@ -554,7 +554,7 @@ flowchart TD
 
 ### ボトルネック
 
-1. **LLM API 呼び出し**: subagent の処理時間の大部分
+1. **LLM API 呼び出し**: カスタム Agent の処理時間の大部分
 2. **ファイル I/O**: ハッシュ計算、YAML 読み書き
 3. **マージ処理**: 大量エントリの結合
 
@@ -576,16 +576,16 @@ flowchart TD
 | `create-rules-toc`, `create-specs-toc` | **Skill** (fork なし)       | ユーザー呼び出し (`/create-*-toc`) が必要。agent を並列起動するため fork 不可                            |
 | `toc-updater`                          | **Agent**                   | ツール制限 (`Read, Bash` のみ)、並列起動、system prompt の確実性が必要。`--category rules\|specs` で分岐 |
 
-### 重要な制約: fork と subagent の関係
+### 重要な制約: fork 型 SKILL と Agent の関係
 
 ```
-メイン会話 ─── skill (fork なし) ──→ Task(agent) ✅ 可能
-メイン会話 ─── skill (fork あり) ──→ Task(agent) ❌ 不可能
-                                      ↑ subagent は他の subagent を起動できない
+メイン会話 ─── 継承型 SKILL ──→ Agent ツール (汎用/カスタム Agent) ✅ 可能
+メイン会話 ─── fork 型 SKILL ──→ Agent ツール (汎用/カスタム Agent) ❌ 不可能
+                                  ↑ fork 型 SKILL は Agent を起動できない
 ```
 
-このため、orchestrator (`create-*-toc`) は fork **しない**（agent を並列起動するため）。
-検索 (`query-*`) は fork **する**（agent 起動不要、コンテキスト隔離が有益）。
+このため、orchestrator (`create-*-toc`) は fork **しない**（カスタム Agent を並列起動するため）。
+検索 (`query-*`) は fork **する**（Agent 起動不要、コンテキスト隔離が有益）。
 
 ---
 

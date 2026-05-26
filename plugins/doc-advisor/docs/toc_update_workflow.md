@@ -13,14 +13,14 @@ applicable_when:
 
 ## Overview
 
-Workflow for updating `.claude/doc-advisor/toc/{category}/{category}_toc.yaml`. Uses **individual entry file method**, processing each document with independent subagents.
+Workflow for updating `.claude/doc-advisor/toc/{category}/{category}_toc.yaml`. Uses **individual entry file method**, processing each document with independent custom Agents (`doc-advisor:toc-updater`).
 
 ## Architecture
 
 ### Design Philosophy
 
-- **1 file = 1 subagent**: Process each document individually
-- **Persistent artifacts**: Each subagent's output remains as a file
+- **1 file = 1 custom Agent**: Process each document individually via `doc-advisor:toc-updater` custom Agent
+- **Persistent artifacts**: Each custom Agent's output remains as a file
 - **Resumable**: Completed work is preserved on interruption, resume from incomplete
 - **Single Source of Truth**: Format definition consolidated in `toc_format.md`
 
@@ -98,7 +98,7 @@ Generate templates in `.toc_work/` for each target file.
 
 Read `.claude/doc-advisor/toc/{category}/.toc_work/*.yaml` and identify files with `_meta.status: pending`
 
-### Step 2.2: Launch subagents in parallel
+### Step 2.2: Launch custom Agents in parallel
 
 **Parallel count**: Default 5 (defined in toc_utils.py)
 
@@ -109,9 +109,9 @@ Task(subagent_type: doc-advisor:toc-updater, prompt: "category: {category}, entr
 ... (up to max_workers simultaneous)
 ```
 
-### Step 2.3: Subagent processing
+### Step 2.3: Custom Agent processing
 
-Each subagent (doc-advisor:toc-updater) executes:
+Each custom Agent (`doc-advisor:toc-updater`) executes:
 
 1. Read `entry_file`
 2. Get document path from `_meta.source_file`
@@ -188,7 +188,7 @@ Check before merge:
 
 ## Error Handling
 
-### On subagent error
+### On custom Agent error
 
 - Keep `_meta.status` as `pending` (do NOT use `error` status)
 - Record error content in `_meta.error_message`
@@ -220,5 +220,5 @@ After generation/update, verify:
 ## Related Files
 
 - `toc_format.md` - Format definition (YAML schema)
-- `agents/toc-updater.md` - Single file processing subagent
+- `agents/toc-updater.md` - Single file processing custom Agent definition
 - `doc-advisor/docs/toc_orchestrator.md` - Orchestrator workflow

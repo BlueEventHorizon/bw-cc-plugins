@@ -71,7 +71,7 @@ DES-001 / ADR-001 から把握した実装対象:
 - **目標**:
   - `plugins/forge/skills/{query-db-rules, query-db-specs, update-db-rules, update-db-specs}/SKILL.md` 4 件が新設され、§8.1 frontmatter テンプレ通りに記述される（version 編集なし）
   - 各 SKILL.md は「available-skills を LLM が読む → Bash で `select_backend.py` 呼出 → JSON 結果を解釈し `Skill` ツールで該当バックエンド起動」のシンプル構造に統一され、SKILL.md 内に分岐テーブルを複製していない
-  - query 系 2 SKILL の SKILL.md が B 層・C 層多重防御契約（read-only 制約 / バックエンド検索 SKILL 以外の Skill 起動禁止 / `/doc-db:build-index` 等の書き込み系起動禁止 / 引数解釈 [MANDATORY] / 自己再帰禁止 / 出力契約 `Required documents:`）を doc-advisor:ADR-002_query_skill_subagent_isolation / §3.1 subagent 契約に従って明記する
+  - query 系 2 SKILL の SKILL.md が B 層・C 層多重防御契約（read-only 制約 / バックエンド検索 SKILL 以外の Skill 起動禁止 / `/doc-db:build-index` 等の書き込み系起動禁止 / 引数解釈 [MANDATORY] / 自己再帰禁止 / 出力契約 `Required documents:`）を doc-advisor:ADR-002_query_skill_subagent_isolation / §3.1 SKILL 契約に従って明記する
   - 雛形は **継承型に変更済みの** `plugins/forge/skills/query-forge-rules/SKILL.md` 構造（fork 関連 frontmatter を引き継がないため）
   - `plugins/forge/.claude-plugin/plugin.json` の `skills` リストに新規 4 件が追加される（**`version` フィールドは編集しない**、§8.3）
   - `tests/common/test_query_skill_isolation.py` の `CONSTRAINT_TARGET_SKILLS` に新規 2 SKILL（query-db-rules / query-db-specs）を追加して継承型整合（`context: fork` 不在 / Role 制約文言 / 引数解釈セクション存在 / Output Format 先頭契約）を機械検証して合格する。`FORK_TARGET_SKILLS` には追加しない

@@ -297,9 +297,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/create_checksums.py --category {category}
 - Resume from pending files
 - If all completed → Proceed to merge
 
-### On Subagent Error
+### On Custom Agent Error
 
-The doc-advisor:toc-updater subagent writes error information to the YAML file (status remains `pending`) before returning `❌ Error`.
+The `doc-advisor:toc-updater` custom Agent writes error information to the YAML file (status remains `pending`) before returning `❌ Error`.
 The orchestrator does NOT need to edit the YAML — just log the error and continue.
 
 1. Log the error file in the completion report

@@ -256,7 +256,7 @@ AskUserQuestion:
 ```
 以下のコマンドを実行します:
 
-  /forge:review code src/ --claude --auto 3
+  /forge:review code --files src/foo.py,src/bar.py --claude --auto
 
 実行しますか？
 - 実行する
