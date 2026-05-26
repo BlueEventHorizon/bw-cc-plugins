@@ -211,7 +211,7 @@ Phase 2: 設計書の作成 [MANDATORY]
 └── 2.3: 設計書の作成（ファイルごとに AskUserQuestion [MANDATORY]）
 
 Phase 3: AIレビュー（FNC-006 準拠）
-└── /forge:review design {差分ファイル} --auto
+└── /forge:review design --files {差分ファイル} --auto
 
 Phase 4: 品質保証
 └── 完全性チェック
@@ -261,7 +261,7 @@ Phase 2: 計画書の作成・更新 [MANDATORY]
 └── 2.4: 完全性チェック [MANDATORY]
 
 Phase 3: AIレビュー [MANDATORY]（FNC-006 準拠: --auto モード）
-└── /forge:review plan {差分ファイル} --auto
+└── /forge:review plan --files {差分ファイル} --auto
 
 完了処理
 ├── /create-specs-toc（利用可能な場合）
@@ -324,7 +324,7 @@ Mode: from-figma
 └── Phase 5: 品質確認
 
 Phase: AIレビュー（FNC-006 準拠）
-└── /forge:review requirement {差分ファイル} --auto
+└── /forge:review requirement --files {差分ファイル} --auto
 
 完了処理
 ├── /create-specs-toc（利用可能な場合）

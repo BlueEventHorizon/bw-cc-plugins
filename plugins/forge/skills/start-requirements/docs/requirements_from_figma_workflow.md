@@ -222,7 +222,7 @@ Figma から抽出した画像の扱い:
 ### 5.3 AI レビュー実施 [MANDATORY]
 
 ```
-/forge:review requirement {作成ファイルパス} --auto
+/forge:review requirement --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

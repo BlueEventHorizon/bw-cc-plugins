@@ -2,13 +2,21 @@
 """
 TEST-S005: Agent prompt として展開されるテキストブロック内に /forge:<skill> / /anvil:<skill>
 表記がある場合、近傍 5 行以内 (前後) に起動経路の明示があること。
+baseline 警告数を超えたら fail する回帰防止テスト。
 
 - テキストブロック境界 = ``` コードブロック (fenced)
 - 起動経路の明示: "汎用 Agent" / "継承型 SKILL" / "fork 型 SKILL" / "Bash subprocess"
   / "Skill ツール" / "Agent ツール"
 - [KNOWN-FP] マーカー付きは除外
 - review 配下の reviewer/SKILL.md は対象外 (fork 型に構造的解消済み)
-- CI を fail させない warning 段階のテスト
+
+設計意図:
+    現状の SKILL 群には起動経路の明示が伴わない /forge:* / /anvil:* 表記が
+    多く残っており、これらは多くが「ユーザーが入力するコマンド構文の例示」
+    で正当な使い方。即時の完全除去は実用的ではないため baseline 方式を採用。
+    警告数が現状を超えた時点で fail させることで、AI が誤読する経路 (Issue
+    #32) が新規に混入していないかを回帰として検出する。違反を解消したら
+    EXPECTED_MAX_WARNINGS を下げて baseline を引き締める。
 
 実行:
     python3 -m unittest tests.forge.subagent.test_slash_command_launch_context -v
@@ -35,6 +43,10 @@ _SKILL_CALL_RE = re.compile(r'/(forge|anvil):[a-z]')
 
 # review 配下は構造的解消済みのため対象外
 _EXCLUDED_SKILLS = {'reviewer'}
+
+# baseline 警告数 (2026-05-26 時点で 45 件)。違反を解消したらこの値を下げる。
+# 新規違反が混入して警告数がこれを超えると fail する (回帰防止)。
+EXPECTED_MAX_WARNINGS = 45
 
 
 def _check_file(skill_path: Path) -> list[str]:
@@ -86,9 +98,9 @@ def _check_file(skill_path: Path) -> list[str]:
 
 
 class TestSlashCommandLaunchContext(unittest.TestCase):
-    """TEST-S005: prompt ブロック内の /forge: 呼び出しに起動経路明示があること (warning 段階)。"""
+    """TEST-S005: prompt ブロック内の /forge: 呼び出しに起動経路明示があることを baseline 方式で検証する。"""
 
-    def test_warn_missing_launch_context(self) -> None:
+    def test_baseline_launch_context_warnings(self) -> None:
         skill_files = sorted(SKILLS_DIR.glob('*/SKILL.md'))
         self.assertGreater(len(skill_files), 0, 'SKILL.md が 1 件も見つからない')
 
@@ -98,14 +110,19 @@ class TestSlashCommandLaunchContext(unittest.TestCase):
 
         if all_warnings:
             print(
-                '\n[TEST-S005 WARNING] prompt ブロック内の /forge: 呼び出しに起動経路記述がありません '
-                '(CI は fail しません):\n'
+                f'\n[TEST-S005] prompt ブロック内 /forge: 呼び出しの起動経路未明示 '
+                f'{len(all_warnings)} 件 (baseline={EXPECTED_MAX_WARNINGS}):\n'
                 + '\n'.join(f'  - {w}' for w in all_warnings),
                 file=sys.stderr,
             )
 
-        # assertion なし — warning のみ
-        self.assertTrue(True)
+        self.assertLessEqual(
+            len(all_warnings),
+            EXPECTED_MAX_WARNINGS,
+            f'警告数が baseline ({EXPECTED_MAX_WARNINGS}) を超えました '
+            f'({len(all_warnings)} 件)。新規に prompt ブロック内の起動経路未明示が '
+            f'追加されていないか確認し、解消後は EXPECTED_MAX_WARNINGS を下げてください。',
+        )
 
 
 if __name__ == '__main__':

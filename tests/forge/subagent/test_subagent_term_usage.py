@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-TEST-S004: SKILL.md 内で "subagent" が単独で使われている箇所を列挙 (warning)。
+TEST-S004: SKILL.md 内で "subagent" が単独で使われている箇所を列挙し、
+baseline 警告数を超えたら fail する回帰防止テスト。
 
 "subagent_type" や "サブエージェント" などの複合表現は検査対象外。
-CI を fail させない warning 段階のテスト。
+
+設計意図:
+    現状の SKILL 群には旧来の "subagent" 単独表記が残存しており、即時の
+    完全除去は困難。そこで baseline 方式を採用し、警告数が現状を超えた
+    時点で fail させることで「新規違反の混入」を回帰として検出する。
+    違反を解消したら EXPECTED_MAX_WARNINGS を下げて baseline を引き締める。
 
 実行:
     python3 -m unittest tests.forge.subagent.test_subagent_term_usage -v
@@ -20,6 +26,10 @@ SKILLS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills'
 # "subagent" が単独で使われているパターン
 # subagent_type / SubAgent (先頭大文字) / sub-agent 等の複合形は除外
 _STANDALONE_RE = re.compile(r'\bsubagent\b(?!_type)', re.IGNORECASE)
+
+# baseline 警告数 (2026-05-26 時点で 8 件)。違反を解消したらこの値を下げる。
+# 新規違反が混入して警告数がこれを超えると fail する (回帰防止)。
+EXPECTED_MAX_WARNINGS = 8
 
 # fenced コードブロック内は除外
 def _strip_code_blocks(body: str) -> str:
@@ -59,9 +69,9 @@ def _collect_warnings(skill_path: Path) -> list[str]:
 
 
 class TestSubagentTermUsage(unittest.TestCase):
-    """TEST-S004: "subagent" の単独使用を warning レベルで報告 (CI は fail させない)。"""
+    """TEST-S004: "subagent" の単独使用を baseline 方式で検証する。"""
 
-    def test_warn_standalone_subagent(self) -> None:
+    def test_baseline_standalone_subagent(self) -> None:
         skill_files = sorted(SKILLS_DIR.glob('*/SKILL.md'))
         self.assertGreater(len(skill_files), 0, 'SKILL.md が 1 件も見つからない')
 
@@ -71,14 +81,19 @@ class TestSubagentTermUsage(unittest.TestCase):
 
         if all_warnings:
             print(
-                '\n[TEST-S004 WARNING] "subagent" の単独使用が検出されました '
-                '(CI は fail しません):\n'
+                f'\n[TEST-S004] "subagent" の単独使用 {len(all_warnings)} 件 '
+                f'(baseline={EXPECTED_MAX_WARNINGS}):\n'
                 + '\n'.join(f'  - {w}' for w in all_warnings),
                 file=sys.stderr,
             )
 
-        # assertion なし — warning のみ報告するため常に pass
-        self.assertTrue(True)
+        self.assertLessEqual(
+            len(all_warnings),
+            EXPECTED_MAX_WARNINGS,
+            f'警告数が baseline ({EXPECTED_MAX_WARNINGS}) を超えました '
+            f'({len(all_warnings)} 件)。新規に "subagent" の単独使用が追加されて '
+            f'いないか確認し、解消後は EXPECTED_MAX_WARNINGS を下げてください。',
+        )
 
 
 if __name__ == '__main__':

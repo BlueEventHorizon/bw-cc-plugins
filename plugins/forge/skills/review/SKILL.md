@@ -44,7 +44,7 @@ hooks:
 /forge:review code --diff --interactive            # 上の明示形
 /forge:review design --files specs/login_design.md # 指定ファイル全文 × 段階的提示
 /forge:review code --auto-critical                 # 🔴致命的のみ自動修正
-/forge:review code --files src/foo.py,src/bar.py --auto  # 指定ファイル全件自動修正
+/forge:review code --files src/foo.py,src/bar.py --auto  # 指定ファイル × critical+major 自動修正 (minor は対象外)
 /forge:review requirement --files login_req.md --claude  # Claude エンジン
 ```
 
@@ -92,7 +92,7 @@ CLI の位置引数は **種別 1 個のみ**。Feature 名・ディレクトリ
 | **DROP 済みフラグ**: `--section` / `--scope` / `--depth` / `--auto N` (件数指定)     | `<flag> は DROP 済みのフラグです。DES-028 §2.2 / REQ-004 FNC-410 を参照してください`         |
 | **未知の種別**: 位置引数が 6 種別 (code/design/requirement/plan/uxui/generic) 以外   | `不明な種別です。code/design/requirement/plan/uxui/generic から選んでください`               |
 
-> **注意**: `--auto N` (件数指定) は REQ-004 FNC-404 で **仕様 DROP** された。介入モードは「対話 / 🔴 のみ / 全件」の 3 つに限定する。
+> **注意**: `--auto N` (件数指定) は REQ-004 FNC-404 で **仕様 DROP** された。介入モードは「対話 (`--interactive`) / 🔴 のみ (`--auto-critical`) / 🔴🟡 (`--auto`, minor は対象外)」の 3 つに限定する。
 
 #### ブランチ確認 [MANDATORY]
 
@@ -445,11 +445,11 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ### 介入軸による分岐 [DES-028 §2.2 / REQ-004 FNC-404]
 
-| 介入軸            | 動作                                                 |
-| ----------------- | ---------------------------------------------------- |
-| `--interactive`   | evaluator → present-findings (段階的提示・人間判断)  |
-| `--auto-critical` | evaluator → fixer (🔴 critical のみ自動修正)         |
-| `--auto`          | evaluator → fixer (全件自動修正・高リスク警告を表示) |
+| 介入軸            | 動作                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `--interactive`   | evaluator → present-findings (段階的提示・人間判断)                                          |
+| `--auto-critical` | evaluator → fixer (🔴 critical のみ自動修正)                                                 |
+| `--auto`          | evaluator → fixer (🔴 critical + 🟡 major を自動修正・🟢 minor は対象外・高リスク警告を表示) |
 
 ### Step 1: evaluator 起動 (1 体のみ)
 

@@ -68,11 +68,11 @@ reviewer が出力した `review_<種別>.md` の finding を吟味し、`recomm
 
 呼び出し元 (`/forge:review`) から以下を受け取る:
 
-| 項目          | 必須 | 説明                                                                                                  |
-| ------------- | ---- | ----------------------------------------------------------------------------------------------------- |
-| `session_dir` | 必須 | セッションワーキングディレクトリのパス                                                                |
-| 種別 (`kind`) | 必須 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                       |
-| 介入軸フラグ  | 必須 | `--interactive` (全件 AI 推奨) / `--auto-critical` (severity=critical のみ fix) / `--auto` (全件 fix) |
+| 項目          | 必須 | 説明                                                                                                                                                                             |
+| ------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_dir` | 必須 | セッションワーキングディレクトリのパス                                                                                                                                           |
+| 種別 (`kind`) | 必須 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                                                                                  |
+| 介入軸フラグ  | 必須 | `--interactive` (全 severity に AI 推奨を付与) / `--auto-critical` (severity=critical のみ fix 推奨) / `--auto` (severity=critical + major のみ fix 推奨、minor は out_of_scope) |
 
 ※ レビュー結果は `{session_dir}/review_<種別>.md` から読む。
 ※ 参考文書・対象ファイル・related_code・review_packet はすべて `{session_dir}/refs.yaml` から読む。
