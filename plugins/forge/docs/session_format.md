@@ -639,7 +639,7 @@ related_code:
 
 ### plan.yaml — 修正プランと進捗状態
 
-修正プランと各指摘事項の進捗状態。`reviewer` が初期作成し、`evaluator` / `present-findings` / `fixer` が更新していく。セッション再開の際は `status: pending` の項目から処理を再開する。
+修正プランと各指摘事項の進捗状態。`reviewer` が初期作成し、`evaluator` / `present-findings` / `review` オーケストレーターが更新していく。セッション再開の際は `status: pending` の項目から処理を再開する。
 
 #### スキーマ
 
@@ -670,7 +670,7 @@ related_code:
 | -------------- | ---------------- | -------------------------------- |
 | `pending`      | 未処理（初期値） | `reviewer`                       |
 | `in_progress`  | 処理中           | `present-findings`               |
-| `fixed`        | 修正完了         | `fixer`                          |
+| `fixed`        | 修正完了         | `review` / `present-findings`    |
 | `skipped`      | スキップ         | `evaluator` / `present-findings` |
 | `needs_review` | 要確認           | `evaluator` / `present-findings` |
 
@@ -716,12 +716,13 @@ items:
 
 #### 読み書き
 
-| スキル             | 操作                                                                                   | タイミング     |
-| ------------------ | -------------------------------------------------------------------------------------- | -------------- |
-| `reviewer`         | Write（初期作成 — 全件 `pending`）                                                     | レビュー完了後 |
-| `evaluator`        | Write → `eval_<種別>.json`（orchestrator が `merge_evals.py` で plan.yaml を一括更新） | 判定完了後     |
-| `present-findings` | Read / Write（ユーザー判断後に更新）                                                   | 対話時         |
-| `fixer`            | Write（`fixed` + `fixed_at` + `files_modified`）                                       | 修正完了後     |
+| スキル             | 操作                                                                                                         | タイミング     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ | -------------- |
+| `reviewer`         | Write（初期作成 — 全件 `pending`）                                                                           | レビュー完了後 |
+| `evaluator`        | Write → `eval_<種別>.json`（orchestrator が `merge_evals.py` で plan.yaml を一括更新）                       | 判定完了後     |
+| `present-findings` | Read / Write（ユーザー判断後に更新）                                                                         | 対話時         |
+| `fixer`            | Write（`patch_result.json` に `patched_ids` + `files_modified` を記録。plan.yaml の `fixed` 遷移は行わない） | 修正実行後     |
+| `review`           | Write（単独修正レビュー完了後に `fixed` + `fixed_at` + `files_modified` を反映）                             | 自動修正後     |
 
 `extract_review_findings.py {session_dir}` は `review_<種別>.md` を解析して `review.md`（統合サマリー） / `plan.yaml` を生成する。`--review-only` は `plan.yaml` を保護する再生成モードであり、`review.md` のみ書き出す。
 
