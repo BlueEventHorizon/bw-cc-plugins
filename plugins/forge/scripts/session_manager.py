@@ -145,6 +145,8 @@ def _auto_cleanup_on_init():
     （誤削除防止）。in_progress の時間ベース回収は手動 `cleanup-stale` に委ねる。
 
     cleanup に失敗しても init 本体を妨げないよう、例外は捕捉して warning を返す。
+    回収は best-effort であり、セッション作成（ユーザー作業）を絶対にブロックしない契約のため、
+    捕捉範囲は意図的に広い（壊れた session.yaml 由来の予期しない例外も握りつぶす）。
     """
     try:
         return _cleanup_stale_core(
@@ -153,7 +155,7 @@ def _auto_cleanup_on_init():
             dry_run=False,
             completed_only=True,
         )
-    except OSError as e:
+    except Exception as e:  # noqa: BLE001 - fail-open 契約のため意図的に広く捕捉
         msg = f"自動 cleanup に失敗しました: {e}"
         print(f"[forge session] warning: {msg}", file=sys.stderr)
         return {"error": msg}
@@ -291,13 +293,20 @@ def _parse_iso_ts(ts):
 
     yaml_utils.now_iso() の出力 (`%Y-%m-%dT%H:%M:%SZ`) との往復に加え、
     手書きセッションへの後方互換として `+00:00` も受理する。
+
+    tz 情報のない naive 文字列（例: 手書き `2026-01-01T00:00:00`）は UTC とみなす。
+    これを怠ると aware な `datetime.now(timezone.utc)` との減算で TypeError になり、
+    `cleanup-stale` / `init` 自動回収が落ちる（#93 レビュー指摘）。
     """
     if not ts:
         return None
     try:
-        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-    except ValueError:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
         return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def _cleanup_stale_core(cutoff_hours, skill_filter, dry_run, completed_only=False):

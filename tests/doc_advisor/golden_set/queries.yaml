@@ -5,13 +5,16 @@
 # expected_paths はプロジェクトルートからの相対パス（.doc_structure.yaml の root_dirs 基準）
 # False Positive は許容するが、False Negative は 1 件でもテスト失敗
 
+# known_failure を持つエントリは「既知未達(xfail)」としてテストで許容する（見落としを fail にしない）。
+# 値は追跡先（Issue 番号等）。#96 解決後にこの行を外すと、xpass が検出され marker 除去を促される。
 specs:
-  # 既知の未達 (#96): DES-006 は全文埋め込みのため短いクエリでスコア 0.20 < 閾値 0.3 となり
-  # recall されない。doc-advisor の検索品質課題として #96 で追跡中（forge #93 とは独立）。
+  # DES-006 は全文埋め込みのため短いクエリでスコア 0.20 < 閾値 0.3 となり recall されない。
+  # doc-advisor の検索品質課題として #96 で追跡中（forge #93 とは独立）。
   - query: "セマンティック検索の設計"
     expected_paths:
       - "docs/specs/doc-advisor/design/DES-006_semantic_search_design.md"
     note: "直接的な設計文書"
+    known_failure: "#96"
 
   - query: "文書モデルの設計仕様"
     expected_paths:

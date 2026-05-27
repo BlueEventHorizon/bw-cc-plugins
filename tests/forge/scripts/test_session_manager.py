@@ -17,6 +17,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
 from session_manager import (
     SESSION_FIELD_ORDER,
     TEMP_BASE,
+    _parse_iso_ts,
     cmd_cleanup,
     cmd_cleanup_stale,
     cmd_complete,
@@ -200,6 +202,25 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(result["auto_count"], 3)
         self.assertIsInstance(result["auto_count"], int)
 
+    def test_parse_iso_ts_z_is_aware(self):
+        """Z 表記は aware datetime（tzinfo あり）になる"""
+        dt = _parse_iso_ts("2026-01-01T00:00:00Z")
+        self.assertIsNotNone(dt)
+        self.assertIsNotNone(dt.tzinfo)
+
+    def test_parse_iso_ts_naive_normalized_to_utc(self):
+        """tz なし naive 文字列は UTC として aware 化される（#93 レビュー指摘）"""
+        dt = _parse_iso_ts("2026-01-01T00:00:00")
+        self.assertIsNotNone(dt)
+        self.assertIsNotNone(dt.tzinfo)
+        self.assertEqual(dt.utcoffset().total_seconds(), 0)
+
+    def test_parse_iso_ts_invalid_returns_none(self):
+        """パース不能な文字列は None（skipped に分類される）"""
+        self.assertIsNone(_parse_iso_ts("not-a-date"))
+        self.assertIsNone(_parse_iso_ts(""))
+        self.assertIsNone(_parse_iso_ts(None))
+
 
 class TestValidateTempPath(_FsTestCase):
     """validate_temp_path のテスト"""
@@ -341,6 +362,40 @@ class TestCmdInit(_FsTestCase):
         self.assertTrue(os.path.isdir(result["session_dir"]))
         deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
         self.assertNotIn(result["session_dir"], deleted_paths)
+
+    def test_auto_cleanup_handles_naive_timestamp(self):
+        """naive(tzなし) timestamp の completed 残骸でも init がクラッシュしない（#93 レビュー指摘）。
+
+        naive datetime と aware な now の減算は TypeError を投げるため、回帰防止する。
+        """
+        session_dir = os.path.join(TEMP_BASE, "start-plan-naive")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-plan",
+             "started_at": "2026-01-01T00:00:00",  # tz 情報なし（手書き想定）
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "completed"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        result = cmd_init(self._make_args("review"), [])
+        self.assertEqual(result["status"], "created")
+        # naive completed 残骸を UTC とみなして回収できる
+        self.assertFalse(os.path.exists(session_dir))
+        deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
+        self.assertIn(session_dir, deleted_paths)
+
+    def test_auto_cleanup_failure_does_not_block_init(self):
+        """自動回収が予期せぬ例外を投げても init は成功する（fail-open 契約、#93 レビュー指摘）"""
+        import session_manager
+        with mock.patch.object(
+            session_manager, "_cleanup_stale_core",
+            side_effect=RuntimeError("予期しないエラー"),
+        ):
+            result = cmd_init(self._make_args("review"), [])
+        self.assertEqual(result["status"], "created")
+        self.assertTrue(os.path.isdir(result["session_dir"]))
+        self.assertIn("error", result["auto_cleanup"])
 
 
 # =========================================================================
@@ -805,6 +860,40 @@ class TestCmdCleanupStale(_FsTestCase):
 
         self.assertEqual(result["status"], "ok")
         self.assertFalse(os.path.exists(stale_in_progress))
+
+    def test_naive_timestamp_treated_as_utc(self):
+        """tz 情報なし naive timestamp を UTC とみなし TypeError で落ちない（#93 レビュー指摘）"""
+        session_dir = os.path.join(TEMP_BASE, "start-design-naive")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-design",
+             "started_at": "2026-01-01T00:00:00",
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "completed"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        # 例外を出さず、completed は age 無視で削除される
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+        self.assertEqual(result["status"], "ok")
+        self.assertFalse(os.path.exists(session_dir))
+
+    def test_naive_in_progress_timestamp_handled(self):
+        """naive な in_progress も TypeError を出さず age 判定される（#93）"""
+        session_dir = os.path.join(TEMP_BASE, "start-plan-naive-ip")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-plan",
+             "started_at": "2026-01-01T00:00:00",
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "in_progress"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        # 2026-01-01 は十分過去なので 48h 超過で削除対象（例外なく処理される）
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+        self.assertEqual(result["status"], "ok")
+        self.assertFalse(os.path.exists(session_dir))
 
 
 # =========================================================================
