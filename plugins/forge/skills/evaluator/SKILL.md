@@ -336,7 +336,7 @@ EOF
 
 以下のルールで各項目の更新内容を決定する:
 
-- `recommendation: fix` → `status: pending` のまま (fixer が後で `fixed` にする)。`auto_fixable` と `reason` を付与
+- `recommendation: fix` → `status: pending` のまま (修正実行後、呼び出し元が単独修正レビュー完了後に `fixed` にする)。`auto_fixable` と `reason` を付与
 - `recommendation: create_issue` → `status: pending` のまま (present-findings が `/anvil:create-issue` 連携で `issued` に遷移)。`reason` に FNC-406 3 条件成立根拠を付与
 - `recommendation: skip` → `status: skipped` / `skip_reason` と `reason` を記録
 - `recommendation: needs_review` → `status: needs_review` / `reason` を記録

@@ -592,12 +592,15 @@ observation 軸 (P1/P2/P3) と精査軸 (5 観点) は **直交**。同一 findi
 
 ##### fixer 経路の手順
 
-| 手順 | 操作                                                                                       |
-| ---- | ------------------------------------------------------------------------------------------ |
-| 1    | review SKILL → `/forge:fixer --batch` (Agent ツール / general-purpose) を起動              |
-|      | present-findings → 「段階的に解決」: `/forge:fixer --single` / 「✅を一括修正」: `--batch` |
-| 2    | fixer が refs.yaml / plan.yaml / `review_<種別>.md` を Read し、汎用 Agent に修正を委譲    |
-| 3    | fixer が mark_fixed.py で plan.yaml を更新                                                 |
+| 手順 | 操作                                                                                                                                        |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 呼び出し元 (review / present-findings) が `/forge:fixer` を Skill ツール (fork) で起動する                                                  |
+|      | review: `args: "{session_dir} {review_type} --batch {介入軸フラグ}"`                                                                        |
+|      | present-findings single: `args: "{session_dir} {review_type} --single {id}"`                                                                |
+|      | present-findings batch: `args: "{session_dir} {review_type} --batch"`                                                                       |
+| 2    | fixer は構造化引数の `session_dir` から refs.yaml / plan.yaml / `review_<種別>.md` を Read し、fork 型 SKILL 自身が Edit/Write で修正を行う |
+| 3    | fixer は `patch_result.json` に `patched_ids` / `files_modified` を書き出して return する。plan.yaml の `fixed` 遷移は行わない              |
+| 4    | 呼び出し元が単独修正レビュー完了後に `mark_fixed.py` を呼び、plan.yaml を `status: fixed` に更新する                                        |
 
 ##### 除外規定
 

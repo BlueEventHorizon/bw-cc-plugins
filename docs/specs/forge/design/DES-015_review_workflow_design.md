@@ -164,12 +164,13 @@ extract 完了後、orchestrator が `/forge:evaluator` を起動する。evalua
 
 #### `--auto-critical` / `--auto`
 
-| Step | 内容                                                                                                                        | 委譲先                                                                |
-| ---- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 1    | 軽量経路判定 (FNC-413): `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 + 全 `auto_fixable: true` か | orchestrator                                                          |
-| 2a   | 軽量経路: `mark_in_progress.py` → orchestrator の `Edit` 直接修正 → `mark_fixed.py`                                         | orchestrator                                                          |
-| 2b   | fixer 経路: 一括修正                                                                                                        | `/forge:fixer --batch`（plan.yaml から `recommendation: fix` を抽出） |
-| 3    | 再レビュー                                                                                                                  | `/forge:reviewer`（fixer の変更差分のみ）                             |
+| Step | 内容                                                                                                                        | 委譲先                                                                                                                 |
+| ---- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1    | 軽量経路判定 (FNC-413): `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 + 全 `auto_fixable: true` か | orchestrator                                                                                                           |
+| 2a   | 軽量経路: `mark_in_progress.py` → orchestrator の `Edit` 直接修正                                                           | orchestrator                                                                                                           |
+| 2b   | fixer 経路: 一括修正                                                                                                        | Skill ツール (fork) で `/forge:fixer` (`args: "{session_dir} {review_type} --batch {介入軸フラグ}"`)                   |
+| 3    | 再レビュー                                                                                                                  | Skill ツール (fork) で `/forge:reviewer` (`args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"`) |
+| 4    | `fixed` 確定                                                                                                                | 単独修正レビュー完了後に呼び出し元が `mark_fixed.py` を実行                                                            |
 
 `--auto-critical` は severity=critical のみを対象に絞り、`--auto` は全件を対象とする。plan.yaml 内の `recommendation: fix` AND `status ∈ {pending, in_progress}` が 0 件でループ終了。`recommendation: create_issue` の項目は fixer / 軽量経路の対象外 (Issue 化済みは fixer の責務外)。
 
@@ -377,15 +378,19 @@ present-findings は evaluator が吟味した結果を人間に段階的 (🔴 
 
 ### review → fixer
 
-| 方向 | 項目                   | 内容                                              |
-| ---- | ---------------------- | ------------------------------------------------- |
-| 入力 | 指摘事項（修正リスト） | plan.yaml から `recommendation: fix` の指摘を抽出 |
-| 入力 | target_files           | 修正対象ファイル（refs.yaml 経由）                |
-| 入力 | レビュー種別           | 確定した種別                                      |
-| 入力 | reference_docs         | 収集済み参考文書パス（refs.yaml 経由）            |
-| 入力 | related_code           | 関連コードのパスと関連性の説明（refs.yaml 経由）  |
-| 入力 | モード                 | `--single`（1件）/ `--batch`（一括）              |
-| 出力 | 修正サマリー           | 修正ファイル・修正内容・影響範囲                  |
+| 方向 | 項目                             | 内容                                                                                                                                                                  |
+| ---- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力 | 起動経路                         | `/forge:fixer` を Skill ツール (fork) で起動する                                                                                                                      |
+| 入力 | 構造化 args                      | `"{session_dir} {review_type} --single {id}"` / `"{session_dir} {review_type} --batch {介入軸フラグ}"` / `"{session_dir} {review_type} --diff-only {files_modified}"` |
+| 入力 | session_dir                      | fixer が plan.yaml / refs.yaml / `review_<種別>.md` を自力 Read するための正本ディレクトリ                                                                            |
+| 入力 | レビュー種別                     | `code` / `design` / `requirement` / `plan` / `uxui` / `generic`                                                                                                       |
+| 入力 | モード                           | `--single`（1件）/ `--batch`（一括）/ `--diff-only`（修正差分のみ）                                                                                                   |
+| 入力 | 介入軸フラグ                     | `--auto-critical` / `--auto`。review からの `--batch` 起動では必ず透過する                                                                                            |
+| 制約 | 指摘詳細・対象ファイル・参考文書 | **直接渡さない**。fixer が `session_dir` から plan.yaml / refs.yaml / `review_<種別>.md` を Read して取得する                                                         |
+| 出力 | patch_result.json                | `patched_ids` / `failed_ids` / `files_modified` を記録する                                                                                                            |
+| 出力 | 修正サマリー                     | 修正ファイル・修正内容・影響範囲。plan.yaml の `fixed` 遷移は行わない                                                                                                 |
+
+`status: fixed` は fixer の修正実行直後には確定しない。review / present-findings が単独修正レビュー完了後に `mark_fixed.py` を呼び、plan.yaml を更新する。
 
 ---
 
@@ -407,9 +412,9 @@ evaluator は常に実行され、`--interactive` ではその後に present-fin
 ### 参考文書収集は1回のみ（orchestrator が担当）
 
 `review` orchestrator が `target_files` 解決・`reference_docs` 収集・`review_packet` 構築を行い、
-以降の全 agent（reviewer・evaluator・fixer）に渡す。各 agent は渡されたパスを Read するだけで、独自収集は行わない。
+以降の fork 型 SKILL（reviewer・evaluator・fixer）に渡す。各 SKILL は渡されたパスを Read するだけで、独自収集は行わない。
 
-### 関連コードを探索して全 agent に渡す
+### 関連コードを探索して fork 型 SKILL に渡す
 
 orchestrator が target_files を起点に汎用 Agent (general-purpose) で関連コードを探索し、
 reviewer・evaluator・fixer 全員に渡す。

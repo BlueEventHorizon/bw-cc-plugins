@@ -60,11 +60,16 @@ flowchart TD
 
     MODE{対話モード?}
     MODE -->|Yes| PRESENT
-    MODE -->|No| FIXER
+    MODE -->|No| FIXPATH
 
-    PRESENT["present-findings<br/>1 件ずつ提示・人間判断"] --> FIXER
+    PRESENT["present-findings<br/>1 件ずつ提示・人間判断"] --> FIXPATH
 
-    FIXER["Phase 6: fixer 修正実行"] --> REREV
+    FIXPATH{"軽量経路?"}
+    FIXPATH -->|Yes| INLINE["orchestrator 直接 Edit"]
+    FIXPATH -->|No| FIXER["fork 型 fixer"]
+
+    INLINE --> REREV
+    FIXER --> REREV
 
     REREV["再レビュー<br/>修正差分のみ検証"] --> CYCLE
 
@@ -80,10 +85,10 @@ flowchart TD
 | モード             | 修正対象     | 最終判断者 | 用途             |
 | ------------------ | ------------ | ---------- | ---------------- |
 | 対話（デフォルト） | ユーザー選択 | 人間       | 慎重な品質管理   |
-| `--auto N`         | 🔴 + 🟡      | AI         | 一括品質向上     |
+| `--auto`           | 🔴 + 🟡      | AI         | 一括品質向上     |
 | `--auto-critical`  | 🔴 のみ      | AI         | 最小限の安全修正 |
 
-コアループ（reviewer → evaluator → fixer → 再レビュー）は全モードで同一。違いは fixer の前に人間判断を挟むかどうかだけ。
+コアループ（reviewer → evaluator → 軽量経路または fork 型 fixer → 再レビュー）は全モードで同一。違いは修正前に人間判断を挟むかどうかだけ。
 
 ### レビュー種別
 

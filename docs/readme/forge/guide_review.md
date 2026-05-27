@@ -60,11 +60,16 @@ flowchart TD
 
     MODE{Interactive?}
     MODE -->|Yes| PRESENT
-    MODE -->|No| FIXER
+    MODE -->|No| FIXPATH
 
-    PRESENT["present-findings<br/>show items one by one"] --> FIXER
+    PRESENT["present-findings<br/>show items one by one"] --> FIXPATH
 
-    FIXER["Phase 6: fixer"] --> REREV
+    FIXPATH{"Lightweight path?"}
+    FIXPATH -->|Yes| INLINE["orchestrator direct Edit"]
+    FIXPATH -->|No| FIXER["fork fixer"]
+
+    INLINE --> REREV
+    FIXER --> REREV
 
     REREV["Re-review<br/>verify fix diff only"] --> CYCLE
 
@@ -80,10 +85,10 @@ flowchart TD
 | Mode                  | Fix targets   | Final judge | Use case                 |
 | --------------------- | ------------- | ----------- | ------------------------ |
 | Interactive (default) | User-selected | Human       | Careful quality control  |
-| `--auto N`            | 🔴 + 🟡       | AI          | Bulk quality improvement |
+| `--auto`              | 🔴 + 🟡       | AI          | Bulk quality improvement |
 | `--auto-critical`     | 🔴 only       | AI          | Minimal safe fixes       |
 
-The core loop (reviewer → evaluator → fixer → re-review) is identical across all modes. The only difference is whether human judgment is inserted before fixer.
+The core loop (reviewer → evaluator → lightweight path or fork fixer → re-review) is identical across all modes. The only difference is whether human judgment is inserted before fixing.
 
 ### Review Types
 
