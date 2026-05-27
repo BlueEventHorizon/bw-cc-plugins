@@ -6,9 +6,11 @@
 # False Positive は許容するが、False Negative は 1 件でもテスト失敗
 
 specs:
+  # 既知の未達 (#96): DES-006 は全文埋め込みのため短いクエリでスコア 0.20 < 閾値 0.3 となり
+  # recall されない。doc-advisor の検索品質課題として #96 で追跡中（forge #93 とは独立）。
   - query: "セマンティック検索の設計"
     expected_paths:
-      - "docs/specs/doc-advisor/semantic-query/design/DES-006_semantic_search_design.md"
+      - "docs/specs/doc-advisor/design/DES-006_semantic_search_design.md"
     note: "直接的な設計文書"
 
   - query: "文書モデルの設計仕様"
@@ -18,17 +20,17 @@ specs:
 
   - query: "レビューワークフローの設計"
     expected_paths:
-      - "docs/specs/forge/design/review_workflow_design.md"
+      - "docs/specs/forge/design/DES-015_review_workflow_design.md"
     note: "レビューパイプラインの設計文書"
 
   - query: "バージョン管理の設計と移行"
     expected_paths:
-      - "docs/specs/forge/design/version_management_workflow_design.md"
+      - "docs/specs/forge/design/DES-023_version_management_workflow_design.md"
     note: "バージョン管理ワークフロー設計"
 
   - query: "見落としゼロの検索精度要件"
     expected_paths:
-      - "docs/specs/doc-advisor/semantic-query/requirements/FNC-002_zero_miss_search_accuracy_spec.md"
+      - "docs/specs/doc-advisor/requirements/FNC-002_zero_miss_search_accuracy_spec.md"
     note: "検索精度の要件定義"
 
   - query: "ToC 生成フローの設計"
@@ -38,7 +40,7 @@ specs:
 
   - query: "セッション管理の設計"
     expected_paths:
-      - "docs/specs/forge/design/session_management_design.md"
+      - "docs/specs/forge/design/DES-011_session_management_design.md"
     note: "セッション管理設計書 DES-011"
 
   - query: "プラグイン移行の設計"

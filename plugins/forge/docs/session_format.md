@@ -174,12 +174,12 @@ flowchart TD
 
 ### 作成から削除まで
 
-| タイミング   | 操作                                                                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| スキル開始時 | 残存セッション検出（自スキル + `--all-skills` 横断）→ セッションディレクトリ作成 + `session.yaml` 初期化                                         |
-| 各フェーズ   | フェーズ冒頭で `session_manager.py touch {session_dir}` を呼び `last_updated` を更新 → エージェントやサブスキルがファイルを読み書き              |
-| 正常完了時   | オーケストレーターが `session_manager.py complete {session_dir}` で `status: completed` に遷移 → `session_manager.py cleanup` でディレクトリ削除 |
-| 中断時       | ディレクトリが残存（次回起動時に検出、または `session_manager.py cleanup-stale` で一括回収）                                                     |
+| タイミング   | 操作                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| スキル開始時 | 残存セッション検出（自スキル + `--all-skills` 横断）→ `init` が completed 残骸を全スキル横断で自動回収（#93）→ セッションディレクトリ作成 + `session.yaml` 初期化 |
+| 各フェーズ   | フェーズ冒頭で `session_manager.py touch {session_dir}` を呼び `last_updated` を更新 → エージェントやサブスキルがファイルを読み書き                               |
+| 正常完了時   | オーケストレーターが `session_manager.py complete {session_dir}` で `status: completed` に遷移 → `session_manager.py cleanup` でディレクトリ削除                  |
+| 中断時       | ディレクトリが残存（次回起動時に検出、または `session_manager.py cleanup-stale` で一括回収）                                                                      |
 
 ### status の意味
 
@@ -261,15 +261,34 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
 
 **処理内容**:
 
-1. `.claude/.temp/{skill_name}-{random6}/` ディレクトリ + `refs/` サブディレクトリを作成
-2. `session.yaml` を共通フィールド順序で書き出し
-3. `started_at` / `last_updated` を UTC ISO 8601 で自動生成
+1. **completed 残骸の自動回収（#93）**: 新規ディレクトリ作成に先立ち、全スキル横断で `status: completed` の残骸セッションのみを削除する（`cleanup-stale --completed-only` 相当）。`status: in_progress` の中断中セッションは再開価値があり得るため**一切削除しない**。回収に失敗しても init 本体は継続し、stderr に warning を出す
+2. `.claude/.temp/{skill_name}-{random6}/` ディレクトリ + `refs/` サブディレクトリを作成
+3. `session.yaml` を共通フィールド順序で書き出し
+4. `started_at` / `last_updated` を UTC ISO 8601 で自動生成
+
+> **設計判断（#93）**: `cleanup-stale` の自動実行フックがないため、明示的に叩かない限り completed 残骸（`complete` 後の `cleanup` 漏れ・クラッシュ由来）が回収されなかった。任意の forge オーケストレーター起動時に必ず走る `init` へ「completed 限定の自動回収」を集約することで、SKILL.md を変更せずに残骸を回収する。in_progress 残骸の時間ベース回収は誤削除を避けるため `init` では行わず、手動 `cleanup-stale --older-than-hours N` に委ねる。
 
 **出力** (JSON):
 
 ```json
-{ "status": "created", "session_dir": ".claude/.temp/start-design-a3f7b2" }
+{
+  "status": "created",
+  "session_dir": ".claude/.temp/start-design-a3f7b2",
+  "auto_cleanup": {
+    "deleted": [
+      {
+        "path": ".claude/.temp/start-plan-9c1f0a",
+        "skill": "start-plan",
+        "session_status": "completed",
+        "age_hours": 12.4
+      }
+    ],
+    "skipped": []
+  }
+}
 ```
+
+`auto_cleanup` は回収結果（`deleted` / `skipped`）を表す。回収処理が例外で失敗した場合は `{"error": "..."}` を持つが、`status` は `created` のままで init は成功扱い。
 
 **スキル別の引数例**:
 
@@ -394,19 +413,21 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup-stale \
-  [--older-than-hours N] [--skill {skill_name}] [--dry-run]
+  [--older-than-hours N] [--skill {skill_name}] [--dry-run] [--completed-only]
 ```
 
-| 引数                 | 必須 | デフォルト | 説明                                                                                |
-| -------------------- | ---- | ---------- | ----------------------------------------------------------------------------------- |
-| `--older-than-hours` | -    | `48`       | この時間より古いセッションを削除対象とする。`0` で全 `in_progress` セッションを対象 |
-| `--skill`            | -    | -          | 特定スキル名のセッションのみを対象にする（省略時は全スキル）                        |
-| `--dry-run`          | -    | -          | 削除せず、対象となるセッション一覧のみを出力する                                    |
+| 引数                 | 必須 | デフォルト | 説明                                                                                                                        |
+| -------------------- | ---- | ---------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `--older-than-hours` | -    | `48`       | この時間より古いセッションを削除対象とする。`0` で全 `in_progress` セッションを対象                                         |
+| `--skill`            | -    | -          | 特定スキル名のセッションのみを対象にする（省略時は全スキル）                                                                |
+| `--dry-run`          | -    | -          | 削除せず、対象となるセッション一覧のみを出力する                                                                            |
+| `--completed-only`   | -    | -          | `status: completed` の残骸のみを対象にする（`in_progress` は age に関わらず温存）。`init` の自動回収が内部で使用する（#93） |
 
 **処理内容**: `.claude/.temp/*/session.yaml` を走査し、以下の判定で削除対象を決定する:
 
 - **`status: completed`** のセッションは `--older-than-hours` を無視して常に削除対象（`complete` 後の cleanup 漏れを即回収するため、#84）
 - **`status: in_progress`** のセッションは `started_at` と `last_updated` のうち新しい方が `--older-than-hours` より古い場合に削除
+- **`--completed-only`** 指定時は `in_progress` を一切対象にしない（中断中セッションの誤削除防止、#93）
 
 タイムスタンプ不正・パス検証失敗のものは削除せず `skipped` に分類する。
 

@@ -278,12 +278,12 @@ flowchart LR
     Cleanup --> |出力| JSON3["{ status: deleted,<br/>  session_dir: ... }"]
 ```
 
-| サブコマンド  | 入力                           | 処理                                     | 出力                                            |
-| ------------- | ------------------------------ | ---------------------------------------- | ----------------------------------------------- |
-| `init`        | `--skill` + 任意 `--key value` | ディレクトリ作成 + session.yaml 書き出し | `{"status": "created", "session_dir": "..."}`   |
-| `find`        | `--skill`                      | `.claude/.temp/*/session.yaml` を検索    | `{"status": "found"/"none", "sessions": [...]}` |
-| `cleanup`     | session_dir パス               | パス検証 + `shutil.rmtree()`             | `{"status": "deleted", "session_dir": "..."}`   |
-| `update-meta` | session_dir + 任意 meta flag   | `session.yaml` の浅い進行状態を更新      | `{"status": "ok", "updated": [...]}`            |
+| サブコマンド  | 入力                           | 処理                                                                       | 出力                                                                 |
+| ------------- | ------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `init`        | `--skill` + 任意 `--key value` | completed 残骸の自動回収（§5.6）→ ディレクトリ作成 + session.yaml 書き出し | `{"status": "created", "session_dir": "...", "auto_cleanup": {...}}` |
+| `find`        | `--skill`                      | `.claude/.temp/*/session.yaml` を検索                                      | `{"status": "found"/"none", "sessions": [...]}`                      |
+| `cleanup`     | session_dir パス               | パス検証 + `shutil.rmtree()`                                               | `{"status": "deleted", "session_dir": "..."}`                        |
+| `update-meta` | session_dir + 任意 meta flag   | `session.yaml` の浅い進行状態を更新                                        | `{"status": "ok", "updated": [...]}`                                 |
 
 ### 5.3 `update-meta` の設計
 
@@ -342,6 +342,22 @@ else:
 
 `--resume-policy` 引数で明示指定すればデフォルトを上書きできる。
 
+### 5.6 `init` 時の completed 残骸自動回収（#93）
+
+`cleanup-stale` の自動実行フックが存在しないため、明示的に叩かない限り `complete` 後の `cleanup` 漏れ（クラッシュ由来）による `status: completed` 残骸が回収されない問題があった（#93）。
+
+**設計判断**: 任意の forge オーケストレーター起動時に必ず実行される `init` に、「completed 残骸のみを全スキル横断で回収する」処理を集約する。
+
+| 項目                   | 決定                                                                                   | 根拠                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 回収対象               | `status: completed` のみ                                                               | 中断中（`in_progress`）は再開価値があり得るため `init` では削除しない（誤削除防止）      |
+| 回収範囲               | 全スキル横断（`skill_filter=None`）                                                    | 同プロジェクト内の他スキル残骸も同時回収（#93 原因 2 を解消）                            |
+| in_progress の時間回収 | `init` では行わない                                                                    | 48h 経過 in_progress の削除は誤削除リスクとのトレードオフ。手動 `cleanup-stale` に委ねる |
+| 失敗時の扱い           | 例外を捕捉し warning（stderr）を出して init 継続                                       | セッション作成というユーザー作業を残骸回収の失敗で妨げない                               |
+| 実装                   | `cleanup-stale` のコアロジック（`_cleanup_stale_core`）を `completed_only=True` で共有 | 手動 `--completed-only` と同一経路。重複実装を避ける                                     |
+
+`init` の戻り値に `auto_cleanup: {deleted, skipped}`（失敗時は `{error}`）を追加し、回収結果を可視化する。SKILL.md 側の変更は不要（`init` の入口がそのまま）。
+
 ---
 
 ## 6. session writer の設計
@@ -393,9 +409,10 @@ writer 別の標準更新内容:
 
 ## 改定履歴
 
-| 日付       | バージョン | 内容                                                                   |
-| ---------- | ---------- | ---------------------------------------------------------------------- |
-| 2026-05-07 | 1.3        | monitor（ブラウザ進捗表示）機能撤去に伴う整合更新                      |
-| 2026-05-06 | 1.2        | `SessionStore` と `session.reader` による writer / reader 共通化を追記 |
-| 2026-05-05 | 1.1        | session architecture cleanup の永続原則を統合。`update-meta` を追加    |
-| 2026-03-13 | 1.0        | 初版作成                                                               |
+| 日付       | バージョン | 内容                                                                                          |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------- |
+| 2026-05-27 | 1.4        | §5.6 `init` 時の completed 残骸自動回収を追加（#93）。`cleanup-stale --completed-only` を新設 |
+| 2026-05-07 | 1.3        | monitor（ブラウザ進捗表示）機能撤去に伴う整合更新                                             |
+| 2026-05-06 | 1.2        | `SessionStore` と `session.reader` による writer / reader 共通化を追記                        |
+| 2026-05-05 | 1.1        | session architecture cleanup の永続原則を統合。`update-meta` を追加                           |
+| 2026-03-13 | 1.0        | 初版作成                                                                                      |
