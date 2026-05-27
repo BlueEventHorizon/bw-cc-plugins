@@ -1,11 +1,11 @@
 # Phase 1 snapshot - used to replace .toc_checksums.yaml after merge
 # Auto-generated - do not edit
-generated_at: 2026-05-24T11:10:28Z
-file_count: 54
+generated_at: 2026-05-26T16:55:19Z
+file_count: 57
 checksums:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: dce48ee7b089418ebbb8d4e245c7da46d45086018bb021ea584fbe9ff8f954ef
   docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: 31549b854d24416793520061e0e9795b15677b81a0ba758a5d83e76cae932adb
-  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: fd0a1090a1d6b3ce33b347697970660b13f7ce397cf2a345f153d74683edb3cf
+  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: 82020e31fe0cf148a62ae99bbc578ce7c00ae7d0748357cd9b27411605df87de
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 2321be488a1552564901e5abd1a4a4fbf5ad5a75355ec3b5c6326e2336a4e047
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
   docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md: 5aebcf8d63017e9a19c2b599e3fecf4e8cd99818f1e60620578e5037320036c8
@@ -35,25 +35,28 @@ checksums:
   docs/specs/doc-db/requirements/NFR-004_doc_db_search_quality_spec.md: cd91a0dadb4eb22a5088d9ac434b1cdaa148daf4ac15acc62604292c60d1c6a9
   docs/specs/doc-db/requirements/NFR-005_doc_db_zero_dependency_spec.md: 7a9df6e214d2f5064c41d89595731317f8bd2381ffc654f7115aa86e140b3ad4
   docs/specs/doc-db/requirements/REQ-006_doc_db.md: 6bbb83a0609873d10ca7a184b05d6f81fcc326538fc07728a22969c8fc8379d7
-  docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md: c3524b6736345dfeb31fcb8aaf0d578978bb163d68dc54ea322b20ddca609982
+  docs/specs/forge-subagent/design/SUBAGENT-DES-001_skill_agent_launch_contract_design.md: 46295ddc8ffd79c9a0d80c8cf438d6326df11bd3d7d5971506f048b789211f4b
+  docs/specs/forge-subagent/design/SUBAGENT-DES-002_changed_line_policy_toml_design.md: 3a4b69165d6f2cead6754280b5f796b6b52e752f6e7f74e175766ac3c7549c1f
+  docs/specs/forge-subagent/plan/forge-subagent_strategy.md: 63560b866dff81c2b1bf2f41859b39cef7b9684ca008ec83bf2532b19175709b
+  docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md: d1606ae9b71b7791dd74629fad5f055a9d2403494defef465035566198656247
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md: 4e21025ed3bc4923e319cd63421624330d39dea7fbde470b21b912d692b599c2
-  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 2e64224028d7ce00efe134524e96a1ddd052df661381f0130647f94272222020
-  docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: dbc0efb78695730066eccae123df63b4574daffe7a7b16ea0e7380f703097c52
+  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: c42ab8405619b0788b11ad73eb9130631999dd35ac1cebcc8524df6b4279e75d
+  docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: 50be62a80a90f59cfb99630c46405b429c74c071be855e9220a0b74c4a729fb0
   docs/specs/forge/design/DES-011_session_management_design.md: f2900274bf454a37ca62ed83d6ca6fafa942d3d3b3671842efaefc9d6c61b015
   docs/specs/forge/design/DES-013_context_gathering_design.md: a7282f2511aa22a021f8ac65cf4625139cdb083a15d4e4fb2cb354199a1b835f
   docs/specs/forge/design/DES-014_orchestrator_session_protocol_design.md: 75e0227b6ab7987ca4561804e7b7fc4db469222a7abfea85d444cb671397d886
-  docs/specs/forge/design/DES-015_review_workflow_design.md: 9f593d8fabe96a163f654ed5613edf7fdef1e54662aadf7a746ad8a2717b311a
+  docs/specs/forge/design/DES-015_review_workflow_design.md: d6906a28ff1e1a6ec03cbb34b53b2fe494161f8a234b27206bceb55e00ac5c7a
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md: 343199fafc6701746e5c7e5246c42d8db89c0fc99586267e502bbf040e47a38f
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md: f97c1e49c75e59e065602162737252ef0937323ed8c00f5989cc74183ef440b1
-  docs/specs/forge/design/DES-018_create_design_workflow_design.md: 34f2845780e8c9301e2bac29e908f72ed4cee6c07c8e441793614c7609db7e5d
-  docs/specs/forge/design/DES-019_create_plan_workflow_design.md: 0fe99fed26262e5511c3d0e4a292fe490245689540c43e3aa255bf7e25f2b0bb
+  docs/specs/forge/design/DES-018_create_design_workflow_design.md: c6e5c8f34149f5821c5880a768604cfb26a6bbe92b256015a4147942b051e2fe
+  docs/specs/forge/design/DES-019_create_plan_workflow_design.md: 2a0df0d8d0a523b6b4f56c58da0262de5ef87f460a26adc77acb328e3a9bcd08
   docs/specs/forge/design/DES-020_clean_rules_design.md: 6aabeb809bc124374613771f1f653ae9c6b3d8363d4e2d8808cdd68457626e88
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md: 29aab972e411df72a3aaf8614eb91da21121634987aa756849747ad5e9068ea6
   docs/specs/forge/design/DES-023_version_management_workflow_design.md: 5e5da5dacd59e3e742fde393dec019c6cfebfaa2fe4ecfcfb2dc9135cd28d475
   docs/specs/forge/design/DES-024_skill_script_layout_design.md: 7e2d2e0d07a336571571ce1bbfbad940e36bfa4ad0a4722a62435ec828ba8003
   docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md: 519aae454c27d51396b8675cf2784932c9e0d1f03834be799c592c2fb389b9e6
-  docs/specs/forge/design/DES-028_review_policy_design.md: e834ad78aa42e0bc449610cc8b06dac811a3f3c665159382730adaf1853c9de9
+  docs/specs/forge/design/DES-028_review_policy_design.md: e482fc6a71f8859eea4a510aab392066be2f50b2d3b8c9e2d13694bd25e16a9b
   docs/specs/forge/plan/forge_query_strategy.md: 65ba7991251e52a360c64c01362d24faa4bfd13edc63d4c62b414167de4a313e
-  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 73024b121783713760b9eece1eea6ee4940dd062ff21183cb51ede856e44eec4
+  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: a499fe80c019da891c85771150255b9462c0edc43e0760f75e94ed7641ef4947
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 61c41caf741b964dfbbe8a798ce6236eb14abd3102180362c737895042d9ea33
   docs/specs/forge/requirements/REQ-004_review_policy.md: 64e6515c305dc08fe490a8009084c9c80c8dfe44fd717ab6351abb7004cb9ba1

@@ -17,6 +17,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 # テスト対象モジュールへのパスを追加
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]
 from session_manager import (
     SESSION_FIELD_ORDER,
     TEMP_BASE,
+    _parse_iso_ts,
     cmd_cleanup,
     cmd_cleanup_stale,
     cmd_complete,
@@ -200,6 +202,25 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(result["auto_count"], 3)
         self.assertIsInstance(result["auto_count"], int)
 
+    def test_parse_iso_ts_z_is_aware(self):
+        """Z 表記は aware datetime（tzinfo あり）になる"""
+        dt = _parse_iso_ts("2026-01-01T00:00:00Z")
+        self.assertIsNotNone(dt)
+        self.assertIsNotNone(dt.tzinfo)
+
+    def test_parse_iso_ts_naive_normalized_to_utc(self):
+        """tz なし naive 文字列は UTC として aware 化される（#93 レビュー指摘）"""
+        dt = _parse_iso_ts("2026-01-01T00:00:00")
+        self.assertIsNotNone(dt)
+        self.assertIsNotNone(dt.tzinfo)
+        self.assertEqual(dt.utcoffset().total_seconds(), 0)
+
+    def test_parse_iso_ts_invalid_returns_none(self):
+        """パース不能な文字列は None（skipped に分類される）"""
+        self.assertIsNone(_parse_iso_ts("not-a-date"))
+        self.assertIsNone(_parse_iso_ts(""))
+        self.assertIsNone(_parse_iso_ts(None))
+
 
 class TestValidateTempPath(_FsTestCase):
     """validate_temp_path のテスト"""
@@ -230,6 +251,21 @@ class TestCmdInit(_FsTestCase):
         a = Args()
         a.skill = skill
         return a
+
+    def _create_leftover(self, skill, name, hours_ago, status):
+        """init 前の残骸セッションを作成する"""
+        from datetime import datetime, timedelta, timezone
+        session_dir = os.path.join(TEMP_BASE, name)
+        os.makedirs(session_dir, exist_ok=True)
+        past = (datetime.now(timezone.utc)
+                - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": skill, "started_at": past,
+             "last_updated": past, "status": status},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
 
     def test_creates_directory_and_refs(self):
         result = cmd_init(self._make_args("start-design"), [])
@@ -288,6 +324,78 @@ class TestCmdInit(_FsTestCase):
         data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
         self.assertIn("output_dir", data)
         self.assertNotIn("output-dir", data)
+
+    def test_auto_cleanup_field_present(self):
+        """init の戻り値に auto_cleanup フィールドが含まれる（#93）"""
+        result = cmd_init(self._make_args("start-design"), [])
+        self.assertIn("auto_cleanup", result)
+        self.assertIn("deleted", result["auto_cleanup"])
+        self.assertIn("skipped", result["auto_cleanup"])
+
+    def test_auto_cleanup_removes_completed_leftover(self):
+        """init 時に completed 残骸が全スキル横断で削除される（#93）"""
+        leftover = self._create_leftover(
+            "start-plan", "start-plan-done", hours_ago=1, status="completed",
+        )
+        result = cmd_init(self._make_args("review"), [])
+        # 他スキルの completed 残骸が回収される
+        self.assertFalse(os.path.exists(leftover))
+        deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
+        self.assertIn(leftover, deleted_paths)
+        # 新規セッションは作成されている
+        self.assertTrue(os.path.isdir(result["session_dir"]))
+
+    def test_auto_cleanup_preserves_in_progress_leftover(self):
+        """init 時に古い in_progress 残骸は削除されない（誤削除防止、#93）"""
+        leftover = self._create_leftover(
+            "start-plan", "start-plan-stale", hours_ago=1000, status="in_progress",
+        )
+        result = cmd_init(self._make_args("review"), [])
+        # 中断中セッションは age に関わらず温存される
+        self.assertTrue(os.path.exists(leftover))
+        deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
+        self.assertNotIn(leftover, deleted_paths)
+
+    def test_auto_cleanup_does_not_touch_new_session(self):
+        """自動 cleanup は新規作成するセッション自身を削除しない"""
+        result = cmd_init(self._make_args("review"), [])
+        self.assertTrue(os.path.isdir(result["session_dir"]))
+        deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
+        self.assertNotIn(result["session_dir"], deleted_paths)
+
+    def test_auto_cleanup_handles_naive_timestamp(self):
+        """naive(tzなし) timestamp の completed 残骸でも init がクラッシュしない（#93 レビュー指摘）。
+
+        naive datetime と aware な now の減算は TypeError を投げるため、回帰防止する。
+        """
+        session_dir = os.path.join(TEMP_BASE, "start-plan-naive")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-plan",
+             "started_at": "2026-01-01T00:00:00",  # tz 情報なし（手書き想定）
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "completed"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        result = cmd_init(self._make_args("review"), [])
+        self.assertEqual(result["status"], "created")
+        # naive completed 残骸を UTC とみなして回収できる
+        self.assertFalse(os.path.exists(session_dir))
+        deleted_paths = [d["path"] for d in result["auto_cleanup"]["deleted"]]
+        self.assertIn(session_dir, deleted_paths)
+
+    def test_auto_cleanup_failure_does_not_block_init(self):
+        """自動回収が予期せぬ例外を投げても init は成功する（fail-open 契約、#93 レビュー指摘）"""
+        import session_manager
+        with mock.patch.object(
+            session_manager, "_cleanup_stale_core",
+            side_effect=RuntimeError("予期しないエラー"),
+        ):
+            result = cmd_init(self._make_args("review"), [])
+        self.assertEqual(result["status"], "created")
+        self.assertTrue(os.path.isdir(result["session_dir"]))
+        self.assertIn("error", result["auto_cleanup"])
 
 
 # =========================================================================
@@ -576,13 +684,15 @@ class TestCmdComplete(_FsTestCase):
 class TestCmdCleanupStale(_FsTestCase):
     """cmd_cleanup_stale のテスト"""
 
-    def _make_args(self, older_than_hours=48, skill=None, dry_run=False):
+    def _make_args(self, older_than_hours=48, skill=None, dry_run=False,
+                   completed_only=False):
         class Args:
             pass
         a = Args()
         a.older_than_hours = older_than_hours
         a.skill = skill
         a.dry_run = dry_run
+        a.completed_only = completed_only
         return a
 
     def _create_session(self, skill, name, hours_ago, status="in_progress"):
@@ -718,6 +828,72 @@ class TestCmdCleanupStale(_FsTestCase):
         self.assertEqual(result["status"], "dry-run")
         self.assertEqual(len(result["deleted"]), 1)
         self.assertEqual(result["deleted"][0]["session_status"], "completed")
+
+    def test_completed_only_skips_in_progress(self):
+        """--completed-only では古い in_progress でも削除されない（#93）"""
+        stale_in_progress = self._create_session(
+            "start-design", "start-design-stale", hours_ago=100, status="in_progress",
+        )
+        completed = self._create_session(
+            "start-plan", "start-plan-done", hours_ago=100, status="completed",
+        )
+
+        result = cmd_cleanup_stale(
+            self._make_args(older_than_hours=48, completed_only=True)
+        )
+
+        self.assertEqual(result["status"], "ok")
+        deleted_paths = [d["path"] for d in result["deleted"]]
+        # completed のみ削除、in_progress は age に関わらず温存
+        self.assertIn(completed, deleted_paths)
+        self.assertNotIn(stale_in_progress, deleted_paths)
+        self.assertFalse(os.path.exists(completed))
+        self.assertTrue(os.path.exists(stale_in_progress))
+
+    def test_completed_only_default_false_still_deletes_in_progress(self):
+        """completed_only 未指定（既存挙動）では古い in_progress も削除される"""
+        stale_in_progress = self._create_session(
+            "start-design", "start-design-stale", hours_ago=100, status="in_progress",
+        )
+
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+
+        self.assertEqual(result["status"], "ok")
+        self.assertFalse(os.path.exists(stale_in_progress))
+
+    def test_naive_timestamp_treated_as_utc(self):
+        """tz 情報なし naive timestamp を UTC とみなし TypeError で落ちない（#93 レビュー指摘）"""
+        session_dir = os.path.join(TEMP_BASE, "start-design-naive")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-design",
+             "started_at": "2026-01-01T00:00:00",
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "completed"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        # 例外を出さず、completed は age 無視で削除される
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+        self.assertEqual(result["status"], "ok")
+        self.assertFalse(os.path.exists(session_dir))
+
+    def test_naive_in_progress_timestamp_handled(self):
+        """naive な in_progress も TypeError を出さず age 判定される（#93）"""
+        session_dir = os.path.join(TEMP_BASE, "start-plan-naive-ip")
+        os.makedirs(session_dir, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": "start-plan",
+             "started_at": "2026-01-01T00:00:00",
+             "last_updated": "2026-01-01T00:00:00",
+             "status": "in_progress"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        # 2026-01-01 は十分過去なので 48h 超過で削除対象（例外なく処理される）
+        result = cmd_cleanup_stale(self._make_args(older_than_hours=48))
+        self.assertEqual(result["status"], "ok")
+        self.assertFalse(os.path.exists(session_dir))
 
 
 # =========================================================================
