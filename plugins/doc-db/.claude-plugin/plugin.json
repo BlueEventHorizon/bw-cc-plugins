@@ -1,7 +1,7 @@
 {
   "name": "doc-db",
   "description": "Heading-chunk hybrid search index plugin（chunk-level Embedding + Lexical + LLM Rerank）",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": { "name": "moons" },
   "license": "MIT",
   "skills": [
