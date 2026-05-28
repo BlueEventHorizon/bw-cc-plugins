@@ -4,7 +4,7 @@
 
 metadata:
   name: Project Specification Document Search Index
-  generated_at: 2026-05-26T16:57:11Z
+  generated_at: 2026-05-28T08:43:25Z
   file_count: 57
 
 docs:
@@ -74,37 +74,36 @@ docs:
       - design tokens
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
     doc_type: design
-    title: SKILL Base Design
-    purpose: Defines design principles for SKILL execution models, fork/inheritance type classification, call argument policies, and governance rules for skill authoring across all plugins
+    title: SKILL Base Design (COMMON-DES-001)
+    purpose: Defines the design basis (WHY) and overall structure for SKILL execution model in bw-cc-plugins, covering fork vs inheritance types, decision criteria, args principles, skill launch paths, fork SKILL regulations, inheritance SKILL responsibilities, and multi-layer defense mechanisms.
     content_details:
-      - SKILL execution model (inheritance vs fork types)
-      - Default inheritance type principle
-      - Fork type adoption criteria
-      - SKILL call argument rules (what to pass and what not to pass)
-      - Launch path selection guide (SKILL vs Agent vs Bash subprocess)
-      - Fork type SKILL list with adoption justification
-      - Inheritance type SKILL responsibility boundaries
-      - Multi-layer defense strategy (fork boundary, Role constraint, allowlist, physical deny)
-      - Static validation and list maintenance procedures
-      - Related documents (skill_authoring_notes, ADRs, public Claude Code docs)
+      - SKILL execution model (fork vs inheritance types)
+      - Default inheritance principle and fork adoption criteria
+      - SKILL args guidelines (what to pass vs prohibit)
+      - Skill launch paths selection guide (SKILL vs Agent vs Bash subprocess)
+      - Fork type SKILL list (5 regulated SKILLs with adoption rationale)
+      - Inheritance SKILL responsibility boundaries and constraints
+      - Multi-layer defense layers (fork boundary, Role constraints, allowlist, physical deny)
+      - Static validation and governance procedures
+      - Related documents and decision procedures
     applicable_tasks:
-      - SKILL authoring and design review
-      - SKILL type classification and decision-making
-      - SKILL call argument validation
-      - Internal SKILL isolation design
-      - Fork type SKILL governance
-      - Launch path selection for new SKILLs
-      - Multi-defense layer implementation
+      - SKILL design decisions
+      - Fork type SKILL management
+      - Inheritance type SKILL implementation
+      - SKILL args validation
+      - Design review for new SKILLs
+      - Architecture documentation for SKILL system
+      - Context isolation planning
     keywords:
       - SKILL
       - fork type
       - inheritance type
       - context isolation
-      - subagent
-      - launch path
-      - call arguments
-      - defense layer
       - Role constraint
+      - args principle
+      - launch paths
+      - multi-layer defense
+      - subagent
       - ADR-002
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     doc_type: requirement
@@ -957,128 +956,6 @@ docs:
       - search quality
       - recall
       - multi-vector
-  docs/specs/forge-subagent/design/SUBAGENT-DES-001_skill_agent_launch_contract_design.md:
-    doc_type: design
-    title: SKILL/Agent Launch Contract Design
-    purpose: "Defines the launch contract architecture for fork-type and inheritance-type SKILLs in /forge:review, restructuring reviewer/evaluator/fixer as fork-type SKILLs to eliminate Issue #32 misconfiguration and reduce context leakage."
-    content_details:
-      - Fork-type SKILL design (reviewer/evaluator/fixer) with parent context isolation
-      - Inheritance-type SKILLs (review orchestrator and present-findings)
-      - Multi-layered defense mechanisms (fork boundary, Role constraints, allowlist, physical deny)
-      - Fix pathway reduction from 3 types to 2 types (lightweight path and fork-type fixer)
-      - Argument interpretation guard for structured parameters
-      - Self-recursion prohibition mechanism
-      - Use case definitions with sequence diagrams
-      - Frontmatter requirements and role constraints specification
-      - Return value schema for fork-type SKILLs
-      - Phased migration plan with 9 stages
-    applicable_tasks:
-      - SKILL type classification and selection
-      - Fork-type vs inheritance-type context design
-      - /forge:review workflow redesign
-      - "Issue #32 misspecification resolution"
-      - fork-type SKILL safety validation
-      - Review orchestrator architecture update
-      - fixer context consumption reduction
-    keywords:
-      - fork type SKILL
-      - context isolation
-      - subagent launch contract
-      - reviewer
-      - evaluator
-      - fixer
-      - inheritance-type SKILL
-      - "Issue #32"
-      - SUBAGENT-REQ-001
-      - COMMON-DES-001
-  docs/specs/forge-subagent/design/SUBAGENT-DES-002_changed_line_policy_toml_design.md:
-    doc_type: design
-    title: Changed Line Policy TOML Design
-    purpose: Defines design for extracting skill launch context official terminology from hardcoded Python constants into TOML configuration, eliminating duplicate management and enabling data-driven test validation
-    content_details:
-      - TOML placement and schema in docs/rules/skill_launch_terms.toml
-      - metadata and launch_context sections with public terms array
-      - tomllib-based helper module in tests/forge/subagent/skill_launch_terms.py
-      - AST-based duplicate literal detection to prevent drift
-      - substring matching validation from TOML terms to Markdown source
-      - one-way synchronization strategy between TOML and Markdown
-      - migration procedure with intermediate test state validation
-      - Python 3.11+ requirement using standard tomllib library
-      - heuristic test patterns remaining in test code not TOML
-      - schema validation for file existence, non-empty array, term verification
-    applicable_tasks:
-      - Changed line gate test refactoring
-      - Skill launch terminology management
-      - Test helper implementation and validation
-      - TOML configuration file creation
-      - AST-based validation test design
-      - Duplicate definition detection test
-      - Test migration without intermediate failures
-    keywords:
-      - TOML
-      - skill launch context
-      - official terminology
-      - machine-readable subset
-      - tomllib
-      - AST validation
-      - duplicate detection
-      - test policy
-      - Markdown sync
-      - one-way validation
-  docs/specs/forge-subagent/plan/forge-subagent_strategy.md:
-    doc_type: plan
-    title: forge-subagent Implementation Strategy
-    purpose: Defines implementation phases, dependencies, and detailed work breakdown for converting reviewer/evaluator/fixer from inheritance-based to fork-type skills in the forge review workflow
-    content_details:
-      - Overall architecture and rationale for fork-type skill conversion
-      - Seven-phase implementation breakdown with dependencies and parallelization strategy
-      - Detailed work items for each phase with specific file modifications
-      - Testing strategy including new static validation tests (TEST-S001 to TEST-S005)
-      - Risk analysis with mitigation strategies for fork boundaries and responsibility transfer
-      - Implementation order summary with phase dependencies and parallel execution paths
-    applicable_tasks:
-      - Planning fork-type skill refactoring for /forge:review workflow
-      - Managing phase dependencies and parallel execution coordination
-      - Implementing static validation tests for skill-tool consistency
-      - Updating design and requirement documents for subagent architecture
-      - Risk assessment for forge subagent migration
-    keywords:
-      - forge-subagent
-      - fork-type skill
-      - reviewer
-      - evaluator
-      - fixer
-      - responsibility transfer
-      - phase planning
-      - skill-tool consistency
-      - static validation testing
-  docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md:
-    doc_type: requirement
-    title: SKILL/Agent/Subagent Launch Contract Requirements
-    purpose: Specifies requirements for clarifying responsibility boundaries and activation contracts among Skill tool, Agent tool, and fork context isolation to prevent AI misconceptions and formalize execution paths.
-    content_details:
-      - Current state of mixed responsibility boundaries in review system
-      - Problems in reviewer/evaluator/fixer/present-findings SKILL documentation
-      - Four policy proposals evaluated by practical harm and design clarity
-      - Policy B-2 (fork type SKILL) recommended for structural clarity
-      - Seven functional requirements for concept separation and responsibility boundaries
-    applicable_tasks:
-      - Review system architecture redesign
-      - SKILL activation contract documentation
-      - Static validation test implementation
-      - Fixer context consumption evaluation
-      - AI prompt refinement to prevent misconception
-    keywords:
-      - SKILL launch
-      - Agent tool isolation
-      - fork context boundary
-      - subagent type
-      - activation responsibility
-      - lightweight path
-      - review workflow
-      - context consumption
-      - slash command semantics
-      - prompt clarity
   docs/specs/forge/design/ADR-001_forge_query_test_flag_policy.md:
     doc_type: design
     title: "ADR-001: forge:query-db-* Query Flag Policy"
@@ -1108,39 +985,35 @@ docs:
       - wrapper design
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     doc_type: design
-    title: Document Search Backend Abstraction (switch-query) Design
-    purpose: Defines forge architecture for selecting document search backend (doc-db or doc-advisor) based on installation state and API key availability, establishing dependency inversion with unified output contracts
+    title: Forge Document Search Backend Abstraction Design
+    purpose: Defines the architecture for unified document search backend selection (doc-db or doc-advisor) with branching logic, skill composition, and error handling strategy
     content_details:
-      - Backend selection logic with API key judgment formula
-      - Branching table A for adoption backend decision
-      - Branching table B for backend-category-operation to skill mapping
-      - Four abstract skills (query-db-rules, query-db-specs, update-db-rules, update-db-specs)
-      - Select backend Python script for centralized branching logic
-      - Error handling contracts for missing backends and API keys
-      - Output format specification with Required documents prefix
-      - SKILL contract with inheritance type constraint
-      - Role read-only constraints and argument interpretation guards
-      - Test design for backend selection logic and output contract validation
+      - Backend selection strategy based on installation and API key availability
+      - Branching tables for backend decision and skill mapping
+      - Abstract skill definitions for query and index update operations
+      - Output contract with Required documents format
+      - Error handling for missing backends and API keys
+      - Python script select_backend.py for centralized decision logic
+      - Test strategy for branching logic and manifest integrity
+      - SKILL.md structure with read-only constraints and argument interpretation guards
     applicable_tasks:
-      - forge plugin development
-      - backend selection abstraction design
-      - search infrastructure abstraction implementation
-      - backend selection logic testing
-      - output contract validation
-      - SKILL isolation constraint verification
-      - doc-db and doc-advisor integration
-      - forge query skill implementation
+      - Backend selection logic implementation
+      - Query skill development
+      - Index update skill development
+      - Integration testing of backend switching
+      - Error scenario validation
+      - Output format contract verification
     keywords:
-      - backend selection
-      - abstraction
-      - dependency inversion
+      - backend abstraction
       - doc-db
       - doc-advisor
+      - available-skills
+      - branching logic
+      - skill composition
       - API key judgment
-      - search backend
-      - SKILL contract
-      - output format
-      - inheritance type skill
+      - output contract
+      - Required documents format
+      - select_backend.py
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     doc_type: design
     title: DES-010 create-* Skills Orchestrator Design
@@ -1176,35 +1049,37 @@ docs:
   docs/specs/forge/design/DES-011_session_management_design.md:
     doc_type: design
     title: Session Management Design
-    purpose: Defines session lifecycle, session_manager.py architecture, and SKILL.md patterns for forge orchestrator skills
+    purpose: Defines session lifecycle design, structural patterns in SKILL.md, session_manager.py implementation, and file-based communication strategy for all forge orchestrator skills (review, start-design, start-plan, start-requirements, start-implement)
     content_details:
-      - Session lifecycle flowchart and resume policy logic
-      - resume_policy design for each skill
-      - session.yaml manifest structure with phase and status fields
-      - session_manager.py subcommands (init, find, cleanup, update-meta)
-      - public entrypoint stability and CLI facades
-      - SessionStore and session reader common architecture
-      - writer meta update patterns and timing
-      - SKILL.md structural pattern with bookending
-      - data flow across parallel agents
+      - Session lifecycle flowchart with detection, creation, and resumption logic
+      - File-based communication rationale over context compression
+      - Delegation to session_manager.py for YAML formatting, timestamp generation, and path safety
+      - Separation of infrastructure concerns from business logic phases
+      - SKILL.md structural pattern with mandatory session management section
+      - resume_policy design with resume for review and none for linear workflows
+      - session.yaml manifest design with shallow progress fields only
+      - "session_manager.py subcommands: init, find, cleanup, update-meta"
+      - update-meta operation rules for atomic field updates
+      - Completed session auto-cleanup during init to recover stale residuals
     applicable_tasks:
-      - Orchestrator skill implementation and debugging
-      - Session recovery and resumption logic
-      - Feature lifecycle management
-      - Phase tracking and artifact management
-      - Multi-skill coordination
-      - Session cleanup and resource management
+      - Session initialization and detection in orchestrator skills
+      - Review skill workflow management with cycle resumption
+      - Design and plan skill session handling
+      - Requirements and implement skill phase coordination
+      - Progress tracking via shallow state fields
+      - Stale session cleanup and recovery
+      - Session manifest and artifact tracking
     keywords:
       - session management
-      - orchestrator pattern
       - session_manager.py
       - resume_policy
       - session.yaml
-      - phase
-      - SessionStore
-      - parallel agents
       - file-based communication
-      - lifecycle design
+      - orchestrator pattern
+      - lifecycle
+      - SKILL.md
+      - completed residuals
+      - atomic updates
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     doc_type: design
     title: DES-013 Context Gathering Task Design
@@ -1266,44 +1141,39 @@ docs:
       - workflow
   docs/specs/forge/design/DES-015_review_workflow_design.md:
     doc_type: design
-    title: DES-015 forge Review Workflow Design
-    purpose: Defines the review workflow orchestration architecture, phase structure, skill inter-dependencies, and mode-based intervention branching (interactive/auto/auto-critical)
+    title: forge Review Workflow Design
+    purpose: Defines the orchestration architecture for review workflows including phase execution, skill responsibilities, session management, and intervention modes
     content_details:
-      - "Review workflow phases (7 phases: parsing → resolution → review execution → integration → evaluation → intervention branching → completion)"
-      - Orchestrator pattern with skill delegation (reviewer/evaluator/fixer/present-findings)
-      - Review types (code, requirement, design, plan, uxui, generic)
-      - Intervention axis modes (--interactive/--auto-critical/--auto) with default behavior
-      - Session working directory lifecycle and file schema
-      - Skill inter-interface specifications (refs.yaml, review_{type}.md, plan.yaml)
-      - Evaluator 5-perspective evaluation framework (rule compliance, design intent, side effects, false positives, target file confirmation)
-      - Lightweight vs fixer fix path branching logic (FNC-413)
-      - Re-review cycle after fixer execution
-      - Core loop consistency across intervention modes
+      - Review workflow phases (argument parsing, target resolution, review execution, evaluation, intervention branching, completion)
+      - Skill responsibilities and delegation (reviewer, evaluator, present-findings, fixer)
+      - Session directory architecture and lifecycle management
+      - Inter-skill data flow through refs.yaml, review_type.md, plan.yaml
+      - Intervention axis modes (interactive, auto-critical, auto) and lightweight path criteria
+      - Evaluator five perspectives (rule matching, design intent, side effect risk, false positive, target file confirmation)
+      - Reference document collection strategy for review types
+      - Design decisions and alternative approaches
+      - Core loop principle (unified across all intervention modes)
+      - One-shot reviewer principle (no parallel execution by perspective or file axis)
     applicable_tasks:
-      - Review workflow design and implementation
-      - Orchestrator pattern implementation
-      - Skill interface specification
-      - Session lifecycle management design
-      - Intervention mode architecture design
-      - Fix path branching logic implementation
-      - Re-review cycle implementation
-      - Review quality consistency design
+      - Review workflow orchestration implementation
+      - Phase execution and skill delegation
+      - Session management and persistence
+      - Inter-skill interface design
+      - Intervention mode branching logic
+      - Lightweight path detection and direct edit execution
+      - Re-review cycle management
+      - Reference document and related code resolution
     keywords:
       - review workflow
-      - orchestrator
-      - phase structure
+      - orchestration
+      - phase design
+      - skill delegation
+      - session management
       - intervention axis
       - evaluator
-      - fixer
-      - presenter
-      - session directory
-      - refs.yaml
-      - plan.yaml
-      - lightweight path
-      - auto-fixable
       - recommendation
-      - severity
-      - priority
+      - auto-fixable
+      - refs.yaml
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md:
     doc_type: design
     title: Design for .doc_structure.yaml Version Management
@@ -1565,64 +1435,155 @@ docs:
       - strategy documentation
   docs/specs/forge/design/DES-028_review_policy_design.md:
     doc_type: design
-    title: DES-028 Review Policy Design
-    purpose: Defines the formalized policy and SKILL design for /forge:review, including policy files and SKILL files that replace prior review designs. Establishes reviewer 1-execution principle, rejection of perspective-based parallelization, and delegation of severity judgment to principles documents.
+    title: Review Policy Design for /forge:review (DES-028)
+    purpose: Defines formal policy and SKILL layer design for /forge:review orchestrator, including review criteria structure, reviewer activation pattern, and integration with principles documents for consistency evaluation
     content_details:
-      - Reviewer 1-execution principle with P1/P2/P3 priority labeling
-      - 3-section fixed structure for review_criteria_*.md (SSOT reference, Check order, Decision rules)
-      - severity_source delegation to principles documents with severity catalogs
-      - review_packet schema contract with criteria_path, ssot_refs[], check_order, severity_source
-      - Lightweight modification pathway (FNC-413) for --auto-critical and --auto modes
-      - Abolishment of perspective-based splitting design (DES-021) and proprietary perspective concepts
-      - 13 principles enhancement items (Appendix A) for severity catalogs and gray-zone tolerance ranges
+      - "Review prioritization framework (priority 1: rule matching, priority 2: contradiction detection, priority 3: unnecessary complexity)"
+      - reviewer single-activation principle (reviewer 1 per execution, not parallelized by perspective)
+      - review_packet structure (criteria path, SSOT references, check order, severity source)
+      - Three-section criteria structure (SSOT reference, check order, judgment rules) replacing perspective-based segmentation
+      - Severity and priority as independent axes; severity catalog sourced from principles documents
+      - Phase 1-5 orchestrator workflow with AskUserQuestion for file count management
+      - Defect classification and create_issue judgment conditions (3-condition test)
+      - Principles document expansion for severity catalogs and gray-zone tolerance ranges
+      - Lightweight fix path pattern for --auto-critical and --auto flows
     applicable_tasks:
-      - Review workflow redesign and implementation
-      - Policy file generation and principles enhancement
-      - SKILL redesign for reviewer, evaluator, present-findings, fixer
-      - Refactoring review criteria structure for 6 document types
-      - "Integration testing for Issue #68 complexity regression prevention"
-      - Requirements integration test planning
+      - /forge:review orchestrator implementation and CLI argument parsing
+      - reviewer, evaluator, and fixer SKILL implementation aligned to single-reviewer pattern
+      - Review criteria file creation and maintenance (3-section structure)
+      - Principles document enhancement with severity catalogs
+      - Test design for single-reviewer pattern and phase transitions
+      - Early validation for mutually exclusive arguments
+      - Defect creation flow integration with /anvil:create-issue
     keywords:
-      - review_packet
-      - SSOT reference
-      - priority P1 P2 P3
+      - review policy
       - severity catalog
-      - reviewer 1-execution
-      - lightweight pathway
+      - review_packet
+      - priority P1 P2 P3
+      - SSOT references
+      - single-activation
+      - create_issue judgment
       - principles delegation
-      - review_criteria_*.md
-      - DES-028
-      - perspective abolishment
+      - reviewer pattern
+      - criteria structure
+  docs/specs/forge/design/DES-029_skill_agent_launch_contract_design.md:
+    doc_type: design
+    title: SKILL and Agent Launch Contract Design
+    purpose: "Defines the launch contract for reviewer, evaluator, and fixer skills, restructuring them as fork-type SKILLs to address context isolation and Issue #32 misinterpretation issues."
+    content_details:
+      - fork-type SKILL design (reviewer, evaluator, fixer)
+      - inherited-type SKILL design (review orchestrator, present-findings)
+      - launch path architecture and transitions
+      - fork boundary with multi-layer defense (fork boundary, Role constraints, allowlist, physical deny)
+      - module design and module responsibilities
+      - use case design with 7 use cases
+      - fork adoption rationale per SKILL
+      - common design for fork-type SKILLs (frontmatter, Role negative constraints, argument interpretation guard, self-recursion prohibition, input/output contract)
+      - patch result persistence and session resumption handling
+      - modification path branching (lightweight path vs fork-type fixer path)
+    applicable_tasks:
+      - Review workflow implementation
+      - fork-type SKILL creation and maintenance
+      - context isolation architecture design
+      - session state management
+      - "Issue #32 remediation and misinterpretation prevention"
+      - COMMON-DES-001 Section 6 updates
+      - static validation test design
+    keywords:
+      - fork SKILL
+      - context isolation
+      - "Issue #32"
+      - launch contract
+      - reviewer
+      - evaluator
+      - fixer
+      - inherited-type SKILL
+      - review orchestrator
+      - modification path
+  docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md:
+    doc_type: design
+    title: "DES-030: Changed Line Gate Launch Terminology TOML Design"
+    purpose: Designs extraction of official launch terminology into TOML format to reduce duplication between test code and skill launch paths documentation
+    content_details:
+      - TOML placement in docs/rules/skill_launch_terms.toml
+      - Metadata and launch_context sections schema
+      - Integration with tomllib for Python 3.11+ reading
+      - AST-based duplicate definition validation
+      - One-directional synchronization with Markdown source
+      - Implementation in test helper modules
+      - Minimal schema validation approach
+      - Migration procedure with test execution steps
+    applicable_tasks:
+      - Test policy implementation
+      - TOML configuration setup
+      - Documentation synchronization
+      - Python test infrastructure updates
+      - Schema validation design
+      - Technical design review for launch pathway handling
+    keywords:
+      - TOML
+      - launch terminology
+      - test gate
+      - skill launch paths
+      - schema validation
+      - tomllib
+      - AST parsing
+      - documentation synchronization
+      - test infrastructure
+      - Python 3.11
+  docs/specs/forge/plan/forge-subagent_strategy.md:
+    doc_type: plan
+    title: forge-subagent Implementation Strategy
+    purpose: Defines the phased implementation plan for converting forge-subagent review skills from inheritance-based to fork-based architecture with safety constraints and context isolation.
+    content_details:
+      - Phase-based implementation plan (7 phases with dependencies)
+      - fork safety features (context isolation, recursive call prevention, argument interpretation guards)
+      - mark_fixed.py responsibility transfer from fixer to callers
+      - Test strategy with 5 static validation tests
+      - Risk management and mitigation strategies
+      - SKILL file refactoring plan for reviewer/evaluator/fixer
+      - Design document updates (DES-015, DES-028)
+      - Requirement resolution plan for TBD items
+    applicable_tasks:
+      - forge-subagent refactoring implementation
+      - fork-type SKILL conversion
+      - Safety constraint enforcement in subagent design
+      - Static validation test development
+      - SKILL file modernization
+      - Review workflow refactoring
+    keywords:
+      - forge-subagent
+      - fork-type SKILL
+      - context isolation
+      - mark_fixed.py
+      - safety constraints
+      - recursive call prevention
+      - subagent architecture
   docs/specs/forge/plan/forge_query_strategy.md:
     doc_type: plan
     title: forge Search Backend Abstraction Implementation Strategy
-    purpose: Defines a phased implementation strategy for abstracting forge query backend selection, covering output contract alignment, branching logic, SKILL abstraction, and reference replacement across the forge ecosystem
+    purpose: Specifies implementation strategy for abstracting doc-db and doc-advisor query backends in forge plugin, with step-by-step plan covering output contract alignment, backend selection logic, skill abstraction, and reference substitution across project
     content_details:
-      - Full scope analysis with 5 new modules and 17+ file changes
-      - Risk analysis across 8 categories with mitigation strategies
-      - Bottom-up and risk-driven phased approach with 3 major phases
-      - "Phase 1: Output contract alignment and select_backend.py implementation"
-      - "Phase 2: Abstract 4 SKILL creation and full-layer integration"
-      - "Phase 3: Reference replacement and documentation updates"
-      - Branching logic tables A and B with 13+ test cases
-      - API key fallback logic and Python standard library constraints
-      - Acceptance criteria validation and observational verification scenarios SW-01 through SW-11
+      - Overall structure analysis of implementation targets
+      - Risk analysis with risk categories and mitigation strategies
+      - Bottom-up plus risk-driven approach rationale
+      - "Phase 1: output contract alignment and backend selection logic implementation"
+      - "Phase 2: four abstract skill creation and full-layer integration"
+      - "Phase 3: existing skill reference substitution and documentation refinement"
+      - Risk mitigation table with specific countermeasures for each phase
     applicable_tasks:
-      - forge backend abstraction implementation planning
-      - Backend selection branching logic implementation
-      - Abstract SKILL creation and inheritance model verification
-      - Reference replacement across multiple files and documentation
-      - Risk-driven phased execution management
-      - Observational verification test execution
+      - Implementation strategy planning for backend abstraction
+      - Phase-based execution planning and risk management
+      - Technical design review for multi-skill integration
+      - Contract-driven development verification
     keywords:
+      - forge
       - backend abstraction
-      - implementation strategy
-      - phased approach
-      - branching logic
+      - query skill isolation
+      - implementation phases
+      - risk-driven development
       - output contract
-      - SKILL abstraction
-      - reference replacement
-      - risk mitigation
+      - skill integration
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     doc_type: requirement
     title: REQ-001 Orchestrator Pattern Requirement
@@ -1677,36 +1638,68 @@ docs:
       - cognitive load
   docs/specs/forge/requirements/REQ-004_review_policy.md:
     doc_type: requirement
-    title: REQ-004 Review Policy Specification
-    purpose: Defines review policy structure with priority hierarchy (rule compliance, contradiction detection, complexity analysis), intervention modes (interactive, auto-critical, auto), and fixer optimization for lightweight modifications
+    title: REQ-004 Review Policy Requirements
+    purpose: Defines review policy to eliminate unnecessary complexity, establish priority hierarchy (P1/P2/P3), and ensure single source of truth for design and implementation decisions
     content_details:
-      - Review priority system (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
-      - Intervention modes (interactive staged presentation, auto-critical critical-only, auto all fixes)
-      - Target specification flags (--diff for changes, --files for explicit files)
-      - Single reviewer activation principle (FNC-412 prevents fragmentation)
-      - Fixer lightweight bypass (3-item threshold with auto_fixable flag)
-      - Built-in fallback rules (forge_anti_patterns.md placeholder)
-      - Issue creation flow for uncovered problems
-      - Per-flow orchestrator input preparation responsibility
-      - Principles expansion with severity catalog and grayzone allowance
-      - CLI structure minimization without presets
+      - Review priority hierarchy (rule compliance / contradiction detection / complexity assessment)
+      - Perspective elimination and criteria judgment removal
+      - Single reviewer activation principle
+      - Target specification with flags (--diff / --files)
+      - Interaction axis with modes (--interactive / --auto-critical / --auto)
+      - Fallback rules and issue creation for rule gaps
+      - Default behavior definition
+      - Lightweight fixer optimization for small fixes
     applicable_tasks:
-      - Review policy implementation for forge:review
-      - Reviewer and evaluator specification definition
-      - Criteria structure redesign and perspective elimination
-      - Principle document expansion with severity mapping
-      - CLI flag design and early validation
-      - Fixer performance optimization for small changes
-      - Single-reviewer workflow enforcement
-      - Rule gap detection and issue creation
+      - Review policy implementation
+      - Code review criteria definition
+      - Design review specification
+      - Implementation review standard establishment
+      - AI reviewer agent configuration
     keywords:
-      - review priority
-      - intervention mode
-      - fixer optimization
-      - lightweight bypass
-      - auto-fixable
-      - SSOT
+      - review policy
+      - priority hierarchy
       - rule compliance
       - contradiction detection
-      - SDD purity
-      - CLI specification
+      - complexity
+      - criteria
+      - single source of truth
+      - fixer optimization
+      - issue creation
+      - review orchestration
+  docs/specs/forge/requirements/REQ-005_skill_agent_launch_contract.md:
+    doc_type: requirement
+    title: REQ-005 SKILL / Agent / Subagent Launch Contract Consolidation Requirement
+    purpose: Defines requirements for consolidating launch contracts and execution paths for review-related SKILLs (reviewer, evaluator, fixer, present-findings), addressing ambiguities between Skill tool invocation, Agent tool activation, and fork context isolation.
+    content_details:
+      - Background and current problems in launch path responsibility boundaries
+      - Identified problem areas in evaluator, reviewer, fixer, and present-findings SKILLs
+      - Functional requirements (FNC-S001 to FNC-S010) for contract clarification
+      - Static validation tests (TEST-S001 to TEST-S005) as prevention measures
+      - Policy evaluation comparing four approaches (A, B-1, B-2, C) for launch path consolidation
+      - Acceptance criteria and split plans for phased implementation
+      - Prior completion of legacy perspective schema consolidation (perspective to review_packet migration)
+      - Related documents and launch path definitions
+    applicable_tasks:
+      - Consolidating SKILL launch contracts
+      - Reviewing and fixing reviewer/evaluator/fixer/present-findings SKILLs
+      - Implementing static validation tests for launch path consistency
+      - Designing fork-type SKILL adoption strategy
+      - Updating COMMON-DES-001 fork SKILL list
+      - "Resolving Issue #32 (subagent_type misspecification)"
+      - Planning phased implementation with method A or B-2
+    keywords:
+      - launch contract
+      - fork type SKILL
+      - general-purpose Agent
+      - Skill tool
+      - Agent tool
+      - context isolation
+      - orchestrator
+      - reviewer
+      - evaluator
+      - fixer
+      - present-findings
+      - subagent
+      - allowed-tools
+      - prompt context
+      - "Issue #32"

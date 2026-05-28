@@ -412,7 +412,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh \
 
 #### Claude エンジン
 
-`/forge:reviewer` を Skill ツール (fork) で **1 体のみ** 起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
+`/forge:reviewer` を Skill ツール (fork) で **1 体のみ** 起動する。引数は forge:DES-029 §6.3 に従い構造化引数として渡す:
 
 ```
 args: "{session_dir} {review_type} claude"
@@ -469,7 +469,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
 
 ### Step 1: evaluator 起動 (1 体のみ)
 
-evaluator も **1 起動**で動作する。`/forge:evaluator` を Skill ツール (fork) で 1 体起動する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す:
+evaluator も **1 起動**で動作する。`/forge:evaluator` を Skill ツール (fork) で 1 体起動する。引数は forge:DES-029 §6.3 に従い構造化引数として渡す:
 
 ```
 args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
@@ -504,7 +504,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 各セクション内では priority 順 (P1 → P2 → P3) でソートする [DES-028 §4.4]。
 
-### 修正経路分岐表 [SUBAGENT-DES-001 §7]
+### 修正経路分岐表 [forge:DES-029 §7]
 
 > **前提**: 本表は **介入軸 `--auto` / `--auto-critical`** での review orchestrator 直接経路を扱う。`--interactive` モードでは present-findings から軽量経路または fork 型 fixer に分岐する。
 
@@ -566,7 +566,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 
 #### Step 2-B: fixer 経路 (fork 型 fixer 経路)
 
-軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は SUBAGENT-DES-001 §6.3 に従い構造化引数として渡す。**介入軸フラグ (`--auto-critical` / `--auto`) は必ず付与する** (Phase 1 で確定した値を透過する):
+軽量経路に当てはまらない場合、`/forge:fixer` を Skill ツール (fork) で起動して修正を委譲する。引数は forge:DES-029 §6.3 に従い構造化引数として渡す。**介入軸フラグ (`--auto-critical` / `--auto`) は必ず付与する** (Phase 1 で確定した値を透過する):
 
 ```
 args: "{session_dir} {review_type} --batch {介入軸フラグ}"

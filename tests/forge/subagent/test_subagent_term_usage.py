@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'skills'
 
 # "subagent" が単独で使われているパターン
-# subagent_type / SUBAGENT-DES-001 のような仕様 ID / sub-agent 等の複合形は除外
+# subagent_type / 仕様 ID (現在は DES-029 等) / sub-agent 等の複合形は除外
 _STANDALONE_RE = re.compile(r'\bsubagent\b(?!_type)', re.IGNORECASE)
 
 # baseline 警告数 (2026-05-26 時点で 0 件)。仕様 ID は検査対象外。
