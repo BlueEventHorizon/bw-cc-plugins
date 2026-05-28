@@ -267,7 +267,18 @@ rules_docs:
 
 ### 4.3 計画書の作成・更新
 
-**出力フォーマット [MANDATORY]**: `plan_format.md` の YAML スキーマに従って生成する。ファイル名: `{feature}_plan.yaml`
+**出力フォーマット [MANDATORY]**: `plan_format.md` の YAML スキーマに従って生成する。ファイル名: `{feature}_plan.yaml`（拡張子は `.yaml`、`.md` ではない）
+
+**Markdown 出力の禁止 [MANDATORY]**:
+
+- **NEVER** 計画書本体を Markdown 形式で出力してはならない。拡張子 `.md` のファイル名で計画書を出力するのは禁止
+- **NEVER** Markdown 見出し（`#`）・Markdown table・Markdown 箇条書きで計画書本体（タスク・トレーサビリティ・改定履歴）を表現してはならない。これらはすべて YAML の構造化データとして表現する
+- **NEVER** Markdown table の「列」概念で計画書のフィールドを説明・出力してはならない。フィールドは `tasks[]` の YAML フィールド (`task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`) として記述する
+- **NEVER** `design_id` が無いタスクに `-` を入れてはならない。`design_id: null` を使用する
+- **NEVER** `required_reading` が無いタスクに `-` を入れてはならない。`required_reading: []` を使用する
+- `description` 内の各項目を YAML 配列要素として記述するのは可（`description` フィールドの値が文字列配列であるため）
+
+> Claude Code の plan mode が生成する **Markdown plan** とは別物。Markdown plan は `/forge:create-feature-from-markdown-plan` の入力素材であり、`/forge:start-plan` の出力ではない。
 
 フォーマットの優先順位:
 
@@ -295,14 +306,28 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 ### 4.4 完全性チェック [MANDATORY]
 
-計画書作成後、以下を確認する:
+計画書作成後、以下を確認する。**ファイルを書き出す前に MUST 自己検査すること**。
+
+**`plan_format.md` 必須スキーマ検査** [MANDATORY]:
+
+- [ ] ファイル名が `{feature}_plan.yaml` 形式（拡張子 `.yaml`）
+- [ ] top-level に `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーがすべて存在する
+- [ ] 上記 4 キー以外の top-level キーは追加していない
+- [ ] `tasks[]` の各要素が必須フィールドをすべて持つ: `task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`
+- [ ] `tasks[].design_id` は文字列か `null`（`-` や `"-"` ではない）
+- [ ] `tasks[].depends_on` / `required_reading` は配列（なければ `[]`、`null` でも `-` でもない）
+- [ ] `tasks[].build_check` の値は `per_task` / `skip` / `on_group_complete` のいずれか
+- [ ] `tasks[].status` の値は `pending` / `in_progress` / `completed` のいずれか
+- [ ] `requirements_traceability[].status` の値は `pending` / `completed` のいずれか
+
+**計画品質検査** [MANDATORY]:
 
 - [ ] 実装戦略のフェーズ分割がタスクの優先度に反映されているか
 - [ ] 要件トレーサビリティマトリクスが全要件を網羅しているか
 - [ ] 設計トレーサビリティマトリクスが全設計書をカバーしているか
 - [ ] 全設計書がタスクに反映されているか
 - [ ] 依存関係に循環がないか
-- [ ] 計画書がフォーマットに従っているか
+- [ ] 計画書が `plan_format.md` の YAML フォーマットに従っているか（Markdown table・Markdown 見出しで計画書本体を表現していないか）
 
 ---
 
