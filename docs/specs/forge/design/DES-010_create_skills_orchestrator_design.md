@@ -79,7 +79,6 @@ mode: new # new | update（start-requirements は interactive | reverse-engineer
 started_at: "2026-03-13T12:00:00Z"
 last_updated: "2026-03-13T12:00:00Z"
 status: in_progress # in_progress | completed
-resume_policy: none # none（再開非対応）
 output_dir: "specs/login/design/" # 出力先ディレクトリ
 ```
 
@@ -395,7 +394,7 @@ sequenceDiagram
 
 ## 6. セッションライフサイクル
 
-> セッション管理の詳細設計（ライフサイクルフロー、session_manager.py、resume_policy、SKILL.md における位置づけ）は **DES-011 `DES-011_session_management_design.md`** を参照。
+> セッション管理の詳細設計（ライフサイクルフロー、session_manager.py、残存セッションのスキル別扱い）は **DES-011 `DES-011_session_management_design.md`** を参照。
 
 本セクションでは create-* スキル固有の補足のみ記述する。
 
@@ -411,10 +410,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py init \
   --output-dir "{出力先ディレクトリ}"
 ```
 
-### 6.2 resume_policy: none
+### 6.2 残存セッションの扱い: 再開非対応
 
 create-* スキルは直線的ワークフローであり、中断時は最初からやり直す方が効率的。
-`resume_policy: none` がデフォルト。設計判断の詳細は DES-011 §4.2 を参照。
+残存セッション検出時は AskUserQuestion で「削除 / 残す」のみを提示し、「再開」は提供しない。判断はスキル種別ごとの責務であり `session.yaml` のフラグには依存しない（Issue #99 / DES-011 §4.2）。
 
 ---
 

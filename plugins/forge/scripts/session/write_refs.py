@@ -16,7 +16,7 @@ stdin JSON:
         "review_packet": {
             "criteria_path": "review/docs/review_criteria_code.md",
             "ssot_refs": [
-                {"path": "docs/rules/implementation_guidelines.md",
+                {"doc_path": "docs/rules/implementation_guidelines.md",
                  "priority": "P1", "doc_type": "rules"}
             ],
             "check_order": ["P1", "P2", "P3"],
@@ -99,9 +99,12 @@ def validate_review_packet(data):
     for i, ref in enumerate(ssot_refs):
         if not isinstance(ref, dict):
             raise ValueError(f"review_packet.ssot_refs[{i}] は dict が必須です")
-        path = ref.get("path")
-        if not isinstance(path, str) or not path:
-            raise ValueError(f"review_packet.ssot_refs[{i}].path は必須です")
+        doc_path = ref.get("doc_path")
+        if not isinstance(doc_path, str) or not doc_path:
+            raise ValueError(
+                f"review_packet.ssot_refs[{i}].doc_path は必須です"
+                " (旧 `path` キーは Issue #99 で `doc_path` に統一されました)"
+            )
         priority = ref.get("priority")
         if priority not in _ALLOWED_PRIORITIES:
             raise ValueError(
