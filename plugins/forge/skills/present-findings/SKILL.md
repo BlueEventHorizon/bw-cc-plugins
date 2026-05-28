@@ -59,7 +59,7 @@ reference_docs:
 review_packet:
   criteria_path: plugins/forge/skills/review/docs/review_criteria_code.md
   ssot_refs:
-    - path: docs/rules/foo.md
+    - doc_path: docs/rules/foo.md
       priority: P1
       doc_type: rules
   check_order: ["P1", "P2", "P3"]
@@ -557,7 +557,7 @@ args: "{session_dir} {review_type} --diff-only {files_modified}"
    ```
 
    - `recommendation` は `create_issue` を維持 (FNC-406 判定の事実を残す)
-   - `status` は `skipped` を採用 (`issued` は plan.yaml の status enum に存在しないため。update_plan.py `VALID_STATUSES` 参照)
+   - `status` は `skipped` を採用 (`update_plan.py` `VALID_STATUSES` = `pending / in_progress / fixed / skipped / needs_review`)
    - `skip_reason` で「Issue 化済み: #<番号>」を記録し、後続レビューで再評価しない
 
 6. **review.md には反映しない**: Issue 化は plan.yaml の状態遷移のみ。`write_interpretation.py` は呼ばない (evaluator が「📌 Issue 化」セクションを既に整形済みのため)。

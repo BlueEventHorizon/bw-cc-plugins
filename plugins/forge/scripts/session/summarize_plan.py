@@ -6,8 +6,10 @@
 
 「未処理」の定義:
     status が pending / needs_review の指摘。
-    fixed / skipped / create_issue は決着済みなので未処理ではない。
-    （create_issue は外部 Issue 化で決着扱い: DES-028 §3.6 / REQ-004 FNC-406）
+    fixed / skipped は決着済みなので未処理ではない。
+    Issue 化済みは status: skipped + recommendation: create_issue + skip_reason: "Issue 化済み: #N"
+    で表現される（Issue #99 / DES-028 §3.6 / REQ-004 FNC-406 / update_plan.py VALID_STATUSES）。
+    create_issue は status 値ではないため by_status には含めない。recommendation 由来で別カウントする。
 
 Usage:
     python3 summarize_plan.py <session_dir>
@@ -17,11 +19,11 @@ Usage:
     {
       "total": 全件数,
       "fixed": 修正済み件数,
-      "skipped": 対応しない件数,
-      "create_issue": Issue 化で決着した件数,
-      "unprocessed_total": 未処理件数（create_issue は含めない）,
+      "skipped": 対応しない件数 (Issue 化済みも含む),
+      "create_issue": Issue 化で決着した件数 (recommendation: create_issue の件数),
+      "unprocessed_total": 未処理件数,
       "by_severity": {"critical": N, "major": N, "minor": N},
-      "by_status": {"pending": N, "needs_review": N, "create_issue": N},
+      "by_status": {"pending": N, "needs_review": N},
       "unprocessed_ids": [未処理の id 一覧],
       "titles": [未処理タイトルの先頭10件]
     }
@@ -70,9 +72,9 @@ def summarize_pending(plan_path):
     ]
 
     by_severity = {"critical": 0, "major": 0, "minor": 0}
-    # by_status は未処理 (pending / needs_review) に加え、decided 扱いの create_issue も集計する
-    # （DES-028 §3.6 / REQ-004 FNC-406: create_issue は Issue 化で決着）
-    by_status = {"pending": 0, "needs_review": 0, "create_issue": 0}
+    # by_status は status enum の有効値のみ集計する。create_issue は status ではないため含めない
+    # （Issue #99 / update_plan.py VALID_STATUSES: pending / in_progress / fixed / skipped / needs_review）
+    by_status = {"pending": 0, "needs_review": 0}
     for item in unprocessed:
         sev = item.get("severity")
         if sev in by_severity:
@@ -83,9 +85,11 @@ def summarize_pending(plan_path):
 
     fixed = sum(1 for i in items if i.get("status") == "fixed")
     skipped = sum(1 for i in items if i.get("status") == "skipped")
-    create_issue = sum(1 for i in items if i.get("status") == "create_issue")
-    # create_issue は unprocessed に含まれないため、ここで by_status に直接加算する
-    by_status["create_issue"] = create_issue
+    # Issue 化済み = recommendation: create_issue の件数 (status は skipped に含まれる)
+    # Issue #99: 旧 status: create_issue は無効化済み (VALID_STATUSES に存在しない)
+    create_issue = sum(
+        1 for i in items if i.get("recommendation") == "create_issue"
+    )
 
     return {
         "total": len(items),

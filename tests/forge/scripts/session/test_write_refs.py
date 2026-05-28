@@ -36,12 +36,12 @@ def _base_data():
             "criteria_path": "review/docs/review_criteria_code.md",
             "ssot_refs": [
                 {
-                    "path": "docs/rules/implementation_guidelines.md",
+                    "doc_path": "docs/rules/implementation_guidelines.md",
                     "priority": "P1",
                     "doc_type": "rules",
                 },
                 {
-                    "path": "plugins/forge/docs/spec_priorities_spec.md",
+                    "doc_path": "plugins/forge/docs/spec_priorities_spec.md",
                     "priority": "P2",
                     "doc_type": "principles",
                 },
@@ -195,7 +195,7 @@ class TestReviewPacketSsotRefs(unittest.TestCase):
 
     def test_ssot_refs_not_list(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"] = {"path": "x.md"}
+        data["review_packet"]["ssot_refs"] = {"doc_path": "x.md"}
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -205,15 +205,15 @@ class TestReviewPacketSsotRefs(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_ssot_refs_missing_path(self):
+    def test_ssot_refs_missing_doc_path(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"][0].pop("path")
+        data["review_packet"]["ssot_refs"][0].pop("doc_path")
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_ssot_refs_empty_path(self):
+    def test_ssot_refs_empty_doc_path(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"][0]["path"] = ""
+        data["review_packet"]["ssot_refs"][0]["doc_path"] = ""
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -504,6 +504,11 @@ class TestWriteRefs(_FsTestCase):
         self.assertEqual(len(packet["ssot_refs"]), 2)
         self.assertEqual(packet["ssot_refs"][0]["priority"], "P1")
         self.assertEqual(packet["ssot_refs"][0]["doc_type"], "rules")
+        self.assertEqual(
+            packet["ssot_refs"][0]["doc_path"],
+            "docs/rules/implementation_guidelines.md",
+        )
+        self.assertNotIn("path", packet["ssot_refs"][0])
 
     def test_full(self):
         data = copy.deepcopy(_base_data())
@@ -513,7 +518,7 @@ class TestWriteRefs(_FsTestCase):
         ]
         data["review_packet"]["ssot_refs"].append(
             {
-                "path": "plugins/forge/docs/spec_priorities_spec.md",
+                "doc_path": "plugins/forge/docs/spec_priorities_spec.md",
                 "priority": "P3",
                 "doc_type": "principles",
             }
@@ -692,6 +697,44 @@ class TestRejectLegacyPerspectivesRegression(_FsTestCase):
         self.assertTrue(refs_path.exists(), "新スキーマでは refs.yaml が生成される")
         # 生成内容にも perspectives が含まれないことを確認 (二重防衛)
         self.assertNotIn("perspectives:", refs_path.read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# Issue #99 回帰防止: 旧 ssot_refs[].path キーの拒否 (doc_path 統一)
+# ---------------------------------------------------------------------------
+
+
+class TestRejectLegacySsotRefsPath(unittest.TestCase):
+    """ssot_refs[] の旧フィールド名 `path` が拒否されることを検証する。
+
+    DES-028 §2.3 / Issue #99: ssot_refs[] のフィールド名は `doc_path` に統一。
+    実装と仕様書の乖離 (write_refs.py が `path` を要求していた) を解消した際の
+    回帰防止テスト。
+    """
+
+    def test_ssot_refs_with_legacy_path_key_rejected(self):
+        """ssot_refs[] に `path` キーのみがあると validation エラーになる。"""
+        data = _base_data()
+        # doc_path を削除し旧 path キーで置き換える
+        data["review_packet"]["ssot_refs"][0].pop("doc_path")
+        data["review_packet"]["ssot_refs"][0]["path"] = (
+            "docs/rules/implementation_guidelines.md"
+        )
+        with self.assertRaises(ValueError) as ctx:
+            validate_review_packet(data)
+        msg = str(ctx.exception)
+        self.assertIn("doc_path", msg, f"エラーメッセージに doc_path が無い: {msg!r}")
+
+    def test_ssot_refs_with_both_keys_still_requires_doc_path(self):
+        """doc_path 不在で path だけがあると拒否される (両キー混在を許さない)。"""
+        data = _base_data()
+        # doc_path を削除し、path も付ける混在状態
+        data["review_packet"]["ssot_refs"][0].pop("doc_path")
+        data["review_packet"]["ssot_refs"][0]["path"] = (
+            "docs/rules/implementation_guidelines.md"
+        )
+        with self.assertRaises(ValueError):
+            validate_review_packet(data)
 
 
 if __name__ == "__main__":

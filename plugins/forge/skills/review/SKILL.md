@@ -482,7 +482,7 @@ args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
 evaluator は以下を必ず実行する:
 
 1. `review_<種別>.md` を Read し、findings を 5 観点で精査
-2. `eval_<種別>.json` に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue`) を Write
+2. `eval_<種別>.json` に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue` / `needs_review` の 4 値、DES-028 §4.3 / Issue #99) を Write
 3. `write_interpretation.py` 経由で `review_<種別>.md` を全面書き換え (整形済み)
    - 原文は `review_<種別>.raw.md` に自動バックアップされる
 
@@ -663,7 +663,7 @@ severity × priority の **二軸表示** で結果を提示する:
 
 #### 終了確認 [MANDATORY]
 
-**終了条件**: 全指摘が `fixed` / `skipped` / `create_issue` で決着していること。
+**終了条件**: 全指摘が `fixed` / `skipped` で決着していること。Issue 化済み項目は `status: skipped` + `recommendation: create_issue` + `skip_reason: "Issue 化済み: #N"` で表現されるため `skipped` に含まれる（Issue #99 / update_plan.py VALID_STATUSES）。
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/summarize_plan.py {session_dir}
