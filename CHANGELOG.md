@@ -2,19 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### forge
-
-- **fix(plan-yaml-contract)**: forge 実装計画書 `{feature}_plan.yaml` の YAML 正本契約を全文書・SKILL に徹底 (Issue #111)
-  - `plan_principles_spec.md`: 「『必読』列」「依存関係はタスク表の列に落とし込む」「`-` を記載」表現を `required_reading` フィールド / `depends_on` フィールド / 空配列 `[]` 表現に統一
-  - `start-implement/SKILL.md`: 「ビルド確認列」「受け入れ基準列」「必読列」「設計 ID ≠ `-`」を YAML フィールド名 (`build_check` / `acceptance_criteria` / `required_reading` / `design_id`) と値域 (`per_task` / `skip` / `on_group_complete`) に統一
-  - `start-plan/SKILL.md`: Markdown 形式の計画書出力禁止を `[MANDATORY]` で明示。完全性チェックリストに `plan_format.md` 必須 top-level keys / `tasks[]` 必須フィールドの自己検査を追加
-  - `review/docs/review_criteria_plan.md`: 「必読列」を `required_reading` フィールド表現に統一
-- **rename(create-feature-from-plan → create-feature-from-markdown-plan)**: skill 名を rename して入力素材が「Claude Code plan mode の Markdown plan」であることを明示。forge 実装計画書 `{feature}_plan.yaml` (YAML、`/forge:start-plan` が作成) との混同を解消 (Issue #111)。旧名互換 wrapper は提供しない。利用者は `/forge:create-feature-from-markdown-plan` に切り替える。`plugins/forge/skills/help/SKILL.md` / `README.md` / `docs/rules/skill_authoring_notes.md` の参照を rename 後に更新
-- **docs(guide_create_docs)**: ユーザー向けガイドの計画書 YAML 例を `plan_format.md` 正本スキーマと整合する最小完全 YAML に差し替え。`build_check` / `acceptance_criteria` / `design_traceability` / `revision_history` などの必須フィールドを欠かないことを保証
-- **test**: `tests/forge/plan_yaml_contract/test_plan_yaml_contract.py` を追加。主要ガイドの YAML 例が `plan_format.md` 必須フィールドを欠かないこと、主要 SKILL/ガイドに Markdown 計画書を誘導する旧表現 (「『必読』列」「タスク表の列」「設計 ID ≠ `-`」「`{feature}_plan.md`」等) が残っていないこと、rename 後の skill が存在し旧 skill dir が無いことを静的検査
-
 ## [marketplace 0.1.25] - 2026-05-21
 
 ### marketplace
