@@ -28,7 +28,14 @@ CHECKED_PATH_PREFIXES = (
 CHECKED_SUFFIXES = {'.md', '.yaml', '.yml', '.json', '.py', '.sh', '.txt', ''}
 
 _HUNK_RE = re.compile(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@')
-_STANDALONE_SUBAGENT_RE = re.compile(r'\bsubagent\b(?!_type)', re.IGNORECASE)
+# 機能名 (例: forge-subagent) / パス (例: tests/forge/subagent/) / 公式 API 名
+# (subagent_type) / inline code (`subagent`) / モジュールパス (tests.forge.subagent)
+# / 鉤括弧引用 (「subagent ...」) の一部として現れる subagent は「単独使用」と
+# みなさない。用語自体を論じる文脈での言及はテストの守備範囲外。
+_STANDALONE_SUBAGENT_RE = re.compile(
+    r'(?<![/\-\w`.「])subagent(?![/\-\w」]|_type)',
+    re.IGNORECASE,
+)
 _OLD_REVIEW_TARGET_RE = re.compile(
     r'/forge:review\s+'
     r'(code|design|plan|requirement|uxui|generic)\s+'
@@ -46,7 +53,7 @@ _LAUNCH_CONTEXT_PATTERNS = _compile_literal_patterns(
     load_terms()['launch_context']['terms']
 )
 # 使用例マーカーは公式用語ではなくテスト誤検知抑制のための heuristic。
-# SUBAGENT-DES-002 §2.1 / §4.2 / §7.2 により TOML 用語集には追加せず、
+# forge:DES-030 §2.1 / §4.2 / §7.2 により TOML 用語集には追加せず、
 # テストコード側に保持する。
 _USER_EXAMPLE_PATTERNS = [
     re.compile(r'使い方'),
@@ -175,7 +182,9 @@ def _has_launch_context_or_user_example(path: str, lineno: int) -> bool:
 
 
 def _uses_standalone_subagent_term(text: str) -> bool:
-    for match in _STANDALONE_SUBAGENT_RE.finditer(text):
+    # 鉤括弧「...」で囲まれた引用句は「旧記述の引用」として用語論扱いとし、検査対象から除外する。
+    masked = re.sub(r'「[^」]*」', '', text)
+    for match in _STANDALONE_SUBAGENT_RE.finditer(masked):
         token = match.group(0)
         if token.isupper():
             continue

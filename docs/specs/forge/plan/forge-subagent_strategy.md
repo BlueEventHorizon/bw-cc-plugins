@@ -269,7 +269,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 - `plugins/forge/` / `docs/readme/forge/` 配下に `review_{perspective}.md` 文字列が存在しないことを確認
 - OBSOLETE マーカー付きは除外
 
-#### 5-D: TEST-S004 — subagent 単独使用の警告
+#### 5-D: TEST-S004 — `subagent` 単独使用の警告
 
 `tests/forge/subagent/test_subagent_term_usage.py`
 

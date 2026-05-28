@@ -3,7 +3,7 @@
 # === トレーサビリティ ===
 requirements_traceability:
   - requirement_id: REQ-005
-    title: SKILL / Agent / subagent 起動契約 整理要件
+    title: review 系 SKILL の起動契約 整理要件
     design_id: DES-029
     status: completed
 

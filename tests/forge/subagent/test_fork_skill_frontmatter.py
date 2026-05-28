@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TEST-S006 (TASK-013): fork 型 SKILL (reviewer / evaluator / fixer) の frontmatter と
-本文が SUBAGENT-DES-001 §9.2 の要件を満たすこと。
+本文が forge:DES-029 §9.2 の要件を満たすこと。
 
 検証項目:
 - frontmatter に context: fork が含まれる
