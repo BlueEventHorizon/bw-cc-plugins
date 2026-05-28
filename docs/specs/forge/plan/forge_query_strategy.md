@@ -13,7 +13,7 @@ DES-001 / ADR-001 から把握した実装対象:
   - `plugins/forge/skills/update-db-specs/SKILL.md`（同上）
   - `plugins/forge/scripts/backend_selection/select_backend.py`（分岐ロジック単一実装。Python 標準ライブラリのみ・read-only）
 - **既存 SKILL の出力契約変更 1 点**: `plugins/doc-db/skills/query/SKILL.md` の Output Format を `Required documents:` 先頭ハイブリッド形式に書換（スクリプト本体は不変、§7.1）
-- **既存 forge 17+ ファイルの参照置換**（§4.2）: `plugins/forge/skills/{review,start-design,start-plan,clean-rules,merge-specs,create-feature-from-plan,start-requirements,start-uxui-design}/...` 配下の SKILL.md および `docs/*.md` / `review_criteria_*.md` 内の `/doc-advisor:query-*` / `/doc-advisor:create-*-toc` 直呼びを抽象 4 SKILL 呼びに一斉置換
+- **既存 forge 17+ ファイルの参照置換**（§4.2）: `plugins/forge/skills/{review,start-design,start-plan,clean-rules,merge-specs,create-feature-from-plan,start-requirements,start-uxui-design}/...` 配下の SKILL.md および `docs/*.md` / `review_criteria_*.md` 内の `/doc-advisor:query-*` / `/doc-advisor:create-*-toc` 直呼びを抽象 4 SKILL 呼びに一斉置換（注: `create-feature-from-plan` は Issue #111 で `create-feature-from-markdown-plan` に rename。本記述は当時の skill 名を保持した履歴記述）
 - **ガード方針の差分対応**（§8.2）: query 系の「利用可能ならスキップ」ガードは削除、update 系は維持
 - **テスト 3 点**
   - 新規 `tests/forge/scripts/test_backend_selection.py`（分岐テーブル A 5 行 + B 8 行 + §1.5.1 API キー判定 + §5.1 エラー文字列完全一致 + read-only 性）
