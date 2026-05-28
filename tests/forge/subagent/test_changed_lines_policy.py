@@ -45,6 +45,9 @@ def _compile_literal_patterns(values: list[str]) -> list[re.Pattern[str]]:
 _LAUNCH_CONTEXT_PATTERNS = _compile_literal_patterns(
     load_terms()['launch_context']['terms']
 )
+# 使用例マーカーは公式用語ではなくテスト誤検知抑制のための heuristic。
+# SUBAGENT-DES-002 §2.1 / §4.2 / §7.2 により TOML 用語集には追加せず、
+# テストコード側に保持する。
 _USER_EXAMPLE_PATTERNS = [
     re.compile(r'使い方'),
     re.compile(r'使用例'),

@@ -193,7 +193,7 @@ $ARGUMENTS[0] # $0 と同等
 - `/kaizen:fix-findings --batch` を呼び出し、🔴問題を修正する
 ```
 
-- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。fork 型 SKILL 内からも同様（例: `create-feature-from-plan` → `/forge:start-*`、query-specs / query-rules → `/doc-db:*`）
+- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。fork 型 SKILL 内からも同様（例: `create-feature-from-markdown-plan` → `/forge:start-*`、query-specs / query-rules → `/doc-db:*`）
 - ❌ 自己再帰禁止（下記）
 
 ### 自己再帰禁止 [MANDATORY]

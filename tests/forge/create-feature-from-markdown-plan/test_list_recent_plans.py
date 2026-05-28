@@ -2,7 +2,7 @@
 """list_recent_plans.py のテスト
 
 実行:
-  python3 -m unittest tests.forge.create-feature-from-plan.test_list_recent_plans -v
+  python3 -m unittest tests.forge.create-feature-from-markdown-plan.test_list_recent_plans -v
   （ハイフン入りパッケージ名のため、loader 経由で実行する）
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 SCRIPT_DIR = (
     Path(__file__).resolve().parents[3]
-    / "plugins" / "forge" / "skills" / "create-feature-from-plan" / "scripts"
+    / "plugins" / "forge" / "skills" / "create-feature-from-markdown-plan" / "scripts"
 )
 sys.path.insert(0, str(SCRIPT_DIR))
 
