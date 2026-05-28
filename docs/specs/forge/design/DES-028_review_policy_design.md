@@ -588,7 +588,7 @@ observation 軸 (P1/P2/P3) と精査軸 (5 観点) は **直交**。同一 findi
 
 複数件 (2〜3 件) の場合は finding ごとに手順 1〜3 のサイクルを順に回す。全件の `Edit` 完了後、呼び出し元 (review / present-findings) は単独修正レビュー (reviewer `--diff-only`) を実行し、問題なければ finding ごとに `mark_fixed.py` を呼んで `status: fixed` に更新する。
 
-> **新 fixed 遷移契約**: 軽量経路・fixer 経路にかかわらず、`status: fixed` への遷移は常に呼び出し元 (review / present-findings) が単独修正レビュー完了後に行う。軽量経路の手順 4 で直接 `mark_fixed.py` を呼ぶ旧契約は廃止 (SUBAGENT-DES-001 §7)。
+> **新 fixed 遷移契約**: 軽量経路・fixer 経路にかかわらず、`status: fixed` への遷移は常に呼び出し元 (review / present-findings) が単独修正レビュー完了後に行う。軽量経路の手順 4 で直接 `mark_fixed.py` を呼ぶ旧契約は廃止 (DES-029 §7)。
 
 ##### fixer 経路の手順
 

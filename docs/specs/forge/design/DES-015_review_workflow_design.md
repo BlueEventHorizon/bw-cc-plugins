@@ -174,14 +174,14 @@ extract 完了後、orchestrator が `/forge:evaluator` を起動する。evalua
 
 `--auto-critical` は severity=critical のみを対象に絞り、`--auto` は全件を対象とする。plan.yaml 内の `recommendation: fix` AND `status ∈ {pending, in_progress}` が 0 件でループ終了。`recommendation: create_issue` の項目は fixer / 軽量経路の対象外 (Issue 化済みは fixer の責務外)。
 
-#### 修正経路分岐表 (SUBAGENT-DES-001 §7)
+#### 修正経路分岐表 (DES-029 §7)
 
 | # | 経路名             | 起動方法              | context 消費    | 用途                                                 | 適用条件                                                                                           |
 | - | ------------------ | --------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | 1 | 軽量経路 (FNC-413) | (起動なし、Edit 直接) | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 AND 全 `auto_fixable: true` |
 | 2 | fork 型 fixer 経路 | Skill ツール (fork)   | 遮断            | 件数多 (≥ 4) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
 
-旧経路 (汎用 Agent 起動による fixer) は SUBAGENT-DES-001 で廃止。SUBAGENT-REQ-001 §1.1 の「経路 3 種混在」問題は経路 2 種に縮約される。
+旧経路 (汎用 Agent 起動による fixer) は DES-029 で廃止。REQ-005 §1.1 の「経路 3 種混在」問題は経路 2 種に縮約される。
 
 ### Phase 7: 完了処理
 

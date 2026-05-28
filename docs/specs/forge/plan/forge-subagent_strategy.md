@@ -2,12 +2,12 @@
 
 ## メタデータ
 
-| 項目         | 値                                                     |
-| ------------ | ------------------------------------------------------ |
-| 機能名       | forge-subagent                                         |
-| 設計書       | SUBAGENT-DES-001_skill_agent_launch_contract_design.md |
-| 作成日       | 2026-05-26                                             |
-| 対象ブランチ | refactor/forge-subagent                                |
+| 項目         | 値                                            |
+| ------------ | --------------------------------------------- |
+| 機能名       | forge-subagent                                |
+| 設計書       | DES-029_skill_agent_launch_contract_design.md |
+| 作成日       | 2026-05-26                                    |
+| 対象ブランチ | refactor/forge-subagent                       |
 
 ---
 
@@ -31,18 +31,18 @@
 
 ### 実装スコープ全体
 
-| 対象ファイル                                                                             | 変更種別                                                    |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `docs/specs/common/design/COMMON-DES-001_skill_base_design.md`                           | §6 リストに 3 行追加                                        |
-| `plugins/forge/skills/reviewer/SKILL.md`                                                 | fork 型化 + 文言改訂                                        |
-| `plugins/forge/skills/evaluator/SKILL.md`                                                | fork 型化 + 文言改訂                                        |
-| `plugins/forge/skills/fixer/SKILL.md`                                                    | fork 型化 + mark_fixed.py 呼び出し削除                      |
-| `plugins/forge/skills/review/SKILL.md`                                                   | 起動方法変更 + 軽量経路 mark_fixed.py 削除 + 経路分岐表追記 |
-| `plugins/forge/skills/present-findings/SKILL.md`                                         | fixer 起動を Skill ツール (fork) に変更                     |
-| `tests/forge/subagent/` (新規ディレクトリ)                                               | TEST-S001〜S005 + frontmatter 検証                          |
-| `docs/specs/forge/design/DES-015_review_workflow_design.md`                              | 経路分岐表追記                                              |
-| `docs/specs/forge/design/DES-028_review_policy_design.md`                                | 軽量経路手順更新                                            |
-| `docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md` | TBD-002〜005 解消                                           |
+| 対象ファイル                                                           | 変更種別                                                    |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `docs/specs/common/design/COMMON-DES-001_skill_base_design.md`         | §6 リストに 3 行追加                                        |
+| `plugins/forge/skills/reviewer/SKILL.md`                               | fork 型化 + 文言改訂                                        |
+| `plugins/forge/skills/evaluator/SKILL.md`                              | fork 型化 + 文言改訂                                        |
+| `plugins/forge/skills/fixer/SKILL.md`                                  | fork 型化 + mark_fixed.py 呼び出し削除                      |
+| `plugins/forge/skills/review/SKILL.md`                                 | 起動方法変更 + 軽量経路 mark_fixed.py 削除 + 経路分岐表追記 |
+| `plugins/forge/skills/present-findings/SKILL.md`                       | fixer 起動を Skill ツール (fork) に変更                     |
+| `tests/forge/subagent/` (新規ディレクトリ)                             | TEST-S001〜S005 + frontmatter 検証                          |
+| `docs/specs/forge/design/DES-015_review_workflow_design.md`            | 経路分岐表追記                                              |
+| `docs/specs/forge/design/DES-028_review_policy_design.md`              | 軽量経路手順更新                                            |
+| `docs/specs/forge/requirements/REQ-005_skill_agent_launch_contract.md` | TBD-002〜005 解消                                           |
 
 ---
 
@@ -75,9 +75,9 @@
 `docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §6 のリストに以下 3 行を追加:
 
 ```
-| plugins/forge/skills/reviewer/SKILL.md  | forge | reviewer  | general-purpose | false | /forge:review のレビュー実行エンジン  | SUBAGENT-DES-001 §5.1 |
-| plugins/forge/skills/evaluator/SKILL.md | forge | evaluator | general-purpose | false | /forge:review の判定エンジン          | SUBAGENT-DES-001 §5.2 |
-| plugins/forge/skills/fixer/SKILL.md     | forge | fixer     | general-purpose | false | /forge:review の修正実行エンジン      | SUBAGENT-DES-001 §5.3 |
+| plugins/forge/skills/reviewer/SKILL.md  | forge | reviewer  | general-purpose | false | /forge:review のレビュー実行エンジン  | forge:DES-029 §5.1 |
+| plugins/forge/skills/evaluator/SKILL.md | forge | evaluator | general-purpose | false | /forge:review の判定エンジン          | forge:DES-029 §5.2 |
+| plugins/forge/skills/fixer/SKILL.md     | forge | fixer     | general-purpose | false | /forge:review の修正実行エンジン      | forge:DES-029 §5.3 |
 ```
 
 #### 1-B: reviewer/SKILL.md に fork 安全機能を全適用
@@ -181,7 +181,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
   - 変更後: `自身 (fork 型 SKILL) が直接 Edit/Write を実行する`
 - `mark_fixed.py` の呼び出し手順を削除（呼び出し元の責務として整理）
 - 出力欄に `patch_result.json` への書き込みを明記
-- return スキーマを SUBAGENT-DES-001 §6.5 に合わせて追記:
+- return スキーマを DES-029 §6.5 に合わせて追記:
   ```
   {status, patched_ids, failed_ids, files_modified, error_message?}
   ```
@@ -210,7 +210,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
   - 変更前: `汎用 Agent として /forge:reviewer を起動する`
   - 変更後: `Skill ツール (fork) で reviewer を呼び出す (args: session_dir kind engine [flags])`
 - `allowed-tools` から `Agent` を削除（fork 型 SKILL 起動に `Agent` ツールは不要）
-- 経路分岐表（SUBAGENT-DES-001 §7）を追記:
+- 経路分岐表（DES-029 §7）を追記:
 
 ```markdown
 ## 修正経路分岐表
@@ -308,7 +308,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 
 `docs/specs/forge/design/DES-015_review_workflow_design.md`
 
-- SUBAGENT-DES-001 §7 の修正経路分岐表を追記
+- DES-029 §7 の修正経路分岐表を追記
 - 追記箇所: レビューワークフローの修正フェーズ（Phase 6 前後）
 
 #### 6-B: DES-028 の軽量経路手順更新
@@ -325,14 +325,14 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 
 **依存**: Phase 5 完了後
 
-`docs/specs/forge-subagent/requirements/SUBAGENT-REQ-001_skill_agent_launch_contract.md` の以下の TBD を解消:
+`docs/specs/forge/requirements/REQ-005_skill_agent_launch_contract.md` の以下の TBD を解消:
 
 | TBD ID  | 内容                         | 解消方法                                             |
 | ------- | ---------------------------- | ---------------------------------------------------- |
 | TBD-002 | 静的テスト判定ロジックの詳細 | TEST-S001〜S005 の実装内容（Phase 5）を参照して記述  |
 | TBD-003 | OBSOLETE マーカー運用ルール  | TEST-S003 の除外ロジックから運用ルールを逆算して記述 |
 | TBD-004 | 検出ヒューリスティクス       | TEST-S002 / TEST-S005 の境界定義から記述             |
-| TBD-005 | (内容確認後に対応)           | SUBAGENT-DES-001 §9 の対応内容に集約                 |
+| TBD-005 | (内容確認後に対応)           | DES-029 §9 の対応内容に集約                          |
 
 ---
 
@@ -366,7 +366,7 @@ Issue #32 の誤読源（「reviewer が別の汎用 Agent を起動する」と
 
 **リスク**: reviewer / evaluator / fixer は `context: fork` のため、AskUserQuestion が使えない可能性がある。
 
-**対策**: 想定外の入力エラー時は `return {status: "error", error_message: "..."}` で orchestrator に判断を委ねる設計とする（SUBAGENT-DES-001 §12.1 に明記済み）。
+**対策**: 想定外の入力エラー時は `return {status: "error", error_message: "..."}` で orchestrator に判断を委ねる設計とする（DES-029 §12.1 に明記済み）。
 
 ### R-2: mark_fixed.py 責務移転による呼び出し元の変更漏れ
 
@@ -422,5 +422,5 @@ Phase 5 (Step 7)    ── Phase 6 (Step 8)
   └─ 静的検証テスト追加  └─ DES-015 + DES-028 更新
        ↓
 Phase 7 (Step 9)
-  └─ SUBAGENT-REQ-001 TBD 解消
+  └─ REQ-005 TBD 解消
 ```

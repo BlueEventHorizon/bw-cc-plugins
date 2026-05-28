@@ -1,12 +1,12 @@
-# SUBAGENT-DES-002 変更行 gate 起動経路用語 TOML 化 設計書
+# DES-030 変更行 gate 起動経路用語 TOML 化 設計書
 
 ## メタデータ
 
 | 項目       | 値                                                                                                                               |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 設計 ID    | SUBAGENT-DES-002                                                                                                                 |
-| 関連要件   | SUBAGENT-REQ-001_skill_agent_launch_contract                                                                                     |
-| 関連設計   | SUBAGENT-DES-001_skill_agent_launch_contract_design                                                                              |
+| 設計 ID    | DES-030                                                                                                                          |
+| 関連要件   | REQ-005_skill_agent_launch_contract                                                                                              |
+| 関連設計   | DES-029_skill_agent_launch_contract_design                                                                                       |
 | 関連ルール | `docs/rules/skill_launch_paths_definitions.md`, `docs/rules/skill_authoring_notes.md`, `docs/rules/implementation_guidelines.md` |
 | 作成日     | 2026-05-26                                                                                                                       |
 | 適用範囲   | `tests/forge/subagent/test_changed_lines_policy.py` の変更行 gate                                                                |
