@@ -159,6 +159,62 @@ class TestFlatYaml(_FsTestCase):
         result = parse_yaml(content)
         self.assertEqual(result["greeting"], "it's me")
 
+    # -----------------------------------------------------------------
+    # list[str] 値（#100: --files のインライン配列出力）
+    # -----------------------------------------------------------------
+
+    def test_str_list_roundtrip(self):
+        data = {"files": ["a.md", "b.md"]}
+        path = self._path("list.yaml")
+        write_flat_yaml(path, data)
+        self.assertEqual(read_yaml(path)["files"], ["a.md", "b.md"])
+
+    def test_empty_list_roundtrip(self):
+        data = {"files": []}
+        path = self._path("empty_list.yaml")
+        write_flat_yaml(path, data)
+        text = Path(path).read_text()
+        self.assertIn("files: []", text)
+        self.assertEqual(read_yaml(path)["files"], [])
+
+    def test_list_quoted_inline_format(self):
+        """list[str] 要素は常にダブルクォートされる。"""
+        data = {"files": ["docs/a.md"]}
+        path = self._path("qlist.yaml")
+        write_flat_yaml(path, data)
+        text = Path(path).read_text()
+        self.assertIn('files: ["docs/a.md"]', text)
+
+    def test_list_with_space_path_roundtrip(self):
+        data = {"files": ["dir name/a b.md"]}
+        path = self._path("space_list.yaml")
+        write_flat_yaml(path, data)
+        self.assertEqual(read_yaml(path)["files"], ["dir name/a b.md"])
+
+    def test_list_with_embedded_quote_roundtrip(self):
+        """要素内のダブルクォートがエスケープされて roundtrip する。"""
+        data = {"files": ['a"b.md']}
+        path = self._path("quote_list.yaml")
+        write_flat_yaml(path, data)
+        self.assertEqual(read_yaml(path)["files"], ['a"b.md'])
+
+    def test_list_with_backslash_roundtrip(self):
+        """要素内のバックスラッシュがエスケープされて roundtrip する。"""
+        data = {"files": ["dir\\file.md"]}
+        path = self._path("bs_list.yaml")
+        write_flat_yaml(path, data)
+        self.assertEqual(read_yaml(path)["files"], ["dir\\file.md"])
+
+    def test_list_comma_element_raises_value_error(self):
+        """comma を含む要素は roundtrip 不能なため ValueError で明示 reject。"""
+        with self.assertRaises(ValueError):
+            write_flat_yaml(self._path("c.yaml"), {"files": ["a,b.md"]})
+
+    def test_list_non_str_element_raises_type_error(self):
+        """str 以外の要素は暗黙 str 化せず TypeError で明示 reject。"""
+        with self.assertRaises(TypeError):
+            write_flat_yaml(self._path("n.yaml"), {"files": [1, 2]})
+
 
 # ---------------------------------------------------------------------------
 # write_nested_yaml

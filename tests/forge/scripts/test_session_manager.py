@@ -33,6 +33,7 @@ from session_manager import (
     cmd_find,
     cmd_init,
     cmd_touch,
+    extract_files,
     generate_session_name,
     parse_extra_args,
     validate_temp_path,
@@ -396,6 +397,137 @@ class TestCmdInit(_FsTestCase):
         self.assertEqual(result["status"], "created")
         self.assertTrue(os.path.isdir(result["session_dir"]))
         self.assertIn("error", result["auto_cleanup"])
+
+
+# =========================================================================
+# 3b. cmd_init の --files（review 専用予約キー、#100）
+# =========================================================================
+
+class TestExtractFiles(unittest.TestCase):
+    """extract_files の残余引数抽出ロジックのテスト。"""
+
+    def test_absent(self):
+        present, files, cleaned = extract_files(["--engine", "codex"])
+        self.assertFalse(present)
+        self.assertEqual(files, [])
+        self.assertEqual(cleaned, ["--engine", "codex"])
+
+    def test_empty_value(self):
+        present, files, cleaned = extract_files(["--files"])
+        self.assertTrue(present)
+        self.assertEqual(files, [])
+        self.assertEqual(cleaned, [])
+
+    def test_single_and_multiple(self):
+        _p, files, _c = extract_files(["--files", "a.md", "b.md"])
+        self.assertEqual(files, ["a.md", "b.md"])
+
+    def test_comma_split(self):
+        _p, files, _c = extract_files(["--files", "a.md,b.md"])
+        self.assertEqual(files, ["a.md", "b.md"])
+
+    def test_stops_at_next_flag(self):
+        """--files は次の --xxx で停止し、後続フラグを飲み込まない。"""
+        present, files, cleaned = extract_files(
+            ["--files", "a.md", "--engine", "codex"]
+        )
+        self.assertTrue(present)
+        self.assertEqual(files, ["a.md"])
+        self.assertEqual(cleaned, ["--engine", "codex"])
+
+    def test_zero_value_with_trailing_flag(self):
+        """値ゼロの --files の直後に別フラグが来ても分離される。"""
+        present, files, cleaned = extract_files(["--files", "--engine", "codex"])
+        self.assertTrue(present)
+        self.assertEqual(files, [])
+        self.assertEqual(cleaned, ["--engine", "codex"])
+
+
+class TestCmdInitFiles(_FsTestCase):
+    """cmd_init の --files 処理（review 専用、副作用ゼロ validation）。"""
+
+    def _make_args(self, skill):
+        class Args:
+            pass
+        a = Args()
+        a.skill = skill
+        return a
+
+    def _files_field(self, remaining):
+        """review で cmd_init を実行し、session.yaml の files フィールドを返す。"""
+        result = cmd_init(self._make_args("review"), remaining)
+        self.assertEqual(result["status"], "created")
+        data = read_yaml(os.path.join(result["session_dir"], "session.yaml"))
+        return result, data
+
+    def test_files_absent_no_key(self):
+        """--files 未指定（直呼び）なら files キーを書かない。"""
+        _result, data = self._files_field([])
+        self.assertNotIn("files", data)
+
+    def test_files_empty_writes_empty_list(self):
+        """--files フラグあり・値 0 個 → files: []"""
+        _result, data = self._files_field(["--files"])
+        self.assertEqual(data["files"], [])
+
+    def test_files_single(self):
+        _result, data = self._files_field(["--files", "docs/a.md"])
+        self.assertEqual(data["files"], ["docs/a.md"])
+
+    def test_files_multiple_space(self):
+        _result, data = self._files_field(["--files", "docs/a.md", "docs/b.md"])
+        self.assertEqual(data["files"], ["docs/a.md", "docs/b.md"])
+
+    def test_files_comma(self):
+        _result, data = self._files_field(["--files", "docs/a.md,docs/b.md"])
+        self.assertEqual(data["files"], ["docs/a.md", "docs/b.md"])
+
+    def test_files_mixed_space_and_comma(self):
+        _result, data = self._files_field(["--files", "a.md,b.md", "c.md"])
+        self.assertEqual(data["files"], ["a.md", "b.md", "c.md"])
+
+    def test_files_inline_quoted_in_yaml_text(self):
+        """session.yaml の生テキストで files が quote 付きインライン配列になる。"""
+        result = cmd_init(self._make_args("review"), ["--files", "docs/a.md"])
+        text = Path(result["session_dir"], "session.yaml").read_text(encoding="utf-8")
+        self.assertIn('files: ["docs/a.md"]', text)
+
+    def test_files_order_mixed_does_not_swallow_flag(self):
+        """--files a.md --engine codex で engine が通常フィールドとして保持される。"""
+        _result, data = self._files_field(["--files", "a.md", "--engine", "codex"])
+        self.assertEqual(data["files"], ["a.md"])
+        self.assertEqual(data["engine"], "codex")
+
+    def test_files_zero_value_with_trailing_flag(self):
+        """--files --engine codex → files: [] かつ engine 保持。"""
+        _result, data = self._files_field(["--files", "--engine", "codex"])
+        self.assertEqual(data["files"], [])
+        self.assertEqual(data["engine"], "codex")
+
+    def test_non_review_files_rejected_without_side_effects(self):
+        """review 以外が --files を渡すと error + 残骸ディレクトリを作らない。"""
+        before = set(os.listdir(TEMP_BASE))
+        result = cmd_init(self._make_args("start-design"), ["--files", "a.md"])
+        self.assertEqual(result["status"], "error")
+        # 副作用ゼロ: 新規セッションディレクトリが作られていない
+        self.assertEqual(set(os.listdir(TEMP_BASE)), before)
+
+    def test_non_review_files_does_not_trigger_auto_cleanup(self):
+        """invalid --files では他セッションの自動回収も起きない（副作用ゼロ）。"""
+        leftover = os.path.join(TEMP_BASE, "start-plan-done")
+        os.makedirs(leftover, exist_ok=True)
+        write_flat_yaml(
+            os.path.join(leftover, "session.yaml"),
+            {"skill": "start-plan",
+             "started_at": "2026-01-01T00:00:00Z",
+             "last_updated": "2026-01-01T00:00:00Z",
+             "status": "completed"},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        result = cmd_init(self._make_args("start-design"), ["--files", "a.md"])
+        self.assertEqual(result["status"], "error")
+        # completed 残骸が回収されずに残る（validation が副作用より前で止まった証拠）
+        self.assertTrue(os.path.exists(leftover))
 
 
 # =========================================================================

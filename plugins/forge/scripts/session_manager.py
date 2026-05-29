@@ -91,6 +91,61 @@ def parse_extra_args(remaining):
     return extra
 
 
+# review 専用の予約キー。`--key value` の scalar 契約に乗らない可変長 list 値
+# (レビュー対象ファイル群) を受けるため、parse_extra_args とは別経路で処理する。
+# DES-011 §5.1/§5.2 の「任意 --key value」契約に対する明示的例外。
+FILES_FLAG = "--files"
+
+
+def _normalize_files(raw_values):
+    """``--files`` の生値を flat な list[str] に正規化する。
+
+    各値はカンマ区切りを許容し、空白を strip して空文字を除外する::
+
+        ["a.md", "b.md"]          -> ["a.md", "b.md"]
+        ["a.md,b.md"]             -> ["a.md", "b.md"]
+        ["a.md,b.md", "c.md"]     -> ["a.md", "b.md", "c.md"]
+    """
+    result = []
+    for v in raw_values:
+        for part in v.split(","):
+            p = part.strip()
+            if p:
+                result.append(p)
+    return result
+
+
+def extract_files(remaining):
+    """残余引数から ``--files`` とその可変長値を抽出する。
+
+    ``--files`` 以降のトークンを **次の ``--xxx`` または末尾まで** 値として集める
+    (空白区切り)。抽出した ``--files`` と値は残余から取り除き、それ以外を
+    ``cleaned_remaining`` として返す。これを parse_extra_args に渡すことで、
+    ``files`` が scalar として再解釈・上書きされる事故を防ぐ。
+
+    Returns:
+        tuple[bool, list[str], list[str]]:
+            (files_present, files, cleaned_remaining)
+    """
+    files_present = False
+    raw_values = []
+    cleaned = []
+    i = 0
+    n = len(remaining)
+    while i < n:
+        tok = remaining[i]
+        if tok == FILES_FLAG:
+            files_present = True
+            i += 1
+            while i < n and not remaining[i].startswith("--"):
+                raw_values.append(remaining[i])
+                i += 1
+        else:
+            cleaned.append(tok)
+            i += 1
+    return files_present, _normalize_files(raw_values), cleaned
+
+
 # ---------------------------------------------------------------------------
 # サブコマンド
 # ---------------------------------------------------------------------------
@@ -100,8 +155,21 @@ def cmd_init(args, remaining):
 
     作成に先立ち、completed 残骸を全スキル横断で自動回収する（#93）。
     in_progress 残骸は再開価値があり得るため対象にしない。
+
+    review の ``--files``（レビュー対象ファイル群）は可変長 list として受け、
+    session.yaml に ``files`` フィールドとして保存する。``--files`` の抽出と
+    validation は、後続の副作用（残骸回収・ディレクトリ作成）より前に完了させる
+    ことで、invalid 入力時に副作用ゼロで reject する。
     """
     skill = args.skill
+
+    # --files の抽出と validation は全副作用より前に行う（invalid 時に副作用ゼロ）
+    files_present, files, cleaned_remaining = extract_files(remaining)
+    if files_present and skill != "review":
+        return {
+            "status": "error",
+            "error": f"--files は review skill 専用の予約キーです（skill={skill}）",
+        }
 
     # 新規作成前に completed 残骸を回収（in_progress には触れない、#93）
     auto_cleanup = _auto_cleanup_on_init()
@@ -121,9 +189,13 @@ def cmd_init(args, remaining):
         "status": "in_progress",
     }
 
-    # 残余引数からスキル固有フィールドを追加
-    extra = parse_extra_args(remaining)
+    # 残余引数からスキル固有フィールドを追加（--files は除外済み）
+    extra = parse_extra_args(cleaned_remaining)
     data.update(extra)
+
+    # --files 指定時のみ files フィールドを書く（値 0 個でも空配列を明示記録する）
+    if files_present:
+        data["files"] = files
 
     # session.yaml 書き出し
     yaml_path = os.path.join(session_dir, "session.yaml")
