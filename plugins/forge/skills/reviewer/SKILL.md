@@ -30,7 +30,7 @@ allowed-tools: Read, Write, Bash
 
 - refs.yaml / review_criteria_*.md / target_files の Read
 - review_<種別>.md への Write（レビュー結果の書き出しのみ）
-- Bash（dprint fmt 等の軽微なユーティリティ実行のみ）
+- Bash（`engine=codex` 時の `run_review_engine.sh` 実行（Codex CLI 起動）、および dprint fmt 等のユーティリティ実行）。対象ファイルへの Edit / Write は上記の通り禁止する
 
 ## 引数解釈
 

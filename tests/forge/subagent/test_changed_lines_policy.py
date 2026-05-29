@@ -108,6 +108,13 @@ def _resolve_diff_base() -> str | None:
     return None
 
 
+def _resolve_diff_start_ref(base: str) -> str:
+    try:
+        return _run_git(['merge-base', base, 'HEAD']).strip()
+    except RuntimeError:
+        return base
+
+
 def _is_checked_path(path: str) -> bool:
     if not path.startswith(CHECKED_PATH_PREFIXES):
         return False
@@ -119,12 +126,13 @@ def _changed_lines() -> list[ChangedLine]:
     if base is None:
         raise unittest.SkipTest('main / origin/main が見つからないため差分検査をスキップします')
 
+    start_ref = _resolve_diff_start_ref(base)
     diff = _run_git([
         'diff',
         '--unified=0',
         '--no-ext-diff',
         '--no-color',
-        f'{base}...HEAD',
+        start_ref,
         '--',
         *CHECKED_PATH_PREFIXES,
     ])
