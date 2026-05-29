@@ -266,13 +266,14 @@ flowchart TD
 
 ### 5.1 設計方針
 
-| 方針                    | 理由                                                                      |
-| ----------------------- | ------------------------------------------------------------------------- |
-| 標準ライブラリのみ      | PyYAML 等の外部依存を避ける（プロジェクト規約）                           |
-| 簡易 YAML writer/reader | フラット key-value のみ対応。ネスト構造は不要                             |
-| JSON 出力               | AI がパースしやすい。`ensure_ascii=False, indent=2`                       |
-| `parse_known_args`      | `--skill` 以外の任意 `--key value` をスキル固有フィールドとして受け入れる |
-| パストラバーサル防止    | cleanup 時に `realpath` で正規化し `.claude/.temp/` 配下であることを検証  |
+| 方針                    | 理由                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 標準ライブラリのみ      | PyYAML 等の外部依存を避ける（プロジェクト規約）                                                                                                                                                                                            |
+| 簡易 YAML writer/reader | フラット key-value のみ対応。ネスト構造は不要                                                                                                                                                                                              |
+| JSON 出力               | AI がパースしやすい。`ensure_ascii=False, indent=2`                                                                                                                                                                                        |
+| `parse_known_args`      | `--skill` 以外の任意 `--key value` をスキル固有フィールドとして受け入れる                                                                                                                                                                  |
+| `--files` 予約 (#100)   | review 専用の予約キー。`--files` のみ可変長 list（レビュー対象ファイル群）として受け取り `session.yaml` に list 保存する。他 skill が `--files` を渡した場合は副作用ゼロで reject する（上記「任意 `--key value`」契約に対する明示的例外） |
+| パストラバーサル防止    | cleanup 時に `realpath` で正規化し `.claude/.temp/` 配下であることを検証                                                                                                                                                                   |
 
 ### 5.2 サブコマンド
 
@@ -288,12 +289,12 @@ flowchart LR
     Cleanup --> |出力| JSON3["{ status: deleted,<br/>  session_dir: ... }"]
 ```
 
-| サブコマンド  | 入力                           | 処理                                                                       | 出力                                                                 |
-| ------------- | ------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `init`        | `--skill` + 任意 `--key value` | completed 残骸の自動回収（§5.6）→ ディレクトリ作成 + session.yaml 書き出し | `{"status": "created", "session_dir": "...", "auto_cleanup": {...}}` |
-| `find`        | `--skill`                      | `.claude/.temp/*/session.yaml` を検索                                      | `{"status": "found"/"none", "sessions": [...]}`                      |
-| `cleanup`     | session_dir パス               | パス検証 + `shutil.rmtree()`                                               | `{"status": "deleted", "session_dir": "..."}`                        |
-| `update-meta` | session_dir + 任意 meta flag   | `session.yaml` の浅い進行状態を更新                                        | `{"status": "ok", "updated": [...]}`                                 |
+| サブコマンド  | 入力                                                                              | 処理                                                                                                                  | 出力                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`        | `--skill` + 任意 `--key value`（review のみ `--files` 可変長 list 可、§5.1 例外） | `--files` 抽出・validation（review 限定）→ completed 残骸の自動回収（§5.6）→ ディレクトリ作成 + session.yaml 書き出し | `{"status": "created", "session_dir": "...", "auto_cleanup": {...}}`（invalid `--files` 時は `{"status": "error", ...}` を副作用ゼロで返す） |
+| `find`        | `--skill`                                                                         | `.claude/.temp/*/session.yaml` を検索                                                                                 | `{"status": "found"/"none", "sessions": [...]}`                                                                                              |
+| `cleanup`     | session_dir パス                                                                  | パス検証 + `shutil.rmtree()`                                                                                          | `{"status": "deleted", "session_dir": "..."}`                                                                                                |
+| `update-meta` | session_dir + 任意 meta flag                                                      | `session.yaml` の浅い進行状態を更新                                                                                   | `{"status": "ok", "updated": [...]}`                                                                                                         |
 
 ### 5.3 `update-meta` の設計
 
