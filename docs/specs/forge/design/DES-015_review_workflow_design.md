@@ -174,7 +174,7 @@ extract 完了後、orchestrator が `/forge:evaluator` を起動する。evalua
 | 3    | 再レビュー                                                                                                                  | Skill ツール (fork) で `/forge:reviewer` (`args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"`) |
 | 4    | `fixed` 確定                                                                                                                | 単独修正レビュー完了後に呼び出し元が `mark_fixed.py` を実行                                                            |
 
-`--auto-critical` は severity=critical のみを対象に絞り、`--auto` は全件を対象とする。plan.yaml 内の `recommendation: fix` AND `status ∈ {pending, in_progress}` が 0 件でループ終了。`recommendation: create_issue` の項目は fixer / 軽量経路の対象外 (Issue 化済みは fixer の責務外)。
+`--auto-critical` は severity=critical のみを対象に絞り、`--auto` は severity=critical + major を対象とする (🟢 minor は対象外)。plan.yaml 内の `recommendation: fix` AND `status ∈ {pending, in_progress}` が 0 件でループ終了。`recommendation: create_issue` の項目は fixer / 軽量経路の対象外 (Issue 化済みは fixer の責務外)。
 
 #### 修正経路分岐表 (DES-029 §7)
 
@@ -355,7 +355,7 @@ flowchart TD
 | 入力 | target_files          | レビュー対象ファイル（refs.yaml 経由）                                                                                                 |
 | 入力 | related_code          | 関連コードのパスと関連性の説明（refs.yaml 経由）                                                                                       |
 | 入力 | レビュー種別          | 確定した種別                                                                                                                           |
-| 入力 | 介入軸フラグ          | `--auto`: 全件 / `--auto-critical`: 🔴 のみ / `--interactive`: 全件 AI 推奨                                                            |
+| 入力 | 介入軸フラグ          | `--auto`: critical + major (🟢 minor 除外) / `--auto-critical`: 🔴 のみ / `--interactive`: 全件 AI 推奨                                |
 | 出力 | review_{種別}.md 更新 | 各指摘に `recommendation` (`fix` / `skip` / `create_issue` / `needs_review` の 4 値) + `auto_fixable` + `reason` を付与 (DES-028 §4.3) |
 
 ### extract_review_findings.py（reviewer 完了後に実行）
@@ -403,11 +403,11 @@ present-findings は evaluator が吟味した結果を人間に段階的 (🔴 
 コアループ（reviewer 1 起動 → extract → evaluator → 軽量経路 or fixer → re-review）は介入軸モード問わず共通。
 evaluator は常に実行され、`--interactive` ではその後に present-findings が UIレイヤーとして入るだけ。
 
-| 介入軸モード      | コアループ                                                            | UIレイヤー       | 最終判断者 |
-| ----------------- | --------------------------------------------------------------------- | ---------------- | ---------- |
-| `--auto`          | reviewer → extract → evaluator → 軽量経路 or fixer → re-review (全件) | なし             | AI         |
-| `--auto-critical` | 同上 (severity=critical のみ対象)                                     | なし             | AI         |
-| `--interactive`   | 同上                                                                  | present-findings | 人間       |
+| 介入軸モード      | コアループ                                                                                        | UIレイヤー       | 最終判断者 |
+| ----------------- | ------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
+| `--auto`          | reviewer → extract → evaluator → 軽量経路 or fixer → re-review (critical + major / 🟢 minor 除外) | なし             | AI         |
+| `--auto-critical` | 同上 (severity=critical のみ対象)                                                                 | なし             | AI         |
+| `--interactive`   | 同上                                                                                              | present-findings | 人間       |
 
 **品質の一貫性**: コアの吟味ロジック（evaluator の 5 観点精査）が常に動くため、auto 系モードの品質が `--interactive` と同等になる。
 
@@ -427,12 +427,12 @@ reviewer・evaluator・fixer 全員に渡す。
 
 ### 介入軸フラグの動作
 
-| 指定              | 動作                                              |
-| ----------------- | ------------------------------------------------- |
-| 省略 (デフォルト) | `--interactive` と等価 (人間が判定者)             |
-| `--interactive`   | 段階的提示で 1 件ずつ判定・修正                   |
-| `--auto-critical` | 🔴 (critical) のみ自動修正                        |
-| `--auto`          | 全件 (全指摘) 自動修正 (高リスク・明示警告を表示) |
+| 指定              | 動作                                                                      |
+| ----------------- | ------------------------------------------------------------------------- |
+| 省略 (デフォルト) | `--interactive` と等価 (人間が判定者)                                     |
+| `--interactive`   | 段階的提示で 1 件ずつ判定・修正                                           |
+| `--auto-critical` | 🔴 (critical) のみ自動修正                                                |
+| `--auto`          | critical + major を自動修正 (🟢 minor は対象外・高リスク・明示警告を表示) |
 
 旧 `--auto N` (件数指定) は採用しない (severity 順 × 件数の混合軸が AI 誤生成を誘発するため、REQ-004 FNC-404 で 3 モード限定)。
 
@@ -477,7 +477,7 @@ recommendation 決定フロー (5 観点の結果から `fix` / `skip` / `create
 | UUID をディレクトリ名に使用            | 人間可読性・ソート可能性を優先してタイムスタンプ+random に                                                                            |
 | evaluator は --auto のみ               | 対話モードでも AI 推奨を活かすため常時実行に変更                                                                                      |
 | 観点軸 (P1/P2/P3) で reviewer 並列起動 | 起動数増加によりコンテキスト分断・重複指摘・評価コスト増を招き Issue #68 (複雑性) が再発するため、reviewer 1 起動原則に統一 (FNC-412) |
-| `--auto N` (件数指定) を残す           | severity 順 × 件数の混合軸は AI 誤生成リスクが高い。「対話 / 🔴 のみ / 全件」の 3 モードに限定                                        |
+| `--auto N` (件数指定) を残す           | severity 順 × 件数の混合軸は AI 誤生成リスクが高い。「対話 / 🔴 のみ / 🔴🟡 (🟢 minor 除外)」の 3 モードに限定                        |
 
 ### 確定事項
 
