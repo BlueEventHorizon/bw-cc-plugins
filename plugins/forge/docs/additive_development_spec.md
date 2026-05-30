@@ -18,7 +18,7 @@
 - 既存要件定義書の追記・更新
 - バグ修正・リファクタリング
 
-追加開発に該当する場合は `requirement_format.md:7-21` で定義された `type: temporary-feature-requirement` frontmatter を文書先頭に付与する。
+追加開発に該当する場合は、**作成するすべての文書種別（要件定義書・設計書・計画書）の先頭に追加 feature 用 frontmatter を付与する**。各種別の frontmatter 定義は本書 [§6 frontmatter 定義一覧（集約 SoT）](#6-frontmatter-定義一覧集約-sot) に集約する。
 
 ---
 
@@ -83,6 +83,59 @@ merge が完了するまで、一時文書は残す。
 
 ## 5. 関連文書
 
-- [`requirement_format.md`](requirement_format.md) — `type: temporary-feature-requirement` frontmatter の正式定義
+- [`requirement_format.md`](requirement_format.md) — 要件定義書フォーマット（追加 feature 用 frontmatter 節を含む）
+- [`design_format.md`](design_format.md) — 設計書フォーマット（追加 feature 用 frontmatter 節を含む）
+- [`plan_format.md`](plan_format.md) — 計画書フォーマット（追加 feature 用 frontmatter マーカー節を含む）
 - [`spec_design_boundary_spec.md`](spec_design_boundary_spec.md) — What/How 境界の判断（merge 時の振り分けに活用）
 - [`design_principles_spec.md`](design_principles_spec.md) — 設計原則（新規ファイル分離の判断補助）
+
+---
+
+## 6. frontmatter 定義一覧（集約 SoT）
+
+追加 feature 文書の frontmatter は本節を **単一の真実源（集約 SoT）** とする。各フォーマット文書（`requirement_format.md` / `design_format.md` / `plan_format.md`）は本節を参照し、自種別の frontmatter を掲載する。
+
+**判定**: いずれの種別も「追加 feature か」の判定は本書 §1（適用条件 / 対象外）に従う。main 初期立ち上げ・既存文書の追記更新は付与しない（false positive 防止）。
+
+### 6-1. 要件定義書（Markdown）
+
+```yaml
+---
+type: temporary-feature-requirement
+notes:
+  - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
+  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
+  - 本 feature 実装完了後、この文書は旧仕様書へ merge され削除される予定。
+---
+```
+
+### 6-2. 設計書（Markdown）
+
+```yaml
+---
+type: temporary-feature-design
+notes:
+  - 正本は対応する追加 feature 要件定義書（REQ-xxx）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
+  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
+  - 本 feature 実装完了後、この文書は旧設計書へ merge され削除される予定。
+---
+```
+
+### 6-3. 計画書（YAML）
+
+計画書は `{feature}_plan.yaml`（YAML ファイル）であり、Markdown の `---` frontmatter を使えない。さらに `plan_format.md` のスキーマは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止している（追加すると 🟡 major 違反）。
+
+したがって追加 feature の計画書では、frontmatter を**ファイル先頭のマーカーコメントブロック**で表現する（トップレベルキーを増やさない）:
+
+```yaml
+# ---
+# type: temporary-feature-plan
+# notes:
+#   - 正本は対応する追加 feature 要件定義書（REQ-xxx）。旧仕様と矛盾する場合は要件定義書を優先する。
+#   - 本 feature 実装完了後、この計画書は破棄される予定（§4「追加開発の計画 → 破棄」）。
+# ---
+
+# {feature} 実装計画書
+requirements_traceability:
+  ...
+```
