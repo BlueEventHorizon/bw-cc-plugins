@@ -7,6 +7,26 @@
 
 ---
 
+## 追加 feature 用 frontmatter
+
+**既存プロジェクトに追加 feature として設計書を新規作成するときに限り**、文書先頭に以下の YAML frontmatter を含めること。既存設計書の追記・更新時、および main の初期立ち上げ時は含めない。
+
+この設計書は feature 実装完了後、既存設計書へ merge され削除される予定の一時文書である（恒久ルール化しない）。文書全体がこの性質を持つため、本文ブロックではなく frontmatter にメタ情報として宣言する。
+
+```yaml
+---
+type: temporary-feature-design
+notes:
+  - 正本は対応する追加 feature 要件定義書（REQ-xxx）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
+  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
+  - 本 feature 実装完了後、この文書は旧設計書へ merge され削除される予定。
+---
+```
+
+正式定義（全文書種別の集約 SoT）・判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6 frontmatter 定義一覧 / §1 適用条件）
+
+---
+
 ## ファイル命名規則
 
 ```
@@ -20,6 +40,8 @@
 ## テンプレート
 
 ````markdown
+<!-- 追加 feature の場合、ここに上記「追加 feature 用 frontmatter」を挿入する -->
+
 # {設計ID} {機能名} 設計書
 
 ## メタデータ
