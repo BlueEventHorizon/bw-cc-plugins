@@ -2,8 +2,8 @@
 name: next-spec-id
 user-invocable: false
 description: |
-  ブランチ間で衝突しない、次の Spec ID（SCR / DES / TASK 等任意プレフィックス）を発行する。
-  要件定義書・設計書・計画書の作成時に ID の重複を防ぐために呼び出される。
+  ブランチ間で衝突しない、次の Spec ID（SCR / DES / TASK / ADR 等任意プレフィックス）を発行する。
+  要件定義書・設計書・計画書・ADR（アーキテクチャ決定記録）の作成時に ID の重複を防ぐために呼び出される。
 argument-hint: ""
 ---
 
@@ -29,6 +29,7 @@ SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
 python3 "$SCRIPT" SCR
 python3 "$SCRIPT" DES
 python3 "$SCRIPT" TASK
+python3 "$SCRIPT" ADR   # アーキテクチャ決定記録（設計書と同ディレクトリに配置）
 
 # プロジェクトルート指定
 python3 "$SCRIPT" --project-root /path/to/project SCR
@@ -114,6 +115,17 @@ JSON の `next_id` フィールドをファイル名の先頭に使用する。
 RESULT=$(python3 "$SCRIPT" DES)
 # → {"status": "ok", "next_id": "DES-004", ...}
 ```
+
+### ADR（アーキテクチャ決定記録）での例
+
+設計判断の記録として ADR を新規作成する際は、番号衝突を防ぐため必ず採番する（手動で「既存の次」と判断しない）:
+
+```bash
+RESULT=$(python3 "$SCRIPT" ADR)
+# → {"status": "ok", "next_id": "ADR-005", ...}
+```
+
+ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリが無くても git スキャンで既存 ADR を検出できる。
 
 ## 動作概要
 
