@@ -10,6 +10,10 @@ canonical 決定 (Issue #117): `--auto` は **critical + major** を自動修正
 としており矛盾していた。本テストは canonical 文言への回帰 (minor を含む「全件」記述の
 復活) を静的に検出する。
 
+ユーザー向けガイド (guide_review_ja.md / guide_review.md) も canonical を露出するため
+保護対象に含める。日本語 FORBIDDEN_SUBSTRINGS では英語版の退行を検出できないため、
+両ガイドの minor 除外は専用の肯定的 assertion で別途検証する。
+
 実行:
   python3 -m unittest tests.forge.review.test_auto_severity_consistency -v
 """
@@ -30,6 +34,8 @@ CANONICAL_DOCS = {
     "evaluator/SKILL.md": "plugins/forge/skills/evaluator/SKILL.md",
     "fixer/SKILL.md": "plugins/forge/skills/fixer/SKILL.md",
     "migration_notes": "docs/readme/forge/migration_notes/forge_review_v0.2.md",
+    "guide_review_ja": "docs/readme/forge/guide_review_ja.md",
+    "guide_review_en": "docs/readme/forge/guide_review.md",
 }
 
 # minor を含意する旧「全件」記述 (--auto の severity スコープ)。復活したら矛盾再発。
@@ -92,6 +98,24 @@ class TestAutoSeverityConsistency(unittest.TestCase):
             "out_of_scope",
             self.texts["evaluator/SKILL.md"],
             "evaluator/SKILL.md に minor の out_of_scope 記述がない",
+        )
+
+    def test_user_guides_state_minor_excluded(self) -> None:
+        """ユーザー向けガイド (日英) が `--auto` の minor 除外を明記していること。
+
+        FORBIDDEN_SUBSTRINGS は日本語専用のため、英語版 guide_review.md の
+        退行 (例: "Auto-fix all findings") は test_no_minor_inclusive_auto_wording
+        では検出できない。両ガイドの minor 除外記述を肯定的に検証する。
+        """
+        self.assertIn(
+            "🟢 minor は対象外",
+            self.texts["guide_review_ja"],
+            "guide_review_ja.md の `--auto` 行に minor 除外記述がない",
+        )
+        self.assertIn(
+            "🟢 minor findings are excluded",
+            self.texts["guide_review_en"],
+            "guide_review.md (英) の `--auto` 行に minor 除外記述がない",
         )
 
     def test_fixer_auto_row_is_critical_major(self) -> None:
