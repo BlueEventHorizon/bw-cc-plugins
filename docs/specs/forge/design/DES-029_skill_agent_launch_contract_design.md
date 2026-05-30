@@ -209,16 +209,28 @@ sequenceDiagram
     participant Review as review<br/>(継承型)
     participant FS as ファイルシステム<br/>(session_dir)
     participant Reviewer as reviewer<br/>(fork 型)
+    participant Codex as Codex CLI<br/>(run_review_engine.sh)
 
     User->>Review: /forge:review code --auto
     Review->>FS: init_session → session_dir 作成
     Review->>FS: write_refs.py → refs.yaml 書込 (review_packet)
-    Review->>Reviewer: Skill ツール (fork): args=session_dir + kind=code + engine=codex
+    Review->>Reviewer: Skill ツール (fork): args=session_dir + kind=code + engine={codex|claude}
+    Note over Review,Reviewer: engine を問わず fork 起動は 1 回のみ<br/>(FNC-412)。orchestrator は run_review_engine.sh を直接起動しない
     Note over Reviewer: fork 境界:<br/>親 context 遮断
     Reviewer->>FS: Read refs.yaml (review_packet 取得)
     Reviewer->>FS: Read target_files / ssot_refs[]
-    Reviewer->>Reviewer: P1→P2→P3 順次評価
-    Reviewer->>FS: Write review_code.md (findings)
+    alt engine=codex
+        Reviewer->>Codex: Bash subprocess: run_review_engine.sh
+        alt Codex 不在 (exit code=2)
+            Reviewer->>Reviewer: reviewer 内で Claude 実行へ fallback (2 体目は起動しない)
+            Reviewer->>FS: Write review_code.md (findings)
+        else Codex 実行成功 (exit 0)
+            Codex->>FS: review_code.md 書込 (Markdown 抽出)
+        end
+    else engine=claude
+        Reviewer->>Reviewer: P1→P2→P3 順次評価
+        Reviewer->>FS: Write review_code.md (findings)
+    end
     Reviewer-->>Review: return: {status: ok, output_path}
     Note over Review: 親 context 復帰<br/>session.yaml の last_updated 更新
 ```

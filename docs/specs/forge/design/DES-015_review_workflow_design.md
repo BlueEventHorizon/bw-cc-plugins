@@ -143,6 +143,8 @@ orchestrator は criteria (`${CLAUDE_SKILL_DIR}/docs/review_criteria_{種別}.md
 
 orchestrator が refs.yaml の `review_packet` を読み、`/forge:reviewer` を **1 体だけ** 起動する (FNC-412)。reviewer は P1 → P2 → P3 を `check_order` に従い順次評価し、`review_{種別}.md` (例: `review_design.md`) を出力する。観点ごとの分離は finding の `priority: P1|P2|P3` ラベルで表現し、agent 分離では行わない。
 
+engine (`codex` / `claude`) は reviewer fork に引数として渡し、Codex 実行 (`run_review_engine.sh`) / Claude self-review / Codex 不在時の fallback の差分はすべて **reviewer 内部で完結** する。orchestrator は engine を問わず reviewer を 1 体起動するのみで、`run_review_engine.sh` を直接起動しない (DES-029 §4.2)。
+
 ### Phase 4: 統合
 
 reviewer 完了後、`extract_review_findings.py` が `review_{種別}.md` から findings を抽出し、`review.md` と `plan.yaml` を生成する。plan.yaml の各 item には `priority` (P1/P2/P3) と `severity` (critical/major/minor) が独立フィールドとして付与される。実装は CLI facade、`scripts/review/findings_parser.py`、`scripts/review/findings_renderer.py` に分かれ、parser / renderer は file write を持たない。
