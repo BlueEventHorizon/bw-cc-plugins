@@ -31,12 +31,12 @@ forge-review v0.2 では `/forge:review` 周辺に **破壊的変更** が複数
 /forge:review <種別> [--diff | --files a.md,b.md,...] [--interactive | --auto-critical | --auto] [--codex | --claude]
 ```
 
-| 軸         | フラグ                                                          | 既定値          | 役割                                          |
-| ---------- | --------------------------------------------------------------- | --------------- | --------------------------------------------- |
-| 種別       | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | 位置引数。1 個のみ                            |
-| 対象軸     | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文 |
-| 介入軸     | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 全件自動修正   |
-| エンジン軸 | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                         |
+| 軸         | フラグ                                                          | 既定値          | 役割                                                         |
+| ---------- | --------------------------------------------------------------- | --------------- | ------------------------------------------------------------ |
+| 種別       | `code` / `design` / `requirement` / `plan` / `uxui` / `generic` | (必須)          | 位置引数。1 個のみ                                           |
+| 対象軸     | `--diff` / `--files`                                            | `--diff`        | 現ブランチ未 commit 差分 / 指定ファイル群全文                |
+| 介入軸     | `--interactive` / `--auto-critical` / `--auto`                  | `--interactive` | 段階的提示 / 🔴 のみ自動修正 / 🔴🟡 自動修正 (🟢 minor 除外) |
+| エンジン軸 | `--codex` / `--claude`                                          | `--codex`       | reviewer 実行エンジン                                        |
 
 #### 主な変更点
 
@@ -44,7 +44,7 @@ forge-review v0.2 では `/forge:review` 周辺に **破壊的変更** が複数
 - **`--files` バイパス経路を新設**: カンマ区切りで指定ファイル群を全文レビュー (例: `--files a.md,b.md,c.md`)。`.doc_structure.yaml` 経路をバイパスする
 - **`--section` フラグを完全撤廃 (DROP)**: 行番号や見出し構造の変動で意味が不安定になるため、ファイル全体または `--diff` のみに統一
 - **`--scope` / `--depth` フラグを撤廃**: scope は `--diff` / `--files` の二択に置き換え、depth は P1〜P3 固定のため不要
-- **`--auto N` (件数指定) を撤廃**: severity 順 × 件数の混合軸は AI 誤生成の温床になるため、介入は「対話 / 🔴 のみ / 全件」の 3 モードに限定
+- **`--auto N` (件数指定) を撤廃**: severity 順 × 件数の混合軸は AI 誤生成の温床になるため、介入は「対話 / 🔴 のみ / 🔴🟡 (🟢 minor 除外)」の 3 モードに限定
 - **介入軸を明示**: `--interactive` (=デフォルト) / `--auto-critical` / `--auto` の 3 モードに限定。相互排他で early validation により二重指定を拒否
 - **デフォルト挙動を明示形と等価に**: `/forge:review code` と `/forge:review code --diff --interactive --codex` は **完全に同一動作** (FNC-407)
 
