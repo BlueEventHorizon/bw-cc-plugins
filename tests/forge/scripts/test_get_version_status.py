@@ -22,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "plugins" / "forge"
 from get_version_status import (
     _parse_version_config_yaml,
     get_version_from_json_content,
+    get_version_from_text_content,
+    get_version_from_changelog_header,
+    extract_version_from_content,
     resolve_version_path,
     classify_bump,
 )
@@ -205,6 +208,80 @@ class TestGetVersionFromJsonContent(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class TestTextAndChangelogExtraction(unittest.TestCase):
+    """Issue #115 提案3・4: 非 JSON / CHANGELOG からの version 抽出"""
+
+    def test_text_swift_constant(self):
+        """Swift 定数 let version = "1.2.3" から抽出できる"""
+        content = 'let version = "1.2.3"\n'
+        self.assertEqual(get_version_from_text_content(content, "version"), "1.2.3")
+
+    def test_text_toml(self):
+        """TOML version = "1.2.3" から抽出できる"""
+        content = '[package]\nversion = "0.6.9"\n'
+        self.assertEqual(get_version_from_text_content(content, "version"), "0.6.9")
+
+    def test_text_nested_field_uses_last_key(self):
+        """ネストパスは最終キー名で照合する"""
+        content = 'appVersion: 2.0.1\n'
+        self.assertEqual(get_version_from_text_content(content, "meta.appVersion"), "2.0.1")
+
+    def test_text_not_found(self):
+        content = "no version anywhere\n"
+        self.assertIsNone(get_version_from_text_content(content, "version"))
+
+    def test_text_skips_comment_line(self):
+        """コメント行の version: X.Y.Z を誤抽出せず、定義行から抽出する"""
+        content = '// minimum supported version: 9.9.9\nlet version = "1.2.3"\n'
+        self.assertEqual(get_version_from_text_content(content, "version"), "1.2.3")
+
+    def test_text_skips_hash_comment(self):
+        """# コメントもスキップする"""
+        content = "# old version: 0.0.1\nversion = '2.0.0'\n"
+        self.assertEqual(get_version_from_text_content(content, "version"), "2.0.0")
+
+    def test_changelog_header_keep_a_changelog(self):
+        content = "# Changelog\n\n## [0.6.9] - 2026-05-27\n"
+        self.assertEqual(get_version_from_changelog_header(content), "0.6.9")
+
+    def test_changelog_header_with_v(self):
+        content = "## [v0.6.9] - 2026-05-27\n"
+        self.assertEqual(get_version_from_changelog_header(content), "v0.6.9")
+
+    def test_changelog_header_simple(self):
+        content = "# タイトル\n\n## 0.6.9 - 2026-05-27\n"
+        self.assertEqual(get_version_from_changelog_header(content), "0.6.9")
+
+    def test_changelog_header_returns_first_of_many(self):
+        """複数 version 見出しがある場合は最初（最新）を返す"""
+        content = "## [0.6.10] - new\n\n## [0.6.9] - old\n"
+        self.assertEqual(get_version_from_changelog_header(content), "0.6.10")
+
+    def test_extract_dispatches_changelog_header(self):
+        content = "## [0.6.9] - 2026-05-27\n"
+        self.assertEqual(
+            extract_version_from_content(content, "changelog_header"), "0.6.9"
+        )
+
+    def test_extract_json_first_then_text(self):
+        """JSON で取れればそれを使い、取れなければテキストにフォールバック"""
+        self.assertEqual(
+            extract_version_from_content('{"version": "1.0.0"}', "version"), "1.0.0"
+        )
+        self.assertEqual(
+            extract_version_from_content('let version = "2.0.0"', "version"), "2.0.0"
+        )
+
+    def test_extract_quoted_version_path_normalized(self):
+        """Issue #115 提案2: 引用符込み version_path でも抽出できる"""
+        self.assertEqual(
+            extract_version_from_content('{"version": "1.0.0"}', '"version"'), "1.0.0"
+        )
+
+    def test_extract_none_content(self):
+        self.assertIsNone(extract_version_from_content(None, "version"))
+
+
 class TestClassifyBump(unittest.TestCase):
     """classify_bump のテスト"""
 
@@ -231,9 +308,15 @@ class TestClassifyBump(unittest.TestCase):
         """current が None のとき unknown を返す"""
         self.assertEqual(classify_bump("1.0.0", None), "unknown")
 
+    def test_v_prefix_allowed(self):
+        """Issue #115 提案3: 先頭 v を許容して比較する"""
+        self.assertEqual(classify_bump("v1.0.0", "v1.0.1"), "patch")
+        self.assertEqual(classify_bump("0.6.9", "v0.6.10"), "patch")
+
     def test_invalid_semver(self):
         """semver 形式でないとき unknown を返す"""
-        self.assertEqual(classify_bump("v1.0.0", "v1.0.1"), "unknown")
+        self.assertEqual(classify_bump("abc", "1.0.1"), "unknown")
+        self.assertEqual(classify_bump("1.0", "1.0.1"), "unknown")
 
     def test_minor_bump_with_patch_reset(self):
         """minor バンプで patch がリセットされたバージョン"""
@@ -241,12 +324,22 @@ class TestClassifyBump(unittest.TestCase):
         self.assertEqual(classify_bump("0.1.4", "0.2.0"), "minor")
 
 
-def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test"):
-    """main() をモックありで実行し、JSON 出力を返すヘルパー"""
+def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test",
+                         mock_exists=None):
+    """main() をモックありで実行し、JSON 出力を返すヘルパー。
+
+    file_exists_on_branch（git cat-file -e）もモックする。既定では
+    mock_git_show が内容を返す（None でない）= base に存在する、と解釈する。
+    存在するが version 抽出できないケースを検証する場合は mock_exists を明示する。
+    """
     import io
     import sys
     from contextlib import redirect_stdout
     from get_version_status import main as _main
+
+    if mock_exists is None:
+        def mock_exists(branch, path):
+            return mock_git_show(branch, path) is not None
 
     buf = io.StringIO()
     saved_argv = sys.argv
@@ -254,6 +347,7 @@ def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test"
         sys.argv = ["get_version_status.py"]
         with patch("get_version_status.find_project_root", return_value=project_root), \
              patch("get_version_status.get_file_content_from_branch", side_effect=mock_git_show), \
+             patch("get_version_status.file_exists_on_branch", side_effect=mock_exists), \
              patch("get_version_status.get_current_branch", return_value=mock_branch):
             with redirect_stdout(buf):
                 _main()
@@ -347,6 +441,86 @@ class TestMainIntegration(unittest.TestCase):
         target = output["targets"][0]
         self.assertFalse(target["changed"])
         self.assertIn("note", target)
+
+    def test_non_json_base_file_not_misjudged_as_new(self):
+        """Issue #115 提案4: base に存在する非 JSON ファイルを「新規」と誤判定しない。
+
+        Swift 定数ファイルは JSON パースできないが、base に存在し version を抽出
+        できれば changed 判定され、note(新規追加) は付かない。
+        """
+        swift_path = "Sources/Constants.swift"
+        full = self.tmpdir / swift_path
+        full.parent.mkdir(parents=True, exist_ok=True)
+        full.write_text('let version = "0.6.10"\n', encoding="utf-8")
+        self._write_config(
+            "targets:\n"
+            "  - name: app\n"
+            f"    version_file: {swift_path}\n"
+            "    version_path: version\n"
+        )
+
+        # base には旧バージョンの Swift ファイルが存在する
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda branch, path: 'let version = "0.6.9"\n',
+            mock_exists=lambda branch, path: True,
+        )
+
+        target = output["targets"][0]
+        self.assertEqual(target["base"], "0.6.9")
+        self.assertEqual(target["current"], "0.6.10")
+        self.assertTrue(target["changed"])
+        self.assertNotIn("note", target)
+
+    def test_existing_but_unextractable_gets_distinct_note(self):
+        """base に存在するが version 抽出不可の場合は「新規追加」ではない note が付く"""
+        path = "Sources/Constants.swift"
+        full = self.tmpdir / path
+        full.parent.mkdir(parents=True, exist_ok=True)
+        full.write_text('let version = "0.6.10"\n', encoding="utf-8")
+        self._write_config(
+            "targets:\n"
+            "  - name: app\n"
+            f"    version_file: {path}\n"
+            "    version_path: version\n"
+        )
+
+        # 存在はするが version を抽出できない内容
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda branch, path: "// no version here\n",
+            mock_exists=lambda branch, path: True,
+        )
+
+        target = output["targets"][0]
+        self.assertIsNone(target["base"])
+        self.assertFalse(target["changed"])
+        self.assertIn("note", target)
+        self.assertNotIn("新規追加", target["note"])
+
+    def test_changelog_header_target(self):
+        """Issue #115 提案3: version_path: changelog_header で CHANGELOG から比較できる"""
+        (self.tmpdir / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.6.10] - 2026-05-27\n\n- x\n", encoding="utf-8"
+        )
+        self._write_config(
+            "targets:\n"
+            "  - name: app\n"
+            "    version_file: CHANGELOG.md\n"
+            "    version_path: changelog_header\n"
+        )
+
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda branch, path: "# Changelog\n\n## [0.6.9] - 2026-05-20\n",
+            mock_exists=lambda branch, path: True,
+        )
+
+        target = output["targets"][0]
+        self.assertEqual(target["base"], "0.6.9")
+        self.assertEqual(target["current"], "0.6.10")
+        self.assertTrue(target["changed"])
+        self.assertEqual(target["bump_type"], "patch")
 
     def test_marketplace_needs_bump(self):
         """プラグインが更新されているが marketplace が変わっていない場合に marketplace_needs_bump=true"""
