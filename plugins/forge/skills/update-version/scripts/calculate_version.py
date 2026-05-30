@@ -14,15 +14,19 @@ import json
 import re
 import sys
 
-SEMVER_PATTERN = re.compile(r'^(\d+)\.(\d+)\.(\d+)$')
+# 先頭 `v` を許容する（CHANGELOG を canonical version source にするケース、Issue #115 提案3）。
+# `v` は normalize して計算し、出力は数値 X.Y.Z 形式に統一する。
+SEMVER_PATTERN = re.compile(r'^[vV]?(\d+)\.(\d+)\.(\d+)$')
 BUMP_SPECS = ('patch', 'minor', 'major')
 
 
 def parse_semver(version_str):
     """セマンティックバージョンをパースする。
 
+    先頭の `v` / `V`（例: "v1.2.3"）は許容し、normalize して扱う。
+
     Args:
-        version_str: バージョン文字列（例: "1.2.3"）
+        version_str: バージョン文字列（例: "1.2.3", "v1.2.3"）
 
     Returns:
         tuple[int, int, int]: (major, minor, patch)
@@ -33,8 +37,8 @@ def parse_semver(version_str):
     stripped = version_str.strip()
     match = SEMVER_PATTERN.match(stripped)
     if not match:
-        # プレリリースサフィックスの検出（例: 1.2.3-alpha, 1.2.3-beta.1）
-        if re.match(r'^\d+\.\d+\.\d+-', stripped):
+        # プレリリースサフィックスの検出（例: 1.2.3-alpha, v1.2.3-beta.1）
+        if re.match(r'^[vV]?\d+\.\d+\.\d+-', stripped):
             raise ValueError(
                 f"プレリリースバージョンは非対応です: '{version_str}'（X.Y.Z 形式のみ対応）"
             )
@@ -64,12 +68,13 @@ def bump_version(current, spec):
     elif spec == 'major':
         new_version = f"{cur_major + 1}.0.0"
     else:
-        # 直接指定 — 形式検証のみ
-        parse_semver(spec)
-        new_version = spec.strip()
+        # 直接指定 — 形式検証のうえ数値 X.Y.Z に normalize（先頭 v を除去）
+        spec_major, spec_minor, spec_patch = parse_semver(spec)
+        new_version = f"{spec_major}.{spec_minor}.{spec_patch}"
 
     result = {
-        "current": current.strip(),
+        # current も数値 X.Y.Z に normalize（先頭 v を除去して一貫した出力にする）
+        "current": f"{cur_major}.{cur_minor}.{cur_patch}",
         "new": new_version,
         "spec": spec.strip(),
     }

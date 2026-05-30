@@ -78,6 +78,102 @@ class TestVersionPath(unittest.TestCase):
         with self.assertRaises(ValueError):
             update_version_in_text(content, "999.88.7", "999.88.8", version_path="version")
 
+    def test_path_prefix_version_not_corrupted(self):
+        """境界: old=0.6.1 が "0.6.10" を前方一致で破壊しない（見つからず ValueError）"""
+        content = '{\n  "version": "0.6.10"\n}'
+        with self.assertRaises(ValueError):
+            update_version_in_text(content, "0.6.1", "0.6.2", version_path="version")
+
+    def test_path_exact_version_among_prefix(self):
+        """境界: 同フィールドに 0.6.10 があっても old=0.6.10 は正しく更新される"""
+        content = '{\n  "version": "0.6.10"\n}'
+        result = update_version_in_text(content, "0.6.10", "0.6.11", version_path="version")
+        self.assertIn('"0.6.11"', result)
+        self.assertNotIn('"0.6.10"', result)
+
+    def test_quoted_version_path_normalized(self):
+        """Issue #115 提案2: 引用符込みの version_path でも一致する"""
+        content = '{\n  "version": "999.88.7"\n}'
+        # ダブルクォート込み
+        result = update_version_in_text(content, "999.88.7", "999.88.8", version_path='"version"')
+        self.assertIn('"999.88.8"', result)
+        # シングルクォート込み + 前後空白
+        result2 = update_version_in_text(content, "999.88.7", "999.88.8", version_path=" 'version' ")
+        self.assertIn('"999.88.8"', result2)
+
+    def test_quoted_nested_version_path_normalized(self):
+        """Issue #115 提案2: 引用符込みのネスト version_path でも一致する"""
+        content = '{\n  "metadata": {\n    "version": "999.88.7"\n  }\n}'
+        result = update_version_in_text(
+            content, "999.88.7", "999.88.8", version_path='"metadata.version"'
+        )
+        self.assertIn('"999.88.8"', result)
+
+
+class TestChangelogHeader(unittest.TestCase):
+    """Issue #115 提案3: version_path: changelog_header のテスト"""
+
+    def test_keep_a_changelog_with_v(self):
+        """## [vX.Y.Z] 形式: v と角括弧を保持して version を更新"""
+        content = "# Changelog\n\n## [v0.6.9] - 2026-05-27\n\n- entry\n"
+        result = update_version_in_text(
+            content, "0.6.9", "0.6.10", version_path="changelog_header"
+        )
+        self.assertIn("## [v0.6.10] - 2026-05-27", result)
+        self.assertNotIn("v0.6.9", result)
+
+    def test_keep_a_changelog_no_v(self):
+        """## [X.Y.Z] 形式（v なし）"""
+        content = "## [0.6.9] - 2026-05-27\n\n- entry\n"
+        result = update_version_in_text(
+            content, "0.6.9", "0.6.10", version_path="changelog_header"
+        )
+        self.assertIn("## [0.6.10] - 2026-05-27", result)
+
+    def test_simple_format(self):
+        """## X.Y.Z - DATE 形式（simple, 角括弧なし）"""
+        content = "# タイトル\n\n## 0.6.9 - 2026-05-27\n\n- entry\n"
+        result = update_version_in_text(
+            content, "0.6.9", "0.6.10", version_path="changelog_header"
+        )
+        self.assertIn("## 0.6.10 - 2026-05-27", result)
+
+    def test_old_version_with_v_prefix(self):
+        """old_version 側に v が付いていても一致する"""
+        content = "## [v0.6.9] - 2026-05-27\n"
+        result = update_version_in_text(
+            content, "v0.6.9", "0.6.10", version_path="changelog_header"
+        )
+        self.assertIn("## [v0.6.10]", result)
+
+    def test_only_first_header_updated(self):
+        """最初の version 見出しのみ更新する"""
+        content = "## [0.6.9] - new\n\n## [0.6.8] - old\n"
+        result = update_version_in_text(
+            content, "0.6.9", "0.6.10", version_path="changelog_header"
+        )
+        self.assertIn("## [0.6.10] - new", result)
+        self.assertIn("## [0.6.8] - old", result)
+
+    def test_header_not_found(self):
+        """該当する version 見出しがない場合は ValueError"""
+        content = "# Changelog\n\nno version header here\n"
+        with self.assertRaises(ValueError):
+            update_version_in_text(
+                content, "0.6.9", "0.6.10", version_path="changelog_header"
+            )
+
+    def test_prefix_version_not_corrupted(self):
+        """境界: old が別バージョンの前方一致部分（0.6.1 vs 0.6.10）を破壊しない"""
+        content = "## [0.6.10] - new\n\n## [0.6.1] - old\n"
+        result = update_version_in_text(
+            content, "0.6.1", "0.6.2", version_path="changelog_header"
+        )
+        # 0.6.10 見出しは無傷で、0.6.1 見出しのみ 0.6.2 に更新される
+        self.assertIn("## [0.6.10] - new", result)
+        self.assertIn("## [0.6.2] - old", result)
+        self.assertNotIn("0.6.20", result)
+
 
 class TestFilterPattern(unittest.TestCase):
     """filter パターンのテスト"""

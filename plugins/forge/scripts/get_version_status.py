@@ -192,6 +192,31 @@ def get_file_content_from_branch(branch, file_path):
         return None
 
 
+def file_exists_on_branch(branch, file_path):
+    """指定ブランチにファイルが存在するかを git cat-file -e で判定する（Issue #115 提案4）。
+
+    version 抽出の成否とは独立に「ファイルの実在」だけを判定する。
+    これにより、base に存在するが version を抽出できないファイル（非 JSON 等）を
+    「新規追加」と誤判定する不具合を防ぐ。
+
+    Args:
+        branch: ブランチ名（例: "main"）
+        file_path: プロジェクトルートからの相対パス
+
+    Returns:
+        bool: 存在すれば True
+    """
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "-e", f"{branch}:{file_path}"],
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
 def get_current_branch():
     """現在のブランチ名を取得する。"""
     try:
@@ -244,7 +269,74 @@ def get_version_from_json_content(content, version_path):
         return None
 
 
-SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+def get_version_from_text_content(content, version_path):
+    """非 JSON テキストから version を正規表現で抽出する（Issue #115 提案4）。
+
+    Swift 定数（`let version = "1.2.3"`）や TOML（`version = "1.2.3"`）など
+    JSON パースできないファイルを対象に、version_path の最終キー名で照合する。
+
+    コメント行（`#` / `//` / `*` / `;` / `<!--` / `--` で始まる行）は除外し、
+    定義行のみを対象にする（コメント中の "version: X.Y.Z" を誤抽出しないため）。
+
+    Args:
+        content: ファイル内容（テキスト）
+        version_path: ドット区切りパス（最終キー名のみ使用）
+
+    Returns:
+        str or None: バージョン文字列（先頭 v を含む場合あり）
+    """
+    field = version_path.split(".")[-1]
+    pattern = re.compile(
+        r'[\"\']?' + re.escape(field) + r'[\"\']?\s*[:=]\s*[\"\']?([vV]?\d+\.\d+\.\d+)'
+    )
+    comment_prefixes = ("#", "//", "*", ";", "<!--", "--")
+    for line in content.splitlines():
+        if line.lstrip().startswith(comment_prefixes):
+            continue
+        m = pattern.search(line)
+        if m:
+            return m.group(1)
+    return None
+
+
+def get_version_from_changelog_header(content):
+    """CHANGELOG の最初の version 見出しから version を抽出する（Issue #115 提案3）。
+
+    `## [v?]X.Y.Z` / `## v?X.Y.Z`（keep-a-changelog / simple 双方）に対応する。
+
+    Returns:
+        str or None: バージョン文字列（先頭 v を含む場合あり）
+    """
+    m = re.search(r"^##\s+\[?([vV]?\d+\.\d+\.\d+)", content, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def extract_version_from_content(content, version_path):
+    """ファイル内容から version を抽出する（JSON / 非 JSON / CHANGELOG を統一的に扱う）。
+
+    Issue #115 提案3・4: JSON パース失敗時にテキスト正規表現へフォールバックし、
+    `changelog_header` は専用ハンドラで抽出する。version_path の引用符は normalize する。
+
+    Args:
+        content: ファイル内容。None の場合は None を返す
+        version_path: バージョンフィールドのパス（引用符・前後空白は許容）
+
+    Returns:
+        str or None: バージョン文字列
+    """
+    if content is None:
+        return None
+    vp = (version_path or "version").strip().strip("'\"")
+    if vp == "changelog_header":
+        return get_version_from_changelog_header(content)
+    version = get_version_from_json_content(content, vp)
+    if version is None:
+        version = get_version_from_text_content(content, vp)
+    return version
+
+
+# 先頭 `v` / `V` を許容する（CHANGELOG canonical 等、Issue #115 提案3）
+SEMVER_RE = re.compile(r"^[vV]?(\d+)\.(\d+)\.(\d+)$")
 
 
 def classify_bump(base_ver, current_ver):
@@ -292,18 +384,20 @@ def main():
     for target in config.get("targets", []):
         name = target.get("name", "")
         version_file = target.get("version_file", "")
-        version_path = target.get("version_path", "version")
+        # version_path の引用符・前後空白を normalize（Issue #115 提案2）
+        version_path = (target.get("version_path", "version") or "version").strip().strip("'\"")
 
-        # base ブランチのバージョン取得
+        # base ブランチでの「存在」と「version 抽出」を分離する（Issue #115 提案4）
+        base_exists = file_exists_on_branch(base_branch, version_file)
         base_content = get_file_content_from_branch(base_branch, version_file)
-        base_ver = get_version_from_json_content(base_content, version_path) if base_content else None
+        base_ver = extract_version_from_content(base_content, version_path)
 
         # 現在ブランチのバージョン取得
         local_path = project_root / version_file
         current_ver = None
         if local_path.exists():
             try:
-                current_ver = get_version_from_json_content(
+                current_ver = extract_version_from_content(
                     local_path.read_text(encoding="utf-8"), version_path
                 )
             except Exception:
@@ -321,8 +415,15 @@ def main():
         }
         if changed:
             entry["bump_type"] = bump
-        if base_ver is None:
+        if not base_exists:
+            # 真にファイルが存在しない場合のみ「新規追加」
             entry["note"] = f"{base_branch} ブランチに {version_file} が存在しない（新規追加）"
+        elif base_ver is None:
+            # 存在するが version を抽出できなかった（形式未対応 / version_path 不一致）
+            entry["note"] = (
+                f"{base_branch} の {version_file} から version を抽出できなかった"
+                f"（version_path: {version_path}）"
+            )
 
         results.append(entry)
 
