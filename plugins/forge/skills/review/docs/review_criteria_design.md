@@ -8,14 +8,14 @@
 
 P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重大度カタログ (FNC-411 拡充済み)」を保持する SoT である。複数文書間の優先順位は DES-028 §3.4.1 (プロジェクト固有 > 内蔵) に従う。
 
-| priority | path                                                      | doc_type   | 役割                                                                                               |
-| -------- | --------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------- |
-| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` | principles | 要件と設計の境界 (What/How 境界、§4 カテゴリ別ガイド / §6 グレーゾーン、規範本体 + 重大度カタログ) |
-| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`    | principles | 設計原則 (定量目標の扱い / よくある失敗パターン / 記載すべき内容、規範本体 + 重大度カタログ)       |
-| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`             | format     | 設計書フォーマット (追加 feature 用 frontmatter `type: temporary-feature-design` の定義)           |
-| P1       | `docs/rules/*.md` (プロジェクト固有アーキテクチャ規約)    | rules      | プロジェクト固有のアーキテクチャ・設計規約 (存在する場合のみ、規範本体 + 重大度カタログ)           |
-| P2       | target ファイル内部 + 関連要件定義書                      | specs      | 矛盾検出 (target_files 内部の相反記述 + 関連 REQ との整合性を突合)                                 |
-| P3       | `${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`      | principles | 不要な複雑化判定 (§3.4 直接数値化禁止 / §4 倒錯パターン、Yes/No 判定原則)                          |
+| priority | path                                                      | doc_type   | 役割                                                                                                                                                   |
+| -------- | --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` | principles | 要件と設計の境界 (What/How 境界、§4 カテゴリ別ガイド / §6 グレーゾーン、規範本体 + 重大度カタログ)                                                     |
+| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`    | principles | 設計原則 (定量目標の扱い / よくある失敗パターン / 記載すべき内容、規範本体 + 重大度カタログ)                                                           |
+| P1       | `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`             | format     | 設計書フォーマット (追加 feature 用 frontmatter `type: temporary-feature-design` の定義。severity は `design_principles_spec.md` 重大度カタログを参照) |
+| P1       | `docs/rules/*.md` (プロジェクト固有アーキテクチャ規約)    | rules      | プロジェクト固有のアーキテクチャ・設計規約 (存在する場合のみ、規範本体 + 重大度カタログ)                                                               |
+| P2       | target ファイル内部 + 関連要件定義書                      | specs      | 矛盾検出 (target_files 内部の相反記述 + 関連 REQ との整合性を突合)                                                                                     |
+| P3       | `${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`      | principles | 不要な複雑化判定 (§3.4 直接数値化禁止 / §4 倒錯パターン、Yes/No 判定原則)                                                                              |
 
 委譲先ルールが未整備の場合は forge 内蔵ルールへフォールバック (REQ-004 FNC-405)。プロジェクト固有アーキテクチャ規約が `docs/rules/` に存在しない場合は P1 を内蔵 principles のみで構成する。
 
