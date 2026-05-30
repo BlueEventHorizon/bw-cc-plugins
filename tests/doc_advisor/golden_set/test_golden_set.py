@@ -7,7 +7,7 @@ search_docs.py を subprocess で呼び出し、queries.yaml に定義された
 見落とし 1 件でもテスト失敗とする。
 
 前提条件:
-- OPENAI_API_KEY 環境変数が設定されていること（未設定時は skipTest）
+- API キー環境変数が設定されていること（`OPENAI_API_DOCDB_KEY` 優先、未設定時 `OPENAI_API_KEY` にフォールバック。DES-007 統一仕様）。双方未設定時は skipTest
 - Embedding インデックスが構築済みであること（未構築時は skipTest）
 """
 
@@ -73,7 +73,12 @@ def load_queries_yaml(yaml_path):
         # エントリの開始（"- query:" パターン）
         if current_category is not None and stripped.lstrip().startswith("- query:"):
             value = stripped.split(":", 1)[1].strip().strip('"').strip("'")
-            current_entry = {"query": value, "expected_paths": [], "note": ""}
+            current_entry = {
+                "query": value,
+                "expected_paths": [],
+                "note": "",
+                "known_failure": "",
+            }
             result[current_category].append(current_entry)
             current_key = None
             continue
@@ -106,6 +111,10 @@ def load_queries_yaml(yaml_path):
                     continue
                 elif key == "query":
                     current_entry["query"] = value
+                    current_key = None
+                    continue
+                elif key == "known_failure":
+                    current_entry["known_failure"] = value
                     current_key = None
                     continue
 
@@ -226,12 +235,15 @@ class TestGoldenSet(unittest.TestCase):
         # ゴールデンセットの読み込み（API 不要なバリデーションテストでも使用）
         cls.queries = load_queries_yaml(QUERIES_YAML)
 
-        # OPENAI_API_KEY チェック（検索テストのみスキップ）
-        cls.api_key = os.environ.get("OPENAI_API_KEY", "")
+        # API キーチェック（OPENAI_API_DOCDB_KEY 優先、未設定時 OPENAI_API_KEY フォールバック。DES-007 / FNC-004 KEY-01）
+        cls.api_key = (
+            os.environ.get("OPENAI_API_DOCDB_KEY", "")
+            or os.environ.get("OPENAI_API_KEY", "")
+        )
         cls.skip_reason = None
 
         if not cls.api_key:
-            cls.skip_reason = "OPENAI_API_KEY が設定されていないためスキップ"
+            cls.skip_reason = "OPENAI_API_DOCDB_KEY / OPENAI_API_KEY のいずれも設定されていないためスキップ"
             return
 
         # プロジェクトルートの解決
@@ -264,15 +276,19 @@ class TestGoldenSet(unittest.TestCase):
         )
 
         all_failures = []
+        known_failures = []     # xfail: known_failure 指定エントリの見落とし（許容）
+        unexpected_passes = []  # xpass: known_failure なのに全件ヒット（marker 除去を促す）
 
         for entry in entries:
             query = entry["query"]
             expected_paths = entry["expected_paths"]
             note = entry.get("note", "")
+            known_failure = entry.get("known_failure", "")
 
             result = _run_search(category, query, self.project_root)
 
             if result.get("status") != "ok":
+                # 検索エラーは recall ミスとは別の実害であり、known_failure でも常に失敗扱い
                 all_failures.append(
                     f"  クエリ: {query}\n"
                     f"  エラー: {result.get('error', 'unknown error')}"
@@ -285,11 +301,38 @@ class TestGoldenSet(unittest.TestCase):
             # expected_paths が全件含まれるか検証
             missing = [p for p in expected_paths if p not in result_paths]
             if missing:
+                if known_failure:
+                    # 既知未達: fail させず xfail として記録（追跡先を明示）
+                    known_failures.append(
+                        f"  クエリ: {query} (既知未達, 追跡: {known_failure})\n"
+                        f"  見落とし: {missing}"
+                    )
+                    continue
                 all_failures.append(
                     f"  クエリ: {query} ({note})\n"
                     f"  見落とし: {missing}\n"
                     f"  検索結果: {result_paths[:10]}{'...' if len(result_paths) > 10 else ''}"
                 )
+            elif known_failure:
+                # known_failure 指定なのに全件ヒット → 解消された可能性。marker 除去を促す
+                unexpected_passes.append(
+                    f"  クエリ: {query} (known_failure: {known_failure} だが全件ヒット → "
+                    f"queries.yaml の known_failure を除去してください)"
+                )
+
+        # xfail / xpass は情報として出力し、テストは緑のままにする
+        if known_failures:
+            print(
+                f"\n[golden-set] {category}: 既知未達 {len(known_failures)} 件を xfail として許容:\n"
+                + "\n".join(known_failures),
+                file=sys.stderr,
+            )
+        if unexpected_passes:
+            print(
+                f"\n[golden-set] {category}: known_failure の解消を検出 (xpass) {len(unexpected_passes)} 件:\n"
+                + "\n".join(unexpected_passes),
+                file=sys.stderr,
+            )
 
         if all_failures:
             self.fail(
@@ -356,6 +399,39 @@ class TestLoadQueriesYaml(unittest.TestCase):
                 self.assertIsInstance(entry["query"], str)
                 self.assertIsInstance(entry["expected_paths"], list)
                 self.assertGreater(len(entry["expected_paths"]), 0)
+
+    def test_known_failure_parsed(self):
+        """known_failure フィールドをパースできること（#96 追跡用 xfail marker）"""
+        import tempfile
+
+        yaml_content = """\
+specs:
+  - query: "既知未達クエリ"
+    expected_paths:
+      - "docs/specs/some/missing.md"
+    note: "xfail テスト"
+    known_failure: "#96"
+  - query: "通常クエリ"
+    expected_paths:
+      - "docs/specs/some/found.md"
+    note: "通常"
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", encoding="utf-8", delete=False
+        ) as f:
+            f.write(yaml_content)
+            tmp_path = f.name
+
+        try:
+            queries = load_queries_yaml(tmp_path)
+        finally:
+            import os as _os
+            _os.unlink(tmp_path)
+
+        specs = queries["specs"]
+        self.assertEqual(specs[0]["known_failure"], "#96")
+        # known_failure を持たないエントリは空文字（デフォルト）
+        self.assertEqual(specs[1]["known_failure"], "")
 
     def test_inline_expected_paths(self):
         """expected_paths のインライン形式（1行で値を書く形式）を正しくパースできること"""

@@ -10,7 +10,7 @@ applicable_when:
 
 ## Purpose
 
-`.claude/doc-advisor/toc/{category}/{category}_toc.yaml` is the **single source of truth** for the subagent to identify documents needed for tasks.
+`.claude/doc-advisor/toc/{category}/{category}_toc.yaml` is the **single source of truth** for the fork 型 SKILL (`/doc-advisor:query-rules` / `query-specs`) to identify documents needed for tasks.
 
 The quality of this file determines task execution success. **Missing information is not acceptable.**
 
@@ -192,7 +192,7 @@ docs:
 ### content_details
 
 - List **specific content items** in the file (rules/constraints/patterns/requirements/design elements)
-- Detailed enough for subagent to understand overview without reading the file
+- Detailed enough for query SKILL / Agent to understand overview without reading the file
 - Must include important constraints/requirements
 - Prioritize items **unique to this document** — generic items (e.g., "error handling", "overview") add little value
 - Describe **concrete details under each heading**, not the heading itself (e.g., not "Error handling" but "ContactContainerError enum with differentContainer, readOnlyContainer variants")

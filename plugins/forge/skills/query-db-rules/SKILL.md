@@ -1,10 +1,8 @@
 ---
 name: query-db-rules
 description: |
-  プロジェクトのコーディング規約・命名規則・設計原則・レビュー基準を検索する。
+  プロジェクトの様々なルールを、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
   設計・実装・コーディング・レビュー等、開発作業のあらゆる場面でルールを参照したいときに使う。
-  自然文でタスクを記述すると関連ルール文書のパスを返す。
-  トリガー: "ルールを検索", "コーディング規約", "プロジェクトルール", "命名規則"
 user-invocable: false
 argument-hint: "task description"
 allowed-tools: Read, Grep, Glob, Bash, Skill

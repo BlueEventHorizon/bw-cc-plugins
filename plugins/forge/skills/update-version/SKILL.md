@@ -68,6 +68,10 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 現在のバージョン (forge): 0.0.18
 ```
 
+> **`version_path` の表記**: 引用符を付けずに記述する（例: `version_path: version` / `version_path: metadata.version`）。引用符付き（`"version"`）でも内部で normalize するが、設定は引用符なしに統一する。
+>
+> **CHANGELOG を canonical version source にする場合（`version_path: changelog_header`）**: `version_file: CHANGELOG.md` + `version_path: changelog_header` を指定すると、最初の version 見出し（`## [v?]X.Y.Z` / `## v?X.Y.Z`）から現在バージョンを取得・更新する。先頭 `v` は許容され、計算は数値 `X.Y.Z` で行い、見出しの `v` / 角括弧 `[]` は保持される。
+
 ### Step 3.5: main ブランチとのバージョン比較
 
 `get_version_status.py` でベースブランチ（デフォルト: main）と現在のバージョンを比較する:
@@ -89,7 +93,7 @@ python3 ${CLAUDE_PROJECT_DIR}/plugins/forge/scripts/get_version_status.py
 
 - **スクリプトが失敗・バージョン取得不可**: 警告のみ表示し、Step 4 へ進む（ブロックしない）。
 
-- **`base` が取得できない（main に存在しないファイル）**: 新規 target の可能性があるため注意のみ表示し、Step 4 へ進む。
+- **`base` が取得できない**: エントリの `note` を確認する。ファイルが base に存在しない（新規追加）か、存在するが version を抽出できなかった（形式未対応 / version_path 不一致）かを `note` が区別する。いずれも注意のみ表示し、Step 4 へ進む。
 
 ### Step 4: 新バージョンを決定する
 
@@ -184,6 +188,10 @@ stderr の JSON で `status: "error"` の場合はエラー内容を報告して
    stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
    stderr の JSON で `status: "skipped"` の場合は Write をスキップする（optional のパターン未マッチ）。
 
+> **sync_files の対象範囲 [制約]**: `sync_files` は **version 文字列そのもの** を単純置換する仕組みである。version に連動するが値が version 文字列ではないフィールド（例: Homebrew Formula の `revision`（git tag commit の SHA）、ハッシュ・ビルド番号など）は **対象外**。これらを `sync_files` に含めると version 部分だけが置換され、連動値が取り残されて壊れる。
+>
+> このような派生値は version bump とは別フェーズ（git tag 確定後など）で決まるため、汎用 version ツールの責務に含めない。必要な場合は手動更新するか、tag 確定後の専用フローで扱う。
+
 #### 6-3. 更新完了メッセージ
 
 ```
@@ -224,7 +232,14 @@ marketplace もバンプしますか？（patch 推奨）
 
 Step 5 で生成した CHANGELOG エントリを CHANGELOG ファイルに挿入する。
 
-CHANGELOG ファイルを Read して、最初の `## [` 行の直前にエントリを挿入する:
+CHANGELOG ファイルを Read し、`changelog.format` に応じて挿入アンカー（新規エントリを差し込む直前の行）を決定する:
+
+| `format`           | 挿入アンカー（この行の直前に挿入）                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `keep-a-changelog` | 最初の `## [` 行                                                                                        |
+| `simple`           | 最初の「`##` + 数字または `v` + 数字で始まる version 見出し」行（例: `## 0.6.10 - ...` / `## v0.6.10`） |
+
+> **simple 形式の注意**: `# タイトル`（H1）・`---`（区切り線）・`## 概要` のような **version でないメタ見出し** はスキップし、最初の version 見出しをアンカーにする。version 見出しが 1 つも無い（新規 CHANGELOG）場合は、メタ見出し群の直後（本文先頭）に挿入する。
 
 **keep-a-changelog 形式**（`format: keep-a-changelog`）:
 

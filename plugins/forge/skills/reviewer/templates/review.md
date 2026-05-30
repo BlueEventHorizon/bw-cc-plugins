@@ -96,5 +96,5 @@
 6. **priority と severity は独立軸**: priority (P1/P2/P3) は観点の出所、severity (critical/major/minor) は修正緊急度。P1 で検出した違反が必ず critical とは限らない (DES-028 §4.1)
 7. **severity ラベルは ASCII 固定**: `critical` / `major` / `minor`。絵文字 (🔴/🟡/🟢) はセクション見出しの装飾のみで使用し、finding 行の severity 値は ASCII に統一する
 8. **severity_source 必須**: severity は委譲先 principles 側カタログから転記すること (reviewer は自ら判定しない)。`severity_source` フィールドに取得元 doc_path + 該当節を必ず記載する (FNC-411)
-9. **recommendation 値域**: `fix` / `create_issue` / `skip` の 3 値。判定基準は criteria §3 判定ルールに従う
+9. **recommendation 値域**: `fix` / `create_issue` / `skip` / `needs_review` の 4 値。判定基準は criteria §3 判定ルールに従う（needs_review は観点 2 設計意図整合または観点 3 副作用限定が不成立で人間判断が必要なケースの evaluator 正規最終値、DES-028 §4.3 / Issue #99）
 10. **DES-022 出力契約 3 原則を温存**: 見出し階層 / 番号採番 / コードブロック構造は変更しない

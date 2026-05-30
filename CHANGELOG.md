@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.1.26] - 2026-05-27
+
+### marketplace
+
+- **chore**: forge 0.1.2 / anvil 0.0.9 / doc-advisor 0.3.1 / doc-db 0.0.3 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.1.2] - 2026-05-27
+
+### forge
+
+- **feat(session)**: forge session ライフサイクルを完成（touch / complete / find --all-skills）し、cleanup を統一 + `cleanup-stale` を追加して残骸を防止。session init 時に completed 残骸を自動回収する (#82 / #83 / #84 / #46 / #93)
+- **feat(review)**: review / present-findings の起動を Skill ツール (fork) 方式へ変更し、reviewer / evaluator / fixer に fork 安全機能を全適用。変更行 gate テストを追加し、軽量修正では fixer subagent をスキップ (FNC-413)
+- **fix(review)**: `--auto` モードで `auto_fixable=false` の指摘が fixer に投入されない誤読を修正し、fixer 読み取り契約から旧解釈を除去 (#92)
+- **fix(review)**: SubAgent / 旧 review 構文 / 起動経路の未明示を一括修正し、複数回のレビュー指摘を解消
+- **docs**: 旧 perspective 仕様を撤廃し reviewer 1 起動原則に整合。DES-007 統一 API key 仕様を docs と clean-rules 実装に反映
+- **refactor**: SKILL / query description を改善し、forge ToC を再生成
+
+## [anvil 0.0.9] - 2026-05-27
+
+### anvil
+
+- **refactor**: SKILL description と docs を整理し、Agent / SKILL 定義を適用
+
+## [doc-advisor 0.3.1] - 2026-05-27
+
+### doc-advisor
+
+- **fix**: DES-007 統一 API key 仕様を docs と clean-rules 実装に反映
+- **refactor**: query description を改善し、Agent / SKILL 定義を適用
+
+## [doc-db 0.0.3] - 2026-05-27
+
+### doc-db
+
+- **refactor**: SKILL / query description を改善
+
 ## [marketplace 0.1.25] - 2026-05-21
 
 ### marketplace

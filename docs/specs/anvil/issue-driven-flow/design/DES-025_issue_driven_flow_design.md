@@ -83,7 +83,7 @@ flowchart LR
 | `anvil:create-issue`       | user-invocable | FNC-01。Issue 種別（Bug Report / Feature Request）を確認し、必須セクションを満たす Issue 起票 |
 | `anvil:impl-issue`         | user-invocable | FNC-02。Issue 番号を入口に SDD パイプライン → PR 作成までをオーケストレーション               |
 | `anvil:update-issue`       | AI-only        | FNC-03。Issue 本文の機械追記セクション（成果物リンク・進捗）を冪等に書き戻し                  |
-| `anvil:prepare-figma`      | AI-only        | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（subagent として呼ばれる）                 |
+| `anvil:prepare-figma`      | AI-only        | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（汎用 Agent として呼ばれる）               |
 | `anvil:resolve-figma-node` | AI-only        | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
 | `anvil:figma-mcp-guide`    | リファレンス   | Figma MCP の知識ベース（呼び出されず参照される）                                              |
 
@@ -196,7 +196,7 @@ classDiagram
 
 ### 3.4 `anvil:impl-issue` の内部責務分割
 
-`anvil:impl-issue` は Phase 0〜14 のオーケストレーション・種別対話・forge 4 skill 起動・update-issue 連携・prepare-figma 呼出・commit/create-pr 委譲・承認ダイアログ・失敗ハンドリングを束ねる単一 skill だが、SKILL 分割基準（`docs/rules/skill_authoring_notes.md`）と `DES-010_create_skills_orchestrator_design.md` のオーケストレータ／subagent 分離パターンに従い、責務は次の通り分離する:
+`anvil:impl-issue` は Phase 0〜14 のオーケストレーション・種別対話・forge 4 skill 起動・update-issue 連携・prepare-figma 呼出・commit/create-pr 委譲・承認ダイアログ・失敗ハンドリングを束ねる単一 skill だが、SKILL 分割基準（`docs/rules/skill_authoring_notes.md`）と `DES-010_create_skills_orchestrator_design.md` のオーケストレータ／汎用 Agent 分離パターンに従い、責務は次の通り分離する:
 
 | 配置                                                    | 責務                                                                                                                                               |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

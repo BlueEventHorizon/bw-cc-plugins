@@ -1,10 +1,7 @@
 ---
 name: query-forge-rules
 description: |
-  forge 内蔵の知識ベースを ToC 検索し、タスクに関連するドキュメントのパスを返す。
-  対象: ID体系・仕様フォーマット・設計原則・レビュー基準・ワークフロー仕様・HIG/UXガイド等。
-  他スキルが forge の内部仕様や規約を参照する必要がある場面で使用する。
-  ※ プロジェクト文書には /forge:query-db-rules を使う。本スキルは forge 自体の docs が対象。
+  forge 内蔵の様々な知識ベースを、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
 user-invocable: false
 ---
 

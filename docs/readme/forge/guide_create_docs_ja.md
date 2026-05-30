@@ -174,38 +174,65 @@ start-requirements → start-design → start-plan → start-implement
 | 完結性     | タスク完了時にビルド・テスト成功が条件     |
 | ファイル数 | 1 ファイル or 密接に関連する 2〜3 ファイル |
 
-### 計画書の主要フィールド
+### 計画書の構造（最小完全 YAML）
+
+計画書は YAML 形式の `{feature}_plan.yaml`。**Markdown ではない**。
+top-level は `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーのみ（`plan_format.md` の正本スキーマに従う）。
 
 ```yaml
+# {feature} 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: REQ-001
+    title: 要件のタイトル
+    design_id: DES-001
+    status: pending # pending / completed
+
+design_traceability:
+  - design_id: DES-001
+    title: 設計書のタイトル
+    requirement_ids:
+      - REQ-001
+    task_ids:
+      - TASK-001
+
+# === タスク一覧 ===
 tasks:
   - task_id: TASK-001
     title: タスク名
     priority: 90 # 高:70-99, 中:40-69, 低:1-39
-    status: pending # pending → in_progress → completed
-    design_id: DES-001
-    depends_on: [] # 依存タスク ID
-    group_id: null # グループ化（ビルド確認をまとめる）
+    status: pending # pending / in_progress / completed
+    design_id: DES-001 # 設計書なしは null（"-" ではない）
+    depends_on: [] # 依存タスク ID 配列。なければ []
+    group_id: null # 独立タスクは null、"GROUP-001 (1/3)" 等
+    build_check: per_task # per_task / skip / on_group_complete
     description:
       - やるべきこと 1
       - やるべきこと 2
-    required_reading:
-      - path/to/design.md
+    acceptance_criteria: 受け入れ基準の記述 # なければ null
+    required_reading: # 必読文書パスの配列。なければ []
+      - specs/{feature}/design/DES-001_xxx.md
 
-requirements_traceability: # 要件 → 設計 → タスクの追跡
-  - requirement_id: REQ-001
-    design_id: DES-001
-    status: pending
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-03-15"
+    content: 初版作成
 ```
 
 ### 重要な原則
 
 - `description` は設計書の該当セクションを特定できるレベルにとどめる（実装詳細は書かない）
+- `design_id` が無いタスクは `null`（`-` や `"-"` は使わない）
+- `depends_on` / `required_reading` が無い場合は空配列 `[]`（`null` や `-` ではない）
+- `build_check` の値は `per_task` / `skip` / `on_group_complete` のみ
 - 依存関係に循環がないか確認
 - トレーサビリティマトリクスで全要件・全設計が反映されていることを検証
 
 ### 出力
 
-`specs/{feature}/plan/{feature}_plan.yaml` に計画書を生成。
+`specs/{feature}/plan/{feature}_plan.yaml` に計画書（YAML）を生成。**Markdown 形式の計画書は出力しない**。
+Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件・設計を作る場合は `/forge:create-feature-from-markdown-plan` を使う）。
 
 ### 参考ドキュメント
 

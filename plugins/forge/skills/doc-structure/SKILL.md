@@ -2,8 +2,8 @@
 name: doc-structure
 user-invocable: false
 description: |
-  .doc_structure.yaml を読み込み、Feature 名から specs/rules ディレクトリの実パスを解決する。
-  他スキルおよび doc-advisor がドキュメントパスを特定する際に呼び出す内部ユーティリティ。
+  Feature 名から specs / rules ドキュメントの実パスを解決する。
+  他スキルが Feature に紐づくドキュメントの場所を特定したいときに呼び出す。
 argument-hint: ""
 ---
 

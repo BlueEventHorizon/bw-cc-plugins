@@ -16,11 +16,32 @@
 
 ---
 
+## 追加 feature 用 frontmatter
+
+**既存プロジェクトに追加 feature として計画書を新規作成するときに限り**、ファイル先頭に追加 feature マーカーを付与すること。既存計画書の追記・更新時、および main の初期立ち上げ時は含めない。
+
+計画書は YAML ファイルであり Markdown の `---` frontmatter を使えない。さらに本フォーマットは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止する（追加すると 🟡 major 違反）。そのため frontmatter は**ファイル先頭のマーカーコメントブロック**で表現する（トップレベルキーを増やさない）:
+
+```yaml
+# ---
+# type: temporary-feature-plan
+# notes:
+#   - 正本は対応する追加 feature 要件定義書（REQ-xxx）。旧仕様と矛盾する場合は要件定義書を優先する。
+#   - 本 feature 実装完了後、この計画書は破棄される予定（§4「追加開発の計画 → 破棄」）。
+# ---
+```
+
+正式定義（全文書種別の集約 SoT）・判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6 frontmatter 定義一覧 / §1 適用条件）
+
+---
+
 ## YAML スキーマ
 
 ファイル名: `{feature}_plan.yaml`
 
 ```yaml
+# 追加 feature の場合、ここに上記「追加 feature 用 frontmatter」マーカーを挿入する
+
 # {feature} 実装計画書
 
 # === トレーサビリティ ===

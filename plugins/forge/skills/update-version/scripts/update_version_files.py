@@ -45,6 +45,13 @@ def update_version_in_text(content, old_version, new_version, version_path=None,
         return _update_with_filter(content, old_version, new_version, filter_pattern)
 
     if version_path:
+        # version_path の引用符を normalize（Issue #115 提案2）。
+        # .version-config.yaml に version_path: "version" と書かれていても、
+        # YAML パースを経ずに生文字列が渡る経路があるため防御する。
+        version_path = version_path.strip().strip('\'"')
+        if version_path == 'changelog_header':
+            # CHANGELOG を canonical version source とするケース（Issue #115 提案3）
+            return _update_changelog_header(content, old_version, new_version)
         return _update_with_path(content, old_version, new_version, version_path)
 
     # シンプルな置換（最初の出現のみ）
@@ -67,19 +74,58 @@ def _replace_first(content, old_version, new_version):
     raise ValueError(f"バージョン '{old_version}' がファイル内に見つかりません")
 
 
+def _update_changelog_header(content, old_version, new_version):
+    """CHANGELOG の最初の version 見出しを更新する（version_path: changelog_header）。
+
+    `## [v?]X.Y.Z` / `## v?X.Y.Z`（keep-a-changelog / simple 双方）の最初の
+    ヘッダ行にある version を置換する。先頭 `v` や角括弧 `[]` は保持する。
+
+    Args:
+        content: CHANGELOG テキスト
+        old_version: 置換元バージョン（`v` 有無いずれも可）
+        new_version: 置換先バージョン（数値 X.Y.Z 想定）
+
+    Returns:
+        str: 更新後のテキスト
+
+    Raises:
+        ValueError: 該当する version 見出しが見つからない
+    """
+    old_norm = old_version.strip().lstrip('vV')
+    # group(1): 見出し接頭辞（"## [v" / "## v" / "## " 等）、group(2): 角括弧閉じ "]" 任意
+    # `(?![\d.])`: version 末尾に境界を設け、`0.6.1` が `## [0.6.10]` を前方一致で
+    # 破壊しないようにする（数字・ドットが続く場合はマッチさせない）。
+    pattern = re.compile(
+        r'^(##\s+\[?[vV]?)' + re.escape(old_norm) + r'(?![\d.])(\]?)',
+        re.MULTILINE,
+    )
+    result, count = pattern.subn(
+        lambda m: m.group(1) + new_version + m.group(2), content, count=1
+    )
+    if count == 0:
+        raise ValueError(
+            f"CHANGELOG ヘッダにバージョン '{old_version}' が見つかりません"
+        )
+    return result
+
+
 def _update_with_path(content, old_version, new_version, version_path):
     """ネストパスを使ってバージョンフィールドを特定し置換する。
 
     version_path が "version" なら "version" キーの行を、
     "package.version" なら "package" ブロック内の "version" キーの行を特定する。
     """
+    # 直接呼び出し経路でも引用符を normalize する（Issue #115 提案2）
+    version_path = version_path.strip().strip('\'"')
     parts = version_path.split('.')
     field_name = parts[-1]  # 最終キー名
 
-    # フィールド名を含む行を検索して置換
+    # フィールド名を含む行を検索して置換。
+    # `(?![\d.])`: version 末尾に境界を設け、old=`0.6.1` が `"0.6.10"` を前方一致で
+    # 破壊しないようにする（数字・ドットが続く場合はマッチさせない）。
     pattern = re.compile(
         r'([\"\']?' + re.escape(field_name) + r'[\"\']?\s*[:=]\s*)[\"\']?'
-        + re.escape(old_version) + r'[\"\']?'
+        + re.escape(old_version) + r'(?![\d.])[\"\']?'
     )
 
     if len(parts) == 1:

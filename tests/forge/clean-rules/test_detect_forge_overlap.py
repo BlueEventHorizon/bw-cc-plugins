@@ -340,7 +340,7 @@ class TestMainOutput(unittest.TestCase):
             self.assertIn("forge_section_count", result)
 
     def test_no_api_key_error(self):
-        """OPENAI_API_KEY 未設定でエラー"""
+        """OPENAI_API_DOCDB_KEY / OPENAI_API_KEY 双方未設定でエラー (DES-007 / FNC-004 KEY-01)"""
         from detect_forge_overlap import main
         import io
 
@@ -348,14 +348,43 @@ class TestMainOutput(unittest.TestCase):
         with patch("sys.argv", ["prog", "--project-rules", "a.md",
                                  "--forge-docs", "b.md"]), \
              patch("sys.stdout", captured), \
-             patch.dict(os.environ, {"OPENAI_API_KEY": ""}, clear=False):
+             patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(SystemExit):
                 main()
 
         output = captured.getvalue()
         result = json.loads(output)
         self.assertEqual(result["status"], "error")
+        self.assertIn("OPENAI_API_DOCDB_KEY", result["error"])
         self.assertIn("OPENAI_API_KEY", result["error"])
+
+    def test_fallback_to_openai_api_key(self):
+        """OPENAI_API_DOCDB_KEY 未設定 / OPENAI_API_KEY のみ設定でフォールバック動作 (DES-007)"""
+        from detect_forge_overlap import main
+        import io
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir) / "rule.md"
+            p.write_text("## Sec\n\nContent.\n", encoding="utf-8")
+            f = Path(tmpdir) / "forge.md"
+            f.write_text("## Forge\n\nContent.\n", encoding="utf-8")
+
+            captured = io.StringIO()
+            with patch("sys.argv", ["prog", "--project-rules", str(p),
+                                     "--forge-docs", str(f)]), \
+                 patch("sys.stdout", captured), \
+                 patch.dict(os.environ, {"OPENAI_API_KEY": "fallback-key"}, clear=True), \
+                 patch("detect_forge_overlap.call_embedding_api") as mock_api:
+                mock_api.return_value = [_make_vector(1.0, 0.0, 0.0)]
+                try:
+                    main()
+                except SystemExit:
+                    pass
+
+            output = captured.getvalue()
+            result = json.loads(output)
+            # フォールバック経路で正常動作（"error" でない）
+            self.assertEqual(result["status"], "ok")
 
 
 if __name__ == "__main__":

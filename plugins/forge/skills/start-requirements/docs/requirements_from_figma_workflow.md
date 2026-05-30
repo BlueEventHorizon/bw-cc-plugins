@@ -221,8 +221,10 @@ Figma から抽出した画像の扱い:
 
 ### 5.3 AI レビュー実施 [MANDATORY]
 
+Skill ツールで `/forge:review` を起動する:
+
 ```
-/forge:review requirement {作成ファイルパス} --auto
+/forge:review requirement --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。
@@ -237,9 +239,14 @@ Figma から抽出した画像の扱い:
 
 ### 5.6 セッション削除
 
+正常完了処理は **complete → cleanup の 2 段** で行う:
+
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
+
+`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
 
 ### 5.7 完了案内
 

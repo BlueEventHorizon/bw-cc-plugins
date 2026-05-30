@@ -1,72 +1,52 @@
 #!/usr/bin/env python3
 """review/scripts/init_session.py のテスト。
 
-DES-028 §4.1 関連:
-  - 位置引数 (review_type / engine / auto_count) を session_manager.py の init flags に変換する
-  - --files (空白 / カンマ区切り両対応) を session.yaml に保存する
+後処理撤去後の wrapper は session.yaml を一切触らず、session_manager.py init に
+透過するだけの薄いラッパーである（DES-024 §2.3 / DES-028 §4.1）。
+本テストは subprocess を mock し、組み立てられる引数（透過内容）を検証する:
+
+  - 位置引数 (review_type / engine / auto_count) → session_manager の init flags
+  - --current-cycle 0 のハードコード
+  - --files (空白 / カンマ区切り) を **常に** session_manager に透過する
+    （カンマ分割・session.yaml への保存は session_manager 側の責務。
+     その内容検証は tests/forge/scripts/test_session_manager.py が担う）
   - --section は完全撤廃。argparse が "unrecognized arguments" として reject する
 """
 
-import json
-import subprocess
 import sys
-import tempfile
 import unittest
-from pathlib import Path
-from unittest import mock
 
 from tests.forge.wrapper_helpers import (
     SESSION_MANAGER,
+    assert_exit_code_transparent,
     assert_init_session_command,
     assert_low_level,
+    assert_transparent_subprocess_kwargs,
     command_from_mock,
+    invoke_with_mocked_run,
     load_wrapper,
     wrapper_path,
 )
+from unittest import mock
 
 EXPECTED_SKILL = 'review'
 WRAPPER_PATH = wrapper_path(EXPECTED_SKILL, "init_session.py")
 
 
-def _make_completed_process(session_dir, returncode=0):
-    """session_manager init の JSON 出力を模した CompletedProcess を返す。"""
-    payload = {"status": "created", "session_dir": str(session_dir)}
-    return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=json.dumps(payload), stderr=""
-    )
-
-
-def _invoke(wrapper, argv, session_dir, returncode=0):
-    """subprocess.run を mock してラッパーを実行する。"""
-    with mock.patch.object(wrapper.subprocess, "run") as mock_run:
-        mock_run.return_value = _make_completed_process(session_dir, returncode)
-        with mock.patch.object(sys, "argv", argv):
-            rc = wrapper.main()
-    return rc, mock_run
-
-
 class TestInitSessionWrapper(unittest.TestCase):
-    """位置引数 + --files の解析と session_manager 呼び出しを検証する。"""
+    """位置引数 + --files の解析と session_manager 透過を検証する。"""
 
     def setUp(self):
         self.wrapper = load_wrapper(WRAPPER_PATH, '_init_session_review')
-        self._tmpdir = tempfile.TemporaryDirectory()
-        self.session_dir = Path(self._tmpdir.name) / "review-abc123"
-        self.session_dir.mkdir()
-        # session_manager.py が事前に書き出すであろう session.yaml を再現
-        (self.session_dir / "session.yaml").write_text(
-            'skill: review\n'
-            'started_at: "2026-05-21T00:00:00Z"\n'
-            'last_updated: "2026-05-21T00:00:00Z"\n'
-            'status: in_progress\n',
-            encoding="utf-8",
-        )
 
-    def tearDown(self):
-        self._tmpdir.cleanup()
+    def _cmd(self, argv):
+        """wrapper を mock 実行し、session_manager へ渡す引数列を返す。"""
+        rc, mock_run = invoke_with_mocked_run(self.wrapper, argv=argv)
+        self.assertEqual(rc, 0)
+        return command_from_mock(mock_run)
 
     # ------------------------------------------------------------------
-    # 基本: 位置引数のマッピング
+    # 基本: hardcode 値 / 透過契約
     # ------------------------------------------------------------------
 
     def test_skill_hardcoded(self):
@@ -76,15 +56,10 @@ class TestInitSessionWrapper(unittest.TestCase):
         assert_low_level(self, self.wrapper, SESSION_MANAGER)
 
     def test_positional_args_mapped_to_flags(self):
-        rc, mock_run = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'code', 'codex', '3'],
-            session_dir=self.session_dir,
-        )
-        self.assertEqual(rc, 0)
+        cmd = self._cmd(['init_session.py', 'code', 'codex', '3'])
         assert_init_session_command(
             self,
-            command_from_mock(mock_run),
+            cmd,
             EXPECTED_SKILL,
             {
                 '--review-type': 'code',
@@ -95,87 +70,52 @@ class TestInitSessionWrapper(unittest.TestCase):
         )
 
     def test_exit_code_transparent(self):
-        for code in (0, 1, 2, 42):
-            with self.subTest(code=code):
-                rc, _mock_run = _invoke(
-                    self.wrapper,
-                    argv=['init_session.py', 'code', 'codex', '3'],
-                    session_dir=self.session_dir,
-                    returncode=code,
-                )
-                self.assertEqual(rc, code)
+        assert_exit_code_transparent(
+            self,
+            self.wrapper,
+            lambda: ['init_session.py', 'code', 'codex', '3'],
+        )
+
+    def test_subprocess_transparent(self):
+        """capture せず exit/stdout/stderr を透過する（DES-024 §2.3）。"""
+        _rc, mock_run = invoke_with_mocked_run(
+            self.wrapper, argv=['init_session.py', 'code', 'codex', '3']
+        )
+        assert_transparent_subprocess_kwargs(self, mock_run)
 
     # ------------------------------------------------------------------
-    # --files の session.yaml 保存
+    # --files の透過（内容検証は session_manager テストに委譲）
     # ------------------------------------------------------------------
 
-    def _read_session_yaml(self):
-        from plugins.forge.scripts.session.yaml_utils import read_yaml  # noqa: E501
-        return read_yaml(self.session_dir / "session.yaml")
+    def test_files_always_passed_even_when_unspecified(self):
+        """--files 未指定でも空の --files を末尾に透過する（files: [] 記録のため）。"""
+        cmd = self._cmd(['init_session.py', 'code', 'codex', '3'])
+        self.assertIn('--files', cmd)
+        # 末尾に置き、後続値が無い（空 list として session_manager が解釈する）
+        self.assertEqual(cmd[-1], '--files')
 
-    def test_files_not_provided_writes_empty_list(self):
-        """--files 未指定時は空配列として session.yaml に明示記録する。"""
-        rc, _ = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'code', 'codex', '3'],
-            session_dir=self.session_dir,
+    def test_files_single_value_passed_through(self):
+        cmd = self._cmd(
+            ['init_session.py', 'design', 'codex', '0', '--files', 'docs/a.md']
         )
-        self.assertEqual(rc, 0)
-        text = (self.session_dir / "session.yaml").read_text(encoding="utf-8")
-        self.assertIn("files: []", text)
+        idx = cmd.index('--files')
+        self.assertEqual(cmd[idx + 1:], ['docs/a.md'])
 
-    def test_files_single_value(self):
-        rc, _ = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'design', 'codex', '0', '--files', 'docs/a.md'],
-            session_dir=self.session_dir,
+    def test_files_multiple_space_separated_passed_through(self):
+        cmd = self._cmd(
+            ['init_session.py', 'design', 'codex', '0',
+             '--files', 'docs/a.md', 'docs/b.md']
         )
-        self.assertEqual(rc, 0)
-        text = (self.session_dir / "session.yaml").read_text(encoding="utf-8")
-        self.assertIn('files: ["docs/a.md"]', text)
+        idx = cmd.index('--files')
+        self.assertEqual(cmd[idx + 1:], ['docs/a.md', 'docs/b.md'])
 
-    def test_files_multiple_space_separated(self):
-        rc, _ = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'design', 'codex', '0',
-                  '--files', 'docs/a.md', 'docs/b.md'],
-            session_dir=self.session_dir,
+    def test_files_comma_passed_through_unsplit(self):
+        """カンマ区切りは分割せずそのまま透過する（分割は session_manager の責務）。"""
+        cmd = self._cmd(
+            ['init_session.py', 'design', 'codex', '0', '--files', 'docs/a.md,docs/b.md']
         )
-        self.assertEqual(rc, 0)
-        text = (self.session_dir / "session.yaml").read_text(encoding="utf-8")
-        self.assertIn('files: ["docs/a.md", "docs/b.md"]', text)
-
-    def test_files_comma_separated(self):
-        rc, _ = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'design', 'codex', '0',
-                  '--files', 'docs/a.md,docs/b.md'],
-            session_dir=self.session_dir,
-        )
-        self.assertEqual(rc, 0)
-        text = (self.session_dir / "session.yaml").read_text(encoding="utf-8")
-        self.assertIn('files: ["docs/a.md", "docs/b.md"]', text)
-
-    def test_files_mixed_space_and_comma(self):
-        rc, _ = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'design', 'codex', '0',
-                  '--files', 'a.md,b.md', 'c.md'],
-            session_dir=self.session_dir,
-        )
-        self.assertEqual(rc, 0)
-        text = (self.session_dir / "session.yaml").read_text(encoding="utf-8")
-        self.assertIn('files: ["a.md", "b.md", "c.md"]', text)
-
-    def test_session_manager_not_called_with_files_flag(self):
-        """--files は init_session が消費し、session_manager には渡さない。"""
-        _, mock_run = _invoke(
-            self.wrapper,
-            argv=['init_session.py', 'code', 'codex', '3', '--files', 'a.md'],
-            session_dir=self.session_dir,
-        )
-        cmd = command_from_mock(mock_run)
-        self.assertNotIn('--files', cmd)
+        idx = cmd.index('--files')
+        self.assertEqual(cmd[idx + 1:], ['docs/a.md,docs/b.md'])
 
     # ------------------------------------------------------------------
     # --section の完全撤廃

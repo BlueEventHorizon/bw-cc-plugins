@@ -42,9 +42,16 @@ class TestParseSemver(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_semver("1.2.3.4")
 
-    def test_invalid_with_prefix(self):
+    def test_v_prefix_allowed(self):
+        """Issue #115 提案3: 先頭 v を許容し normalize する"""
+        self.assertEqual(parse_semver("v1.2.3"), (1, 2, 3))
+        self.assertEqual(parse_semver("V0.6.9"), (0, 6, 9))
+        self.assertEqual(parse_semver("  v1.2.3  "), (1, 2, 3))
+
+    def test_invalid_prerelease_with_v(self):
+        """v 付きプレリリースも非対応エラー"""
         with self.assertRaises(ValueError):
-            parse_semver("v1.2.3")
+            parse_semver("v1.2.3-alpha")
 
     def test_empty(self):
         with self.assertRaises(ValueError):
@@ -111,6 +118,17 @@ class TestBumpVersion(unittest.TestCase):
         """current が正しく保持される"""
         result = bump_version("999.88.7", "patch")
         self.assertEqual(result["current"], "999.88.7")
+
+    def test_v_prefix_current_normalized(self):
+        """Issue #115 提案3: v 付き current は数値に normalize される"""
+        result = bump_version("v0.6.9", "patch")
+        self.assertEqual(result["current"], "0.6.9")
+        self.assertEqual(result["new"], "0.6.10")
+
+    def test_v_prefix_direct_spec_normalized(self):
+        """Issue #115 提案3: v 付き直接指定は数値 X.Y.Z に normalize される"""
+        result = bump_version("0.6.9", "v0.7.0")
+        self.assertEqual(result["new"], "0.7.0")
 
 
 class TestCLI(unittest.TestCase):

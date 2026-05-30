@@ -55,8 +55,17 @@ def write_flat_yaml(path, data, field_order=None):
 
     Args:
         path: 出力ファイルパス
-        data: dict（値はスカラーのみ）
+        data: dict（値は ``bool`` / ``int`` / ``str`` / ``list[str]``）
         field_order: 先頭に出力するフィールド順序（省略時はアルファベット順）
+
+    list[str] はインライン配列 ``["a", "b"]`` として出力する。
+    要素は常にダブルクォートし ``\\`` / ``"`` をエスケープする
+    （self-parser ``_parse_inline_array`` と roundtrip 可能な形に揃える）。
+
+    Raises:
+        TypeError: list の要素が str 以外のとき（暗黙の str 化はしない）
+        ValueError: list[str] の要素に comma を含むとき
+            （self-parser が ``split(",")`` で roundtrip できないため、黙って壊さない）
     """
     lines = []
     if field_order:
@@ -66,8 +75,35 @@ def write_flat_yaml(path, data, field_order=None):
     else:
         ordered = sorted(data.keys())
     for key in ordered:
-        lines.append(f"{key}: {yaml_scalar(data[key])}")
+        lines.append(f"{key}: {_flat_value(data[key])}")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _flat_value(value):
+    """フラット YAML の値部分を生成する（scalar または list[str] インライン配列）。"""
+    if isinstance(value, list):
+        return _inline_str_list(value)
+    return yaml_scalar(value)
+
+
+def _inline_str_list(items):
+    """list[str] を ``["a", "b"]`` 形式のインライン配列文字列に変換する。
+
+    空リストは ``[]``。各要素は常にダブルクォートし、``\\`` / ``"`` をエスケープする。
+    """
+    parts = []
+    for item in items:
+        if not isinstance(item, str):
+            raise TypeError(
+                f"list 要素は str のみ対応します（{type(item).__name__}: {item!r}）"
+            )
+        if "," in item:
+            raise ValueError(
+                f"list 要素に comma を含められません（roundtrip 不能）: {item!r}"
+            )
+        escaped = item.replace("\\", "\\\\").replace('"', '\\"')
+        parts.append(f'"{escaped}"')
+    return "[" + ", ".join(parts) + "]"
 
 
 def atomic_write_text(path, content):

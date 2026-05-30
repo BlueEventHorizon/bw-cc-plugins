@@ -18,7 +18,7 @@
 
 ## 1. 概要
 
-forge のオーケストレータスキルが subagent / agent と通信する際の
+forge のオーケストレータスキルが汎用 Agent / カスタム Agent と通信する際の
 共通プロトコルを定義する。セッションディレクトリをデータバスとして使用し、
 ファイル経由でデータを受け渡す。
 
@@ -80,7 +80,6 @@ skill: review # 起動スキル名
 started_at: "2026-03-12T18:30:00Z"
 last_updated: "2026-03-12T18:35:00Z"
 status: in_progress # in_progress | completed
-resume_policy: resume # resume（デフォルト）| none
 
 # === スキル固有フィールド（各スキルが自由に追加）===
 # 例: review の場合
@@ -92,43 +91,43 @@ current_cycle: 0
 
 ### 共通フィールド定義
 
-| フィールド    | 型       | 必須 | 説明                                                           |
-| ------------- | -------- | ---- | -------------------------------------------------------------- |
-| skill         | string   | ○    | 起動スキル名（review, create-design 等）                       |
-| started_at    | datetime | ○    | セッション開始時刻（ISO 8601）                                 |
-| last_updated  | datetime | ○    | 最終更新時刻（ISO 8601）                                       |
-| status        | enum     | ○    | `in_progress` / `completed`                                    |
-| resume_policy | enum     | -    | `resume`（デフォルト）/ `none`。未指定時は `resume` として扱う |
+| フィールド   | 型       | 必須 | 説明                                                                          |
+| ------------ | -------- | ---- | ----------------------------------------------------------------------------- |
+| skill        | string   | ○    | 起動スキル名（review, create-design 等）                                      |
+| started_at   | datetime | ○    | セッション開始時刻（ISO 8601）                                                |
+| last_updated | datetime | ○    | 最終更新時刻（ISO 8601）。`init` で初期値、`touch` / `complete` で更新        |
+| status       | enum     | ○    | `in_progress`（処理中）/ `completed`（正常完了マーク済み。`complete` で設定） |
+
+> Issue #99: 旧 `resume_policy` フィールドは廃止（実装の `cmd_init` は上記 4 フィールドのみを書く）。残存セッションの扱いはスキル種別ごとの責務で判断する（下記）。
 
 ### ライフサイクル
 
-| タイミング     | 操作                                                                    |
-| -------------- | ----------------------------------------------------------------------- |
-| スキル開始時   | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化 |
-| 正常完了時     | オーケストレータがディレクトリを削除                                    |
-| セッション中断 | ディレクトリが残存（次回起動時に検出）                                  |
+| タイミング     | 操作                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| スキル開始時   | 残存セッション検出 → セッションディレクトリ作成 + `session.yaml` 初期化                                 |
+| 正常完了時     | オーケストレータが `session_manager.py complete` で `status: completed` に遷移してから `cleanup` で削除 |
+| セッション中断 | ディレクトリが残存（次回起動時に検出、または `cleanup-stale` で一括回収）                               |
 
 ### 残存セッション検出フロー
 
-スキル起動時、`.claude/.temp/` 内に同一 `skill` 名の `session.yaml` を持つディレクトリを検索する。
-見つかった場合の処理は `resume_policy` によって分岐する:
+スキル起動時、`.claude/.temp/` 内に同一 `skill` 名の `session.yaml` を持つディレクトリを検索する。残存セッションの処理は **スキル種別ごとの責務** で分岐する（`session.yaml` には判断フラグを持たない、Issue #99 / DES-011 §4.2）:
 
-#### `resume_policy: resume`（デフォルト）
+#### review（中間状態に価値があるスキル）
 
 1. 残存セッションの `status` と `last_updated` を確認
 2. AskUserQuestion: 「前回のセッションが見つかりました。再開しますか？」
    - **再開** → 既存 session_dir を使用して処理を続行
-   - **破棄して新規作成** → `rm -rf {session_dir}` して新規セッションを開始
+   - **破棄して新規作成** → `session_manager.py cleanup {session_dir}` して新規セッションを開始
 
-#### `resume_policy: none`
+#### start-* 系（直線的なワークフロー）
 
 1. 残存セッションを検出
 2. AskUserQuestion: 「前回の未完了セッションがあります。削除しますか？」
-   - **削除** → `rm -rf {session_dir}` して新規セッションを開始
+   - **削除** → `session_manager.py cleanup {session_dir}` して新規セッションを開始
    - **残す** → 残存ディレクトリを無視して新規セッションを開始
 
-> **設計判断**: review はサイクル実行（reviewer → evaluator → fixer）があり中間状態の価値が高いため `resume`。
-> create-* は直線的なワークフローであり、中断時は最初からやり直す方が効率的なため `none`。
+> **設計判断**: review はサイクル実行（reviewer → evaluator → fixer）があり中間状態の価値が高いため「再開」選択肢を提示する。
+> start-* は直線的なワークフローであり、中断時は最初からやり直す方が効率的なため「削除 / 残す」のみを提示する。判断はスキル側の責務で `session.yaml` のフラグには依存しない。
 
 ---
 

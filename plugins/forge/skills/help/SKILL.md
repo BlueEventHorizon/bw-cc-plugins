@@ -27,7 +27,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   start-plan          : 計画書の作成。レビュー+自動修正→commit
   start-implement     : 計画書から実装・レビュー・計画更新
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
-  create-feature-from-plan: plan ファイルから要件定義→設計書へ展開
+  create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
   clean-rules         : ルール文書を分析し重複を検出・削除
   merge-specs          : 2 つの仕様 DIR（基本 / 追加）を内容単位でマージ
   setup-doc-structure : .doc_structure.yaml を対話的に生成
@@ -207,9 +207,10 @@ AskUserQuestion:
 
 ---
 
-### create-feature-from-plan
+### create-feature-from-markdown-plan
 
-引数: plan ファイルパス（省略時は対話で決定）
+引数: Markdown plan のファイルパス（省略時は対話で決定）。
+入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.yaml`（YAML、`/forge:start-plan` が作成）とは別物。
 
 ---
 
@@ -256,7 +257,7 @@ AskUserQuestion:
 ```
 以下のコマンドを実行します:
 
-  /forge:review code src/ --claude --auto 3
+  /forge:review code --files src/foo.py,src/bar.py --claude --auto
 
 実行しますか？
 - 実行する

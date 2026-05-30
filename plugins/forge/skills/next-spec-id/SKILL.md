@@ -2,9 +2,8 @@
 name: next-spec-id
 user-invocable: false
 description: |
-  全ブランチ（ローカル+リモート）をスキャンし、指定プレフィックスの次の連番IDを安全に取得する。
-  ブランチ間のID重複を防止する。任意のプレフィックス対応（SCR, DES, TASK 等）。
-  start-requirements / start-design / start-plan から内部的に呼び出される。
+  ブランチ間で衝突しない、次の Spec ID（SCR / DES / TASK 等任意プレフィックス）を発行する。
+  要件定義書・設計書・計画書の作成時に ID の重複を防ぐために呼び出される。
 argument-hint: ""
 ---
 

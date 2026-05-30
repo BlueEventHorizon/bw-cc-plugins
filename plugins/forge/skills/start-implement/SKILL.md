@@ -5,7 +5,7 @@ description: |
   トリガー: "実装開始", "タスク実行", "start implement"
 user-invocable: true
 argument-hint: "<feature> [--task TASK-ID[,TASK-ID,...]] [-n N]"
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-implement
@@ -102,7 +102,7 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 選択した全タスクについて以下を確認:
 
 - **依存関係チェック**: `depends_on` 配列の全タスクが `status: completed` か確認。未完了の依存がある場合は AskUserQuestion で確認
-- **設計書の存在**: 設計ID ≠ `-` の場合は対応する設計書が存在するか確認
+- **設計書の存在**: `design_id` が `null` でない場合は対応する設計書が存在するか確認
 - **タスクグループの確認**: グループ内タスクはグループ先頭から順次実行。グループ途中からの実行は不可
 
 ### 2.3 複数タスク指定時の依存関係チェック [MANDATORY]
@@ -131,18 +131,42 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 <!-- DES-011 §3.2 準拠: start-implement は事前準備 Phase が多いため、セッション管理を Phase 間の独立セクションとして配置 -->
 
-残存セッション検出:
+### 自スキル残骸の検出
 
 ```bash
 python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
 ```
 
-- `status: "none"` → セッション作成へ
-- `status: "found"` → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-  - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
-  - **残す** → 無視して新規作成へ
+- `status: "none"` → 「他スキル残骸の通告」へ
+- `status: "found"` の場合、`sessions[]` を以下のルールで処理する:
+  - **`status: "completed"`** → 正常完了したのに cleanup されなかった残骸として AskUserQuestion なしで自動回収する:
+    ```bash
+    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {completed_session_path}
+    ```
+  - **`status: "in_progress"`** が残る場合 → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
+    - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
+    - **残す** → 無視して新規作成へ
 
-セッション作成:
+### 他スキル残骸の通告
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py --all-skills
+```
+
+返却された `sessions[]` から自スキル分（既に処理済み）を除外し、`status: "completed"` は自動 cleanup する。残った `status: "in_progress"` が存在する場合は AskUserQuestion:「他スキルの残骸が N 件あります。今クリーンアップしますか？」
+
+- **はい** → 各セッションを cleanup
+- **いいえ** → そのまま新規セッション作成へ進む
+
+### Phase 切替時の touch [MANDATORY]
+
+各 Phase の開始時に session.yaml の `last_updated` を更新する。これにより `cleanup-stale` の時間基準が「最後に活動があった時刻」を正しく反映し、長時間タスクが誤削除されることを防ぐ。
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py touch {session_dir}
+```
+
+### セッション作成
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{TASK-ID}"
@@ -194,9 +218,9 @@ skill_type: "{タスクのタイトル}"
 
 > 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。
 
-#### 3.1.5 計画書「必読」列の処理
+#### 3.1.5 計画書 `required_reading` フィールドの処理
 
-計画書のタスク表に「必読」列がある場合、記載されたファイルパスを追加の必読文書とする。
+タスクの `required_reading` 配列が空配列 `[]` でない場合、記載された各ファイルパスを追加の必読文書として executor に渡す。`required_reading` は YAML のタスクフィールドであり、Markdown table の「列」ではない点に注意する。
 
 ### 3.2 refs/ 統合・表示
 
@@ -226,17 +250,17 @@ skill_type: "{タスクのタイトル}"
 
 ### 4.1 検証要件の判定 [MANDATORY]
 
-オーケストレーターが計画書を読んで検証要件を判定する:
+オーケストレーターが計画書（`{feature}_plan.yaml`）を読み、タスクの YAML フィールド値から検証要件を判定する:
 
-**「ビルド確認」列がある場合**（列の値が最優先）:
+**`build_check` フィールドの値による検証要件**（`build_check` の値が最優先）:
 
-| 値                               | 検証要件                           |
-| -------------------------------- | ---------------------------------- |
-| `タスクごと`（またはデフォルト） | ビルド確認必須                     |
-| `スキップ`                       | ビルド確認スキップ（代替検証推奨） |
-| `グループ完了時`                 | グループ最終タスクでビルド確認必須 |
+| 値 (`plan_format.md` の値域) | 検証要件                           |
+| ---------------------------- | ---------------------------------- |
+| `per_task`（デフォルト）     | タスク完了時にビルド確認必須       |
+| `skip`                       | ビルド確認スキップ（代替検証推奨） |
+| `on_group_complete`          | グループ最終タスクでビルド確認必須 |
 
-**「受け入れ基準」列がある場合**:
+**`acceptance_criteria` フィールドが `null` でない場合**:
 
 - 記載された基準を検証要件として executor に渡す
 
@@ -337,10 +361,10 @@ executor は以下のステータスで報告する:
 
 #### 単一タスク実行時
 
-executor が作成・変更したファイル（差分のみ）に対して `/forge:review code` を `--auto` モードで実行する:
+executor が作成・変更したファイル（差分のみ）に対して Skill ツールで `/forge:review code` を `--auto` モードで実行する:
 
 ```
-/forge:review code {変更ファイル一覧} --auto
+/forge:review code --files {変更ファイル一覧(カンマ区切り)} --auto
 ```
 
 #### 複数タスク並列実行時
@@ -348,7 +372,7 @@ executor が作成・変更したファイル（差分のみ）に対して `/fo
 全 executor 完了後、SUCCESS のタスクについて**逐次的に**レビューを実施する:
 
 1. `exec_*.json` から `status: SUCCESS` のタスクを収集する
-2. 各タスクの `files_modified` に対して `/forge:review code {files} --auto` を逐次実行する
+2. 各タスクの `files_modified` に対して Skill ツールで `/forge:review code --files {files} --auto` を逐次実行する
 3. タスク間でファイルが重複する場合、重複ファイルは最初のレビューで対応し、以降はスキップする
 
 > **レビューの並列実行は行わない。** `/forge:review` 自体が内部で並列 agent を使用するため、レビューを更に並列化するとリソース競合が発生する。
@@ -392,9 +416,14 @@ executor のステータスに基づいて分岐:
 
 ### 6.4 セッション削除・次タスク判定
 
+正常完了処理は **complete → cleanup の 2 段** で行う:
+
 ```bash
-rm -rf {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
 ```
+
+`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
 
 次タスクの判定:
 
@@ -445,7 +474,18 @@ executor が FAILURE を報告した場合:
    - **手動で修正** → オーケストレーターまたは人間が直接修正後、Phase 5 へ
    - **タスクをスキップ** → 計画書は更新せず、Phase 6.4 へ
 
-**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーション。
+**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーションし、6.5.1 のセッション後処理へ進む。
+
+#### 6.5.1 エスカレーション時のセッション後処理 [MANDATORY]
+
+エスカレーション・中断・人間判断による継続放棄のいずれの場合も、セッションディレクトリを放置せず、AskUserQuestion でユーザーに扱いを確認する。プレーンテキストで「どうしますか？」のように書かない。
+
+質問例:「タスク {task_id} はエスカレーションに到達しました。セッションディレクトリ {session_dir} の扱いを選んでください。」
+
+- **削除する** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}` を実行
+- **残す（後で再開する）** → そのまま終了。次回 `/forge:start-implement` 起動時に find_session が検出する
+
+**MUST** どちらを選んでも、SKILL は明示的に「セッションを削除した」「セッションを残した」と完了案内で報告する。**NEVER** session_dir をユーザーに告知せず放置してはならない（残骸の原因）。
 
 ---
 

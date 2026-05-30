@@ -74,6 +74,10 @@ targets:
       - path: README.md
         pattern: "| **doc-db**      | {version} |"
         filter: "| **doc-db**"
+      - path: README_en.md
+        pattern: "| **doc-db**      | {version} |"
+        filter: "| **doc-db**"
+        optional: true
       - path: CLAUDE.md
         pattern: "**doc-db** (v{version})"
         filter: "**doc-db** (v"

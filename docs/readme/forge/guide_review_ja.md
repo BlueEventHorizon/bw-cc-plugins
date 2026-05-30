@@ -5,27 +5,28 @@
 ## review
 
 ```
-/forge:review <種別> [対象] [--codex|--claude] [--auto [N]] [--auto-critical]
+/forge:review <種別> [--diff | --files path[,path...]] [--codex|--claude] [--interactive|--auto|--auto-critical]
 ```
 
 | 引数                   | 説明                                                                |
 | ---------------------- | ------------------------------------------------------------------- |
 | `種別`                 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`     |
-| `対象`                 | ファイルパス / ディレクトリ / Feature 名 / 省略（= 対話で決定）     |
+| `--diff` / `--files`   | 現ブランチ差分 / 明示したファイル・ディレクトリ一覧                 |
 | `--codex` / `--claude` | エンジン選択（デフォルト: Codex。不在時は Claude にフォールバック） |
-| `--auto [N]`           | 🔴 + 🟡 を N サイクル自動修正（省略時 N=1）                         |
-| `--auto-critical`      | 🔴 のみを 1 サイクル自動修正                                        |
+| `--interactive`        | 指摘を提示し、人間が修正可否を判断                                  |
+| `--auto`               | 🔴 + 🟡 を自動修正。🟢 minor は対象外                               |
+| `--auto-critical`      | 🔴 のみを自動修正                                                   |
 
 ### 使用例
 
 ```bash
-/forge:review code src/                        # 対話モード
-/forge:review code src/ --auto 3               # 3 サイクル自動修正
-/forge:review code src/ --auto-critical        # 致命的のみ自動修正
-/forge:review requirement login                # Feature 名で指定
-/forge:review design specs/login/design.md     # ファイル直接指定
-/forge:review generic README.md                # 任意の文書
-/forge:review code src/ --claude               # Claude エンジン指定
+/forge:review code --diff --interactive                     # 現ブランチ差分
+/forge:review code --files src/ --auto                      # critical+major 自動修正
+/forge:review code --files src/ --auto-critical             # 致命的のみ自動修正
+/forge:review requirement --files docs/specs/login_req.md   # 要件定義書
+/forge:review design --files specs/login/design.md          # ファイル直接指定
+/forge:review generic --files README.md                     # 任意の文書
+/forge:review code --files src/ --claude                    # Claude エンジン指定
 ```
 
 ### いつ使うか
@@ -45,13 +46,13 @@ flowchart TD
 
     P1["Phase 1: 引数解析<br/>種別・エンジン・モード確定"] --> P2
 
-    P2["Phase 2: 対象解決<br/>ファイル特定・参考文書収集<br/>perspectives 構成"] --> P3
+    P2["Phase 2: 対象解決<br/>ファイル特定・参考文書収集"] --> P3
 
-    P3["Phase 3: 並列レビュー<br/>reviewer × N（perspective ごと）"] --> P4
+    P3["Phase 3: レビュー基準の準備<br/>基準ルール・優先度を集約"] --> P4
 
-    P4["Phase 4: 統合・重複除去"] --> P5
+    P4["Phase 4: レビュー実行<br/>reviewer が一括評価"] --> P5
 
-    P5["Phase 5: 並列吟味<br/>evaluator × N（perspective ごと）"] --> CHECK
+    P5["Phase 5: 結果の吟味<br/>修正対象を判定"] --> CHECK
 
     CHECK{修正対象あり?}
     CHECK -->|No| P7
@@ -59,16 +60,21 @@ flowchart TD
 
     MODE{対話モード?}
     MODE -->|Yes| PRESENT
-    MODE -->|No| FIXER
+    MODE -->|No| FIXPATH
 
-    PRESENT["present-findings<br/>1 件ずつ提示・人間判断"] --> FIXER
+    PRESENT["present-findings<br/>1 件ずつ提示・人間判断"] --> FIXPATH
 
-    FIXER["Phase 6: fixer 修正実行"] --> REREV
+    FIXPATH{"軽量経路?"}
+    FIXPATH -->|Yes| INLINE["orchestrator 直接 Edit"]
+    FIXPATH -->|No| FIXER["fork 型 fixer"]
+
+    INLINE --> REREV
+    FIXER --> REREV
 
     REREV["再レビュー<br/>修正差分のみ検証"] --> CYCLE
 
     CYCLE{未修正あり AND<br/>サイクル上限未到達?}
-    CYCLE -->|Yes| P3
+    CYCLE -->|Yes| P4
     CYCLE -->|No| P7
 
     P7["Phase 7: 完了処理<br/>テスト → commit 確認"]
@@ -79,10 +85,10 @@ flowchart TD
 | モード             | 修正対象     | 最終判断者 | 用途             |
 | ------------------ | ------------ | ---------- | ---------------- |
 | 対話（デフォルト） | ユーザー選択 | 人間       | 慎重な品質管理   |
-| `--auto N`         | 🔴 + 🟡      | AI         | 一括品質向上     |
+| `--auto`           | 🔴 + 🟡      | AI         | 一括品質向上     |
 | `--auto-critical`  | 🔴 のみ      | AI         | 最小限の安全修正 |
 
-コアループ（reviewer → 統合 → evaluator → fixer → 再レビュー）は全モードで同一。違いは fixer の前に人間判断を挟むかどうかだけ。
+コアループ（reviewer → evaluator → 軽量経路または fork 型 fixer → 再レビュー）は全モードで同一。違いは修正前に人間判断を挟むかどうかだけ。
 
 ### レビュー種別
 
@@ -103,25 +109,24 @@ flowchart TD
 | 🟡 品質   | 修正推奨。規約、エラーハンドリング、パフォーマンス | `--auto` のみで修正                   |
 | 🟢 改善   | あると良い。可読性、リファクタリング提案           | 自動修正しない                        |
 
-### レビュー観点（perspectives）
+### レビュー基準
 
-レビュー観点は累積的に構成される。各 perspective は独立した reviewer で並列処理される。
+レビュー基準は複数ソースから集約され、1 つにまとめて reviewer に渡される。
 
-| ソース                   | 内容                                                          |
-| ------------------------ | ------------------------------------------------------------- |
-| **プラグインデフォルト** | `review_criteria_{type}.md` から自動抽出（常に含む）          |
-| **DocAdvisor**           | `/query-rules` が利用可能な場合、プロジェクト固有ルールを追加 |
+| ソース             | 内容                                                          |
+| ------------------ | ------------------------------------------------------------- |
+| **プラグイン同梱** | 種別ごとに用意された基準ファイル（常に含む）                  |
+| **DocAdvisor**     | `/query-rules` が利用可能な場合、プロジェクト固有ルールを追加 |
 
 ### セッション管理
 
 レビュー中は `.claude/.temp/` にセッションディレクトリが作成される。
 
-| ファイル       | 内容                                               |
-| -------------- | -------------------------------------------------- |
-| `session.yaml` | セッションメタデータ（種別・エンジン・サイクル数） |
-| `refs.yaml`    | 参照ファイル一覧（対象・参考文書・perspectives）   |
-| `review_*.md`  | perspective 別レビュー結果                         |
-| `review.md`    | 統合・重複除去済み結果                             |
-| `plan.yaml`    | 修正プランと進捗状態                               |
+| ファイル           | 内容                                               |
+| ------------------ | -------------------------------------------------- |
+| `session.yaml`     | セッションメタデータ（種別・エンジン・サイクル数） |
+| `refs.yaml`        | 参照ファイル一覧（対象・参考文書・基準ルール）     |
+| `review_<種別>.md` | レビュー結果（指摘事項・修正案）                   |
+| `plan.yaml`        | 修正プランと進捗状態                               |
 
 正常完了時は自動削除。中断時は残存し、次回起動時に再開提案される。

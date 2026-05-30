@@ -53,7 +53,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/scan_version_targets.py"
 
 ```
 スキャン完了:
-  バージョンファイル: 3件 (forge, anvil, doc-advisor)
+  バージョンファイル: 4件 (forge, anvil, doc-advisor, doc-db)
   カタログ: .claude-plugin/marketplace.json
   README: README.md, README_en.md
   CHANGELOG: CHANGELOG.md (keep-a-changelog 形式)
@@ -199,8 +199,8 @@ git:
 targets:
   - name: forge # target の論理名（/forge:update-version の引数に使う）
     version_file: plugins/forge/.claude-plugin/plugin.json # バージョン値の読み取り元
-    version_path: version # JSON/TOML のフィールドパス（ネストは "a.b.c"）
-    sync_files: # バージョンを同期するファイルリスト
+    version_path: version # JSON/TOML のフィールドパス。引用符を付けず記述する（ネストは a.b.c）。CHANGELOG を canonical にする場合は changelog_header
+    sync_files: # バージョンを同期するファイルリスト（version 文字列の単純置換）
       - path: .claude-plugin/marketplace.json
         pattern: '"version": "{version}"' # {version} が新バージョンに置換される
         filter: '"name": "forge"' # 同一コンテキストブロック内に存在すべき文字列（絞り込み）
@@ -224,3 +224,7 @@ git:
   auto_tag: false # true: バージョン更新後に自動タグ作成
   auto_commit: false # true: AskUserQuestion で確認後に自動コミット
 ```
+
+### sync_files に含めないもの [制約]
+
+`sync_files` は **version 文字列そのもの** を単純置換する仕組みである。version に連動するが値が version 文字列でないフィールド（例: Homebrew Formula の `revision`（git tag commit の SHA）、ハッシュ・ビルド番号）は `sync_files` の **対象外**。含めると version 部分だけが置換され、連動値が取り残されて壊れる。これらは git tag 確定後など別フェーズで決まるため、手動更新または専用フローで扱う。
