@@ -60,6 +60,7 @@ _USER_EXAMPLE_PATTERNS = [
     re.compile(r'使用例'),
     re.compile(r'Usage'),
     re.compile(r'Example'),
+    re.compile(r'コマンド構文'),
     re.compile(r'コマンド例'),
     re.compile(r'コマンド確認'),
     re.compile(r'コマンドを実行'),

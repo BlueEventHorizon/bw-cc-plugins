@@ -27,6 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FORGE_DOCS = REPO_ROOT / "plugins" / "forge" / "docs"
 CRITERIA_DIR = REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "docs"
+SKILLS_DIR = REPO_ROOT / "plugins" / "forge" / "skills"
 
 # 追加 feature 文書の frontmatter type マーカー (生成経路を問わず検出対象)
 FRONTMATTER_TYPES = {
@@ -182,6 +183,63 @@ class TestCriteriaLayer(unittest.TestCase):
                         f"{path.name} に severity 絵文字 '{emoji}' が混入 "
                         "(FNC-402: criteria は severity を宣言しない)",
                     )
+
+
+class TestGenerationLayer(unittest.TestCase):
+    """提案 B: start-design / start-plan が追加開発分岐と frontmatter 付与を持つこと。
+
+    生成層の非対称 (追加開発サポートが start-requirements のみに存在) を解消したことを
+    検証する。SKILL.md はテキスト規約のため本リポジトリではユニットテスト対象外だが、
+    Issue #118 の構造的欠陥 (生成層の伝播漏れ) の回帰を静的に検知する目的で文字列検証する。
+    """
+
+    GEN_SKILLS = {
+        "start-requirements": (
+            SKILLS_DIR / "start-requirements" / "SKILL.md",
+            "type: temporary-feature-requirement",
+        ),
+        "start-design": (
+            SKILLS_DIR / "start-design" / "SKILL.md",
+            "type: temporary-feature-design",
+        ),
+        "start-plan": (
+            SKILLS_DIR / "start-plan" / "SKILL.md",
+            "type: temporary-feature-plan",
+        ),
+    }
+
+    def test_skills_have_add_flag(self):
+        """3 生成 SKILL が --add（追加開発）分岐を持つこと。"""
+        for name, (path, _marker) in self.GEN_SKILLS.items():
+            with self.subTest(skill=name):
+                content = _read(path)
+                self.assertIn(
+                    "--add",
+                    content,
+                    f"{name}/SKILL.md に追加開発フラグ --add がない (生成層の非対称が残存)",
+                )
+
+    def test_skills_reference_frontmatter_type(self):
+        """3 生成 SKILL が自種別の frontmatter type を付与指示していること。"""
+        for name, (path, marker) in self.GEN_SKILLS.items():
+            with self.subTest(skill=name):
+                content = _read(path)
+                self.assertIn(
+                    marker,
+                    content,
+                    f"{name}/SKILL.md が '{marker}' の付与を指示していない",
+                )
+
+    def test_skills_reference_additive_spec(self):
+        """start-design / start-plan が additive_development_spec.md を参照していること。"""
+        for name in ("start-design", "start-plan"):
+            with self.subTest(skill=name):
+                content = _read(self.GEN_SKILLS[name][0])
+                self.assertIn(
+                    "additive_development_spec.md",
+                    content,
+                    f"{name}/SKILL.md が additive_development_spec.md を参照していない",
+                )
 
 
 if __name__ == "__main__":
