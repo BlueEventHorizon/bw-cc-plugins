@@ -28,6 +28,7 @@ CANONICAL_DOCS = {
     "DES-028": "docs/specs/forge/design/DES-028_review_policy_design.md",
     "review/SKILL.md": "plugins/forge/skills/review/SKILL.md",
     "evaluator/SKILL.md": "plugins/forge/skills/evaluator/SKILL.md",
+    "fixer/SKILL.md": "plugins/forge/skills/fixer/SKILL.md",
     "migration_notes": "docs/readme/forge/migration_notes/forge_review_v0.2.md",
 }
 
@@ -39,6 +40,8 @@ FORBIDDEN_SUBSTRINGS = (
     "全件自動修正",             # 旧 --auto ラベル (DES-028 / migration_notes の介入軸表)
     "は全件を対象とする",       # 旧 DES-015 本文 (`--auto` は全件を対象とする)
     "`--auto`: 全件 ",          # 旧 DES-015 表セル (末尾空白で interactive と区別)
+    "`--auto` (全件)",          # 旧 migration_notes 移行手順 (--auto を「全件」と注記)
+    "🔴 のみ / 全件",           # 旧 3 モード略称 (対話 / 🔴 のみ / 全件)。新表記は「🔴 のみ / 🔴🟡」
 )
 
 
@@ -79,7 +82,7 @@ class TestAutoSeverityConsistency(unittest.TestCase):
         )
 
     def test_skill_layer_consistent_critical_major(self) -> None:
-        """review / evaluator SKILL が critical + major (minor 除外) で一貫していること。"""
+        """review / evaluator / fixer SKILL が critical + major (minor 除外) で一貫していること。"""
         self.assertIn(
             "minor は対象外",
             self.texts["review/SKILL.md"],
@@ -89,6 +92,28 @@ class TestAutoSeverityConsistency(unittest.TestCase):
             "out_of_scope",
             self.texts["evaluator/SKILL.md"],
             "evaluator/SKILL.md に minor の out_of_scope 記述がない",
+        )
+
+    def test_fixer_auto_row_is_critical_major(self) -> None:
+        """fixer SKILL の介入軸フィルタ表で `--auto` = critical + major であること。
+
+        fixer の severity フィルタ表は --auto の対象 severity の最終的な実装記述。
+        ここが `critical` + `major` + `minor` に退行すると minor も自動修正対象に
+        なり Issue #117 の canonical に反する。`--auto` 行が critical + major である
+        ことを確認する (minor は (フラグなし) 行のみで許容)。
+        """
+        fixer = self.texts["fixer/SKILL.md"]
+        # `--auto` 行のセル: `critical` + `major` (minor を含まない)
+        self.assertIn(
+            "`critical` + `major`",
+            fixer,
+            "fixer/SKILL.md の `--auto` 行が `critical` + `major` になっていない",
+        )
+        # `--auto` の直後に minor を含める退行 (`--auto` 行が全 severity 化) を弾く
+        self.assertNotIn(
+            "| `--auto`          | `critical` + `major` + `minor`",
+            fixer,
+            "fixer/SKILL.md の `--auto` 行に minor が含まれている (minor 除外に反する)",
         )
 
 

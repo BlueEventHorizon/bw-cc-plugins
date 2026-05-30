@@ -146,7 +146,7 @@ evaluator は finding が以下 **3 条件をすべて満たす場合のみ** `r
    - `--scope <value>` を `--diff` または `--files` に置き換え
    - `--depth <value>` を削除
    - `--section "<value>"` を削除 (ファイル全体または `--diff` で代替)
-   - `--auto N` (件数指定) を `--auto-critical` (🔴 のみ) または `--auto` (全件) に置き換え
+   - `--auto N` (件数指定) を `--auto-critical` (🔴 のみ) または `--auto` (critical + major、🟢 minor 除外) に置き換え
 
 3. **CI / スクリプトの確認**
    - shell スクリプト / Makefile / GitHub Actions 等で旧フラグ (`--perspective` / `--scope` / `--depth` / `--section` / `--auto N`) を使っていないか grep で確認
