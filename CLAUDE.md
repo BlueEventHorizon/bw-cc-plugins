@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。4 プラグインを格納・配布する。
 
-- **forge** (v0.1.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
-- **doc-advisor** (v0.3.0) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
-- **doc-db** (v0.0.2) — 見出し chunk の Hybrid 検索（Embedding + Lexical + LLM Rerank）。doc-advisor とは併用・補完
+- **forge** (v0.1.2) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **doc-advisor** (v0.3.1) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
+- **doc-db** (v0.0.3) — 見出し chunk の Hybrid 検索（Embedding + Lexical + LLM Rerank）。doc-advisor とは併用・補完
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。

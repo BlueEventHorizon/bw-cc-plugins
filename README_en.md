@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.25**
+**Marketplace version: 0.1.26**
 
 The marketplace ships **4 plugins** (forge, anvil, doc-advisor, **doc-db**). **doc-db** complements rule/spec discovery with heading-level Hybrid search (Embedding + Lexical) and LLM Rerank. It is **not a superset of doc-advisor**; the two are designed to be used together, sharing the same `.doc_structure.yaml`.
 
@@ -38,10 +38,10 @@ flowchart LR
 
 | Plugin          | Version | Description                                                                                                                                                                                  |
 | --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.1.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                                                                     |
-| **anvil**       | 0.0.8   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                                                         |
-| **doc-advisor** | 0.3.0   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task.                                         |
-| **doc-db**      | 0.0.2   | Heading-chunk Hybrid search (Embedding + Lexical) with LLM Rerank. Grep results for IDs / proper nouns are merged in to reduce misses (used together with and complementary to doc-advisor). |
+| **forge**       | 0.1.2   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                                                                     |
+| **anvil**       | 0.0.9   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                                                         |
+| **doc-advisor** | 0.3.1   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task.                                         |
+| **doc-db**      | 0.0.3   | Heading-chunk Hybrid search (Embedding + Lexical) with LLM Rerank. Grep results for IDs / proper nouns are merged in to reduce misses (used together with and complementary to doc-advisor). |
 
 ## Skills
 
