@@ -180,6 +180,8 @@ Mermaid 構文リファレンス:
 - 改定履歴に変更理由を追記する
 - 設計意図（なぜそう変えたか）を記述する。コードの転記は不要
 - ADR（Architecture Decision Record）は設計書と同じディレクトリに配置する
+- ADR を新規作成する際は、ID（`ADR-NNN`）を手動で決めず、必ず `next-spec-id` スキルで採番する（`python3 scan_spec_ids.py ADR`）。手動採番は並行ブランチで同一 `ADR-NNN` が別内容で衝突する原因になる
+- ADR は設計ディレクトリ配下に置くため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても `next-spec-id` の git スキャンで既存 ADR を検出できる（ID 体系は `spec_format.md` 設計ID カタログを参照）
 
 ### 更新不要なケース
 
