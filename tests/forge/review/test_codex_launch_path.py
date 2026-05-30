@@ -87,10 +87,11 @@ class TestCodexLaunchPath(unittest.TestCase):
         in_fence, _out = _split_fence(self.review)
         joined = "\n".join(in_fence)
         self.assertIn(
-            "{session_dir} {review_type} {engine}",
+            'args: "{session_dir} {review_type} {engine}"',
             joined,
-            "review/SKILL.md の reviewer fork 起動 args が "
-            "`{session_dir} {review_type} {engine}` になっていない",
+            "review/SKILL.md の主起動 (reviewer fork) args が "
+            '`args: "{session_dir} {review_type} {engine}"` 行になっていない '
+            "(--diff-only 例やコマンド構文表の substring では pass させない)",
         )
 
     # 3. reviewer はコードブロックで run_review_engine.sh を起動する
