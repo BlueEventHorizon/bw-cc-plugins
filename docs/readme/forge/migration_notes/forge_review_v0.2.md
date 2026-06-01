@@ -7,8 +7,8 @@ forge-review v0.2 では `/forge:review` 周辺に **破壊的変更** が複数
 `/forge:review` を実行すると、初回のみ SKILL レベルで本ドキュメントへの誘導が表示されます (フラグファイル: `.claude/.temp/.forge_review_announce_shown`)。
 
 - 起点 Issue: #68「AI reviewer がコトをどんどん複雑にする」
-- 関連要件: `docs/specs/forge-review/requirements/REQ-004_review_policy.md`
-- 関連設計: `docs/specs/forge-review/design/DES-028_review_policy_design.md`
+- 関連要件: `docs/specs/forge/requirements/REQ-004_review_policy.md`
+- 関連設計: `docs/specs/forge/design/DES-028_review_policy_design.md`
 
 ---
 

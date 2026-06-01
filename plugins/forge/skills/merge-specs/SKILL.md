@@ -7,7 +7,7 @@ description: |
   トリガー: "仕様 DIR をマージ", "spec をマージ", "merge spec", "追加仕様を基本に統合", "spec ディレクトリ統合"
 user-invocable: true
 argument-hint: "[base] [additional]   # 短縮名なら specs/ 配下を自動探索"
-allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill
 ---
 
 # /merge-specs
@@ -70,6 +70,7 @@ allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion
 ### 6.2 必ずやること
 
 - **趣旨を理解する**: 追加側が何を変えたいのか（廃止・変更・拡張・条件追加）を読み取る
+- **規約に沿わせる**: Phase 0.6 で取得した規約（What/How 境界・フォーマット・品質規範）があれば、それに沿って改訂・新規作成する。取得できていない場合は基本側の既存文書から推測する
 - **基本側の文脈に馴染ませる**: 文体・用語・章構成・前提条件の表記を基本側の慣習に合わせて書き直す
 - **前後の整合を取る**: 改訂箇所の直前直後の文・節と論理が繋がっているか確認する
 - **波及する箇所を洗う**: 同じ概念に言及している他の節・他の文書を grep し、必要なら連動して改訂する
@@ -187,15 +188,55 @@ git rev-parse --abbrev-ref HEAD
 - ワーキングツリーが clean でない場合は、ユーザーに確認（commit するか stash するか）
 - 現在のブランチが main / master の場合は、新ブランチへの切り替えを推奨
 
-### 0.4 表示
+### 0.4 追加開発モードの判定（任意検証）
+
+本 skill は forge の **追加開発ワークフロー**（[`additive_development_spec.md`](../../docs/additive_development_spec.md) §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書は frontmatter に `type: temporary-feature-*` を持つ（`temporary-feature-requirement` / `temporary-feature-design`）。
+
+追加 DIR (B) の各 `*.md` 先頭 frontmatter を確認し、判定する:
+
+```bash
+# 追加 DIR 内に temporary-feature 文書が含まれるか
+grep -rlE '^type:[[:space:]]*temporary-feature-' "$additional_dir" 2>/dev/null
+```
+
+- **検出された場合（追加開発モード）**: 追加 DIR は追加開発の一時文書である可能性が高い。`additive_development_spec.md` §2 の優先度（追加開発の要件定義書が最優先＝正）と本 skill の「追加側が正」原則は一致する。Phase 8 の一括削除も §4「一時文書の削除」と整合する。安心して進めてよい。
+- **検出されない場合（汎用マージモード）**: frontmatter による裏付けは無いが、これは異常ではない。汎用的な spec ディレクトリ統合として、ユーザー指定の「追加側を正」の前提でそのまま進める。
+
+> この判定は**安全確認のための任意検証**であり、`temporary-feature` frontmatter を必須とはしない。検出有無にかかわらず処理フロー自体は変わらない。検出されない場合に「追加側を正」「最後に追加 DIR を削除」という破壊的前提でよいか不安があれば、Phase 8 の削除前確認（8.1）で改めてユーザーに確認する。
+
+### 0.5 表示
 
 ```
 基本 DIR (A): {base-dir}
 追加 DIR (B): {additional-dir}
 作業ブランチ: {current-branch}
+モード: {追加開発モード（temporary-feature 検出） / 汎用マージモード}
 
 「追加側を正」「内容単位で統合」「追加 DIR は最終的に削除」の方針で進めます。
 ```
+
+### 0.6 改訂規約の取得（検索ベース）
+
+Phase 4 / 5 の改訂・新規作成は「改訂の原則」に従うプロの文書改訂であり、**ターゲットプロジェクトの文書規約に沿わせる**必要がある。規約の所在はプロジェクトごとに異なるため、**特定の文書名をハードコードせず、利用可能な検索スキルで動的に取得する**。
+
+判断材料となる規約の例:
+
+- **What/How 境界** — 吸収した内容を要件側 / 設計側のどちらに反映するかの振り分け（Phase 2 分類・Phase 4 改訂）
+- **フォーマット規約** — 新規作成する B' ファイルが従うべき要件 / 設計 / 計画の様式（Phase 5）
+- **文書品質・優先度の規範** — 改訂後の品質バー（改訂の原則 §6.3 の判断基準）
+
+取得手順（**利用可能なものを使う。無ければスキップ**）:
+
+```
+1. プロジェクトの仕様・ルール検索スキルが利用可能か確認する
+   （例: /query-specs · /query-rules · /forge:query-db-specs · /forge:query-db-rules · /forge:query-forge-rules）
+2. 利用可能なら、上記「規約の例」をキーワードに検索し、ヒットした規約文書を Read して改訂の指針に取り込む
+   （例: 「要件 設計 境界」「要件定義書 フォーマット」「設計書 フォーマット」「文書 スタイル」）
+3. 検索スキルが一つも無い場合は取得をスキップし、改訂の原則 §6.2 に従って
+   **基本側 (A) の既存文書から文体・粒度・章構成・フォーマットを推測**して合わせる
+```
+
+> 取得した規約はあくまで**改訂の指針**であり、merge の処理フロー自体は変えない。検索結果が基本側の実態と矛盾する場合は、改訂の原則どおり**基本側の慣習を優先**する（基本 DIR が正本だから）。
 
 ---
 
@@ -484,6 +525,8 @@ AskUserQuestion:
 - 中断 (削除前にもう一度確認したい)
 ```
 
+> Phase 0.4 が**汎用マージモード**（`temporary-feature` frontmatter なし）だった場合、削除対象が一時文書である裏付けが無い。ここで削除対象の一覧を改めて提示し、本当に削除してよいかを念入りに確認する。
+
 ### 8.2 削除実行
 
 ```bash
@@ -530,3 +573,11 @@ git status --short
 - **明白でない判定はユーザー確認**: Claude の独断でファイル削除・ID 改廃は行わない
 - **追加 DIR は最後にまとめて削除**: 途中で消すと差分追跡が困難になる
 - **基本 DIR の命名・ID 慣習を維持**: 追加側の慣習が違う場合、基本側に合わせてリネーム（Phase 6.2）
+
+---
+
+## 関連文書
+
+- [`additive_development_spec.md`](../../docs/additive_development_spec.md) — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `type: temporary-feature-*` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.4 で frontmatter を任意検証する
+
+> What/How 境界・要件/設計/計画のフォーマット・文書品質の規範（`spec_design_boundary_spec` / `*_format` / `*_principles_spec` など）は、**特定の文書名をハードコードせず Phase 0.6 で検索して取得**する。本 skill は汎用ツールであり、ターゲットプロジェクトごとに規約の所在・内容が異なるため、固定リンクは持たない。
