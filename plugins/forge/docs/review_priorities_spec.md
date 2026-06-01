@@ -13,8 +13,8 @@
 
 **関連文書**:
 
-- 要件: `docs/specs/forge-review/requirements/REQ-004_review_policy.md` (FNC-401 / FNC-402 / FNC-406 / FNC-409 / FNC-411)
-- 設計: `docs/specs/forge-review/design/DES-028_review_policy_design.md` (差分設計)
+- 要件: `docs/specs/forge/requirements/REQ-004_review_policy.md` (FNC-401 / FNC-402 / FNC-406 / FNC-409 / FNC-411)
+- 設計: `docs/specs/forge/design/DES-028_review_policy_design.md` (差分設計)
 - 文書スタイル: `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`
 - 委譲先 principles (severity の SoT / 重大度カタログ・グレーゾーン許容範囲の正規 SoT): `${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md` / `${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` / `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md` / `${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`
 

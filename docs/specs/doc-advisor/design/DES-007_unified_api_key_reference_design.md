@@ -67,6 +67,8 @@ export OPENAI_API_DOCDB_KEY='your-api-key' を実行してください。
 
 実装の重複は数行であり、独立実装による保守コストよりプラグイン独立性のメリットが大きい。
 
+> ※ 注（DES-020 改訂後）: `forge:clean-rules` は Embedding 利用自体を廃止し（`split_doc_sections.py` によるセクション分割 + AI 判定へ移行）、当該 cross-plugin import（`embedding_api.py`）を解消済み。本節は他プラグインに同パターンを持ち込まない判断の根拠として維持する。
+
 ## 4. テスト設計
 
 ### 4.1 テストパターン

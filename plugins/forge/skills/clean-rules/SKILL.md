@@ -10,7 +10,7 @@ argument-hint: "[--delete] [--rebuild]"
 # /forge:clean-rules
 
 プロジェクトの rules/ を開発文書の分類学（Taxonomy）に基づいて分析する。
-forge 内蔵 docs との重複を Embedding 類似度で検出し、モードに応じて削除・再構築を実行する。
+forge 内蔵 docs との重複を AI（LLM）の内容判定で検出し、モードに応じて削除・再構築を実行する。
 
 ## コマンド構文
 
@@ -74,21 +74,39 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/resolve_rules.py"
 #### Step 3: forge 内蔵 docs のパス取得
 
 `${CLAUDE_PLUGIN_ROOT}/toc/rules/rules_toc.yaml` を Read し、`docs:` セクションの全キー（ファイルパス）を取得する。
+併せて各 docs のキーワード・要約も取得する（Step 4 の一次絞り込みに使う）。
 
 パスは `plugins/forge/...` 形式。Read 時は `${CLAUDE_PLUGIN_ROOT}` 起点で解決する
 （例: `plugins/forge/docs/design_format.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`）。
 
-#### Step 4: Embedding ベースの重複検出
+#### Step 4: セクション分割
+
+重複判定の前処理として、プロジェクト rules と forge docs を `##` 見出し単位の
+セクションに分割する（行番号付き）。**重複の判定そのものは Phase 2 で AI が内容を読んで行う**
+（外部 Embedding API は使用しない）。
+
+**一次絞り込み**: Step 3 で取得した rules_toc.yaml のキーワード・要約を手がかりに、
+プロジェクト rules と内容が関連しそうな forge docs のみを `--forge-docs` に渡す
+（明らかに無関係な docs を除外し、Phase 2 の精読コストを抑える）。判断に迷う docs は
+含める（取りこぼし回避を優先）。
+
+**注意**: `--forge-docs` には必ず 1 件以上渡すこと（`nargs="+"`のため 0 件でスクリプトが
+エラー終了する）。絞り込み後に該当 docs が 0 件になった場合は、スクリプトを呼ばずに
+`forge_sections: []` として Phase 2 に進む（「forge docs に重複候補なし」として扱う）。
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/detect_forge_overlap.py" \
+python3 "${CLAUDE_SKILL_DIR}/scripts/split_doc_sections.py" \
   --project-rules {Step 2 のファイル一覧} \
-  --forge-docs {Step 3 のファイル一覧（絶対パスに解決済み）} \
-  --threshold 0.5
+  --forge-docs {一次絞り込み後の forge docs（絶対パスに解決済み）}
 ```
 
-- `status: "ok"` → `overlaps` リストを Phase 2 に渡す
-- `status: "error"` → エラー内容を報告。API キー未設定の場合は `OPENAI_API_DOCDB_KEY`（推奨。未設定時は `OPENAI_API_KEY` にフォールバック。DES-007 統一仕様）の設定をユーザーに案内
+出力の確認:
+
+- `status: "ok"` → `project_sections` / `forge_sections`（各 `file` / `heading` / `text` / `line`）を Phase 2 に渡す
+- `warnings` が空でない → 読み込み失敗ファイルをユーザーに報告してから続行する
+- `project_section_count: 0` かつ `warnings` にエントリあり → ファイルパス解決の失敗。Step 2 の出力を再確認してエラー終了
+- `project_section_count: 0` かつ `warnings` なし → rules が空（セクションを持たない）。「rules 文書が空です」と報告して終了
+- 外部 API・API キーは不要（標準ライブラリのみで動作）
 
 #### Step 5: 分類学定義の読み込み [MANDATORY]
 
@@ -101,7 +119,7 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 #### Step 6: 全文書の読み込み
 
 - ルール文書（プロジェクト側）を全て Read
-- forge docs（Step 3 で取得したパスのうち、Step 4 の `overlaps` に登場するもの）を Read
+- forge docs（Step 4 で `--forge-docs` に渡したもの）を Read
 
 情報収集完了後、以下を出力する:
 
@@ -111,8 +129,8 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 | 項目 | 値 |
 |------|-----|
 | ルール文書 | N 件 |
-| forge docs（比較対象） | N 件 |
-| Embedding 重複候補 | N 件 |
+| forge docs（一次絞り込み後の比較対象） | N 件 |
+| 分割セクション（project / forge） | N / M 件 |
 
 **ルール文書**
 - `rules/file1.md`
@@ -123,15 +141,15 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 
 ### Phase 2: 分類・分析（AI） [MANDATORY]
 
-`taxonomy.md` の分類学と `detect_forge_overlap.py` の重複スコアに基づき、
-各ルール文書の**セクション（## 見出し）単位**で以下を判定する:
+`taxonomy.md` の分類学に基づき、Step 4 で分割した各セクションの本文を
+forge docs のセクションと読み比べて、各ルール文書の**セクション（## 見出し）単位**で以下を判定する:
 
-| 判定項目                | 内容                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------- |
-| **A. Content Type**     | Constraint / Convention / Format / Process / Decision / Reference のどれか                        |
-| **B. Authority Source** | Tool-provided（forge）/ Project-defined / External standard                                       |
-| **C. forge 対応**       | Tool-provided と判定したセクションが forge のどの内蔵 docs に対応するか（Embedding スコアを参照） |
-| **D. モード別推奨**     | `--delete` で削除すべきか / `--rebuild` で分割・統合すべきか                                      |
+| 判定項目                | 内容                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **A. Content Type**     | Constraint / Convention / Format / Process / Decision / Reference のどれか                                              |
+| **B. Authority Source** | Tool-provided（forge）/ Project-defined / External standard                                                             |
+| **C. forge 対応**       | Tool-provided と判定したセクションが forge のどの内蔵 docs に対応するか（セクション本文を読み比べて対応先と根拠を判断） |
+| **D. モード別推奨**     | `--delete` で削除すべきか / `--rebuild` で分割・統合すべきか                                                            |
 
 分析結果を以下の形式で出力する:
 
@@ -143,8 +161,8 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 | セクション | Content Type | Authority | forge 対応 | --delete | --rebuild |
 |-----------|-------------|-----------|-----------|----------|-----------|
 | §1 命名規則 | Convention | Project-defined | — | keep | keep |
-| §2 設計書フォーマット | Format | Tool-provided | design_format.md (0.82) | delete | n/a |
-| §3 レビュー観点 | Constraint | Tool-provided | review_criteria_code.md (0.75) | delete | n/a |
+| §2 設計書フォーマット | Format | Tool-provided | design_format.md | delete | n/a |
+| §3 レビュー観点 | Constraint | Tool-provided | review_criteria_code.md | delete | n/a |
 | §4 エラーハンドリング | Convention | Project-defined | — | keep | keep |
 
 **判定**: §2, §3 は forge でカバー済み → --delete で除去可能
@@ -158,9 +176,9 @@ ${CLAUDE_SKILL_DIR}/docs/taxonomy.md
 ## 📋 分析レポート（ドライラン）
 
 ### --delete で削除される見込み
-| ファイル | セクション | forge 対応 | 類似度 |
-|---------|-----------|-----------|--------|
-| rules/coding_standards.md | §2 設計書フォーマット | design_format.md | 0.82 |
+| ファイル | セクション | forge 対応 | 対応根拠 |
+|---------|-----------|-----------|----------|
+| rules/coding_standards.md | §2 設計書フォーマット | design_format.md | 同一のフォーマット規定を重複記述 |
 
 ### --rebuild で再構築される見込み
 | ファイル | 推奨操作 | 理由 |
