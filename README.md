@@ -4,7 +4,7 @@
 
 **マーケットプレイスバージョン: 0.1.26**
 
-マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) へ分離された。forge の検索系スキルはこの外部 doc-advisor（`index-docs` / `query-docs`）へ転送する。旧同梱の doc-advisor / doc-db は廃止。
+マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供し、forge の検索系スキルがこれへ転送する（`index-docs` / `query-docs`）。
 
 [English README (README_en.md)](README_en.md)
 

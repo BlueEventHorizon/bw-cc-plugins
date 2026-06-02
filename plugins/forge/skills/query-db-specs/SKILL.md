@@ -8,8 +8,7 @@ argument-hint: "task description"
 allowed-tools: Skill
 ---
 
-仕様文書（key `specs`）を検索する read-only ラッパー。検索バックエンドは doc-advisor に一本化されており、
-`doc-advisor:query-docs` へ転送する。
+仕様文書（key `specs`）を検索する read-only ラッパー。`doc-advisor:query-docs` へ転送する。
 
 > ❌ 自己再帰禁止: `Skill` ツールで自分自身や他の `/forge:*-db-*` 抽象 SKILL を呼ばないこと（無限再帰）
 

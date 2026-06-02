@@ -66,7 +66,7 @@ docs/rules/skill_launch_terms.toml
 配置時の副作用確認:
 
 - `.doc_structure.yaml` の `rules.patterns.target_glob` が `**/*.md` であり、通常の rules index 対象に TOML が混入しないことを確認する
-- doc-advisor / doc-db / forge rules 検索の実装が拡張子無制限で `docs/rules/` を読む場合は、必要に応じて exclude または対象 glob を追加する
+- forge rules 検索や外部 doc-advisor の実装が拡張子無制限で `docs/rules/` を読む場合は、必要に応じて exclude または対象 glob を追加する
 - 将来 `.doc_structure.yaml` の rules 対象 glob を `.toml` まで広げる場合は、`skill_launch_terms.toml` が検索 index に混入しないかを再確認する
 - `dprint.jsonc` で TOML plugin が有効であり、`dprint check` の対象になることを確認する
 

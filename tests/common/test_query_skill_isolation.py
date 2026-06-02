@@ -15,11 +15,8 @@ COMMON-DES-001 §4 (docs/specs/common/design/COMMON-DES-001_skill_base_design.md
 - 継承型だが Role 制約を維持する SKILL (COMMON-DES-001 §4.2):
   - plugins/forge/skills/query-forge-rules/SKILL.md
 
-注: doc-advisor の fork 型 query-rules / query-specs は別リポジトリ
-（BlueEventHorizon/DocAdvisor、新 doc-advisor の query-docs）へ分離されたため、
-本リポジトリの検証対象から外れている。bw-cc-plugins の forge query-db-rules /
-query-db-specs は doc-advisor:query-docs へ転送する薄いラッパー（Role 制約・fork
-を持たない）であり、隔離契約は転送先の doc-advisor 側が担保する。
+注: forge の query-db-rules / query-db-specs は doc-advisor:query-docs へ転送する薄いラッパー
+（Role 制約・fork を持たない）であり、隔離契約は転送先の doc-advisor が担保するため本検証の対象外。
 
 実行:
   python3 -m unittest tests.common.test_query_skill_isolation -v

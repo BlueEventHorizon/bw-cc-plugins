@@ -261,7 +261,8 @@ rules_files = resolve_files(config, 'rules', project_root)
 specs_files = resolve_files(config, 'specs', project_root)
 ```
 
-### Doc Advisor から
+### 外部 doc-advisor へのパス受け渡し
 
-`.doc_structure.yaml` を `config.yaml` として直接読み込める（フォーマット互換）。
-`import_doc_structure.py` による変換は不要。
+外部 doc-advisor（`index-docs` / `query-docs`）は `.doc_structure.yaml` を **読まない**。
+forge の `/forge:update-db-rules` / `/forge:update-db-specs` が `resolve_doc_structure.py` で本ファイルから
+対象パスを解決し、`--paths-json` として doc-advisor の `index-docs` に渡す。

@@ -9,8 +9,8 @@ argument-hint: ""
 allowed-tools: Read, Bash, Skill
 ---
 
-ルール文書（key `rules`）の検索インデックス（ToC）を再構築するラッパー。検索バックエンドは doc-advisor に
-一本化されており、`.doc_structure.yaml` から rules の対象パスを解決して `doc-advisor:index-docs` へ転送する。
+ルール文書（key `rules`）の検索インデックス（ToC）を再構築するラッパー。`.doc_structure.yaml` から
+rules の対象パスを解決して `doc-advisor:index-docs` へ転送する。
 
 > ❌ 自己再帰禁止: `Skill` ツールで自分自身や他の `/forge:*-db-*` 抽象 SKILL を呼ばないこと（無限再帰）
 
@@ -48,5 +48,4 @@ stdout の JSON から `rules` 配列（project-root-relative パスのリスト
 
 - **desired-state**: `--paths-json` は key `rules` の完全な desired state。Step 1 で解決した一覧に
   含まれないパスは ToC から削除される（`.doc_structure.yaml` が正）。
-- 旧 `--full` 引数は廃止。index-docs は常に渡された paths を desired-state として同期する。
 - 索引の出力先は `.claude/doc-advisor/toc/rules-<hash>/toc.yaml`（doc-advisor が管理）。

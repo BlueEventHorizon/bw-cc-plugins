@@ -31,7 +31,7 @@ forge KB の対象 Markdown を、本 SKILL 同梱の `forge_doc_structure.yaml`
 ```bash
 python3 plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py \
   --type rules \
-  --doc-structure "${CLAUDE_PLUGIN_ROOT}/forge_doc_structure.yaml"
+  --doc-structure .claude/skills/update-forge-toc/forge_doc_structure.yaml
 ```
 
 stdout JSON の `rules` 配列（project-root-relative パス）を取得する。`status` が `error` なら `message` を報告して終了。
@@ -68,4 +68,3 @@ forge 内蔵 docs の検索インデックスを更新しました
 
 - forge 同梱 ToC は `.claude/doc-advisor/toc/<slug>/` の doc-advisor 管理 ToC を **コピー** して配布する設計。
   ランタイムの `/forge:query-forge-rules` は同梱ファイルを直接 Read するため doc-advisor インストール不要。
-- `.doc_structure.yaml` の退避・復元（旧 swap-doc-config 方式）は不要。

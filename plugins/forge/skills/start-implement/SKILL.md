@@ -364,6 +364,7 @@ executor は以下のステータスで報告する:
 executor が作成・変更したファイル（差分のみ）に対して Skill ツールで `/forge:review code` を `--auto` モードで実行する:
 
 ```
+# Skill ツールで起動する
 /forge:review code --files {変更ファイル一覧(カンマ区切り)} --auto
 ```
 

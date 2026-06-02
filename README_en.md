@@ -4,7 +4,7 @@ Claude Code plugins for **Spec-Driven Development** — write specs first, then 
 
 **Marketplace version: 0.1.26**
 
-The marketplace ships **2 plugins** (forge, anvil). The AI-searchable document index (**doc-advisor**) has been split into a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). forge's search skills forward to that external doc-advisor (`index-docs` / `query-docs`). The previously bundled doc-advisor / doc-db are retired.
+The marketplace ships **2 plugins** (forge, anvil). The AI-searchable document index (**doc-advisor**) is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor); forge's search skills forward to it (`index-docs` / `query-docs`).
 
 [Japanese README (README.md)](README.md)
 

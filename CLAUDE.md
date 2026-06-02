@@ -10,8 +10,8 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 
 > **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
-> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（doc-advisor / `index-docs`・`query-docs`）へ分離された。
-> forge の `/forge:query-db-rules` 等はこの外部 doc-advisor へ転送する。旧同梱の doc-advisor / doc-db は廃止。
+> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（doc-advisor / `index-docs`・`query-docs`）が提供する。
+> forge の `/forge:query-db-rules` 等はこの外部 doc-advisor へ転送する。
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。
 
@@ -33,8 +33,8 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 | `plugins/{plugin}/scripts/`                       | スキルから呼ばれる Python / Bash                                          |
 | `plugins/{plugin}/docs/`                          | プラグイン内部仕様（forge は `/forge:query-forge-rules` 対象）            |
 | `plugins/forge/toc/rules/rules_toc.yaml`          | forge 内蔵知識ベースの ToC                                                |
-| `docs/rules/`                                     | プロジェクトルール（`/query-rules` 対象）                                 |
-| `docs/specs/{plugin}/{requirements,design,plan}/` | プラグインごとの仕様文書（`/query-specs` 対象）                           |
+| `docs/rules/`                                     | プロジェクトルール（`/forge:query-db-rules` 対象）                        |
+| `docs/specs/{plugin}/{requirements,design,plan}/` | プラグインごとの仕様文書（`/forge:query-db-specs` 対象）                  |
 | `docs/readme/`                                    | ユーザー向けガイド（日英併記、`guide_*_ja.md`）                           |
 | `docs/references/`                                | 外部参考資料                                                              |
 | `tests/{common,forge}/`                           | プラグイン別テスト                                                        |
