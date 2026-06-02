@@ -4,18 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Code プラグインのマーケットプレイスリポジトリ。4 プラグインを格納・配布する。
+Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
 - **forge** (v0.1.2) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
-- **doc-advisor** (v0.3.1) — AI 検索可能なドキュメントインデックス。ToC キーワード検索と Embedding セマンティック検索の2層構造
-- **doc-db** (v0.0.3) — 見出し chunk の Hybrid 検索（Embedding + Lexical + LLM Rerank）。doc-advisor とは併用・補完
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
+
+> **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
+> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（doc-advisor / `index-docs`・`query-docs`）が提供する。
+> forge の `/forge:query-db-rules` 等はこの外部 doc-advisor へ転送する。
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。
 
 ## 重要規約
 
-- **全ての作業開始時に `/query-rules` を実行**: 新しい作業（タスク）に取り掛かる前に `/query-rules` でプロジェクトルールを確認する [MANDATORY]
+- **全ての作業開始時に `/forge:query-db-rules` を実行**: 新しい作業（タスク）に取り掛かる前に `/forge:query-db-rules <タスク>` でプロジェクトルールを確認する（外部 doc-advisor の `query-docs --key rules` へ転送される） [MANDATORY]
 - **ルールは `docs/rules/` で管理**: CLAUDE.md にルールを極力書かない（コンテキスト肥大化防止）
   - ルールを読むための必要な入り口となる記述は許容される(query-xxx SKILLを使う、など）
 - **設計文書の保存**: plan モードで作成した重要な設計文書は `docs/specs/forge/**/requirements/`, `docs/specs/forge/**/design/` に保存する
@@ -31,11 +33,11 @@ Claude Code プラグインのマーケットプレイスリポジトリ。4 プ
 | `plugins/{plugin}/scripts/`                       | スキルから呼ばれる Python / Bash                                          |
 | `plugins/{plugin}/docs/`                          | プラグイン内部仕様（forge は `/forge:query-forge-rules` 対象）            |
 | `plugins/forge/toc/rules/rules_toc.yaml`          | forge 内蔵知識ベースの ToC                                                |
-| `docs/rules/`                                     | プロジェクトルール（`/query-rules` 対象）                                 |
-| `docs/specs/{plugin}/{requirements,design,plan}/` | プラグインごとの仕様文書（`/query-specs` 対象）                           |
+| `docs/rules/`                                     | プロジェクトルール（`/forge:query-db-rules` 対象）                        |
+| `docs/specs/{plugin}/{requirements,design,plan}/` | プラグインごとの仕様文書（`/forge:query-db-specs` 対象）                  |
 | `docs/readme/`                                    | ユーザー向けガイド（日英併記、`guide_*_ja.md`）                           |
 | `docs/references/`                                | 外部参考資料                                                              |
-| `tests/{common,forge,doc_advisor}/`               | プラグイン別テスト                                                        |
+| `tests/{common,forge}/`                           | プラグイン別テスト                                                        |
 | `meta/`                                           | 研究・評価・ゴールデンセット（git 管理外、下記ルール参照）                |
 | `.claude/settings.json`                           | 権限・hooks 設定（プロジェクトレベル）                                    |
 | `.claude/skills/`                                 | ローカル限定 skill（配布対象外、`update-forge-toc` 等）                   |
@@ -57,16 +59,16 @@ Claude Code プラグインのマーケットプレイスリポジトリ。4 プ
 
 タスクに応じて以下の入口を使う:
 
-| 対象                                                       | 入口                                                                                                                             |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| プロジェクト全体の鳥瞰                                     | `README.md`（ワークフロー図 + 全スキル一覧 + トリガー句）                                                                        |
-| 仕様駆動開発の思想・What/How 境界                          | `docs/readme/guide_sdd_ja.md`                                                                                                    |
-| 各スキルの挙動・引数・使用例                               | `docs/readme/forge/guide_{create_docs,implement,review,setup,uxui_design}_ja.md` / `docs/readme/guide_{anvil,doc-advisor}_ja.md` |
-| プロジェクトルール（実装・文書・CLI・SKILL 作成）          | `/query-rules` → `docs/rules/`                                                                                                   |
-| プロジェクト仕様（要件/設計/計画）                         | `/query-specs` → `docs/specs/`                                                                                                   |
-| forge 内部仕様（ID体系・フォーマット・原則・レビュー基準） | `/forge:query-forge-rules` → `plugins/forge/docs/`                                                                               |
-| Claude Code / SDK / API 仕様                               | `claude-code-guide` agent                                                                                                        |
-| 最新の変更意図                                             | `git log main..HEAD` / `CHANGELOG.md`                                                                                            |
+| 対象                                                       | 入口                                                                                                               |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| プロジェクト全体の鳥瞰                                     | `README.md`（ワークフロー図 + 全スキル一覧 + トリガー句）                                                          |
+| 仕様駆動開発の思想・What/How 境界                          | `docs/readme/guide_sdd_ja.md`                                                                                      |
+| 各スキルの挙動・引数・使用例                               | `docs/readme/forge/guide_{create_docs,implement,review,setup,uxui_design}_ja.md` / `docs/readme/guide_anvil_ja.md` |
+| プロジェクトルール（実装・文書・CLI・SKILL 作成）          | `/forge:query-db-rules` → `docs/rules/`                                                                            |
+| プロジェクト仕様（要件/設計/計画）                         | `/forge:query-db-specs` → `docs/specs/`                                                                            |
+| forge 内部仕様（ID体系・フォーマット・原則・レビュー基準） | `/forge:query-forge-rules` → `plugins/forge/docs/`                                                                 |
+| Claude Code / SDK / API 仕様                               | `claude-code-guide` agent                                                                                          |
+| 最新の変更意図                                             | `git log main..HEAD` / `CHANGELOG.md`                                                                              |
 
 ## Development
 
@@ -83,7 +85,12 @@ dprint check        # チェックのみ
 
 ### プラグインのローカルテスト
 
+詳細な手順は [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
+
 ```bash
+# 両プラグインを同時にロード（推奨）
+claude --plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil
+
 # セッション限定でプラグインをロード
 claude --plugin-dir ./plugins/forge
 
@@ -138,6 +145,6 @@ python3 -m unittest tests.forge.review.test_xxx -v
 
 ユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
 
-- doc-db / Embedding / ToC の方式を同一ゴールデンセットで比較評価
-- 評価スクリプト: `meta/test_docs/` 配下（`run_docdb_test.py` / `run_search_test.py` / `evaluate_toc_results.py` 等）
+- doc-advisor の ToC 検索品質を同一ゴールデンセットで測定
+- 評価スクリプト: `meta/test_docs/` 配下（`run_search_test.py` / `evaluate_toc_results.py` 等）
 - 詳細・実行手順は `meta/test_docs/README.md`

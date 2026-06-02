@@ -93,7 +93,7 @@ ls -1 docs/specs/ 2>/dev/null
 
 ### 2.2 plan からの推定
 
-plan の内容（タイトル・本文の語彙）から最有力候補を 1 つ推定する。例: plan に「GitHub Issue」「PR 作成」が頻出 → `anvil`、「ドキュメント検索」「ToC」 → `doc-advisor`。
+plan の内容（タイトル・本文の語彙）から最有力候補を 1 つ推定する。例: plan に「GitHub Issue」「PR 作成」が頻出 → `anvil`、「レビュー」「要件・設計・計画」 → `forge`。
 
 ### 2.3 ユーザー確認
 
@@ -137,10 +137,10 @@ feature 名を確定してください
 
 ### 4.1 自動判定
 
-| 条件                                                                                          | モード  |
-| --------------------------------------------------------------------------------------------- | ------- |
-| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/doc-advisor/common 等） | `--add` |
-| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在          | `--new` |
+| 条件                                                                                 | モード  |
+| ------------------------------------------------------------------------------------ | ------- |
+| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/common 等）    | `--add` |
+| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在 | `--new` |
 
 ### 4.2 ユーザー確認
 

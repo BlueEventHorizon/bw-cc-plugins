@@ -4,7 +4,7 @@
 
 **マーケットプレイスバージョン: 0.1.26**
 
-マーケットプレイスは **4 つのプラグイン**（forge、anvil、doc-advisor、**doc-db**）で構成される。**doc-db** は見出し単位 chunk の Embedding + Lexical による Hybrid 検索と LLM Rerank で、ルール・仕様文書の発見精度を補完する。doc-advisor（ToC／軽量インデックス）と**上位互換ではなく併用**し、同一の `.doc_structure.yaml` を参照する。
+マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供し、forge の検索系スキルがこれへ転送する（`index-docs` / `query-docs`）。
 
 [English README (README_en.md)](README_en.md)
 
@@ -14,14 +14,14 @@
 
 → 哲学と追加開発ワークフローの詳細は [仕様駆動開発ガイド](docs/readme/guide_sdd_ja.md) を参照。
 
-## doc-advisor の役割
+## 文書検索（外部 doc-advisor）の役割
 
-プロジェクトが大きくなると、ルール・規約・設計文書が蓄積される。AI がそれらを見つけられなければ活用できない。**doc-advisor** はこれらの文書をインデックス化し（ToC キーワード検索 + OpenAI Embedding セマンティック検索）、forge の重要な場面で自動的に提供する:
+プロジェクトが大きくなると、ルール・規約・設計文書が蓄積される。AI がそれらを見つけられなければ活用できない。外部の **doc-advisor**（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）はこれらの文書を ToC（キーワード／メタデータ）でインデックス化し、forge の重要な場面で自動的に提供する:
 
 - **実装時** — コードを書く前にプロジェクト固有の実装ルールと関連仕様を収集する。
 - **レビュー時** — 適用すべきルールをレビュー観点として追加し、汎用的なベストプラクティスではなくプロジェクトの実際の基準で検査する。
 
-これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
+forge の `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` が doc-advisor の `query-docs` / `index-docs` へ転送する。これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
 
 ## ワークフロー
 
@@ -31,19 +31,18 @@ flowchart LR
         R(["要件定義"]) --> D(["設計"]) --> P(["計画"]) --> I(["実装"]) --> RF(["レビュー / 修正"])
     end
     RF --> DL(["成果物"])
-    DA[doc-advisor] -. "コンテキスト収集" .-> forge
-    DB[doc-db] -. "chunk Hybrid 検索" .-> forge
+    DA["doc-advisor（外部）"] -. "コンテキスト収集" .-> forge
     AV[anvil] -- "コミット & PR" --> DL
 ```
 
 ## プラグイン一覧
 
-| プラグイン      | バージョン | 説明                                                                                                                                                     |
-| --------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.1.2      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応                                  |
-| **anvil**       | 0.0.9      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                                                            |
-| **doc-advisor** | 0.3.1      | AI 検索可能な文書インデックス。キーワード（ToC）と OpenAI Embedding セマンティック検索の2層構造で、タスクに関連するルール・仕様文書を自動発見する        |
-| **doc-db**      | 0.0.3      | 見出し chunk 単位の Hybrid 検索（Embedding + Lexical）と LLM Rerank。ID や固有名詞は grep 結果も統合して取りこぼしを抑える（doc-advisor とは併用・補完） |
+| プラグイン | バージョン | 説明                                                                                                                    |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **forge**  | 0.1.2      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **anvil**  | 0.0.9      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
+
+> **doc-advisor は外部依存**: AI 検索可能な文書インデックスは別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。
 
 ## スキル一覧
 
@@ -127,27 +126,11 @@ flowchart LR
 | **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）           | `"issue を作成"`      |
 | **impl-issue**                                           | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応） | `"この issue を実装"` |
 
-### doc-advisor
-
-> [詳細ガイド](docs/readme/guide_doc-advisor_ja.md) — 使い方、使用例
-
-| スキル                                                                       | 説明                                                                           | トリガー           |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------ |
-| [**query-rules**](docs/readme/guide_doc-advisor_ja.md#query-rules)           | ToC（キーワード）・Index（セマンティック）・ハイブリッドでルール文書を検索する | `"ルール確認"`     |
-| [**query-specs**](docs/readme/guide_doc-advisor_ja.md#query-specs)           | ToC（キーワード）・Index（セマンティック）・ハイブリッドで仕様文書を検索する   | `"仕様確認"`       |
-| [**create-rules-toc**](docs/readme/guide_doc-advisor_ja.md#create-rules-toc) | ルール文書の変更後に ToC を構築・更新する                                      | `"rules ToC 更新"` |
-| [**create-specs-toc**](docs/readme/guide_doc-advisor_ja.md#create-specs-toc) | 仕様文書の変更後に ToC を構築・更新する                                        | `"specs ToC 更新"` |
-
 > **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
-### doc-db
+### doc-advisor（外部プラグイン）
 
-> [詳細ガイド](docs/readme/guide_doc-db_ja.md) — 使い方、使用例、doc-advisor との併用
-
-| スキル                                                        | 説明                                                                 | トリガー            |
-| ------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- |
-| [**build-index**](docs/readme/guide_doc-db_ja.md#build-index) | 見出し chunk 単位で Index を構築・更新（rules / specs、`--full` 等） | `"doc-db の index"` |
-| [**query**](docs/readme/guide_doc-db_ja.md#query)             | Hybrid / Rerank 検索。必要に応じ grep で全文行検索し結果を統合       | `"doc-db で検索"`   |
+文書検索は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) の doc-advisor が提供する（`index-docs` / `query-docs`）。forge の `/forge:query-db-rules` 等から呼び出される。詳細は同リポジトリの README を参照。
 
 ## インストール
 
@@ -159,8 +142,10 @@ Claude Code セッション内で:
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
-/plugin install doc-advisor@bw-cc-plugins
-/plugin install doc-db@bw-cc-plugins
+
+# 文書検索（doc-advisor）は別マーケットプレイス
+/plugin marketplace add BlueEventHorizon/DocAdvisor
+/plugin install doc-advisor@DocAdvisor
 ```
 
 無効化したプラグインを再有効化するには、ターミナルから:
@@ -190,7 +175,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## 文書構造管理 (.doc_structure.yaml)
 
-`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge・doc-advisor・doc-db が参照する。`/forge:setup-doc-structure` で生成する。
+`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge が参照する（`/forge:update-db-rules` 等が対象パスを解決して doc-advisor に渡す）。`/forge:setup-doc-structure` で生成する。
 → [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) | [スキーマ仕様](plugins/forge/docs/doc_structure_format.md)
 
 ## Git 情報キャッシュ (.git_information.yaml)
@@ -202,8 +187,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
-- OpenAI API キー（doc-advisor の embedding 使用時。`OPENAI_API_DOCDB_KEY` 推奨。未設定時は `OPENAI_API_KEY` にフォールバック。DES-007 統一仕様）
-- OpenAI API キー（doc-db の Index 構築・検索・Rerank 使用時。`OPENAI_API_DOCDB_KEY` 推奨。未設定時は `OPENAI_API_KEY` にフォールバック。DES-007 統一仕様）
+- 文書検索を使う場合は外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor)（Python 標準ライブラリのみ・追加 API キー不要）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 
 ## ライセンス

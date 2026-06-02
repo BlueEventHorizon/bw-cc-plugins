@@ -305,6 +305,7 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 作成した設計書に対して Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
 ```
+# Skill ツールで起動する
 /forge:review design --files {作成ファイルパス} --auto
 ```
 

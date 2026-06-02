@@ -44,9 +44,9 @@ _SKILL_CALL_RE = re.compile(r'/(forge|anvil):[a-z]')
 # review 配下は構造的解消済みのため対象外
 _EXCLUDED_SKILLS = {'reviewer'}
 
-# baseline 警告数 (2026-05-26 時点で 45 件)。違反を解消したらこの値を下げる。
+# baseline 警告数。違反を解消したらこの値を下げて引き締める。
 # 新規違反が混入して警告数がこれを超えると fail する (回帰防止)。
-EXPECTED_MAX_WARNINGS = 45
+EXPECTED_MAX_WARNINGS = 43
 
 
 def _check_file(skill_path: Path) -> list[str]:

@@ -187,14 +187,14 @@ extract 完了後、orchestrator が `/forge:evaluator` を起動する。evalua
 
 ### Phase 7: 完了処理
 
-| Step | 内容                                       |
-| ---- | ------------------------------------------ |
-| 1    | テスト実行（修正ありの場合）               |
-| 2    | 設計書の更新確認                           |
-| 3    | サマリー報告                               |
-| 4    | `/create-specs-toc` 実行（利用可能な場合） |
-| 5    | commit 確認 → `/anvil:commit`              |
-| 6    | セッションディレクトリ削除                 |
+| Step | 内容                                            |
+| ---- | ----------------------------------------------- |
+| 1    | テスト実行（修正ありの場合）                    |
+| 2    | 設計書の更新確認                                |
+| 3    | サマリー報告                                    |
+| 4    | `/forge:update-db-specs` 実行（利用可能な場合） |
+| 5    | commit 確認 → `/anvil:commit`                   |
+| 6    | セッションディレクトリ削除                      |
 
 ---
 
@@ -456,14 +456,14 @@ recommendation 決定フロー (5 観点の結果から `fix` / `skip` / `create
 
 ## 9. レビュー種別と参考文書収集戦略
 
-| レビュー種別  | DocAdvisor 利用可能時       | 利用不可時（フォールバック）                   |
-| ------------- | --------------------------- | ---------------------------------------------- |
-| `requirement` | /query-rules + /query-specs | .doc_structure.yaml から rules + specs を Glob |
-| `design`      | /query-rules + /query-specs | .doc_structure.yaml から rules + specs を Glob |
-| `plan`        | /query-rules + /query-specs | .doc_structure.yaml から rules + specs を Glob |
-| `code`        | /query-rules + /query-specs | .doc_structure.yaml から rules + specs を Glob |
-| `uxui`        | /query-rules + /query-specs | .doc_structure.yaml から rules + specs を Glob |
-| `generic`     | **使用しない**              | **使用しない**（レビュアーが自発探索）         |
+| レビュー種別  | DocAdvisor 利用可能時                         | 利用不可時（フォールバック）                   |
+| ------------- | --------------------------------------------- | ---------------------------------------------- |
+| `requirement` | /forge:query-db-rules + /forge:query-db-specs | .doc_structure.yaml から rules + specs を Glob |
+| `design`      | /forge:query-db-rules + /forge:query-db-specs | .doc_structure.yaml から rules + specs を Glob |
+| `plan`        | /forge:query-db-rules + /forge:query-db-specs | .doc_structure.yaml から rules + specs を Glob |
+| `code`        | /forge:query-db-rules + /forge:query-db-specs | .doc_structure.yaml から rules + specs を Glob |
+| `uxui`        | /forge:query-db-rules + /forge:query-db-specs | .doc_structure.yaml から rules + specs を Glob |
+| `generic`     | **使用しない**                                | **使用しない**（レビュアーが自発探索）         |
 
 ---
 

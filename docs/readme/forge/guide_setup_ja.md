@@ -4,7 +4,7 @@
 
 ## setup-doc-structure
 
-プロジェクトのドキュメント配置場所と種別を宣言する `.doc_structure.yaml` を生成する。forge と doc-advisor の共通基盤。
+プロジェクトのドキュメント配置場所と種別を宣言する `.doc_structure.yaml` を生成する。forge がドキュメントのパス解決に用いる基盤。
 
 > 詳細は [文書構造ガイド](../guide_doc_structure_ja.md) を参照。
 

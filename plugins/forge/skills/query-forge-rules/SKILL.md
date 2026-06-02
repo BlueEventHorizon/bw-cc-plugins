@@ -3,6 +3,7 @@ name: query-forge-rules
 description: |
   forge 内蔵の様々な知識ベースを、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
 user-invocable: false
+allowed-tools: Read, Grep, Glob
 ---
 
 > **【最重要・無限再帰防止】**

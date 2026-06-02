@@ -144,7 +144,7 @@ current_cycle: 0
 全ての refs/{category}.yaml は同一スキーマに従う:
 
 ```yaml
-source: query-specs # 取得手段の識別子
+source: forge:query-db-specs # 取得手段の識別子
 query: "login feature design" # 検索に使用したクエリ（デバッグ用）
 documents:
   - path: specs/requirements/app_overview.md
@@ -156,23 +156,23 @@ documents:
 
 ### フィールド定義
 
-| フィールド         | 型     | 必須 | 説明                                                                                                   |
-| ------------------ | ------ | ---- | ------------------------------------------------------------------------------------------------------ |
-| source             | string | ○    | 取得手段（`query-specs`, `query-rules`, `gh-pr-search`, `code-exploration`, `doc_structure_fallback`） |
-| query              | string | -    | 検索クエリ（デバッグ・再現用）                                                                         |
-| documents          | array  | ○    | 発見した参照文書のリスト                                                                               |
-| documents[].path   | string | ○    | プロジェクトルートからの相対パス                                                                       |
-| documents[].reason | string | ○    | なぜこの文書が関連するか                                                                               |
-| documents[].lines  | string | -    | 関連する行範囲（例: "10-50"）                                                                          |
+| フィールド         | 型     | 必須 | 説明                                                                                                                     |
+| ------------------ | ------ | ---- | ------------------------------------------------------------------------------------------------------------------------ |
+| source             | string | ○    | 取得手段（`forge:query-db-specs`, `forge:query-db-rules`, `gh-pr-search`, `code-exploration`, `doc_structure_fallback`） |
+| query              | string | -    | 検索クエリ（デバッグ・再現用）                                                                                           |
+| documents          | array  | ○    | 発見した参照文書のリスト                                                                                                 |
+| documents[].path   | string | ○    | プロジェクトルートからの相対パス                                                                                         |
+| documents[].reason | string | ○    | なぜこの文書が関連するか                                                                                                 |
+| documents[].lines  | string | -    | 関連する行範囲（例: "10-50"）                                                                                            |
 
 ### カテゴリ別ファイル
 
-| ファイル          | 収集対象                   | 主な取得手段                            |
-| ----------------- | -------------------------- | --------------------------------------- |
-| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/query-specs` or `.doc_structure.yaml` |
-| `refs/rules.yaml` | 開発ルール・規約           | `/query-rules` or `.doc_structure.yaml` |
-| `refs/prs.yaml`   | 類似PR                     | `gh pr list --search`                   |
-| `refs/code.yaml`  | 関連ソースコード・テスト   | Glob / Grep 探索                        |
+| ファイル          | 収集対象                   | 主な取得手段                                     |
+| ----------------- | -------------------------- | ------------------------------------------------ |
+| `refs/specs.yaml` | 仕様書（要件・設計・計画） | `/forge:query-db-specs` or `.doc_structure.yaml` |
+| `refs/rules.yaml` | 開発ルール・規約           | `/forge:query-db-rules` or `.doc_structure.yaml` |
+| `refs/prs.yaml`   | 類似PR                     | `gh pr list --search`                            |
+| `refs/code.yaml`  | 関連ソースコード・テスト   | Glob / Grep 探索                                 |
 
 ### refs/ がない場合の扱い
 

@@ -28,26 +28,6 @@
       },
       "source": "./plugins/anvil",
       "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
-    },
-    {
-      "name": "doc-advisor",
-      "description": "AI-searchable document index (ToC) generator for Claude Code",
-      "version": "0.3.1",
-      "author": {
-        "name": "moons"
-      },
-      "source": "./plugins/doc-advisor",
-      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
-    },
-    {
-      "name": "doc-db",
-      "description": "Heading-chunk hybrid search index plugin (Embedding + Lexical + LLM Rerank)",
-      "version": "0.0.3",
-      "author": {
-        "name": "moons"
-      },
-      "source": "./plugins/doc-db",
-      "homepage": "https://github.com/BlueEventHorizon/bw-cc-plugins"
     }
   ]
 }

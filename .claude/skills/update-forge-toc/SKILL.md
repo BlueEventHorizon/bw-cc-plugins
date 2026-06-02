@@ -4,100 +4,67 @@ description: |
   forge 内蔵ドキュメントの検索インデックスを更新する。
   /forge:query-forge-rules の検索結果を最新化したいときに使う。
   トリガー: "forge ToC 更新", "update forge toc", "forge インデックス更新", "forge 内蔵ドキュメントの ToC を再生成"
-allowed-tools: Bash, Read, Write, Glob, Skill
+allowed-tools: Bash, Read, Skill
 user-invocable: true
 argument-hint: ""
 ---
 
 # update-forge-toc
 
-`.doc_structure.yaml` を forge 内蔵 docs 用に一時差し替えして、利用可能な検索バックエンドの索引を生成する:
-
-- `/doc-advisor:create-rules-toc` があれば ToC（`plugins/forge/toc/rules/rules_toc.yaml`）を生成
-- `/doc-db:build-index` があれば Embedding インデックス（`plugins/forge/index/rules/rules_index.json`）を生成
-- 両方あれば両方生成
+forge 内蔵ドキュメント（`plugins/forge/docs/`, `plugins/forge/skills/*/docs/`）から、
+新 doc-advisor の `index-docs` で ToC を生成し、forge 同梱の検索インデックス
+`plugins/forge/toc/rules/rules_toc.yaml` を更新する。
 
 ## 前提条件
 
-- `/swap-doc-config` SKILL が利用可能であること
-- `/doc-advisor:create-rules-toc` または `/doc-db:build-index` のいずれかが利用可能であること
-
-## forge 固有の引数
-
-| 値                                               | 内容                                          |
-| ------------------------------------------------ | --------------------------------------------- |
-| `${CLAUDE_PLUGIN_ROOT}/forge_doc_structure.yaml` | swap-doc-config の `--target` に渡す YAML     |
-| `${CLAUDE_PLUGIN_ROOT}/.backup`                  | swap-doc-config の `--backup-dir` に渡す path |
-
-> **注**: `${CLAUDE_PLUGIN_ROOT}` は本 SKILL のディレクトリを指す。
+- `doc-advisor` プラグイン（外部 marketplace `BlueEventHorizon/DocAdvisor`）がインストールされ、
+  `doc-advisor:index-docs` が available-skills に存在すること
+- 未インストールの場合はその旨を報告して終了する
 
 ## 実行フロー
 
-> **重要**: Step 2 がエラーになっても **必ず** Step 3 (restore) を実行すること。
+### Step 1: 対象パスの解決
 
-### Step 1: 設定の退避と差し替え
+forge KB の対象 Markdown を、本 SKILL 同梱の `forge_doc_structure.yaml` から解決する
+（doc-advisor は `.doc_structure.yaml` を読まないため、forge 側でパスを解決して渡す）:
 
-Skill ツールで `swap-doc-config` を以下の引数で実行する:
-
-```
---store --target ${CLAUDE_PLUGIN_ROOT}/forge_doc_structure.yaml --backup-dir ${CLAUDE_PLUGIN_ROOT}/.backup
-```
-
-JSON 出力の `status` を確認:
-
-- `ok` → Step 2 へ
-- `error` → 中断（restore 不要）。`message` に `Backup already exists` が含まれる場合は前回 `--restore` し忘れの状態。`${CLAUDE_PLUGIN_ROOT}/.backup/` の中身を確認した上で `--restore` を実行して復旧してから再試行する
-
-### Step 2: バックエンド判定と索引生成
-
-available-skills に含まれるバックエンドを確認し、含まれているものを **すべて** 実行する。
-どちらかでもエラーになっても、もう片方は続行する。
-
-#### 2a. ToC 生成（`/doc-advisor:create-rules-toc` がある場合）
-
-Skill ツールで `/doc-advisor:create-rules-toc` を実行する（incremental モード）。初回や checksums がない場合は自動で full にフォールバックする。
-
-forge_doc_structure.yaml の `output_dir` 設定により、ToC は `plugins/forge/toc/rules/rules_toc.yaml` に直接出力される。
-
-#### 2b. Embedding インデックス生成（`/doc-db:build-index` がある場合）
-
-Skill ツールで `/doc-db:build-index --category rules` を実行する。
-
-forge_doc_structure.yaml の `output_dir` 設定により、インデックスは `plugins/forge/index/rules/rules_index.json` に直接出力される。
-
-#### 2c. 利用可能なバックエンドがない場合
-
-両方とも available-skills に含まれない場合は、Step 3 で設定を復元したうえでエラー報告:
-
-```
-ERROR: 検索バックエンドが見つかりません
-       doc-advisor または doc-db のいずれかをインストールしてください
+```bash
+python3 plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py \
+  --type rules \
+  --doc-structure .claude/skills/update-forge-toc/forge_doc_structure.yaml
 ```
 
-**エラー時**: Step 2a / 2b の結果に関わらず **必ず** Step 3 以降を実行する。
+stdout JSON の `rules` 配列（project-root-relative パス）を取得する。`status` が `error` なら `message` を報告して終了。
 
-### Step 3: 設定の復元
+### Step 2: ToC 生成（index-docs）
 
-Skill ツールで `swap-doc-config` を以下の引数で実行する:
+`Skill` ツールで `doc-advisor:index-docs` を **1 回だけ** 呼ぶ。key には予約語と衝突しない `forge-rules` を使う:
 
 ```
---restore --backup-dir ${CLAUDE_PLUGIN_ROOT}/.backup
+/doc-advisor:index-docs --key forge-rules --paths-json '<Step 1 の rules 配列の JSON>'
 ```
 
-JSON 出力の `status` を確認:
+完了レポート JSON の `toc_path`（例: `.claude/doc-advisor/toc/forge-rules-<hash>/toc.yaml`）を取得する。
 
-- `ok` → Step 4 へ
-- `error` → ユーザーに手動復元を案内: `${CLAUDE_PLUGIN_ROOT}/.backup/` にバックアップがある
+### Step 3: 同梱 ToC へコピー
+
+生成された ToC を forge プラグイン同梱の場所へコピーする（配布されるのはこのファイル）:
+
+```bash
+cp "<Step 2 の toc_path>" plugins/forge/toc/rules/rules_toc.yaml
+```
 
 ### Step 4: 完了報告
-
-実行したバックエンドに応じて以下を出力する:
 
 ```
 forge 内蔵 docs の検索インデックスを更新しました
 
 - 生成元: plugins/forge/docs/, plugins/forge/skills/*/docs/
-- ToC: plugins/forge/toc/rules/rules_toc.yaml ({doc-advisor を実行した場合のみ})
-- インデックス: plugins/forge/index/rules/rules_index.json ({doc-db を実行した場合のみ})
-- .doc_structure.yaml: 復元済み
+- key: forge-rules
+- 出力: plugins/forge/toc/rules/rules_toc.yaml
 ```
+
+## Notes
+
+- forge 同梱 ToC は `.claude/doc-advisor/toc/<slug>/` の doc-advisor 管理 ToC を **コピー** して配布する設計。
+  ランタイムの `/forge:query-forge-rules` は同梱ファイルを直接 Read するため doc-advisor インストール不要。
