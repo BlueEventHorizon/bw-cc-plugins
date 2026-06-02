@@ -1,0 +1,11 @@
+# ToC checksums for key: rules
+# Auto-generated - do not edit
+generated_at: 2026-06-02T03:27:08Z
+file_count: 6
+checksums:
+  docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
+  docs/rules/document_writing_rules.md: 1f840d4431321f6cc346eb5a1a2bf6768bfbc7aec2c10064798e34bab2aefbd6
+  docs/rules/implementation_guidelines.md: 7bdabd4c8ea1a5e7dd7dcb05a7aa18ed4c41713cc37f7a93d1dfebd10f6ce2d7
+  docs/rules/skill_authoring_notes.md: 860a3dabf276225eef771ff589693ac7309a28a8e8fcfb9ebc95fbf4ea2967cf
+  docs/rules/skill_launch_paths_definitions.md: 426506c1f61f4366688291467457bacd93040b7c718012e41272121d4c065499
+  docs/rules/version_migration_design.md: 6362075eb21c144d5f0dc03c570f82182aaf7146866e16a058d33fae847de7e9

@@ -85,7 +85,12 @@ dprint check        # チェックのみ
 
 ### プラグインのローカルテスト
 
+詳細な手順は [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
+
 ```bash
+# 両プラグインを同時にロード（推奨）
+claude --plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil
+
 # セッション限定でプラグインをロード
 claude --plugin-dir ./plugins/forge
 
