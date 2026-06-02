@@ -2,7 +2,7 @@
 name: setup-doc-structure
 description: |
   プロジェクトのディレクトリをスキャン・分類し .doc_structure.yaml を対話的に生成する。
-  forge・doc-advisor が文書を参照するための必須初期設定。
+  forge が文書を参照するための必須初期設定。
   トリガー: "forge の初期設定", "doc structure を作成", "ドキュメント構成", "setup"
 user-invocable: true
 argument-hint: ""
@@ -186,8 +186,8 @@ Step 3 で作成を選択されたディレクトリについて:
 
 ### Step 5: .doc_structure.yaml の生成
 
-確定した分類結果から `.doc_structure.yaml` を config.yaml 互換フォーマットで生成し、プロジェクトルートに書き出す。
-doc-advisor 固有フィールドはデフォルト値で生成する（Quick reference のテンプレートを参照）。
+確定した分類結果から `.doc_structure.yaml` を生成し、プロジェクトルートに書き出す。
+forge が使用するフィールド（`root_dirs` / `doc_types_map` / `patterns`）のみを生成する（Quick reference のテンプレートを参照）。
 
 ### Step 6: 結果表示
 

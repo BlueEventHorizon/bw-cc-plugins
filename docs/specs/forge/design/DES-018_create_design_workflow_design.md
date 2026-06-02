@@ -58,7 +58,7 @@ flowchart TD
 
     AI_REVIEW["/forge:review design --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> QA
 
-    QA["品質保証<br>完全性チェック<br>/create-specs-toc"] --> COMMIT
+    QA["品質保証<br>完全性チェック<br>/forge:update-db-specs"] --> COMMIT
 
     COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
 ```
@@ -88,11 +88,11 @@ flowchart TD
 
 要件定義書・ルール・既存実装を収集する。
 
-| 収集対象     | 手段                                         | 出力            |
-| ------------ | -------------------------------------------- | --------------- |
-| 要件定義書   | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml |
-| 実装ルール   | `/query-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml |
-| 既存実装資産 | Glob / Grep / MCP コード解析                 | refs/code.yaml  |
+| 収集対象     | 手段                                                  | 出力            |
+| ------------ | ----------------------------------------------------- | --------------- |
+| 要件定義書   | `/forge:query-db-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml |
+| 実装ルール   | `/forge:query-db-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml |
+| 既存実装資産 | Glob / Grep / MCP コード解析                          | refs/code.yaml  |
 
 **既存実装資産の確認 [MANDATORY]:**
 
@@ -119,7 +119,7 @@ flowchart TD
 | Step | 内容                                                   |
 | ---- | ------------------------------------------------------ |
 | 4.1  | 完全性チェック（要件反映漏れ、ID一意性、既存資産活用） |
-| 4.2  | `/create-specs-toc` 実行（利用可能な場合）             |
+| 4.2  | `/forge:update-db-specs` 実行（利用可能な場合）        |
 | 4.3  | `/anvil:commit` による commit/push 確認                |
 
 ---

@@ -2,9 +2,9 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.26**
+**Marketplace version: 0.2.0**
 
-The marketplace ships **4 plugins** (forge, anvil, doc-advisor, **doc-db**). **doc-db** complements rule/spec discovery with heading-level Hybrid search (Embedding + Lexical) and LLM Rerank. It is **not a superset of doc-advisor**; the two are designed to be used together, sharing the same `.doc_structure.yaml`.
+The marketplace ships **2 plugins** (forge, anvil). The AI-searchable document index (**doc-advisor**) is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor); forge's search skills forward to it (`index-docs` / `query-docs`).
 
 [Japanese README (README.md)](README.md)
 
@@ -12,14 +12,14 @@ The marketplace ships **4 plugins** (forge, anvil, doc-advisor, **doc-db**). **d
 
 Spec-Driven Development is a workflow where every code change traces back to a written specification. **forge** guides you through five stages — requirements, design, plan, implement, and review — so that AI always works from explicit, reviewable intent rather than ad-hoc instructions. Each stage produces a document; each document feeds the next stage. The result is traceable, auditable delivery: you can always answer _why_ a piece of code exists.
 
-## The Role of doc-advisor
+## The Role of doc-advisor (external)
 
-Large projects accumulate rules, standards, and design documents that AI cannot use if it cannot find them. **doc-advisor** indexes these documents (via ToC keyword search and OpenAI Embedding semantic search) and automatically supplies the relevant ones to forge at the moments that matter:
+Large projects accumulate rules, standards, and design documents that AI cannot use if it cannot find them. The external **doc-advisor** ([BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)) indexes these documents as a ToC (keyword / metadata) and automatically supplies the relevant ones to forge at the moments that matter:
 
 - **During implementation** — project-specific coding rules and related specs are collected before a single line is written.
 - **During review** — applicable rules are added as review perspectives, so reviews check against your actual standards, not generic best practices.
 
-This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
+forge's `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` forward to doc-advisor's `query-docs` / `index-docs`. This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
 
 ## Workflow
 
@@ -29,19 +29,18 @@ flowchart LR
         R([Requirements]) --> D([Design]) --> P([Plan]) --> I([Implement]) --> RF([Review / Fix])
     end
     RF --> DL([Delivery])
-    DA[doc-advisor] -. find context .-> forge
-    DB[doc-db] -. chunk Hybrid search .-> forge
+    DA["doc-advisor (external)"] -. find context .-> forge
     AV[anvil] -- commit & PR --> DL
 ```
 
 ## Plugins
 
-| Plugin          | Version | Description                                                                                                                                                                                  |
-| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **forge**       | 0.1.2   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.                                                                                     |
-| **anvil**       | 0.0.9   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                                                                                                         |
-| **doc-advisor** | 0.3.1   | AI-searchable document index with dual search — keyword (ToC) and semantic (OpenAI Embedding). Auto-discovers relevant rules and specs for any task.                                         |
-| **doc-db**      | 0.0.3   | Heading-chunk Hybrid search (Embedding + Lexical) with LLM Rerank. Grep results for IDs / proper nouns are merged in to reduce misses (used together with and complementary to doc-advisor). |
+| Plugin    | Version | Description                                                                                              |
+| --------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| **forge** | 0.2.0   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **anvil** | 0.0.9   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
+
+> **doc-advisor is an external dependency**: the AI-searchable document index ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`.
 
 ## Skills
 
@@ -124,27 +123,11 @@ flowchart LR
 | **create-issue**                                      | Organize problem, background, and root cause into a GitHub Issue (resolution handled by impl-issue) | `"create issue"`    |
 | **impl-issue**                                        | Run end-to-end from a GitHub Issue: plan, branch, implement, PR (UI Issue supported)                | `"implement issue"` |
 
-### doc-advisor
-
-> [Detailed Guide](docs/readme/guide_doc-advisor.md) — Usage and examples
-
-| Skill                                                                     | Description                                                        | Trigger               |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------- |
-| [**query-rules**](docs/readme/guide_doc-advisor.md#query-rules)           | Search rules with ToC (keyword), Index (semantic), or hybrid mode  | `"query rules"`       |
-| [**query-specs**](docs/readme/guide_doc-advisor.md#query-specs)           | Search specs with ToC (keyword), Index (semantic), or hybrid mode  | `"query specs"`       |
-| [**create-rules-toc**](docs/readme/guide_doc-advisor.md#create-rules-toc) | Update the rules search index (ToC) after modifying rule documents | `"rebuild rules ToC"` |
-| [**create-specs-toc**](docs/readme/guide_doc-advisor.md#create-specs-toc) | Update the specs search index (ToC) after modifying spec documents | `"rebuild specs ToC"` |
-
-### doc-db
-
-> Detailed Guide: [Japanese](docs/readme/guide_doc-db_ja.md) (en TBD) — Usage, examples, and how it complements doc-advisor
-
-| Skill                                                         | Description                                                             | Trigger           |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------- |
-| [**build-index**](docs/readme/guide_doc-db_ja.md#build-index) | Build/update the heading-chunk Index (rules / specs, `--full`, etc.)    | `"build doc-db"`  |
-| [**query**](docs/readme/guide_doc-db_ja.md#query)             | Hybrid / Rerank search. Optionally augments results with full-text grep | `"search doc-db"` |
-
 > **Bold** = user-invocable, _Italic_ = AI-only (called internally by other skills)
+
+### doc-advisor (external plugin)
+
+Document search is provided by the external [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) plugin (`index-docs` / `query-docs`), invoked from forge's `/forge:query-db-rules` etc. See that repository's README for details.
 
 ## Installation
 
@@ -156,8 +139,10 @@ Inside a Claude Code session:
 /plugin marketplace add BlueEventHorizon/bw-cc-plugins
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
-/plugin install doc-advisor@bw-cc-plugins
-/plugin install doc-db@bw-cc-plugins
+
+# Document search (doc-advisor) ships from a separate marketplace
+/plugin marketplace add BlueEventHorizon/DocAdvisor
+/plugin install doc-advisor@DocAdvisor
 ```
 
 To re-enable a disabled plugin, from your terminal:
@@ -187,7 +172,7 @@ claude plugin update forge@bw-cc-plugins --scope local
 
 ## Document Structure (.doc_structure.yaml)
 
-`.doc_structure.yaml` declares where documents live and what types they are. Both forge and doc-advisor reference this file. Generate it with `/forge:setup-doc-structure`.
+`.doc_structure.yaml` declares where documents live and what types they are. forge reads it (e.g. `/forge:update-db-rules` resolves the target paths and passes them to doc-advisor). Generate it with `/forge:setup-doc-structure`.
 → [Document Structure Guide](docs/readme/guide_doc_structure.md) | [Schema reference](plugins/forge/docs/doc_structure_format.md)
 
 ## Git Information Cache (.git_information.yaml)
@@ -199,8 +184,7 @@ On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and 
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
-- OpenAI API key (for doc-advisor embedding features; `OPENAI_API_DOCDB_KEY` recommended, falls back to `OPENAI_API_KEY` if unset; per DES-007 unified spec)
-- OpenAI API key (for doc-db index build / search / rerank; `OPENAI_API_DOCDB_KEY` recommended, falls back to `OPENAI_API_KEY` if unset; per DES-007 unified spec)
+- For document search, the external [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor) (Python standard library only; no API key required)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 
 ## License

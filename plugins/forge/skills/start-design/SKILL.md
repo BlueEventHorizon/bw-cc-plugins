@@ -268,6 +268,14 @@ python3 "$SCAN_SCRIPT" DES
 
 JSON 出力の `next_id` をファイル名・設計 ID として使用する。`duplicates` が空でない場合は警告を表示する。
 
+**ADR（アーキテクチャ決定記録）を作成する場合 [MANDATORY]**: 設計判断の根拠を ADR として新規作成する際も、ADR の ID は手動で決定せず、必ず `next-spec-id` で採番する（プレフィックスは `ADR`）。手動採番は並行ブランチでの番号衝突（同一 `ADR-NNN` が別内容で重複）の原因になる。
+
+```bash
+python3 "$SCAN_SCRIPT" ADR
+```
+
+ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md` の設計ID カタログを参照）。
+
 ### 3.3 設計書の作成
 
 - **作成場所**: session.yaml の `output_dir`
@@ -297,6 +305,7 @@ JSON 出力の `next_id` をファイル名・設計 ID として使用する。
 作成した設計書に対して Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
 ```
+# Skill ツールで起動する
 /forge:review design --files {作成ファイルパス} --auto
 ```
 

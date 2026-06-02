@@ -178,7 +178,7 @@ v2 → v3 変換:
 plugins/forge/scripts/migrate_doc_structure.py
 ```
 
-forge プラグインのスクリプトとして配置する。doc-advisor の `merge_config.py` とは独立。
+forge プラグインのスクリプトとして配置する。
 
 ### CLI インターフェース
 

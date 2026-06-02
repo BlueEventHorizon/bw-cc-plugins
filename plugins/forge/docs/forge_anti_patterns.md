@@ -16,8 +16,8 @@
 
 ## 関連文書
 
-- 要件: `docs/specs/forge-review/requirements/REQ-004_review_policy.md` (FNC-405 / FNC-406)
-- 設計: `docs/specs/forge-review/design/DES-028_review_policy_design.md` (§3.1 / §3.4)
+- 要件: `docs/specs/forge/requirements/REQ-004_review_policy.md` (FNC-405 / FNC-406)
+- 設計: `docs/specs/forge/design/DES-028_review_policy_design.md` (§3.1 / §3.4)
 - レビュー優先度 SoT: `${CLAUDE_PLUGIN_ROOT}/docs/review_priorities_spec.md`
 
 ## カテゴリ別アンチパターン

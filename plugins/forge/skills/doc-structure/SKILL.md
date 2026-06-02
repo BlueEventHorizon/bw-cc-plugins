@@ -15,7 +15,7 @@ argument-hint: ""
 ドキュメントのパス解決・Feature 検出・doc_type 判定を行う。
 
 forge 内の他スキルからの呼び出し専用（`user-invocable: false`）。
-doc-advisor がこのスキルをまるごとコピーして使える自己完結設計。
+`.doc_structure.yaml` のパス解決を担う自己完結設計（外部依存なし）。
 
 ## スクリプト
 

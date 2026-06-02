@@ -79,8 +79,8 @@ v6データ（完全なv6形式）
 バージョン番号はコード1箇所で管理し、データ自体にも埋め込む（セルフ記述型）。
 
 ```yaml
-# config.yaml（セルフ記述型の例）
-# doc-advisor-version-xK9XmQ: 4.3
+# .doc_structure.yaml（セルフ記述型の例）
+# doc_structure_version: 3.0
 ```
 
 ### 原則3: 冪等性（Idempotency）

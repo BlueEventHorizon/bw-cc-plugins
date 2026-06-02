@@ -146,19 +146,19 @@ gh repo view --json nameWithOwner --jq '.nameWithOwner'
 
 ### Phase 3: 仕様書を調査する
 
-`/doc-advisor:query-specs` を使い、Issue のタイトル・本文から **抽出した検索キーワード** または **短い自然文のタスク記述** を `args` として渡して関連仕様書を特定する。Issue 本文をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
+`/forge:query-db-specs` を使い、Issue のタイトル・本文から **抽出した検索キーワード** または **短い自然文のタスク記述** を `args` として渡して関連仕様書を特定する。Issue 本文をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
 
 **詳細は [references/phase-03-spec-investigation.md](references/phase-03-spec-investigation.md) を参照。**
 
 ### Phase 4: 実装ルールを調査する
 
-`/doc-advisor:query-rules` を使い、タスクに関連するルール文書を特定する。`args` は Issue 本文から **抽出した検索キーワード** または **短い自然文のタスク記述** に限定し、Issue 本文・実装手順をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
+`/forge:query-db-rules` を使い、タスクに関連するルール文書を特定する。`args` は Issue 本文から **抽出した検索キーワード** または **短い自然文のタスク記述** に限定し、Issue 本文・実装手順をそのまま貼り付けない（COMMON-DES-001 §4 [MANDATORY]）。
 
 **必須ルール**:
 
 - 特定したルール文書は**すべて**実際に Read tool で読み込む
 - CLAUDE.md に記載されているプロジェクト構造・アーキテクチャの説明を確認する
-- `/doc-advisor:query-rules` で "architecture" / "coding" / "layer" 等をクエリして重要文書を特定する
+- `/forge:query-db-rules` で "architecture" / "coding" / "layer" 等をクエリして重要文書を特定する
 
 ### Phase 5: 類似実装済みPRを調査する
 
@@ -191,7 +191,7 @@ Agent tool で `/anvil:prepare-figma` を呼び出す:
 - Figma URL: 画面設計書に記載されていた Figma URL
 ```
 
-デザイン仕様書の出力先は `/doc-advisor:query-specs` で確認した `design/` ディレクトリを使用する。
+デザイン仕様書の出力先は `/forge:query-db-specs` で確認した `design/` ディレクトリを使用する。
 
 ### Phase 8: デザイン仕様書をレビューする（UI Issue のみ）
 
@@ -216,7 +216,7 @@ Phase 2〜6（UI Issue の場合は Phase 2〜8）の調査結果をもとに以
 
 **UI Issue の場合**: デザイン仕様書 + Phase 3〜6 の全調査結果を踏まえて**実装設計書**も作成する。
 実装設計書は「どう作るか」を決定する文書（既存コンポーネント対応表、デザイントークン、状態管理、API連携等）。
-出力先: `/doc-advisor:query-specs` で確認した `design/` ディレクトリ。
+出力先: `/forge:query-db-specs` で確認した `design/` ディレクトリ。
 
 **実装設計書作成前に必ず [references/phase-09-impl-design.md](references/phase-09-impl-design.md) を読み込む。**
 

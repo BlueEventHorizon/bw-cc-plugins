@@ -66,7 +66,7 @@ flowchart TD
 
     QA --> AI_REVIEW["Phase 5: AIレビュー<br>review plan --auto"]
 
-    AI_REVIEW --> TOC["create-specs-toc"]
+    AI_REVIEW --> TOC["forge:update-db-specs"]
 
     TOC --> COMMIT["anvil:commit"]
 
@@ -94,11 +94,11 @@ flowchart TD
 
 ### Phase 1: コンテキスト収集 [MANDATORY]
 
-| 収集対象   | 手段                                         | 出力                            |
-| ---------- | -------------------------------------------- | ------------------------------- |
-| 要件定義書 | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml                 |
-| 設計書     | `/query-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml（同一ファイル） |
-| 実装ルール | `/query-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml                 |
+| 収集対象   | 手段                                                  | 出力                            |
+| ---------- | ----------------------------------------------------- | ------------------------------- |
+| 要件定義書 | `/forge:query-db-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml                 |
+| 設計書     | `/forge:query-db-specs` or `.doc_structure.yaml` Glob | refs/specs.yaml（同一ファイル） |
+| 実装ルール | `/forge:query-db-rules` or `.doc_structure.yaml` Glob | refs/rules.yaml                 |
 
 **設計書は必須入力。** 見つからない場合は AskUserQuestion でユーザーに手動指定またはスキップ確認（リスク理解のもと）。
 
@@ -150,10 +150,10 @@ flowchart TD
 
 ### 完了処理
 
-| Step | 内容                                       |
-| ---- | ------------------------------------------ |
-| 6.1  | `/create-specs-toc` 実行（利用可能な場合） |
-| 6.2  | `/anvil:commit` による commit/push 確認    |
+| Step | 内容                                            |
+| ---- | ----------------------------------------------- |
+| 6.1  | `/forge:update-db-specs` 実行（利用可能な場合） |
+| 6.2  | `/anvil:commit` による commit/push 確認         |
 
 ---
 
