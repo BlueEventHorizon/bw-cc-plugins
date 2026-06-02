@@ -5,40 +5,33 @@ description: |
   設計・実装・コーディング・レビュー等、開発作業のあらゆる場面でルールを参照したいときに使う。
 user-invocable: false
 argument-hint: "task description"
-allowed-tools: Read, Grep, Glob, Bash, Skill
+allowed-tools: Skill
 ---
 
-利用可能なバックエンド（doc-db / doc-advisor）を自動選択して該当検索 SKILL に転送する read-only ラッパー。
+ルール文書（key `rules`）を検索する read-only ラッパー。検索バックエンドは doc-advisor に一本化されており、
+`doc-advisor:query-docs` へ転送する。
 
 > ❌ 自己再帰禁止: `Skill` ツールで自分自身や他の `/forge:*-db-*` 抽象 SKILL を呼ばないこと（無限再帰）
 
 ## Procedure
 
-### Step 1: バックエンド選択
+`Skill` ツールで `doc-advisor:query-docs` を **1 回だけ** 呼ぶ:
 
-available-skills から `doc-db:query` / `doc-advisor:query-rules` の有無を判定し、利用可能なバックエンドをカンマ区切りで `--available` に渡す（両方なら `doc-db,doc-advisor`、なければ空文字列）。
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/backend_selection/select_backend.py" \
-  --available "<doc-db,doc-advisor 等>" \
-  --category rules \
-  --operation query
+```
+/doc-advisor:query-docs --key rules <$ARGUMENTS>
 ```
 
-stdout に `{ "backend": ..., "skill": ..., "error": ... }` の JSON が返る。
+`$ARGUMENTS`（検索タスク記述）をそのまま末尾に渡す。バックエンドの応答はそのまま親に返す（構造変換しない）。
 
-### Step 2: 転送
+## 前提・エラー処理
 
-- `error` が null でない場合 → `error` 文字列をそのまま親に返して終了
-- `error` が null の場合 → `skill` フィールドの SKILL を `Skill` ツールで 1 回呼ぶ:
-  - `/doc-db:query` → `/doc-db:query --category rules --query "$ARGUMENTS" --mode rerank`
-  - `/doc-advisor:query-rules` → `/doc-advisor:query-rules "$ARGUMENTS"`
-
-バックエンドの応答はそのまま親に返す。構造変換は行わない。
+- `doc-advisor` プラグイン（外部 marketplace `BlueEventHorizon/DocAdvisor`）が未インストールで
+  `doc-advisor:query-docs` が available-skills に存在しない場合は、その旨を報告して終了する。
+- ToC（key `rules`）が未生成（`TOC_NOT_FOUND`）の場合は、`/forge:update-db-rules` で索引を生成するよう案内する。
 
 ## Output Format
 
-応答の先頭は `Required documents:` 形式（DES-001 §3.1 / §9）:
+応答の先頭は `Required documents:` 形式:
 
 ```
 Required documents:
@@ -47,9 +40,7 @@ Required documents:
 - docs/rules/yyy.md
 ```
 
-doc-db バックエンド採用時は後段に `## Hybrid scores / grep hits` セクションが付加されることがある（任意）。
-
 ## Notes
 
-- バックエンド間のフォールバックなし（DES-001 §5.4）。最初に選択したバックエンドが失敗したらエラー終了
-- 分岐ロジックの Single Source of Truth は `select_backend.py`。本 SKILL.md に分岐テーブルを複製しない
+- バックエンド間のフォールバックは存在しない（doc-advisor 単一）。
+- key の意味（rules）は forge が決定し、doc-advisor へ opaque key として渡す。

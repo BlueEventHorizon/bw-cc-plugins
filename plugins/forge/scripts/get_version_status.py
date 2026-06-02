@@ -13,7 +13,7 @@ Options:
 
 Output (JSON):
     {
-      "current_branch": "feature/embedding-doc-advisor",
+      "current_branch": "feature/some-change",
       "base_branch": "main",
       "targets": [
         {
@@ -26,9 +26,9 @@ Output (JSON):
         ...
       ],
       "summary": {
-        "changed": ["marketplace", "doc-advisor"],
-        "unchanged": ["forge", "anvil"],
-        "plugins_changed_on_base": ["doc-advisor"]
+        "changed": ["marketplace", "forge"],
+        "unchanged": ["anvil"],
+        "plugins_changed_on_base": ["forge"]
       }
     }
 

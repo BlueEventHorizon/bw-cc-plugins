@@ -5,10 +5,10 @@
 ## 概要
 
 `.doc_structure.yaml` はプロジェクトレベルの設定ファイルで、ドキュメントの配置場所と種別を宣言する。
-doc-advisor の `config.yaml` と完全互換のフォーマットを採用し、以下のツールが共通で参照する:
+forge が参照する。検索インデックス（外部 doc-advisor）の対象パスは、forge が本ファイルから解決して渡す
+（doc-advisor 自体は本ファイルを読まない）:
 
-- **forge スキル** — ドキュメント作成先の特定、レビュー対象の解決、Feature 検出
-- **Doc Advisor** — ToC 生成のスキャン対象・doc_type 判定
+- **forge スキル** — ドキュメント作成先の特定、レビュー対象の解決、Feature 検出、検索対象パスの解決
 - **resolve_doc_structure.py** — プログラムからのパス解決（JSON 出力）
 
 ## ファイル配置

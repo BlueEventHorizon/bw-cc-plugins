@@ -495,7 +495,7 @@ class TestNoSlashCommandRefsInScripts(unittest.TestCase):
     docstring・コメント・生成物ヘッダは除外。
     """
 
-    PLUGIN_NAMES = ('forge', 'doc-advisor', 'anvil', 'doc-db')
+    PLUGIN_NAMES = ('forge', 'doc-advisor', 'anvil')
     SLASH_CMD_PATTERN = re.compile(
         r'/(' + '|'.join(re.escape(p) for p in PLUGIN_NAMES) + r'):[a-z]'
     )
@@ -542,12 +542,6 @@ class TestNoSlashCommandRefsInScripts(unittest.TestCase):
 
     def test_no_slash_refs_in_forge(self):
         self._assert_no_slash_refs('forge')
-
-    def test_no_slash_refs_in_doc_advisor(self):
-        self._assert_no_slash_refs('doc-advisor')
-
-    def test_no_slash_refs_in_doc_db(self):
-        self._assert_no_slash_refs('doc-db')
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 # Document Structure Guide
 
-`.doc_structure.yaml` is a project-level configuration file that declares where documents live and what types they are. It serves as the shared foundation for both forge and doc-advisor.
+`.doc_structure.yaml` is a project-level configuration file that declares where documents live and what types they are. forge uses it to resolve document paths.
 
 ## Feature
 
@@ -28,8 +28,7 @@ specs/
 
 A file that declares where documents live and what types they are. The following tools share it:
 
-- **forge** — Resolve review targets, detect Feature directories, locate document output paths
-- **doc-advisor** — Determine ToC scan targets and doc_type classification
+- **forge** — Resolve review targets, detect Feature directories, locate document output paths, and resolve the search-index target paths (passed to the external doc-advisor)
 
 Place it at the project root (same level as `.git/`).
 
@@ -135,7 +134,7 @@ No arguments.
 
 ### When to run
 
-- First time using forge / doc-advisor in a project
+- First time using forge in a project
 - After major changes to the directory structure
 - After manually adding a Feature
 

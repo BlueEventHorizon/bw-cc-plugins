@@ -4,59 +4,65 @@ description: |
   forge 内蔵ドキュメントの ToC（検索インデックス）を更新する。
   /forge:query-forge-rules の検索結果を最新化したいときに使う。
   トリガー: "forge ToC 更新", "update forge toc", "forge 内蔵ドキュメントの ToC を再生成"
-allowed-tools: Bash, Read, Write, Glob
+allowed-tools: Bash, Read, Skill
 user-invocable: true
 argument-hint: ""
 ---
 
 # update-forge-toc
 
-doc-advisor の `/doc-advisor:create-rules-toc --full` パイプラインを借用して、`plugins/forge/toc/rules_toc.yaml` を AI 品質で自動生成する。
+forge 内蔵ドキュメント（`plugins/forge/docs/`, `plugins/forge/skills/*/docs/`）から、
+新 doc-advisor の `index-docs` で ToC を生成し、forge 同梱の検索インデックス
+`plugins/forge/toc/rules/rules_toc.yaml` を更新する。
 
 ## 前提条件
 
-- `/doc-advisor:create-rules-toc` スキルが利用可能であること
+- `doc-advisor`（外部 marketplace `BlueEventHorizon/DocAdvisor`）の `doc-advisor:index-docs` が利用可能であること
+- 未インストールの場合はその旨を報告して終了する
 
 ## 実行フロー
 
-> **重要**: Step 2 がエラーになっても **必ず** Step 3 (restore) を実行すること。
+### Step 1: 対象パスの解決
 
-### Step 1: 設定の退避と差し替え
-
-```bash
-python3 .Codex/skills/update-forge-toc/scripts/swap_doc_config.py --store
-```
-
-JSON 出力の `status` を確認:
-
-- `ok` → Step 2 へ
-- `error` → 中断（restore 不要）
-
-### Step 2: ToC 生成
-
-`/doc-advisor:create-rules-toc --full` を実行する。
-
-forge_doc_structure.yaml の `output_dir` 設定により、ToC は `plugins/forge/toc/rules/rules_toc.yaml` に直接出力される。コピー不要。
-
-**エラー時**: Step 2 の結果に関わらず **必ず** Step 3 以降を実行する。
-
-### Step 3: 設定の復元
+forge KB の対象 Markdown を、本 SKILL 同梱の `forge_doc_structure.yaml` から解決する
+（doc-advisor は `.doc_structure.yaml` を読まないため、forge 側でパスを解決して渡す）:
 
 ```bash
-python3 .Codex/skills/update-forge-toc/scripts/swap_doc_config.py --restore
+python3 plugins/forge/skills/doc-structure/scripts/resolve_doc_structure.py \
+  --type rules \
+  --doc-structure .agents/skills/update-forge-toc/forge_doc_structure.yaml
 ```
 
-JSON 出力の `status` を確認:
+stdout JSON の `rules` 配列（project-root-relative パス）を取得する。`status` が `error` なら `message` を報告して終了。
 
-- `ok` → Step 4 へ
-- `error` → ユーザーに手動復元を案内: `.Codex/skills/update-forge-toc/.backup/` にバックアップがある
+### Step 2: ToC 生成（index-docs）
+
+`doc-advisor:index-docs` を **1 回だけ** 実行する。key には予約語と衝突しない `forge-rules` を使う:
+
+```
+/doc-advisor:index-docs --key forge-rules --paths-json '<Step 1 の rules 配列の JSON>'
+```
+
+完了レポート JSON の `toc_path`（例: `.claude/doc-advisor/toc/forge-rules-<hash>/toc.yaml`）を取得する。
+
+### Step 3: 同梱 ToC へコピー
+
+```bash
+cp "<Step 2 の toc_path>" plugins/forge/toc/rules/rules_toc.yaml
+```
 
 ### Step 4: 完了報告
 
 ```
-forge rules_toc.yaml を更新しました
+forge 内蔵 docs の検索インデックスを更新しました
 
 - 生成元: plugins/forge/docs/, plugins/forge/skills/*/docs/
-- 出力先: plugins/forge/toc/rules/rules_toc.yaml (output_dir convention)
-- .doc_structure.yaml: 復元済み
+- key: forge-rules
+- 出力: plugins/forge/toc/rules/rules_toc.yaml
 ```
+
+## Notes
+
+- forge 同梱 ToC は doc-advisor 管理 ToC を **コピー** して配布する設計。ランタイムの
+  `/forge:query-forge-rules` は同梱ファイルを直接 Read するため doc-advisor インストール不要。
+- `.doc_structure.yaml` の退避・復元（旧 swap_doc_config 方式）は不要。

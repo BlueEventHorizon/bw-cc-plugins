@@ -2,8 +2,7 @@
 """
 検索系 SKILL の subagent 隔離 / read-only 制約テスト
 
-ADR-002 (docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md)
-および COMMON-DES-001 §4 (docs/specs/common/design/COMMON-DES-001_skill_base_design.md)
+COMMON-DES-001 §4 (docs/specs/common/design/COMMON-DES-001_skill_base_design.md)
 で採択された以下の制約が、対象 SKILL.md に反映されていることを検証する:
 
 - fork 型 SKILL の frontmatter に `context: fork` が含まれている (§4 規定リスト)
@@ -13,11 +12,14 @@ ADR-002 (docs/specs/doc-advisor/design/ADR-002_query_skill_subagent_isolation.md
 - 引数解釈ガード ([MANDATORY]) が含まれている
 
 対象:
-- fork 型 (COMMON-DES-001 §4 規定リスト):
-  - plugins/doc-advisor/skills/query-rules/SKILL.md
-  - plugins/doc-advisor/skills/query-specs/SKILL.md
 - 継承型だが Role 制約を維持する SKILL (COMMON-DES-001 §4.2):
   - plugins/forge/skills/query-forge-rules/SKILL.md
+
+注: doc-advisor の fork 型 query-rules / query-specs は別リポジトリ
+（BlueEventHorizon/DocAdvisor、新 doc-advisor の query-docs）へ分離されたため、
+本リポジトリの検証対象から外れている。bw-cc-plugins の forge query-db-rules /
+query-db-specs は doc-advisor:query-docs へ転送する薄いラッパー（Role 制約・fork
+を持たない）であり、隔離契約は転送先の doc-advisor 側が担保する。
 
 実行:
   python3 -m unittest tests.common.test_query_skill_isolation -v
@@ -29,11 +31,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# COMMON-DES-001 §4 規定リスト: fork 型 SKILL（context: fork 必須）
-FORK_TARGET_SKILLS = [
-    REPO_ROOT / 'plugins' / 'doc-advisor' / 'skills' / 'query-rules' / 'SKILL.md',
-    REPO_ROOT / 'plugins' / 'doc-advisor' / 'skills' / 'query-specs' / 'SKILL.md',
-]
+# COMMON-DES-001 §4 規定リスト: fork 型 SKILL（context: fork 必須）。
+# doc-advisor の fork 型 query skill は外部リポジトリへ分離されたため、本リポジトリには
+# 配布される fork 型 query skill は存在しない（空リスト）。
+FORK_TARGET_SKILLS: list[Path] = []
 
 # Role 制約・引数解釈ガード・出力契約を維持する全 query-* SKILL
 # (fork 型 + COMMON-DES-001 §4.2 で継承型に再分類された SKILL)

@@ -4,7 +4,7 @@ Project setup, version management, rule cleanup, and other operational skills.
 
 ## setup-doc-structure
 
-Generate `.doc_structure.yaml`, which declares where documents live and what types they are. Shared foundation for forge and doc-advisor.
+Generate `.doc_structure.yaml`, which declares where documents live and what types they are. The foundation forge uses to resolve document paths.
 
 > For details, see the [Document Structure Guide](../guide_doc_structure.md).
 
