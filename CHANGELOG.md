@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.0] - 2026-06-02
+
+### marketplace
+
+- **chore**: forge 0.2.0 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.0] - 2026-06-02
+
+### forge
+
+- **feat**: 文書検索バックエンドを外部 doc-advisor（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）へ全面移行。プラグイン内蔵の doc-advisor / doc-db を削除し、`/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` を外部 doc-advisor の `query-docs` / `index-docs` へ転送する構成に刷新。ToC 索引機構（`.claude/doc-advisor/toc/`）を追加
+- **refactor(clean-rules)**: Embedding 方式を廃止し、`split_doc_sections.py` + AI 判定方式へ移行
+- **docs**: ADR の ID 採番ガイドを定義層・生成層・テストへ展開 (#123)
+- **fix**: ドキュメント・テストを修正
+
 ## [marketplace 0.1.26] - 2026-05-27
 
 ### marketplace

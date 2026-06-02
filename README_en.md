@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.1.26**
+**Marketplace version: 0.2.0**
 
 The marketplace ships **2 plugins** (forge, anvil). The AI-searchable document index (**doc-advisor**) is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor); forge's search skills forward to it (`index-docs` / `query-docs`).
 
@@ -37,7 +37,7 @@ flowchart LR
 
 | Plugin    | Version | Description                                                                                              |
 | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.1.2   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **forge** | 0.2.0   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.0.9   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
 
 > **doc-advisor is an external dependency**: the AI-searchable document index ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`.
