@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.1] - 2026-06-07
+
+### marketplace
+
+- **chore**: forge 0.2.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.1] - 2026-06-07
+
+### forge
+
+- **docs**: `docs/rules/document_writing_rules.md` に「本文は現在状態のみ・移行履歴は CHANGELOG にのみ置く」ルール（§5.1）を追加
+- **docs**: ローカル開発・デバッグ手順書 `DEVELOPMENT.md` を新規作成。両プラグイン同時ロード（`--plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil`）を含む
+
 ## [marketplace 0.2.0] - 2026-06-02
 
 ### marketplace

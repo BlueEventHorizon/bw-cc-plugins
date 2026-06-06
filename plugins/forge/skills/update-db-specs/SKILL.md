@@ -4,7 +4,7 @@ description: |
   要件定義書・設計書の追加・改訂後に検索インデックスを最新化する。
   新しい仕様文書を /forge:query-db-specs で検索可能にしたいときに実行する。
   トリガー: "仕様検索インデックス更新", "仕様検索インデックス再構築", "設計書インデックス更新"
-user-invocable: false
+user-invocable: true
 argument-hint: ""
 allowed-tools: Read, Bash, Skill
 ---
