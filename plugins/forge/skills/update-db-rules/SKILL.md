@@ -4,7 +4,7 @@ description: |
   ルール文書の追加・改訂後に検索インデックスを最新化する。
   新しいルール文書を /forge:query-db-rules で検索可能にしたいときに実行する。
   トリガー: "ルール検索インデックス更新", "ルールインデックス再構築"
-user-invocable: false
+user-invocable: true
 argument-hint: ""
 allowed-tools: Read, Bash, Skill
 ---
