@@ -3,7 +3,7 @@ name: query-db-rules
 description: |
   プロジェクトの様々なルールを、キーワード・機能名・自然文で、高速・高品位に、優先度をつけて検索する。
   設計・実装・コーディング・レビュー等、開発作業のあらゆる場面でルールを参照したいときに使う。
-user-invocable: false
+user-invocable: true
 argument-hint: "task description"
 allowed-tools: Skill, Read, Grep, Glob, Bash
 ---
