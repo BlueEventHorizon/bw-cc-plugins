@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.2] - 2026-06-07
+
+### marketplace
+
+- **chore**: forge 0.2.2 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.2] - 2026-06-07
+
+### forge
+
+- **fix**: `query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` の `user-invocable` を `false` → `true` に修正（ユーザーから直接呼び出し可能でなかった問題を解消）
+
 ## [marketplace 0.2.1] - 2026-06-07
 
 ### marketplace
