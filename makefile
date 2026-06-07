@@ -1,20 +1,26 @@
 .PHONY: help \
         install-forge install-anvil install-all \
+        install-forge-codex install-anvil-codex install-all-codex \
         uninstall-forge uninstall-anvil \
         connect_gemini disconnect_gemini connect_serena disconnect_serena
 
 # パス引数を取得（例: make install-all /path/to/project）
-_ARGS := $(filter-out install-forge install-anvil install-all uninstall-forge uninstall-anvil,$(MAKECMDGOALS))
+_ARGS := $(filter-out install-forge install-anvil install-all install-forge-codex install-anvil-codex install-all-codex uninstall-forge uninstall-anvil,$(MAKECMDGOALS))
 
 default: help
 
 help:
 	@echo "プラグイン直接インストール（プラグイン機構が使えない環境向け）:"
-	@echo "  make install-forge  [dir]  forge をインストール"
-	@echo "  make install-anvil  [dir]  anvil をインストール"
-	@echo "  make install-all    [dir]  全プラグインをインストール"
-	@echo "  make uninstall-forge [dir] forge を削除"
-	@echo "  make uninstall-anvil [dir] anvil を削除"
+	@echo "  make install-forge        [dir]  forge をインストール（Claude Code 専用）"
+	@echo "  make install-anvil        [dir]  anvil をインストール（Claude Code 専用）"
+	@echo "  make install-all          [dir]  全プラグインをインストール（Claude Code 専用）"
+	@echo "  make install-forge-codex  [dir]  forge をインストール（Codex 専用）"
+	@echo "  make install-anvil-codex  [dir]  anvil をインストール（Codex 専用）"
+	@echo "  make install-all-codex    [dir]  全プラグインをインストール（Codex 専用）"
+	@echo "  実体は .plugins/ に配置。Claude Code は .claude/skills/、Codex は .agents/skills/ からシンボリックリンクで参照"
+	@echo "  両ツールで使う場合は install-xxx と install-xxx-codex を順に実行（.plugins/ は共有）"
+	@echo "  make uninstall-forge      [dir]  forge を削除（.claude/skills/ と .agents/skills/ 両方のリンクを削除）"
+	@echo "  make uninstall-anvil      [dir]  anvil を削除"
 	@echo "  dir 省略時はカレントディレクトリにインストール"
 	@echo ""
 	@echo "MCP サーバー操作:"
@@ -34,6 +40,14 @@ install-anvil:
 	@bash scripts/install_plugin.sh anvil "$(_ARGS)"
 
 install-all: install-forge install-anvil
+
+install-forge-codex:
+	@bash scripts/install_plugin.sh --codex forge "$(_ARGS)"
+
+install-anvil-codex:
+	@bash scripts/install_plugin.sh --codex anvil "$(_ARGS)"
+
+install-all-codex: install-forge-codex install-anvil-codex
 
 uninstall-forge:
 	@bash scripts/uninstall_plugin.sh forge "$(_ARGS)"
