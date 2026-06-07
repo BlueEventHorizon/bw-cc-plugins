@@ -74,18 +74,21 @@ echo "Installing '${PLUGIN_NAME}' → ${TARGET_DIR}"
 
 # -----------------------------------------------------------------------
 # Step 1: プラグインファイルをコピー（メタデータ・キャッシュを除く）
+#         rsync --delete でソースの完全ミラーにする（削除・リネームも反映）
+#         cp fallback では rm -rf で旧ツリーを先に消してから上書き
 # -----------------------------------------------------------------------
 if [ "${SKIP_COPY}" = "false" ]; then
-    mkdir -p "${PLUGIN_DST}"
-
     if command -v rsync &>/dev/null; then
-        rsync -a \
+        mkdir -p "${PLUGIN_DST}"
+        rsync -a --delete \
             --exclude='.claude-plugin' \
             --exclude='__pycache__' \
             --exclude='.DS_Store' \
             --exclude='*.pyc' \
             "${PLUGIN_SRC}/" "${PLUGIN_DST}/"
     else
+        rm -rf "${PLUGIN_DST}"
+        mkdir -p "${PLUGIN_DST}"
         cp -r "${PLUGIN_SRC}/." "${PLUGIN_DST}/"
         find "${PLUGIN_DST}" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
         find "${PLUGIN_DST}" -name '*.pyc' -delete 2>/dev/null || true
@@ -159,8 +162,41 @@ fi
 # Step 4: シンボリックリンクを作成
 #         --codex なし → .claude/skills/{skill}  （Claude Code 専用）
 #         --codex あり → .agents/skills/{skill}  （Codex 専用）
+#
+# 安全ルール:
+#   - 自分が管理するリンク（リンク先が .plugins/{plugin}/ を含む）のみ上書き
+#   - 実ファイル・実ディレクトリ、または他プラグインのリンクには触れずエラー報告
 # -----------------------------------------------------------------------
 SKILL_COUNT=0
+CONFLICT_COUNT=0
+
+# シンボリックリンクを安全に作成するヘルパー
+# 戻り値: 成功時 SKILL_COUNT++、競合時 CONFLICT_COUNT++ してスキップ
+_create_link() {
+    local link_path="$1"
+    local link_target="$2"
+
+    if [ -L "${link_path}" ]; then
+        local existing_target
+        existing_target="$(readlink "${link_path}")"
+        if echo "${existing_target}" | grep -qF ".plugins/${PLUGIN_NAME}/"; then
+            # 自プラグインが管理するリンク → 更新
+            rm "${link_path}"
+        else
+            echo "  CONFLICT (foreign symlink): ${link_path} → ${existing_target} — skipped" >&2
+            CONFLICT_COUNT=$((CONFLICT_COUNT + 1))
+            return 0
+        fi
+    elif [ -e "${link_path}" ]; then
+        # 実ファイル・実ディレクトリ → データ消失を防ぐため触れない
+        echo "  CONFLICT (real path): ${link_path} is not a symlink — skipped to avoid data loss" >&2
+        CONFLICT_COUNT=$((CONFLICT_COUNT + 1))
+        return 0
+    fi
+
+    ln -s "${link_target}" "${link_path}"
+    SKILL_COUNT=$((SKILL_COUNT + 1))
+}
 
 if [ -d "${SKILLS_SRC}" ]; then
     if [ "${CODEX}" = "false" ]; then
@@ -169,15 +205,9 @@ if [ -d "${SKILLS_SRC}" ]; then
         for skill_dir in "${SKILLS_SRC}"/*/; do
             [ -d "${skill_dir}" ] || continue
             skill_name="$(basename "${skill_dir}")"
-            link_path="${CLAUDE_SKILLS_DIR}/${skill_name}"
-            link_target="../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
-
-            if [ -L "${link_path}" ] || [ -e "${link_path}" ]; then
-                rm -rf "${link_path}"
-            fi
-
-            ln -s "${link_target}" "${link_path}"
-            SKILL_COUNT=$((SKILL_COUNT + 1))
+            _create_link \
+                "${CLAUDE_SKILLS_DIR}/${skill_name}" \
+                "../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
         done
     else
         # Codex 専用: .agents/skills/{skill} → ../../.plugins/{plugin}/skills/{skill}/
@@ -185,15 +215,9 @@ if [ -d "${SKILLS_SRC}" ]; then
         for skill_dir in "${SKILLS_SRC}"/*/; do
             [ -d "${skill_dir}" ] || continue
             skill_name="$(basename "${skill_dir}")"
-            link_path="${AGENTS_SKILLS_DIR}/${skill_name}"
-            link_target="../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
-
-            if [ -L "${link_path}" ] || [ -e "${link_path}" ]; then
-                rm -rf "${link_path}"
-            fi
-
-            ln -s "${link_target}" "${link_path}"
-            SKILL_COUNT=$((SKILL_COUNT + 1))
+            _create_link \
+                "${AGENTS_SKILLS_DIR}/${skill_name}" \
+                "../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
         done
     fi
 fi
@@ -209,6 +233,11 @@ if [ "${CODEX}" = "false" ]; then
 else
     echo "  Codex         : ${AGENTS_SKILLS_DIR}/*  (${SKILL_COUNT} symlinks)"
 fi
+
+if [ "${CONFLICT_COUNT}" -gt 0 ]; then
+    echo ""
+    echo "⚠ ${CONFLICT_COUNT} conflict(s) skipped (see above). Resolve manually." >&2
+fi
 echo ""
 
 # .gitignore の案内
@@ -216,4 +245,9 @@ GITIGNORE="${TARGET_DIR}/.gitignore"
 if ! grep -qF ".plugins/" "${GITIGNORE}" 2>/dev/null; then
     echo "Tip: .gitignore に以下を追加することを推奨します:"
     echo "  echo '.plugins/' >> ${GITIGNORE}"
+fi
+
+# 競合があった場合は非ゼロで終了
+if [ "${CONFLICT_COUNT}" -gt 0 ]; then
+    exit 1
 fi
