@@ -4,25 +4,38 @@
 # プラグインをターゲットプロジェクトに直接インストールする。
 # プラグイン機構が使えない環境向け。
 #
-# Usage: install_plugin.sh <plugin_name> [target_dir]
+# Usage: install_plugin.sh [--codex] <plugin_name> [target_dir]
+#   --codex     : Codex 専用インストール（.agents/skills/ のみ、.claude/skills/ は作成しない）
 #   plugin_name : インストールするプラグイン名（例: forge, anvil）
 #   target_dir  : インストール先プロジェクトルート（省略時: カレントディレクトリ）
 #
 # インストール方式:
-#   1. plugins/{plugin}/ を {target}/.claude/plugins/{plugin}/ にコピー
-#   2. ${CLAUDE_PLUGIN_ROOT} / ${CLAUDE_SKILL_DIR} を実パスに置換（Python 使用）
-#   3. .claude/skills/{plugin}:{skill} → ../plugins/{plugin}/skills/{skill}/ のシンボリックリンクを作成
+#   実体: {target}/.plugins/{plugin}/  （Claude Code / Codex 共通の中立ディレクトリ）
+#   Claude Code: .claude/skills/{skill} → ../../.plugins/{plugin}/skills/{skill}/
+#   Codex:       .agents/skills/{skill} → ../../.plugins/{plugin}/skills/{skill}/
+#
+# --codex なし → Claude Code 専用（.claude/skills/ のみ）
+# --codex あり → Codex 専用（.agents/skills/ のみ）
+# 両方使う場合は install-forge と install-forge-codex を順に実行する
 
 set -euo pipefail
 
 # -----------------------------------------------------------------------
 # 引数チェック
 # -----------------------------------------------------------------------
+CODEX=false
+while [[ "${1:-}" == --* ]]; do
+    case "$1" in
+        --codex) CODEX=true; shift ;;
+        *) echo "Unknown option: $1" >&2; exit 1 ;;
+    esac
+done
+
 PLUGIN_NAME="${1:-}"
 TARGET_DIR="${2:-.}"
 
 if [ -z "${PLUGIN_NAME}" ]; then
-    echo "Usage: install_plugin.sh <plugin_name> [target_dir]" >&2
+    echo "Usage: install_plugin.sh [--codex] <plugin_name> [target_dir]" >&2
     echo "  plugin_name: forge | anvil | ..." >&2
     exit 1
 fi
@@ -37,20 +50,23 @@ if [ ! -d "${PLUGIN_SRC}" ]; then
 fi
 
 TARGET_DIR="$(cd "${TARGET_DIR}" && pwd)"
-INSTALL_PATH=".claude/plugins/${PLUGIN_NAME}"
+INSTALL_PATH=".plugins/${PLUGIN_NAME}"
 PLUGIN_DST="${TARGET_DIR}/${INSTALL_PATH}"
-SKILLS_DIR="${TARGET_DIR}/.claude/skills"
+SKILLS_SRC="${PLUGIN_DST}/skills"
+CLAUDE_SKILLS_DIR="${TARGET_DIR}/.claude/skills"
+AGENTS_SKILLS_DIR="${TARGET_DIR}/.agents/skills"
 
 # -----------------------------------------------------------------------
 # 既存インストールの確認
 # -----------------------------------------------------------------------
+SKIP_COPY=false
 if [ -d "${PLUGIN_DST}" ]; then
     echo "Plugin '${PLUGIN_NAME}' is already installed in ${TARGET_DIR}"
-    printf "Overwrite? [y/N] "
+    printf "Re-copy files? [y/N] (シンボリックリンクは常に更新されます): "
     read -r answer
     case "${answer}" in
         [yY]|[yY][eE][sS]) ;;
-        *) echo "Aborted."; exit 0 ;;
+        *) SKIP_COPY=true ;;
     esac
 fi
 
@@ -58,29 +74,33 @@ echo "Installing '${PLUGIN_NAME}' → ${TARGET_DIR}"
 
 # -----------------------------------------------------------------------
 # Step 1: プラグインファイルをコピー（メタデータ・キャッシュを除く）
+#         rsync --delete でソースの完全ミラーにする（削除・リネームも反映）
+#         cp fallback では rm -rf で旧ツリーを先に消してから上書き
 # -----------------------------------------------------------------------
-mkdir -p "${PLUGIN_DST}"
+if [ "${SKIP_COPY}" = "false" ]; then
+    if command -v rsync &>/dev/null; then
+        mkdir -p "${PLUGIN_DST}"
+        rsync -a --delete \
+            --exclude='.claude-plugin' \
+            --exclude='__pycache__' \
+            --exclude='.DS_Store' \
+            --exclude='*.pyc' \
+            "${PLUGIN_SRC}/" "${PLUGIN_DST}/"
+    else
+        rm -rf "${PLUGIN_DST}"
+        mkdir -p "${PLUGIN_DST}"
+        cp -r "${PLUGIN_SRC}/." "${PLUGIN_DST}/"
+        find "${PLUGIN_DST}" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+        find "${PLUGIN_DST}" -name '*.pyc' -delete 2>/dev/null || true
+        find "${PLUGIN_DST}" -name '.DS_Store' -delete 2>/dev/null || true
+        rm -rf "${PLUGIN_DST}/.claude-plugin"
+    fi
 
-if command -v rsync &>/dev/null; then
-    rsync -a \
-        --exclude='.claude-plugin' \
-        --exclude='__pycache__' \
-        --exclude='.DS_Store' \
-        --exclude='*.pyc' \
-        "${PLUGIN_SRC}/" "${PLUGIN_DST}/"
-else
-    cp -r "${PLUGIN_SRC}/." "${PLUGIN_DST}/"
-    find "${PLUGIN_DST}" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
-    find "${PLUGIN_DST}" -name '*.pyc' -delete 2>/dev/null || true
-    find "${PLUGIN_DST}" -name '.DS_Store' -delete 2>/dev/null || true
-    rm -rf "${PLUGIN_DST}/.claude-plugin"
-fi
-
-# -----------------------------------------------------------------------
-# Step 2: ${CLAUDE_PLUGIN_ROOT} を実パスに置換
-#         対象: .md / .yaml / .sh / .toml （Python で処理）
-# -----------------------------------------------------------------------
-python3 - "${PLUGIN_DST}" "${INSTALL_PATH}" <<'PYEOF'
+    # -----------------------------------------------------------------------
+    # Step 2: ${CLAUDE_PLUGIN_ROOT} を実パスに置換
+    #         対象: .md / .yaml / .sh / .toml （Python で処理）
+    # -----------------------------------------------------------------------
+    python3 - "${PLUGIN_DST}" "${INSTALL_PATH}" <<'PYEOF'
 import sys
 import pathlib
 
@@ -94,7 +114,6 @@ for fpath in plugin_dst.rglob("*"):
         continue
     if fpath.suffix not in (".md", ".yaml", ".sh", ".toml"):
         continue
-    # キャッシュ除外
     if "__pycache__" in fpath.parts:
         continue
     try:
@@ -108,14 +127,12 @@ for fpath in plugin_dst.rglob("*"):
 print(f"  CLAUDE_PLUGIN_ROOT replaced in {replaced} file(s)")
 PYEOF
 
-# -----------------------------------------------------------------------
-# Step 3: ${CLAUDE_SKILL_DIR} をスキルごとの実パスに置換
-#         スキルの SKILL.md のみ対象
-# -----------------------------------------------------------------------
-SKILLS_SRC="${PLUGIN_DST}/skills"
-
-if [ -d "${SKILLS_SRC}" ]; then
-    python3 - "${SKILLS_SRC}" "${INSTALL_PATH}" <<'PYEOF'
+    # -----------------------------------------------------------------------
+    # Step 3: ${CLAUDE_SKILL_DIR} をスキルごとの実パスに置換
+    #         スキルの SKILL.md のみ対象
+    # -----------------------------------------------------------------------
+    if [ -d "${SKILLS_SRC}" ]; then
+        python3 - "${SKILLS_SRC}" "${INSTALL_PATH}" <<'PYEOF'
 import sys
 import pathlib
 
@@ -138,31 +155,71 @@ for skill_dir in sorted(skills_src.iterdir()):
 
 print(f"  CLAUDE_SKILL_DIR replaced in {replaced} SKILL.md file(s)")
 PYEOF
+    fi
 fi
 
 # -----------------------------------------------------------------------
-# Step 4: .claude/skills/{skill} → ../plugins/{plugin}/skills/{skill}/
-#         のシンボリックリンクを作成（スキル名のみ、プレフィックスなし）
+# Step 4: シンボリックリンクを作成
+#         --codex なし → .claude/skills/{skill}  （Claude Code 専用）
+#         --codex あり → .agents/skills/{skill}  （Codex 専用）
+#
+# 安全ルール:
+#   - 自分が管理するリンク（リンク先が .plugins/{plugin}/ を含む）のみ上書き
+#   - 実ファイル・実ディレクトリ、または他プラグインのリンクには触れずエラー報告
 # -----------------------------------------------------------------------
-mkdir -p "${SKILLS_DIR}"
 SKILL_COUNT=0
+CONFLICT_COUNT=0
+
+# シンボリックリンクを安全に作成するヘルパー
+# 戻り値: 成功時 SKILL_COUNT++、競合時 CONFLICT_COUNT++ してスキップ
+_create_link() {
+    local link_path="$1"
+    local link_target="$2"
+
+    if [ -L "${link_path}" ]; then
+        local existing_target
+        existing_target="$(readlink "${link_path}")"
+        if echo "${existing_target}" | grep -qF ".plugins/${PLUGIN_NAME}/"; then
+            # 自プラグインが管理するリンク → 更新
+            rm "${link_path}"
+        else
+            echo "  CONFLICT (foreign symlink): ${link_path} → ${existing_target} — skipped" >&2
+            CONFLICT_COUNT=$((CONFLICT_COUNT + 1))
+            return 0
+        fi
+    elif [ -e "${link_path}" ]; then
+        # 実ファイル・実ディレクトリ → データ消失を防ぐため触れない
+        echo "  CONFLICT (real path): ${link_path} is not a symlink — skipped to avoid data loss" >&2
+        CONFLICT_COUNT=$((CONFLICT_COUNT + 1))
+        return 0
+    fi
+
+    ln -s "${link_target}" "${link_path}"
+    SKILL_COUNT=$((SKILL_COUNT + 1))
+}
 
 if [ -d "${SKILLS_SRC}" ]; then
-    for skill_dir in "${SKILLS_SRC}"/*/; do
-        [ -d "${skill_dir}" ] || continue
-        skill_name="$(basename "${skill_dir}")"
-        link_path="${SKILLS_DIR}/${skill_name}"
-        # .claude/skills/ から .claude/plugins/{plugin}/skills/{skill}/ への相対パス
-        link_target="../plugins/${PLUGIN_NAME}/skills/${skill_name}"
-
-        # 再インストール時は既存リンク・ディレクトリを削除
-        if [ -L "${link_path}" ] || [ -e "${link_path}" ]; then
-            rm -rf "${link_path}"
-        fi
-
-        ln -s "${link_target}" "${link_path}"
-        SKILL_COUNT=$((SKILL_COUNT + 1))
-    done
+    if [ "${CODEX}" = "false" ]; then
+        # Claude Code 専用: .claude/skills/{skill} → ../../.plugins/{plugin}/skills/{skill}/
+        mkdir -p "${CLAUDE_SKILLS_DIR}"
+        for skill_dir in "${SKILLS_SRC}"/*/; do
+            [ -d "${skill_dir}" ] || continue
+            skill_name="$(basename "${skill_dir}")"
+            _create_link \
+                "${CLAUDE_SKILLS_DIR}/${skill_name}" \
+                "../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
+        done
+    else
+        # Codex 専用: .agents/skills/{skill} → ../../.plugins/{plugin}/skills/{skill}/
+        mkdir -p "${AGENTS_SKILLS_DIR}"
+        for skill_dir in "${SKILLS_SRC}"/*/; do
+            [ -d "${skill_dir}" ] || continue
+            skill_name="$(basename "${skill_dir}")"
+            _create_link \
+                "${AGENTS_SKILLS_DIR}/${skill_name}" \
+                "../../.plugins/${PLUGIN_NAME}/skills/${skill_name}"
+        done
+    fi
 fi
 
 # -----------------------------------------------------------------------
@@ -170,13 +227,27 @@ fi
 # -----------------------------------------------------------------------
 echo ""
 echo "✓ '${PLUGIN_NAME}' installed: ${SKILL_COUNT} skill(s)"
-echo "  Plugin files : ${PLUGIN_DST}"
-echo "  Skills       : ${SKILLS_DIR}/*  (symlinks)"
+echo "  Plugin files  : ${PLUGIN_DST}"
+if [ "${CODEX}" = "false" ]; then
+    echo "  Claude Code   : ${CLAUDE_SKILLS_DIR}/*  (${SKILL_COUNT} symlinks)"
+else
+    echo "  Codex         : ${AGENTS_SKILLS_DIR}/*  (${SKILL_COUNT} symlinks)"
+fi
+
+if [ "${CONFLICT_COUNT}" -gt 0 ]; then
+    echo ""
+    echo "⚠ ${CONFLICT_COUNT} conflict(s) skipped (see above). Resolve manually." >&2
+fi
 echo ""
 
 # .gitignore の案内
 GITIGNORE="${TARGET_DIR}/.gitignore"
-if ! grep -qF ".claude/plugins/" "${GITIGNORE}" 2>/dev/null; then
+if ! grep -qF ".plugins/" "${GITIGNORE}" 2>/dev/null; then
     echo "Tip: .gitignore に以下を追加することを推奨します:"
-    echo "  echo '.claude/plugins/' >> ${GITIGNORE}"
+    echo "  echo '.plugins/' >> ${GITIGNORE}"
+fi
+
+# 競合があった場合は非ゼロで終了
+if [ "${CONFLICT_COUNT}" -gt 0 ]; then
+    exit 1
 fi

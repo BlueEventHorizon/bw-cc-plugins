@@ -21,7 +21,7 @@ if [ -z "${PLUGIN_NAME}" ]; then
 fi
 
 TARGET_DIR="$(cd "${TARGET_DIR}" && pwd)"
-PLUGIN_DST="${TARGET_DIR}/.claude/plugins/${PLUGIN_NAME}"
+PLUGIN_DST="${TARGET_DIR}/.plugins/${PLUGIN_NAME}"
 SKILLS_DIR="${TARGET_DIR}/.claude/skills"
 
 echo "Uninstalling '${PLUGIN_NAME}' from ${TARGET_DIR}"
@@ -40,10 +40,11 @@ else
 fi
 
 # -----------------------------------------------------------------------
-# Step 2: .claude/skills/ 内のシンボリックリンクのうち
+# Step 2: .claude/skills/ および .agents/skills/ 内のシンボリックリンクのうち
 #         リンク先が plugins/{plugin}/ を指すものをすべて削除
 # -----------------------------------------------------------------------
-if [ -d "${SKILLS_DIR}" ]; then
+for search_dir in "${SKILLS_DIR}" "${TARGET_DIR}/.agents/skills"; do
+    [ -d "${search_dir}" ] || continue
     while IFS= read -r -d '' link; do
         target="$(readlink "${link}" 2>/dev/null || true)"
         if echo "${target}" | grep -q "plugins/${PLUGIN_NAME}/"; then
@@ -51,8 +52,8 @@ if [ -d "${SKILLS_DIR}" ]; then
             echo "  Removed: ${link}"
             REMOVED=$((REMOVED + 1))
         fi
-    done < <(find "${SKILLS_DIR}" -maxdepth 1 -type l -print0 2>/dev/null)
-fi
+    done < <(find "${search_dir}" -maxdepth 1 -type l -print0 2>/dev/null)
+done
 
 # -----------------------------------------------------------------------
 # 完了報告
