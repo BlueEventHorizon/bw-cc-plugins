@@ -16,10 +16,25 @@ specs の対象パスを解決して `doc-advisor:index-docs` へ転送する。
 
 ## Procedure
 
-### Step 1: 対象パスの解決
+### Step 1: `.doc_structure.yaml` を読んで呼び出しモードを決定する
 
-`.doc_structure.yaml` の `specs.root_dirs` / `doc_types_map` / `patterns.exclude` から、index 対象の
-project-root-relative パス一覧を取得する（doc-advisor は `.doc_structure.yaml` を読まないため、forge 側で解決して渡す）:
+`Read` ツールで `.doc_structure.yaml` を読み、`specs.root_dirs` と `specs.patterns.exclude` を取得する。
+
+**モード判定（必須）: 判定軸は `exclude` の有無のみ。グロブの有無では分岐しない**
+（`doc-advisor:index-docs` の `--dirs-json` はグロブメタ文字 `*` `?` `[` を展開できるため）:
+
+| 条件 | モード |
+| ---- | ------ |
+| `exclude` が空（`[]`） | **dirs モード**: `--dirs-json` に `root_dirs` をそのまま渡す（doc-advisor が rglob / グロブ展開する） |
+| `exclude` が非空 | **ファイル列挙モード**: `resolve_doc_structure.py` → `--paths-json` |
+
+> ⚠️ **exclude を `--dirs-json` + `--exclude-json` で渡してはならない**: forge の `exclude`（例 `[plan]`）は
+> **パスの任意の階層**にある同名ディレクトリにマッチする（裸名マッチ）が、doc-advisor の `--exclude-json` は
+> **完全一致 / パス前置きマッチ**のため、裸名 `plan` は `docs/specs/forge/plan/` を除外できない。
+> exclude が非空のときは forge 側の `resolve_doc_structure.py` でファイル列挙し、`--paths-json` で渡すこと。
+> （現在の specs 設定は `exclude: [plan]` のため、このプロジェクトでは常にファイル列挙モードになる）
+
+**ファイル列挙モードの場合のみ** 以下を実行する:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py" --type specs
@@ -30,10 +45,13 @@ stdout の JSON から `specs` 配列（project-root-relative パスのリスト
 
 ### Step 2: index-docs へ転送
 
-取得した `specs` 配列を **そのまま** `--paths-json` の値（JSON 配列文字列）として、`Skill` ツールで
-`doc-advisor:index-docs` を **1 回だけ** 呼ぶ:
+モードに応じて `Skill` ツールで `doc-advisor:index-docs` を **1 回だけ** 呼ぶ:
 
 ```
+# dirs モード（exclude が空）— root_dirs をそのまま渡す（グロブ含む場合も doc-advisor が展開）
+/doc-advisor:index-docs --key specs --dirs-json '<root_dirs の JSON 配列>'
+
+# ファイル列挙モード（exclude が非空）
 /doc-advisor:index-docs --key specs --paths-json '<specs 配列の JSON>'
 ```
 

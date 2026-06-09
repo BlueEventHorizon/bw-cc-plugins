@@ -113,6 +113,20 @@ python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクト
 
 コード読解による推論で 2〜3 回修正しても解決しない場合は、**ログ挿入で実際の状態を観測する**。推測に基づく修正を繰り返さず、`print()` / 変数ダンプで実際に何が起こっているかを確認してから次の修正を行う。観測後にログを除去すること。
 
+### 外部プラグインの実体確認 [MANDATORY]
+
+外部プラグイン（doc-advisor 等）のスクリプトを調査・テストする前に、**実際に動いている実体パスを必ず特定してから読む**。
+
+```bash
+# 起動引数から --plugin-dir を確認
+ps -axo args | grep 'plugin-dir'
+
+# PATH から bin の所在を確認（実体ディレクトリが判明する）
+echo $PATH | tr ':' '\n' | grep -iE 'advisor|plugin'
+```
+
+キャッシュ版（`~/.claude/plugins/cache/`）とローカル開発版（`--plugin-dir` 指定）は**同じバージョン番号でも実装が異なる**場合がある。キャッシュ版を実測した結果をローカル版に適用すると誤った結論になる。
+
 ## Testing [MANDATORY]
 
 `plugins/` 配下の Python スクリプトにはテストが必須。SKILL.md はテスト困難なため例外。
