@@ -29,7 +29,7 @@ echo "Uninstalling '${PLUGIN_NAME}' from ${TARGET_DIR}"
 REMOVED=0
 
 # -----------------------------------------------------------------------
-# Step 1: .claude/plugins/{plugin}/ を削除
+# Step 1: .plugins/{plugin}/ を削除
 # -----------------------------------------------------------------------
 if [ -d "${PLUGIN_DST}" ]; then
     rm -rf "${PLUGIN_DST}"
@@ -47,8 +47,8 @@ for search_dir in "${SKILLS_DIR}" "${TARGET_DIR}/.agents/skills"; do
     [ -d "${search_dir}" ] || continue
     while IFS= read -r -d '' link; do
         target="$(readlink "${link}" 2>/dev/null || true)"
-        if echo "${target}" | grep -q "plugins/${PLUGIN_NAME}/"; then
-            rm -rf "${link}"
+        if echo "${target}" | grep -qF ".plugins/${PLUGIN_NAME}/"; then
+            rm "${link}"
             echo "  Removed: ${link}"
             REMOVED=$((REMOVED + 1))
         fi

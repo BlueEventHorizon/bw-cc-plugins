@@ -62,12 +62,16 @@ AGENTS_SKILLS_DIR="${TARGET_DIR}/.agents/skills"
 SKIP_COPY=false
 if [ -d "${PLUGIN_DST}" ]; then
     echo "Plugin '${PLUGIN_NAME}' is already installed in ${TARGET_DIR}"
-    printf "Re-copy files? [y/N] (シンボリックリンクは常に更新されます): "
-    read -r answer
-    case "${answer}" in
-        [yY]|[yY][eE][sS]) ;;
-        *) SKIP_COPY=true ;;
-    esac
+    if [ -t 0 ]; then
+        printf "Re-copy files? [y/N] (シンボリックリンクは常に更新されます): "
+        read -r answer || answer=""
+        case "${answer}" in
+            [yY]|[yY][eE][sS]) ;;
+            *) SKIP_COPY=true ;;
+        esac
+    else
+        echo "Non-interactive: re-copying files."
+    fi
 fi
 
 echo "Installing '${PLUGIN_NAME}' → ${TARGET_DIR}"
@@ -97,8 +101,8 @@ if [ "${SKIP_COPY}" = "false" ]; then
     fi
 
     # -----------------------------------------------------------------------
-    # Step 2: ${CLAUDE_PLUGIN_ROOT} を実パスに置換
-    #         対象: .md / .yaml / .sh / .toml （Python で処理）
+    # Step 2: ${CLAUDE_PLUGIN_ROOT} / ${CLAUDE_SKILL_DIR} を実パスに置換
+    #         対象: .md / .yaml / .sh / .toml（1 回の走査で両プレースホルダを処理）
     # -----------------------------------------------------------------------
     python3 - "${PLUGIN_DST}" "${INSTALL_PATH}" <<'PYEOF'
 import sys
@@ -106,8 +110,13 @@ import pathlib
 
 plugin_dst = pathlib.Path(sys.argv[1])
 install_path = sys.argv[2]
-placeholder = "${CLAUDE_PLUGIN_ROOT}"
-replaced = 0
+
+PLUGIN_ROOT_PH = "${CLAUDE_PLUGIN_ROOT}"
+SKILL_DIR_PH = "${CLAUDE_SKILL_DIR}"
+skills_src = plugin_dst / "skills"
+
+root_replaced = 0
+skill_replaced = 0
 
 for fpath in plugin_dst.rglob("*"):
     if not fpath.is_file():
@@ -116,46 +125,24 @@ for fpath in plugin_dst.rglob("*"):
         continue
     if "__pycache__" in fpath.parts:
         continue
-    try:
-        content = fpath.read_text(encoding="utf-8")
-        if placeholder in content:
-            fpath.write_text(content.replace(placeholder, install_path), encoding="utf-8")
-            replaced += 1
-    except Exception:
-        pass
+    content = fpath.read_text(encoding="utf-8")
+    new_content = content
+    if PLUGIN_ROOT_PH in new_content:
+        new_content = new_content.replace(PLUGIN_ROOT_PH, install_path)
+        root_replaced += 1
+    if (SKILL_DIR_PH in new_content
+            and fpath.name == "SKILL.md"
+            and skills_src.is_dir()
+            and fpath.parent.parent == skills_src):
+        skill_path = f"{install_path}/skills/{fpath.parent.name}"
+        new_content = new_content.replace(SKILL_DIR_PH, skill_path)
+        skill_replaced += 1
+    if new_content != content:
+        fpath.write_text(new_content, encoding="utf-8")
 
-print(f"  CLAUDE_PLUGIN_ROOT replaced in {replaced} file(s)")
+print(f"  CLAUDE_PLUGIN_ROOT replaced in {root_replaced} file(s)")
+print(f"  CLAUDE_SKILL_DIR replaced in {skill_replaced} SKILL.md file(s)")
 PYEOF
-
-    # -----------------------------------------------------------------------
-    # Step 3: ${CLAUDE_SKILL_DIR} をスキルごとの実パスに置換
-    #         スキルの SKILL.md のみ対象
-    # -----------------------------------------------------------------------
-    if [ -d "${SKILLS_SRC}" ]; then
-        python3 - "${SKILLS_SRC}" "${INSTALL_PATH}" <<'PYEOF'
-import sys
-import pathlib
-
-skills_src = pathlib.Path(sys.argv[1])
-install_path = sys.argv[2]
-placeholder = "${CLAUDE_SKILL_DIR}"
-replaced = 0
-
-for skill_dir in sorted(skills_src.iterdir()):
-    if not skill_dir.is_dir():
-        continue
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.exists():
-        continue
-    skill_path = f"{install_path}/skills/{skill_dir.name}"
-    content = skill_md.read_text(encoding="utf-8")
-    if placeholder in content:
-        skill_md.write_text(content.replace(placeholder, skill_path), encoding="utf-8")
-        replaced += 1
-
-print(f"  CLAUDE_SKILL_DIR replaced in {replaced} SKILL.md file(s)")
-PYEOF
-    fi
 fi
 
 # -----------------------------------------------------------------------
