@@ -148,13 +148,29 @@ Claude Code セッション内で:
 /plugin install doc-advisor@DocAdvisor
 ```
 
+`/plugin install` を実行するとインストールスコープの選択を求められます:
+
+| スコープ | 対象範囲 | チーム共有 | 設定保存先 |
+|---|---|---|---|
+| **user** | 自分・全プロジェクト | なし | `~/.claude/settings.json` |
+| **project** | このリポジトリの全員 | あり（git コミット） | `.claude/settings.json` |
+| **local** | 自分・このリポジトリのみ | なし（gitignore） | `.claude/settings.local.json` |
+
+各スコープのプラグインは**足し合わされて**有効になります。上位スコープが下位を上書き・無効化するわけではありません。そのため **user スコープでインストールすると、そのプラグインはすべてのプロジェクトで自動的に有効**になります。
+
+- **全プロジェクトで常に使いたい** → **user**
+- **このリポジトリのチーム全員に配布したい** → **project**
+- **このリポジトリで自分だけ使いたい** → **local**
+
+特定のプロジェクトで無効化したい場合は `/plugin disable forge@bw-cc-plugins` を実行してください。
+
 無効化したプラグインを再有効化するには、ターミナルから:
 
 ```bash
 claude plugin enable forge@bw-cc-plugins
 ```
 
-`marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。一度インストールすれば、常に利用可能です。
+`marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。
 
 ### 方法 B: ローカルディレクトリ（セッション限定）
 
@@ -167,10 +183,12 @@ claude --plugin-dir ./bw-cc-plugins/plugins/forge
 
 ### 更新
 
-ターミナルから:
+ターミナルから（スコープはインストール時に選択したものを指定）:
 
 ```bash
-claude plugin update forge@bw-cc-plugins --scope local
+claude plugin update forge@bw-cc-plugins --scope user    # user スコープの場合
+claude plugin update forge@bw-cc-plugins --scope project  # project スコープの場合
+claude plugin update forge@bw-cc-plugins --scope local    # local スコープの場合
 ```
 
 ## 文書構造管理 (.doc_structure.yaml)
