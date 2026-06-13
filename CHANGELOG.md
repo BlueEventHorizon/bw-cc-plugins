@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.3] - 2026-06-10
+
+### marketplace
+
+- **chore**: forge 0.2.3 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.3] - 2026-06-10
+
+### forge
+
+- **fix**: インストールスクリプト（`install_plugin.sh` / `uninstall_plugin.sh`）の非インタラクティブ対応・`DIR=` 変数化・プレースホルダ統合、symlink 安全チェック・`rsync --delete`・実行権限付与を修正
+- **chore**: doc-advisor をマーケットプレイスインストールからファイルパス参照（`--plugin-dir`）へ移行
+- **docs**: `README.md` にプラグインインストールスコープ（user / project / local）の説明・使い分け・アンインストール手順を追加
+
 ## [marketplace 0.2.2] - 2026-06-07
 
 ### marketplace
