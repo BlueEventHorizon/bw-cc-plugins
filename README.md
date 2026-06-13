@@ -2,7 +2,7 @@
 
 **仕様駆動開発（Spec-Driven Development）** のための Claude Code プラグイン — 仕様を先に書き、AI がフルコンテキストで実装・レビューする。
 
-**マーケットプレイスバージョン: 0.2.2**
+**マーケットプレイスバージョン: 0.2.3**
 
 マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供し、forge の検索系スキルがこれへ転送する（`index-docs` / `query-docs`）。
 
@@ -39,7 +39,7 @@ flowchart LR
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.2.2      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **forge**  | 0.2.3      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.0.9      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 
 > **doc-advisor は外部依存**: AI 検索可能な文書インデックスは別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。
@@ -148,13 +148,35 @@ Claude Code セッション内で:
 /plugin install doc-advisor@DocAdvisor
 ```
 
+`/plugin install` を実行するとインストールスコープの選択を求められます（`--scope` で直接指定することも可能）:
+
+```bash
+/plugin install forge@bw-cc-plugins --scope user     # 自分の全プロジェクトで使う
+/plugin install forge@bw-cc-plugins --scope project  # このリポのチーム全員で使う
+/plugin install forge@bw-cc-plugins --scope local    # このリポで自分だけ使う
+```
+
+| スコープ | 対象範囲 | チーム共有 | 設定保存先 |
+|---|---|---|---|
+| **user** | 自分・全プロジェクト | なし | `~/.claude/settings.json` |
+| **project** | このリポジトリの全員 | あり（git コミット） | `.claude/settings.json` |
+| **local** | 自分・このリポジトリのみ | なし（gitignore） | `.claude/settings.local.json` |
+
+- **全プロジェクトで常に使いたい** → **user**
+- **このリポジトリのチーム全員に配布したい** → **project**
+- **このリポジトリで自分だけ使いたい** → **local**
+
+> **注意**: 同じプラグインをすでにインストール済みの場合、別スコープで再インストールはできません。スコープを変更するには先にアンインストールしてから再インストールしてください。
+
+特定のプロジェクトで無効化したい場合は `/plugin disable forge@bw-cc-plugins` を実行してください。
+
 無効化したプラグインを再有効化するには、ターミナルから:
 
 ```bash
 claude plugin enable forge@bw-cc-plugins
 ```
 
-`marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。一度インストールすれば、常に利用可能です。
+`marketplace add` は GitHub リポジトリをプラグイン取得元として登録します（ユーザーごとに1回）。
 
 ### 方法 B: ローカルディレクトリ（セッション限定）
 
@@ -167,10 +189,12 @@ claude --plugin-dir ./bw-cc-plugins/plugins/forge
 
 ### 更新
 
-ターミナルから:
+ターミナルから（スコープはインストール時に選択したものを指定）:
 
 ```bash
-claude plugin update forge@bw-cc-plugins --scope local
+claude plugin update forge@bw-cc-plugins --scope user    # user スコープの場合
+claude plugin update forge@bw-cc-plugins --scope project  # project スコープの場合
+claude plugin update forge@bw-cc-plugins --scope local    # local スコープの場合
 ```
 
 ## 文書構造管理 (.doc_structure.yaml)
