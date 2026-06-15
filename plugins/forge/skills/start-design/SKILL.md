@@ -12,6 +12,10 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 要件定義書から設計書を作成する。
 
+## Goal
+
+要件定義書をもとにコンテキスト収集・設計書執筆・レビュー+自動修正・commit・セッション削除・完了案内まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。

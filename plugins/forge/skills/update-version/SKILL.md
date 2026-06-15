@@ -37,6 +37,10 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 
 ---
 
+## Goal
+
+`version_file`・`sync_files`・`CHANGELOG` の更新から README 影響判定・テストまで、Step 1〜10 を完走すること。AskUserQuestion が必要な判断点以外はユーザー介入なしに継続する。
+
 ## ワークフロー
 
 ### Step 1: 設定ファイルの確認

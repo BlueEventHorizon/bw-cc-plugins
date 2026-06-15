@@ -20,6 +20,10 @@ argument-hint: "[feature-name] [--platform ios|macos]"
 
 > **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。本スキルは不要。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
 
+## Goal
+
+ASCII アートの画面仕様からデザイントークン・UI コンポーネント視覚仕様の作成・UX評価・文書化まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
