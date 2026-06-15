@@ -50,6 +50,10 @@ hooks:
 
 ---
 
+## Goal
+
+引数解析・対象検出・reviewer 起動・evaluator 吟味・介入軸に応じた修正または所見提示・終了サマリ出力まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。

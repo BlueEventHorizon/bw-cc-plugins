@@ -12,6 +12,10 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 設計書から実装戦略を策定し、タスクを抽出して計画書を作成または更新する。
 
+## Goal
+
+設計書からタスク抽出・YAML計画書作成・レビュー+自動修正・commit・セッション削除まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
