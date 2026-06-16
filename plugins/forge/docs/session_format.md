@@ -759,7 +759,7 @@ items:
 | スキル                       | 操作                                                                                                         | タイミング      |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------- |
 | `extract_review_findings.py` | Write（初期作成 — 全件 `pending`）                                                                           | reviewer 完了後 |
-| `evaluator`                  | Write → `eval_<種別>.json`（orchestrator が `merge_evals.py` で plan.yaml を一括更新）                       | 判定完了後      |
+| `evaluator`                  | Bash → `write_eval.py` → `eval_<種別>.json`（orchestrator が `merge_evals.py` で plan.yaml を一括更新）      | 判定完了後      |
 | `present-findings`           | Read / Write（ユーザー判断後に更新）                                                                         | 対話時          |
 | `fixer`                      | Write（`patch_result.json` に `patched_ids` + `files_modified` を記録。plan.yaml の `fixed` 遷移は行わない） | 修正実行後      |
 | `review`                     | Write（単独修正レビュー完了後に `fixed` + `fixed_at` + `files_modified` を反映）                             | 自動修正後      |

@@ -7,7 +7,7 @@ description: |
   レビュー指摘事項を精査し、修正・Issue 化・スキップ・要再検討のいずれかに方針判定する。
   /forge:review から呼び出される判定エンジン。
 argument-hint: "session_dir kind [flags]"
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Bash
 ---
 
 # /evaluator Skill
@@ -29,8 +29,8 @@ allowed-tools: Read, Write, Bash
 許可される動作:
 
 - session_dir 配下の review_\*.md / refs.yaml の Read
-- eval_<種別>.json および review_<種別>.md への Write（判定結果・整形済みレビューの書き出しのみ）
-- Bash（軽微なユーティリティ実行のみ）
+- `write_eval.py` (eval_<種別>.json) / `write_interpretation.py` (review_<種別>.md) への stdin 受け渡しによる成果物書き出し（Bash 経由。判定結果・整形済みレビューのみ。Write ツールでの直接書き出しは禁止）
+- Bash（上記書き出しスクリプトの実行・軽微なユーティリティ実行）
 
 ## 引数解釈
 
@@ -332,7 +332,7 @@ EOF
 
 #### 5-2: eval_<種別>.json の書き出し
 
-吟味結果を JSON に構造化し、`{session_dir}/eval_<種別>.json` に Write する。**plan.yaml には直接書き込まない** (並列 agent 出力契約パターン。DES-022)。
+吟味結果を JSON に構造化し、**`write_eval.py` に stdin で渡して** `{session_dir}/eval_<種別>.json` を書き出す (Write ツールでの直接書き出しは禁止)。スクリプトがスキーマ検証 (必須キー / enum / id 重複) を担い、フォーマット崩壊による後段 `merge_evals.py` のサイレント脱落を防ぐ (`write_interpretation.py` と対称、Issue #38)。**plan.yaml には直接書き込まない** (並列 agent 出力契約パターン。DES-022)。
 
 以下のルールで各項目の更新内容を決定する:
 
@@ -345,6 +345,9 @@ EOF
 
 `recommendation: skip` の判定時は、以下のカタログから該当値を選び `skip_reason` に記録する。
 present-findings での skip 理由分布の集計・分析を機械可読に扱うため、自由日本語ではなく enum 値で揃える。
+
+> **SSOT**: enum 値の正規定義は `plugins/forge/scripts/session/write_eval.py` の `VALID_SKIP_REASONS`。
+> 値を追加・変更する場合は必ず当該スクリプトを先に更新し、本テーブルをそれに合わせること。
 
 | `skip_reason` 値     | 意味                                 | 該当条件                                                                                                                        |
 | -------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -399,7 +402,23 @@ present-findings での skip 理由分布の集計・分析を機械可読に扱
 }
 ```
 
-Write 先: `{session_dir}/eval_<種別>.json`
+**必ず `write_eval.py` 経由で書き出す** (Write ツールでの直接編集は禁止)。上記 JSON を stdin で渡す:
+
+```bash
+cat <<'EOF' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_eval.py \
+  {session_dir} --kind {kind}
+{
+  "kind": "{kind}",
+  "updates": [ ... ]
+}
+EOF
+```
+
+スクリプトの動作:
+
+- スキーマ検証 (必須キー `id`/`priority`/`recommendation` / `priority` enum / `recommendation` 4 値 enum (`fix`/`skip`/`create_issue`/`needs_review`) / `recommendation: skip` 時 `skip_reason` enum / `recommendation: fix` 時 `auto_fixable` bool / `id` の updates 内一意性 / `reason` 必須条件) に成功した場合のみ `{session_dir}/eval_<種別>.json` に書き出す
+- 検証失敗時: 非ゼロ exit + stderr に違反一覧 JSON (`{"status": "error", "violations": [...]}`) を出力する。**evaluator は違反内容を修正して再実行する** (全違反を一度に収集して返すため、1 回の修正で全件解消できる)
+- 出力 (stdout): `{"status": "ok", "path": "...", "count": N}`
 
 > **plan.yaml の更新は orchestrator の責務**: evaluator 完了後、review orchestrator が `eval_<種別>.json` を収集し `merge_evals.py` を 1 回だけ呼び出す。`merge_evals.py` は (1) `recommendation: create_issue` を `should_continue` から除外し、(2) priority (P1/P2/P3) ベースで global id に変換して plan.yaml を一括更新する (旧 perspective ベース統合は廃止、DES-028 §4.3 関連スクリプト)。これにより並列書き込み競合が根本的に排除される。
 >
