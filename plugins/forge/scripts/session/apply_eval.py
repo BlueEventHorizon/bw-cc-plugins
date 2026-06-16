@@ -300,11 +300,14 @@ def apply_eval(session_dir, kind, data):
     # plan.yaml 更新用エントリに変換
     entries = [_build_entry(u) for u in sorted_updates]
 
+    all_entry_ids = [e["id"] for e in entries]
     updated_ids = []
     if entries:
         updated_ids = update_items_batch(items, entries)
         plan_data["items"] = items
         write_plan(session_dir, plan_data)
+
+    not_found_ids = sorted(set(all_entry_ids) - set(updated_ids))
 
     # 統計計算 (FNC-406: should_continue は recommendation=fix のみカウント)
     fix_count = sum(1 for u in updates if u.get("recommendation") == "fix")
@@ -323,6 +326,7 @@ def apply_eval(session_dir, kind, data):
 
     return {
         "updated": updated_ids,
+        "not_found_ids": not_found_ids,
         "fix_count": fix_count,
         "skip_count": skip_count,
         "needs_review_count": needs_review_count,
@@ -373,6 +377,18 @@ def main():
         violations = e.args[0] if e.args and isinstance(e.args[0], list) else [str(e)]
         _emit_error("eval JSON のスキーマ検証に失敗しました", violations=violations)
         sys.exit(1)
+
+    if result.get("not_found_ids"):
+        _warn = {
+            "status": "warning",
+            "message": (
+                f"plan.yaml に存在しない id: {result['not_found_ids']} "
+                "(evaluator の id が plan.yaml のグローバル ID と一致しません)"
+            ),
+            "not_found_ids": result["not_found_ids"],
+        }
+        json.dump(_warn, sys.stderr, ensure_ascii=False)
+        sys.stderr.write("\n")
 
     json.dump({"status": "ok", **result}, sys.stdout, ensure_ascii=False)
     print()

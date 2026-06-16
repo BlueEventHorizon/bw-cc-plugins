@@ -651,6 +651,36 @@ class TestApplyEvalCli(_FsTestCase):
         eval_files = list(self.session_dir.glob("eval_*.json"))
         self.assertEqual(eval_files, [])
 
+    def test_not_found_ids_empty_when_all_match(self):
+        """全 id が plan.yaml に存在する場合 not_found_ids は空。"""
+        self._write_plan()
+        payload = json.dumps({"updates": [_fix(1), _skip(2)]}, ensure_ascii=False)
+        result = self._run("code", payload)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+        self.assertEqual(output["not_found_ids"], [])
+
+    def test_not_found_ids_reported_for_missing_ids(self):
+        """plan.yaml に存在しない id が not_found_ids に含まれ、stderr に警告が出る。"""
+        self._write_plan()  # plan には id 1..6 のみ存在
+        payload = json.dumps({"updates": [_fix(1), _fix(99)]}, ensure_ascii=False)
+        result = self._run("code", payload)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+        self.assertEqual(output["not_found_ids"], [99])
+        # 警告が stderr に出ていること
+        warn = json.loads(result.stderr)
+        self.assertEqual(warn["status"], "warning")
+        self.assertIn(99, warn["not_found_ids"])
+
+    def test_not_found_ids_via_apply_eval_function(self):
+        """apply_eval 関数として呼んだ場合も not_found_ids が返る。"""
+        self._write_plan()
+        data = {"updates": [_fix(1), _fix(7), _fix(8)]}
+        result = apply_eval(self.session_dir, "code", data)
+        self.assertEqual(result["not_found_ids"], [7, 8])
+        self.assertIn(1, result["updated"])
+
 
 if __name__ == "__main__":
     unittest.main()
