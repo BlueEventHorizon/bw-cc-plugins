@@ -16,10 +16,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(
-    0,
-    str(Path(__file__).resolve().parents[4] / "plugins" / "forge" / "scripts"),
-)
+# tests/forge/scripts/session/ → repo root (4 levels up)
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
+sys.path.insert(0, str(_REPO_ROOT / "plugins" / "forge" / "scripts"))
 
 from session.write_eval import (  # noqa: E402
     VALID_SKIP_REASONS,
@@ -27,10 +27,7 @@ from session.write_eval import (  # noqa: E402
     write_eval,
 )
 
-SCRIPT = str(
-    Path(__file__).resolve().parents[4]
-    / "plugins" / "forge" / "scripts" / "session" / "write_eval.py"
-)
+SCRIPT = str(_REPO_ROOT / "plugins" / "forge" / "scripts" / "session" / "write_eval.py")
 
 
 def _fix(item_id, priority="P1", auto_fixable=True, **extra):
@@ -230,6 +227,65 @@ class TestValidateEval(unittest.TestCase):
         # id / priority / recommendation × 2 件分の複数違反が含まれる
         self.assertGreaterEqual(len(v), 4)
 
+    # --- recommendation/status 相関バリデーション ---
+
+    def test_skip_requires_status_skipped(self):
+        """recommendation=skip では status=skipped が必須。"""
+        v = validate_eval({"updates": [
+            {"id": 1, "priority": "P2", "recommendation": "skip",
+             "skip_reason": "out_of_scope", "reason": "x"},
+        ]}, "code")
+        self.assertTrue(any("status" in m for m in v))
+
+    def test_skip_rejects_wrong_status(self):
+        """recommendation=skip で status=pending は不正。"""
+        v = validate_eval({"updates": [
+            {"id": 1, "priority": "P2", "recommendation": "skip",
+             "skip_reason": "out_of_scope", "reason": "x", "status": "pending"},
+        ]}, "code")
+        self.assertTrue(any("skipped" in m for m in v))
+
+    def test_create_issue_status_pending_valid(self):
+        """recommendation=create_issue では status=pending が正常 (初期状態)。
+        present-findings が issue 作成後に skipped へ遷移させる (SKILL.md §5-2)。"""
+        self.assertEqual(validate_eval({"updates": [_create_issue(1)]}, "code"), [])
+
+    def test_create_issue_status_optional(self):
+        """recommendation=create_issue では status を省略できる (merge_evals が pending を補完)。"""
+        self.assertEqual(validate_eval({"updates": [
+            {"id": 1, "priority": "P1", "recommendation": "create_issue",
+             "reason": "FNC-406 3 条件成立"},
+        ]}, "code"), [])
+
+    def test_needs_review_requires_status_needs_review(self):
+        """recommendation=needs_review では status=needs_review が必須。"""
+        v = validate_eval({"updates": [
+            {"id": 1, "priority": "P2", "recommendation": "needs_review",
+             "reason": "観点 2 不成立"},
+        ]}, "code")
+        self.assertTrue(any("status" in m for m in v))
+
+    def test_needs_review_rejects_wrong_status(self):
+        """recommendation=needs_review で status=pending は不正。"""
+        v = validate_eval({"updates": [
+            {"id": 1, "priority": "P2", "recommendation": "needs_review",
+             "reason": "x", "status": "pending"},
+        ]}, "code")
+        self.assertTrue(any("needs_review" in m for m in v))
+
+    def test_fix_status_optional(self):
+        """recommendation=fix では status は任意 (省略可)。"""
+        self.assertEqual(validate_eval({"updates": [
+            {"id": 1, "priority": "P1", "recommendation": "fix", "auto_fixable": True},
+        ]}, "code"), [])
+
+    def test_fix_with_status_pending_valid(self):
+        """recommendation=fix で status=pending は正常。"""
+        self.assertEqual(validate_eval({"updates": [
+            {"id": 1, "priority": "P1", "recommendation": "fix",
+             "auto_fixable": True, "status": "pending"},
+        ]}, "code"), [])
+
 
 # ---------------------------------------------------------------------------
 # write_eval (書き出し) のテスト
@@ -280,11 +336,11 @@ class TestWriteEval(_FsTestCase):
         data = {"updates": [_fix(1)]}
         write_eval(str(self.session_dir), "plan", data)
         write_eval(str(self.session_dir), "plan", data)
-        first = (self.session_dir / "eval_plan.json").read_text(encoding="utf-8")
+        reference = (self.session_dir / "eval_plan.json").read_text(encoding="utf-8")
         write_eval(str(self.session_dir), "plan", data)
         self.assertEqual(
             (self.session_dir / "eval_plan.json").read_text(encoding="utf-8"),
-            first,
+            reference,
         )
 
     def test_no_tmp_files_left(self):

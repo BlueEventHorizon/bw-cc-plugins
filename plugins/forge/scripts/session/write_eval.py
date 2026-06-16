@@ -21,7 +21,12 @@ Usage:
           "priority": "P1|P2|P3",# 必須
           "recommendation":      # 必須。fix|skip|create_issue|needs_review
             "<value>",
-          "status": "<value>",   # 任意。pending|in_progress|fixed|skipped|needs_review
+          "status": "<value>",   # recommendation ごとに必須値が決まる:
+                                 #   fix          → 任意 (省略時 merge_evals が pending を補完)
+                                 #   skip         → "skipped" 必須
+                                 #   create_issue → 任意 (省略時 pending。present-findings が
+                                 #                  issue 作成後に skipped へ遷移)
+                                 #   needs_review → "needs_review" 必須
           "auto_fixable": bool,  # recommendation=fix のとき必須 (bool 型)
           "skip_reason": "<v>",  # recommendation=skip のとき必須 (enum)
           "reason": "<text>"     # skip/create_issue/needs_review と
@@ -56,8 +61,9 @@ from session.update_plan import (  # noqa: E402
 )
 from session.write_interpretation import KIND_CHOICES  # noqa: E402
 
-# skip_reason の値カタログ (evaluator SKILL.md §5-2 と一致)。
-# 現状コード側に SSOT がないため本スクリプトを正規定義箇所とする。
+# skip_reason の値カタログ。本スクリプトをコード側の SSOT とする。
+# 値を変更する場合は evaluator/SKILL.md §5-2 の skip_reason テーブルも同時に更新すること
+# (逆に SKILL.md を先に変更した場合も本スクリプトを必ず追従させること)。
 VALID_SKIP_REASONS = (
     "out_of_scope",
     "false_positive",
@@ -166,12 +172,38 @@ def _validate_recommendation_fields(update, recommendation, id_label):
     """recommendation 値に応じた条件付きフィールドを検証する。
 
     - fix          → auto_fixable 必須 (bool 型)。
-                     auto_fixable=false のとき reason 必須 (fixer の修正方針根拠)
-    - skip         → skip_reason 必須 (enum) / reason 必須
-    - create_issue → reason 必須 (FNC-406 3 条件成立根拠)
-    - needs_review → reason 必須 (観点 2/3 の不成立点)
+                     auto_fixable=false のとき reason 必須 (fixer の修正方針根拠)。
+                     status は任意 (省略時 merge_evals がデフォルト "pending" を補完)。
+    - skip         → skip_reason 必須 (enum) / reason 必須 / status="skipped" 必須
+    - create_issue → reason 必須 / status は任意 (省略時 pending。present-findings が
+                     issue 作成後に skipped へ遷移。SKILL.md §5-2 参照)
+    - needs_review → reason 必須 / status="needs_review" 必須
     """
     violations = []
+
+    # recommendation/status 相関チェック
+    # skip / needs_review は status の期待値が固定。省略すると merge_evals が "pending"
+    # にデフォルトし summarize_plan の終了条件判定が正しく動かない。
+    # create_issue は pending のまま (present-findings が遷移させる) なので除外。
+    _REQUIRED_STATUS = {
+        "skip": "skipped",
+        "needs_review": "needs_review",
+    }
+    if recommendation in _REQUIRED_STATUS:
+        expected_status = _REQUIRED_STATUS[recommendation]
+        actual_status = update.get("status")
+        if actual_status is None:
+            violations.append(
+                f"{id_label}: recommendation={recommendation} には "
+                f"'status: {expected_status}' が必須です (省略すると "
+                f"merge_evals が 'pending' にデフォルトし未処理扱いになります)"
+            )
+        elif actual_status != expected_status:
+            violations.append(
+                f"{id_label}: recommendation={recommendation} では "
+                f"'status' は {expected_status!r} である必要があります "
+                f"(実際: {actual_status!r})"
+            )
 
     if recommendation == "fix":
         auto_fixable = update.get("auto_fixable")

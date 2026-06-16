@@ -42,10 +42,6 @@ VALID_PRIORITIES = ("P1", "P2", "P3")
 # 優先度ソート用の重み (P1 が最優先)
 _PRIORITY_ORDER = {"P1": 0, "P2": 1, "P3": 2}
 
-# update_plan.VALID_RECOMMENDATIONS への create_issue 追加 (FNC-406 / DES-028 §4.3)。
-# TASK-038 と同期する idempotent な追加。
-VALID_RECOMMENDATIONS.add("create_issue")
-
 
 def collect_eval_files(session_dir):
     """session_dir 内の eval_*.json を収集する。

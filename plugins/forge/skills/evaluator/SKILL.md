@@ -346,6 +346,9 @@ EOF
 `recommendation: skip` の判定時は、以下のカタログから該当値を選び `skip_reason` に記録する。
 present-findings での skip 理由分布の集計・分析を機械可読に扱うため、自由日本語ではなく enum 値で揃える。
 
+> **SSOT**: enum 値の正規定義は `plugins/forge/scripts/session/write_eval.py` の `VALID_SKIP_REASONS`。
+> 値を追加・変更する場合は必ず当該スクリプトを先に更新し、本テーブルをそれに合わせること。
+
 | `skip_reason` 値     | 意味                                 | 該当条件                                                                                                                        |
 | -------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `out_of_scope`       | 介入フラグの severity フィルタ対象外 | `--auto` で `minor` / `--auto-critical` で `major` + `minor` (priority は絞り込まない)                                          |
