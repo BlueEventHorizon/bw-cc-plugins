@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""evaluator の判定結果 (eval_{kind}.json) をバリデーション付きで書き出す。
+"""evaluator の判定結果をバリデーション付きで plan.yaml に直接適用する。
 
-evaluator から呼ばれ、stdin で受け取った JSON テキストをスキーマ検証してから
-`{session_dir}/eval_{kind}.json` に書き出す。AI 直接 Write のフォーマット崩壊
-(必須キー抜け / enum 違反 / id 重複) を防ぎ、後段 merge_evals.py のサイレント
-脱落リスクを下げる。`write_interpretation.py` と対称的な設計とする (Issue #38)。
+write_eval.py（検証）と merge_evals.py（plan.yaml 更新・統計計算）を統合し、
+中間ファイル eval_{kind}.json を不要にする。
+
+evaluator から呼ばれ、stdin で受け取った JSON テキストを:
+1. スキーマ検証（必須キー / enum 違反 / id 重複 / recommendation↔status 相関）
+2. priority 順ソート (P1→P2→P3、同一 priority 内は id 昇順)
+3. plan.yaml への一括更新
+4. 統計計算（fix_count / should_continue 等）
 
 Usage:
-    echo '<json>' | python3 write_eval.py <session_dir> --kind <value>
+    echo '<json>' | python3 apply_eval.py <session_dir> --kind <value>
 
 `--kind` の値域 (write_interpretation.py KIND_CHOICES と一致):
     code / design / requirement / plan / uxui / generic
@@ -22,10 +26,9 @@ Usage:
           "recommendation":      # 必須。fix|skip|create_issue|needs_review
             "<value>",
           "status": "<value>",   # recommendation ごとに必須値が決まる:
-                                 #   fix          → 任意 (省略時 merge_evals が pending を補完)
+                                 #   fix          → 任意 (省略時 pending)
                                  #   skip         → "skipped" 必須
-                                 #   create_issue → 任意 (省略時 pending。present-findings が
-                                 #                  issue 作成後に skipped へ遷移)
+                                 #   create_issue → 任意 (省略時 pending)
                                  #   needs_review → "needs_review" 必須
           "auto_fixable": bool,  # recommendation=fix のとき必須 (bool 型)
           "skip_reason": "<v>",  # recommendation=skip のとき必須 (enum)
@@ -37,11 +40,12 @@ Usage:
 バリデーション失敗時:
     非ゼロ exit。stderr に違反内容 JSON を出力する
     {"status": "error", "error": "...", "violations": [...]}
-    (evaluator が全違反を一度に修正して再試行できるよう、最初の 1 件で
-     打ち切らず全違反を収集して返す)
+    (evaluator が全違反を一度に修正して再試行できるよう、全違反を収集して返す)
 
 出力 (stdout JSON):
-    {"status": "ok", "path": ".../eval_{kind}.json", "count": N}
+    {"status": "ok", "updated": [...], "fix_count": N, "skip_count": N,
+     "needs_review_count": N, "create_issue_count": N,
+     "should_continue": true/false, "not_auto_fixable": [...]}
 """
 
 import argparse
@@ -53,23 +57,27 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from session.store import SessionStore  # noqa: E402
-from session.merge_evals import VALID_PRIORITIES  # noqa: E402
 from session.update_plan import (  # noqa: E402
+    VALID_PRIORITIES,
     VALID_RECOMMENDATIONS,
     VALID_STATUSES,
+    read_plan,
+    update_items_batch,
+    write_plan,
 )
 from session.write_interpretation import KIND_CHOICES  # noqa: E402
 
 # skip_reason の値カタログ。本スクリプトをコード側の SSOT とする。
-# 値を変更する場合は evaluator/SKILL.md §5-2 の skip_reason テーブルも同時に更新すること
-# (逆に SKILL.md を先に変更した場合も本スクリプトを必ず追従させること)。
+# 値を変更する場合は evaluator/SKILL.md §5-2 の skip_reason テーブルも同時に更新すること。
 VALID_SKIP_REASONS = (
     "out_of_scope",
     "false_positive",
     "intentional_design",
     "already_addressed",
 )
+
+# priority ソート用の重み (P1 が最優先)
+_PRIORITY_ORDER = {"P1": 0, "P2": 1, "P3": 2}
 
 
 def validate_eval(data, kind):
@@ -90,8 +98,6 @@ def validate_eval(data, kind):
     if not isinstance(data, dict):
         return [f"トップレベルは object である必要があります (実際: {type(data).__name__})"]
 
-    # kind 整合 (存在する場合のみ。merge_evals は kind を使わないが
-    # 取り違え検出のため --kind と一致を要求する)
     json_kind = data.get("kind")
     if json_kind is not None and json_kind != kind:
         violations.append(
@@ -173,18 +179,14 @@ def _validate_recommendation_fields(update, recommendation, id_label):
 
     - fix          → auto_fixable 必須 (bool 型)。
                      auto_fixable=false のとき reason 必須 (fixer の修正方針根拠)。
-                     status は任意 (省略時 merge_evals がデフォルト "pending" を補完)。
+                     status は任意 (省略時 pending)。
     - skip         → skip_reason 必須 (enum) / reason 必須 / status="skipped" 必須
-    - create_issue → reason 必須 / status は任意 (省略時 pending。present-findings が
-                     issue 作成後に skipped へ遷移。SKILL.md §5-2 参照)
+    - create_issue → reason 必須 / status は任意 (省略時 pending)
     - needs_review → reason 必須 / status="needs_review" 必須
     """
     violations = []
 
     # recommendation/status 相関チェック
-    # skip / needs_review は status の期待値が固定。省略すると merge_evals が "pending"
-    # にデフォルトし summarize_plan の終了条件判定が正しく動かない。
-    # create_issue は pending のまま (present-findings が遷移させる) なので除外。
     _REQUIRED_STATUS = {
         "skip": "skipped",
         "needs_review": "needs_review",
@@ -196,7 +198,7 @@ def _validate_recommendation_fields(update, recommendation, id_label):
             violations.append(
                 f"{id_label}: recommendation={recommendation} には "
                 f"'status: {expected_status}' が必須です (省略すると "
-                f"merge_evals が 'pending' にデフォルトし未処理扱いになります)"
+                f"'pending' にデフォルトし未処理扱いになります)"
             )
         elif actual_status != expected_status:
             violations.append(
@@ -249,8 +251,22 @@ def _has_text(value):
     return isinstance(value, str) and value.strip() != ""
 
 
-def write_eval(session_dir, kind, data):
-    """eval_{kind}.json を検証付きで書き出す。
+def _build_entry(update):
+    """eval の update 1件を plan.yaml 更新用エントリに変換する。
+
+    status 省略時は "pending" をデフォルトとして補完する。
+    """
+    entry = {"id": update["id"], "status": update.get("status", "pending")}
+    if "priority" in update:
+        entry["priority"] = update["priority"]
+    for key in ("recommendation", "auto_fixable", "skip_reason", "reason"):
+        if key in update:
+            entry[key] = update[key]
+    return entry
+
+
+def apply_eval(session_dir, kind, data):
+    """eval JSON を検証し plan.yaml を直接更新する。
 
     Args:
         session_dir: セッションディレクトリパス
@@ -258,27 +274,66 @@ def write_eval(session_dir, kind, data):
         data: パース済み JSON
 
     Returns:
-        dict: {"path", "count"}
+        dict: {"updated": [...], "fix_count": N, "skip_count": N,
+               "needs_review_count": N, "create_issue_count": N,
+               "should_continue": bool, "not_auto_fixable": [...]}
 
     Raises:
         ValueError: スキーマ検証に失敗 (args に違反リストを格納)
+        FileNotFoundError: plan.yaml が存在しない
     """
     violations = validate_eval(data, kind)
     if violations:
         raise ValueError(violations)
 
-    # 出力には正規の kind を必ず含める (入力に kind がなくても補完)
-    payload = {"kind": kind, "updates": data["updates"]}
-    content = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+    plan_data = read_plan(session_dir)
+    items = plan_data.get("items", [])
 
-    target_name = f"eval_{kind}.json"
-    target = SessionStore(session_dir).write_text(target_name, content)
+    updates = data["updates"]
 
-    return {"path": str(target), "count": len(data["updates"])}
+    # priority 順 (P1→P2→P3) でソート。同一 priority 内は id 昇順
+    sorted_updates = sorted(
+        updates,
+        key=lambda u: (_PRIORITY_ORDER[u["priority"]], u["id"]),
+    )
+
+    # plan.yaml 更新用エントリに変換
+    entries = [_build_entry(u) for u in sorted_updates]
+
+    updated_ids = []
+    if entries:
+        updated_ids = update_items_batch(items, entries)
+        plan_data["items"] = items
+        write_plan(session_dir, plan_data)
+
+    # 統計計算 (FNC-406: should_continue は recommendation=fix のみカウント)
+    fix_count = sum(1 for u in updates if u.get("recommendation") == "fix")
+    skip_count = sum(1 for u in updates if u.get("recommendation") == "skip")
+    needs_review_count = sum(1 for u in updates if u.get("recommendation") == "needs_review")
+    create_issue_count = sum(1 for u in updates if u.get("recommendation") == "create_issue")
+    # should_continue: recommendation=fix が 1 件以上ある場合のみ true。
+    # create_issue / skip / needs_review は fixer の対象外 (FNC-406)。
+    should_continue = fix_count > 0
+
+    not_auto_fixable = sorted(
+        u["id"]
+        for u in updates
+        if u.get("recommendation") == "fix" and u.get("auto_fixable") is False
+    )
+
+    return {
+        "updated": updated_ids,
+        "fix_count": fix_count,
+        "skip_count": skip_count,
+        "needs_review_count": needs_review_count,
+        "create_issue_count": create_issue_count,
+        "should_continue": should_continue,
+        "not_auto_fixable": not_auto_fixable,
+    }
 
 
 def _emit_error(error, **extra):
-    """エラー JSON を stderr に出力する (merge_evals.py / write_interpretation.py と統一)。"""
+    """エラー JSON を stderr に出力する。"""
     payload = {"status": "error", "error": error}
     payload.update(extra)
     json.dump(payload, sys.stderr, ensure_ascii=False)
@@ -287,7 +342,7 @@ def _emit_error(error, **extra):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="evaluator の判定結果 (eval_{kind}.json) を検証付きで書き出す"
+        description="evaluator の判定結果を検証付きで plan.yaml に直接適用する"
     )
     parser.add_argument("session_dir", help="セッションディレクトリパス")
     parser.add_argument(
@@ -310,7 +365,10 @@ def main():
         sys.exit(1)
 
     try:
-        result = write_eval(args.session_dir, args.kind, data)
+        result = apply_eval(args.session_dir, args.kind, data)
+    except FileNotFoundError as e:
+        _emit_error(str(e))
+        sys.exit(1)
     except ValueError as e:
         violations = e.args[0] if e.args and isinstance(e.args[0], list) else [str(e)]
         _emit_error("eval JSON のスキーマ検証に失敗しました", violations=violations)

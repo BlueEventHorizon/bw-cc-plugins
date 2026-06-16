@@ -29,7 +29,7 @@ allowed-tools: Read, Bash
 許可される動作:
 
 - session_dir 配下の review_\*.md / refs.yaml の Read
-- `write_eval.py` (eval_<種別>.json) / `write_interpretation.py` (review_<種別>.md) への stdin 受け渡しによる成果物書き出し（Bash 経由。判定結果・整形済みレビューのみ。Write ツールでの直接書き出しは禁止）
+- `apply_eval.py` (plan.yaml 直接更新) / `write_interpretation.py` (review_<種別>.md) への stdin 受け渡しによる成果物書き出し（Bash 経由。判定結果・整形済みレビューのみ。Write ツールでの直接書き出しは禁止）
 - Bash（上記書き出しスクリプトの実行・軽微なユーティリティ実行）
 
 ## 引数解釈
@@ -45,7 +45,7 @@ allowed-tools: Read, Bash
 
 reviewer が出力した `review_<種別>.md` の finding を吟味し、`recommendation` を判定する AI 専用 Skill。
 
-種別 (`code` / `design` / `requirement` / `plan` / `uxui` / `generic`) ごとに 1 体だけ起動され、担当の `review_<種別>.md` の指摘を **5 観点 × P1/P2/P3 の直交評価** で精査する。全モードで AI 推奨 (`recommendation`) を `eval_<種別>.json` に書き出し、orchestrator が `merge_evals.py` 経由で `plan.yaml` に一括反映する。`--interactive` モードでは後段の `/forge:present-findings` が人間の最終判断で `plan.yaml` を上書き更新する。
+種別 (`code` / `design` / `requirement` / `plan` / `uxui` / `generic`) ごとに 1 体だけ起動され、担当の `review_<種別>.md` の指摘を **5 観点 × P1/P2/P3 の直交評価** で精査する。全モードで AI 推奨 (`recommendation`) を `apply_eval.py` 経由で plan.yaml に直接一括反映する。`--interactive` モードでは後段の `/forge:present-findings` (Skill ツールで起動) が人間の最終判断で `plan.yaml` を上書き更新する。
 
 ---
 
@@ -328,11 +328,11 @@ EOF
 - 項目を新設 / 削除 / 結合してはならない。原文の全項目を保持し、Issue 化判断は `📌 Issue 化` セクションへ、却下判断は `❌ 却下` セクションへ **移動するだけ**
 
 **なぜ重要か:**
-`merge_evals.py` は `eval_<種別>.json` の local_id を `plan.yaml` 上の項目順 (= reviewer 原文の出現順) と突き合わせてグローバル ID に変換する (priority ベースのソート: P1 → P2 → P3、同一 priority 内は id 昇順)。evaluator が `review_<種別>.md` 内の項目順序を変えると、**reviewer が検出した順序と evaluator が判定した順序の対応関係が崩れ**、`plan.yaml` の判定結果が別項目に誤マッピングされる。
+`apply_eval.py` は eval JSON の `id` を `plan.yaml` 上のグローバル ID と突き合わせて更新する (priority ベースのソート: P1 → P2 → P3、同一 priority 内は id 昇順)。evaluator が `review_<種別>.md` 内の項目順序を変えると、**reviewer が検出した順序と evaluator が判定した順序の対応関係が崩れ**、`plan.yaml` の判定結果が別項目に誤マッピングされる。
 
-#### 5-2: eval_<種別>.json の書き出し
+#### 5-2: plan.yaml への直接適用
 
-吟味結果を JSON に構造化し、**`write_eval.py` に stdin で渡して** `{session_dir}/eval_<種別>.json` を書き出す (Write ツールでの直接書き出しは禁止)。スクリプトがスキーマ検証 (必須キー / enum / id 重複) を担い、フォーマット崩壊による後段 `merge_evals.py` のサイレント脱落を防ぐ (`write_interpretation.py` と対称、Issue #38)。**plan.yaml には直接書き込まない** (並列 agent 出力契約パターン。DES-022)。
+吟味結果を JSON に構造化し、**`apply_eval.py` に stdin で渡して** plan.yaml を直接更新する (Write ツールでの直接書き出しは禁止)。スクリプトがスキーマ検証 (必須キー / enum / id 重複 / recommendation↔status 相関) + priority ソート + plan.yaml 一括更新を 1 ステップで完結させる (Issue #103 / `write_interpretation.py` と対称)。
 
 以下のルールで各項目の更新内容を決定する:
 
@@ -346,7 +346,7 @@ EOF
 `recommendation: skip` の判定時は、以下のカタログから該当値を選び `skip_reason` に記録する。
 present-findings での skip 理由分布の集計・分析を機械可読に扱うため、自由日本語ではなく enum 値で揃える。
 
-> **SSOT**: enum 値の正規定義は `plugins/forge/scripts/session/write_eval.py` の `VALID_SKIP_REASONS`。
+> **SSOT**: enum 値の正規定義は `plugins/forge/scripts/session/apply_eval.py` の `VALID_SKIP_REASONS`。
 > 値を追加・変更する場合は必ず当該スクリプトを先に更新し、本テーブルをそれに合わせること。
 
 | `skip_reason` 値     | 意味                                 | 該当条件                                                                                                                        |
@@ -362,7 +362,7 @@ present-findings での skip 理由分布の集計・分析を機械可読に扱
 
 ##### 結果ファイルのフォーマット
 
-各 update は `priority` (P1/P2/P3) を **必須** で含む (merge_evals.py が priority ベースで global id に変換するため):
+各 update は `priority` (P1/P2/P3) を **必須** で含む (apply_eval.py が priority ベースでソートして plan.yaml を更新するため):
 
 ```json
 {
@@ -402,10 +402,10 @@ present-findings での skip 理由分布の集計・分析を機械可読に扱
 }
 ```
 
-**必ず `write_eval.py` 経由で書き出す** (Write ツールでの直接編集は禁止)。上記 JSON を stdin で渡す:
+**必ず `apply_eval.py` 経由で plan.yaml に直接適用する** (Write ツールでの直接編集・`eval_{kind}.json` への書き出しは禁止)。上記 JSON を stdin で渡す:
 
 ```bash
-cat <<'EOF' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/write_eval.py \
+cat <<'EOF' | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/apply_eval.py \
   {session_dir} --kind {kind}
 {
   "kind": "{kind}",
@@ -416,13 +416,13 @@ EOF
 
 スクリプトの動作:
 
-- スキーマ検証 (必須キー `id`/`priority`/`recommendation` / `priority` enum / `recommendation` 4 値 enum (`fix`/`skip`/`create_issue`/`needs_review`) / `recommendation: skip` 時 `skip_reason` enum / `recommendation: fix` 時 `auto_fixable` bool / `id` の updates 内一意性 / `reason` 必須条件) に成功した場合のみ `{session_dir}/eval_<種別>.json` に書き出す
+- スキーマ検証 (必須キー `id`/`priority`/`recommendation` / `priority` enum / `recommendation` 4 値 enum (`fix`/`skip`/`create_issue`/`needs_review`) / `recommendation: skip` 時 `skip_reason` enum / `recommendation: fix` 時 `auto_fixable` bool / `id` の updates 内一意性 / `reason` 必須条件 / `recommendation↔status` 相関) に成功した場合のみ plan.yaml を一括更新する
 - 検証失敗時: 非ゼロ exit + stderr に違反一覧 JSON (`{"status": "error", "violations": [...]}`) を出力する。**evaluator は違反内容を修正して再実行する** (全違反を一度に収集して返すため、1 回の修正で全件解消できる)
-- 出力 (stdout): `{"status": "ok", "path": "...", "count": N}`
+- 出力 (stdout): `{"status": "ok", "updated": [...], "fix_count": N, "skip_count": N, "needs_review_count": N, "create_issue_count": N, "should_continue": true/false, "not_auto_fixable": [...]}`
 
-> **plan.yaml の更新は orchestrator の責務**: evaluator 完了後、review orchestrator が `eval_<種別>.json` を収集し `merge_evals.py` を 1 回だけ呼び出す。`merge_evals.py` は (1) `recommendation: create_issue` を `should_continue` から除外し、(2) priority (P1/P2/P3) ベースで global id に変換して plan.yaml を一括更新する (旧 perspective ベース統合は廃止、DES-028 §4.3 関連スクリプト)。これにより並列書き込み競合が根本的に排除される。
+> **plan.yaml の更新は evaluator の責務**: `apply_eval.py` が検証・priority ソート・plan.yaml 一括更新・統計計算を 1 ステップで完結させる。中間ファイル `eval_{kind}.json` は廃止 (Issue #103)。
 >
-> **interactive モードの場合**: orchestrator が plan.yaml を更新した後、present-findings がユーザーの最終判断で上書き更新する (TASK-021 で `create_issue` 選択肢も提示)。
+> **interactive モードの場合**: orchestrator が plan.yaml を確認した後、present-findings がユーザーの最終判断で上書き更新する (TASK-021 で `create_issue` 選択肢も提示)。
 
 ### Step 6: 次サイクル判定
 
@@ -431,7 +431,7 @@ EOF
 - `recommendation: fix` が 0 件 → `should_continue: false` (修正不要)
 - `recommendation: fix` が 1 件以上 → `should_continue: true` (fixer を呼び出す)
 
-`recommendation: create_issue` / `skip` / `needs_review` は **fixer の対象外** であり `should_continue` の対象から除外する (FNC-406 / DES-028 §4.3 関連スクリプト merge_evals.py)。
+`recommendation: create_issue` / `skip` / `needs_review` は **fixer の対象外** であり `should_continue` の対象から除外する (FNC-406 / DES-028 §4.3)。
 
 > **interactive モードの場合**: `should_continue: true` でも、review オーケストレーターは fixer を直接呼び出さず present-findings を経由する。present-findings がユーザーの判断 (修正する / Issue 化する / スキップする) に基づき fixer / `/anvil:create-issue` を制御する。
 
@@ -444,7 +444,7 @@ EOF
 ```
 ## 吟味結果 (種別: {kind})
 
-結果ファイル: {session_dir}/eval_<種別>.json
+plan.yaml 更新: {session_dir}/plan.yaml (apply_eval.py 経由)
 
 ### 修正する (fix) — X 件
 1. **[問題名]** (priority: P1 / severity: critical)
@@ -480,4 +480,4 @@ EOF
 | `review_<種別>.md` が空 / 読めない                  | `should_continue: false` で呼び出し元に返す                                         |
 | `review_packet.ssot_refs[]` の doc_path が読めない  | severity 委譲経路が壊れているため呼び出し元にエラーを返す                           |
 | 参考文書が読めない                                  | 参考文書なしで吟味を続行し、その旨を記録する                                        |
-| 判定困難な指摘が多数                                | 「要確認 (needs_review)」として全件を `eval_<種別>.json` に書き込み呼び出し元に返す |
+| 判定困難な指摘が多数                                | 「要確認 (needs_review)」として全件を `apply_eval.py` で plan.yaml に書き込み呼び出し元に返す |
