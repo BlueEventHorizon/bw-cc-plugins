@@ -476,7 +476,7 @@ args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
 evaluator は以下を必ず実行する:
 
 1. `review_<種別>.md` を Read し、findings を 5 観点で精査
-2. `eval_<種別>.json` に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue` / `needs_review` の 4 値、DES-028 §4.3 / Issue #99) を Write
+2. `write_eval.py` 経由で `eval_<種別>.json` に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue` / `needs_review` の 4 値、DES-028 §4.3 / Issue #99) を書き出す (Write ツール直接書き出し禁止)
 3. `write_interpretation.py` 経由で `review_<種別>.md` を全面書き換え (整形済み)
    - 原文は `review_<種別>.raw.md` に自動バックアップされる
 

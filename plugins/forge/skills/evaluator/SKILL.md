@@ -7,7 +7,7 @@ description: |
   レビュー指摘事項を精査し、修正・Issue 化・スキップ・要再検討のいずれかに方針判定する。
   /forge:review から呼び出される判定エンジン。
 argument-hint: "session_dir kind [flags]"
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Bash
 ---
 
 # /evaluator Skill
