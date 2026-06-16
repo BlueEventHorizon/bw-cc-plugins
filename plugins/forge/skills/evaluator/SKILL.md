@@ -316,7 +316,7 @@ EOF
 - 推測・曖昧表現を避け、Read した事実のみを記述する
 - フォーマットは reviewer の `templates/review.md` 互換を維持する
 
-#### 5-1.1: ローカル ID 順序の保持 [MANDATORY]
+#### 5-1.1: ID 順序の保持 [MANDATORY]
 
 `apply_eval.py` に渡す `updates[].id` は **plan.yaml のグローバル ID** である。reviewer 1 起動原則 (FNC-412) により reviewer が連番割り当てした id は plan.yaml のグローバル ID と一致するため、evaluator は id を変換せずそのまま使用する。`review_<種別>.md` を書き換える際、**原文の出現順を保持する責務** が evaluator にある。
 
@@ -418,7 +418,9 @@ EOF
 
 - スキーマ検証 (必須キー `id`/`priority`/`recommendation` / `priority` enum / `recommendation` 4 値 enum (`fix`/`skip`/`create_issue`/`needs_review`) / `recommendation: skip` 時 `skip_reason` enum / `recommendation: fix` 時 `auto_fixable` bool / `id` の updates 内一意性 / `reason` 必須条件 / `recommendation↔status` 相関) に成功した場合のみ plan.yaml を一括更新する
 - 検証失敗時: 非ゼロ exit + stderr に違反一覧 JSON (`{"status": "error", "violations": [...]}`) を出力する。**evaluator は違反内容を修正して再実行する** (全違反を一度に収集して返すため、1 回の修正で全件解消できる)
-- 出力 (stdout): `{"status": "ok", "updated": [...], "fix_count": N, "skip_count": N, "needs_review_count": N, "create_issue_count": N, "should_continue": true/false, "not_auto_fixable": [...]}`
+- 出力 (stdout): `{"status": "ok", "updated": [...], "not_found_ids": [...], "fix_count": N, "skip_count": N, "needs_review_count": N, "create_issue_count": N, "should_continue": true/false, "not_auto_fixable": [...]}`
+- **`not_found_ids` が非空の場合は必ずエラー扱いとし、Step 6 に進まない**。`not_found_ids` 非空 = evaluator が渡した id が plan.yaml に存在しない = plan.yaml の items と id がずれている。`plan.yaml` の `items[].id` を Read して送った id と突き合わせ、正しい id に修正して `apply_eval.py` を再実行する。
+  - 警告は stderr にも `{"status": "warning", "not_found_ids": [...]}` として出力されるが、**stdout の `not_found_ids` を確認すること**（returncode は 0 のため exit code だけでは検知できない）
 
 > **plan.yaml の更新は evaluator の責務**: `apply_eval.py` が検証・priority ソート・plan.yaml 一括更新・統計計算を 1 ステップで完結させる。中間ファイル `eval_{kind}.json` は廃止 (Issue #103)。
 >
