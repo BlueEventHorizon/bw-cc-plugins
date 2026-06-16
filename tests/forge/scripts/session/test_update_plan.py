@@ -199,8 +199,8 @@ class TestUpdateItemsBatch(unittest.TestCase):
                 {"id": 2, "status": "pending", "recommendation": "fix"},
                 {"id": 1, "status": "skipped", "recommendation": "skip"},  # 重複
             ])
-        # エラーメッセージに merge_evals.py への誘導が含まれていることを確認
-        self.assertIn("merge_evals.py", str(ctx.exception))
+        # エラーメッセージに apply_eval.py への誘導が含まれていることを確認
+        self.assertIn("apply_eval.py", str(ctx.exception))
 
     def test_duplicate_id_does_not_partially_update(self):
         """重複検出時は部分更新が残らない（事前チェック方式の保証）。"""
@@ -446,7 +446,7 @@ class TestCLI(_FsTestCase):
         self.assertEqual(proc.returncode, 1)
         err = json.loads(proc.stderr)
         self.assertEqual(err["status"], "error")
-        self.assertIn("merge_evals.py", err["error"])
+        self.assertIn("apply_eval.py", err["error"])
 
     def test_batch_update_with_recommendation(self):
         self._write_plan(_sample_items())

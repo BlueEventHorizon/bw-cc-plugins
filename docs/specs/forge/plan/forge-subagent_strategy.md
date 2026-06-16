@@ -128,7 +128,7 @@ argument-hint を `"session_dir kind engine [flags]"` に変更。
 reviewer と同様。差異:
 
 - frontmatter `argument-hint: "session_dir kind [flags]"` (engine 引数なし)
-- Role 制約の「許可される動作」は evaluator の責務（eval_<種別>.json 書き出し）に対応させる
+- Role 制約の「許可される動作」は evaluator の責務（`apply_eval.py` 経由の plan.yaml 直接更新）に対応させる
 
 #### 1-D: fixer/SKILL.md に fork 安全機能を全適用
 
