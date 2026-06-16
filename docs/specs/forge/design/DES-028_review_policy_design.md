@@ -529,7 +529,7 @@ observation 軸 (P1/P2/P3) と精査軸 (5 観点) は **直交**。同一 findi
 | スクリプト                                | 規定内容                                                                                                                                                                                                                                                          |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scripts/session/write_interpretation.py` | 出力ファイル名規約 (`review_<種別>.md`) に対応。f-string テンプレート `f"review_{kind}.md"`、CLI 引数 `--kind` (値域: `code` / `design` / `requirement` / `plan` / `uxui` / `generic`)。冪等な全面書き換え + `.raw.md` バックアップ機構 (DES-022 出力契約) は温存 |
-| `scripts/session/merge_evals.py`          | `recommendation: create_issue` 行を `should_continue` 計算から除外する。priority (P1/P2/P3) ベースのマッピングで global_id ↔ local_id マッピングを引き直す (reviewer 1 起動原則により同一 global_id に対する複数 perspective 判定の統合ロジックは不要)            |
+| `scripts/session/apply_eval.py`           | `recommendation: create_issue` 行を `should_continue` 計算から除外する。検証・priority (P1/P2/P3) ソート・plan.yaml 一括更新・統計計算を 1 ステップで完結させる (Issue #103: 中間ファイル `eval_{kind}.json` 廃止)                                               |
 
 ### 4.4 `plugins/forge/skills/present-findings/SKILL.md`
 
@@ -650,7 +650,7 @@ observation 軸 (P1/P2/P3) と精査軸 (5 観点) は **直交**。同一 findi
 | `plugins/forge/skills/review/scripts/init_session.py`             | script        | §4.1 関連                                                                                                                                                                                 |
 | `plugins/forge/scripts/review/findings_parser.py`                 | script        | priority タグ抽出                                                                                                                                                                         |
 | `plugins/forge/scripts/review/findings_renderer.py`               | script        | priority セクション見出し描画                                                                                                                                                             |
-| `plugins/forge/scripts/session/merge_evals.py`                    | script        | `create_issue` を should_continue から除外。priority ベース統合 (§4.3 関連スクリプト)                                                                                                     |
+| `plugins/forge/scripts/session/apply_eval.py`                     | script        | `create_issue` を should_continue から除外。検証・priority ソート・plan.yaml 直接更新 (§4.3 関連スクリプト / Issue #103)                                                                   |
 | `plugins/forge/scripts/session/summarize_plan.py`                 | script        | `recommendation: create_issue` の件数を集計し、`by_status` から旧 `create_issue` キーを削除 (Issue #99: status enum に `create_issue` は存在しない、`update_plan.py` VALID_STATUSES 整合) |
 | `plugins/forge/scripts/session/write_interpretation.py`           | script        | f-string テンプレと CLI 引数を種別名対応 (§4.3 関連スクリプト)                                                                                                                            |
 | `plugins/forge/scripts/session/write_refs.py`                     | script        | refs.yaml のスキーマ (review_packet) に対応 (§4.1 関連スクリプト / §2.3)                                                                                                                  |
@@ -683,7 +683,7 @@ observation 軸 (P1/P2/P3) と精査軸 (5 観点) は **直交**。同一 findi
 | init_session.py           | `--files` が `session_manager.py init` に透過される (`--section` 受理経路が無いこと)。`files` の session.yaml 保存自体は `test_session_manager.py` が検証 (#100)                         |
 | findings_parser.py        | `priority: P1\|P2\|P3` 行を含むレビュー出力をパースし、priority と severity を独立に抽出                                                                                                 |
 | findings_renderer.py      | review.md / plan.yaml に severity 別 + priority 別の二軸ソートが反映                                                                                                                     |
-| merge_evals.py            | `recommendation: create_issue` が `should_continue` の対象外になる                                                                                                                       |
+| apply_eval.py             | `recommendation: create_issue` が `should_continue` の対象外になる (FNC-406)                                                                                                             |
 | summarize_plan.py         | `recommendation: create_issue` の件数が `create_issue` キーに集計され、Issue 化済み (`status: skipped + recommendation: create_issue`) は `unprocessed_total` から除外される (Issue #99) |
 
 ### 7.2 統合テスト対象

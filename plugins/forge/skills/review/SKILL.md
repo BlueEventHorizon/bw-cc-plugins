@@ -50,6 +50,10 @@ hooks:
 
 ---
 
+## Goal
+
+引数解析・対象検出・reviewer 起動・evaluator 吟味・介入軸に応じた修正または所見提示・終了サマリ出力まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
@@ -472,7 +476,7 @@ args: "{session_dir} {review_type} [--interactive|--auto-critical|--auto]"
 evaluator は以下を必ず実行する:
 
 1. `review_<種別>.md` を Read し、findings を 5 観点で精査
-2. `eval_<種別>.json` に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue` / `needs_review` の 4 値、DES-028 §4.3 / Issue #99) を Write
+2. `apply_eval.py` 経由で plan.yaml に判定メタ情報 (recommendation: `fix` / `skip` / `create_issue` / `needs_review` の 4 値、DES-028 §4.3 / Issue #99 #103) を直接更新する (Write ツール直接書き出し禁止)
 3. `write_interpretation.py` 経由で `review_<種別>.md` を全面書き換え (整形済み)
    - 原文は `review_<種別>.raw.md` に自動バックアップされる
 
@@ -481,10 +485,9 @@ evaluator は以下を必ず実行する:
 ```bash
 # 統合 review.md を evaluator 整形済み内容で再生成 (plan.yaml は書き換えない)
 python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --review-only
-
-# evaluator 判定を plan.yaml にマージ (priority ベース)
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/merge_evals.py {session_dir}
 ```
+
+> evaluator が `apply_eval.py` 経由で plan.yaml を直接更新済み (Issue #103)。orchestrator は plan.yaml を再読して FNC-413 判定に進む。
 
 ### Step 2: 介入軸ごとの処理
 

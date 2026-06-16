@@ -12,6 +12,10 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestio
 
 計画書（`{feature}_plan.yaml`）からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を実行する。
 
+## Goal
+
+計画書から選択したタスクの実装・AIレビュー・計画書更新・完了処理（セッション削除・完了案内）まで完走すること。
+
 ## フロー継続 [MANDATORY]
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。

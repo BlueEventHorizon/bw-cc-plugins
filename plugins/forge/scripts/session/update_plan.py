@@ -34,6 +34,8 @@ VALID_STATUSES = {"pending", "in_progress", "fixed", "skipped", "needs_review"}
 # fix / skip / create_issue / needs_review。create_issue は FNC-406 の 3 条件
 # (該当規定なし / 再発性または客観性 / 明文化可能粒度) を満たす場合に付与する。
 VALID_RECOMMENDATIONS = {"fix", "skip", "create_issue", "needs_review"}
+# review_priorities_spec.md / DES-028 で定義された優先度値域
+VALID_PRIORITIES = ("P1", "P2", "P3")
 
 # plan.yaml items のフィールド出力順序
 ITEM_FIELD_ORDER = [
@@ -135,7 +137,7 @@ def update_items_batch(items, updates_list):
             raise ValueError(
                 f"id={uid} が updates 配列内で重複しています。"
                 f"perspective ローカル ID をそのまま渡していませんか？ "
-                f"evaluator 結果のマージは merge_evals.py を経由してください。"
+                f"evaluator 結果の適用は apply_eval.py を経由してください。"
             )
         seen.add(uid)
 
