@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.4] - 2026-06-17
+
+### marketplace
+
+- **chore**: forge 0.2.4 / anvil 0.0.10 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.4] - 2026-06-17
+
+### forge
+
+- **feat**: evaluator の eval 中間ファイルを廃止し `apply_eval.py` 経由で plan.yaml を直接更新（Issue #103）
+- **feat**: evaluator の JSON 出力を `write_eval.py` 経由に統一し、Write ツール直接書き出しバイパスを閉鎖
+- **fix**: `write_eval.py` に recommendation/status 相関バリデーションを追加
+- **fix**: evaluator SKILL.md の `not_found_ids` 振る舞い定義とセクション名を修正、残存 `eval_*.json` 参照を全廃・`not_found_ids` 警告を追加
+- **feat**: ワークフロー型スキルに Goal セクションを追加（`update-version` 含む）
+- **fix**: `update-version` SKILL.md に Write 前の Read 必須を明記
+- **rename**: `docadvisor-toc` リネーム対応
+
+## [anvil 0.0.10] - 2026-06-17
+
+### anvil
+
+- **feat**: ワークフロー型スキルに Goal セクションを追加
+- **feat**: 外部 doc-advisor（DocAdvisor リポジトリ）への適応対応
+
 ## [marketplace 0.2.3] - 2026-06-10
 
 ### marketplace
