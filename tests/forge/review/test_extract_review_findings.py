@@ -1184,5 +1184,67 @@ class TestAsciiLabelMarkers(unittest.TestCase):
         self.assertEqual(findings[0]['title'], '見出し形式のラベル')
 
 
+# ===========================================================================
+# パースミス検出テスト (Issue #104)
+# ===========================================================================
+
+class TestParseMissWarning(unittest.TestCase):
+    """findings が 0 件かつ内容が空でない場合に警告が出ることを確認する。"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.session_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write(self, filename, content):
+        (self.session_path / filename).write_text(content, encoding='utf-8')
+
+    def test_non_empty_content_with_no_findings_emits_warning(self):
+        """severity マーカーがない内容の場合、findings 0 件で警告が出る。"""
+        self._write('review_code.md', "指摘事項はありませんでした。\n\n詳細なレビューを実施しましたが問題なし。\n")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertEqual(data['total'], 0)
+        self.assertEqual(data['files_processed'], 1)
+        self.assertIn('Warning', result.stderr)
+        self.assertIn('review_code.md', result.stderr)
+        self.assertIn('parse miss', result.stderr)
+
+    def test_empty_content_does_not_warn(self):
+        """空ファイルは failed 扱いで警告は出ない。"""
+        self._write('review_code.md', '')
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn('parse miss', result.stderr)
+
+    def test_valid_findings_do_not_warn(self):
+        """正常に findings が抽出された場合は警告が出ない。"""
+        self._write('review_code.md', """\
+### 🔴致命的問題
+
+1. **問題A**: 説明
+   - 箇所: a.py:1
+""")
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'), self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertNotIn('parse miss', result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

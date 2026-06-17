@@ -68,6 +68,13 @@ def _extract_all_findings(review_files):
             failed_files.append(filename)
             continue
 
+        if not findings:
+            print(
+                f"Warning: {filename}: content is non-empty but no findings were "
+                f"extracted (possible parse miss — check severity markers)",
+                file=sys.stderr,
+            )
+
         processed_files.append(filename)
 
         for f in findings:
