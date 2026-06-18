@@ -14,6 +14,7 @@ applicable_when:
 
 **NEVER skip.** 下記を全て読み込み、深く理解すること
 
+- **`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md`** — フィーチャーの概念定義（§0）・追加開発ワークフロー仕様
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID 分類カタログ（使用する ID をここから選択）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
