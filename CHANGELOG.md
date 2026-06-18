@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.5] - 2026-06-18
+
+### marketplace
+
+- **chore**: forge 0.2.5 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.2.5] - 2026-06-18
+
+### forge
+
+- **feat**: フィーチャー概念定義を追加し、start-* スキルへの常時参照化（設計・計画・実装の各スキルがフィーチャー文書を一貫して参照するよう改善）
+- **fix**: レビュー結果ファイルに内容があるにもかかわらず findings が 0 件の場合、stderr に Warning を出力するよう修正（Issue #104）
+
 ## [marketplace 0.2.4] - 2026-06-17
 
 ### marketplace
