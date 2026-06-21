@@ -48,7 +48,7 @@ tasks:
   - task_id: TASK-001
     title: 静的検証テスト test_no_fork_skill.py を新設
     priority: 95
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on: []
     group_id: "GROUP-F2 (1/4)"
