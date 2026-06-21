@@ -78,8 +78,12 @@ class TestForkSkillCallContract(unittest.TestCase):
 
     def test_review_documents_fork_data_handoff_contract(self) -> None:
         content = _read('plugins/forge/skills/review/SKILL.md')
+        # REQ-006 / DES-032 (TASK-004) で reviewer を fork 型 SKILL → カスタム Agent 化したため、
+        # 見出しは「fork 型 SKILL への入力契約」→「worker 起動の入力契約」に改名。
+        # 残る 4 文言 (target_files 貼り付け禁止 / session_dir ファイル契約 / fixer 受け渡し / mark_fixed.py 遷移)
+        # は session_dir 経由のデータ受け渡しを担保する契約として継続して要求する。
         required = [
-            'fork 型 SKILL への入力契約',
+            'worker 起動の入力契約',
             'target_files、指摘詳細、参考文書本文、親タスク本文は貼り付けない',
             '`refs.yaml` / `plan.yaml` / `review_<種別>.md` / `patch_result.json`',
             'fixer には指摘本文や対象ファイル本文を直接渡さない',

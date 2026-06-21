@@ -83,7 +83,7 @@ tasks:
   - task_id: TASK-003
     title: plugins/forge/agents/reviewer.md を新規作成
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-002
@@ -104,7 +104,7 @@ tasks:
   - task_id: TASK-004
     title: review/SKILL.md Phase 3 (reviewer 起動) を Agent ツール起動に書き換え
     priority: 90
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-003
@@ -143,7 +143,7 @@ tasks:
   - task_id: TASK-006
     title: plugins/forge/agents/evaluator.md を新規作成
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-005
@@ -164,7 +164,7 @@ tasks:
   - task_id: TASK-007
     title: review/SKILL.md Phase 5 (evaluator 起動) を Agent ツール起動に書き換え
     priority: 80
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-006

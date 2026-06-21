@@ -82,16 +82,22 @@ class TestCodexLaunchPath(unittest.TestCase):
             "orchestrator は run_review_engine.sh を直接起動しないこと",
         )
 
-    # 2. review は reviewer fork に engine 引数を渡す
+    # 2. review は reviewer Agent に engine を含めて起動する
+    # REQ-006 / DES-032 で fork 型 SKILL → カスタム Agent に移行 (TASK-004)
     def test_review_skill_forks_reviewer_with_engine_arg(self) -> None:
         in_fence, _out = _split_fence(self.review)
         joined = "\n".join(in_fence)
         self.assertIn(
-            'args: "{session_dir} {review_type} {engine}"',
+            'subagent_type: "forge:reviewer"',
             joined,
-            "review/SKILL.md の主起動 (reviewer fork) args が "
-            '`args: "{session_dir} {review_type} {engine}"` 行になっていない '
-            "(--diff-only 例やコマンド構文表の substring では pass させない)",
+            "review/SKILL.md の主起動 (reviewer Agent) が "
+            '`subagent_type: "forge:reviewer"` を含むコードブロックで起動されていない '
+            "(REQ-006 / DES-032 §3.1 / TASK-004 で fork 型 SKILL から Agent 化済み)",
+        )
+        self.assertIn(
+            'engine',
+            joined,
+            "reviewer Agent 起動 prompt に engine 指定が含まれていない",
         )
 
     # 3. reviewer はコードブロックで run_review_engine.sh を起動する
