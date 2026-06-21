@@ -124,7 +124,7 @@ tasks:
   - task_id: TASK-005
     title: F-2 完了 E2E 検証
     priority: 85
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-004
@@ -181,7 +181,7 @@ tasks:
   - task_id: TASK-008
     title: F-3 完了 E2E 検証
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-007
