@@ -2,6 +2,9 @@
 """JSON/TOML ファイルのバージョンフィールドを更新する。
 
 元ファイルは書き換えない（NFR-01）。更新後の内容を stdout に出力する。
+**ファイルへの書き戻しは呼び出し側ラッパー (update_main_version.py / update_*_filtered.py /
+update_*_dependent.py) の責務である**（DES-024 §2.3.1 writer 例外類型 / Issue #139）。
+本スクリプトを単独で使用する場合は、呼び出し側が stdout を必ずファイルへリダイレクト・Write すること。
 
 使用例:
     python3 update_version_files.py <file_path> <old_version> <new_version> [--version-path <path>] [--filter <pattern>]
