@@ -530,7 +530,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --r
 
 ### 修正経路分岐表 [forge:DES-029 §7]
 
-> **前提**: 本表は **介入軸 `--auto` / `--auto-critical`** での review orchestrator 直接経路を扱う。`--interactive` モードでは present-findings から軽量経路または fork 型 fixer に分岐する。
+> **前提**: 本表は **介入軸 `--auto` / `--auto-critical`** での review orchestrator 直接経路を扱う。`--interactive` モードでは present-findings から軽量経路または Agent 経由 fixer に分岐する。
 
 | # | 経路名                | 起動方法                                                       | context 消費    | 用途                                                 | 適用条件                                                                                           |
 | - | --------------------- | -------------------------------------------------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |

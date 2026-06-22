@@ -66,7 +66,7 @@ flowchart TD
 
     FIXPATH{"Lightweight path?"}
     FIXPATH -->|Yes| INLINE["orchestrator direct Edit"]
-    FIXPATH -->|No| FIXER["fork fixer"]
+    FIXPATH -->|No| FIXER["Agent fixer"]
 
     INLINE --> REREV
     FIXER --> REREV
@@ -88,7 +88,7 @@ flowchart TD
 | `--auto`              | 🔴 + 🟡       | AI          | Bulk quality improvement |
 | `--auto-critical`     | 🔴 only       | AI          | Minimal safe fixes       |
 
-The core loop (reviewer → evaluator → lightweight path or fork fixer → re-review) is identical across all modes. The only difference is whether human judgment is inserted before fixing.
+The core loop (reviewer → evaluator → lightweight path or Agent fixer → re-review) is identical across all modes. The only difference is whether human judgment is inserted before fixing.
 
 ### Review Types
 
