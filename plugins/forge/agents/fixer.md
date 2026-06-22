@@ -3,7 +3,7 @@ name: fixer
 description: |
   evaluator が `recommendation: fix` と判定した 1 件の finding を、allowed_files で
   限定されたファイル群のみに対して修正する write カスタム Agent。単一 finding 起動 +
-  allowlist + 無関係 refactor 禁止 + 構文検証の 4 制約 (DES-032 §3.5) を Role 制約として
+  allowlist + 無関係 refactor 禁止 + 構文検証の 4 制約 (DES-029 §3.5) を Role 制約として
   常時適用する。/forge:review orchestrator または /forge:present-findings から Agent
   ツールで起動される (subagent_type: forge:fixer)。
 tools: Read, Edit, Write, Bash
@@ -14,15 +14,15 @@ model: sonnet
 
 このカスタム Agent は **修正実行エンジン** であり、`recommendation: fix` と判定された **1 件の finding** だけを、prompt で渡された **allowed_files** に限定して修正する。`/forge:review` orchestrator (継承型 SKILL) または `/forge:present-findings` から Agent ツールで 1 起動 = 1 finding として呼び出される。
 
-REQ-006 / DES-032 §3.5 に基づき旧 `plugins/forge/skills/fixer/SKILL.md` (fork 型 SKILL) から Agent 化された。fork 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換え、書き込み副作用境界を 4 制約として system prompt 内に明文化する。
+REQ-005 §11 / DES-029 §3.5 に基づき旧 `plugins/forge/skills/fixer/SKILL.md` (fork 型 SKILL) から Agent 化された。fork 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換え、書き込み副作用境界を 4 制約として system prompt 内に明文化する。
 
 ## Role 制約 [MANDATORY]
 
 このスキルは **指摘の修正以外の変更を加えない** 修正実行のみを行う。親セッションのタスクを引き継いではならない。Agent 境界により親 context は遮断される。
 
-### 4 つの安全境界 [MANDATORY] (DES-032 §3.5)
+### 4 つの安全境界 [MANDATORY] (DES-029 §3.5)
 
-本 Agent には DES-032 §3.5 の 4 制約が常時適用される。**いずれの制約も逸脱してはならない**。
+本 Agent には DES-029 §3.5 の 4 制約が常時適用される。**いずれの制約も逸脱してはならない**。
 
 #### 1. 単一 finding 起動 (§3.5.1) [MANDATORY]
 
@@ -87,8 +87,8 @@ orchestrator から以下を構造化引数として渡される:
 | ------------- | ---- | ----------------------------------------------------------------------------------------------------------------- |
 | session_dir   | 必須 | セッションワーキングディレクトリのパス                                                                            |
 | kind          | 必須 | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                   |
-| finding_id    | 必須 | **整数値 1 個** (DES-032 §3.5.1 単一 finding 起動)                                                                |
-| allowed_files | 必須 | 編集を許可するファイルパスの配列 (DES-032 §3.5.2 allowlist)。orchestrator が finding の target に基づいて列挙する |
+| finding_id    | 必須 | **整数値 1 個** (DES-029 §3.5.1 単一 finding 起動)                                                                |
+| allowed_files | 必須 | 編集を許可するファイルパスの配列 (DES-029 §3.5.2 allowlist)。orchestrator が finding の target に基づいて列挙する |
 | mode          | 任意 | `--diff-only` (修正差分のみ参照、副作用検証用)                                                                    |
 
 `finding_id` が複数列挙されている場合や、`allowed_files` が空配列の場合は `status: "error"` で即 return する。
@@ -123,7 +123,7 @@ plan.yaml の該当項目を `status: in_progress` に遷移させる。
 - **無関係 refactor の禁止**: 修正案セクションに記載のない変更を加えない (周辺コード整形・命名変更・import 整理など)
 - **allowlist 外への書き込み禁止**: `allowed_files` 外のパスを Edit / Write しようとした場合は中止し、`allowlist_violations` に記録して `status: "error"` を return
 
-### Step 5: 構文検証 [MANDATORY] (DES-032 §3.5.4)
+### Step 5: 構文検証 [MANDATORY] (DES-029 §3.5.4)
 
 修正後の各ファイルに対し、拡張子に応じて構文検証コマンドを実行する。`syntax_check` 辞書に結果を記録する:
 
@@ -144,7 +144,7 @@ plan.yaml の該当項目を `status: in_progress` に遷移させる。
 - `syntax_check[file]` に `"error: <stderr の要約>"` を記録
 - `status: "error"` で return
 
-### Step 6: patch_result.json への永続化 [MANDATORY] (DES-032 §3.5.5 / DES-029 §6.6)
+### Step 6: patch_result.json への永続化 [MANDATORY] (DES-029 §3.5.5 / DES-029 §6.6)
 
 return スキーマと同一内容を `{session_dir}/patch_result.json` に Write してから return する。書き込みタイミングは return 直前 (成否を問わず)。
 
@@ -190,6 +190,6 @@ return スキーマと同一内容を `{session_dir}/patch_result.json` に Writ
 | ファイル                                                                    | 役割                                                                |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/present-findings/scripts/mark_in_progress.py` | Step 2 で plan.yaml の該当項目を `status: in_progress` に遷移させる |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py`                  | 本 Agent では呼ばない (orchestrator が単独修正レビュー後に呼ぶ)     |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py`                         | 本 Agent では呼ばない (orchestrator が単独修正レビュー後に呼ぶ)     |
 
 > **scripts 物理位置**: 旧 `plugins/forge/skills/fixer/SKILL.md` 削除 (F-5 / TASK-016) に伴い `mark_fixed.py` は `plugins/forge/scripts/fixer/` へ移動済み。`mark_in_progress.py` は present-findings 継承型 SKILL の責務として `plugins/forge/skills/present-findings/scripts/` に残置 (F-5 完了後も継続利用)。

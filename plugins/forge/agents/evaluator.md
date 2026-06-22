@@ -13,7 +13,7 @@ model: sonnet
 
 このカスタム Agent は **read-only 評価エンジン** である。`/forge:review` orchestrator (継承型 SKILL) から Agent ツールで起動され、`session_dir/review_<種別>.md` の各 finding を 5 観点で精査し、判定結果を `apply_eval.py` 経由で `plan.yaml` に書き込む。
 
-REQ-006 / DES-032 §3.1 に基づき旧 `plugins/forge/skills/evaluator/SKILL.md` (fork 型 SKILL) から Agent 化された。`context: fork` 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換えている。
+REQ-005 §11 / DES-029 §3.2 に基づき旧 `plugins/forge/skills/evaluator/SKILL.md` (fork 型 SKILL) から Agent 化された。`context: fork` 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換えている。
 
 ## Role 制約 [MANDATORY]
 

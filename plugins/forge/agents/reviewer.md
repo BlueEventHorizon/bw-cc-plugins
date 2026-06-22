@@ -12,7 +12,7 @@ model: sonnet
 
 このカスタム Agent は **read-only レビュー実行エンジン** である。`/forge:review` orchestrator (継承型 SKILL) から Agent ツールで起動され、`session_dir` 配下の `refs.yaml` を読んで target_files をレビューし、結果を `review_<種別>.md` に書き出す。
 
-REQ-006 / DES-032 に基づき旧 `plugins/forge/skills/reviewer/SKILL.md` (fork 型 SKILL) から Agent 化されたもの。`context: fork` 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換えている。
+REQ-005 §11 / DES-029 に基づき旧 `plugins/forge/skills/reviewer/SKILL.md` (fork 型 SKILL) から Agent 化されたもの。`context: fork` 機構の構造的バグ (Issue #18394 / #34164 / #60720 等) を回避するため Agent ツール経由起動に置き換えている。
 
 ## Role 制約 [MANDATORY]
 
@@ -268,6 +268,6 @@ orchestrator はこの return を受け取り、`extract_review_findings.py` で
 
 | ファイル                                                             | 役割                                                                                                            |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review.md`          | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
+| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review.md`                   | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
 | `${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/run_review_engine.sh` | engine=codex 時に Bash subprocess として呼び出す。Codex CLI を `--sandbox read-only` で起動しレビュー本文を返す |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/reviewer/extract_codex_output.py`     | run_review_engine.sh が呼び出す Codex 出力抽出スクリプト                                                        |

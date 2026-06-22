@@ -61,16 +61,16 @@ agent: general-purpose         # context: fork 時の Agent タイプ
 ## SKILL 実行モデルと多重防御 [MANDATORY]
 
 > **fork 型 SKILL は採用しない (廃止)** [MANDATORY]
-> REQ-006 / DES-032 に基づき、bw-cc-plugins では `context: fork` を持つ SKILL を新規・既存ともに採用しない。`context: fork` 機構は anthropics/claude-code の公式リポジトリで構造的バグが報告されている (#18394 / #34164 / #60720 / #55592 ほか)。隔離 context が必要な処理は **カスタム Agent** (`plugins/<plugin>/agents/<name>.md` + `Agent` ツール起動) で実装する。詳細は `docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md` を参照。
+> REQ-005 §11 / DES-029 に基づき、bw-cc-plugins では `context: fork` を持つ SKILL を新規・既存ともに採用しない。`context: fork` 機構は anthropics/claude-code の公式リポジトリで構造的バグが報告されている (#18394 / #34164 / #60720 / #55592 ほか)。隔離 context が必要な処理は **カスタム Agent** (`plugins/<plugin>/agents/<name>.md` + `Agent` ツール起動) で実装する。詳細は `docs/specs/forge/design/DES-029_skill_agent_launch_contract_design.md` を参照。
 
 SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分かれていたが、現在は **継承型のみ採用**。判別を誤ると親 context 漏洩や副作用暴走 (ユーザー承認なしの書き込み) の原因となる。実害事例は ADR-002 を参照。
 
 ### 用語
 
-| 型 | frontmatter | 実行モデル | 親 context | 入力 | 採否 |
-| --- | --- | --- | --- | --- | --- |
-| **継承型** | `context:` 未指定 | 親 Claude が SKILL.md を読み、そのまま実行 | 継承 (会話履歴・進行中タスクをすべて保持) | SKILL.md + `$ARGUMENTS` + 親 context | **採用** |
-| ~~**fork 型**~~ | ~~`context: fork` 指定~~ | ~~別 context が起動し、終了時に return のみを親へ戻す~~ | ~~継承しない~~ | ~~SKILL.md + `$ARGUMENTS` のみ~~ | **採用しない (廃止)** |
+| 型              | frontmatter              | 実行モデル                                              | 親 context                                | 入力                                 | 採否                  |
+| --------------- | ------------------------ | ------------------------------------------------------- | ----------------------------------------- | ------------------------------------ | --------------------- |
+| **継承型**      | `context:` 未指定        | 親 Claude が SKILL.md を読み、そのまま実行              | 継承 (会話履歴・進行中タスクをすべて保持) | SKILL.md + `$ARGUMENTS` + 親 context | **採用**              |
+| ~~**fork 型**~~ | ~~`context: fork` 指定~~ | ~~別 context が起動し、終了時に return のみを親へ戻す~~ | ~~継承しない~~                            | ~~SKILL.md + `$ARGUMENTS` のみ~~     | **採用しない (廃止)** |
 
 隔離 context が必要なロールは **カスタム Agent** (`Agent` ツール + `agents/<name>.md`) で実現する。
 
@@ -86,10 +86,10 @@ SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分
 - orchestrator として子 Agent を呼び出すときに親 context を保ったまま結果を統合できる
 - AskUserQuestion を含むユーザー対話が必要なケースで意味を持つ
 
-カスタム Agent を採用する判断基準 (REQ-006 / DES-032 §3.1 / COMMON-DES-001 §5.3):
+カスタム Agent を採用する判断基準 (REQ-005 §11 / DES-029 §3.2 / COMMON-DES-001 §5.3):
 
 - 同じロールが複数の呼び出し元から呼ばれ、別 context で動く必要がある (例: reviewer / evaluator / fixer)
-- 書き込み副作用境界 (allowlist / 単一 finding / 無関係 refactor 禁止 / 構文検証) を Role 制約として常時拘束したい (例: fixer。DES-032 §3.5)
+- 書き込み副作用境界 (allowlist / 単一 finding / 無関係 refactor 禁止 / 構文検証) を Role 制約として常時拘束したい (例: fixer。DES-029 §3.5)
 - 親 context が肥大化し、分離した方が context 効率が良い
 
 ### 継承型 SKILL の必須事項
@@ -100,23 +100,23 @@ SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分
 
 ### カスタム Agent の必須事項
 
-詳細は `docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md` §3.1 / §3.5 を参照。要点:
+詳細は `docs/specs/forge/design/DES-029_skill_agent_launch_contract_design.md` §3.1 / §3.5 を参照。要点:
 
 - frontmatter に `name` / `description` / `tools` (allowlist) / `model` を明示
 - Role 制約として禁止事項 (他 Agent 起動 / 親タスクの解釈引継ぎ / allowlist 外への書き込み) を否定形で明記
 - 引数解釈ガード: 起動時 prompt を「親の指示文」として解釈しないことを明示
-- 書き込みを伴う Agent (fixer 等) は **単一 finding 起動 / allowed_files allowlist / 無関係 refactor 禁止 / 修正後の構文検証** の 4 制約 (DES-032 §3.5) を Role 制約として system prompt に常時定式化する
+- 書き込みを伴う Agent (fixer 等) は **単一 finding 起動 / allowed_files allowlist / 無関係 refactor 禁止 / 修正後の構文検証** の 4 制約 (DES-029 §3.5) を Role 制約として system prompt に常時定式化する
 
 ### 多重防御の層
 
 性質に応じて以下を組み合わせる (fork 境界に依存しない設計):
 
-| 層 | 役割 | 実現方法 | カスタム Agent | 継承型 SKILL |
-| --- | --- | --- | --- | --- |
-| A. Agent 境界 | 親 context 漏洩の遮断 (Agent ツール起動で構造的に遮断) | `Agent` ツール (`subagent_type: <plugin>:<name>`) | 必須 | (該当なし) |
-| B. Role 制約 | AI 行動規範で逸脱抑止 | system prompt / SKILL.md 内に否定形で明記 | 必須 | 必須 (§7.2 / COMMON-DES-001 §7.2) |
-| C. allowlist | 承認なしで使えるツール指定 | `tools:` (Agent) / `allowed-tools:` (SKILL) | 必須 (tools) | 推奨 |
-| D. 物理 deny | 書き込み系ツールの強制禁止 | `.claude/settings.json` の `permissions.deny` | プロジェクト側で対応 | 同左 |
+| 層            | 役割                                                   | 実現方法                                          | カスタム Agent       | 継承型 SKILL                      |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------- | -------------------- | --------------------------------- |
+| A. Agent 境界 | 親 context 漏洩の遮断 (Agent ツール起動で構造的に遮断) | `Agent` ツール (`subagent_type: <plugin>:<name>`) | 必須                 | (該当なし)                        |
+| B. Role 制約  | AI 行動規範で逸脱抑止                                  | system prompt / SKILL.md 内に否定形で明記         | 必須                 | 必須 (§7.2 / COMMON-DES-001 §7.2) |
+| C. allowlist  | 承認なしで使えるツール指定                             | `tools:` (Agent) / `allowed-tools:` (SKILL)       | 必須 (tools)         | 推奨                              |
+| D. 物理 deny  | 書き込み系ツールの強制禁止                             | `.claude/settings.json` の `permissions.deny`     | プロジェクト側で対応 | 同左                              |
 
 > A 層は旧 `context: fork` から **Agent ツール起動** へ置換されている。Agent ツール経由起動は親 context を確実に遮断し、`$ARGUMENTS` 不達バグも踏まない。
 

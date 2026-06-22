@@ -83,7 +83,7 @@ class TestCodexLaunchPath(unittest.TestCase):
         )
 
     # 2. review は reviewer Agent に engine を含めて起動する
-    # REQ-006 / DES-032 で fork 型 SKILL → カスタム Agent に移行 (TASK-004)
+    # REQ-005 §11 / DES-029 §3.2 で fork 型 SKILL → カスタム Agent に移行 (TASK-004)
     def test_review_skill_forks_reviewer_with_engine_arg(self) -> None:
         in_fence, _out = _split_fence(self.review)
         joined = "\n".join(in_fence)
@@ -92,7 +92,7 @@ class TestCodexLaunchPath(unittest.TestCase):
             joined,
             "review/SKILL.md の主起動 (reviewer Agent) が "
             '`subagent_type: "forge:reviewer"` を含むコードブロックで起動されていない '
-            "(REQ-006 / DES-032 §3.1 / TASK-004 で fork 型 SKILL から Agent 化済み)",
+            "(REQ-005 §11 / DES-029 §3.2 / TASK-004 で fork 型 SKILL から Agent 化済み)",
         )
         self.assertIn(
             'engine',
