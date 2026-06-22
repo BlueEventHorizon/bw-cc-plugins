@@ -44,8 +44,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKING_SKILLS: list[Path] = []
 
 # ALL_SKILLS_FORK_FREE: True のとき plugins/*/skills/*/SKILL.md を全件対象に検査する。
-# F-5 (旧 SKILL.md 削除完了) で True に切り替える。WORKING_SKILLS を空リストに戻す。
-ALL_SKILLS_FORK_FREE: bool = False
+# F-5 / TASK-016 で旧 SKILL.md (reviewer / evaluator / fixer) を削除し、本フラグを
+# True に切り替えた。以後、新規に context: fork を持つ SKILL.md を追加すると本テストが
+# fail する (no-fork-skill フィーチャー完了後の継続的な再発防止)。
+ALL_SKILLS_FORK_FREE: bool = True
 
 # frontmatter 内の `context: fork` を検出する正規表現。
 # 行頭から始まり、値が `fork` (前後の空白許容) であることを要求する。

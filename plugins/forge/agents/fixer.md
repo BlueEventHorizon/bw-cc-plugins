@@ -190,6 +190,6 @@ return スキーマと同一内容を `{session_dir}/patch_result.json` に Writ
 | ファイル                                                                    | 役割                                                                |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/present-findings/scripts/mark_in_progress.py` | Step 2 で plan.yaml の該当項目を `status: in_progress` に遷移させる |
-| `${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py`                  | 本 Agent では呼ばない (orchestrator が単独修正レビュー後に呼ぶ)     |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py`                  | 本 Agent では呼ばない (orchestrator が単独修正レビュー後に呼ぶ)     |
 
-> **scripts 物理位置**: 旧 SKILL.md と並存する F-5 完了まで `plugins/forge/skills/fixer/scripts/` と `plugins/forge/skills/present-findings/scripts/` を使用する。F-5 で旧 SKILL.md が削除されたとき scripts/ も整理対象になりうる (TASK-020 で再評価)。
+> **scripts 物理位置**: 旧 `plugins/forge/skills/fixer/SKILL.md` 削除 (F-5 / TASK-016) に伴い `mark_fixed.py` は `plugins/forge/scripts/fixer/` へ移動済み。`mark_in_progress.py` は present-findings 継承型 SKILL の責務として `plugins/forge/skills/present-findings/scripts/` に残置 (F-5 完了後も継続利用)。

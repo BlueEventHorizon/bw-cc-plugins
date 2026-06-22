@@ -37,10 +37,6 @@ design_traceability:
       - TASK-015
       - TASK-016
       - TASK-017
-      - TASK-018
-      - TASK-019
-      - TASK-020
-      - TASK-021
 
 # === タスク一覧 ===
 tasks:
@@ -290,127 +286,58 @@ tasks:
     required_reading:
       - docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md
 
-  # === F-5: 設計書・ルール・旧ファイル最終クリーンアップ ===
+  # === F-5: ルール改訂・旧ファイル削除・merge-specs 統合・最終 E2E ===
+  # 注: 旧 TASK-014〜017 (基本側設計書の手動改訂: COMMON-DES-001 / DES-015 /
+  # DES-028 / DES-029) は削除した。これらは追加 feature (REQ-006 / DES-032) を
+  # /forge:merge-specs で基本側へ fold する際に自動で改訂されるため (merge-specs
+  # 仕様: 「追加側を正とし、基本側を追加側の内容に合わせて修正」)、手動改訂は
+  # 二重作業となる (CLAUDE.md「fold が正・promote は誤り」)。
+  # F-5 は (1) rules 改訂 (merge-specs 対象外) (2) plugins/tests 削除
+  # (merge-specs 対象外) (3) merge-specs 実行 (4) 最終 E2E の 4 タスクに集約。
   - task_id: TASK-014
-    title: COMMON-DES-001 §6 / §3.2 / §8 / §9 を改訂
-    priority: 50
-    status: pending
-    design_id: DES-032
-    depends_on:
-      - TASK-013
-    group_id: "GROUP-F5 (1/8)"
-    build_check: skip
-    description:
-      - §6 fork 型 SKILL 一覧の節そのものを「fork 型 SKILL は採用しない (廃止)」へ書き換え
-      - §3.2 fork 型採用判断基準を削除
-      - §8 多重防御表から A 層 (fork 境界) を削除し B / C / D に縮約
-      - §9 静的検証から fork 型 frontmatter 検証を削除
-      - 改訂は項目自体を残して「採用しない」と注記する方針で統一 (DES-032 §3.1 注記)
-    acceptance_criteria: COMMON-DES-001 内に「fork 型 SKILL を採用する」記述が残らない
-    required_reading:
-      - docs/specs/common/design/COMMON-DES-001_skill_base_design.md
-      - docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md
-
-  - task_id: TASK-015
-    title: DES-029 を Agent 起動契約へ全面改訂
-    priority: 50
-    status: pending
-    design_id: DES-032
-    depends_on:
-      - TASK-013
-    group_id: "GROUP-F5 (2/8)"
-    build_check: skip
-    description:
-      - docs/specs/forge/design/DES-029_skill_agent_launch_contract_design.md を全面改訂
-      - 「fork 型 SKILL として Skill ツールで呼ぶ」前提を全廃し、Agent ツール起動経路に書き換え
-      - §5 fork 採用根拠を「Agent 採用根拠」(REQ-006 §1.3 公式バグ群) に転換
-      - return スキーマ・session_dir ファイル契約は維持
-    acceptance_criteria: DES-029 内に「Skill ツール (fork) で reviewer/evaluator/fixer を起動」記述が残らない
-    required_reading:
-      - docs/specs/forge/design/DES-029_skill_agent_launch_contract_design.md
-      - docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md
-
-  - task_id: TASK-016
-    title: DES-015 起動経路図を Agent 起動に追随
-    priority: 50
-    status: pending
-    design_id: DES-032
-    depends_on:
-      - TASK-013
-    group_id: "GROUP-F5 (3/8)"
-    build_check: skip
-    description:
-      - docs/specs/forge/design/DES-015_review_workflow_design.md の flowchart の reviewer/evaluator/fixer 起動を Agent 起動 (subagent_type=forge:<name>) に書き換え
-      - Phase 3 / 5 / 6 の起動方法記述を更新
-      - 「reviewer 1 起動原則 (FNC-412)」を「Agent 1 起動原則」として再宣言
-    acceptance_criteria: DES-015 内に「Skill ツール (fork) で起動」記述が残らない
-    required_reading:
-      - docs/specs/forge/design/DES-015_review_workflow_design.md
-
-  - task_id: TASK-017
-    title: DES-028 修正経路分岐表を更新
-    priority: 50
-    status: pending
-    design_id: DES-032
-    depends_on:
-      - TASK-013
-    group_id: "GROUP-F5 (4/8)"
-    build_check: skip
-    description:
-      - docs/specs/forge/design/DES-028_review_policy_design.md §4.5 修正経路分岐表 (FNC-413) を更新
-      - 「fork 型 fixer 経路」を「Agent 経由 fixer 経路」に置換
-      - 軽量経路 (FNC-413) の判定条件は変更なし
-    acceptance_criteria: DES-028 内に「fork 型 fixer 経路」記述が残らない
-    required_reading:
-      - docs/specs/forge/design/DES-028_review_policy_design.md
-
-  - task_id: TASK-018
     title: docs/rules/skill_launch_paths_definitions.md を改訂
     priority: 50
     status: pending
     design_id: DES-032
     depends_on:
       - TASK-013
-    group_id: "GROUP-F5 (5/8)"
+    group_id: "GROUP-F5 (1/4)"
     build_check: skip
     description:
       - §1 起動経路 5 種の fork 型 SKILL 項目に「採用しない (廃止)」注記を追加 (項目自体は削除しない)
       - §2 「subagent」用法統一は維持
+      - rules ディレクトリは merge-specs 対象外のため本タスクで手動改訂する
     acceptance_criteria: ファイル内に「fork 型 SKILL を採用する」記述が残らない
     required_reading:
       - docs/rules/skill_launch_paths_definitions.md
 
-  - task_id: TASK-019
+  - task_id: TASK-015
     title: docs/rules/skill_authoring_notes.md fork 型関連節を非推奨化
     priority: 50
     status: pending
     design_id: DES-032
     depends_on:
       - TASK-013
-    group_id: "GROUP-F5 (6/8)"
+    group_id: "GROUP-F5 (2/4)"
     build_check: skip
     description:
       - fork 型 / 継承型 判別表を「継承型のみ採用する」へ統一
       - 多重防御表から A 層を削除
       - fork 型必須事項節を削除または非推奨化
       - 命名規約 fork 関連の記述を削除
+      - rules ディレクトリは merge-specs 対象外のため本タスクで手動改訂する
     acceptance_criteria: ファイル内に「fork 型 SKILL を採用する」記述が残らない
     required_reading:
       - docs/rules/skill_authoring_notes.md
 
-  - task_id: TASK-020
+  - task_id: TASK-016
     title: 旧 SKILL.md と旧 fork 型テストを一括削除
     priority: 45
     status: pending
     design_id: DES-032
     depends_on:
-      - TASK-014
-      - TASK-015
-      - TASK-016
-      - TASK-017
-      - TASK-018
-      - TASK-019
-    group_id: "GROUP-F5 (7/8)"
+      - TASK-013
+    group_id: "GROUP-F5 (3/4)"
     build_check: skip
     description:
       - plugins/forge/skills/reviewer/SKILL.md を削除 (scripts/ は維持)
@@ -418,31 +345,39 @@ tasks:
       - plugins/forge/skills/fixer/SKILL.md を削除 (mark_fixed.py 等の scripts/ は維持)
       - tests/forge/subagent/test_fork_skill_frontmatter.py を削除
       - tests/forge/subagent/test_fork_skill_call_contract.py を削除
-      - 削除直前に tests/common/test_no_fork_skill.py が PASS することを確認 (allowlist を空にする)
-    acceptance_criteria: 上記ファイルが存在せず test_no_fork_skill.py が allowlist 空で pass
+      - 削除直前に tests/common/test_no_fork_skill.py が PASS することを確認 (ALL_SKILLS_FORK_FREE = True へ切り替え)
+      - plugins/tests は merge-specs 対象外のため本タスクで手動削除する
+    acceptance_criteria: 上記ファイルが存在せず test_no_fork_skill.py が ALL_SKILLS_FORK_FREE=True で pass
     required_reading:
       - docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md
 
-  - task_id: TASK-021
-    title: 最終 E2E + 全テスト pass 確認 + 本フィーチャー文書の旧文書 merge
+  - task_id: TASK-017
+    title: /forge:merge-specs 実行 + 最終 E2E + フォロー Issue 解消確認
     priority: 40
     status: pending
     design_id: DES-032
     depends_on:
-      - TASK-020
-    group_id: "GROUP-F5 (8/8)"
+      - TASK-014
+      - TASK-015
+      - TASK-016
+    group_id: "GROUP-F5 (4/4)"
     build_check: on_group_complete
     description:
+      - "/forge:merge-specs base no-fork-skill を実行: REQ-006 / DES-032 を旧仕様書 (COMMON-DES-001 / DES-015 / DES-028 / DES-029) へ fold (additive_development_spec.md §4)"
+      - merge-specs 完了後、docs/specs/forge/no-fork-skill/ ディレクトリが自動削除されていることを確認
+      - Issue #136 (DES-032 §3.6 yaml/regex 不整合) が merge 結果で解消されていることを確認 (merge 後に必要なら追加修正)
+      - Issue #137 (WORKING_SKILLS 戦略整合性) が merge 結果で解消されていることを確認 (merge 後に必要なら追加修正)
       - "`python3 -m unittest discover -s tests -p 'test_*.py' -v` が全 pass することを確認"
       - "`/forge:review code --files <小さなファイル> --auto` 最終 E2E を完走"
-      - REQ-006 / DES-032 を旧仕様書 (COMMON-DES-001 / DES-015 / DES-028 / DES-029) へ /forge:merge-specs で fold (additive_development_spec.md §4)
-      - docs/specs/forge/no-fork-skill/ 配下の 3 ファイル (REQ-006 / DES-032 / strategy / plan) を削除
-    acceptance_criteria: 全テスト pass、E2E 完走、no-fork-skill フィーチャーディレクトリが消えている
+    acceptance_criteria: 全テスト pass、E2E 完走、no-fork-skill フィーチャーディレクトリが消えている、Issue #136 / #137 が解消または別途継続対応 Issue へ転記済み
     required_reading:
       - docs/specs/forge/no-fork-skill/requirements/REQ-006_fork_skill_deprecation.md
       - docs/specs/forge/no-fork-skill/design/DES-032_no_fork_skill_migration_design.md
+      - /Users/moons/data/dev/moons/ai_tools/bw-cc-plugins/plugins/forge/docs/additive_development_spec.md
 
 # === 改定履歴 ===
 revision_history:
   - date: "2026-06-21"
     content: "初版作成。F-1 (REQ-006/DES-032 作成) は完了済みとし、F-2 〜 F-5 の 21 タスクを抽出。reviewer/evaluator/fixer を段階的に Agent 化、最後に旧 SKILL.md と旧テストを一括削除する設計"
+  - date: "2026-06-22"
+    content: "F-5 再構成。旧 TASK-014〜017 (基本側設計書 COMMON-DES-001 / DES-015 / DES-028 / DES-029 の手動改訂) を削除。これらは /forge:merge-specs を新 TASK-017 で実行する際に基本側自動改訂で吸収されるため二重作業だった (CLAUDE.md「fold が正」/ merge-specs 仕様「追加側を正とし基本側を追加側の内容に合わせて修正」)。F-5 は (1) rules 改訂 / (2) plugins/tests 削除 / (3) merge-specs 実行 + 最終 E2E の 4 タスクに集約 (合計 21→17)"

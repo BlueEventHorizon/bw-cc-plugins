@@ -650,7 +650,7 @@ patch_result.json を Write してから return すること。
 
 ##### 旧 fork 型 fixer 経路の廃止 [MANDATORY]
 
-旧経路 (`/forge:fixer` を Skill ツール (fork) で `--batch` モード起動) は **廃止**。本ループ起動経路で置き換える。DES-028 §4.5 修正経路分岐表は「軽量経路 + Agent 経由 fixer 経路」の 2 種に縮約される (DES-032 UC-D3)。
+旧経路 (forge:fixer を Skill ツール (fork) で `--batch` モード起動) は **廃止**。本ループ起動経路で置き換える。DES-028 §4.5 修正経路分岐表は「軽量経路 + Agent 経由 fixer 経路」の 2 種に縮約される (DES-032 UC-D3)。
 
 ### Step 3: 単独修正レビュー (--auto / --auto-critical のみ)
 
@@ -676,7 +676,7 @@ args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"
 単独修正レビュー完了後、修正が成功した各 finding に対して `mark_fixed.py` を呼ぶ:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/fixer/scripts/mark_fixed.py {session_dir} {id} {files_modified}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py {session_dir} {id} {files_modified}
 ```
 
 - 軽量経路 (Step 2-A) の場合: 修正した finding の id と修正ファイルパス一覧を渡す

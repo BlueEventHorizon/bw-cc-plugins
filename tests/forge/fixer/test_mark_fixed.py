@@ -13,8 +13,8 @@ from pathlib import Path
 from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WRAPPER_PATH = (REPO_ROOT / 'plugins' / 'forge' / 'skills'
-                / 'fixer' / 'scripts' / 'mark_fixed.py')
+WRAPPER_PATH = (REPO_ROOT / 'plugins' / 'forge' / 'scripts'
+                / 'fixer' / 'mark_fixed.py')
 EXPECTED_LOW_LEVEL = (REPO_ROOT / 'plugins' / 'forge' / 'scripts'
                       / 'session' / 'update_plan.py')
 
