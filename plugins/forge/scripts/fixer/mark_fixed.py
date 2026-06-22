@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 LOW_LEVEL = (
-    Path(__file__).resolve().parents[3] / "scripts" / "session" / "update_plan.py"
+    Path(__file__).resolve().parents[2] / "scripts" / "session" / "update_plan.py"
 )
 
 
