@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.6] - 2026-06-22
+
+### marketplace
+
+- **chore**: forge 0.3.0 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.3.0] - 2026-06-22
+
+### forge
+
+- **feat**: reviewer / evaluator / fixer を fork 型 SKILL から **カスタム Agent** (`plugins/forge/agents/<name>.md`) に再実装（Issue [#127](https://github.com/BlueEventHorizon/bw-cc-plugins/issues/127)）。Claude Code の `context: fork` 機構の公式バグ 9 件 (#18394 / #34164 / #60720 / #55592 ほか — fork が 95%+ で効かない / `$ARGUMENTS` 不達 / 出力消失 / 無限再帰) を構造的に回避する。`subagent_type: "forge:<name>"` を介した Agent ツール起動に統一
+- **feat**: fixer Agent に 4 安全境界 (単一 finding 起動 / allowed_files allowlist / 無関係 refactor 禁止 / 修正後の構文検証) を Role 制約として常時適用（DES-029 §3.5）。`--batch` モードは廃止し、orchestrator 側で id 単位ループに変換
+- **refactor**: 修正経路を「軽量経路 (FNC-413) + Agent 経由 fixer 経路」の 2 種に縮約（旧 fork 型 fixer 経路 / 汎用 Agent fixer 経路をいずれも廃止）
+- **refactor**: REQ-006 / DES-032 (no-fork-skill 一時 feature) を REQ-005 §11 / DES-029 に fold。COMMON-DES-001 §6 を「fork 型 SKILL は採用しない (廃止)」に転換し、旧 SKILL ↔ 置換先 Agent 対応表を §6.2 に記録
+- **refactor**: 旧 `plugins/forge/skills/{reviewer,evaluator,fixer}/SKILL.md` を削除。`mark_fixed.py` を `plugins/forge/scripts/fixer/` へ移動
+- **fix**: forge:reviewer / evaluator / fixer Agent の description フィールドを正規化
+- **test**: 静的検証テスト 3 種を新設 (`tests/common/test_no_fork_skill.py` / `tests/forge/agents/test_agent_frontmatter.py` / `tests/forge/agents/test_fixer_safety_prompt.py`)。旧 `tests/forge/subagent/test_fork_skill_*.py` を削除
+
 ## [marketplace 0.2.5] - 2026-06-18
 
 ### marketplace
