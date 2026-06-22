@@ -22,23 +22,21 @@ user-invocable: true           # false で / メニューから非表示
 argument-hint: "[arg1] [arg2]" # ユーザーへの引数ヒント表示
 disable-model-invocation: true # true で Claude 自動呼び出し禁止
 allowed-tools: Read, Grep      # 承認なしで使えるツールの allowlist
-context: fork                  # fork で隔離実行（親 context を遮断）
-agent: general-purpose         # context: fork 時の Agent タイプ
 ---
 ```
 
 ### フィールド一覧
 
-| フィールド                 | 必須 | 型             | デフォルト                   | 効果                                                                              |
-| -------------------------- | ---- | -------------- | ---------------------------- | --------------------------------------------------------------------------------- |
-| `name`                     | 推奨 | string         | ディレクトリ名               | スキル識別名。小文字・数字・ハイフン、64 字以下                                   |
-| `description`              | 推奨 | string         | Markdown 本文の第 1 段落     | Claude 自動呼び出し判定に使用。`when_to_use` と合算 1,536 字以下                  |
-| `user-invocable`           | 任意 | boolean        | `true`                       | false で `/` メニュー非表示（Skill ツール経由は呼出可能）                         |
-| `argument-hint`            | 任意 | string         | なし                         | オートコンプリート時のヒント表示                                                  |
-| `disable-model-invocation` | 任意 | boolean        | `false`                      | true で Claude 自動呼び出し禁止。`description` も context から削除される          |
-| `allowed-tools`            | 任意 | string \| list | 親 permission を継承         | 承認なしで使えるツールの **allowlist**（denylist ではない）                       |
-| `context`                  | 任意 | `fork`         | 未指定（継承型・インライン） | `fork` で親 context を遮断（fork 型スキル）                                       |
-| `agent`                    | 任意 | string         | `general-purpose`            | `context: fork` 時のみ意味あり。`Explore` / `Plan` / `general-purpose` / カスタム |
+| フィールド                 | 必須 | 型             | デフォルト                   | 効果                                                                        |
+| -------------------------- | ---- | -------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| `name`                     | 推奨 | string         | ディレクトリ名               | スキル識別名。小文字・数字・ハイフン、64 字以下                             |
+| `description`              | 推奨 | string         | Markdown 本文の第 1 段落     | Claude 自動呼び出し判定に使用。`when_to_use` と合算 1,536 字以下            |
+| `user-invocable`           | 任意 | boolean        | `true`                       | false で `/` メニュー非表示（Skill ツール経由は呼出可能）                   |
+| `argument-hint`            | 任意 | string         | なし                         | オートコンプリート時のヒント表示                                            |
+| `disable-model-invocation` | 任意 | boolean        | `false`                      | true で Claude 自動呼び出し禁止。`description` も context から削除される    |
+| `allowed-tools`            | 任意 | string \| list | 親 permission を継承         | 承認なしで使えるツールの **allowlist**（denylist ではない）                 |
+| `context`                  | 任意 | `fork`         | 未指定（継承型・インライン） | 公式フィールドだが本リポジトリでは使用禁止（fork 型 SKILL は採用しない）    |
+| `agent`                    | 任意 | string         | `general-purpose`            | `context: fork` 時のみ意味あり。本リポジトリでは `context` と同じく使用禁止 |
 
 出典: [Claude Code Skills 公式 docs](https://code.claude.com/docs/en/skills)
 
@@ -195,7 +193,7 @@ $ARGUMENTS[0] # $0 と同等
 - `/kaizen:fix-findings --batch` を呼び出し、🔴問題を修正する
 ```
 
-- ✅ 別プラグイン / 同一プラグインの SKILL を `Skill` ツールで起動できる。fork 型 SKILL 内からも同様（例: `create-feature-from-markdown-plan` → `/forge:start-*`、`forge:query-db-rules` / `forge:query-db-specs` → `/doc-advisor:query-docs`）
+- ✅ 別プラグイン / 同一プラグインの継承型 SKILL を `Skill` ツールで起動できる（例: `create-feature-from-markdown-plan` → `/forge:start-*`、`forge:query-db-rules` / `forge:query-db-specs` → `/doc-advisor:query-docs`）
 - ❌ 自己再帰禁止（下記）
 
 ### 自己再帰禁止 [MANDATORY]

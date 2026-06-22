@@ -66,7 +66,7 @@ flowchart TD
 
     FIXPATH{"軽量経路?"}
     FIXPATH -->|Yes| INLINE["orchestrator 直接 Edit"]
-    FIXPATH -->|No| FIXER["fork 型 fixer"]
+    FIXPATH -->|No| FIXER["Agent 経由 fixer"]
 
     INLINE --> REREV
     FIXER --> REREV
@@ -88,7 +88,7 @@ flowchart TD
 | `--auto`           | 🔴 + 🟡      | AI         | 一括品質向上     |
 | `--auto-critical`  | 🔴 のみ      | AI         | 最小限の安全修正 |
 
-コアループ（reviewer → evaluator → 軽量経路または fork 型 fixer → 再レビュー）は全モードで同一。違いは修正前に人間判断を挟むかどうかだけ。
+コアループ（reviewer → evaluator → 軽量経路または Agent 経由 fixer → 再レビュー）は全モードで同一。違いは修正前に人間判断を挟むかどうかだけ。
 
 ### レビュー種別
 

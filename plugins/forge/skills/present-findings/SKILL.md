@@ -573,7 +573,7 @@ prompt:
 
 session_dir が存在しないため plan.yaml 更新はスキップする。`/anvil:create-issue` 呼び出しは可能 (Skill ツール経由)。起票結果の Issue URL はテキスト出力でユーザーに報告する。
 
-`--inline` では fork 型 fixer / reviewer に渡す `session_dir` が存在しないため、修正実行、単独修正レビュー、`mark_fixed.py` による `status: fixed` 確定は行わない。修正まで進める必要がある場合は、`/forge:review` の session_dir 入力経路で実行し直す。
+`--inline` では Agent 経由 fixer / reviewer に渡す `session_dir` が存在しないため、修正実行、単独修正レビュー、`mark_fixed.py` による `status: fixed` 確定は行わない。修正まで進める必要がある場合は、`/forge:review` の session_dir 入力経路で実行し直す。
 
 ### batch_update の値域拡張 [MANDATORY]
 
