@@ -161,10 +161,7 @@ git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 python3 ${CLAUDE_SKILL_DIR}/scripts/update_main_version.py {version_file} {current_version} {new_version} {version_path}
 ```
 
-stdout に更新後の内容が出力される。Write でファイルに書き出す。
-stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
-
-> **Write の前提 [MANDATORY]**: `Write` ツールはそのファイルを事前に `Read` していないと失敗する。Step 3 で `version_file` を Read 済みであれば Write 可。未 Read の場合は先に `Read` してから `Write` するか、`Edit` で差分更新する。
+ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認し、`status: "error"` の場合はエラー内容を報告して終了する。orchestrator AI 側で別途 Write する手順は不要。
 
 #### 6-2. sync_files の更新
 
@@ -189,11 +186,11 @@ stderr の JSON で `status: "error"` の場合はエラー内容を報告して
      ```bash
      python3 ${CLAUDE_SKILL_DIR}/scripts/update_optional_filtered.py {path} {current_version} {new_version} "{filter}"
      ```
-   optional ラッパーでパターン未マッチ時はスクリプトが `{"status": "skipped"}` を返して exit 0 で終了する。この場合は Write をスキップする。
-3. stdout に更新後の内容が出力される。Write でファイルに書き出す。
-   stderr の JSON で `status: "error"` の場合はエラー内容を報告して終了する。
-   stderr の JSON で `status: "skipped"` の場合は Write をスキップする（optional のパターン未マッチ）。
-   > **Write の前提 [MANDATORY]**: sync_files のファイルは Step 3 で Read していないことが多い。Write の前に対象ファイルを `Read` するか、`Edit` で差分更新する。
+   optional ラッパーでパターン未マッチ時はスクリプトが `{"status": "skipped"}` を返して exit 0 で終了する。この場合ラッパーは書き戻しをスキップする。
+3. ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認:
+   - `status: "ok"` → 対象ファイルが更新済み
+   - `status: "skipped"` → optional のパターン未マッチ（書き戻しスキップ済み）
+   - `status: "error"` → エラー内容を報告して終了する
 
 > **sync_files の対象範囲 [制約]**: `sync_files` は **version 文字列そのもの** を単純置換する仕組みである。version に連動するが値が version 文字列ではないフィールド（例: Homebrew Formula の `revision`（git tag commit の SHA）、ハッシュ・ビルド番号など）は **対象外**。これらを `sync_files` に含めると version 部分だけが置換され、連動値が取り残されて壊れる。
 >
