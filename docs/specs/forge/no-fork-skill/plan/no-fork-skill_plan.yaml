@@ -199,7 +199,7 @@ tasks:
   - task_id: TASK-009
     title: 静的検証テスト test_fixer_safety_prompt.py を新設
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-008
@@ -217,7 +217,7 @@ tasks:
   - task_id: TASK-010
     title: plugins/forge/agents/fixer.md を新規作成 (安全境界 4 制約付き)
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-009
@@ -238,7 +238,7 @@ tasks:
   - task_id: TASK-011
     title: review/SKILL.md Phase 6 (fixer 経路) を Agent ツール起動に書き換え + 修正経路分岐表更新
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-010
@@ -257,7 +257,7 @@ tasks:
   - task_id: TASK-012
     title: present-findings/SKILL.md の fixer 起動を Agent ツールに書き換え
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-010
@@ -274,7 +274,7 @@ tasks:
   - task_id: TASK-013
     title: F-4 完了 E2E 検証
     priority: 65
-    status: pending
+    status: completed
     design_id: DES-032
     depends_on:
       - TASK-011

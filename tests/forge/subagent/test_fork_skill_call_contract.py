@@ -61,18 +61,23 @@ class TestForkSkillCallContract(unittest.TestCase):
 
     def test_present_findings_documents_structured_fixer_args(self) -> None:
         content = _read('plugins/forge/skills/present-findings/SKILL.md')
-        required_examples = [
-            'args: "{session_dir} {review_type} --single {id}"',
-            'args: "{session_dir} {review_type} --batch"',
-            'args: "{session_dir} {review_type} --diff-only {files_modified}"',
-            'args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"',
+        # REQ-006 / DES-032 (TASK-010/012) で fixer / reviewer を fork 型 SKILL →
+        # カスタム Agent 化したため、構造化引数の渡し方が args 形式から Agent prompt
+        # 形式に変わった。--batch は廃止 (DES-032 §3.5.1 単一 finding 起動原則)。
+        # Agent 経路の入力契約 5 要素を assert する。
+        required = [
+            'subagent_type: "forge:fixer"',         # fixer の Agent タイプ
+            'subagent_type: "forge:reviewer"',      # 単独修正レビューでの reviewer Agent
+            'finding_id',                            # 単一 finding 起動引数
+            'allowed_files',                         # allowlist 引数
+            '--diff-only',                           # 単独修正レビュー モード
         ]
 
-        missing = [example for example in required_examples if example not in content]
+        missing = [phrase for phrase in required if phrase not in content]
         self.assertEqual(
             missing,
             [],
-            'present-findings の fixer / reviewer 呼び出しに構造化 args 例が不足しています:\n'
+            'present-findings の fixer / reviewer Agent 呼び出しに構造化引数の説明が不足しています:\n'
             + '\n'.join(f'  - {m}' for m in missing),
         )
 
@@ -140,9 +145,13 @@ class TestForkSkillCallContract(unittest.TestCase):
         self.assertNotIn('args: `{session_dir}', content)
 
     def test_batch_ids_format_is_documented(self) -> None:
+        # REQ-006 / DES-032 §3.5.1 で fixer の `--batch` モードは廃止され、
+        # orchestrator 側の `for id in fix_ids:` ループに置き換えられた (単一 finding
+        # 起動原則)。よって present-findings には `--ids 1 2 3` の旧記法は不在。
+        # 旧 fixer/SKILL.md (F-5 / TASK-020 で削除予定) には引き続き残るため、
+        # そちらでのみ --ids 表記の存在を確認する。
         paths = [
             'plugins/forge/skills/fixer/SKILL.md',
-            'plugins/forge/skills/present-findings/SKILL.md',
         ]
 
         missing = [
@@ -153,7 +162,7 @@ class TestForkSkillCallContract(unittest.TestCase):
         self.assertEqual(
             missing,
             [],
-            '--batch の id リスト書式が明示されていません:\n'
+            '--batch の id リスト書式が明示されていません (旧 fixer/SKILL.md のみ対象):\n'
             + '\n'.join(f'  - {m}' for m in missing),
         )
 
