@@ -24,6 +24,18 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
+## 議論モードの基本原則 [MANDATORY]
+
+ユーザーの「叩き台を作って」「全面改訂してレビューしよう」「議論しよう」「壁打ち」は **議論起点** であり、決定フローではない。詳細は `requirements_interactive_workflow.md` § 対話の基本原則 8-11 を参照。
+
+要点のみ:
+
+- 叩き台を書いたら一度止まる。連続 AskUserQuestion で詰めない
+- 検討中の暫定案を改訂履歴に書かない (確定段階で 1 エントリにまとめる)
+- 大規模 rewrite 後は grep で stale 文言を必ず検査
+- システム的 feature は「用語 → アーキテクチャ → 状態 → データモデル → 要件」の順で積み上げる
+- 「批判的にレビュー」依頼には A/B/C 比較 + 1 推奨案 + 決定は委ねる、のフォーマットで返す
+
 ## コマンド構文
 
 ```
