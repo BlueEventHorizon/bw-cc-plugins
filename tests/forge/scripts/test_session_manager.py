@@ -1148,5 +1148,189 @@ class TestCLI(_FsTestCase):
         self.assertNotEqual(r.returncode, 0)
 
 
+# =========================================================================
+# 9. 動詞レベル API (probe / resume / finish)
+# =========================================================================
+
+class TestCmdProbe(_FsTestCase):
+    """cmd_probe のテスト: 中断判定 + completed 自動回収"""
+
+    def _args(self, skill):
+        class A: pass
+        a = A(); a.skill = skill
+        return a
+
+    def _make_session(self, skill, name, status, hours_ago=0):
+        from datetime import datetime, timedelta, timezone
+        from session_manager import _auto_cleanup_on_init  # noqa: F401
+        session_dir = os.path.join(TEMP_BASE, name)
+        os.makedirs(session_dir, exist_ok=True)
+        ts = (datetime.now(timezone.utc)
+              - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        write_flat_yaml(
+            os.path.join(session_dir, "session.yaml"),
+            {"skill": skill, "started_at": ts, "last_updated": ts, "status": status},
+            field_order=SESSION_FIELD_ORDER,
+        )
+        return session_dir
+
+    def test_state_none_when_no_session(self):
+        from session_manager import cmd_probe
+        result = cmd_probe(self._args("review"))
+        self.assertEqual(result["state"], "none")
+
+    def test_state_resumable_when_in_progress_exists(self):
+        from session_manager import cmd_probe
+        session_dir = self._make_session("review", "review-aaa", "in_progress")
+        result = cmd_probe(self._args("review"))
+        self.assertEqual(result["state"], "resumable")
+        self.assertEqual(result["session_dir"], session_dir)
+
+    def test_auto_cleans_completed_remnant(self):
+        """probe 呼び出しで completed 残骸が自動 cleanup される"""
+        from session_manager import cmd_probe
+        completed_dir = self._make_session("review", "review-old", "completed")
+        cmd_probe(self._args("review"))
+        self.assertFalse(os.path.exists(completed_dir))
+
+    def test_ignores_other_skill_in_progress(self):
+        """別スキルの in_progress は resumable に含めない"""
+        from session_manager import cmd_probe
+        self._make_session("start-design", "design-aaa", "in_progress")
+        result = cmd_probe(self._args("review"))
+        self.assertEqual(result["state"], "none")
+
+    def test_picks_latest_when_multiple_resumable(self):
+        """複数 in_progress がある場合は last_updated が新しい方を返す"""
+        from session_manager import cmd_probe
+        self._make_session("review", "review-old", "in_progress", hours_ago=10)
+        newer = self._make_session("review", "review-new", "in_progress", hours_ago=1)
+        result = cmd_probe(self._args("review"))
+        self.assertEqual(result["state"], "resumable")
+        self.assertEqual(result["session_dir"], newer)
+
+
+class TestCmdResume(_FsTestCase):
+    """cmd_resume のテスト: last_updated 更新 + session.yaml 全体返却"""
+
+    def _args(self, session_dir):
+        class A: pass
+        a = A(); a.session_dir = session_dir
+        return a
+
+    def test_updates_last_updated(self):
+        from session_manager import cmd_init, cmd_resume
+        class IArgs: pass
+        ia = IArgs(); ia.skill = "review"
+        init_result = cmd_init(ia, [])
+        session_dir = init_result["session_dir"]
+        before = read_yaml(os.path.join(session_dir, "session.yaml"))["last_updated"]
+
+        import time; time.sleep(1)
+        result = cmd_resume(self._args(session_dir))
+        self.assertEqual(result["status"], "ok")
+        self.assertNotEqual(result["session"]["last_updated"], before)
+
+    def test_returns_full_session_metadata(self):
+        from session_manager import cmd_init, cmd_resume
+        class IArgs: pass
+        ia = IArgs(); ia.skill = "review"
+        init_result = cmd_init(ia, ["--feature", "login", "--review-type", "code"])
+        session_dir = init_result["session_dir"]
+
+        result = cmd_resume(self._args(session_dir))
+        self.assertEqual(result["session"]["skill"], "review")
+        self.assertEqual(result["session"]["feature"], "login")
+        self.assertEqual(result["session"]["review_type"], "code")
+
+    def test_error_on_missing_session(self):
+        from session_manager import cmd_resume
+        result = cmd_resume(self._args(os.path.join(TEMP_BASE, "nonexistent")))
+        self.assertEqual(result["status"], "error")
+
+    def test_error_on_path_traversal(self):
+        from session_manager import cmd_resume
+        result = cmd_resume(self._args("/etc/passwd"))
+        self.assertEqual(result["status"], "error")
+
+
+class TestCmdFinish(_FsTestCase):
+    """cmd_finish のテスト: complete + cleanup の 1 動詞化"""
+
+    def _args(self, session_dir):
+        class A: pass
+        a = A(); a.session_dir = session_dir
+        return a
+
+    def test_deletes_session_dir(self):
+        from session_manager import cmd_init, cmd_finish
+        class IArgs: pass
+        ia = IArgs(); ia.skill = "review"
+        init_result = cmd_init(ia, [])
+        session_dir = init_result["session_dir"]
+        self.assertTrue(os.path.exists(session_dir))
+
+        result = cmd_finish(self._args(session_dir))
+        self.assertEqual(result["status"], "finished")
+        self.assertFalse(os.path.exists(session_dir))
+
+    def test_error_on_missing(self):
+        from session_manager import cmd_finish
+        result = cmd_finish(self._args(os.path.join(TEMP_BASE, "nonexistent")))
+        self.assertEqual(result["status"], "error")
+
+    def test_error_on_path_traversal(self):
+        from session_manager import cmd_finish
+        result = cmd_finish(self._args("/etc/passwd"))
+        self.assertEqual(result["status"], "error")
+
+
+class TestVerbApisCli(_FsTestCase):
+    """probe / resume / finish の CLI 経由テスト"""
+
+    def _run(self, *args, input_data=None):
+        script = (Path(__file__).resolve().parents[3]
+                  / 'plugins' / 'forge' / 'scripts' / 'session_manager.py')
+        return subprocess.run(
+            [sys.executable, str(script), *args],
+            input=input_data,
+            capture_output=True,
+            text=True,
+            cwd=self.tmpdir,
+        )
+
+    def test_probe_cli_none(self):
+        r = self._run("probe", "--skill", "review")
+        self.assertEqual(r.returncode, 0)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["state"], "none")
+
+    def test_resume_finish_cycle_cli(self):
+        # init
+        r = self._run("init", "--skill", "review")
+        session_dir = json.loads(r.stdout)["session_dir"]
+
+        # probe → resumable
+        r = self._run("probe", "--skill", "review")
+        data = json.loads(r.stdout)
+        self.assertEqual(data["state"], "resumable")
+        self.assertEqual(data["session_dir"], session_dir)
+
+        # resume
+        r = self._run("resume", session_dir)
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(json.loads(r.stdout)["status"], "ok")
+
+        # finish
+        r = self._run("finish", session_dir)
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(json.loads(r.stdout)["status"], "finished")
+        self.assertFalse((self.tmpdir / session_dir).exists())
+
+        # 後続 probe は none
+        r = self._run("probe", "--skill", "review")
+        self.assertEqual(json.loads(r.stdout)["state"], "none")
+
+
 if __name__ == "__main__":
     unittest.main()
