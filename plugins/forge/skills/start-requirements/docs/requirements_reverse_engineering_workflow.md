@@ -63,38 +63,51 @@ graph TD
 
 ### 1.3 コンテキスト収集 agent の起動
 
-Agent ツールで以下を**並列起動**する。各 agent には `${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md` のパスと `session_dir` を渡す。
+Agent ツールで以下を**並列起動**する。各 agent の **return value** を main AI コンテキストに直接保持する。
 
 **rules agent**:
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 実装ルール調査
-feature: "{feature}"
-skill_type: "要件定義書作成"
+```
+Agent ツール起動: 実装ルール収集
+prompt:
+  Feature "{feature}" の要件定義書作成に適用するプロジェクト固有ルール (UX / アーキ規約等) を検索する。
+
+  検索手順 (優先順):
+  - `/forge:query-db-rules {feature} 要件`
+  - 利用不可なら `python3 ${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py --type rules`
+  - それも不可なら `Glob: docs/rules/**/*.md`
+
+  return value として以下の markdown 形式で返す:
+
+  ## 実装ルール (N 件)
+  - `path/to/rule.md` — 関連理由
 ```
 
 **code agent**:
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 既存コード調査
-feature: "{feature}"
-skill_type: "要件定義書作成"
-target_description: "{ソースコードのパス}"
+```
+Agent ツール起動: 既存コード収集
+prompt:
+  Feature "{feature}" の解析対象として、以下のソースコード周辺の既存実装を探索する。
+  対象パス: {ソースコードのパス}
+
+  検索手順:
+  - 上記パス配下のファイルを列挙
+  - 同一機能ドメインの import 元・類似命名・テストファイルを分類
+
+  return value として以下の markdown 形式で返す:
+
+  ## 既存コード (N 件)
+  - `path/to/file.swift` — 関連理由
 ```
 
 ### 1.4 収集結果の確認
 
-全 agent 完了後、`{session_dir}/refs/` 内のファイルを Read し表示する（5件以下は全件、6件以上は先頭3件+省略）。
+全 agent 完了後、2 つの return value をそのままユーザーに表示する（5 件以下は全件、6 件以上は先頭 3 件 + `... 他 N 件`）。
 
 **失敗時の扱い**:
 
-- agent がエラー終了 → 該当カテゴリの refs/ ファイルなしで後続工程に進む
+- agent がエラー終了 → 該当カテゴリの return value なしで後続工程に進む
 - agent が空結果 → 正常扱い
 
 ---
@@ -103,9 +116,9 @@ target_description: "{ソースコードのパス}"
 
 ### 2.1 プロジェクト構造の把握
 
-`{session_dir}/refs/code.yaml` を Read し、収集済みのソースコード一覧を起点に解析する:
+Phase 1 の既存コード収集 agent の return value を起点に、解析する:
 
-- refs/code.yaml に記載されたファイルを Read して全体構造を把握
+- return value に記載されたファイルを Read して全体構造を把握
 - プロジェクト構造の把握（ディレクトリ構成）
 - 必要に応じて追加の Grep/Glob 探索で補完
 
