@@ -63,7 +63,9 @@ claude mcp add --transport http figma-desktop http://127.0.0.1:3845/mcp
 | `generate_diagram`      | Mermaid → FigJam 図生成         | Flowchart, Gantt, State, Sequence |
 | `whoami`                | 認証ユーザー情報取得            | リモートのみ                      |
 
-## プロジェクトでの使い方
+## Flutter プロジェクトでの使い方
+
+プロジェクト固有のルール（デザイントークン、フォント、アセット管理等）は [project-rules.md](references/project-rules.md) を参照。
 
 ### 関連 UI ワークフロー（impl-issue スキル）
 
@@ -81,12 +83,10 @@ server: user-figma-remote-mcp  (または figma-dev-mode-mcp-server)
 arguments: {
   nodeId: "<nodeId>",
   fileKey: "<fileKey>",
-  clientLanguages: "<プロジェクトの言語 (例: swift, dart, typescript)>",
-  clientFrameworks: "<プロジェクトのFW (例: swiftui, flutter, react)>"
+  clientLanguages: "dart",
+  clientFrameworks: "flutter"
 }
 ```
-
-> fileKey は `.claude/figma.yaml` から取得する（`resolve-figma-node` スキル参照）。
 
 ### 重要: React + Tailwind 出力の扱い
 
@@ -134,10 +134,40 @@ https://www.figma.com/design/<fileKey>/<FileName>?node-id=<int1>-<int2>
 
 ### `get_design_context` の注意点
 
+- **node の存在 ≠ 採用**: コンポーネント流用により、**`visible=false` の未使用子 node** がツリーに残ることが多い。構造データだけで実装対象と判断しない
+- **必ず `get_screenshot` と突合**: スクリーンショットに写っているものだけが「表示されている UI」。写っていなければ実装・YAML に含めない（条件付き表示は状態バリエーション表で別記）
+- **REST API 補助**: 疑わしい node は Figma REST API の `visible` 属性で確認可能
 - **マスク/クリッピング情報を正確に反映しない場合がある**
 - 円形マスク（ellipse）の画像が単なる `<div>` として出力される等
 - 形状が重要な要素は **`get_metadata` で個別にノードタイプを確認** する
 - ノードタイプ: `ellipse` = 円形, `rectangle` = 四角形
+
+### 色 / アイコンの値を変更するとき（必須手順）
+
+**Figma の Variable 名・Style 名だけを根拠に色を変更してはならない。** 同じノードに複数の似た色変数が定義されていることがあり、名前から実装対象を推測すると誤判定する。
+
+**必須プロセス:**
+
+1. **`get_screenshot` で実描画を確認** — 実際にレンダリングされた色を目視する（変更前後の差を把握できる粒度で）
+2. **`get_variable_defs` で候補を全件取得** — そのノードに紐づくすべての Variable / Style を一覧化する
+3. **両者をクロスチェック** — スクショの見た目と、Variable の RGB 値を突合し、実際に SVG / Fill に bind されている Variable を特定する
+4. **採用根拠をコードコメントに残す** — `// Figma の Variable XXX 準拠 / Style 名 YYY は別用途` のように、なぜそのコードを採用したかを明示する
+
+<bad-example>
+Figma の `get_design_context` レスポンス末尾に `Star-Dark: #DFB300` が含まれていたため、星の色を `#FFCB45` から `#DFB300` に変更した。
+→ 実描画は別 Variable `Color/gold/200` (#FFCB45) を使っており、`Star-Dark` は未使用 / 別用途だった。スクショを見れば一目で気づけた誤判定。
+</bad-example>
+
+<good-example>
+1. `get_screenshot` で星部分が明るい金色に見えることを確認
+2. `get_variable_defs` で `Star-Dark: #DFB300` と `Color/gold/200: #ffcb45` の両方が定義されているのを把握
+3. スクショの色と RGB 値を突合し、`Color/gold/200` が採用されていると判断
+4. コードコメントに `// Figma の Variable Color/gold/200 準拠。Style 名 Star-Dark は別用途` と記載
+</good-example>
+
+このルールはアイコン色・テキスト色・ボーダー色・背景色など、**すべての色変更**に適用する。
+
+> **関連（実装側のルール）**: Figma 値を Flutter 実装に落とし込む際のルール（既存デザイントークンを再発明しない／フォントサイズが異なるテキストの baseline 揃え 等）は Figma MCP ツールの話ではなく **実装規約**のため、`impl-issue` スキルの [phase-11-typography-mapping.md](../impl-issue/references/phase-11-typography-mapping.md) と [phase-11-ui-implementation.md](../impl-issue/references/phase-11-ui-implementation.md) に記載している。
 
 ### プロンプトのコツ
 
