@@ -1,32 +1,53 @@
-# プロジェクト固有の Figma MCP ルール（テンプレート）
+# Flutter プロジェクト固有の Figma MCP ルール
 
-このファイルは各プロジェクトでカスタマイズするためのテンプレートです。
-プロジェクトに合わせて内容を書き換えてください。
+本プロジェクト（DaytonaPark）で Figma MCP を使用する際の固有ルール。
 
 ## フォントルール
 
 ### フォントファミリーはシステムフォントを使用
 
-Figma のフォントファミリーは **使用しない**。
-プラットフォーム（iOS / Android / macOS / Web 等）のシステムフォントを使用する。
+Figma のフォントファミリー（Hiragino Kaku Gothic Pro, SF Pro 等）は **使用しない**。
+iOS / Android で動作するため、システムフォントを使用する。
 
 Figma から参照するのは **ウェイト（太さ）・サイズ・line-height** のみ。
 
-### JP/EN テキストスタイルの区別（プロジェクトに JP/EN 分離がある場合）
+### JP/EN テキストスタイルの区別
 
-Figma のテキストスタイルに JP / EN の区別がある場合は、プロジェクトの命名規則に対応させる。
+Figma のテキストスタイルは JP（日本語）と EN（英語）で分離定義されている。
+
+```
+JP/body/Body2_14R: Hiragino Kaku Gothic Pro W3, 14px, weight 300, lineHeight 20px
+EN/Label/Label_14R: SF Pro Regular, 14px, weight 400, lineHeight 1
+```
+
+**Flutter での使い分け**:
+
+| テキスト内容                         | 使用するテーマ               | 例                           |
+| ------------------------------------ | ---------------------------- | ---------------------------- |
+| 日本語を含む                         | `context.appTextThemeJP.xxx` | 「カラーをまとめる」         |
+| 英数字のみ（価格、件数、ブランド名） | `context.appTextThemeEN.xxx` | 「¥1,980」「URBAN RESEARCH」 |
 
 ## デザイントークンマッピング
 
-Figma 変数名からプロジェクトのテーマ定義への対応はプロジェクト規約を参照すること。
+Figma 変数名から Flutter テーマ定義への対応:
 
-**禁止**: 色・サイズ等のハードコード。プロジェクトのデザイントークンを使用する。
+| カテゴリ   | Figma 変数パターン      | Flutter テーマ                    |
+| ---------- | ----------------------- | --------------------------------- |
+| 背景色     | `var(--background/xxx)` | `context.appBackgroundColors.xxx` |
+| ボタン色   | `var(--button/xxx)`     | `context.appButtonColors.xxx`     |
+| テキスト色 | `var(--text/xxx)`       | `context.appTextColors.xxx`       |
+| アイコン色 | `var(--icon/xxx)`       | `context.appIconColors.xxx`       |
+
+**禁止**: `Colors.white`, `Color(0xFFxxxxxx)`, `TextStyle(fontSize: xx)` 等のハードコード
 
 ## アセット管理
 
 ### アイコン
 
-プロジェクト規約に従ったアイコン参照方法を使用する。
+- **禁止**: `Icons.tune`, `Icons.sort` 等の `IconData`
+- **使用**: `CommonAssets.res.assets.{iconName}.svg()`
+- 色変更時: `colorFilter: ColorFilter.mode(iconColors.primary, BlendMode.srcIn)`
+- 既存アセット: `packages/design_ui/res/assets/`
 
 ### アセットダウンロード
 
@@ -48,7 +69,8 @@ curl -s -H "X-Figma-Token: $FIGMA_PAT" \
 
 ### UI 文字列
 
-プロジェクトの i18n / 文字列管理方法に従う。文字列のハードコード禁止。
+- **禁止**: `Text('タイトル')` 等のハードコード
+- **使用**: slang（`final t = Translations.of(context); Text(t.myFeature.title)`）
 
 ## Figma MCP 使用上の注意
 
