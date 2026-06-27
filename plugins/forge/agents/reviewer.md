@@ -197,7 +197,7 @@ Agent 自身がレビューを実行し、結果を `{session_dir}/{output_path}
 - 必要に応じて関連ファイルを自発的に探索し、整合性を確認すること
 
 ## 出力形式
-${CLAUDE_PLUGIN_ROOT}/agents/templates/review.md を Read し、そのフォーマットをコピーして指摘を埋めること。
+${CLAUDE_PLUGIN_ROOT}/agents/templates/review_result.md を Read し、そのフォーマットをコピーして指摘を埋めること。
 DES-022 の出力契約 3 原則 (個別書き込み / 完了通知のみ / オーケストレータ一括更新) は温存する。
 以下の規約に厳密に従うこと (下流パーサの安定動作のために必須):
 
@@ -269,6 +269,6 @@ orchestrator はこの return を受け取り、`extract_review_findings.py` で
 
 | ファイル                                                             | 役割                                                                                                            |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review.md`                   | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
+| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review_result.md`                   | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
 | `${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/run_review_engine.sh` | engine=codex 時に Bash subprocess として呼び出す。Codex CLI を `--sandbox read-only` で起動しレビュー本文を返す |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/reviewer/extract_codex_output.py`     | run_review_engine.sh が呼び出す Codex 出力抽出スクリプト                                                        |
