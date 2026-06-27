@@ -14,7 +14,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestio
 
 ## Goal
 
-計画書から選択したタスクの実装・AIレビュー・計画書更新・完了処理（セッション削除・完了案内）まで完走すること。
+計画書から選択したタスクの実装・AIレビュー・計画書更新・完了案内まで完走すること。
 
 ## フロー継続 [MANDATORY]
 
@@ -131,46 +131,7 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ---
 
-## セッション管理 [MANDATORY]
-
-<!-- DES-011 §3.2 準拠: start-implement は事前準備 Phase が多いため、セッション管理を Phase 間の独立セクションとして配置 -->
-
-### 自スキル残骸の検出
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
-```
-
-- `status: "none"` → 「他スキル残骸の通告」へ
-- `status: "found"` の場合、`sessions[]` を以下のルールで処理する:
-  - **`status: "completed"`** → 正常完了したのに cleanup されなかった残骸として AskUserQuestion なしで自動回収する:
-    ```bash
-    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {completed_session_path}
-    ```
-  - **`status: "in_progress"`** が残る場合 → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-    - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
-    - **残す** → 無視して新規作成へ
-
-### 他スキル残骸の通告
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py --all-skills
-```
-
-返却された `sessions[]` から自スキル分（既に処理済み）を除外し、`status: "completed"` は自動 cleanup する。残った `status: "in_progress"` が存在する場合は AskUserQuestion:「他スキルの残骸が N 件あります。今クリーンアップしますか？」
-
-- **はい** → 各セッションを cleanup
-- **いいえ** → そのまま新規セッション作成へ進む
-
-### Phase 切替時の touch [MANDATORY]
-
-各 Phase の開始時に session.yaml の `last_updated` を更新する。これにより `cleanup-stale` の時間基準が「最後に活動があった時刻」を正しく反映し、長時間タスクが誤削除されることを防ぐ。
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py touch {session_dir}
-```
-
-### セッション作成
+## セッション作成 [MANDATORY]
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{TASK-ID}"
@@ -419,16 +380,7 @@ executor のステータスに基づいて分岐:
 
 `/anvil:commit` を実行して commit/push を確認する。
 
-### 6.4 セッション削除・次タスク判定
-
-正常完了処理は **complete → cleanup の 2 段** で行う:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
-```
-
-`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
+### 6.4 次タスク判定
 
 次タスクの判定:
 
@@ -479,18 +431,7 @@ executor が FAILURE を報告した場合:
    - **手動で修正** → オーケストレーターまたは人間が直接修正後、Phase 5 へ
    - **タスクをスキップ** → 計画書は更新せず、Phase 6.4 へ
 
-**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーションし、6.5.1 のセッション後処理へ進む。
-
-#### 6.5.1 エスカレーション時のセッション後処理 [MANDATORY]
-
-エスカレーション・中断・人間判断による継続放棄のいずれの場合も、セッションディレクトリを放置せず、AskUserQuestion でユーザーに扱いを確認する。プレーンテキストで「どうしますか？」のように書かない。
-
-質問例:「タスク {task_id} はエスカレーションに到達しました。セッションディレクトリ {session_dir} の扱いを選んでください。」
-
-- **削除する** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}` を実行
-- **残す（後で再開する）** → そのまま終了。次回 `/forge:start-implement` 起動時に find_session が検出する
-
-**MUST** どちらを選んでも、SKILL は明示的に「セッションを削除した」「セッションを残した」と完了案内で報告する。**NEVER** session_dir をユーザーに告知せず放置してはならない（残骸の原因）。
+**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーションして終了する。
 
 ---
 

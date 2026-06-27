@@ -82,44 +82,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/resolve_doc.py"
 
 ---
 
-## セッション管理 [MANDATORY]
-
-### 自スキル残骸の検出
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
-```
-
-- `status: "none"` → 「他スキル残骸の通告」へ
-- `status: "found"` の場合、`sessions[]` を以下のルールで処理する:
-  - **`status: "completed"`** → 正常完了したのに cleanup されなかった残骸として AskUserQuestion なしで自動回収する:
-    ```bash
-    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {completed_session_path}
-    ```
-  - **`status: "in_progress"`** が残る場合 → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-    - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
-    - **残す** → 残存ディレクトリを無視して新規セッション作成へ
-
-### 他スキル残骸の通告
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py --all-skills
-```
-
-返却された `sessions[]` から自スキル分（既に処理済み）を除外し、`status: "completed"` は自動 cleanup する。残った `status: "in_progress"` が存在する場合は AskUserQuestion:「他スキルの残骸が N 件あります。今クリーンアップしますか？」
-
-- **はい** → 各セッションを cleanup
-- **いいえ** → そのまま新規セッション作成へ進む
-
-### Phase 切替時の touch [MANDATORY]
-
-各 Phase の開始時に session.yaml の `last_updated` を更新する。これにより `cleanup-stale` の時間基準が「最後に活動があった時刻」を正しく反映し、長時間タスクが誤削除されることを防ぐ。
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py touch {session_dir}
-```
-
-### セッション作成
+## セッション作成 [MANDATORY]
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{ios|macos}" "{出力先ディレクトリ}"
@@ -148,4 +111,4 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 ${CLAUDE_PLUGIN_ROOT}/skills/start-uxui-design/docs/uxui_analysis_workflow.md
 ```
 
-Read 後、ワークフローファイルの Phase 1 から開始する。ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認・セッション削除）まで自己完結している。SKILL.md に戻る必要はない。
+Read 後、ワークフローファイルの Phase 1 から開始する。ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認）まで自己完結している。SKILL.md に戻る必要はない。

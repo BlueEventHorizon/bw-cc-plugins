@@ -4,7 +4,17 @@
 オーケストレータースキルのセッション作成・更新・検索・削除を担う。
 AI が YAML を手書きする代わりに、このスクリプトが正しいフォーマットで生成する。
 
-使用例:
+使用例（動詞レベル API、推奨）:
+    # 中断判定（completed 残骸を自動回収しつつ自スキルの resumable を返す）
+    python3 session_manager.py probe --skill review
+
+    # 再開（last_updated 更新 + session.yaml 全体を返却）
+    python3 session_manager.py resume .claude/.temp/review-a3f7b2
+
+    # 正常完了（complete + cleanup を 1 動詞）
+    python3 session_manager.py finish .claude/.temp/review-a3f7b2
+
+使用例（低レベル CRUD、後方互換）:
     # セッション作成（作成前に completed 残骸を全スキル横断で自動回収する。#93）
     python3 session_manager.py init --skill start-design --feature login --mode new
 
@@ -360,6 +370,100 @@ def cmd_cleanup(args):
     return {"status": "deleted", "session_dir": session_dir}
 
 
+def cmd_probe(args):
+    """中断判定: completed 残骸を自動回収し、自スキルの resumable を返す。
+
+    SKILL 側から「中断があったか / 再開できるか」だけを問えるよう、find の生 JSON
+    分岐を内部に隠蔽する。返却は以下のいずれか:
+
+      - {"state": "none"}                                        — 再開対象なし
+      - {"state": "resumable", "session_dir": ..., "started_at": ..., "last_updated": ...}
+
+    副作用: 全スキル横断で `status: completed` の残骸を自動 cleanup する（init と
+    同じ「完了済みなのに残っている = 価値ゼロ」の方針）。
+    """
+    skill = args.skill
+
+    # completed 残骸を全スキル横断で best-effort 回収（_auto_cleanup_on_init と同じ動作）
+    _auto_cleanup_on_init()
+
+    # 自スキルの in_progress を検索
+    pattern = os.path.join(TEMP_BASE, "*", "session.yaml")
+    candidates = []
+    for yaml_path in sorted(glob.glob(pattern)):
+        try:
+            data = read_yaml(yaml_path)
+        except (IOError, OSError):
+            continue
+        if data.get("skill") != skill:
+            continue
+        if data.get("status") != "in_progress":
+            continue
+        candidates.append({
+            "session_dir": os.path.dirname(yaml_path),
+            "started_at": data.get("started_at", ""),
+            "last_updated": data.get("last_updated", ""),
+        })
+
+    if not candidates:
+        return {"state": "none"}
+
+    # 複数残っている場合は最新の last_updated を選ぶ（古いものは手動 cleanup-stale 待ち）
+    candidates.sort(key=lambda c: c["last_updated"], reverse=True)
+    top = candidates[0]
+    return {
+        "state": "resumable",
+        "session_dir": top["session_dir"],
+        "started_at": top["started_at"],
+        "last_updated": top["last_updated"],
+    }
+
+
+def cmd_resume(args):
+    """中断セッションを再開する。last_updated を更新し、session.yaml の内容を返す。
+
+    SKILL 側はこの返却 dict をそのままコンテキストとして使える（skill / feature /
+    review_type など、init 時に保存された任意フィールドを含む）。
+    """
+    session_dir = args.session_dir
+    data = _update_session_yaml(session_dir, {})
+    if data.get("status") == "error":
+        return data
+    return {
+        "status": "ok",
+        "session_dir": session_dir,
+        "session": data,
+    }
+
+
+def cmd_finish(args):
+    """正常完了処理: complete → cleanup を 1 動詞で行う。
+
+    SKILL 側の "2 段呼び" を集約する。complete 段でクラッシュしても次回起動時の
+    auto-cleanup が拾うため、安全性は 2 段呼びと等価。
+    """
+    session_dir = args.session_dir
+
+    # complete (status: completed に遷移)
+    data = _update_session_yaml(session_dir, {"status": "completed"})
+    if data.get("status") == "error":
+        return data
+
+    # cleanup (rmtree)
+    if not validate_temp_path(session_dir):
+        return {
+            "status": "error",
+            "error": f"安全でないパスです。{TEMP_BASE}/ 配下のみ削除できます: {session_dir}",
+        }
+    if not os.path.exists(session_dir):
+        return {
+            "status": "error",
+            "error": f"ディレクトリが存在しません: {session_dir}",
+        }
+    shutil.rmtree(session_dir)
+    return {"status": "finished", "session_dir": session_dir}
+
+
 def _parse_iso_ts(ts):
     """ISO 8601 (Z 表記または +00:00 表記) を aware datetime に変換する。
 
@@ -530,6 +634,27 @@ def main():
     cleanup_parser = subparsers.add_parser("cleanup", help="セッション削除")
     cleanup_parser.add_argument("session_dir", help="削除するセッションディレクトリパス")
 
+    # probe サブコマンド
+    probe_parser = subparsers.add_parser(
+        "probe",
+        help="中断判定（completed 残骸を自動回収し、自スキルの resumable を返す）",
+    )
+    probe_parser.add_argument("--skill", required=True, help="判定対象のスキル名")
+
+    # resume サブコマンド
+    resume_parser = subparsers.add_parser(
+        "resume",
+        help="中断セッションを再開（last_updated 更新 + session.yaml 全体を返却）",
+    )
+    resume_parser.add_argument("session_dir", help="再開するセッションディレクトリパス")
+
+    # finish サブコマンド
+    finish_parser = subparsers.add_parser(
+        "finish",
+        help="正常完了処理（complete + cleanup を 1 動詞に統合）",
+    )
+    finish_parser.add_argument("session_dir", help="完了処理するセッションディレクトリパス")
+
     # cleanup-stale サブコマンド
     stale_parser = subparsers.add_parser(
         "cleanup-stale",
@@ -574,6 +699,12 @@ def main():
         result = cmd_complete(args)
     elif args.command == "cleanup":
         result = cmd_cleanup(args)
+    elif args.command == "probe":
+        result = cmd_probe(args)
+    elif args.command == "resume":
+        result = cmd_resume(args)
+    elif args.command == "finish":
+        result = cmd_finish(args)
     elif args.command == "cleanup-stale":
         result = cmd_cleanup_stale(args)
     else:
