@@ -325,7 +325,12 @@ def main():
 
     sub.add_parser("probe", help="中断判定 + completed 残骸の自動回収")
 
-    sp_start = sub.add_parser("start", help="新規 review セッションを作成し refs.yaml を書く")
+    sp_start = sub.add_parser(
+        "start", help="新規 review セッションを作成し refs.yaml を書く",
+        # SKILL レベルのフラグ (--auto / --interactive / --auto-critical 等) が
+        # `--auto-count` 等への prefix-match で誤って消費されないよう、prefix 省略を無効化。
+        allow_abbrev=False,
+    )
     sp_start.add_argument("--review-type", required=True)
     sp_start.add_argument("--engine", default=None)
     sp_start.add_argument("--interaction", default=None)

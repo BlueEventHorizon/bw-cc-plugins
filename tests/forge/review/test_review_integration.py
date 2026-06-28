@@ -2,7 +2,7 @@
 """DES-028 §7.2 統合テスト (forge-review feature)
 
 REQ-004 / DES-028 が定める「レビューポリシー」の **統合シナリオ** を網羅する。
-個別スクリプトの単体テスト (test_init_session.py / test_resolve_review_context.py
+個別スクリプトの単体テスト (test_review_session.py / test_resolve_review_context.py
 / test_criteria_no_perspective.py 等) は対応するファイルに任せ、本ファイルは
 
 - 引数なしデフォルト挙動と `--diff` 明示形の等価性
@@ -58,9 +58,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FORGE_DOCS_DIR = REPO_ROOT / "plugins" / "forge" / "docs"
 REVIEW_CRITERIA_DIR = REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "docs"
-INIT_SESSION = (
+REVIEW_SESSION = (
     REPO_ROOT
-    / "plugins" / "forge" / "skills" / "review" / "scripts" / "init_session.py"
+    / "plugins" / "forge" / "skills" / "review" / "scripts" / "review_session.py"
 )
 RESOLVE_CONTEXT = (
     REPO_ROOT
@@ -239,17 +239,18 @@ class TestReviewIntegration(unittest.TestCase):
             self.assertIn("--diff", data.get("error", ""))
 
     # ------------------------------------------------------------------
-    # 4. --section の argparse reject (init_session.py)
+    # 4. --section の argparse reject (review_session.py start)
     #    DES-028 §7.2「--section "4.1" → early validation error」
     # ------------------------------------------------------------------
 
     def test_section_flag_rejected_by_argparse(self):
-        """`--section` は DROP 済み。init_session.py の argparse が reject する。
+        """`--section` は DROP 済み。review_session.py start の argparse が reject する。
 
         exit code 2 + stderr に 'unrecognized arguments' を含むことを確認。
         """
         res = _run(
-            [sys.executable, str(INIT_SESSION), "code", "codex", "3",
+            [sys.executable, str(REVIEW_SESSION), "start",
+             "--review-type", "code", "--engine", "codex", "--auto-count", "3",
              "--section", "4.1"],
         )
         self.assertEqual(res.returncode, 2, res.stderr)
@@ -260,10 +261,12 @@ class TestReviewIntegration(unittest.TestCase):
     # 5. 介入軸の二重指定エラー (仕様確認)
     #    DES-028 §7.2「--interactive --auto-critical / --auto --auto-critical → error」
     #
-    #    early validation は SKILL.md レベル (AI が解釈) で行われ、init_session.py
-    #    の argparse には介入軸フラグそのものが定義されていない。テスト戦略として:
+    #    early validation は SKILL.md レベル (AI が解釈) で行われ、review_session.py
+    #    の argparse には介入軸フラグそのものが定義されていない (--interaction (単数形)
+    #    は受理するが、--interactive (形容詞形) は SKILL レベルのフラグなので透過しない)。
+    #    テスト戦略として:
     #    - SKILL.md に「介入軸の二重指定はエラー」と明文化されていることを確認
-    #    - init_session.py が `--interactive` 等を未知フラグとして reject する
+    #    - review_session.py が `--interactive` 等を未知フラグとして reject する
     #      (= AI 解釈段階以前に値として透過されないことを担保)
     # ------------------------------------------------------------------
 
@@ -277,8 +280,8 @@ class TestReviewIntegration(unittest.TestCase):
             "SKILL.md に介入軸の相互排他制約が明文化されていない",
         )
 
-    def test_interaction_flags_not_consumed_by_init_session(self):
-        """init_session.py は介入軸フラグ (--interactive 等) を消費しない。
+    def test_interaction_flags_not_consumed_by_review_session(self):
+        """review_session.py は介入軸フラグ (--interactive 等) を消費しない。
 
         SKILL.md レベルで AI が解釈する前提なので、ラッパー argparse は介入軸を
         知らない (= 透過されると未知フラグとして reject される) ことを確認する。
@@ -287,8 +290,9 @@ class TestReviewIntegration(unittest.TestCase):
         for flag in ("--interactive", "--auto-critical", "--auto"):
             with self.subTest(flag=flag):
                 res = _run(
-                    [sys.executable, str(INIT_SESSION),
-                     "code", "codex", "3", flag],
+                    [sys.executable, str(REVIEW_SESSION), "start",
+                     "--review-type", "code", "--engine", "codex",
+                     "--auto-count", "3", flag],
                 )
                 self.assertEqual(res.returncode, 2, res.stderr)
                 self.assertIn("unrecognized arguments", res.stderr)
@@ -426,7 +430,7 @@ class TestReviewIntegration(unittest.TestCase):
     def test_unknown_review_type_does_not_match_known_types(self):
         """未知種別が known の値域に含まれていないことを確認 (構造的妥当性)。
 
-        init_session.py 自体は review_type を文字列として透過するため、
+        review_session.py 自体は review_type を文字列として透過するため、
         値域チェックは SKILL.md レベルで AI が行う。本テストは「6 種別の
         集合が想定通り」を前提条件として担保する (CLI 仕様の値域の SSOT 確認)。
         """

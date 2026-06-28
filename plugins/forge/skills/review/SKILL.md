@@ -657,7 +657,7 @@ args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"
 単独修正レビュー完了後、修正が成功した各 finding に対して `mark_fixed.py` を呼ぶ:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py {session_dir} {id} {files_modified}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py {session_dir} {id} {file1} {file2} ...
 ```
 
 - 軽量経路 (Step 2-A) の場合: 修正した finding の id と修正ファイルパス一覧を渡す
