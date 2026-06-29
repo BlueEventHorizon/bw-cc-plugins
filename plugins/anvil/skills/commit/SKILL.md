@@ -23,6 +23,29 @@ argument-hint: "[message]"
 
 ---
 
+## Phase 0: フォーマット適用 [MANDATORY]
+
+commit 前に format 乱れを必ず解消する。format ずれたまま commit すると、後で誰かが fmt を走らせたときに無関係なファイルが diff に混入し、PR レビューや git blame が混乱する。
+
+プロジェクトルートに `dprint.jsonc` または `dprint.json` が存在し、かつ `dprint` コマンドが利用可能な場合のみ実行する:
+
+```bash
+# 存在チェック + 実行
+if [ -f dprint.jsonc ] || [ -f dprint.json ]; then
+  if command -v dprint >/dev/null 2>&1; then
+    dprint fmt
+  else
+    echo "warning: dprint 設定ファイルがあるが dprint コマンドが見つかりません。format スキップ"
+  fi
+fi
+```
+
+`dprint fmt` が新たにファイルを書き換えた場合、それも本 commit に含める (関連: ユーザー方針「dprint fmt がスコープ外ファイルを整形しても revert 不要」)。
+
+`dprint` 以外の formatter (prettier / black / rustfmt 等) が project で使われている場合は、CLAUDE.md か README.md の指示に従って手動適用したうえで本 commit に含める。
+
+---
+
 ## Phase 1: 変更確認 [MANDATORY]
 
 ```bash
