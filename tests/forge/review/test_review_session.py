@@ -21,17 +21,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WRAPPER = REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "scripts" / "review_session.py"
 
 VALID_REFS = {
-    "target_files": ["src/foo.py"],
+    "target_files": [{"path": "src/foo.py"}],
     "reference_docs": [{"path": "docs/rules.md"}],
     "review_packet": {
         "criteria_path": "review/docs/review_criteria_code.md",
         "ssot_refs": [
-            {"doc_path": "docs/rules/implementation_guidelines.md",
+            {"path": "docs/rules/implementation_guidelines.md",
              "priority": "P1", "doc_type": "rules"},
         ],
         "check_order": ["P1", "P2", "P3"],
-        "severity_source": "principles",
-        "output_path": "review_code.md",
+        "severity_source": "plugins/forge/docs/review_priorities_spec.md",
+        "output_filename": "review_code.md",
     },
 }
 
@@ -113,7 +113,7 @@ class TestStart(ReviewSessionTestBase):
             "--interaction", "auto", "--auto-count", "5",
             input_data=json.dumps({
                 **VALID_REFS,
-                "review_packet": {**VALID_REFS["review_packet"], "output_path": "review_design.md"},
+                "review_packet": {**VALID_REFS["review_packet"], "output_filename": "review_design.md"},
             }),
         )
         self.assertEqual(r.returncode, 0, r.stderr)

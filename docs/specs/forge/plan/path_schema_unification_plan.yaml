@@ -55,7 +55,7 @@ tasks:
   - task_id: TASK-002
     title: write_refs.py の validation を新 schema 専用に書き換え (TDD)
     priority: 85
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-001
@@ -75,7 +75,7 @@ tasks:
   - task_id: TASK-003
     title: write_refs.py の build_refs_text を新 schema 出力に切替
     priority: 85
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-002

@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
-"""refs.yaml を生成する。
+"""refs.yaml を生成する (ADR-032 path schema unification 後)。
 
-review スキルの Phase 2 で呼び出され、新スキーマ (review_packet) の refs.yaml を書き出す。
+review スキルの Phase 3 で呼び出され、新スキーマ (review_packet) の refs.yaml を書き出す。
 
-スキーマ契約は DES-028 §2.3 「refs.yaml の新スキーマ契約」に従う。
-旧 perspectives[] スキーマは本 feature で完全撤廃 (FNC-412)。
+スキーマ契約は DES-028 §2.3 + ADR-032 「path schema unification」に従う。
+- target_files: [{path: ...}] dict 配列 (ADR-032 で string[] から移行)
+- ssot_refs[].path: path に統一 (ADR-032 で Issue #99 の doc_path 改名を覆す)
+- review_packet.output_filename: sandbox 内ファイル名 (ADR-032 で output_path から改名)
+- 旧 perspectives[] スキーマは完全撤廃 (FNC-412)
+- 旧キー名 (doc_path / output_path / target_files の string array) は明示的 reject
 
 Usage:
     echo '<json>' | python3 write_refs.py <session_dir>
 
 stdin JSON:
     {
-        "target_files": ["path/to/file1"],
+        "target_files": [{"path": "path/to/file1"}],
         "reference_docs": [{"path": "docs/rules.md"}],
         "review_packet": {
             "criteria_path": "review/docs/review_criteria_code.md",
             "ssot_refs": [
-                {"doc_path": "docs/rules/implementation_guidelines.md",
+                {"path": "docs/rules/implementation_guidelines.md",
                  "priority": "P1", "doc_type": "rules"}
             ],
             "check_order": ["P1", "P2", "P3"],
-            "severity_source": "principles",
-            "output_path": "review_code.md"
+            "severity_source": "plugins/forge/docs/review_priorities_spec.md",
+            "output_filename": "review_code.md"
         },
         "related_code": [{"path": "src/foo.py", "reason": "関連", "lines": "1-50"}]
     }
@@ -46,12 +50,12 @@ from session.yaml_utils import yaml_scalar
 _ALLOWED_PRIORITIES = frozenset({"P1", "P2", "P3"})
 # review_packet.ssot_refs[].doc_type の許容値
 _ALLOWED_DOC_TYPES = frozenset({"rules", "principles", "format"})
-# review_packet.output_path のフォーマット: review_<種別>.md
-_OUTPUT_PATH_RE = re.compile(r"^review_[a-z0-9_-]+\.md$")
+# review_packet.output_filename のフォーマット: review_<種別>.md
+_OUTPUT_FILENAME_RE = re.compile(r"^review_[a-z0-9_-]+\.md$")
 
 
 def validate_review_packet(data):
-    """入力データをバリデーションする (新スキーマ: review_packet)。
+    """入力データをバリデーションする (ADR-032 新スキーマ)。
 
     Args:
         data: stdin から受け取った dict
@@ -66,13 +70,20 @@ def validate_review_packet(data):
             " review_packet を使ってください"
         )
 
+    # target_files: 非空の dict 配列 (ADR-032 で string[] から移行)
     if not isinstance(data.get("target_files"), list) or not data["target_files"]:
         raise ValueError("target_files は非空の配列が必須です")
 
     for i, item in enumerate(data["target_files"]):
-        if not isinstance(item, str) or not item:
+        if not isinstance(item, dict):
             raise ValueError(
-                f"target_files[{i}] は非空文字列が必須です (project-root-relative パス): {item!r}"
+                f"target_files[{i}] は dict が必須です ({{'path': '...'}} 形式、"
+                f"ADR-032 で string 配列から dict 配列に移行): {item!r}"
+            )
+        path = item.get("path")
+        if not isinstance(path, str) or not path:
+            raise ValueError(
+                f"target_files[{i}].path は非空文字列が必須です: {item!r}"
             )
 
     if not isinstance(data.get("reference_docs"), list):
@@ -89,7 +100,8 @@ def validate_review_packet(data):
     for i, code in enumerate(data.get("related_code", [])):
         if not isinstance(code, dict):
             raise ValueError(
-                f"related_code[{i}] は dict が必須です ({{'path': '...', 'reason': '...'}} 形式): {code!r}"
+                f"related_code[{i}] は dict が必須です "
+                f"({{'path': '...', 'reason': '...'}} 形式): {code!r}"
             )
         if not code.get("path"):
             raise ValueError(f"related_code[{i}].path は必須です")
@@ -105,7 +117,7 @@ def validate_review_packet(data):
     if not isinstance(criteria_path, str) or not criteria_path:
         raise ValueError("review_packet.criteria_path は必須です")
 
-    # ssot_refs: 必須非空配列
+    # ssot_refs: 必須非空配列 (ADR-032 で doc_path → path に統一)
     ssot_refs = packet.get("ssot_refs")
     if not isinstance(ssot_refs, list) or not ssot_refs:
         raise ValueError("review_packet.ssot_refs は非空の配列が必須です")
@@ -113,11 +125,11 @@ def validate_review_packet(data):
     for i, ref in enumerate(ssot_refs):
         if not isinstance(ref, dict):
             raise ValueError(f"review_packet.ssot_refs[{i}] は dict が必須です")
-        doc_path = ref.get("doc_path")
-        if not isinstance(doc_path, str) or not doc_path:
+        path = ref.get("path")
+        if not isinstance(path, str) or not path:
             raise ValueError(
-                f"review_packet.ssot_refs[{i}].doc_path は必須です"
-                " (旧 `path` キーは Issue #99 で `doc_path` に統一されました)"
+                f"review_packet.ssot_refs[{i}].path は必須です "
+                "(ADR-032: 旧 `doc_path` キーは path に統一)"
             )
         priority = ref.get("priority")
         if priority not in _ALLOWED_PRIORITIES:
@@ -143,27 +155,31 @@ def validate_review_packet(data):
     if not isinstance(severity_source, str) or not severity_source:
         raise ValueError("review_packet.severity_source は必須です")
 
-    # output_path: 必須、フォーマット検証、../ 禁止、絶対パス禁止
-    output_path = packet.get("output_path")
-    if not isinstance(output_path, str) or not output_path:
-        raise ValueError("review_packet.output_path は必須です")
-    if ".." in output_path.split("/"):
+    # output_filename: 必須、フォーマット検証、../ 禁止、絶対パス禁止
+    # (ADR-032 で output_path から改名)
+    output_filename = packet.get("output_filename")
+    if not isinstance(output_filename, str) or not output_filename:
         raise ValueError(
-            f"review_packet.output_path に ../ は使用できません: {output_path!r}"
+            "review_packet.output_filename は必須です "
+            "(ADR-032: 旧 `output_path` キーは output_filename に改名)"
         )
-    if output_path.startswith("/"):
+    if ".." in output_filename.split("/"):
         raise ValueError(
-            f"review_packet.output_path に絶対パスは使用できません: {output_path!r}"
+            f"review_packet.output_filename に ../ は使用できません: {output_filename!r}"
         )
-    if not _OUTPUT_PATH_RE.match(output_path):
+    if output_filename.startswith("/"):
         raise ValueError(
-            "review_packet.output_path は ^review_[a-z0-9_-]+\\.md$ 形式が必須です: "
-            f"{output_path!r}"
+            f"review_packet.output_filename に絶対パスは使用できません: {output_filename!r}"
+        )
+    if not _OUTPUT_FILENAME_RE.match(output_filename):
+        raise ValueError(
+            "review_packet.output_filename は ^review_[a-z0-9_-]+\\.md$ 形式が必須です: "
+            f"{output_filename!r}"
         )
 
 
 def build_refs_text(data):
-    """入力データから refs.yaml のテキストを構築する。
+    """入力データから refs.yaml のテキストを構築する (ADR-032 新スキーマ)。
 
     トップレベル順序: target_files / reference_docs / review_packet / related_code
 
@@ -175,13 +191,12 @@ def build_refs_text(data):
     """
     lines = []
 
-    # target_files
+    # target_files (ADR-032: dict 配列)
     lines.append("target_files:")
-    for item in data["target_files"]:
-        lines.append(f"  - {yaml_scalar(item)}")
+    _append_object_list(lines, data["target_files"], indent="  ")
     lines.append("")
 
-    # reference_docs (空でも明示出力するが、現実装は空なら出力しない)
+    # reference_docs (空なら出力しない)
     reference_docs = data.get("reference_docs", [])
     if reference_docs:
         lines.append("reference_docs:")
@@ -194,13 +209,13 @@ def build_refs_text(data):
     lines.append(f"  criteria_path: {yaml_scalar(packet['criteria_path'])}")
     lines.append("  ssot_refs:")
     _append_object_list(lines, packet["ssot_refs"], indent="    ")
-    # check_order: ブロックリストで出力 (parse_yaml がネスト dict 配下の
-    # インライン配列を扱えないため、ラウンドトリップ可能なブロック形式を採用)
     lines.append("  check_order:")
     for step in packet["check_order"]:
         lines.append(f"    - {yaml_scalar(step)}")
     lines.append(f"  severity_source: {yaml_scalar(packet['severity_source'])}")
-    lines.append(f"  output_path: {yaml_scalar(packet['output_path'])}")
+    lines.append(
+        f"  output_filename: {yaml_scalar(packet['output_filename'])}"
+    )
     lines.append("")
 
     # related_code (任意)
@@ -210,7 +225,6 @@ def build_refs_text(data):
         _append_object_list(lines, related, indent="  ")
         lines.append("")
 
-    # 末尾の余分な空行を除去
     while lines and lines[-1] == "":
         lines.pop()
 
@@ -234,15 +248,7 @@ def _append_object_list(lines, items, indent="  "):
 
 
 def write_refs(session_dir, data):
-    """refs.yaml を書き出す。
-
-    Args:
-        session_dir: セッションディレクトリパス
-        data: バリデーション済みの入力データ
-
-    Returns:
-        str: 書き出したファイルのパス
-    """
+    """refs.yaml を書き出す。"""
     text = build_refs_text(data)
     output_path = SessionStore(session_dir).write_text("refs.yaml", text)
     return str(output_path)
