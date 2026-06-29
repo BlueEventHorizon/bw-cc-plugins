@@ -178,7 +178,7 @@ tasks:
   - task_id: TASK-008
     title: 受け入れ条件確認 + 全 unit test pass + dprint check clean
     priority: 50
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-002

@@ -36,10 +36,10 @@ adb shell wm size
 
 `ANDROID_SERIAL` 未指定の場合は、最初に `adb devices` で接続デバイスを確認する。
 
-| 接続デバイス数 | 動作 |
-| -------------- | ---- |
-| 0 台           | キャプチャ不可として中断し、Emulator / Simulator の起動を依頼する |
-| 1 台           | その serial を対象デバイスとして固定する |
+| 接続デバイス数 | 動作                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| 0 台           | キャプチャ不可として中断し、Emulator / Simulator の起動を依頼する                        |
+| 1 台           | その serial を対象デバイスとして固定する                                                 |
 | 2 台以上       | 勝手に先頭を選ばず、AskUserQuestion（Cursor では AskQuestion）でユーザーに選択してもらう |
 
 複数台ある場合は、各候補について次を確認して選択肢に含める。
@@ -54,13 +54,13 @@ adb -s <serial> shell cmd package resolve-activity --brief com.freaks.freaksstor
 選択後は `ANDROID_SERIAL=<selected-serial>` を設定するか、全ての `adb` / `flutter` コマンドに `-s <selected-serial>` / `-d <selected-serial>` を明示する。
 以後の起動・操作・キャプチャは同じ serial に固定し、途中で別デバイスへ切り替えない。
 
-| スクリプト | 用途 |
-| ---------- | ---- |
-| `scripts/run_stub.sh` | FIFO stdin 付きで stub を `flutter run` 起動（hot_reload の前提） |
-| `scripts/hot_reload.sh [r\|R]` | コード反映（FIFO 経由で `r`/`R` 送信） |
-| `scripts/android-prepare.sh` | アニメーション全オフ + stub アプリ前面起動（撮影安定化） |
-| `scripts/capture.sh <name> [out_dir]` | 画面キャプチャ（既定 `.figma_tmp/captures/<name>.png`） |
-| `scripts/adb_ui.sh <cmd> ...` | 操作（dump/find/tap/swipe/text/key/launch/stop/wait） |
+| スクリプト                            | 用途                                                              |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| `scripts/run_stub.sh`                 | FIFO stdin 付きで stub を `flutter run` 起動（hot_reload の前提） |
+| `scripts/hot_reload.sh [r\|R]`        | コード反映（FIFO 経由で `r`/`R` 送信）                            |
+| `scripts/android-prepare.sh`          | アニメーション全オフ + stub アプリ前面起動（撮影安定化）          |
+| `scripts/capture.sh <name> [out_dir]` | 画面キャプチャ（既定 `.figma_tmp/captures/<name>.png`）           |
+| `scripts/adb_ui.sh <cmd> ...`         | 操作（dump/find/tap/swipe/text/key/launch/stop/wait）             |
 
 `adb_ui.sh` の主な内部コマンド: `dump` / `find` / `tap` / `swipe` / `text` / `key` / `launch` / `stop` / `wait`。
 

@@ -257,7 +257,7 @@ plan.yaml の作成は行わない。複数 finding を統合後に `extract_rev
 ```json
 {
   "status": "ok" | "error",
-  "output_path": "<session_dir>/<output_filename>",
+  "output_filename": "<session_dir>/<output_filename>",
   "finding_count": <integer>,
   "error_message": "<string?>"
 }

@@ -4,10 +4,10 @@ forge プラグインの**開発ルール**。forge 内部 (SKILL / agent / scri
 
 ## 2 つの経路のみ
 
-| 経路 | 対象 | 方式 |
-|---|---|---|
+| 経路            | 対象                                                                      | 方式                                                        |
+| --------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | **A. 直接参照** | forge 内蔵 docs (`plugins/forge/docs/*`, `plugins/forge/skills/*/docs/*`) | パスを直接書く: `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` を Read |
-| **B. クエリ** | プロジェクト固有 spec / rules (`docs/specs/`, `docs/rules/`) | `/forge:query-db-specs` / `/forge:query-db-rules` を呼ぶ |
+| **B. クエリ**   | プロジェクト固有 spec / rules (`docs/specs/`, `docs/rules/`)              | `/forge:query-db-specs` / `/forge:query-db-rules` を呼ぶ    |
 
 それ以外の経路 (例: session_dir / refs/*.yaml を介したファイル受け渡し) は採用しない。
 
