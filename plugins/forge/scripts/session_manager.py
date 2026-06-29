@@ -204,8 +204,9 @@ def cmd_init(args, remaining):
     data.update(extra)
 
     # --files 指定時のみ files フィールドを書く（値 0 個でも空配列を明示記録する）
+    # ADR-032: files は [{path: ...}] dict 配列で保存する。
     if files_present:
-        data["files"] = files
+        data["files"] = [{"path": p} for p in files]
 
     # session.yaml 書き出し
     yaml_path = os.path.join(session_dir, "session.yaml")

@@ -42,9 +42,10 @@ class TestCheckBaselineViolations(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def _write_refs(self, target_files):
+        """refs.yaml を ADR-032 新 schema ([{path}] dict 配列) で書く。"""
         lines = ["target_files:"]
         for f in target_files:
-            lines.append(f"  - {f}")
+            lines.append(f"  - path: {f}")
         (self.session_dir / "refs.yaml").write_text(
             "\n".join(lines) + "\n", encoding="utf-8"
         )

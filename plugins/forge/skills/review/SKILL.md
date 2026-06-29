@@ -307,13 +307,13 @@ echo '<refs_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py start
 
 **refs JSON のスキーマ SoT**: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` §「refs.yaml — レビュー参照ファイルリスト」を参照。最低限の必須キーは以下:
 
-- `target_files`: 文字列配列 (project-root-relative パス)
+- `target_files`: `[{"path": "..."}, ...]` (各要素 dict 必須、`path` 必須、ADR-032 で文字列配列から改修)
 - `reference_docs`: `[{"path": "..."}, ...]` (各要素 dict 必須、`path` 必須)
 - `related_code`: `[{"path": "...", "reason": "..."}, ...]` (各要素 dict 必須、`path` / `reason` 両方必須)
-- `review_packet.criteria_path` / `output_path` / `check_order` / `severity_source` / `ssot_refs` (全て必須)
-- `review_packet.ssot_refs[]`: `{"priority": "P1"|"P2"|"P3", "doc_path": "...", "doc_type": "rules"|"principles"|"format"}` (旧 `path` キーは Issue #99 で `doc_path` に統一)
+- `review_packet.criteria_path` / `output_filename` / `check_order` / `severity_source` / `ssot_refs` (全て必須)
+- `review_packet.ssot_refs[]`: `{"priority": "P1"|"P2"|"P3", "path": "...", "doc_type": "rules"|"principles"|"format"}` (ADR-032 で Issue #99 の `doc_path` 改名を覆し `path` に統一)
 - `review_packet.severity_source`: criteria header の「severity は ... から取得する」記述が指す principles ファイルパス (例: design レビューなら `plugins/forge/docs/review_priorities_spec.md`)
-- `review_packet.output_path`: `^review_[a-z0-9_-]+\.md$` 形式 (例: `review_design.md`)
+- `review_packet.output_filename`: `^review_[a-z0-9_-]+\.md$` 形式 (例: `review_design.md`)。ADR-032 で旧 `output_path` から改名 (sandbox 内ファイル名と外部参照 path の区別を明示)
 
 validation エラー時は `review_session.py start` が `status: error` + 具体的なフィールド名を返す。
 
@@ -337,7 +337,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/check_baseline_violations.py {sess
 | criteria_path | `review_criteria_<種別>.md`                   |
 | ssot_refs     | N 件 (P1: X 件 / P2: Y 件 / P3: Z 件)         |
 | check_order   | P1 → P2 → P3                                  |
-| output_path   | `review_<種別>.md`                            |
+| output_filename | `review_<種別>.md`                            |
 
 **session_dir**
 - `.claude/.temp/{session_dir_name}`

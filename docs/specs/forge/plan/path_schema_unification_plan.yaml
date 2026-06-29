@@ -94,7 +94,7 @@ tasks:
   - task_id: TASK-004
     title: session.yaml の files[] を [{path}] dict 化 + session_manager 系更新
     priority: 80
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-001
@@ -114,7 +114,7 @@ tasks:
   - task_id: TASK-005
     title: refs.yaml / session.yaml readers (3 agents + scripts) を新 schema 対応に
     priority: 75
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-003

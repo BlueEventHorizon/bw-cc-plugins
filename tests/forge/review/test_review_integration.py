@@ -197,7 +197,8 @@ class TestReviewIntegration(unittest.TestCase):
             self.assertEqual(res_explicit.returncode, 0, res_explicit.stderr)
             data_explicit = json.loads(res_explicit.stdout)
             self.assertEqual(data_explicit["status"], "resolved")
-            self.assertIn("sample.md", data_explicit["target_files"])
+            # ADR-032: target_files は [{path}] dict 配列
+            self.assertIn({"path": "sample.md"}, data_explicit["target_files"])
 
     # ------------------------------------------------------------------
     # 2. --files バイパス
@@ -215,7 +216,8 @@ class TestReviewIntegration(unittest.TestCase):
             self.assertEqual(res.returncode, 0, res.stderr)
             data = json.loads(res.stdout)
             self.assertEqual(data["status"], "resolved")
-            self.assertEqual(sorted(data["target_files"]), ["a.md", "b.md"])
+            paths = sorted(t["path"] for t in data["target_files"])
+            self.assertEqual(paths, ["a.md", "b.md"])
             # --files は種別解決をバイパスするため type は None
             self.assertIsNone(data["type"])
 

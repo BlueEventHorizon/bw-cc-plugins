@@ -75,7 +75,7 @@ orchestrator は本 Agent 起動時の prompt に **`allowed_files`** (編集を
 
 - session_dir 配下の `refs.yaml` / `plan.yaml` / `review_<種別>.md` / 該当 finding の修正案セクション の Read
 - `allowed_files` リスト内ファイルの **Read** (原本保存用) と **Edit / Write** (修正実行)
-- 参考文書 (`refs.yaml` の `reference_docs` / `related_code` / `ssot_refs[].doc_path`) の Read
+- 参考文書 (`refs.yaml` の `reference_docs` / `related_code` / `ssot_refs[].path`) の Read
 - Bash 経由の構文検証コマンド実行
 - Bash 経由の `mark_in_progress.py` / `patch_result.json` 書き込み実行
 
@@ -102,7 +102,7 @@ orchestrator から以下を構造化引数として渡される:
 3. 取得した項目の `recommendation` が `fix` であることを assert。`fix` 以外 (skip / create_issue / needs_review) なら `status: "error"` で return
 4. 取得した項目の `status` が `pending` または `in_progress` であることを assert。`completed` / `skipped` / `needs_review` なら `status: "error"` で return
 5. `{session_dir}/review_<種別>.md` を Read → 該当 finding の **該当コード** / **なぜ問題か** / **修正案** セクションを抽出
-6. `refs.yaml` の `reference_docs` / `related_code` / `review_packet.ssot_refs[].doc_path` を Read → 修正の根拠規範を把握
+6. `refs.yaml` の `reference_docs` / `related_code` / `review_packet.ssot_refs[].path` を Read → 修正の根拠規範を把握
 
 ### Step 2: mark_in_progress.py で plan.yaml を更新
 

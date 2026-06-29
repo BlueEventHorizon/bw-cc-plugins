@@ -105,7 +105,7 @@ def _check_file(file_path):
 
 
 def _load_target_files(session_dir):
-    """refs.yaml から target_files を読む。"""
+    """refs.yaml から target_files を読む (ADR-032: [{path}] dict 配列)。"""
     refs_path = Path(session_dir) / "refs.yaml"
     if not refs_path.is_file():
         return []
@@ -116,7 +116,13 @@ def _load_target_files(session_dir):
     targets = data.get("target_files") if isinstance(data, dict) else None
     if not isinstance(targets, list):
         return []
-    return [t for t in targets if isinstance(t, str) and t]
+    paths = []
+    for t in targets:
+        if isinstance(t, dict):
+            p = t.get("path")
+            if isinstance(p, str) and p:
+                paths.append(p)
+    return paths
 
 
 def run(session_dir):
