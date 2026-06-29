@@ -305,6 +305,18 @@ echo '<refs_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py start
 
 `<refs_json>` は Step 1〜3 で構築した `target_files / reference_docs / review_packet / related_code` を含む JSON。返却 JSON の `session_dir` をコンテキストに保持する。
 
+**refs JSON のスキーマ SoT**: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` §「refs.yaml — レビュー参照ファイルリスト」を参照。最低限の必須キーは以下:
+
+- `target_files`: 文字列配列 (project-root-relative パス)
+- `reference_docs`: `[{"path": "..."}, ...]` (各要素 dict 必須、`path` 必須)
+- `related_code`: `[{"path": "...", "reason": "..."}, ...]` (各要素 dict 必須、`path` / `reason` 両方必須)
+- `review_packet.criteria_path` / `output_path` / `check_order` / `severity_source` / `ssot_refs` (全て必須)
+- `review_packet.ssot_refs[]`: `{"priority": "P1"|"P2"|"P3", "doc_path": "...", "doc_type": "rules"|"principles"|"format"}` (旧 `path` キーは Issue #99 で `doc_path` に統一)
+- `review_packet.severity_source`: criteria header の「severity は ... から取得する」記述が指す principles ファイルパス (例: design レビューなら `plugins/forge/docs/review_priorities_spec.md`)
+- `review_packet.output_path`: `^review_[a-z0-9_-]+\.md$` 形式 (例: `review_design.md`)
+
+validation エラー時は `review_session.py start` が `status: error` + 具体的なフィールド名を返す。
+
 ### Step 5: dprint check ベースライン取得 [MANDATORY]
 
 `target_files` に pre-existing な format 違反があるかを記録する。fixer はこの baseline を参照して、自身の修正と無関係な既存違反で rollback されないように構文検証をスキップ判定する (DES-029 §3.5.4)。
@@ -772,7 +784,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py finish {session_dir}
 
 ## レビュー結果フォーマット (reviewer 出力)
 
-reviewer は以下のフォーマットで `review_<種別>.md` を出力する。詳細は `plugins/forge/skills/reviewer/SKILL.md` を参照。
+reviewer は以下のフォーマットで `review_<種別>.md` を出力する。詳細は `plugins/forge/agents/reviewer.md` を参照 (REQ-005 §11 / DES-029 §3.2 で旧 `skills/reviewer/SKILL.md` から Agent 化済み)。
 
 ```markdown
 ## AIレビュー結果

@@ -69,14 +69,28 @@ def validate_review_packet(data):
     if not isinstance(data.get("target_files"), list) or not data["target_files"]:
         raise ValueError("target_files は非空の配列が必須です")
 
+    for i, item in enumerate(data["target_files"]):
+        if not isinstance(item, str) or not item:
+            raise ValueError(
+                f"target_files[{i}] は非空文字列が必須です (project-root-relative パス): {item!r}"
+            )
+
     if not isinstance(data.get("reference_docs"), list):
         raise ValueError("reference_docs は配列が必須です")
 
     for i, doc in enumerate(data.get("reference_docs", [])):
+        if not isinstance(doc, dict):
+            raise ValueError(
+                f"reference_docs[{i}] は dict が必須です ({{'path': '...'}} 形式): {doc!r}"
+            )
         if not doc.get("path"):
             raise ValueError(f"reference_docs[{i}].path は必須です")
 
     for i, code in enumerate(data.get("related_code", [])):
+        if not isinstance(code, dict):
+            raise ValueError(
+                f"related_code[{i}] は dict が必須です ({{'path': '...', 'reason': '...'}} 形式): {code!r}"
+            )
         if not code.get("path"):
             raise ValueError(f"related_code[{i}].path は必須です")
         if not code.get("reason"):

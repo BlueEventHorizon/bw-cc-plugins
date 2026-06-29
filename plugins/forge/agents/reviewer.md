@@ -267,8 +267,8 @@ orchestrator はこの return を受け取り、`extract_review_findings.py` で
 
 ## 関連テンプレート
 
-| ファイル                                                             | 役割                                                                                                            |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review_result.md`            | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
-| `${CLAUDE_PLUGIN_ROOT}/skills/reviewer/scripts/run_review_engine.sh` | engine=codex 時に Bash subprocess として呼び出す。Codex CLI を `--sandbox read-only` で起動しレビュー本文を返す |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/reviewer/extract_codex_output.py`     | run_review_engine.sh が呼び出す Codex 出力抽出スクリプト                                                        |
+| ファイル                                                              | 役割                                                                                                            |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `${CLAUDE_PLUGIN_ROOT}/agents/templates/review_result.md`             | レビュー結果のテンプレート。本 Agent は Read してそのフォーマットに従い `review_<種別>.md` を書き出す           |
+| `${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/run_review_engine.sh`    | engine=codex 時に Bash subprocess として呼び出す。Codex CLI を `--sandbox read-only` で起動しレビュー本文を返す |
+| `${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/extract_codex_output.py` | run_review_engine.sh が呼び出す Codex 出力抽出スクリプト                                                        |
