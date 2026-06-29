@@ -225,12 +225,19 @@ prompt: |
   - 関連性の理由を各ファイルについて 1 行で説明すること
   - 上限 10 ファイル程度
 
-  ## 出力形式
+  ## 出力形式 [MANDATORY]
+  以下の構造化 markdown 形式で返すこと (ADR-032 #11 で固定化)。
+  各エントリは `- path:` と `  reason:` の 2 行 1 ブロックで構成し、orchestrator が `related_code: [{path, reason}, ...]` (refs.yaml schema) に直接マッピングできるようにする。
+  自由記述・箇条書きフォーマット (例: `- {path}: {理由}`) は禁止。
+
   ### 関連コード一覧
-  - {path}: {関連性の理由}
+  - path: path/to/file1
+    reason: 対象ファイルと同一ディレクトリの類似実装
+  - path: path/to/file2
+    reason: 対象ファイルを import している呼び出し元
 ```
 
-探索結果 (`related_code`) を以降の reviewer に渡す。
+orchestrator は agent の return value を構造化 markdown としてパースし、各エントリの `path` / `reason` を refs.yaml の `related_code[]` (ADR-032 で dict 配列に統一済み) に投入する。
 
 ### Step 5: reference_docs 収集
 

@@ -136,7 +136,7 @@ tasks:
   - task_id: TASK-006
     title: review / present-findings SKILL.md を新 schema + 構造化 agent prompt に更新
     priority: 70
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-001
@@ -155,7 +155,7 @@ tasks:
   - task_id: TASK-007
     title: DES-011 / DES-014 / DES-015 / DES-028 / DES-029 の例 YAML を新 schema に同期
     priority: 60
-    status: pending
+    status: completed
     design_id: ADR-032
     depends_on:
       - TASK-001

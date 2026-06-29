@@ -274,7 +274,7 @@ orchestrator (review SKILL.md)
   │     ├─ target_files
   │     ├─ reference_docs
   │     ├─ related_code
-  │     └─ review_packet  ← criteria_path / ssot_refs[] / check_order / severity_source / output_path
+  │     └─ review_packet  ← criteria_path / ssot_refs[] / check_order / severity_source / output_filename
   │
   ├─ Phase 3 → forge:reviewer Agent × 1（1 起動原則、FNC-412）
   │     ├─ 起動: Agent ツール (subagent_type: "forge:reviewer")
@@ -341,15 +341,15 @@ flowchart TD
 
 ### review → reviewer（1 起動原則）
 
-| 方向 | 項目             | 内容                                                                                                                                  |
-| ---- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力 | 種別             | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                                       |
-| 入力 | target_files     | 解決済みファイルパス一覧（refs.yaml 経由）                                                                                            |
-| 入力 | エンジン         | `codex` / `claude`                                                                                                                    |
-| 入力 | reference_docs   | 収集済み参考文書パス一覧（refs.yaml 経由）                                                                                            |
-| 入力 | related_code     | 関連コードのパスと関連性の説明（refs.yaml 経由）                                                                                      |
-| 入力 | review_packet    | `criteria_path` / `ssot_refs[]` / `check_order` / `severity_source` / `output_path` をまとめたパケット (refs.yaml 経由、DES-028 §2.3) |
-| 出力 | review_{種別}.md | 🔴🟡🟢 マーカー付き指摘事項リスト。各 finding に `priority: P1\|P2\|P3` と `severity_source` を付与                                   |
+| 方向 | 項目             | 内容                                                                                                                                                      |
+| ---- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力 | 種別             | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                                                           |
+| 入力 | target_files     | 解決済みファイルパス一覧（refs.yaml 経由）                                                                                                                |
+| 入力 | エンジン         | `codex` / `claude`                                                                                                                                        |
+| 入力 | reference_docs   | 収集済み参考文書パス一覧（refs.yaml 経由）                                                                                                                |
+| 入力 | related_code     | 関連コードのパスと関連性の説明（refs.yaml 経由）                                                                                                          |
+| 入力 | review_packet    | `criteria_path` / `ssot_refs[]` / `check_order` / `severity_source` / `output_filename` をまとめたパケット (refs.yaml 経由、DES-028 §2.3。ADR-032 適用後) |
+| 出力 | review_{種別}.md | 🔴🟡🟢 マーカー付き指摘事項リスト。各 finding に `priority: P1\|P2\|P3` と `severity_source` を付与                                                       |
 
 ### review → evaluator
 
