@@ -79,13 +79,13 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py probe
     ```
     返却の `next_phase` から該当 Phase へ jump する:
 
-    | `next_phase` | jump 先                                |
-    | ------------ | -------------------------------------- |
-    | `reviewer`   | Phase 4                                |
-    | `evaluator`  | Phase 5 (evaluator step)               |
-    | `present`    | Phase 5 (present-findings step)        |
-    | `finish`     | Phase 5 (終了サマリ)                   |
-    | `start`      | refs 欠損のため Phase 3 から再構築      |
+    | `next_phase` | jump 先                            |
+    | ------------ | ---------------------------------- |
+    | `reviewer`   | Phase 4                            |
+    | `evaluator`  | Phase 5 (evaluator step)           |
+    | `present`    | Phase 5 (present-findings step)    |
+    | `finish`     | Phase 5 (終了サマリ)               |
+    | `start`      | refs 欠損のため Phase 3 から再構築 |
 
     `resume` の返却 `session` (session.yaml の全体) から `review_type` / `engine` / `interaction` を取り出してコンテキストに復元する。
 
@@ -305,6 +305,16 @@ echo '<refs_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py start
 
 `<refs_json>` は Step 1〜3 で構築した `target_files / reference_docs / review_packet / related_code` を含む JSON。返却 JSON の `session_dir` をコンテキストに保持する。
 
+### Step 5: dprint check ベースライン取得 [MANDATORY]
+
+`target_files` に pre-existing な format 違反があるかを記録する。fixer はこの baseline を参照して、自身の修正と無関係な既存違反で rollback されないように構文検証をスキップ判定する (DES-029 §3.5.4)。
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/check_baseline_violations.py {session_dir}
+```
+
+`{session_dir}/baseline_violations.json` が書き出される。`dprint` が未インストールの環境では空 baseline (全ファイル `has_violations: false`) が生成され、fixer 側の挙動は従来通り (構文検証を実施) になる。
+
 完了後、以下を出力する:
 
 ```
@@ -366,7 +376,6 @@ reviewer / evaluator / fixer は **すべて Agent ツール** で起動する (
 ### Step 1: reviewer Agent 起動 (engine 問わず 1 体) [MANDATORY]
 
 <!-- 残存セッション検出 / touch / cleanup は Phase 0 + review_session.py に集約済み -->
-
 
 Phase 3 で確定した review_packet と session_dir を `forge:reviewer` カスタム Agent に渡す。
 
@@ -515,8 +524,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --r
 
 | # | 経路名                | 起動方法                                                       | context 消費    | 用途                                                 | 適用条件                                                                                           |
 | - | --------------------- | -------------------------------------------------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1 | 軽量経路 (FNC-413)    | (起動なし、Edit 直接)                                          | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 AND 全 `auto_fixable: true` |
-| 2 | Agent 経由 fixer 経路 | Agent ツール (`subagent_type: forge:fixer`、id 単位ループ起動) | 遮断            | 件数多 (≥ 4) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
+| 1 | 軽量経路 (FNC-413)    | (起動なし、Edit 直接)                                          | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 5 AND 全 `auto_fixable: true` |
+| 2 | Agent 経由 fixer 経路 | Agent ツール (`subagent_type: forge:fixer`、id 単位ループ起動) | 遮断            | 件数多 (≥ 6) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
 
 旧経路 (Skill ツール fork 型 fixer / 汎用 Agent 起動 fixer) は **廃止**。修正経路は上記 2 種に縮約される (REQ-005 §11 / DES-029 §3.2 / TASK-010・TASK-011 で Agent 化済み)。
 
@@ -529,7 +538,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --r
 1. plan.yaml を Read (Phase 4 で読み込み済みのため再 Read 不要)
 2. `recommendation: fix` AND `status ∈ {pending, in_progress}` の項目を抽出
 3. `--auto-critical` の場合は `severity: critical` でさらに絞り込む
-4. 抽出件数が **3 以下** AND 全項目が `auto_fixable: true` → **軽量経路** (下記 Step 2-A)
+4. 抽出件数が **5 以下** AND 全項目が `auto_fixable: true` → **軽量経路** (下記 Step 2-A)
 5. それ以外 → **fixer 経路** (下記 Step 2-B)
 
 判定結果を出力する:
@@ -650,7 +659,14 @@ Agent(
 args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"
 ```
 
+- **新規 finding を plan.yaml に統合**: reviewer (`--diff-only`) は `review_<種別>.md` に新 finding を append する。orchestrator は以下を実行して plan.yaml に統合する (修正 A merge ロジックにより、既存 finding の status / recommendation は保持されたまま新 finding が連番 id で追加される):
+
+  ```bash
+  python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
+  ```
+
 - 修正起因の問題が見つかった場合 → `forge:fixer` カスタム Agent を id 単位で再起動して修正 (上限 3 回 / id ループ)
+  - 新規 finding の id は extract 再実行で plan.yaml に採番されている (max(既存 id)+1 から連番) ので、その id を fixer Agent に渡す
   - `args: "{session_dir} {review_type} --diff-only {files_modified}"`
 - 問題なし → 以下の通り plan.yaml を `fixed` に更新してから Step 4 へ
 

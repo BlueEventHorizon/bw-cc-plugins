@@ -238,7 +238,7 @@ def cmd_finish(args):
 
 def _classify_items(items):
     """plan.yaml の items[] を集計する。"""
-    by_severity = {"critical": 0, "warning": 0, "info": 0, "unknown": 0}
+    by_severity = {"critical": 0, "major": 0, "minor": 0, "unknown": 0}
     by_status = {"pending": 0, "in_progress": 0, "fixed": 0, "skipped": 0, "other": 0}
     by_recommendation = {"fix": 0, "skip": 0, "create_issue": 0, "needs_review": 0, "unset": 0}
     unprocessed_total = 0

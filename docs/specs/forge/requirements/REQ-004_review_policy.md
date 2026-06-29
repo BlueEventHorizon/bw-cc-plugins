@@ -355,7 +355,7 @@ fixer はカスタム Agent として session_dir から plan.yaml / refs.yaml /
 
 | 条件             | 内容                                                                                      |
 | ---------------- | ----------------------------------------------------------------------------------------- |
-| 件数             | `recommendation: fix` AND `status ∈ {pending, in_progress}` の項目が **3 件以下**         |
+| 件数             | `recommendation: fix` AND `status ∈ {pending, in_progress}` の項目が **5 件以下**         |
 | 単純度           | 対象項目が **すべて `auto_fixable: true`** (evaluator が「機械的・一意な修正」と判定済み) |
 | 介入軸フィルタ後 | `--auto-critical` の場合は `severity: critical` で絞った後の件数で判定する                |
 
@@ -374,10 +374,10 @@ fixer はカスタム Agent として session_dir から plan.yaml / refs.yaml /
 
 | 呼び出し元                                   | 介入軸 / 選択肢                        | 判定                                                                                         |
 | -------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `/forge:review`                              | `--auto-critical`                      | `severity: critical` でフィルタ後の件数が 3 以下 + 全 `auto_fixable: true` で軽量経路        |
-| `/forge:review`                              | `--auto`                               | `recommendation: fix` 全件数が 3 以下 + 全 `auto_fixable: true` で軽量経路                   |
+| `/forge:review`                              | `--auto-critical`                      | `severity: critical` でフィルタ後の件数が 5 以下 + 全 `auto_fixable: true` で軽量経路        |
+| `/forge:review`                              | `--auto`                               | `recommendation: fix` 全件数が 5 以下 + 全 `auto_fixable: true` で軽量経路                   |
 | `/forge:present-findings`                    | 「段階的に解決」(auto_fixable=true)    | 件数=1 + `auto_fixable: true` で軽量経路                                                     |
-| `/forge:present-findings`                    | 「✅を一括修正」                       | ✅付き項目数が 3 以下で軽量経路 (✅付き = `auto_fixable: true` の集合)                       |
+| `/forge:present-findings`                    | 「✅を一括修正」                       | ✅付き項目数が 5 以下で軽量経路 (✅付き = `auto_fixable: true` の集合)                       |
 | `/forge:present-findings`                    | 「段階的に解決」(ユーザー修正方針あり) | fixer 経路 (`--single`)。修正方針 (A 案 / B 案 / Other) の解釈が必要なため軽量経路に入らない |
 | reviewer/fixer 内部の `--diff-only` サイクル | -                                      | **常に fixer 経路**。reviewer(`--diff-only`) → fixer(`--diff-only`) の対称性を維持するため   |
 
@@ -388,13 +388,13 @@ fixer はカスタム Agent として session_dir から plan.yaml / refs.yaml /
 
 #### Issue 提案「20 行以下推測」との対応関係
 
-Issue #86 が示す「20 行以下推測」は厳密な行数閾値ではなく「小さい修正」の直感的基準。本要件はこの直感を **件数 (3 件以下) × `auto_fixable: true`** をプロキシ指標として近似する:
+Issue #86 が示す「20 行以下推測」は厳密な行数閾値ではなく「小さい修正」の直感的基準。本要件はこの直感を **件数 (5 件以下) × `auto_fixable: true`** をプロキシ指標として近似する:
 
 - `auto_fixable: true` は evaluator が「一意・局所的・機械的修正」と判定したフラグであり、典型的に修正行数が小さい蓋然性が高い
-- 3 件以下なら合計修正行数も 20 行程度に収まる蓋然性が高い
+- 5 件以下なら合計修正行数も 20〜25 行程度に収まる蓋然性が高い (1 件あたり典型 1〜5 行)
 - リジッドな行数カウンタは「AI が解釈すべき入力にスクリプトパーサーを使わない」(`docs/rules/implementation_guidelines.md`) に反するため採用しない
 
-閾値 (3 件) は初期値として固定。運用結果に応じた調整は別 Issue で対応する。
+閾値 (5 件) は実運用フィードバック (初期値 3 件で 4 件の自明修正がすべて fixer Agent 経路に流れたケース) を踏まえて調整した値。さらなる調整 / 行数推定への移行は別 Issue で対応する。
 
 ---
 

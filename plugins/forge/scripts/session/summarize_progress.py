@@ -9,8 +9,11 @@
 
 `next_action` 判定ルール:
 - 未処理 (pending/needs_review) 0 件 + in_progress 0 件 → "finish"
-- in_progress / fixed / skipped のいずれかが既にある → "resume_prompt"
-- それ以外 (全件 pending、未着手) → "present"
+  (全件 fixed / skipped で決着済み。skipped は決着状態であり中断指標ではない)
+- in_progress > 0 → "resume_prompt" (真の中断)
+- pending > 0 + fixed > 0 → "resume_prompt" (修正中断の続行)
+- それ以外 (pending あり、fixed なし) → "present"
+  (初回フロー: evaluator が一部を skipped にしただけの状態も含む)
 
 低レベル script。位置引数のみ (DES-024 §2.3 共通原則)。
 
@@ -61,7 +64,9 @@ def _decide_next_action(base, extra):
     unprocessed = base["unprocessed_total"]
     if unprocessed == 0 and extra["in_progress"] == 0:
         return "finish"
-    if extra["in_progress"] > 0 or base["fixed"] > 0 or base["skipped"] > 0:
+    if extra["in_progress"] > 0:
+        return "resume_prompt"
+    if base["fixed"] > 0:
         return "resume_prompt"
     return "present"
 

@@ -115,6 +115,40 @@ class TestSummarizeProgress(unittest.TestCase):
         r = _run(str(self.session_dir), "--foo", "bar")
         self.assertNotEqual(r.returncode, 0)
 
+    def test_next_action_present_when_evaluator_skipped_some(self):
+        """evaluator が初期に一部 finding を skipped にしただけの状態は initial present。
+
+        旧実装は skipped > 0 を「中断」と誤判定して resume_prompt を返した (Issue: 今回観測)。
+        skipped は決着状態であり中断指標ではない。
+        """
+        self._write_plan("""  - id: 1
+    severity: critical
+    status: pending
+    recommendation: fix
+  - id: 2
+    severity: minor
+    status: skipped
+    recommendation: skip
+""")
+        r = _run(str(self.session_dir))
+        d = json.loads(r.stdout)
+        self.assertEqual(d["next_action"], "present")
+
+    def test_next_action_finish_when_all_skipped(self):
+        """全件 skipped で pending/in_progress 0 件なら finish。"""
+        self._write_plan("""  - id: 1
+    severity: major
+    status: skipped
+    recommendation: skip
+  - id: 2
+    severity: minor
+    status: skipped
+    recommendation: skip
+""")
+        r = _run(str(self.session_dir))
+        d = json.loads(r.stdout)
+        self.assertEqual(d["next_action"], "finish")
+
 
 if __name__ == "__main__":
     unittest.main()
