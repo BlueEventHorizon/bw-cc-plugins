@@ -325,7 +325,7 @@ docs:
       - start-implement executor result files
       - Session manager CLI (init, find, cleanup)
       - Writer scripts for YAML operations
-      - refs.yaml new schema with review_packet (criteria_path / ssot_refs / check_order / severity_source / output_path)
+      - refs.yaml new schema with review_packet (criteria_path / ssot_refs / check_order / severity_source / output_filename)
     applicable_tasks:
       - Session initialization and lifecycle management
       - Context reference collection and storage
