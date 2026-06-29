@@ -298,11 +298,9 @@ def get_uncommitted_changed_files(project_root, runner=None):
         if path.startswith('"') and path.endswith('"'):
             path = path[1:-1]
 
-        # 完全削除 (' D' / 'D ' / 'DD' / 'AD' 等) はレビュー対象外
-        if xy.strip() == 'D' or xy == 'DD' or xy.endswith('D') and xy[0] in ('D', 'A', 'U', '?'):
-            # 'AD' (staged add → working delete) や 'UD' は実体無し
-            if xy in ('AD', 'DD', 'UD', ' D', 'D ', '!D'):
-                continue
+        # 完全削除 ('AD' / 'DD' / 'UD' / ' D' / 'D ' / '!D') はレビュー対象外
+        if xy in ('AD', 'DD', 'UD', ' D', 'D ', '!D'):
+            continue
         # Untracked (??) はレビュー対象に含める
         # path がディレクトリの場合は配下のファイルを展開
         full = project_root / path

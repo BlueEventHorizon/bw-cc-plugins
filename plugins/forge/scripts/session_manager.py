@@ -91,9 +91,11 @@ def parse_extra_args(remaining):
         if arg.startswith("--") and i + 1 < len(remaining):
             key = arg[2:].replace("-", "_")
             val = remaining[i + 1]
-            # 整数値の変換
-            if val.lstrip("-").isdigit():
+            # 整数値の変換 ("--1" 等の不正値は ValueError で文字列のまま残す)
+            try:
                 val = int(val)
+            except ValueError:
+                pass
             extra[key] = val
             i += 2
         else:
