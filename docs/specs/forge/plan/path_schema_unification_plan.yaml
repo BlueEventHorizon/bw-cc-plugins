@@ -201,7 +201,7 @@ tasks:
       - docs/specs/forge/design/ADR-032_path_schema_unification.md
 
   - task_id: TASK-009
-    title: ADR-032 status を accepted に更新 + 改定履歴追記
+    title: ADR-032 を accepted 化 + SoT 委譲注記 + 履歴追記
     priority: 40
     status: pending
     design_id: ADR-032
@@ -211,10 +211,12 @@ tasks:
     build_check: skip
     description:
       - "ADR-032 のメタデータ表「ステータス」を proposed → accepted に更新"
-      - "改定履歴に「YYYY-MM-DD 実装完了 (PR #N)」を追記"
-    acceptance_criteria: "ADR-032 status が accepted、改定履歴に実装完了行が追加されている"
+      - "ADR-032 §「決定」末尾に SoT 委譲注記を追加: 「実装完了後、refs.yaml / session.yaml の操作的仕様 SoT は plugins/forge/docs/session_format.md。本 ADR は設計判断の履歴として扱い、schema の正規定義としては参照しない」"
+      - "ADR-032 改定履歴に「YYYY-MM-DD 実装完了、SoT を session_format.md に委譲 (PR #N)」を追記"
+    acceptance_criteria: "ADR-032 status が accepted、SoT 委譲注記と改定履歴の実装完了行が追加されている"
     required_reading:
       - docs/specs/forge/design/ADR-032_path_schema_unification.md
+      - plugins/forge/docs/session_format.md
 
 # === 改定履歴 ===
 revision_history:
