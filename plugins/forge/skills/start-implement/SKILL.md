@@ -14,7 +14,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestio
 
 ## Goal
 
-計画書から選択したタスクの実装・AIレビュー・計画書更新・完了処理（セッション削除・完了案内）まで完走すること。
+計画書から選択したタスクの実装・AIレビュー・計画書更新・完了案内まで完走すること。
 
 ## フロー継続 [MANDATORY]
 
@@ -131,55 +131,6 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ---
 
-## セッション管理 [MANDATORY]
-
-<!-- DES-011 §3.2 準拠: start-implement は事前準備 Phase が多いため、セッション管理を Phase 間の独立セクションとして配置 -->
-
-### 自スキル残骸の検出
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py
-```
-
-- `status: "none"` → 「他スキル残骸の通告」へ
-- `status: "found"` の場合、`sessions[]` を以下のルールで処理する:
-  - **`status: "completed"`** → 正常完了したのに cleanup されなかった残骸として AskUserQuestion なしで自動回収する:
-    ```bash
-    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {completed_session_path}
-    ```
-  - **`status: "in_progress"`** が残る場合 → AskUserQuestion:「前回の未完了セッションがあります。削除しますか？」
-    - **削除** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {sessions[0].path}`
-    - **残す** → 無視して新規作成へ
-
-### 他スキル残骸の通告
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/find_session.py --all-skills
-```
-
-返却された `sessions[]` から自スキル分（既に処理済み）を除外し、`status: "completed"` は自動 cleanup する。残った `status: "in_progress"` が存在する場合は AskUserQuestion:「他スキルの残骸が N 件あります。今クリーンアップしますか？」
-
-- **はい** → 各セッションを cleanup
-- **いいえ** → そのまま新規セッション作成へ進む
-
-### Phase 切替時の touch [MANDATORY]
-
-各 Phase の開始時に session.yaml の `last_updated` を更新する。これにより `cleanup-stale` の時間基準が「最後に活動があった時刻」を正しく反映し、長時間タスクが誤削除されることを防ぐ。
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py touch {session_dir}
-```
-
-### セッション作成
-
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{TASK-ID}"
-```
-
-JSON 出力の `session_dir` をコンテキストに保持する。
-
----
-
 ## Phase 3: コンテキスト収集 [MANDATORY]
 
 ### 3.1 文書の特定
@@ -196,39 +147,48 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 
 #### 3.1.3 実装ルールの収集
 
-プロジェクト固有の実装ルール（レイヤー固有ルール等）を検索する agent を起動する。結果は `{session_dir}/refs/rules.yaml` に書き込まれる。
+```
+Agent ツール起動: 実装ルール収集
+prompt:
+  タスク "{タスクのタイトル}" (feature: {feature}) の実装に適用するプロジェクト固有ルール (レイヤー固有ルール等) を検索する。
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 実装ルール調査
-feature: "{feature}"
-skill_type: "{タスクのタイトル}"
+  検索手順 (優先順):
+  - `/forge:query-db-rules {feature} {タスクのタイトル}`
+  - 利用不可なら `python3 ${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py --type rules`
+  - それも不可なら `Glob: docs/rules/**/*.md`
+
+  return value として以下の markdown 形式で返す:
+
+  ## 実装ルール (N 件)
+  - `path/to/rule.md` — 関連理由
 ```
 
 #### 3.1.4 既存コードの収集
 
-既存コード（類似実装、参照コード）を検索する agent を起動する。結果は `{session_dir}/refs/code.yaml` に書き込まれる。
+```
+Agent ツール起動: 既存コード収集
+prompt:
+  タスク "{タスクのタイトル}" (feature: {feature}) に関連する既存コード (類似実装、参照コード) を探索する。
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 既存コード調査
-feature: "{feature}"
-skill_type: "{タスクのタイトル}"
+  検索手順:
+  - 機能名・コンポーネント名で `Grep` / `Glob: **/*{キーワード}*`
+  - 同一ディレクトリ・import 元・類似命名・テストファイルを分類
+
+  return value として以下の markdown 形式で返す:
+
+  ## 既存コード (N 件)
+  - `path/to/file.swift` — 関連理由
 ```
 
-> 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。
+> 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。各 agent の **return value** を main AI コンテキストに直接保持する。
 
 #### 3.1.5 計画書 `required_reading` フィールドの処理
 
 タスクの `required_reading` 配列が空配列 `[]` でない場合、記載された各ファイルパスを追加の必読文書として executor に渡す。`required_reading` は YAML のタスクフィールドであり、Markdown table の「列」ではない点に注意する。
 
-### 3.2 refs/ 統合・表示
+### 3.2 統合・表示
 
-全 agent 完了後、`{session_dir}/refs/` 内のファイルと直接特定した文書を統合して表示する:
+全 agent 完了後、agent の return value (実装ルール / 既存コード) と直接特定した文書 (設計書 / 要件定義書) を統合して表示する:
 
 ```
 ### ✅ コンテキスト収集完了
@@ -332,9 +292,9 @@ executor は以下のステータスで報告する:
 
 #### 複数タスク並列実行時
 
-**executor は計画書や共有リソースに直接書き込まない。** 各 executor は個別の結果ファイルを Write し、orchestrator が全 executor 完了後に一括処理する。
+**executor は計画書や共有リソースに直接書き込まない。** 各 executor は結果を **return value として JSON で返す**。orchestrator が全 executor 完了後に return value を収集して一括処理する。
 
-各 executor は `{session_dir}/exec_{task_id}.json` に結果を Write する:
+各 executor の return value JSON:
 
 ```json
 {
@@ -353,7 +313,7 @@ executor は以下のステータスで報告する:
 | `summary`        | 実装の要約（1-2行）            |
 | `error`          | FAILURE 時のエラー内容（任意） |
 
-全 executor 完了後、orchestrator が `exec_*.json` を収集して Phase 5-6 を逐次処理する。
+全 executor 完了後、orchestrator が return value を集めて Phase 5-6 を逐次処理する。
 
 ---
 
@@ -419,16 +379,7 @@ executor のステータスに基づいて分岐:
 
 `/anvil:commit` を実行して commit/push を確認する。
 
-### 6.4 セッション削除・次タスク判定
-
-正常完了処理は **complete → cleanup の 2 段** で行う:
-
-```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py complete {session_dir}
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}
-```
-
-`complete` で `session.yaml` を `status: completed` に遷移させてから `cleanup` する。`cleanup` 直前にクラッシュしても、次回起動時または `cleanup-stale` が「完了済み残骸」として自動回収する。
+### 6.4 次タスク判定
 
 次タスクの判定:
 
@@ -479,18 +430,7 @@ executor が FAILURE を報告した場合:
    - **手動で修正** → オーケストレーターまたは人間が直接修正後、Phase 5 へ
    - **タスクをスキップ** → 計画書は更新せず、Phase 6.4 へ
 
-**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーションし、6.5.1 のセッション後処理へ進む。
-
-#### 6.5.1 エスカレーション時のセッション後処理 [MANDATORY]
-
-エスカレーション・中断・人間判断による継続放棄のいずれの場合も、セッションディレクトリを放置せず、AskUserQuestion でユーザーに扱いを確認する。プレーンテキストで「どうしますか？」のように書かない。
-
-質問例:「タスク {task_id} はエスカレーションに到達しました。セッションディレクトリ {session_dir} の扱いを選んでください。」
-
-- **削除する** → `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_manager.py cleanup {session_dir}` を実行
-- **残す（後で再開する）** → そのまま終了。次回 `/forge:start-implement` 起動時に find_session が検出する
-
-**MUST** どちらを選んでも、SKILL は明示的に「セッションを削除した」「セッションを残した」と完了案内で報告する。**NEVER** session_dir をユーザーに告知せず放置してはならない（残骸の原因）。
+**再実行上限: 1回**（初回 + 再実行1回 = 最大2回）。上限に達した場合は人間にエスカレーションして終了する。
 
 ---
 

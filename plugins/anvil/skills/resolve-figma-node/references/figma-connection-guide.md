@@ -2,22 +2,10 @@
 
 ## プロジェクトの Figma ファイル
 
-fileKey はプロジェクトローカルの `.claude/figma.yaml` から取得する。
-
-```yaml
-# .claude/figma.yaml の例
-files:
-  design:
-    key: "<fileKey>" # メインデザインファイルの fileKey
-    name: "<FileName>" # Figma 上のファイル名（URL 構築用）
-  wireframe: # 任意
-    key: "<fileKey>"
-    name: "<FileName>"
-```
-
-- ファイルが存在する場合: `files.design.key` をデフォルト fileKey として使用する
-- ファイルが存在しない場合: 入力された Figma URL から fileKey を抽出して使用する
-- どちらもない場合: AskUserQuestion で fileKey を確認する
+| ファイル名                  | fileKey                  | 用途               |
+| --------------------------- | ------------------------ | ------------------ |
+| DaytonaPark_APP_Design_共有 | `Yg2pMkry4klPFTMHxcM63F` | デザイン（メイン） |
+| アプリワイヤー              | `AgUnNptCnqo85esjicl2ne` | 仕様・WF 参照      |
 
 ## 接続方法: 2 系統
 
@@ -90,9 +78,8 @@ curl -s -H "X-Figma-Token: $FIGMA_PAT" "https://api.figma.com/v1/me"
 # → {"id":"...","email":"...","handle":"..."} が返れば OK
 
 # ファイル内容の確認（file_content:read スコープ必須）
-# fileKey は .claude/figma.yaml から取得した値を使用
 curl -s -H "X-Figma-Token: $FIGMA_PAT" \
-  "https://api.figma.com/v1/files/{fileKey}/nodes?ids={nodeId}" \
+  "https://api.figma.com/v1/files/Yg2pMkry4klPFTMHxcM63F/nodes?ids=6467:232879" \
   | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('err', 'OK'))"
 # → "OK" が返れば file_content:read も有効
 # → "Invalid token" が返れば PAT 期限切れ or スコープ不足
@@ -112,7 +99,7 @@ curl -s -H "X-Figma-Token: $FIGMA_PAT" \
 | MCP ツールが見つからない         | Figma Desktop が未起動 or Dev Mode 無効 | Figma Desktop を起動し Dev Mode タブに切り替え |
 | PAT `/me` で 403                 | トークン期限切れ                        | PAT を再発行                                   |
 | PAT `/nodes` で 403、`/me` は OK | `file_content:read` スコープ不足        | PAT を全スコープで再発行                       |
-| PAT `/nodes` で `null` データ    | nodeId が存在しないファイル             | `.claude/figma.yaml` の fileKey を確認         |
+| PAT `/nodes` で `null` データ    | nodeId が存在しないファイル             | fileKey を確認（デザイン vs ワイヤー）         |
 | MCP で大量データ（数MB）が返る   | nodeId なしで呼び出した                 | nodeId を指定して絞り込む                      |
 
 ## node-id 形式の変換

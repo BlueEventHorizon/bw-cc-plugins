@@ -55,15 +55,20 @@ def write_flat_yaml(path, data, field_order=None):
 
     Args:
         path: 出力ファイルパス
-        data: dict（値は ``bool`` / ``int`` / ``str`` / ``list[str]``）
+        data: dict（値は ``bool`` / ``int`` / ``str`` / ``list[str]`` / ``list[dict]``）
         field_order: 先頭に出力するフィールド順序（省略時はアルファベット順）
 
-    list[str] はインライン配列 ``["a", "b"]`` として出力する。
-    要素は常にダブルクォートし ``\\`` / ``"`` をエスケープする
-    （self-parser ``_parse_inline_array`` と roundtrip 可能な形に揃える）。
+    list[str] はインライン配列 ``["a", "b"]`` として出力する
+    （self-parser ``_parse_inline_array`` と roundtrip 可能な形）。
+
+    list[dict] は ADR-032 path entry 配列のためのブロック形式で出力する::
+
+        key:
+          - path: a.md
+          - path: b.md
 
     Raises:
-        TypeError: list の要素が str 以外のとき（暗黙の str 化はしない）
+        TypeError: list の要素が str / dict 以外のとき（暗黙の str 化はしない）
         ValueError: list[str] の要素に comma を含むとき
             （self-parser が ``split(",")`` で roundtrip できないため、黙って壊さない）
     """
@@ -75,8 +80,24 @@ def write_flat_yaml(path, data, field_order=None):
     else:
         ordered = sorted(data.keys())
     for key in ordered:
-        lines.append(f"{key}: {_flat_value(data[key])}")
+        value = data[key]
+        if isinstance(value, list) and value and all(isinstance(v, dict) for v in value):
+            # list[dict] はブロック形式で出力 (ADR-032)
+            lines.append(f"{key}:")
+            for item in value:
+                _append_dict_block(lines, item, indent="  ")
+        else:
+            lines.append(f"{key}: {_flat_value(value)}")
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _append_dict_block(lines, item, indent):
+    """list[dict] の 1 要素をブロック形式で追加する (`  - key: val`)。"""
+    first = True
+    for k, v in item.items():
+        prefix = f"{indent}- " if first else f"{indent}  "
+        lines.append(f"{prefix}{k}: {yaml_scalar(v)}")
+        first = False
 
 
 def _flat_value(value):

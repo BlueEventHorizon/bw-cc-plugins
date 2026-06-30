@@ -29,7 +29,110 @@ from review.findings_renderer import (  # noqa: E402
     summarize,
 )
 from session.store import SessionStore  # noqa: E402
+from session.update_plan import read_plan, write_plan  # noqa: E402
 from session.yaml_utils import atomic_write_text  # noqa: E402
+
+# (title, location, perspective) で既存 finding と照合する際の正規化キー生成
+def _finding_key(f):
+    return (
+        (f.get("title") or "").strip(),
+        (f.get("location") or "").strip(),
+        (f.get("perspective") or "").strip(),
+    )
+
+
+# merge 時に既存 item から保持するフィールド (evaluator / fixer / present-findings が
+# 書き込む状態フィールド。再 extract で巻き戻してはならない)
+_PRESERVED_FIELDS = (
+    "status",
+    "recommendation",
+    "auto_fixable",
+    "reason",
+    "skip_reason",
+    "files_modified",
+    "fixed_at",
+)
+
+# merge 時に新 finding で上書きするフィールド (reviewer 由来の表示・分類情報)
+_OVERRIDABLE_FIELDS = (
+    "severity",
+    "title",
+    "priority",
+    "perspective",
+    "location",
+    "body",
+)
+
+
+def _merge_plan_items(session_dir, new_findings):
+    """既存 plan.yaml と new_findings を merge する。
+
+    動作:
+      - (title, location, perspective) で既存 item と照合
+      - マッチした場合:
+          * id は既存値で保持 (新 finding の incremental id は捨てる)
+          * status / recommendation / auto_fixable / reason / skip_reason /
+            files_modified / fixed_at は既存値を維持
+          * severity / title / priority などの表示・分類フィールドは新 finding で上書き
+      - 未マッチの新規 finding:
+          * max(既存 id) + 1 から連番採番して append
+      - 既存 item で new_findings に登場しないものはそのまま保持
+        (--diff-only 後の append で過去 finding が消えないようにするため)
+
+    Returns:
+        merge 後の items list (id 昇順ソート済み)
+    """
+    try:
+        existing_plan = read_plan(session_dir)
+    except FileNotFoundError:
+        existing_plan = {"items": []}
+
+    existing_items = existing_plan.get("items") or []
+    existing_by_key = {
+        _finding_key(it): it
+        for it in existing_items
+        if isinstance(it, dict)
+    }
+
+    max_id = 0
+    for it in existing_items:
+        if isinstance(it, dict) and isinstance(it.get("id"), int):
+            max_id = max(max_id, it["id"])
+
+    used_existing_ids = set()
+    merged_items = []
+    next_new_id = max_id + 1
+
+    for new_f in new_findings:
+        key = _finding_key(new_f)
+        if key in existing_by_key:
+            existing = existing_by_key[key]
+            used_existing_ids.add(existing.get("id"))
+            merged = dict(existing)
+            for field in _OVERRIDABLE_FIELDS:
+                if field in new_f and new_f[field] not in (None, ""):
+                    merged[field] = new_f[field]
+            merged_items.append(merged)
+            continue
+
+        new_item = {k: v for k, v in new_f.items() if k != "id"}
+        new_item["id"] = next_new_id
+        next_new_id += 1
+        merged_items.append(new_item)
+
+    # 既存 item で new_findings に登場しなかったものを保持
+    for it in existing_items:
+        if not isinstance(it, dict):
+            continue
+        if it.get("id") not in used_existing_ids and _finding_key(it) not in {
+            _finding_key(m) for m in merged_items
+        }:
+            merged_items.append(it)
+
+    merged_items.sort(
+        key=lambda x: x.get("id", 0) if isinstance(x.get("id"), int) else 0
+    )
+    return merged_items
 
 
 def _emit_error(error):
@@ -88,7 +191,16 @@ def _extract_all_findings(review_files):
 
 
 def run_session_dir_mode(session_dir, review_only=False):
-    """session_dir モード: review_*.md を glob で収集し統合する。"""
+    """session_dir モード: review_*.md を glob で収集し統合する。
+
+    plan.yaml の生成は冪等な merge 動作 (修正 A):
+      - 既存 plan.yaml がある場合: (title, location, perspective) で照合し、
+        evaluator / fixer / present-findings が書いた状態フィールド
+        (status / recommendation / auto_fixable / reason / skip_reason /
+        files_modified / fixed_at) を保持したまま、reviewer 由来の表示・分類
+        フィールドのみを更新する。新規 finding は max(id)+1 から連番採番する。
+      - 既存 plan.yaml がない場合: 通常通り新規生成する。
+    """
     session_path = Path(session_dir)
     if not session_path.is_dir():
         _emit_error(f"Directory not found: {session_dir}")
@@ -105,8 +217,13 @@ def run_session_dir_mode(session_dir, review_only=False):
         return 1
 
     store = SessionStore(session_path)
+    plan_path = session_path / "plan.yaml"
     if not review_only:
-        store.write_text("plan.yaml", generate_plan_yaml(all_findings))
+        if plan_path.exists():
+            merged_items = _merge_plan_items(session_dir, all_findings)
+            write_plan(session_dir, {"items": merged_items})
+        else:
+            store.write_text("plan.yaml", generate_plan_yaml(all_findings))
 
     store.write_text("review.md", generate_review_md(all_findings))
 

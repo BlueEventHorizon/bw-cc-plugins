@@ -29,7 +29,7 @@ Output (JSON):
     "status": "resolved" | "needs_input" | "error",
     "has_doc_structure": true | false,
     "type": "requirement" | "design" | "code" | "plan" | "generic" | null,
-    "target_files": ["path1", ...],
+    "target_files": [{"path": "path1"}, ...],  # ADR-032: dict 配列
     "features": ["feature1", ...],
     "questions": [
       {"key": "type|feature|target", "message": "...", "options": [...]}
@@ -298,11 +298,9 @@ def get_uncommitted_changed_files(project_root, runner=None):
         if path.startswith('"') and path.endswith('"'):
             path = path[1:-1]
 
-        # 完全削除 (' D' / 'D ' / 'DD' / 'AD' 等) はレビュー対象外
-        if xy.strip() == 'D' or xy == 'DD' or xy.endswith('D') and xy[0] in ('D', 'A', 'U', '?'):
-            # 'AD' (staged add → working delete) や 'UD' は実体無し
-            if xy in ('AD', 'DD', 'UD', ' D', 'D ', '!D'):
-                continue
+        # 完全削除 ('AD' / 'DD' / 'UD' / ' D' / 'D ' / '!D') はレビュー対象外
+        if xy in ('AD', 'DD', 'UD', ' D', 'D ', '!D'):
+            continue
         # Untracked (??) はレビュー対象に含める
         # path がディレクトリの場合は配下のファイルを展開
         full = project_root / path
@@ -483,13 +481,18 @@ def find_target_files(project_root, doc_structure, feature, review_type):
 # 対象解決
 # ---------------------------------------------------------------------------
 
+def _to_path_entries(paths):
+    """文字列パスのリストを ADR-032 形式の dict 配列に変換する。"""
+    return [{"path": p} for p in paths]
+
+
 def _resolve_single_target(target, doc_structure, project_root, features, result):
     """単一の対象（ファイル/ディレクトリ/Feature名）を解決"""
     target_path = Path(target)
 
     if (project_root / target_path).is_file():
         result["type"] = detect_type_from_path(target, doc_structure, project_root)
-        result["target_files"] = [target]
+        result["target_files"] = _to_path_entries([target])
 
         if result["type"] is None:
             result["questions"].append({
@@ -501,7 +504,7 @@ def _resolve_single_target(target, doc_structure, project_root, features, result
     elif (project_root / target_path).is_dir():
         detected_type, files = detect_type_from_dir(target, doc_structure, project_root)
         result["type"] = detected_type
-        result["target_files"] = files
+        result["target_files"] = _to_path_entries(files)
 
         if detected_type is None and files:
             result["questions"].append({
@@ -521,8 +524,8 @@ def _resolve_single_target(target, doc_structure, project_root, features, result
 
         if len(available_types) == 1:
             result["type"] = available_types[0]
-            result["target_files"] = find_target_files(
-                project_root, doc_structure, target, available_types[0])
+            result["target_files"] = _to_path_entries(find_target_files(
+                project_root, doc_structure, target, available_types[0]))
         elif len(available_types) > 1:
             result["questions"].append({
                 "key": "type",
@@ -564,7 +567,7 @@ def _resolve_multiple_targets(targets, doc_structure, project_root, result):
         result["target_files"] = []
         return
 
-    result["target_files"] = valid_files
+    result["target_files"] = _to_path_entries(valid_files)
 
     # 種別判定: 最初のファイルで判定
     result["type"] = detect_type_from_path(valid_files[0], doc_structure, project_root)
@@ -616,7 +619,7 @@ def _resolve_files_bypass(file_args, project_root, result):
         ))
         return
 
-    result["target_files"] = valid
+    result["target_files"] = _to_path_entries(valid)
     # 種別解決はバイパス (type は呼び出し側で確定済みの前提)。
     # type は None のままで返し、SKILL 側で --type 等の明示引数を採用する。
 
@@ -633,7 +636,7 @@ def _resolve_diff(project_root, result):
         result.update(_error_result(str(e)))
         return
 
-    result["target_files"] = files
+    result["target_files"] = _to_path_entries(files)
     if not files:
         result["questions"].append({
             "key": "target",

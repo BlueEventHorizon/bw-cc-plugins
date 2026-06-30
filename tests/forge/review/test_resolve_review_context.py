@@ -958,7 +958,8 @@ class TestMainFilesBypass(_MainBypassTestCase):
         (self.tmpdir / 'a.md').write_text('a')
         result = self._run_main(['--files', 'a.md'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md'])
+        # ADR-032: target_files は [{path}] dict 配列
+        self.assertEqual(result["target_files"], [{"path": "a.md"}])
         # 種別解決はバイパスされるため type は None
         self.assertIsNone(result["type"])
 
@@ -967,14 +968,18 @@ class TestMainFilesBypass(_MainBypassTestCase):
         (self.tmpdir / 'b.md').write_text('b')
         result = self._run_main(['--files', 'a.md', 'b.md'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md', 'b.md'])
+        self.assertEqual(
+            result["target_files"], [{"path": "a.md"}, {"path": "b.md"}]
+        )
 
     def test_files_comma_separated(self):
         (self.tmpdir / 'a.md').write_text('a')
         (self.tmpdir / 'b.md').write_text('b')
         result = self._run_main(['--files', 'a.md,b.md'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md', 'b.md'])
+        self.assertEqual(
+            result["target_files"], [{"path": "a.md"}, {"path": "b.md"}]
+        )
 
     def test_files_missing_is_error(self):
         """指定ファイルが存在しない場合は error (early validation)"""
@@ -994,7 +999,7 @@ class TestMainFilesBypass(_MainBypassTestCase):
         # .doc_structure.yaml を作らずに実行
         result = self._run_main(['--files', 'a.md'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md'])
+        self.assertEqual(result["target_files"], [{"path": "a.md"}])
 
     def test_files_and_diff_conflict(self):
         """--files と --diff の同時指定は error (early validation)"""
@@ -1027,7 +1032,10 @@ class TestMainDiff(_MainBypassTestCase):
         with self._patch_git(porcelain):
             result = self._run_main(['--diff'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md', 'b.md', 'c.md'])
+        self.assertEqual(
+            result["target_files"],
+            [{"path": "a.md"}, {"path": "b.md"}, {"path": "c.md"}],
+        )
 
     def test_diff_empty_yields_needs_input(self):
         """変更なしの場合は needs_input で質問を返す"""
@@ -1049,7 +1057,7 @@ class TestMainDiff(_MainBypassTestCase):
         with self._patch_git(' M a.md\n'):
             result = self._run_main(['--diff'])
         self.assertEqual(result["status"], "resolved")
-        self.assertEqual(result["target_files"], ['a.md'])
+        self.assertEqual(result["target_files"], [{"path": "a.md"}])
 
 
 # =========================================================================
@@ -1076,7 +1084,7 @@ class TestMainLegacyPath(_MainBypassTestCase):
         result = self._run_main(['rules/guide.md'])
         # 通常経路を通っているので features (空でも) + has_doc_structure True
         self.assertTrue(result["has_doc_structure"])
-        self.assertEqual(result["target_files"], ['rules/guide.md'])
+        self.assertEqual(result["target_files"], [{"path": "rules/guide.md"}])
         self.assertEqual(result["type"], "generic")
 
 

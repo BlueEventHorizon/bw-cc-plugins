@@ -2,10 +2,11 @@
 
 ## メタデータ
 
-| 項目   | 値         |
-| ------ | ---------- |
-| 設計ID | DES-015    |
-| 作成日 | 2026-03-14 |
+| 項目     | 値                                                                 |
+| -------- | ------------------------------------------------------------------ |
+| 設計ID   | DES-015                                                            |
+| 作成日   | 2026-03-14                                                         |
+| 関連要件 | REQ-004 レビューポリシー要件 / REQ-005 skill_agent_launch_contract |
 
 ---
 
@@ -273,7 +274,7 @@ orchestrator (review SKILL.md)
   │     ├─ target_files
   │     ├─ reference_docs
   │     ├─ related_code
-  │     └─ review_packet  ← criteria_path / ssot_refs[] / check_order / severity_source / output_path
+  │     └─ review_packet  ← criteria_path / ssot_refs[] / check_order / severity_source / output_filename
   │
   ├─ Phase 3 → forge:reviewer Agent × 1（1 起動原則、FNC-412）
   │     ├─ 起動: Agent ツール (subagent_type: "forge:reviewer")
@@ -340,15 +341,15 @@ flowchart TD
 
 ### review → reviewer（1 起動原則）
 
-| 方向 | 項目             | 内容                                                                                                                                  |
-| ---- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 入力 | 種別             | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                                       |
-| 入力 | target_files     | 解決済みファイルパス一覧（refs.yaml 経由）                                                                                            |
-| 入力 | エンジン         | `codex` / `claude`                                                                                                                    |
-| 入力 | reference_docs   | 収集済み参考文書パス一覧（refs.yaml 経由）                                                                                            |
-| 入力 | related_code     | 関連コードのパスと関連性の説明（refs.yaml 経由）                                                                                      |
-| 入力 | review_packet    | `criteria_path` / `ssot_refs[]` / `check_order` / `severity_source` / `output_path` をまとめたパケット (refs.yaml 経由、DES-028 §2.3) |
-| 出力 | review_{種別}.md | 🔴🟡🟢 マーカー付き指摘事項リスト。各 finding に `priority: P1\|P2\|P3` と `severity_source` を付与                                   |
+| 方向 | 項目             | 内容                                                                                                                                                      |
+| ---- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力 | 種別             | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                                                                           |
+| 入力 | target_files     | 解決済みファイルパス一覧（refs.yaml 経由）                                                                                                                |
+| 入力 | エンジン         | `codex` / `claude`                                                                                                                                        |
+| 入力 | reference_docs   | 収集済み参考文書パス一覧（refs.yaml 経由）                                                                                                                |
+| 入力 | related_code     | 関連コードのパスと関連性の説明（refs.yaml 経由）                                                                                                          |
+| 入力 | review_packet    | `criteria_path` / `ssot_refs[]` / `check_order` / `severity_source` / `output_filename` をまとめたパケット (refs.yaml 経由、DES-028 §2.3。ADR-032 適用後) |
+| 出力 | review_{種別}.md | 🔴🟡🟢 マーカー付き指摘事項リスト。各 finding に `priority: P1\|P2\|P3` と `severity_source` を付与                                                       |
 
 ### review → evaluator
 
@@ -507,10 +508,10 @@ recommendation 決定フロー (5 観点の結果から `fix` / `skip` / `create
 | `plugins/forge/skills/review/docs/review_criteria_{type}.md`    | レビュー観点（種別ごと、3 セクション固定構造）           |
 | `plugins/forge/docs/review_priorities_spec.md`                  | レビュー優先度 SoT (P1/P2/P3 定義 + create_issue 3 条件) |
 | `plugins/forge/docs/session_format.md`                          | セッションファイルスキーマ（正規仕様）                   |
-| `plugins/forge/skills/reviewer/SKILL.md`                        | レビュー実行 AI スキル (1 起動原則)                      |
-| `plugins/forge/skills/evaluator/SKILL.md`                       | 吟味・判定 AI スキル (5 観点精査 × P1/P2/P3 直交)        |
-| `plugins/forge/skills/present-findings/SKILL.md`                | 段階的提示 AI スキル (Issue 化選択肢含む)                |
-| `plugins/forge/skills/fixer/SKILL.md`                           | 修正実行 AI スキル                                       |
+| `plugins/forge/agents/reviewer.md`                              | レビュー実行カスタム Agent (1 起動原則)                  |
+| `plugins/forge/agents/evaluator.md`                             | 吟味・判定カスタム Agent (5 観点精査 × P1/P2/P3 直交)    |
+| `plugins/forge/skills/present-findings/SKILL.md`                | 段階的提示 SKILL (Issue 化選択肢含む)                    |
+| `plugins/forge/agents/fixer.md`                                 | 修正実行カスタム Agent (4 安全境界)                      |
 
 ### 関連設計書
 

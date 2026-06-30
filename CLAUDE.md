@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.3.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **forge** (v0.3.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 
 > **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
@@ -30,7 +30,7 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - **`docs/specs/base/design/` の ADR と DES は通し番号を共有**。`forge:next-spec-id` の出力を鵜呑みにせず ADR/DES 横断の最大番号+1 を使う
 - **決定論的な定型処理（列挙・転記・集計・ファイル生成）は script 化する**。AI は判断のみ担い、手転記・手列挙をしない
 - **agent/SKILL のプロンプト指示は混入点でなく出力構築点に 1 箇所だけ置く**。近接した複数箇所への同一指示は重複であり追記しない
-- **`/forge:merge-specs` で一時 feature 文書を統合するときは fold が正（promote は誤り）**。一時文書（REQ-*/DES-*/計画書）は既存文書へ反映して削除する（`additive_development_spec.md` §4）
+- **`/forge:merge-specs` で一時 feature 文書を統合するときは fold が正（promote は誤り）**。一時文書（REQ-_/DES-_/計画書）は既存文書へ反映して削除する（`additive_development_spec.md` §4）
 
 ## Repository Layout
 

@@ -2,7 +2,7 @@
 
 **仕様駆動開発（Spec-Driven Development）** のための Claude Code プラグイン — 仕様を先に書き、AI がフルコンテキストで実装・レビューする。
 
-**マーケットプレイスバージョン: 0.2.6**
+**マーケットプレイスバージョン: 0.2.7**
 
 マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供し、forge の検索系スキルがこれへ転送する（`index-docs` / `query-docs`）。
 
@@ -39,8 +39,8 @@ flowchart LR
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.3.0      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
-| **anvil**  | 0.0.10     | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
+| **forge**  | 0.3.1      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **anvil**  | 0.0.11     | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 
 > **doc-advisor は外部依存**: AI 検索可能な文書インデックスは別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。
 
@@ -95,7 +95,7 @@ flowchart LR
 
 | スキル                                                                                    | 説明                                                                                                                         | トリガー                            |
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| [**review**](docs/readme/forge/guide_review_ja.md)                                        | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto N` で自動修正                                                            | `"レビューして"`                    |
+| [**review**](docs/readme/forge/guide_review_ja.md)                                        | コード・文書を 🔴🟡🟢 重大度付きでレビュー。`--auto-critical` で 🔴 のみ / `--auto` で 🔴🟡 を自動修正                       | `"レビューして"`                    |
 | [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements)    | 対話・ソース解析・Figma の 3 モードで要件定義書を作成                                                                        | `"要件定義"`                        |
 | [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design)                | 要件定義書から設計書を作成。既存資産の再利用を重視                                                                           | `"設計書作成"`                      |
 | [**start-plan**](docs/readme/forge/guide_create_docs_ja.md#start-plan)                    | 設計書からタスクを抽出し YAML 計画書を作成                                                                                   | `"計画書作成"`                      |
@@ -119,12 +119,17 @@ flowchart LR
 
 > [詳細ガイド](docs/readme/guide_anvil_ja.md) — 使い方、使用例
 
-| スキル                                                   | 説明                                                                                   | トリガー              |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------- |
-| [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push                               | `"コミットして"`      |
-| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成                      | `"PR を作成"`         |
-| **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）           | `"issue を作成"`      |
-| **impl-issue**                                           | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応） | `"この issue を実装"` |
+| スキル                                                   | 説明                                                                                   | トリガー                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push                               | `"コミットして"`                    |
+| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成                      | `"PR を作成"`                       |
+| **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）           | `"issue を作成"`                    |
+| **impl-issue**                                           | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応） | `"この issue を実装"`               |
+| **capture-emulator-screen**                              | Android Emulator / iOS Simulator 上で実装済みアプリ画面を起動・操作・キャプチャ        | ※ sync-screen-design 等から呼び出し |
+| **sync-screen-design**                                   | 画面設計書・Figma・実装キャプチャの三点突合で実装画面を仕様とデザインに同期            | `"Figma 通りに直して"`              |
+| _figma-mcp-guide_                                        | Figma MCP サーバーの公式知識ベース。get_design_context / get_screenshot 等のツール仕様 | ※ 他スキルが参照                    |
+| _prepare-figma_                                          | Figma デザインからデザイン仕様書を作成。nodeId 検証とプレビュー突合まで                | ※ impl-issue が呼び出し             |
+| _resolve-figma-node_                                     | 画面名/ID から Figma 内の正しい nodeId と URL を PAT で検証して特定                    | ※ prepare-figma 等が呼び出し        |
 
 > **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
@@ -156,11 +161,11 @@ Claude Code セッション内で:
 /plugin install forge@bw-cc-plugins --scope local    # このリポで自分だけ使う
 ```
 
-| スコープ | 対象範囲 | チーム共有 | 設定保存先 |
-|---|---|---|---|
-| **user** | 自分・全プロジェクト | なし | `~/.claude/settings.json` |
-| **project** | このリポジトリの全員 | あり（git コミット） | `.claude/settings.json` |
-| **local** | 自分・このリポジトリのみ | なし（gitignore） | `.claude/settings.local.json` |
+| スコープ    | 対象範囲                 | チーム共有           | 設定保存先                    |
+| ----------- | ------------------------ | -------------------- | ----------------------------- |
+| **user**    | 自分・全プロジェクト     | なし                 | `~/.claude/settings.json`     |
+| **project** | このリポジトリの全員     | あり（git コミット） | `.claude/settings.json`       |
+| **local**   | 自分・このリポジトリのみ | なし（gitignore）    | `.claude/settings.local.json` |
 
 - **全プロジェクトで常に使いたい** → **user**
 - **このリポジトリのチーム全員に配布したい** → **project**

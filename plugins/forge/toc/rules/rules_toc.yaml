@@ -34,33 +34,6 @@ docs:
       - new file separation
       - frontmatter type
       - addendum lifecycle
-  plugins/forge/docs/context_gathering_spec.md:
-    title: Context Gathering Specification
-    purpose: Specifies context gathering tasks and workflows for the forge orchestrator agent to research specifications, implementation rules, related PRs, and existing code relevant to development tasks
-    content_details:
-      - Issue and task confirmation from git branch and GitHub CLI
-      - Specification research using doc-advisor query-specs skill with fallback to doc_structure and direct search
-      - Implementation rule research using doc-advisor query-rules skill
-      - Similar PR investigation using GitHub CLI with merged PR search
-      - Existing code exploration and categorization by relationship type
-      - Output structure as refs/ entries
-      - Integration with /forge:review per-flow orchestrator pattern
-    applicable_tasks:
-      - Context gathering orchestration
-      - Pre-implementation research execution
-      - Documentation discovery for features
-      - Code reference identification
-      - Agent task initiation
-    keywords:
-      - context gathering
-      - agent orchestration
-      - specification research
-      - implementation rules
-      - code exploration
-      - doc-advisor
-      - GitHub CLI
-      - refs
-      - per-flow orchestrator
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
     purpose: Provides a generic template for design documents when project-specific formats are not available, defining structure for design IDs, metadata, architecture overview, modules, use cases, and test planning
@@ -352,7 +325,7 @@ docs:
       - start-implement executor result files
       - Session manager CLI (init, find, cleanup)
       - Writer scripts for YAML operations
-      - refs.yaml new schema with review_packet (criteria_path / ssot_refs / check_order / severity_source / output_path)
+      - refs.yaml new schema with review_packet (criteria_path / ssot_refs / check_order / severity_source / output_filename)
     applicable_tasks:
       - Session initialization and lifecycle management
       - Context reference collection and storage

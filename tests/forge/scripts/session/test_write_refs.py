@@ -1,4 +1,11 @@
-"""write_refs のテスト (DES-028 §2.3 review_packet 新スキーマ)。"""
+"""write_refs のテスト (ADR-032 path schema unification 後の新スキーマ)。
+
+ADR-032 で以下を変更:
+- target_files: string[] → object[] (path フィールド必須)
+- ssot_refs[].doc_path → path (Issue #99 改名を覆す)
+- review_packet.output_path → output_filename
+- 旧キー名は明示的 ValueError で reject
+"""
 
 import copy
 import json
@@ -28,27 +35,27 @@ SCRIPT = str(
 
 
 def _base_data():
-    """テスト用の最小限の正常データを返す (review_packet 新スキーマ)。"""
+    """テスト用の最小限の正常データを返す (ADR-032 新スキーマ)。"""
     return {
-        "target_files": ["a.py"],
+        "target_files": [{"path": "a.py"}],
         "reference_docs": [{"path": "docs/r.md"}],
         "review_packet": {
             "criteria_path": "review/docs/review_criteria_code.md",
             "ssot_refs": [
                 {
-                    "doc_path": "docs/rules/implementation_guidelines.md",
+                    "path": "docs/rules/implementation_guidelines.md",
                     "priority": "P1",
                     "doc_type": "rules",
                 },
                 {
-                    "doc_path": "plugins/forge/docs/spec_priorities_spec.md",
+                    "path": "plugins/forge/docs/spec_priorities_spec.md",
                     "priority": "P2",
                     "doc_type": "principles",
                 },
             ],
             "check_order": ["P1", "P2", "P3"],
-            "severity_source": "principles",
-            "output_path": "review_code.md",
+            "severity_source": "plugins/forge/docs/review_priorities_spec.md",
+            "output_filename": "review_code.md",
         },
     }
 
@@ -69,7 +76,7 @@ class _FsTestCase(unittest.TestCase):
 
 
 class TestValidateReviewPacketBasics(unittest.TestCase):
-    """validate_review_packet の基本 (既存スキーマ部分維持) テスト。"""
+    """validate_review_packet の基本テスト。"""
 
     def test_valid_minimal(self):
         validate_review_packet(_base_data())
@@ -91,7 +98,7 @@ class TestValidateReviewPacketBasics(unittest.TestCase):
         data["reference_docs"] = []
         validate_review_packet(data)
 
-    # -- target_files --
+    # -- target_files (ADR-032: dict 配列必須) --
 
     def test_empty_target_files(self):
         data = _base_data()
@@ -105,11 +112,38 @@ class TestValidateReviewPacketBasics(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
+    def test_target_files_item_not_dict(self):
+        """target_files[] の各要素は dict 必須 (ADR-032)。"""
+        data = _base_data()
+        data["target_files"] = ["a.py"]  # 旧 schema (string array)
+        with self.assertRaises(ValueError) as ctx:
+            validate_review_packet(data)
+        self.assertIn("target_files", str(ctx.exception))
+
+    def test_target_files_missing_path(self):
+        data = _base_data()
+        data["target_files"] = [{"reason": "no path"}]
+        with self.assertRaises(ValueError):
+            validate_review_packet(data)
+
+    def test_target_files_empty_path(self):
+        data = _base_data()
+        data["target_files"] = [{"path": ""}]
+        with self.assertRaises(ValueError):
+            validate_review_packet(data)
+
     # -- reference_docs --
 
     def test_reference_docs_missing_path(self):
         data = _base_data()
         data["reference_docs"] = [{"reason": "no path"}]
+        with self.assertRaises(ValueError):
+            validate_review_packet(data)
+
+    def test_reference_docs_item_not_dict(self):
+        """reference_docs[] の各要素は dict 必須 (bb0a85a で型チェック追加)。"""
+        data = _base_data()
+        data["reference_docs"] = ["docs/r.md"]
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -174,7 +208,7 @@ class TestReviewPacketRequiredKeys(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# validate_review_packet: ssot_refs
+# validate_review_packet: ssot_refs (ADR-032: path に改名)
 # ---------------------------------------------------------------------------
 
 
@@ -195,7 +229,7 @@ class TestReviewPacketSsotRefs(unittest.TestCase):
 
     def test_ssot_refs_not_list(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"] = {"doc_path": "x.md"}
+        data["review_packet"]["ssot_refs"] = {"path": "x.md"}
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -205,15 +239,15 @@ class TestReviewPacketSsotRefs(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_ssot_refs_missing_doc_path(self):
+    def test_ssot_refs_missing_path(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"][0].pop("doc_path")
+        data["review_packet"]["ssot_refs"][0].pop("path")
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_ssot_refs_empty_doc_path(self):
+    def test_ssot_refs_empty_path(self):
         data = _base_data()
-        data["review_packet"]["ssot_refs"][0]["doc_path"] = ""
+        data["review_packet"]["ssot_refs"][0]["path"] = ""
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -323,76 +357,74 @@ class TestReviewPacketCheckOrder(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# validate_review_packet: output_path
+# validate_review_packet: output_filename (ADR-032 で output_path から改名)
 # ---------------------------------------------------------------------------
 
 
-class TestReviewPacketOutputPath(unittest.TestCase):
-    """output_path の検証テスト (^review_<種別>.md$ 形式)。"""
+class TestReviewPacketOutputFilename(unittest.TestCase):
+    """output_filename の検証テスト (^review_<種別>.md$ 形式)。"""
 
-    def test_missing_output_path(self):
+    def test_missing_output_filename(self):
         data = _base_data()
-        del data["review_packet"]["output_path"]
+        del data["review_packet"]["output_filename"]
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_empty_output_path(self):
+    def test_empty_output_filename(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = ""
+        data["review_packet"]["output_filename"] = ""
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_valid_output_path_code(self):
+    def test_valid_output_filename_code(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "review_code.md"
+        data["review_packet"]["output_filename"] = "review_code.md"
         validate_review_packet(data)
 
-    def test_valid_output_path_design(self):
+    def test_valid_output_filename_design(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "review_design.md"
+        data["review_packet"]["output_filename"] = "review_design.md"
         validate_review_packet(data)
 
-    def test_invalid_output_path_no_prefix(self):
+    def test_invalid_output_filename_no_prefix(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "code.md"
+        data["review_packet"]["output_filename"] = "code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_invalid_output_path_wrong_ext(self):
+    def test_invalid_output_filename_wrong_ext(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "review_code.txt"
+        data["review_packet"]["output_filename"] = "review_code.txt"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_invalid_output_path_uppercase(self):
-        """大文字を含む種別は不可。"""
+    def test_invalid_output_filename_uppercase(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "review_Code.md"
+        data["review_packet"]["output_filename"] = "review_Code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_invalid_output_path_with_subdir(self):
-        """サブディレクトリ含みは不可 (^review_<種別>.md$ 厳密)。"""
+    def test_invalid_output_filename_with_subdir(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "sub/review_code.md"
+        data["review_packet"]["output_filename"] = "sub/review_code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_output_path_traversal(self):
+    def test_output_filename_traversal(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "../review_code.md"
+        data["review_packet"]["output_filename"] = "../review_code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_output_path_traversal_middle(self):
+    def test_output_filename_traversal_middle(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "sub/../review_code.md"
+        data["review_packet"]["output_filename"] = "sub/../review_code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
-    def test_output_path_absolute(self):
+    def test_output_filename_absolute(self):
         data = _base_data()
-        data["review_packet"]["output_path"] = "/tmp/review_code.md"
+        data["review_packet"]["output_filename"] = "/tmp/review_code.md"
         with self.assertRaises(ValueError):
             validate_review_packet(data)
 
@@ -411,30 +443,68 @@ class TestRejectLegacyPerspectives(unittest.TestCase):
             {
                 "name": "correctness",
                 "criteria_path": "review/docs/review_criteria_code.md",
-                "output_path": "review_correctness.md",
+                "output_filename": "review_correctness.md",
             }
         ]
         with self.assertRaises(ValueError) as ctx:
             validate_review_packet(data)
-        # メッセージに「perspectives」「撤廃」「review_packet」が含まれること
         msg = str(ctx.exception)
         self.assertIn("perspectives", msg)
         self.assertIn("review_packet", msg)
 
     def test_reject_legacy_perspectives_even_when_review_packet_absent(self):
-        """review_packet 欠落 + perspectives 同時指定でも perspectives 拒否を優先。"""
         data = _base_data()
         del data["review_packet"]
         data["perspectives"] = [
             {
                 "name": "correctness",
                 "criteria_path": "x.md",
-                "output_path": "review_x.md",
+                "output_filename": "review_x.md",
             }
         ]
         with self.assertRaises(ValueError) as ctx:
             validate_review_packet(data)
         self.assertIn("perspectives", str(ctx.exception))
+
+
+# ---------------------------------------------------------------------------
+# ADR-032 回帰防止: 旧キー名 (doc_path / output_path) の拒否
+# ---------------------------------------------------------------------------
+
+
+class TestRejectLegacyAdr032Keys(unittest.TestCase):
+    """ADR-032 で改名された旧キー名が拒否されることを検証する。"""
+
+    def test_ssot_refs_legacy_doc_path_rejected(self):
+        """ssot_refs[].doc_path は ADR-032 で path に統一されたため拒否される。"""
+        data = _base_data()
+        data["review_packet"]["ssot_refs"][0].pop("path")
+        data["review_packet"]["ssot_refs"][0]["doc_path"] = "docs/x.md"
+        with self.assertRaises(ValueError) as ctx:
+            validate_review_packet(data)
+        msg = str(ctx.exception)
+        # メッセージに「path」必須が出る (doc_path を明示的に reject する必要は必ずしも無いが、
+        # 「path フィールド必須」として fail することは保証される)
+        self.assertIn("path", msg)
+
+    def test_review_packet_legacy_output_path_rejected(self):
+        """review_packet.output_path は ADR-032 で output_filename に改名されたため拒否される。"""
+        data = _base_data()
+        data["review_packet"].pop("output_filename")
+        data["review_packet"]["output_path"] = "review_code.md"
+        with self.assertRaises(ValueError) as ctx:
+            validate_review_packet(data)
+        msg = str(ctx.exception)
+        self.assertIn("output_filename", msg)
+
+    def test_target_files_legacy_string_array_rejected(self):
+        """target_files string array は ADR-032 で [{path}] dict 配列に統一されたため拒否される。"""
+        data = _base_data()
+        data["target_files"] = ["a.py", "b.py"]
+        with self.assertRaises(ValueError) as ctx:
+            validate_review_packet(data)
+        msg = str(ctx.exception)
+        self.assertIn("target_files", msg)
 
 
 # ---------------------------------------------------------------------------
@@ -463,18 +533,35 @@ class TestBuildRefsText(unittest.TestCase):
         self.assertNotIn("perspectives:", text)
 
     def test_review_packet_nested(self):
-        """review_packet 配下にネスト構造で出力される。"""
         text = build_refs_text(_base_data())
         self.assertIn("review_packet:", text)
-        # criteria_path / ssot_refs / check_order / severity_source / output_path
         for key in (
             "criteria_path:",
             "ssot_refs:",
             "check_order:",
             "severity_source:",
-            "output_path:",
+            "output_filename:",
         ):
             self.assertIn(key, text)
+
+    def test_output_path_not_in_output(self):
+        """ADR-032: 旧 output_path キー名で書き出してはならない。"""
+        text = build_refs_text(_base_data())
+        self.assertNotIn("output_path:", text)
+
+    def test_ssot_refs_doc_path_not_in_output(self):
+        """ADR-032: ssot_refs[] は path で書き出される (旧 doc_path 不可)。"""
+        text = build_refs_text(_base_data())
+        # ssot_refs セクション内に doc_path: が出てはならない
+        self.assertNotIn("doc_path:", text)
+
+    def test_target_files_dict_format(self):
+        """ADR-032: target_files は [{path: ...}] dict 配列で書き出される。"""
+        text = build_refs_text(_base_data())
+        # "- path:" の形式が含まれる (target_files セクション)
+        self.assertIn("target_files:", text)
+        # 旧 string array 形式 "- a.py" は無い (path: プレフィックスありで書かれる)
+        self.assertNotRegex(text, r"target_files:\s*\n\s+-\s+a\.py\s*\n")
 
     def test_skip_reference_docs_when_empty(self):
         data = _base_data()
@@ -492,23 +579,30 @@ class TestWriteRefs(_FsTestCase):
         path = write_refs(str(self.session_dir), data)
         self.assertTrue(Path(path).exists())
         result = read_yaml(path)
-        self.assertEqual(result["target_files"], ["a.py"])
+        # ADR-032: target_files は dict 配列
+        self.assertEqual(result["target_files"], [{"path": "a.py"}])
         packet = result["review_packet"]
         self.assertIsInstance(packet, dict)
         self.assertEqual(
             packet["criteria_path"], "review/docs/review_criteria_code.md"
         )
-        self.assertEqual(packet["severity_source"], "principles")
-        self.assertEqual(packet["output_path"], "review_code.md")
+        self.assertEqual(
+            packet["severity_source"],
+            "plugins/forge/docs/review_priorities_spec.md",
+        )
+        # ADR-032: output_filename
+        self.assertEqual(packet["output_filename"], "review_code.md")
+        self.assertNotIn("output_path", packet)
         self.assertEqual(packet["check_order"], ["P1", "P2", "P3"])
         self.assertEqual(len(packet["ssot_refs"]), 2)
         self.assertEqual(packet["ssot_refs"][0]["priority"], "P1")
         self.assertEqual(packet["ssot_refs"][0]["doc_type"], "rules")
+        # ADR-032: ssot_refs は path
         self.assertEqual(
-            packet["ssot_refs"][0]["doc_path"],
+            packet["ssot_refs"][0]["path"],
             "docs/rules/implementation_guidelines.md",
         )
-        self.assertNotIn("path", packet["ssot_refs"][0])
+        self.assertNotIn("doc_path", packet["ssot_refs"][0])
 
     def test_full(self):
         data = copy.deepcopy(_base_data())
@@ -518,7 +612,7 @@ class TestWriteRefs(_FsTestCase):
         ]
         data["review_packet"]["ssot_refs"].append(
             {
-                "doc_path": "plugins/forge/docs/spec_priorities_spec.md",
+                "path": "plugins/forge/docs/spec_priorities_spec.md",
                 "priority": "P3",
                 "doc_type": "principles",
             }
@@ -535,6 +629,9 @@ class TestWriteRefs(_FsTestCase):
         )
         self.assertEqual(result["related_code"][0]["reason"], "ヘルパー")
         self.assertEqual(result["related_code"][0]["lines"], "1-30")
+        # ADR-032 ラウンドトリップ: target_files も dict 配列で保持
+        self.assertEqual(len(result["target_files"]), 1)
+        self.assertEqual(result["target_files"][0]["path"], "a.py")
 
 
 # ---------------------------------------------------------------------------
@@ -574,13 +671,12 @@ class TestCLI(_FsTestCase):
         self.assertNotEqual(proc.returncode, 0)
 
     def test_reject_legacy_perspectives(self):
-        """旧 perspectives[] スキーマが渡されたら CLI もエラー終了する。"""
         data = _base_data()
         data["perspectives"] = [
             {
                 "name": "correctness",
                 "criteria_path": "x.md",
-                "output_path": "review_x.md",
+                "output_filename": "review_x.md",
             }
         ]
         proc = subprocess.run(
@@ -590,28 +686,55 @@ class TestCLI(_FsTestCase):
         )
         self.assertNotEqual(proc.returncode, 0)
 
+    def test_reject_legacy_output_path(self):
+        """ADR-032: CLI 経由でも旧 output_path キーは reject される。"""
+        data = _base_data()
+        data["review_packet"].pop("output_filename")
+        data["review_packet"]["output_path"] = "review_code.md"
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir)],
+            input=json.dumps(data),
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+
+    def test_reject_legacy_ssot_refs_doc_path(self):
+        """ADR-032: CLI 経由でも旧 ssot_refs[].doc_path は reject される。"""
+        data = _base_data()
+        data["review_packet"]["ssot_refs"][0].pop("path")
+        data["review_packet"]["ssot_refs"][0]["doc_path"] = "docs/x.md"
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir)],
+            input=json.dumps(data),
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+
+    def test_reject_legacy_target_files_string_array(self):
+        """ADR-032: CLI 経由でも target_files の string array は reject される。"""
+        data = _base_data()
+        data["target_files"] = ["a.py"]
+        proc = subprocess.run(
+            [sys.executable, SCRIPT, str(self.session_dir)],
+            input=json.dumps(data),
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+
 
 # ---------------------------------------------------------------------------
-# TASK-028 回帰防止: 旧 perspectives キー拒否を subprocess 経由で確認
+# 旧 perspectives キー拒否 (subprocess 経由回帰防止)
 # ---------------------------------------------------------------------------
 
 
 class TestRejectLegacyPerspectivesRegression(_FsTestCase):
-    """TASK-028 回帰防止テスト。
+    """DES-028 §2.3 / REQ-004 FNC-412 回帰防止テスト。"""
 
-    DES-028 §2.3 / REQ-004 FNC-412 により、refs.yaml の旧スキーマ
-    (perspectives[]) は完全撤廃されている (TASK-009 で write_refs.py に
-    拒否ロジック実装済み)。本テストはその拒否ロジックが回帰しないよう
-    subprocess 経由で実際の振る舞い (終了コード / 標準エラー /
-    refs.yaml 非生成) を検証する。
-    """
-
-    # 旧スキーマの典型 perspectives エントリ (DES-021 当時の構造)
     LEGACY_PERSPECTIVE = {
         "name": "logic",
         "criteria_path": "review/docs/review_criteria_code.md",
         "section": "Perspective: logic",
-        "output_path": "review_logic.md",
+        "output_filename": "review_logic.md",
     }
 
     def _run_cli(self, payload):
@@ -623,118 +746,54 @@ class TestRejectLegacyPerspectivesRegression(_FsTestCase):
         )
 
     def test_legacy_perspectives_exits_nonzero(self):
-        """旧 perspectives キーが含まれる入力では CLI が非 0 終了する。"""
         payload = _base_data()
         payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
-
         proc = self._run_cli(payload)
-
         self.assertNotEqual(
             proc.returncode, 0,
             f"perspectives キー入力で 0 終了は不可: stdout={proc.stdout!r}",
         )
 
     def test_legacy_perspectives_error_message_mentions_key_and_deprecation(self):
-        """エラーメッセージに「perspectives」キー名と廃止文言・新スキーマ案内を含む。"""
         payload = _base_data()
         payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
-
         proc = self._run_cli(payload)
-
-        # write_refs.py は stderr に JSON 形式でエラーを出す
         self.assertTrue(proc.stderr, "stderr が空: エラーメッセージ未出力")
         try:
             err = json.loads(proc.stderr)
         except json.JSONDecodeError:
             self.fail(
-                f"stderr が JSON 形式でない (write_refs.py 仕様違反): {proc.stderr!r}"
+                f"stderr が JSON 形式でない: {proc.stderr!r}"
             )
         self.assertEqual(err.get("status"), "error")
         msg = err.get("error", "")
-        # キー名「perspectives」を含む
-        self.assertIn(
-            "perspectives", msg,
-            f"エラーメッセージにキー名 'perspectives' が無い: {msg!r}",
-        )
-        # 廃止 / 撤廃 / 使用不可 のいずれかを含む (TASK-009 実装文言「撤廃」に対応)
+        self.assertIn("perspectives", msg)
         self.assertTrue(
             any(token in msg for token in ("撤廃", "廃止", "使用不可", "deprecated")),
             f"エラーメッセージに廃止文言が無い: {msg!r}",
         )
-        # 新スキーマ (review_packet) への移行案内を含む
-        self.assertIn(
-            "review_packet", msg,
-            f"エラーメッセージに新スキーマ案内 'review_packet' が無い: {msg!r}",
-        )
+        self.assertIn("review_packet", msg)
 
     def test_legacy_perspectives_does_not_create_refs_yaml(self):
-        """拒否時に refs.yaml が生成されないこと。"""
         payload = _base_data()
         payload["perspectives"] = [self.LEGACY_PERSPECTIVE]
         refs_path = self.session_dir / "refs.yaml"
-        self.assertFalse(refs_path.exists(), "前提: refs.yaml は事前に存在しない")
-
+        self.assertFalse(refs_path.exists())
         proc = self._run_cli(payload)
-
         self.assertNotEqual(proc.returncode, 0)
-        self.assertFalse(
-            refs_path.exists(),
-            "旧スキーマ拒否時に refs.yaml が生成されてはならない",
-        )
+        self.assertFalse(refs_path.exists())
 
     def test_new_schema_succeeds_and_creates_refs_yaml(self):
-        """対照ケース: perspectives 不在の新スキーマ単体では正常生成。"""
         payload = _base_data()
-        # perspectives キーが存在しないことを明示
         self.assertNotIn("perspectives", payload)
         refs_path = self.session_dir / "refs.yaml"
-
         proc = self._run_cli(payload)
-
         self.assertEqual(proc.returncode, 0, f"stderr={proc.stderr!r}")
         result = json.loads(proc.stdout)
         self.assertEqual(result["status"], "ok")
-        self.assertTrue(refs_path.exists(), "新スキーマでは refs.yaml が生成される")
-        # 生成内容にも perspectives が含まれないことを確認 (二重防衛)
-        self.assertNotIn("perspectives:", refs_path.read_text(encoding="utf-8"))
-
-
-# ---------------------------------------------------------------------------
-# Issue #99 回帰防止: 旧 ssot_refs[].path キーの拒否 (doc_path 統一)
-# ---------------------------------------------------------------------------
-
-
-class TestRejectLegacySsotRefsPath(unittest.TestCase):
-    """ssot_refs[] の旧フィールド名 `path` が拒否されることを検証する。
-
-    DES-028 §2.3 / Issue #99: ssot_refs[] のフィールド名は `doc_path` に統一。
-    実装と仕様書の乖離 (write_refs.py が `path` を要求していた) を解消した際の
-    回帰防止テスト。
-    """
-
-    def test_ssot_refs_with_legacy_path_key_rejected(self):
-        """ssot_refs[] に `path` キーのみがあると validation エラーになる。"""
-        data = _base_data()
-        # doc_path を削除し旧 path キーで置き換える
-        data["review_packet"]["ssot_refs"][0].pop("doc_path")
-        data["review_packet"]["ssot_refs"][0]["path"] = (
-            "docs/rules/implementation_guidelines.md"
-        )
-        with self.assertRaises(ValueError) as ctx:
-            validate_review_packet(data)
-        msg = str(ctx.exception)
-        self.assertIn("doc_path", msg, f"エラーメッセージに doc_path が無い: {msg!r}")
-
-    def test_ssot_refs_with_both_keys_still_requires_doc_path(self):
-        """doc_path 不在で path だけがあると拒否される (両キー混在を許さない)。"""
-        data = _base_data()
-        # doc_path を削除し、path も付ける混在状態
-        data["review_packet"]["ssot_refs"][0].pop("doc_path")
-        data["review_packet"]["ssot_refs"][0]["path"] = (
-            "docs/rules/implementation_guidelines.md"
-        )
-        with self.assertRaises(ValueError):
-            validate_review_packet(data)
+        self.assertTrue(refs_path.exists())
+        text = refs_path.read_text(encoding="utf-8")
+        self.assertNotIn("perspectives:", text)
 
 
 if __name__ == "__main__":

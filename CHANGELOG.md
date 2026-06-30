@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.7] - 2026-06-30
+
+### marketplace
+
+- **chore**: forge 0.3.1 / anvil 0.0.11 のリリースに伴い marketplace バージョンをバンプ
+
+## [anvil 0.0.11] - 2026-06-30
+
+### anvil
+
+- **feat**: 新規 SKILL `sync-screen-design` を追加 (Figma 画面設計と実装の同期管理。figma-side / implementation-rules / review-checklist / typography-and-tokens の 4 観点で対話的に進行)
+- **feat**: `prepare-figma` に scripts 一式を追加 (extract_preview_yaml.py / render_preview.sh / trim_screenshot.py / yaml_to_html.py + README + preview-yaml-schema)。design-spec-template も大幅刷新
+- **feat**: `resolve-figma-node` SKILL.md と figma-connection-guide を更新 (nodeId 検証フロー強化)
+- **refactor**: `impl-issue` の TEMPLATE / phase-08-impl-design / phase-11 / phase-12 references を整理
+
+## [forge 0.3.1] - 2026-06-30
+
+### forge
+
+- **feat**: ADR-032 path schema unification を実装。refs.yaml / session.yaml の「パスを持つフィールド」11 箇所を統一形式 `[{path: ..., ...metadata}]` dict 配列に集約。`ssot_refs[].doc_path` を `path` に統一 (Issue #99 を覆す)、`output_path` を `output_filename` に改名 (sandbox 内ファイル名と外部参照 path の概念区別)、`target_files` を文字列配列から dict 配列に移行。旧 schema は明示的 ValueError で reject (後方互換層なし)
+- **feat**: review pipeline の構造化 agent prompt を固定化 (ADR-032 #11)。general-purpose agent (related_code 探索) の出力を `- path:` / `reason:` の構造化 markdown 形式に強制し、orchestrator が refs.yaml の `related_code[]` に直接マッピング可能に
+- **refactor**: findings_session を DES-024 準拠の単機能 wrapper 群 (`mark_in_progress` / `mark_skipped` / `mark_needs_review` / `mark_issued` / `mark_fixed` / `batch_update` / `list_items_sorted` / `list_fixable_pending` / `summarize_progress`) に分割
+- **refactor**: start-design / start-implement / start-plan / start-requirements / start-uxui-design から session / refs / init_session 機構を撤去。review 専用に絞り SKILL の責務を整理
+- **fix**: `/forge:review` パイプラインの整合性問題を一括修正。write_refs.py の validation エラー露出 (Python traceback で潰れていた問題)、review SKILL.md の refs JSON schema 説明不足、旧 fork 型 SKILL の削除済みパス参照
+- **fix**: resolve_review_context.py の削除ファイル除外ロジック (二重 if 論理的不整合) を一段化で解消。外側 if が True で内側 if が False のエッジで削除済みファイルが target_files に漏れる問題を修正
+- **fix**: session_manager.py の `parse_extra_args` で `val.lstrip("-").isdigit()` が `"--1"` を True と判定し `int(val)` で ValueError を投げる不具合を try/except に修正
+- **fix**: update-version ラッパーで stdout を対象ファイルへ書き戻す改修 (Issue #139)。format pre-commit hook の起動順を修正
+- **fix**: forge:review で additive feature と legacy specs の衝突を P2 観点から除外
+- **docs**: ADR-032 を accepted 化。操作的仕様 SoT は `plugins/forge/docs/session_format.md` に委譲、本 ADR は設計判断の履歴として保持。session_format.md / DES-011/014/015/028/029 / review SKILL.md / present-findings SKILL.md / 3 agent prompt を新 schema に同期
+
 ## [marketplace 0.2.6] - 2026-06-22
 
 ### marketplace

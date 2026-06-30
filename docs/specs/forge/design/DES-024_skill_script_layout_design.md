@@ -39,6 +39,19 @@
 - exit code / stdout / stderr を透過
 - ガード追加なし / retry なし / timeout なし
 
+#### 2.3.1 writer 例外類型（stdout-only な低レベルを書き戻すラッパー）
+
+低レベル script が NFR 上「元ファイルを書き換えない」と決まっており、更新後の内容を **stdout のみに出力する** 場合（例: `update_version_files.py`）、stdout を inherit するだけだと呼び出し側 (orchestrator AI 等) が Write を踏み外した瞬間に silent 失敗する。これを避けるため、当該低レベルを呼ぶラッパーは以下の writer 例外類型として実装する (Issue #139):
+
+- `subprocess.run(..., capture_output=True, text=True)` で stdout を取得する
+- stderr はそのまま透過出力する（status JSON を呼び出し元へ届ける）
+- exit code は透過する
+- `rc == 0` AND `stdout` 非空 → 対象ファイルへ書き戻す
+- `rc == 0` AND `stdout` 空 (optional skipped 等) → 書き戻しをスキップ
+- `rc != 0` → 書き戻さない（元ファイル保護）
+
+この類型は §2.3 共通原則の「stdout を inherit」例外であり、対象を **「低レベルが stdout-only 設計の場合のみ」** に限定する。通常のラッパーには適用しない。
+
 ### 2.4 ラッパー化判断基準
 
 **作る** (いずれかを満たす):
