@@ -131,16 +131,6 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ---
 
-## セッション作成 [MANDATORY]
-
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{TASK-ID}"
-```
-
-JSON 出力の `session_dir` をコンテキストに保持する。
-
----
-
 ## Phase 3: コンテキスト収集 [MANDATORY]
 
 ### 3.1 文書の特定
@@ -157,39 +147,48 @@ JSON 出力の `session_dir` をコンテキストに保持する。
 
 #### 3.1.3 実装ルールの収集
 
-プロジェクト固有の実装ルール（レイヤー固有ルール等）を検索する agent を起動する。結果は `{session_dir}/refs/rules.yaml` に書き込まれる。
+```
+Agent ツール起動: 実装ルール収集
+prompt:
+  タスク "{タスクのタイトル}" (feature: {feature}) の実装に適用するプロジェクト固有ルール (レイヤー固有ルール等) を検索する。
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 実装ルール調査
-feature: "{feature}"
-skill_type: "{タスクのタイトル}"
+  検索手順 (優先順):
+  - `/forge:query-db-rules {feature} {タスクのタイトル}`
+  - 利用不可なら `python3 ${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/scripts/resolve_doc_structure.py --type rules`
+  - それも不可なら `Glob: docs/rules/**/*.md`
+
+  return value として以下の markdown 形式で返す:
+
+  ## 実装ルール (N 件)
+  - `path/to/rule.md` — 関連理由
 ```
 
 #### 3.1.4 既存コードの収集
 
-既存コード（類似実装、参照コード）を検索する agent を起動する。結果は `{session_dir}/refs/code.yaml` に書き込まれる。
+```
+Agent ツール起動: 既存コード収集
+prompt:
+  タスク "{タスクのタイトル}" (feature: {feature}) に関連する既存コード (類似実装、参照コード) を探索する。
 
-```yaml
-session_dir: { session_dir }
-spec: ${CLAUDE_PLUGIN_ROOT}/docs/context_gathering_spec.md
-tasks:
-  - 既存コード調査
-feature: "{feature}"
-skill_type: "{タスクのタイトル}"
+  検索手順:
+  - 機能名・コンポーネント名で `Grep` / `Glob: **/*{キーワード}*`
+  - 同一ディレクトリ・import 元・類似命名・テストファイルを分類
+
+  return value として以下の markdown 形式で返す:
+
+  ## 既存コード (N 件)
+  - `path/to/file.swift` — 関連理由
 ```
 
-> 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。
+> 3.1.3 と 3.1.4 は **Agent ツールで並列起動** する。エラー終了した場合は該当カテゴリなしで続行。各 agent の **return value** を main AI コンテキストに直接保持する。
 
 #### 3.1.5 計画書 `required_reading` フィールドの処理
 
 タスクの `required_reading` 配列が空配列 `[]` でない場合、記載された各ファイルパスを追加の必読文書として executor に渡す。`required_reading` は YAML のタスクフィールドであり、Markdown table の「列」ではない点に注意する。
 
-### 3.2 refs/ 統合・表示
+### 3.2 統合・表示
 
-全 agent 完了後、`{session_dir}/refs/` 内のファイルと直接特定した文書を統合して表示する:
+全 agent 完了後、agent の return value (実装ルール / 既存コード) と直接特定した文書 (設計書 / 要件定義書) を統合して表示する:
 
 ```
 ### ✅ コンテキスト収集完了
@@ -293,9 +292,9 @@ executor は以下のステータスで報告する:
 
 #### 複数タスク並列実行時
 
-**executor は計画書や共有リソースに直接書き込まない。** 各 executor は個別の結果ファイルを Write し、orchestrator が全 executor 完了後に一括処理する。
+**executor は計画書や共有リソースに直接書き込まない。** 各 executor は結果を **return value として JSON で返す**。orchestrator が全 executor 完了後に return value を収集して一括処理する。
 
-各 executor は `{session_dir}/exec_{task_id}.json` に結果を Write する:
+各 executor の return value JSON:
 
 ```json
 {
@@ -314,7 +313,7 @@ executor は以下のステータスで報告する:
 | `summary`        | 実装の要約（1-2行）            |
 | `error`          | FAILURE 時のエラー内容（任意） |
 
-全 executor 完了後、orchestrator が `exec_*.json` を収集して Phase 5-6 を逐次処理する。
+全 executor 完了後、orchestrator が return value を集めて Phase 5-6 を逐次処理する。
 
 ---
 

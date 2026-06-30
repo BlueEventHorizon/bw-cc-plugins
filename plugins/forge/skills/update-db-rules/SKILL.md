@@ -23,10 +23,10 @@ rules の対象パスを解決して `doc-advisor:index-docs` へ転送する。
 **モード判定（必須）: 判定軸は `exclude` の有無のみ。グロブの有無では分岐しない**
 （`doc-advisor:index-docs` の `--dirs-json` はグロブメタ文字 `*` `?` `[` を展開できるため）:
 
-| 条件 | モード |
-| ---- | ------ |
+| 条件                   | モード                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
 | `exclude` が空（`[]`） | **dirs モード**: `--dirs-json` に `root_dirs` をそのまま渡す（doc-advisor が rglob / グロブ展開する） |
-| `exclude` が非空 | **ファイル列挙モード**: `resolve_doc_structure.py` → `--paths-json` |
+| `exclude` が非空       | **ファイル列挙モード**: `resolve_doc_structure.py` → `--paths-json`                                   |
 
 > ⚠️ **exclude を `--dirs-json` + `--exclude-json` で渡してはならない**: forge の `exclude`（例 `[plan]`）は
 > **パスの任意の階層**にある同名ディレクトリにマッチする（裸名マッチ）が、doc-advisor の `--exclude-json` は

@@ -1246,5 +1246,145 @@ class TestParseMissWarning(unittest.TestCase):
         self.assertNotIn('parse miss', result.stderr)
 
 
+# ===========================================================================
+# Merge モード(冪等再実行)のテスト
+# ===========================================================================
+
+class TestMergeMode(unittest.TestCase):
+    """通常モード再実行時の merge 動作テスト(修正 A、問題 1+4+5 を解消)。
+
+    既存 plan.yaml がある状態で extract を再実行した際、evaluator / fixer /
+    present-findings が書いた状態フィールドが保持されること、新規 finding は
+    既存 max(id)+1 から連番採番されることを検証する。
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.session_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _write(self, filename, content):
+        (self.session_path / filename).write_text(content, encoding='utf-8')
+
+    def _run_extract(self):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'extract_review_findings.py'),
+             self.tmpdir],
+            capture_output=True, text=True, timeout=10,
+        )
+
+    def test_rerun_preserves_evaluator_status_and_recommendation(self):
+        """再実行で evaluator の status/recommendation/auto_fixable/reason が保持される。"""
+        self._write('review_correctness.md', REVIEW_CORRECTNESS)
+        # 1 回目: plan.yaml 新規生成
+        r1 = self._run_extract()
+        self.assertEqual(r1.returncode, 0, r1.stderr)
+
+        # evaluator が状態フィールドを書き込んだ状態を模擬
+        # (REVIEW_CORRECTNESS の finding と (title, location, perspective) が一致)
+        existing_plan = """\
+items:
+  - id: 1
+    severity: critical
+    title: "境界値チェック漏れ"
+    location: "utils.py:42"
+    perspective: "correctness"
+    status: skipped
+    recommendation: skip
+    auto_fixable: false
+    reason: "evaluator 判定: false_positive"
+    skip_reason: "false_positive"
+  - id: 2
+    severity: major
+    title: "戻り値の型が不統一"
+    location: "utils.py:88"
+    perspective: "correctness"
+    status: in_progress
+    recommendation: fix
+    auto_fixable: true
+    reason: "明確な型違反"
+"""
+        (self.session_path / 'plan.yaml').write_text(existing_plan, encoding='utf-8')
+
+        # 2 回目: 同じ review_correctness.md で再実行
+        r2 = self._run_extract()
+        self.assertEqual(r2.returncode, 0, r2.stderr)
+
+        plan_after = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # 状態フィールドが保持される
+        self.assertIn('status: skipped', plan_after)
+        self.assertIn('recommendation: skip', plan_after)
+        self.assertIn('auto_fixable: false', plan_after)
+        self.assertIn('false_positive', plan_after)
+        self.assertIn('status: in_progress', plan_after)
+        self.assertIn('明確な型違反', plan_after)
+        # pending に巻き戻っていない
+        self.assertNotIn('status: pending', plan_after)
+
+    def test_new_finding_gets_continued_id_after_existing_max(self):
+        """既存 plan に存在しない新 finding は max(id)+1 から採番される。"""
+        # 既存: id=1, id=5 (max=5)
+        existing_plan = """\
+items:
+  - id: 1
+    severity: critical
+    title: "既存 finding A"
+    location: "a.py:1"
+    status: fixed
+  - id: 5
+    severity: major
+    title: "既存 finding B"
+    location: "b.py:2"
+    status: skipped
+"""
+        (self.session_path / 'plan.yaml').write_text(existing_plan, encoding='utf-8')
+
+        # 新 finding は既存と異なる (title/location)
+        self._write('review_design.md', """\
+### 🔴致命的問題
+
+1. **新しい問題**: 説明
+   - 箇所: c.py:3
+""")
+
+        r = self._run_extract()
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+        plan_after = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # id=6 (max=5 の次) で採番されること
+        self.assertIn('id: 6', plan_after)
+        self.assertIn('新しい問題', plan_after)
+        # 既存 id=1, id=5 は保持される
+        self.assertIn('既存 finding A', plan_after)
+        self.assertIn('既存 finding B', plan_after)
+
+    def test_existing_id_preserved_on_match(self):
+        """(title, location, perspective) で既存とマッチした finding は既存 id を維持する。"""
+        existing_plan = """\
+items:
+  - id: 42
+    severity: critical
+    title: "境界値チェック漏れ"
+    location: "utils.py:42"
+    perspective: "correctness"
+    status: in_progress
+    recommendation: fix
+"""
+        (self.session_path / 'plan.yaml').write_text(existing_plan, encoding='utf-8')
+
+        self._write('review_correctness.md', REVIEW_CORRECTNESS)
+        r = self._run_extract()
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+        plan_after = (self.session_path / 'plan.yaml').read_text(encoding='utf-8')
+        # id=42 が保持されること
+        self.assertIn('id: 42', plan_after)
+        # status: in_progress は保持
+        self.assertIn('status: in_progress', plan_after)
+
+
 if __name__ == '__main__':
     unittest.main()

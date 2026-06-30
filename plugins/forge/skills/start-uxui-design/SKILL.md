@@ -82,16 +82,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/resolve_doc.py"
 
 ---
 
-## セッション作成 [MANDATORY]
-
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/init_session.py" "{feature}" "{ios|macos}" "{出力先ディレクトリ}"
-```
-
-JSON 出力の `session_dir` をコンテキストに保持する。
-
----
-
 ## 知識ベースの読み込み [MANDATORY]
 
 **常駐知識**として以下を **必ず** Read する。この文書は全 Phase を通じてコンテキスト内に保持する:

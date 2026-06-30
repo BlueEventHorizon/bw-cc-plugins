@@ -21,17 +21,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WRAPPER = REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "scripts" / "review_session.py"
 
 VALID_REFS = {
-    "target_files": ["src/foo.py"],
+    "target_files": [{"path": "src/foo.py"}],
     "reference_docs": [{"path": "docs/rules.md"}],
     "review_packet": {
         "criteria_path": "review/docs/review_criteria_code.md",
         "ssot_refs": [
-            {"doc_path": "docs/rules/implementation_guidelines.md",
+            {"path": "docs/rules/implementation_guidelines.md",
              "priority": "P1", "doc_type": "rules"},
         ],
         "check_order": ["P1", "P2", "P3"],
-        "severity_source": "principles",
-        "output_path": "review_code.md",
+        "severity_source": "plugins/forge/docs/review_priorities_spec.md",
+        "output_filename": "review_code.md",
     },
 }
 
@@ -113,7 +113,7 @@ class TestStart(ReviewSessionTestBase):
             "--interaction", "auto", "--auto-count", "5",
             input_data=json.dumps({
                 **VALID_REFS,
-                "review_packet": {**VALID_REFS["review_packet"], "output_path": "review_design.md"},
+                "review_packet": {**VALID_REFS["review_packet"], "output_filename": "review_design.md"},
             }),
         )
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -254,13 +254,46 @@ class TestStatus(ReviewSessionTestBase):
             "items:\n"
             "  - id: F1\n"
             "    status: fixed\n"
-            "    severity: warning\n"
+            "    severity: major\n"
         )
         (self.tmpdir / session_dir / "plan.yaml").write_text(plan_text)
         r = self.run_wrapper("status", session_dir)
         data = json.loads(r.stdout)
         self.assertEqual(data["unprocessed_total"], 0)
         self.assertEqual(data["next_action"], "finish")
+
+    def test_status_by_severity_uses_critical_major_minor_domain(self):
+        """by_severity の集計 dict が critical/major/minor ドメインを使うこと。
+
+        旧実装は warning/info を集計対象としていたため、plan.yaml の major/minor が
+        unknown に分類されていた。findings_renderer.py SEVERITY_ORDER と一致させる。
+        """
+        session_dir = self._start()
+        plan_text = (
+            "items:\n"
+            "  - id: F1\n"
+            "    status: pending\n"
+            "    severity: critical\n"
+            "  - id: F2\n"
+            "    status: pending\n"
+            "    severity: major\n"
+            "  - id: F3\n"
+            "    status: pending\n"
+            "    severity: major\n"
+            "  - id: F4\n"
+            "    status: pending\n"
+            "    severity: minor\n"
+        )
+        (self.tmpdir / session_dir / "plan.yaml").write_text(plan_text)
+        r = self.run_wrapper("status", session_dir)
+        data = json.loads(r.stdout)
+        self.assertIn("critical", data["by_severity"])
+        self.assertIn("major", data["by_severity"])
+        self.assertIn("minor", data["by_severity"])
+        self.assertEqual(data["by_severity"]["critical"], 1)
+        self.assertEqual(data["by_severity"]["major"], 2)
+        self.assertEqual(data["by_severity"]["minor"], 1)
+        self.assertEqual(data["by_severity"]["unknown"], 0)
 
 
 if __name__ == "__main__":

@@ -79,13 +79,13 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py probe
     ```
     返却の `next_phase` から該当 Phase へ jump する:
 
-    | `next_phase` | jump 先                                |
-    | ------------ | -------------------------------------- |
-    | `reviewer`   | Phase 4                                |
-    | `evaluator`  | Phase 5 (evaluator step)               |
-    | `present`    | Phase 5 (present-findings step)        |
-    | `finish`     | Phase 5 (終了サマリ)                   |
-    | `start`      | refs 欠損のため Phase 3 から再構築      |
+    | `next_phase` | jump 先                            |
+    | ------------ | ---------------------------------- |
+    | `reviewer`   | Phase 4                            |
+    | `evaluator`  | Phase 5 (evaluator step)           |
+    | `present`    | Phase 5 (present-findings step)    |
+    | `finish`     | Phase 5 (終了サマリ)               |
+    | `start`      | refs 欠損のため Phase 3 から再構築 |
 
     `resume` の返却 `session` (session.yaml の全体) から `review_type` / `engine` / `interaction` を取り出してコンテキストに復元する。
 
@@ -225,12 +225,19 @@ prompt: |
   - 関連性の理由を各ファイルについて 1 行で説明すること
   - 上限 10 ファイル程度
 
-  ## 出力形式
+  ## 出力形式 [MANDATORY]
+  以下の構造化 markdown 形式で返すこと (ADR-032 #11 で固定化)。
+  各エントリは `- path:` と `  reason:` の 2 行 1 ブロックで構成し、orchestrator が `related_code: [{path, reason}, ...]` (refs.yaml schema) に直接マッピングできるようにする。
+  自由記述・箇条書きフォーマット (例: `- {path}: {理由}`) は禁止。
+
   ### 関連コード一覧
-  - {path}: {関連性の理由}
+  - path: path/to/file1
+    reason: 対象ファイルと同一ディレクトリの類似実装
+  - path: path/to/file2
+    reason: 対象ファイルを import している呼び出し元
 ```
 
-探索結果 (`related_code`) を以降の reviewer に渡す。
+orchestrator は agent の return value を構造化 markdown としてパースし、各エントリの `path` / `reason` を refs.yaml の `related_code[]` (ADR-032 で dict 配列に統一済み) に投入する。
 
 ### Step 5: reference_docs 収集
 
@@ -305,6 +312,28 @@ echo '<refs_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py start
 
 `<refs_json>` は Step 1〜3 で構築した `target_files / reference_docs / review_packet / related_code` を含む JSON。返却 JSON の `session_dir` をコンテキストに保持する。
 
+**refs JSON のスキーマ SoT**: `${CLAUDE_PLUGIN_ROOT}/docs/session_format.md` §「refs.yaml — レビュー参照ファイルリスト」を参照。最低限の必須キーは以下:
+
+- `target_files`: `[{"path": "..."}, ...]` (各要素 dict 必須、`path` 必須、ADR-032 で文字列配列から改修)
+- `reference_docs`: `[{"path": "..."}, ...]` (各要素 dict 必須、`path` 必須)
+- `related_code`: `[{"path": "...", "reason": "..."}, ...]` (各要素 dict 必須、`path` / `reason` 両方必須)
+- `review_packet.criteria_path` / `output_filename` / `check_order` / `severity_source` / `ssot_refs` (全て必須)
+- `review_packet.ssot_refs[]`: `{"priority": "P1"|"P2"|"P3", "path": "...", "doc_type": "rules"|"principles"|"format"}` (ADR-032 で Issue #99 の `doc_path` 改名を覆し `path` に統一)
+- `review_packet.severity_source`: criteria header の「severity は ... から取得する」記述が指す principles ファイルパス (例: design レビューなら `plugins/forge/docs/review_priorities_spec.md`)
+- `review_packet.output_filename`: `^review_[a-z0-9_-]+\.md$` 形式 (例: `review_design.md`)。ADR-032 で旧 `output_path` から改名 (sandbox 内ファイル名と外部参照 path の区別を明示)
+
+validation エラー時は `review_session.py start` が `status: error` + 具体的なフィールド名を返す。
+
+### Step 5: dprint check ベースライン取得 [MANDATORY]
+
+`target_files` に pre-existing な format 違反があるかを記録する。fixer はこの baseline を参照して、自身の修正と無関係な既存違反で rollback されないように構文検証をスキップ判定する (DES-029 §3.5.4)。
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session/check_baseline_violations.py {session_dir}
+```
+
+`{session_dir}/baseline_violations.json` が書き出される。`dprint` が未インストールの環境では空 baseline (全ファイル `has_violations: false`) が生成され、fixer 側の挙動は従来通り (構文検証を実施) になる。
+
 完了後、以下を出力する:
 
 ```
@@ -315,7 +344,7 @@ echo '<refs_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py start
 | criteria_path | `review_criteria_<種別>.md`                   |
 | ssot_refs     | N 件 (P1: X 件 / P2: Y 件 / P3: Z 件)         |
 | check_order   | P1 → P2 → P3                                  |
-| output_path   | `review_<種別>.md`                            |
+| output_filename | `review_<種別>.md`                            |
 
 **session_dir**
 - `.claude/.temp/{session_dir_name}`
@@ -366,7 +395,6 @@ reviewer / evaluator / fixer は **すべて Agent ツール** で起動する (
 ### Step 1: reviewer Agent 起動 (engine 問わず 1 体) [MANDATORY]
 
 <!-- 残存セッション検出 / touch / cleanup は Phase 0 + review_session.py に集約済み -->
-
 
 Phase 3 で確定した review_packet と session_dir を `forge:reviewer` カスタム Agent に渡す。
 
@@ -515,8 +543,8 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --r
 
 | # | 経路名                | 起動方法                                                       | context 消費    | 用途                                                 | 適用条件                                                                                           |
 | - | --------------------- | -------------------------------------------------------------- | --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1 | 軽量経路 (FNC-413)    | (起動なし、Edit 直接)                                          | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 3 AND 全 `auto_fixable: true` |
-| 2 | Agent 経由 fixer 経路 | Agent ツール (`subagent_type: forge:fixer`、id 単位ループ起動) | 遮断            | 件数多 (≥ 4) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
+| 1 | 軽量経路 (FNC-413)    | (起動なし、Edit 直接)                                          | 親 context 消費 | 件数小・auto_fixable な finding の自動修正           | `recommendation: fix` AND `status ∈ {pending, in_progress}` の件数 ≤ 5 AND 全 `auto_fixable: true` |
+| 2 | Agent 経由 fixer 経路 | Agent ツール (`subagent_type: forge:fixer`、id 単位ループ起動) | 遮断            | 件数多 (≥ 6) または非 auto_fixable な finding の修正 | 軽量経路の条件を満たさない場合                                                                     |
 
 旧経路 (Skill ツール fork 型 fixer / 汎用 Agent 起動 fixer) は **廃止**。修正経路は上記 2 種に縮約される (REQ-005 §11 / DES-029 §3.2 / TASK-010・TASK-011 で Agent 化済み)。
 
@@ -529,7 +557,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir} --r
 1. plan.yaml を Read (Phase 4 で読み込み済みのため再 Read 不要)
 2. `recommendation: fix` AND `status ∈ {pending, in_progress}` の項目を抽出
 3. `--auto-critical` の場合は `severity: critical` でさらに絞り込む
-4. 抽出件数が **3 以下** AND 全項目が `auto_fixable: true` → **軽量経路** (下記 Step 2-A)
+4. 抽出件数が **5 以下** AND 全項目が `auto_fixable: true` → **軽量経路** (下記 Step 2-A)
 5. それ以外 → **fixer 経路** (下記 Step 2-B)
 
 判定結果を出力する:
@@ -650,14 +678,21 @@ Agent(
 args: "{session_dir} {review_type} {engine} --diff-only {files_modified}"
 ```
 
+- **新規 finding を plan.yaml に統合**: reviewer (`--diff-only`) は `review_<種別>.md` に新 finding を append する。orchestrator は以下を実行して plan.yaml に統合する (修正 A merge ロジックにより、既存 finding の status / recommendation は保持されたまま新 finding が連番 id で追加される):
+
+  ```bash
+  python3 ${CLAUDE_SKILL_DIR}/scripts/extract_review_findings.py {session_dir}
+  ```
+
 - 修正起因の問題が見つかった場合 → `forge:fixer` カスタム Agent を id 単位で再起動して修正 (上限 3 回 / id ループ)
+  - 新規 finding の id は extract 再実行で plan.yaml に採番されている (max(既存 id)+1 から連番) ので、その id を fixer Agent に渡す
   - `args: "{session_dir} {review_type} --diff-only {files_modified}"`
 - 問題なし → 以下の通り plan.yaml を `fixed` に更新してから Step 4 へ
 
 単独修正レビュー完了後、修正が成功した各 finding に対して `mark_fixed.py` を呼ぶ:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py {session_dir} {id} {files_modified}
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fixer/mark_fixed.py {session_dir} {id} {file1} {file2} ...
 ```
 
 - 軽量経路 (Step 2-A) の場合: 修正した finding の id と修正ファイルパス一覧を渡す
@@ -756,7 +791,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/review_session.py finish {session_dir}
 
 ## レビュー結果フォーマット (reviewer 出力)
 
-reviewer は以下のフォーマットで `review_<種別>.md` を出力する。詳細は `plugins/forge/skills/reviewer/SKILL.md` を参照。
+reviewer は以下のフォーマットで `review_<種別>.md` を出力する。詳細は `plugins/forge/agents/reviewer.md` を参照 (REQ-005 §11 / DES-029 §3.2 で旧 `skills/reviewer/SKILL.md` から Agent 化済み)。
 
 ```markdown
 ## AIレビュー結果

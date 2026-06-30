@@ -471,31 +471,40 @@ class TestCmdInitFiles(_FsTestCase):
         self.assertEqual(data["files"], [])
 
     def test_files_single(self):
+        # ADR-032: files は [{path}] dict 配列
         _result, data = self._files_field(["--files", "docs/a.md"])
-        self.assertEqual(data["files"], ["docs/a.md"])
+        self.assertEqual(data["files"], [{"path": "docs/a.md"}])
 
     def test_files_multiple_space(self):
         _result, data = self._files_field(["--files", "docs/a.md", "docs/b.md"])
-        self.assertEqual(data["files"], ["docs/a.md", "docs/b.md"])
+        self.assertEqual(
+            data["files"], [{"path": "docs/a.md"}, {"path": "docs/b.md"}]
+        )
 
     def test_files_comma(self):
         _result, data = self._files_field(["--files", "docs/a.md,docs/b.md"])
-        self.assertEqual(data["files"], ["docs/a.md", "docs/b.md"])
+        self.assertEqual(
+            data["files"], [{"path": "docs/a.md"}, {"path": "docs/b.md"}]
+        )
 
     def test_files_mixed_space_and_comma(self):
         _result, data = self._files_field(["--files", "a.md,b.md", "c.md"])
-        self.assertEqual(data["files"], ["a.md", "b.md", "c.md"])
+        self.assertEqual(
+            data["files"],
+            [{"path": "a.md"}, {"path": "b.md"}, {"path": "c.md"}],
+        )
 
-    def test_files_inline_quoted_in_yaml_text(self):
-        """session.yaml の生テキストで files が quote 付きインライン配列になる。"""
+    def test_files_block_format_in_yaml_text(self):
+        """session.yaml の生テキストで files が ADR-032 ブロック形式で書かれる。"""
         result = cmd_init(self._make_args("review"), ["--files", "docs/a.md"])
         text = Path(result["session_dir"], "session.yaml").read_text(encoding="utf-8")
-        self.assertIn('files: ["docs/a.md"]', text)
+        # ブロック形式: files:\n  - path: docs/a.md
+        self.assertIn("files:\n  - path: docs/a.md", text)
 
     def test_files_order_mixed_does_not_swallow_flag(self):
         """--files a.md --engine codex で engine が通常フィールドとして保持される。"""
         _result, data = self._files_field(["--files", "a.md", "--engine", "codex"])
-        self.assertEqual(data["files"], ["a.md"])
+        self.assertEqual(data["files"], [{"path": "a.md"}])
         self.assertEqual(data["engine"], "codex")
 
     def test_files_zero_value_with_trailing_flag(self):

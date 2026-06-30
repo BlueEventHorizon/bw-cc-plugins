@@ -75,7 +75,7 @@ orchestrator は本 Agent 起動時の prompt に **`allowed_files`** (編集を
 
 - session_dir 配下の `refs.yaml` / `plan.yaml` / `review_<種別>.md` / 該当 finding の修正案セクション の Read
 - `allowed_files` リスト内ファイルの **Read** (原本保存用) と **Edit / Write** (修正実行)
-- 参考文書 (`refs.yaml` の `reference_docs` / `related_code` / `ssot_refs[].doc_path`) の Read
+- 参考文書 (`refs.yaml` の `reference_docs` / `related_code` / `ssot_refs[].path`) の Read
 - Bash 経由の構文検証コマンド実行
 - Bash 経由の `mark_in_progress.py` / `patch_result.json` 書き込み実行
 
@@ -102,7 +102,7 @@ orchestrator から以下を構造化引数として渡される:
 3. 取得した項目の `recommendation` が `fix` であることを assert。`fix` 以外 (skip / create_issue / needs_review) なら `status: "error"` で return
 4. 取得した項目の `status` が `pending` または `in_progress` であることを assert。`completed` / `skipped` / `needs_review` なら `status: "error"` で return
 5. `{session_dir}/review_<種別>.md` を Read → 該当 finding の **該当コード** / **なぜ問題か** / **修正案** セクションを抽出
-6. `refs.yaml` の `reference_docs` / `related_code` / `review_packet.ssot_refs[].doc_path` を Read → 修正の根拠規範を把握
+6. `refs.yaml` の `reference_docs` / `related_code` / `review_packet.ssot_refs[].path` を Read → 修正の根拠規範を把握
 
 ### Step 2: mark_in_progress.py で plan.yaml を更新
 
@@ -137,7 +137,35 @@ plan.yaml の該当項目を `status: in_progress` に遷移させる。
 | `.toml`        | `python3 -c "import tomllib; tomllib.load(open('<file>', 'rb'))"` |
 | その他         | 検証スキップ。`syntax_check` 結果に `"skipped"` を記録            |
 
-**いずれかの構文検証が失敗した場合**:
+#### pre-existing 違反のスキップ判定 [MANDATORY] (修正 E)
+
+**dprint check の挙動**: dprint はファイル全体の format 違反を列挙するため、本 Agent の修正と無関係な pre-existing 違反 (修正前から存在していたもの) も検出する。これに毎回 rollback すると修正が完了せず、本 Agent が pre-existing 違反の有無を独力で判別する負担を負うことになる。
+
+本 Agent は `{session_dir}/baseline_violations.json` を Read する (review SKILL の Phase 3 Step 5 で `check_baseline_violations.py` が生成済み)。
+
+```json
+// baseline_violations.json の構造 (抜粋)
+{
+  "tool": "dprint" | null,
+  "files": {
+    "docs/specs/...md": {"has_violations": true, "exit_code": 20},
+    "...": {"has_violations": false, "exit_code": 0}
+  }
+}
+```
+
+`dprint check` が失敗した (exit code != 0) ファイルについて:
+
+| baseline 状態                             | 判定                                                                                                                                                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `files[path].has_violations == true`      | **pre-existing 違反あり**。本修正による新規違反かは厳密判定できないが、本 Agent の責務範囲外として扱う。`syntax_check[file]: "skipped: pre-existing dprint violations"` を記録し、rollback しない |
+| `files[path].has_violations == false`     | 修正による新規違反。`syntax_check[file]: "error: <stderr 要約>"` を記録し、Step 3 で保存した原本で rollback                                                                                       |
+| `files[path]` が baseline に存在しない    | baseline 未取得 (例: `--diff-only` で allowed_files に追加された新規ファイル)。安全側に倒して通常の rollback フローに進む                                                                         |
+| `baseline.tool == null` (dprint 不在環境) | 従来通り通常の rollback フローに進む                                                                                                                                                              |
+
+**py_compile / yaml / json / bash / tomllib の構文検証は本判定の対象外** (これらは「ファイル全体の文法エラー」を返すコマンドであり、pre-existing 違反と新規違反の区別が無意味なため。失敗したら従来通り rollback する)。
+
+**それ以外で構文検証が失敗した場合**:
 
 - 修正前の内容で Edit / Write して **rollback** する (Step 3 で保存した原本を使う)
 - `failed_ids` に `finding_id` を追加
