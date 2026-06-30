@@ -21,7 +21,7 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 
 | 引数          | 説明                                                          |
 | ------------- | ------------------------------------------------------------- |
-| `target`      | 対象 target 名（省略時: targets の先頭、または唯一の target） |
+| `target`      | 対象 target 名（省略時: scope に基づき変更されたプラグインを自動検出） |
 | `new-version` | バージョン番号を直接指定（例: `1.2.3`）                       |
 | `patch`       | パッチバージョンをインクリメント（`0.0.11` → `0.0.12`）       |
 | `minor`       | マイナーバージョンをインクリメント（`0.0.11` → `0.1.0`）      |
@@ -30,7 +30,7 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
 ### 使用例
 
 ```
-/forge:update-version patch              # 先頭 target をパッチバンプ
+/forge:update-version patch              # 変更が検出された target を自動選択してパッチバンプ
 /forge:update-version forge 0.1.0       # forge を 0.1.0 に更新
 /forge:update-version anvil minor        # anvil をマイナーバンプ
 ```
@@ -54,15 +54,37 @@ argument-hint: "[target] <patch | minor | major | X.Y.Z>"
   ```
 - **存在する** → Read して内容を解析する
 
-### Step 2: 引数解析
+### Step 2: 引数解析 + 自動検出
 
 `$ARGUMENTS` を解析する:
 
-- `targets` に含まれる名前 → `target_name` として使用し、残りを `version_spec` に
-- バージョン番号またはバンプ種別のみ → `target_name` は targets の先頭を使用
-- 引数なし → AskUserQuestion を使用して target と version_spec を確認する
+- `targets` に含まれる名前 → `target_name` として使用し、残りを `version_spec` に。**Step 2.5 をスキップ**し Step 3 へ
+- バージョン番号またはバンプ種別のみ → `version_spec` に保持し、**Step 2.5 で target を自動検出**
+- 引数なし → **Step 2.5 で target を自動検出**し、version_spec も AskUserQuestion で確認
 
 既知の target 名は `.version-config.yaml` の `targets[].name` から取得する。
+
+### Step 2.5: 対象 target の自動検出
+
+target が引数で明示指定されていない場合のみ実行する。
+
+`get_version_status.py` を実行し、`summary.needs_bump` を取得する:
+
+```bash
+python3 ${CLAUDE_PROJECT_DIR}/plugins/forge/scripts/get_version_status.py
+```
+
+`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。
+
+| `needs_bump` の状態 | 挙動                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 空                  | 「main 以降に変更されたプラグインがありません」と表示して終了。`summary.changed` が非空ならそれも併せて案内 |
+| 1 件                | その target を採用。version_spec が未指定なら AskUserQuestion で確認                                        |
+| 複数件              | AskUserQuestion (multiSelect, デフォルト全選択) で対象を選ばせる                                            |
+
+選択された target を順次 Step 3 以降に流す（複数選択時は target ごとに Step 3〜8 を繰り返す）。
+
+> **scope を持たない target は自動検出されない**: 明示的に target 名を指定したときのみバンプ可能。安全側のデフォルト。
 
 ### Step 3: 現在のバージョンを読み取る
 
