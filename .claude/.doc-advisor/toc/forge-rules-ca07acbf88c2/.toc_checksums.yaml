@@ -1,0 +1,41 @@
+# ToC checksums for key: forge-rules
+# Auto-generated - do not edit
+generated_at: 2026-07-01T06:30:42Z
+file_count: 36
+checksums:
+  plugins/forge/docs/additive_development_spec.md: e51a91eebba8ac4ceadcead38cb3d9153de0fdff9c3a9f637ad2bcf20aa9f370
+  plugins/forge/docs/ai_user_inquiry_pattern.md: c54a489a279c6bdcc056edee8cc297063dfd577e1fcaa0c3d26244e8f2b31bab
+  plugins/forge/docs/design_format.md: c39ba6bdbe1cf92a545d4d310aa1b2ff6576c967336d1b9b496f05efcd73f23b
+  plugins/forge/docs/design_principles_spec.md: 092f5e3674a3ba3b040fd1e0155b2ce6792ebbb78edaef44351d4f4a0ba08b78
+  plugins/forge/docs/doc_structure_format.md: 080e2fe0556a05c24beaa71644043106133386bef8f4f24fadf7640f2685571c
+  plugins/forge/docs/document_style_guide.md: fb1989169495f0ddc5013b8b7a92a4f002a1bc4f7095615ad601428acb969276
+  plugins/forge/docs/forge_anti_patterns.md: 2315e4bf39c55d2367f9cccc51236915cafadff1d79e50c5d8d8efd8896530d4
+  plugins/forge/docs/plan_format.md: 7625931c942f20baa38e79f0aac6e54cf1fd54435e019a83b778bf0ed4817a96
+  plugins/forge/docs/plan_principles_spec.md: aede2228274117d64c9c6798914f76068343c50c6b9b09d7c4f81f780661c202
+  plugins/forge/docs/requirement_format.md: 907029165b4dafcc17a9700c2d74053d37fcbcbc58caa1f943cd359c248769a0
+  plugins/forge/docs/review_priorities_spec.md: cbcf4057501f87cee71cdc4b722c95e9783352e2537b625a4d135b515dcedc18
+  plugins/forge/docs/session_format.md: 0f6a297cc7710775f2a7ec0c209b30d70a1bb99a90eb280d3339e1545ae60288
+  plugins/forge/docs/spec_design_boundary_spec.md: e13bf013b1c71ae584ba41a8ad341c8bb6a5d718d8c32834d758b9189cb02e03
+  plugins/forge/docs/spec_format.md: b2da26ff52cf21edb54d7ffcf8f49d790792e6ec5613c2c296b6ef0087903475
+  plugins/forge/docs/spec_priorities_spec.md: 005af0ab77b406800d06fd37799a5331e89baa91e859016604ba0e85a3b47b12
+  plugins/forge/docs/strategy_formulation_spec.md: b77a8920147a4e847c7612adc2aa51c79efa4c7857b4c52edb92d0b88a9acdf1
+  plugins/forge/docs/task_execution_spec.md: 7d373c42062812c25873dc7bd14ecdd9e3447d72fdca91a12db17221976ca0fb
+  plugins/forge/docs/version_migration_spec.md: accb3b2f52c7bc199f110d3f19ac533610bd4d49fc9b7f00173445f4bc97df70
+  plugins/forge/skills/clean-rules/docs/taxonomy.md: cbe025933f39f74be1d11707b0a4c376c9aab7faa99973f6bfa1a6c09ee9b39a
+  plugins/forge/skills/review/docs/review_criteria_code.md: 9e7066ad7dd3a9bc7891f9261af5babbfc63b24fc096c57df8cdf6db2a9ac49a
+  plugins/forge/skills/review/docs/review_criteria_design.md: d437101cf0515a6a240de6655dfc78ff2c33817cd0142a9238f2bc7ad031fb8f
+  plugins/forge/skills/review/docs/review_criteria_generic.md: 1b1ed407c5812890575cdf913a7d72116fa2b2192ade94ea1c3484e02c174e3b
+  plugins/forge/skills/review/docs/review_criteria_plan.md: aef894622e364bdc589684b34459383ecaa5a93efcc41a894c68daa3d1d06e95
+  plugins/forge/skills/review/docs/review_criteria_requirement.md: 179bad619f484b2d6026000f5a329ec68a30c555f54c845a74822c199af933fc
+  plugins/forge/skills/review/docs/review_criteria_uxui.md: f33596f210cc112354c79cf03b8d8255f72f0b5fa718308ee9a5d1f2617b9439
+  plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md: 0b726cd986fa2cc87c849d3dfcb9bf9662c72c47984c55272687615b5a6fedf5
+  plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md: c1603366b3c66cf000dd0946adc2a4857b39e83f1839b44b827d115ceb211db5
+  plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md: 66fbb8292c580269128baec9475f73d36bc1eb80ecb32917d5c2f8763db4132f
+  plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md: 2310cdef9c7f5ee9bc9468c87784817c3570d185d40da9c0125f5df888c0e97e
+  plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md: 315ddb7393a2252caa355c78701534de12c14f6403865a4368009317f118679b
+  plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md: 857a03b9e44f13d3937958db4351a0593105640f4f86c6bb6859ca2394415344
+  plugins/forge/skills/start-uxui-design/docs/design_philosophy.md: b791ef2d1ad781c38a19c6edc7495e95221d202e376bb6d684912801b23a6129
+  plugins/forge/skills/start-uxui-design/docs/design_token_template.md: f1c6a877274047043cd1cd7226de6813ad0d6c66f5dd894df35416f24b3c5b93
+  plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md: 6ec13d3237553eca047441203acdf2362a0ce6540368a8f5da3ec5f382d3bd23
+  plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md: a3fdb8360ab5bfbcece2de768ae2d75dc0f3c9f11e5c9216baffd990ec5d993f
+  plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md: bb8755c0f6c16481b569944139f2476ee60ff1fda3aee60f21c9a3a41c6b02b4
