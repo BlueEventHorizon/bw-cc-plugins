@@ -1,7 +1,7 @@
 {
   "name": "forge",
   "description": "AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": {
     "name": "moons"
   },
