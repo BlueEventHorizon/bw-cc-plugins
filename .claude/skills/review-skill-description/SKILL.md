@@ -143,7 +143,7 @@ description: |
 # オーケストレーター（user-invocable: true）
 description: |
   コード・文書をレビューし、品質問題の発見から修正まで自動化できる。重大度 🔴🟡🟢 で分類。
-  --auto で修正まで一貫実行。code/requirement/design/plan/generic の5種別に対応。
+  --auto で修正まで一貫実行。code/requirement/design/plan/uxui/generic の6種別に対応。
   トリガー: "レビュー", "review", "レビューして", "確認して"
 
 # AI 専用スキル（user-invocable: false）
