@@ -87,6 +87,9 @@ def _parse_version_config_yaml(content):
 
     PyYAML 非依存で .version-config.yaml の構造を解析する。
     targets リストと changelog/git セクションのみ対象。
+
+    target 内のリスト型キー（`scope:` / `exclude:` / `sync_files:`）はトップレベルの
+    順序に依存せず処理できる。各サブリストは indent 6 の `- ...` を子要素として収集する。
     """
     targets = []
     changelog = {}
@@ -96,10 +99,11 @@ def _parse_version_config_yaml(content):
     i = 0
     current_target = None
     current_sync = None
+    # target 内でアクティブな「サブリスト」モード
+    sublist_mode = None  # "sync_files" / "scope" / "exclude" / None
     in_targets = False
     in_changelog = False
     in_git = False
-    in_sync_files = False
 
     while i < len(lines):
         line = lines[i]
@@ -135,20 +139,31 @@ def _parse_version_config_yaml(content):
                 current_target = {
                     "name": content.split(":", 1)[1].strip(),
                     "sync_files": [],
+                    "scope": [],
+                    "exclude": [],
                 }
                 targets.append(current_target)
-                in_sync_files = False
+                sublist_mode = None
+                current_sync = None
             elif indent == 4 and current_target is not None:
                 if content == "sync_files:":
-                    in_sync_files = True
-                elif not in_sync_files:
+                    sublist_mode = "sync_files"
+                elif content == "scope:":
+                    sublist_mode = "scope"
+                elif content == "exclude:":
+                    sublist_mode = "exclude"
+                else:
+                    # スカラーキー: サブリストモードを抜けて key:value 取得
+                    sublist_mode = None
                     key, _, val = content.partition(":")
                     current_target[key.strip()] = val.strip()
-            elif indent == 6 and in_sync_files and content.startswith("- path:"):
-                current_sync = {"path": content.split(":", 1)[1].strip()}
-                if current_target:
+            elif indent == 6 and current_target is not None:
+                if sublist_mode == "sync_files" and content.startswith("- path:"):
+                    current_sync = {"path": content.split(":", 1)[1].strip()}
                     current_target["sync_files"].append(current_sync)
-            elif indent == 8 and current_sync is not None and in_sync_files:
+                elif sublist_mode in ("scope", "exclude") and content.startswith("- "):
+                    current_target[sublist_mode].append(content[2:].strip())
+            elif indent == 8 and current_sync is not None and sublist_mode == "sync_files":
                 key, _, val = content.partition(":")
                 current_sync[key.strip()] = val.strip()
 
@@ -358,6 +373,76 @@ def classify_bump(base_ver, current_ver):
     return "patch"
 
 
+def _pattern_to_regex(pattern):
+    """glob パターンを正規表現に変換する（`**` / `*` / `?` を解釈）。
+
+    - `**` は 0 個以上の任意文字（スラッシュ含む）
+    - `*` は 0 個以上の非スラッシュ
+    - `?` は 1 文字の非スラッシュ
+    """
+    out = []
+    i = 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "*":
+            if i + 1 < len(pattern) and pattern[i + 1] == "*":
+                out.append(".*")
+                i += 2
+                continue
+            out.append("[^/]*")
+        elif c == "?":
+            out.append("[^/]")
+        else:
+            out.append(re.escape(c))
+        i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+
+def match_any_pattern(path, patterns):
+    """path がいずれかの glob パターンに一致するか判定する。"""
+    if not patterns:
+        return False
+    for pat in patterns:
+        if _pattern_to_regex(pat).match(path):
+            return True
+    return False
+
+
+def get_changed_files(base_branch):
+    """base_branch との merge-base から作業ツリーまでの変更ファイル一覧を取得する。
+
+    コミット済 + ステージング + 未コミット + untracked を統合して返す。
+    git 失敗時は None を返す（呼び出し側は「自動検出不可」として扱う）。
+    """
+    try:
+        mb = subprocess.run(
+            ["git", "merge-base", base_branch, "HEAD"],
+            capture_output=True, text=True,
+        )
+        if mb.returncode != 0:
+            return None
+        base_ref = mb.stdout.strip()
+        diff = subprocess.run(
+            ["git", "diff", "--name-only", base_ref],
+            capture_output=True, text=True,
+        )
+        if diff.returncode != 0:
+            return None
+        files = set(line for line in diff.stdout.splitlines() if line)
+        # untracked も含める（まだ add されていない新規ファイルを拾う）
+        ls = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True, text=True,
+        )
+        if ls.returncode == 0:
+            for line in ls.stdout.splitlines():
+                if line:
+                    files.add(line)
+        return sorted(files)
+    except Exception:
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="main ブランチと現在ブランチのバージョンを比較する"
@@ -379,6 +464,9 @@ def main():
 
     base_branch = args.base_branch
     current_branch = get_current_branch()
+
+    # 変更ファイル一覧（base からの差分 + 未コミット + untracked）
+    changed_files = get_changed_files(base_branch)
 
     results = []
     for target in config.get("targets", []):
@@ -406,12 +494,23 @@ def main():
         bump = classify_bump(base_ver, current_ver)
         changed = bump not in ("same", "unknown") and base_ver is not None
 
+        # scope に基づく変更ファイル検出（auto-detect 用）
+        scope = target.get("scope") or []
+        exclude = target.get("exclude") or []
+        matched_files = []
+        if scope and changed_files is not None:
+            for f in changed_files:
+                if match_any_pattern(f, scope) and not match_any_pattern(f, exclude):
+                    matched_files.append(f)
+
         entry = {
             "name": name,
             "version_file": version_file,
             "base": base_ver,
             "current": current_ver,
             "changed": changed,
+            "files_changed": bool(matched_files),
+            "changed_file_count": len(matched_files),
         }
         if changed:
             entry["bump_type"] = bump
@@ -429,6 +528,10 @@ def main():
 
     changed_names = [r["name"] for r in results if r["changed"]]
     unchanged_names = [r["name"] for r in results if not r["changed"]]
+    # bump 候補: scope の変更ファイルがあるが、まだ version 更新されていない target
+    needs_bump = [
+        r["name"] for r in results if r.get("files_changed") and not r["changed"]
+    ]
 
     # marketplace 以外で変更されたプラグインのうち、marketplace バンプが必要かを判定
     # ルール: marketplace 以外の target が変更されているが marketplace が変わっていない = 要バンプ
@@ -445,6 +548,7 @@ def main():
         "summary": {
             "changed": changed_names,
             "unchanged": unchanged_names,
+            "needs_bump": needs_bump,
             "marketplace_bumped": marketplace_bumped,
             "marketplace_needs_bump": marketplace_needs_bump,
         },

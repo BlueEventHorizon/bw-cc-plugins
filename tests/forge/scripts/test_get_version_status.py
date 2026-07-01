@@ -27,6 +27,8 @@ from get_version_status import (
     extract_version_from_content,
     resolve_version_path,
     classify_bump,
+    _pattern_to_regex,
+    match_any_pattern,
 )
 
 _TEST_TEMP_BASE = Path(__file__).parent / ".temp"
@@ -324,8 +326,67 @@ class TestClassifyBump(unittest.TestCase):
         self.assertEqual(classify_bump("0.1.4", "0.2.0"), "minor")
 
 
+class TestScopeParsing(unittest.TestCase):
+    """target 内の scope / exclude リストのパース"""
+
+    def test_parse_scope_and_exclude(self):
+        yaml = """
+targets:
+  - name: forge
+    version_file: plugins/forge/.claude-plugin/plugin.json
+    version_path: version
+    scope:
+      - plugins/forge/**
+      - shared/forge/*.py
+    exclude:
+      - plugins/forge/**/*.md
+    sync_files:
+      - path: README.md
+        filter: '| **forge**'
+"""
+        result = _parse_version_config_yaml(yaml)
+        target = result["targets"][0]
+        self.assertEqual(target["scope"], ["plugins/forge/**", "shared/forge/*.py"])
+        self.assertEqual(target["exclude"], ["plugins/forge/**/*.md"])
+        self.assertEqual(target["sync_files"][0]["path"], "README.md")
+
+    def test_default_empty_scope(self):
+        """scope を持たない target は空リスト"""
+        yaml = """
+targets:
+  - name: anvil
+    version_file: plugins/anvil/.claude-plugin/plugin.json
+    version_path: version
+"""
+        target = _parse_version_config_yaml(yaml)["targets"][0]
+        self.assertEqual(target.get("scope"), [])
+        self.assertEqual(target.get("exclude"), [])
+
+
+class TestGlobMatch(unittest.TestCase):
+    """_pattern_to_regex / match_any_pattern のテスト"""
+
+    def test_double_star_matches_nested(self):
+        rx = _pattern_to_regex("plugins/forge/**")
+        self.assertTrue(rx.match("plugins/forge/skills/x/SKILL.md"))
+        self.assertTrue(rx.match("plugins/forge/"))
+        self.assertFalse(rx.match("plugins/anvil/x"))
+
+    def test_single_star_does_not_cross_slash(self):
+        rx = _pattern_to_regex("plugins/*/SKILL.md")
+        self.assertTrue(rx.match("plugins/forge/SKILL.md"))
+        self.assertFalse(rx.match("plugins/forge/skills/SKILL.md"))
+
+    def test_match_any_with_exclude(self):
+        self.assertTrue(match_any_pattern("plugins/forge/a.py", ["plugins/forge/**"]))
+        self.assertFalse(match_any_pattern("plugins/anvil/a.py", ["plugins/forge/**"]))
+
+    def test_match_empty_patterns(self):
+        self.assertFalse(match_any_pattern("x", []))
+
+
 def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test",
-                         mock_exists=None):
+                         mock_exists=None, mock_changed_files=None):
     """main() をモックありで実行し、JSON 出力を返すヘルパー。
 
     file_exists_on_branch（git cat-file -e）もモックする。既定では
@@ -341,6 +402,9 @@ def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test"
         def mock_exists(branch, path):
             return mock_git_show(branch, path) is not None
 
+    if mock_changed_files is None:
+        mock_changed_files = []
+
     buf = io.StringIO()
     saved_argv = sys.argv
     try:
@@ -348,6 +412,7 @@ def _run_main_with_mocks(project_root, mock_git_show, mock_branch="feature/test"
         with patch("get_version_status.find_project_root", return_value=project_root), \
              patch("get_version_status.get_file_content_from_branch", side_effect=mock_git_show), \
              patch("get_version_status.file_exists_on_branch", side_effect=mock_exists), \
+             patch("get_version_status.get_changed_files", return_value=mock_changed_files), \
              patch("get_version_status.get_current_branch", return_value=mock_branch):
             with redirect_stdout(buf):
                 _main()
@@ -575,6 +640,128 @@ class TestMainIntegration(unittest.TestCase):
 
         self.assertTrue(output["summary"]["marketplace_bumped"])
         self.assertFalse(output["summary"]["marketplace_needs_bump"])
+
+
+class TestNeedsBumpDetection(unittest.TestCase):
+    """scope + 変更ファイルから needs_bump を算出する main() の動作"""
+
+    def setUp(self):
+        _TEST_TEMP_BASE.mkdir(parents=True, exist_ok=True)
+        self.tmpdir = Path(tempfile.mkdtemp(dir=_TEST_TEMP_BASE))
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _setup_two_plugins(self):
+        for name in ("forge", "anvil"):
+            p = self.tmpdir / f"plugins/{name}/.claude-plugin/plugin.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"version": "0.1.0"}), encoding="utf-8")
+        (self.tmpdir / ".version-config.yaml").write_text(
+            "targets:\n"
+            "  - name: forge\n"
+            "    version_file: plugins/forge/.claude-plugin/plugin.json\n"
+            "    version_path: version\n"
+            "    scope:\n"
+            "      - plugins/forge/**\n"
+            "  - name: anvil\n"
+            "    version_file: plugins/anvil/.claude-plugin/plugin.json\n"
+            "    version_path: version\n"
+            "    scope:\n"
+            "      - plugins/anvil/**\n",
+            encoding="utf-8",
+        )
+
+    def test_needs_bump_detects_only_scoped_changes(self):
+        """変更ファイルが scope に一致した target のみ needs_bump に入る"""
+        self._setup_two_plugins()
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=["plugins/forge/skills/foo.py"],
+        )
+        forge = next(t for t in output["targets"] if t["name"] == "forge")
+        anvil = next(t for t in output["targets"] if t["name"] == "anvil")
+        self.assertTrue(forge["files_changed"])
+        self.assertEqual(forge["changed_file_count"], 1)
+        self.assertFalse(anvil["files_changed"])
+        self.assertEqual(output["summary"]["needs_bump"], ["forge"])
+
+    def test_needs_bump_excludes_already_bumped(self):
+        """既に bump 済み (changed=True) の target は needs_bump から除外する"""
+        self._setup_two_plugins()
+        # forge は既に 0.2.0 にバンプ済み（main は 0.1.0）
+        (self.tmpdir / "plugins/forge/.claude-plugin/plugin.json").write_text(
+            json.dumps({"version": "0.2.0"}), encoding="utf-8"
+        )
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=["plugins/forge/skills/foo.py"],
+        )
+        forge = next(t for t in output["targets"] if t["name"] == "forge")
+        self.assertTrue(forge["changed"])
+        self.assertTrue(forge["files_changed"])
+        # 変更はあるが既に bump されているので候補ではない
+        self.assertEqual(output["summary"]["needs_bump"], [])
+
+    def test_needs_bump_empty_when_no_changes(self):
+        self._setup_two_plugins()
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=[],
+        )
+        self.assertEqual(output["summary"]["needs_bump"], [])
+
+    def test_target_without_scope_never_auto_detected(self):
+        """scope を持たない target は files_changed=false（自動検出対象外）"""
+        p = self.tmpdir / "plugins/forge/.claude-plugin/plugin.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"version": "0.1.0"}), encoding="utf-8")
+        (self.tmpdir / ".version-config.yaml").write_text(
+            "targets:\n"
+            "  - name: forge\n"
+            "    version_file: plugins/forge/.claude-plugin/plugin.json\n"
+            "    version_path: version\n",
+            encoding="utf-8",
+        )
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=["plugins/forge/skills/foo.py"],
+        )
+        forge = output["targets"][0]
+        self.assertFalse(forge["files_changed"])
+        self.assertEqual(output["summary"]["needs_bump"], [])
+
+    def test_exclude_filters_out_matched_files(self):
+        """exclude に一致したファイルは files_changed のカウントに含まれない"""
+        p = self.tmpdir / "plugins/forge/.claude-plugin/plugin.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"version": "0.1.0"}), encoding="utf-8")
+        (self.tmpdir / ".version-config.yaml").write_text(
+            "targets:\n"
+            "  - name: forge\n"
+            "    version_file: plugins/forge/.claude-plugin/plugin.json\n"
+            "    version_path: version\n"
+            "    scope:\n"
+            "      - plugins/forge/**\n"
+            "    exclude:\n"
+            "      - plugins/forge/**/*.md\n",
+            encoding="utf-8",
+        )
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=[
+                "plugins/forge/skills/foo.py",
+                "plugins/forge/docs/x.md",
+            ],
+        )
+        forge = output["targets"][0]
+        self.assertEqual(forge["changed_file_count"], 1)
 
 
 if __name__ == "__main__":

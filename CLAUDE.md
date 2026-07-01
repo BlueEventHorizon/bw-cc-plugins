@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.3.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **forge** (v0.3.2) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:impl-issue`）
 
 > **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
@@ -26,6 +26,7 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - **プラグインランタイム文書の境界**: `plugins/doc-advisor/{workflows,formats}/` 配下は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）
 - **文書間参照にパスを焼き込まない**: 「どのタスクで何を読むべきか」をタスク記述から動的に発見すること（＝パス参照の保守コスト爆発を無くすこと）こそ doc-advisor の存在意義。文書には「何に依存するか（概念・ID）」だけ残し、`docs/...md` のようなディレクトリパス直書きの "ここを見ろ" 参照は書かない（パスは改訂で腐り、ToC の動的発見を無意味化する）。参照先の発見は `query-docs` に委ねる
 - **feature/fix PR では CHANGELOG.md・version 関連ファイルを編集しない**。リリースコミットでまとめて更新（`/forge:update-version` を使う）
+- **本リポジトリは下流プロジェクトを導く SoT である**。配布された SKILL / agent / script を使っている最中に不具合・不足を発見したら、`~/.claude/plugins/cache/` のキャッシュ実体や下流プロジェクトでの回避策で済ませず、必ず本リポジトリ (`plugins/{anvil,forge,doc-advisor}/...`) の原本を直す。キャッシュは次回 install で再生成されるため、原本を直すことが下流すべてへの正しい伝播経路になる。「刹那的に今のセッションで動くようにする」ではなく「プロジェクトを正しいものに完遂し、すべての他のプロジェクトを正しく導く」が目的。memory に回避策を保存するのは原本修正の代替にならない
 - **`.toc_work/` 等の消えるべき一時物は `.gitignore` に入れない**。残存が `git status` に untracked として出ることで異常を検知できる
 - **`docs/specs/base/design/` の ADR と DES は通し番号を共有**。`forge:next-spec-id` の出力を鵜呑みにせず ADR/DES 横断の最大番号+1 を使う
 - **決定論的な定型処理（列挙・転記・集計・ファイル生成）は script 化する**。AI は判断のみ担い、手転記・手列挙をしない

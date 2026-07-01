@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.2.8] - 2026-07-01
+
+### marketplace
+
+- **chore**: forge 0.3.2 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.3.2] - 2026-07-01
+
+### forge
+
+- **feat**: `/forge:update-version` に変更プラグインの自動検出フローを追加。`.version-config.yaml` の各 target に `scope`（および任意の `exclude`）を定義すると、`get_version_status.py` が base ブランチとの差分から `files_changed` / `summary.needs_bump` を算出し、target 未指定時に対象を自動選択する（複数該当時は multiSelect で選択）
+
 ## [marketplace 0.2.7] - 2026-06-30
 
 ### marketplace
