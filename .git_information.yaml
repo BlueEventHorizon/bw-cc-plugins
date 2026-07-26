@@ -1,0 +1,7 @@
+version: "1.0"
+github:
+  owner: "BlueEventHorizon"
+  repo: "bw-cc-plugins"
+  remote_url: "git@github.com:BlueEventHorizon/bw-cc-plugins.git"
+  default_base_branch: develop
+  pr_template: .github/PULL_REQUEST_TEMPLATE.md

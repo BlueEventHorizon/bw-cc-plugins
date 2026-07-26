@@ -1,0 +1,170 @@
+# Review Guide
+
+Have a resident Codex session review your code and documents, while Claude drives the evaluation, fixing, re-request, and completion decisions. Splitting "who reports" from "who fixes" across two different AIs avoids the failure mode where an AI approves its own work.
+
+## review
+
+```
+/forge:review <type> [--diff | --branch | --files a.md,b.py,...] [--interactive | --auto-critical | --auto]
+```
+
+| Argument          | Description                                                     |
+| ----------------- | --------------------------------------------------------------- |
+| `type`            | `code` / `requirement` / `design` / `plan` / `uxui` / `generic` |
+| `--diff`          | Uncommitted changes on the current branch (default)             |
+| `--branch`        | All changes since the base-branch divergence point              |
+| `--files`         | Explicit comma-separated file list                              |
+| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior") |
+| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                      |
+| `--auto-critical` | Auto-fix 🔴 only                                                |
+
+> **There is no engine axis (`--codex` / `--claude`).** Review execution is always performed by the resident Codex session. Passing these flags logs a warning and continues with the default behavior (so existing callers migrated from the legacy pipeline keep working).
+
+### Examples
+
+The user types one of these to start:
+
+```bash
+/forge:review code                                        # Uncommitted diff (default)
+/forge:review code --branch --auto                        # All branch changes, auto-fix critical+major
+/forge:review code --files src/foo.py,src/bar.py --auto    # Explicit files
+/forge:review requirement --files docs/specs/login_req.md  # Requirement doc
+/forge:review design --files specs/login/design.md         # Design doc
+/forge:review generic --files README.md                    # Any document
+```
+
+### Prerequisites
+
+This skill runs on top of msg-sys (the async Claude ⇔ Codex messaging layer). You need:
+
+- **Codex CLI installed and running as a resident session in the target project directory** (start it manually; the skill never auto-starts Codex)
+- The forge plugin installed (the Claude-side Stop hook registers automatically via the plugin mechanism)
+- A Codex-side Stop hook entry in `.codex/hooks.json` (the skill self-repairs this before every request, so manual setup is normally unnecessary)
+
+If Codex is not resident, the request is still sent but no reply arrives, and after the wait budget (600s by default) the skill reports a **definitive failure** — it does not fall back. Under cmux, the target pane is discovered automatically and woken via push, so the wait is usually tens of seconds.
+
+### When to Use
+
+| Scenario                        | Recommended mode                                       |
+| ------------------------------- | ------------------------------------------------------ |
+| Pre-PR final check              | `--auto` for bulk fix, then review the diff            |
+| Document quality review         | `--auto`, then check the disposition table for reasons |
+| CI-style quality gate           | `--auto-critical` for minimal safe fixes               |
+| Completion step of other skills | start-design etc. call `--auto` internally             |
+
+### Three Operating Modes
+
+A review does not finish in a single turn, so the skill has three modes keyed on how it was entered.
+
+| Mode        | Trigger                                                    | Behavior                                                   |
+| ----------- | ---------------------------------------------------------- | ---------------------------------------------------------- |
+| **Request** | `/forge:review` invoked by a user or another skill         | Resolve targets → build request → send → wait for reply    |
+| **Receive** | Codex's reply is delivered back via the Stop hook          | Evaluate findings → fix → reply with a report, or complete |
+| **Resume**  | User asks for status after a round-trip-limit notification | Summarize unresolved findings from the round-trip history  |
+
+### Execution Flow
+
+```mermaid
+flowchart TD
+    START([User / other skill]) --> REQ
+
+    REQ["Request mode<br/>resolve targets, collect rules, build request"] --> SEND
+
+    SEND["Send to Codex + push wake"] --> WAIT
+
+    WAIT["Block waiting for the reply"] --> RESULT
+
+    RESULT{Codex completion verdict}
+    RESULT -->|"Timeout"| FAIL["Report a definitive failure<br/>(no fallback)"]
+    RESULT -->|"Approved"| DONE["Done. Summary report"]
+    RESULT -->|"Findings"| EVAL
+
+    EVAL["Evaluate each finding<br/>valid / unnecessary / Codex misread"] --> GATE
+
+    GATE["Gate auto-fix scope by severity"] --> CONFIRM
+
+    CONFIRM{Any fix to apply now?}
+    CONFIRM -->|No| DONE2["Complete with unaddressed findings<br/>(reported distinctly from approval)"]
+    CONFIRM -->|Yes| FIX
+
+    FIX["Fix one at a time → verify → decide"] --> VERIFY
+
+    VERIFY["End-of-round independent check<br/>catches unreported edits"] --> REPLY
+
+    REPLY["Reply with disposition table + re-review request"] --> WAIT
+```
+
+### Claude Evaluates the Findings
+
+Codex's findings are never applied blindly. Each one is judged against the **same** `review_criteria_<type>.md` that was sent with the request.
+
+| Verdict             | Action                                                               |
+| ------------------- | -------------------------------------------------------------------- |
+| Valid finding       | Decide the fix after weighing blast radius and alternatives          |
+| Unnecessary finding | Drop it; record "determined not applicable" in the disposition table |
+| Based on a misread  | Drop it, or ask Codex to reconsider in the next round                |
+
+Using the same criteria on both sides prevents both arbitrary rejection under a different standard and unconditional acceptance.
+
+### Fix Safety Boundaries
+
+Fixes are not batched. Each finding goes through **apply → verify → decide → next**.
+
+- **Allowlist check**: detects edits outside the target files. If a ripple edit is judged legitimate, the change is kept and the reason is stated in the report (no silent scope creep)
+- **Syntax check**: compares against a pre-fix baseline to detect newly introduced syntax errors
+- **End-of-round independent check**: the above rely on self-reported edited paths, so they cannot catch an omission. The round's whole change set is re-checked without relying on self-reporting
+
+The verification scripts **only detect**; they never roll back automatically. Deciding between an accidental deviation and a legitimate ripple edit is Claude's job.
+
+### Convergence
+
+Re-requesting a review while findings remain unaddressed makes Codex report the same findings forever. Therefore, **if no fix is to be applied this round, no re-review is requested and the review completes.**
+
+That completion differs from Codex approving the work, and the summary distinguishes them:
+
+- **Completed by approval**: Codex reported no findings
+- **Completed with unaddressed findings**: Codex still reports findings, but none were in scope this round
+
+In the latter case every unfixed finding is listed with its reason (out of severity scope / severity undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
+
+### Review Types
+
+| Type          | Target                   | Main perspectives                             |
+| ------------- | ------------------------ | --------------------------------------------- |
+| `code`        | Source code              | Correctness, robustness, maintainability      |
+| `requirement` | Requirements docs        | Completeness, consistency, testability        |
+| `design`      | Design docs              | Architecture, requirement coverage, viability |
+| `plan`        | Plan docs                | Task granularity, dependencies, traceability  |
+| `uxui`        | Design tokens & UI specs | HIG compliance, usability, visual consistency |
+| `generic`     | Any document             | Structure, clarity, completeness              |
+
+### Severity Levels
+
+| Level       | Meaning                                              | Under auto modes                             |
+| ----------- | ---------------------------------------------------- | -------------------------------------------- |
+| 🔴 Critical | Must fix. Bugs, security, data loss, spec violations | Fixed by both `--auto` and `--auto-critical` |
+| 🟡 Major    | Should fix. Conventions, error handling, performance | Fixed by `--auto` only                       |
+| 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Never auto-fixed                             |
+
+Findings whose severity could not be determined are excluded from auto-fix and left to human review.
+
+### Review Criteria
+
+The request embeds the paths of the type-specific criteria file and the project documents relevant to the target. Codex reads them itself, read-only.
+
+| Source             | Content                                                                         |
+| ------------------ | ------------------------------------------------------------------------------- |
+| **Plugin-bundled** | `review_criteria_<type>.md` per type (always included)                          |
+| **DocAdvisor**     | Project documents returned by `/forge:query-db-rules` / `/forge:query-db-specs` |
+
+### Interim Behavior: `--interactive`
+
+**`--interactive` (the default) currently applies the same gating as `--auto`** (user-directed, user's responsibility [2026-07-19]). The intended step-by-step presentation — showing findings one at a time and asking the human to decide — is not implemented yet.
+
+This is a deliberate interim measure to get the mechanism into real use across many projects and surface problems early. It will be implemented later, self-contained within this skill.
+
+### No Session Directory
+
+This skill does not persist finding state to files. Receiving, evaluating, fixing, and replying all complete within a single turn, and the round-trip history is reconstructed from the msg-sys message DB on demand.
+
+Even when context is lost (session resume, compaction), the protocol header on the delivered message body triggers the receive mode, and the history for that specific review is filtered back out so work can continue.

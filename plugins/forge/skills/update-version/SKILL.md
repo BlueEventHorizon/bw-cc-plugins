@@ -1,0 +1,383 @@
+---
+name: update-version
+description: |
+  プロジェクトのバージョンを一括更新する。patch/minor/major/直接指定に対応。CHANGELOG 自動反映付き。
+  トリガー: "バージョン更新", "バージョンアップ", "version bump"
+user-invocable: true
+argument-hint: "[target] <patch | minor | major | X.Y.Z>"
+---
+
+# /forge:update-version
+
+## 概要
+
+`.version-config.yaml` の設定に基づいて、プロジェクトのバージョンを複数ファイルにわたって一括更新する。
+
+## コマンド構文
+
+```
+/forge:update-version [target] <new-version | patch | minor | major>
+```
+
+| 引数          | 説明                                                                   |
+| ------------- | ---------------------------------------------------------------------- |
+| `target`      | 対象 target 名（省略時: scope に基づき変更されたプラグインを自動検出） |
+| `new-version` | バージョン番号を直接指定（例: `1.2.3`）                                |
+| `patch`       | パッチバージョンをインクリメント（`0.0.11` → `0.0.12`）                |
+| `minor`       | マイナーバージョンをインクリメント（`0.0.11` → `0.1.0`）               |
+| `major`       | メジャーバージョンをインクリメント（`0.0.11` → `1.0.0`）               |
+
+### 使用例
+
+```
+/forge:update-version patch              # 変更が検出された target を自動選択してパッチバンプ
+/forge:update-version forge 0.1.0       # forge を 0.1.0 に更新
+/forge:update-version anvil minor        # anvil をマイナーバンプ
+```
+
+---
+
+## Goal
+
+`version_file`・`sync_files`・`CHANGELOG` の更新から README 影響判定・テストまで、Step 1〜10 を完走すること。AskUserQuestion が必要な判断点以外はユーザー介入なしに継続する。
+
+## ワークフロー
+
+### Step 1: 設定ファイルの確認
+
+`.version-config.yaml` がプロジェクトルートに存在するか確認する。
+
+- **存在しない** → エラーを表示して終了:
+  ```
+  エラー: .version-config.yaml が見つかりません。
+  先に /forge:setup-version-config を実行してください。
+  ```
+- **存在する** → Read して内容を解析する
+
+### Step 2: 引数解析 + 自動検出
+
+`$ARGUMENTS` を解析する:
+
+- `targets` に含まれる名前 → `target_name` として使用し、残りを `version_spec` に。**Step 2.5 をスキップ**し Step 3 へ
+- バージョン番号またはバンプ種別のみ → `version_spec` に保持し、**Step 2.5 で target を自動検出**
+- 引数なし → **Step 2.5 で target を自動検出**し、version_spec も AskUserQuestion で確認
+
+既知の target 名は `.version-config.yaml` の `targets[].name` から取得する。
+
+### Step 2.5: 対象 target の自動検出
+
+target が引数で明示指定されていない場合のみ実行する。
+
+`get_version_status.py` を実行し、`summary.needs_bump` を取得する:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/get_version_status.py
+```
+
+`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。
+
+| `needs_bump` の状態 | 挙動                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 空                  | 「main 以降に変更されたプラグインがありません」と表示して終了。`summary.changed` が非空ならそれも併せて案内 |
+| 1 件                | その target を採用。version_spec が未指定なら AskUserQuestion で確認                                        |
+| 複数件              | AskUserQuestion (multiSelect, デフォルト全選択) で対象を選ばせる                                            |
+
+選択された target を順次 Step 3 以降に流す（複数選択時は target ごとに Step 3〜8 を繰り返す）。
+
+> **scope を持たない target は自動検出されない**: 明示的に target 名を指定したときのみバンプ可能。安全側のデフォルト。
+
+### Step 3: 現在のバージョンを読み取る
+
+指定 target の `version_file` を Read し、`version_path` が指すフィールドからバージョンを取得する。
+
+```
+現在のバージョン (forge): 0.0.18
+```
+
+> **`version_path` の表記**: 引用符を付けずに記述する（例: `version_path: version` / `version_path: metadata.version`）。引用符付き（`"version"`）でも内部で normalize するが、設定は引用符なしに統一する。
+>
+> **CHANGELOG を canonical version source にする場合（`version_path: changelog_header`）**: `version_file: CHANGELOG.md` + `version_path: changelog_header` を指定すると、最初の version 見出し（`## [v?]X.Y.Z` / `## v?X.Y.Z`）から現在バージョンを取得・更新する。先頭 `v` は許容され、計算は数値 `X.Y.Z` で行い、見出しの `v` / 角括弧 `[]` は保持される。
+
+### Step 3.5: main ブランチとのバージョン比較
+
+`get_version_status.py` でベースブランチ（デフォルト: main）と現在のバージョンを比較する:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/get_version_status.py
+```
+
+出力 JSON の `targets` から対象 target のエントリを探す。
+
+- **`changed: true`（current > main）**: 既にこのブランチでバンプ済みであることをユーザーに伝える。AskUserQuestion を使用して、さらにバンプするか確認する:
+  ```
+  {target_name} は既に main より新しいバージョンです（main: {base} / current: {current}）。
+  さらにバンプしますか？
+  ```
+  ユーザーが「しない」と回答した場合は処理を終了する。
+
+- **`changed: false`（current == main）**: 通常フロー。何もせず Step 4 へ進む。
+
+- **スクリプトが失敗・バージョン取得不可**: 警告のみ表示し、Step 4 へ進む（ブロックしない）。
+
+- **`base` が取得できない**: エントリの `note` を確認する。ファイルが base に存在しない（新規追加）か、存在するが version を抽出できなかった（形式未対応 / version_path 不一致）かを `note` が区別する。いずれも注意のみ表示し、Step 4 へ進む。
+
+### Step 4: 新バージョンを決定する
+
+スクリプトで新バージョンを計算する:
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/calculate_version.py {current_version} {version_spec}
+```
+
+JSON 出力から `new` を取得する。`status: "error"` の場合はエラー内容を表示して終了する。
+`warning` フィールドが存在する場合は AskUserQuestion を使用して続行を確認する。
+
+```
+新バージョン ({target_name}): {new_version}
+```
+
+### Step 5: 変更内容の収集 [MANDATORY]
+
+> **このステップはバージョンファイル更新（Step 6）より前に実行する。** バージョン番号を書き換える前にコミット履歴を収集することで、バージョン番号変更のノイズが混入しない。
+
+`.version-config.yaml` の `changelog` セクションが存在する場合に実行する。存在しない場合は Step 6 へスキップする。
+
+#### 5-1. コミット履歴の取得
+
+前バージョンのタグから HEAD までのコミットを取得する:
+
+```bash
+# tag_format からタグ名を生成（例: "forge-v0.0.23"）
+git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
+```
+
+タグが存在しない場合のフォールバック:
+
+1. CHANGELOG.md を Read し、前バージョンのエントリ日付を取得する（例: `## [0.0.23] - 2026-03-16` → `2026-03-16`）
+2. その日付以降のコミットを取得する:
+   ```bash
+   git log --after="2026-03-16" --pretty=format:"%s" --no-merges
+   ```
+3. CHANGELOG にも日付がない場合は `git log --oneline -30 --no-merges` で直近のコミットを取得し、AskUserQuestion で範囲を確認する
+
+#### 5-2. CHANGELOG エントリの生成
+
+コミットメッセージを Conventional Commits 形式で分類し、CHANGELOG エントリを AI が作成する:
+
+- `feat:` → 新機能の説明
+- `fix:` → 修正内容の説明
+- `refactor:` → リファクタリング内容の説明
+- 類似した変更はグループ化し、箇条書きの粒度を調整する（1コミット=1行ではなく、意味のある単位でまとめる）
+
+> **注意**: 空のテンプレート（`-` のみ）で済ませない。必ずコミット履歴から内容を記入すること。
+
+生成した CHANGELOG エントリはコンテキストに保持し、Step 7 で挿入する。
+
+### Step 6: ファイルの更新 [MANDATORY]
+
+#### 6-1. version_file の更新
+
+スクリプトでバージョンフィールドを更新する:
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/update_main_version.py {version_file} {current_version} {new_version} {version_path}
+```
+
+ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認し、`status: "error"` の場合はエラー内容を報告して終了する。orchestrator AI 側で別途 Write する手順は不要。
+
+#### 6-2. sync_files の更新
+
+`sync_files` リストを順に処理する。各エントリについて:
+
+1. `optional: true` でファイルが存在しない場合 → スキップ（警告なし）
+   `optional: false`（デフォルト）でファイルが存在しない場合 → 警告を表示
+2. エントリの `required`/`filter`/`optional` の組み合わせに応じて、以下のラッパーのいずれか 1 本を呼び出す（YAML 値から決定論的に 1 本が定まる）:
+   - `filter` なし・`optional: false`:
+     ```bash
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_required_dependent.py {path} {current_version} {new_version}
+     ```
+   - `filter` なし・`optional: true`:
+     ```bash
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_optional_dependent.py {path} {current_version} {new_version}
+     ```
+   - `filter` あり・`optional: false`:
+     ```bash
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_required_filtered.py {path} {current_version} {new_version} "{filter}"
+     ```
+   - `filter` あり・`optional: true`:
+     ```bash
+     python3 ${CLAUDE_SKILL_DIR}/scripts/update_optional_filtered.py {path} {current_version} {new_version} "{filter}"
+     ```
+   optional ラッパーでパターン未マッチ時はスクリプトが `{"status": "skipped"}` または `{"status": "drift"}` を返して exit 0 で終了する。この場合ラッパーは書き戻しをスキップする。
+3. ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認:
+   - `status: "ok"` → 対象ファイルが更新済み
+   - `status: "skipped"` → optional かつ filter パターン自体がファイルに存在しない（対象外。正常系）
+   - `status: "drift"` → optional かつ filter パターンは見つかったがブロック内に現在バージョンが見当たらない（**ドリフト**: そのファイルの記載バージョンが既に古い値のまま蓄積している可能性）。`skipped` と異なり見過ごすべきではない。Step 6-3 の完了メッセージで `drift` が 1 件でもあれば必ず目立つ警告として利用者に提示すること（対象ファイル・filter を明記）
+   - `status: "error"` → エラー内容を報告して終了する
+
+> **sync_files の対象範囲 [制約]**: `sync_files` は **version 文字列そのもの** を単純置換する仕組みである。version に連動するが値が version 文字列ではないフィールド（例: Homebrew Formula の `revision`（git tag commit の SHA）、ハッシュ・ビルド番号など）は **対象外**。これらを `sync_files` に含めると version 部分だけが置換され、連動値が取り残されて壊れる。
+>
+> このような派生値は version bump とは別フェーズ（git tag 確定後など）で決まるため、汎用 version ツールの責務に含めない。必要な場合は手動更新するか、tag 確定後の専用フローで扱う。
+
+#### 6-3. 更新完了メッセージ
+
+```
+### ✅ バージョン更新完了
+
+| ファイル | 変更 |
+|----------|------|
+| {version_file} | {current_version} → {new_version} |
+| {sync_file_1} | {current_version} → {new_version} |
+| ...      |      |
+```
+
+`status: "drift"` が 1 件以上あった場合、上記に加えて必ず以下を表示する（`skipped` とは別枠で明示し、見過ごされないようにする）:
+
+```
+### ⚠️ バージョンドリフト検出
+
+以下のファイルは filter パターンは見つかりましたが、記載されているバージョンが
+現行値と異なっていたため自動更新をスキップしました。手動で確認・修正してください:
+
+| ファイル | filter |
+|----------|--------|
+| {drift_file_1} | {filter} |
+```
+
+### Step 6.5: marketplace バンプ提案
+
+対象 target が `marketplace` 以外の場合のみ実行する。
+
+`get_version_status.py` を再実行し、`summary.marketplace_needs_bump` を確認する:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/get_version_status.py
+```
+
+`marketplace_needs_bump: true`（marketplace が main と同じバージョンのまま、かつプラグインが更新済み）の場合、AskUserQuestion を使用して確認する:
+
+```
+以下のプラグインが main より新しいバージョンになっています:
+  {変更済みプラグイン一覧（name: base → current）}
+
+marketplace はまだ main と同じバージョン（{marketplace_base}）です。
+marketplace もバンプしますか？（patch 推奨）
+```
+
+ユーザーが「はい」と回答した場合、`/forge:update-version marketplace {version_spec}` を自分自身で呼び出してワークフローを再実行する（target: marketplace）。
+
+`marketplace_needs_bump: false` または スクリプト失敗の場合は何もせず Step 7 へ進む。
+
+### Step 7: CHANGELOG の挿入
+
+Step 5 で生成した CHANGELOG エントリを CHANGELOG ファイルに挿入する。
+
+CHANGELOG ファイルを Read し、`changelog.format` に応じて挿入アンカー（新規エントリを差し込む直前の行）を決定する:
+
+| `format`           | 挿入アンカー（この行の直前に挿入）                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `keep-a-changelog` | 最初の `## [` 行                                                                                        |
+| `simple`           | 最初の「`##` + 数字または `v` + 数字で始まる version 見出し」行（例: `## 0.6.10 - ...` / `## v0.6.10`） |
+
+> **simple 形式の注意**: `# タイトル`（H1）・`---`（区切り線）・`## 概要` のような **version でないメタ見出し** はスキップし、最初の version 見出しをアンカーにする。version 見出しが 1 つも無い（新規 CHANGELOG）場合は、メタ見出し群の直後（本文先頭）に挿入する。
+
+**keep-a-changelog 形式**（`format: keep-a-changelog`）:
+
+```markdown
+## [{new_version}] - {YYYY-MM-DD}
+
+### {target_name}
+
+- **feat**: [機能の説明]
+- **fix**: [修正の説明]
+```
+
+**simple 形式**（`format: simple`）:
+
+```markdown
+## {new_version} - {YYYY-MM-DD}
+
+- [変更の説明]
+```
+
+`section_per_target: true` の場合、各 target の変更を `### {target_name}` サブセクションに分ける。
+
+### Step 8: README 影響判定 [MANDATORY]
+
+CHANGELOG に記載した変更内容が README に影響するかを判断する。
+
+#### 8-1. README の読み込み
+
+`.version-config.yaml` の sync_files に含まれる README ファイル（`README.md`, `README_en.md` 等）を **全文 Read** する。バージョン番号は Step 6 で更新済みのため、ここでは **本文の内容** に着目する。
+
+#### 8-2. 影響判定
+
+Step 5 の CHANGELOG エントリと README の現在の内容を照合し、以下の観点で更新の要否を判断する:
+
+- **インストール方法・セットアップ手順の変更**: コマンド体系、前提条件、依存関係の変更
+- **スキル・コマンド一覧の変更**: 新規追加、名前変更、削除、引数変更
+- **機能説明の大幅な変更**: アーキテクチャ変更、主要ワークフローの変更
+- **廃止・破壊的変更**: 後方互換性のない変更
+
+以下は README 更新 **不要** と判断する:
+
+- 内部リファクタリング（外部挙動に変化なし）
+- バグ修正（既存の説明が正しくなるだけ）
+- 小規模な改善（新しいオプション追加程度）
+- テスト追加
+
+#### 8-3. 更新の実施
+
+- **更新不要** → 判断理由を1行で報告し、Step 9 へ進む
+- **更新が必要** → README を修正する。修正後、AskUserQuestion を使用して変更内容を確認する
+- **判断に迷う場合** → AskUserQuestion を使用してユーザーに確認する
+
+### Step 9: テスト実行
+
+`tests/` ディレクトリが存在する場合のみ実行する:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py' 2>&1 | tail -3
+```
+
+テストが失敗した場合は失敗内容を表示し、AskUserQuestion を使用して続行か否かを確認する。
+
+### Step 10: git 操作（設定が有効な場合のみ）
+
+`.version-config.yaml` の `git` セクションに基づいて処理する。
+
+`auto_commit: true` の場合: AskUserQuestion を使用して以下の git 操作を確認する:
+
+```
+git commit -m "{commit_message}"  # 例: "chore: bump forge to 0.0.19"
+```
+
+`auto_tag: true` かつコミット成功の場合: タグを作成する:
+
+```bash
+git tag {tag}  # 例: "forge-v0.0.19"
+```
+
+`auto_commit: false`（デフォルト）の場合: git 操作は行わず、以下のコマンドを案内する:
+
+```
+変更をコミットするには:
+  commit/push の確認フローを担うスキル（例: anvil:commit、利用可能な場合）または:
+  git add <更新したファイルのパス>
+  git commit -m "{commit_message}"
+  git tag {tag}
+```
+
+---
+
+## エラーハンドリング
+
+| エラー                              | 対応                                                      |
+| ----------------------------------- | --------------------------------------------------------- |
+| `.version-config.yaml` がない       | エラーを表示し `/forge:setup-version-config` の実行を案内 |
+| 引数なし                            | AskUserQuestion を使用して target と version_spec を確認  |
+| 不正な target 名                    | 有効な target 名の一覧を表示して終了                      |
+| 不正なバージョン形式                | 「バージョン形式が不正です（例: 1.2.3）」と表示して終了   |
+| 新バージョン ≦ 現バージョン         | AskUserQuestion を使用して続行を確認                      |
+| sync_file の pattern が見つからない | 警告を表示して次のファイルへ進む（処理は継続）            |
+| テスト失敗                          | 内容を表示し AskUserQuestion を使用して続行を確認         |

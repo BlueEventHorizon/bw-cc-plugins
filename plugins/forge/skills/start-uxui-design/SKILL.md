@@ -1,0 +1,89 @@
+---
+name: start-uxui-design
+description: |
+  要件定義書の ASCII アートからデザイントークンと UI コンポーネントの視覚仕様を創造する。
+  Apple HIG / Norman / Rams / Nielsen / Gestalt の知見に基づく UX 評価付き。iOS / macOS 対応。
+  トリガー: "UXUIデザイン", "デザイントークン作成", "start uxui design"
+user-invocable: true
+argument-hint: "[feature-name] [--platform ios|macos]"
+---
+
+# /forge:start-uxui-design
+
+要件定義書（ASCII アート付きの画面仕様）を入力に、デザイントークンと UI コンポーネントの視覚仕様を創造する。Apple HIG・Don Norman の感情デザイン・Dieter Rams の 10 原則・Nielsen ヒューリスティクス・ゲシュタルト原則の知識ベースに基づき、デザイン意図を理論的根拠とともに設計する。
+
+## 位置づけ
+
+本スキルは `/forge:start-requirements` の **Figma なし時の補完** として位置づけられる。ゼロから UI を設計する必要があり、Figma デザインも既存 UI もない場合に使用する。
+
+デザイン方向性は Phase 2.0（Design Intent の取得）で要件本文・既存コードから読み取りまたは推定し、AskUserQuestion で確認する。プロジェクト全体に挙動モードを固定する設定ファイル（`.uxui-config.yaml` 等）は持たない。
+
+> **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。本スキルは不要。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
+
+## Goal
+
+ASCII アートの画面仕様からデザイントークン・UI コンポーネント視覚仕様の作成・UX評価・文書化まで完走すること。
+
+## フロー継続 [MANDATORY]
+
+Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
+
+## コマンド構文
+
+```
+/forge:start-uxui-design [feature] [--platform ios|macos]
+```
+
+| 引数       | 内容                                       |
+| ---------- | ------------------------------------------ |
+| feature    | Feature 名（省略時は対話で確定）           |
+| --platform | 対象プラットフォーム（省略時は選択肢提示） |
+
+---
+
+## 前提確認 [MANDATORY]
+
+### Step 1: プラットフォーム選択
+
+`--platform` 未指定時、AskUserQuestion を使用して選択肢を提示する:
+
+```
+対象プラットフォームを選択してください:
+1. iOS     — iPhone / iPad アプリのデザイン
+2. macOS   — Mac アプリのデザイン
+```
+
+### Step 2: Feature 名の確定
+
+- 引数で指定済み → そのまま使用
+- 未指定 → AskUserQuestion を使用して入力を求める
+
+### Step 3: 出力先ディレクトリの解決
+
+`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
+doc_type `requirement`、feature `{feature}` で出力先ディレクトリを求める。
+
+- `requirement` に対応するエントリが無い場合 → `specs/{feature}/requirements/` をデフォルトとして使用
+
+---
+
+## 知識ベースの読み込み [MANDATORY]
+
+**常駐知識**として以下を **必ず** Read する。この文書は全 Phase を通じてコンテキスト内に保持する:
+
+- `${CLAUDE_PLUGIN_ROOT}/skills/start-uxui-design/docs/design_philosophy.md` — デザイン哲学の統合フレームワーク（3 層モデル）。全てのデザイン判断の基盤
+- `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md` — 文書スタイル指針（タグ・見出し・参照記法）
+
+その他の知識ベース（`apple_design_principles.md`、プラットフォームガイド、テンプレート）はワークフロー内で Phase 別に JIT 読み込みする。一括読み込みしない。
+
+---
+
+## ワークフローの実行 [MANDATORY]
+
+知識ベースの読み込み後、ワークフローファイルを **Read** し、そのファイルの指示に従って作業を実行する:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/start-uxui-design/docs/uxui_analysis_workflow.md
+```
+
+Read 後、ワークフローファイルの Phase 1 から開始する。ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認）まで自己完結している。SKILL.md に戻る必要はない。

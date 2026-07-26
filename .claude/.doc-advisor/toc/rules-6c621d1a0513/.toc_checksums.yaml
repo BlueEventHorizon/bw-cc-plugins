@@ -1,0 +1,12 @@
+# ToC checksums for key: rules
+# Auto-generated - do not edit
+generated_at: 2026-07-18T00:10:25Z
+file_count: 7
+checksums:
+  docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
+  docs/rules/document_writing_rules.md: cbad80624d2ede65f2df54900467fbfecd5f758adaf3d622ead626979a3acd6e
+  docs/rules/forge_doc_access_principle.md: b9ee0320c5c8e8b8ba6f3979981e751de9f801c89661d0104ab18c5c63512c48
+  docs/rules/implementation_guidelines.md: 7bdabd4c8ea1a5e7dd7dcb05a7aa18ed4c41713cc37f7a93d1dfebd10f6ce2d7
+  docs/rules/skill_authoring_notes.md: c3161bb13a41eb0fdcf1403f79e5c8089fe2711a22f3033df092ba9d222fe213
+  docs/rules/skill_launch_paths_definitions.md: f02cb874ed92b42d2e97051786b84af8ec36c5902b27634ada105134b5fed8e7
+  docs/rules/version_migration_design.md: b89406179a82928ae0dcbc1480cba22ce5e4ed57548dcb10403b86d41530994a

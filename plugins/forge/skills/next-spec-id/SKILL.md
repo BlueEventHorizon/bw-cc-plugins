@@ -1,0 +1,155 @@
+---
+name: next-spec-id
+user-invocable: false
+description: |
+  ブランチ間で衝突しない、次の Spec ID（SCR / DES / TASK / ADR 等任意プレフィックス）を発行する。
+  要件定義書・設計書・計画書・ADR（アーキテクチャ決定記録）の作成時に ID の重複を防ぐために呼び出される。
+argument-hint: ""
+---
+
+# next-spec-id スキル
+
+## 概要
+
+仕様書（要件定義書・設計書・計画書）の次の連番 ID を、全ブランチスキャンで安全に取得する。
+ブランチ間での ID 重複を防止する。
+
+forge 内の他スキルからの呼び出し専用（`user-invocable: false`）。
+
+## スクリプト
+
+`${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py`
+
+### CLI インターフェース
+
+```bash
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+
+# 次の ID を取得（プレフィックス指定）
+python3 "$SCRIPT" SCR
+python3 "$SCRIPT" DES
+python3 "$SCRIPT" TASK
+python3 "$SCRIPT" ADR --share-prefixes ADR,DES   # アーキテクチャ決定記録（DES と通し番号共有、設計書と同ディレクトリに配置）
+
+# プロジェクトルート指定
+python3 "$SCRIPT" --project-root /path/to/project SCR
+
+# .doc_structure.yaml のパス指定
+python3 "$SCRIPT" --doc-structure /path/to/.doc_structure.yaml SCR
+
+# 通し番号を複数 prefix で共有する場合（例: ADR と DES が同一ディレクトリで番号を共有）
+python3 "$SCRIPT" DES --share-prefixes ADR,DES
+python3 "$SCRIPT" ADR --share-prefixes ADR,DES
+```
+
+### 通し番号の共有（`--share-prefixes`）
+
+複数の prefix（例: `ADR` / `DES`）が同一ディレクトリに配置され、番号衝突を避けるために連番を共有する運用がある。`--share-prefixes` にカンマ区切りで prefix を指定すると、それらすべてのファイルを横断スキャンして最大番号を計算し、位置引数で指定した prefix の次番号として返す。`shared_with` フィールドに共有先 prefix が記録される。
+
+### 出力形式（JSON）
+
+#### 正常時
+
+```json
+{
+  "status": "ok",
+  "next_id": "SCR-016",
+  "prefix": "SCR",
+  "max_number": 15,
+  "base_branch": "develop",
+  "branches_scanned": 7,
+  "ids_found": 15,
+  "duplicates": []
+}
+```
+
+#### 重複検出時
+
+`duplicates` に報告されるのは「**異なるファイルが同じ ID（共有採番モードでは同じ番号）を主張している**」衝突のみ。同一パスのファイルが複数ブランチに存在するだけの同一履歴由来ケースは報告されない（Issue #181）。共有採番モード（`--share-prefixes`）では、`ADR-007` と `DES-007` のような prefix 違い・同番号も衝突として報告される。
+
+```json
+{
+  "status": "ok",
+  "next_id": "SCR-016",
+  "prefix": "SCR",
+  "max_number": 15,
+  "base_branch": "develop",
+  "branches_scanned": 7,
+  "ids_found": 17,
+  "duplicates": [
+    {
+      "id": "SCR-013",
+      "ids": ["SCR-013"],
+      "branches": ["feature/edit_pickup", "origin/feature/print_letter"],
+      "paths": [
+        "docs/specs/pickup/requirements/SCR-013_edit_pickup.md",
+        "docs/specs/letter/requirements/SCR-013_print_letter.md"
+      ]
+    }
+  ]
+}
+```
+
+- `id`: 代表 ID（衝突に関与する ID の先頭）
+- `ids`: 衝突に関与する全 ID（共有採番モードでは `["ADR-007", "DES-007"]` のように複数になりうる）
+- `paths`: 同じ番号を主張している異なるファイルパス
+- `branches`: 該当ファイルが存在するブランチ
+
+#### エラー時
+
+```json
+{
+  "status": "error",
+  "message": ".doc_structure.yaml が見つかりません"
+}
+```
+
+## プレフィックスについて
+
+スクリプトは任意のプレフィックスを引数で受け取る。ID 体系の知識は持たない。
+
+どのプレフィックスを使うかは **呼び出し側のスキル** が決定する:
+
+1. プロジェクト固有の `spec_format.md` やルールがあればそれに従う
+2. なければ forge の `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md` をフォールバック参照
+
+## 他スキルからの呼び出し方
+
+### 要件定義（start-requirements）での例
+
+```bash
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
+RESULT=$(python3 "$SCRIPT" SCR)
+# → {"status": "ok", "next_id": "SCR-016", ...}
+```
+
+JSON の `next_id` フィールドをファイル名の先頭に使用する。
+
+### 設計（start-design）での例
+
+```bash
+RESULT=$(python3 "$SCRIPT" DES)
+# → {"status": "ok", "next_id": "DES-004", ...}
+```
+
+### ADR（アーキテクチャ決定記録）での例
+
+設計判断の記録として ADR を新規作成する際は、番号衝突を防ぐため必ず採番する（手動で「既存の次」と判断しない）。ADR と DES は同一ディレクトリで通し番号を共有するため `--share-prefixes ADR,DES` を必ず付与する:
+
+```bash
+RESULT=$(python3 "$SCRIPT" ADR --share-prefixes ADR,DES)
+# → {"status": "ok", "next_id": "ADR-005", "shared_with": ["DES"], ...}
+```
+
+ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリが無くても git スキャンで既存 ADR を検出できる。
+
+## 動作概要
+
+1. `.doc_structure.yaml` から specs の `root_dirs` を取得
+2. `git fetch --quiet` でリモートを最新化
+3. ベースブランチ（develop or main）を特定
+4. ベースブランチから派生した全ブランチをスキャン（ローカル + リモート）
+5. `git ls-tree` で各ブランチの specs ディレクトリを走査
+6. 指定プレフィックスの最大番号を検出
+7. 異なるファイルが同じ ID / 共有番号を主張する衝突があれば `duplicates` に記録（同一パス由来の複数ブランチ出現は正常として除外）
+8. 最大番号 + 1 を返す

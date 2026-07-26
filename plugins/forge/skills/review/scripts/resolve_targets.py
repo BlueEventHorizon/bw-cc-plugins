@@ -1,0 +1,334 @@
+#!/usr/bin/env python3
+"""review 対象解決 CLI。
+
+`/forge:review` の対象軸（diff / branch / files）ごとに対象ファイルを
+列挙し、`{"status", "mode", "base_branch", "files", "warnings"}` の単一 JSON
+を標準出力へ返す。標準ライブラリのみ使用する（`git` は subprocess で呼ぶ）。
+
+使い方:
+    python3 resolve_targets.py --mode <diff|branch|files> \
+        [--files a,b,...] [--project-root <path>]
+
+モードの挙動:
+    diff:   HEAD に対する未 commit 変更（staged + unstaged）+ 未追跡ファイル
+    branch: base ブランチとの merge-base 以降の全変更
+            （commit 済み + 未 commit + 未追跡）。base ブランチは
+            `.git_information.yaml` の `default_base_branch` → `develop` →
+            `main` → `master` の優先順位で、実際にリポジトリに存在する
+            ブランチを採用する
+    files:  指定ファイル（--files a,b,c のカンマ区切り）の存在検証のみ
+
+対象 0 件・不在ファイルは status: error を返す。パスはすべて
+プロジェクトルート相対で返す。
+"""
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+DEFAULT_BASE_CANDIDATES = ["develop", "main", "master"]
+
+_DEFAULT_BASE_BRANCH_RE = re.compile(r"^\s*default_base_branch\s*:\s*(.+?)\s*$")
+
+
+def _run_git(args, project_root: Path):
+    """git コマンドを実行し (returncode, stdout, stderr) を返す。"""
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        return 1, "", f"git 実行に失敗しました: {exc}"
+    return result.returncode, result.stdout, result.stderr
+
+
+def _strip_quotes(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
+
+
+def _read_configured_base_branch(project_root: Path) -> str | None:
+    """`.git_information.yaml` の `default_base_branch` を読む（標準ライブラリのみ）。
+
+    PyYAML を使わず、対象行を正規表現で直接抽出する最小限のパースに留める
+    （このファイルで必要なのは単一のスカラー値のみのため）。
+    """
+    config_path = project_root / ".git_information.yaml"
+    if not config_path.is_file():
+        return None
+    try:
+        text = config_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    for line in text.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        match = _DEFAULT_BASE_BRANCH_RE.match(line)
+        if match:
+            value = _strip_quotes(match.group(1))
+            # インラインコメント（`develop # comment`）を除去
+            value = value.split("#", 1)[0].strip()
+            if value:
+                return value
+    return None
+
+
+def _branch_ref_if_exists(branch: str, project_root: Path) -> str | None:
+    """branch がローカル、またはリモート追跡ブランチ（origin/<branch>）として
+    実際に存在するかを確認し、`merge-base` / `diff` に使える ref 文字列を返す。
+
+    ローカルブランチを優先する。どちらにも存在しなければ None を返す。
+    """
+    code, _, _ = _run_git(["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], project_root)
+    if code == 0:
+        return branch
+
+    code, _, _ = _run_git(
+        ["rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{branch}"], project_root
+    )
+    if code == 0:
+        return f"origin/{branch}"
+
+    return None
+
+
+def resolve_base_branch(project_root: Path):
+    """base ブランチ解決の優先順位を適用する。
+
+    優先順位: `.git_information.yaml` の `default_base_branch` → `develop` →
+    `main` → `master`。実際にリポジトリに存在する（ローカル or
+    リモート追跡）ブランチのうち、最初に見つかったものを採用する。
+
+    戻り値: (表示用ブランチ名, git コマンドに渡す ref) のタプル。
+    どの候補も存在しなければ (None, None) を返す。
+    """
+    candidates = []
+    configured = _read_configured_base_branch(project_root)
+    if configured:
+        candidates.append(configured)
+    for name in DEFAULT_BASE_CANDIDATES:
+        if name not in candidates:
+            candidates.append(name)
+
+    for name in candidates:
+        ref = _branch_ref_if_exists(name, project_root)
+        if ref is not None:
+            return name, ref
+
+    return None, None
+
+
+def _parse_porcelain_status_z(stdout: str) -> list[str]:
+    """`git status --porcelain=v1 -z --untracked-files=all` の出力をファイル一覧へ変換する。
+
+    staged / unstaged / 未追跡ファイルを列挙する。完全削除（`D`）は
+    レビュー時に Read できないため対象から除外する。rename/copy はリネーム後の
+    パスを採用する。NUL 区切り (`-z`) を使うことで、非 ASCII ファイル名の
+    C-style クォート化（例: 日本語ファイル名が `"\346\227..."` と出力される事象）
+    を回避し、rename の ` -> ` 文字列パースの曖昧性も解消する（rename/copy は
+    新パスの後続 NUL フィールドに旧パスが別エントリとして続く）。
+    """
+    files: list[str] = []
+    seen: set[str] = set()
+
+    entries = stdout.split("\0")
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if not entry or len(entry) < 3:
+            continue
+        xy = entry[:2]
+        path = entry[3:]
+
+        # rename/copy (先頭が R または C) は新パスの直後に旧パスが別 NUL エントリで続く
+        if xy[0] in ("R", "C"):
+            i += 1
+
+        # 完全削除（staged / unstaged いずれかで D）はレビュー対象外
+        if "D" in xy:
+            continue
+
+        if path in seen:
+            continue
+        seen.add(path)
+        files.append(path)
+
+    return sorted(files)
+
+
+def get_diff_targets(project_root: Path):
+    """diff モード: 未 commit 変更（staged + unstaged）+ 未追跡ファイルを列挙する。"""
+    code, stdout, stderr = _run_git(
+        ["status", "--porcelain=v1", "-z", "--untracked-files=all"], project_root
+    )
+    if code != 0:
+        raise RuntimeError(f"git status の実行に失敗しました: {stderr.strip()}")
+    return _parse_porcelain_status_z(stdout)
+
+
+def get_branch_targets(project_root: Path, base_ref: str):
+    """branch モード: base ブランチとの merge-base 以降の全変更を列挙する。
+
+    commit 済みの変更（merge-base...HEAD）+ 未 commit 変更 + 未追跡ファイルを
+    合わせて返す。
+    """
+    code, stdout, stderr = _run_git(["merge-base", base_ref, "HEAD"], project_root)
+    if code != 0:
+        raise RuntimeError(f"git merge-base の実行に失敗しました: {stderr.strip()}")
+    merge_base = stdout.strip()
+    if not merge_base:
+        raise RuntimeError("git merge-base が空の結果を返しました")
+
+    code, stdout, stderr = _run_git(
+        ["diff", "--name-only", f"{merge_base}...HEAD"], project_root
+    )
+    if code != 0:
+        raise RuntimeError(f"git diff の実行に失敗しました: {stderr.strip()}")
+    committed_files = [line.strip() for line in stdout.splitlines() if line.strip()]
+
+    uncommitted_files = get_diff_targets(project_root)
+
+    combined = set(committed_files) | set(uncommitted_files)
+    # 削除済みでワークツリーに存在しないファイルはレビュー（Read）できないため除外する
+    existing = [f for f in combined if (project_root / f).is_file()]
+    return sorted(existing)
+
+
+def _result(status, mode, base_branch, files, warnings=None, error=None):
+    payload = {
+        "status": status,
+        "mode": mode,
+        "base_branch": base_branch,
+        "files": files,
+        "warnings": warnings or [],
+    }
+    if error is not None:
+        payload["error"] = error
+    return payload
+
+
+def resolve_targets(mode: str, project_root: Path, files_arg: str | None):
+    if mode == "files":
+        if not files_arg or not files_arg.strip():
+            return _result(
+                "error", mode, None, [],
+                error="--files モードには --files でファイルパスを1つ以上指定してください",
+            )
+
+        candidates = [token.strip() for token in files_arg.split(",") if token.strip()]
+        if not candidates:
+            return _result(
+                "error", mode, None, [],
+                error="--files モードには --files でファイルパスを1つ以上指定してください",
+            )
+
+        project_root_resolved = project_root.resolve()
+        outside = [f for f in candidates if Path(f).is_absolute() or ".." in Path(f).parts]
+        if outside:
+            return _result(
+                "error", mode, None, [],
+                error=f"プロジェクトルート外を指すパスは指定できません: {', '.join(outside)}",
+            )
+
+        missing = []
+        for f in candidates:
+            resolved = (project_root / f).resolve()
+            try:
+                resolved.relative_to(project_root_resolved)
+            except ValueError:
+                missing.append(f)
+                continue
+            if not resolved.is_file():
+                missing.append(f)
+        if missing:
+            return _result(
+                "error", mode, None, [],
+                error=f"指定されたファイルが見つかりません: {', '.join(missing)}",
+                warnings=[f"不在ファイル: {f}" for f in missing],
+            )
+
+        return _result("ok", mode, None, sorted(candidates))
+
+    if mode == "diff":
+        try:
+            files = get_diff_targets(project_root)
+        except RuntimeError as exc:
+            return _result("error", mode, None, [], error=str(exc))
+
+        if not files:
+            return _result("error", mode, None, [], error="レビュー対象がありません")
+
+        return _result("ok", mode, None, files)
+
+    if mode == "branch":
+        base_branch, base_ref = resolve_base_branch(project_root)
+        if base_branch is None:
+            return _result(
+                "error", mode, None, [],
+                error=(
+                    "base ブランチを解決できません（.git_information.yaml の "
+                    "default_base_branch / develop / main / master のいずれも"
+                    "リポジトリに存在しません）"
+                ),
+            )
+
+        try:
+            files = get_branch_targets(project_root, base_ref)
+        except RuntimeError as exc:
+            return _result("error", mode, base_branch, [], error=str(exc))
+
+        if not files:
+            return _result(
+                "error", mode, base_branch, [], error="レビュー対象がありません"
+            )
+
+        return _result("ok", mode, base_branch, files)
+
+    # argparse の choices で防いでいるが、念のため防御的に処理する
+    return _result("error", mode, None, [], error=f"不明なモードです: {mode}")
+
+
+def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
+
+    parser = argparse.ArgumentParser(
+        description="review 対象解決 CLI",
+    )
+    parser.add_argument(
+        "--mode",
+        required=True,
+        choices=["diff", "branch", "files"],
+        help="対象モード（diff|branch|files）",
+    )
+    parser.add_argument(
+        "--files",
+        default=None,
+        help="files モード用のカンマ区切りファイルパス（例: a.md,b.py）",
+    )
+    parser.add_argument(
+        "--project-root",
+        default=None,
+        help="プロジェクトルート（省略時は cwd を使う）",
+    )
+    args = parser.parse_args()
+
+    project_root = Path(args.project_root) if args.project_root else Path.cwd()
+
+    result = resolve_targets(args.mode, project_root, args.files)
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
