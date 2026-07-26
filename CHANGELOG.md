@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.0] - 2026-07-27
+
+### marketplace
+
+- **chore**: forge 0.4.0 / anvil 0.1.0 のリリースに伴い marketplace バージョンをマイナーバンプ（機能変更なし）
+
+## [forge 0.4.0] - 2026-07-27
+
+### forge
+
+- **chore**: バージョン番号のみの更新
+
+## [anvil 0.1.0] - 2026-07-27
+
+### anvil
+
+- **chore**: バージョン番号のみの更新
+
 ## [marketplace 0.2.15] - 2026-07-20
 
 ### marketplace
