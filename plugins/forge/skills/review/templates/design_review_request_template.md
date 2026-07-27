@@ -14,6 +14,12 @@
 
 上記ファイルを全文読んでレビューしてください。
 
+## 今回の重点観点
+
+{{FOCUS}}
+
+これは下記の参照文書に基づく通常のレビューに**加えて**特に注意を払う対象であり、他の観点を免除するものではありません。`（指定なし）` の場合は通常のレビューのみを行ってください。
+
 ## 参照文書
 
 ### レビュー観点
@@ -30,6 +36,7 @@
 - `{{PLUGIN_ROOT}}/docs/adr_format.md` — ADR の構成・必須項目（対象が ADR の場合）
 - `{{PLUGIN_ROOT}}/docs/design_principles_spec.md` — 設計原則
 - `{{PLUGIN_ROOT}}/docs/spec_design_boundary_spec.md` — What / How の境界。設計書が要件を再定義していないか
+- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` — 文書スタイル。特に §5 文書参照記法と参照先の実在性
 
 ### プロジェクト固有のルール文書
 

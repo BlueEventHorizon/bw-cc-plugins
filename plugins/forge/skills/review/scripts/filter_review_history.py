@@ -23,7 +23,13 @@ Claude/Codex 間の全メッセージ履歴を取得したうえで、指定し�
 `REVIEW_RESULT` 完了宣言行の判定・round/resolved の算出のみを担う。
 
 使い方:
-    python3 filter_review_history.py <agent_a> <agent_b> <review_id> [--db-path <path>]
+    python3 filter_review_history.py <agent_a> <agent_b> <review_id> \
+        [--project-root <path>] [--db-path <path>]
+
+`--project-root` は DB パスの導出起点であり、review スキルの他スクリプト
+（`analyze_branch_point.py` / `resolve_targets.py` / `scan_secrets.py` /
+`collect_modified_files.py`）と同じ引数名で統一している。渡せば
+`FORGE_MSG_PROJECT_ROOT` をシェルで前置する必要はない。
 """
 
 import argparse
@@ -84,9 +90,14 @@ def compute_resolved(messages: list[dict], reviewer: str) -> bool:
     return last_line == APPROVED_LINE
 
 
-def fetch_history(agent_a: str, agent_b: str, db_path: str | None) -> list[dict]:
+def fetch_history(
+    agent_a: str,
+    agent_b: str,
+    db_path: str | None,
+    project_root: str | None = None,
+) -> list[dict]:
     """history.py を subprocess として呼び、全履歴 JSON を取得する（thread_filter に委譲）。"""
-    return thread_filter.fetch_history(agent_a, agent_b, db_path)
+    return thread_filter.fetch_history(agent_a, agent_b, db_path, project_root)
 
 
 def main() -> int:
@@ -101,10 +112,20 @@ def main() -> int:
         default=None,
         help="messages.db のパス（省略時は history.py 側の導出規則に従う）",
     )
+    parser.add_argument(
+        "--project-root",
+        default=None,
+        help=(
+            "プロジェクトルート（DB パスの導出起点）。"
+            "指定すると FORGE_MSG_PROJECT_ROOT の前置が不要になる"
+        ),
+    )
     args = parser.parse_args()
 
     try:
-        all_messages = fetch_history(args.agent_a, args.agent_b, args.db_path)
+        all_messages = fetch_history(
+            args.agent_a, args.agent_b, args.db_path, args.project_root
+        )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

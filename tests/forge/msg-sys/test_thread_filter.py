@@ -193,5 +193,40 @@ class FetchHistoryTest(unittest.TestCase):
                 thread_filter.fetch_history("claude", "codex", None)
 
 
+class FetchHistoryProjectRootTest(unittest.TestCase):
+    """`project_root` から DB パス解決用の環境変数を設定すること。
+
+    history.py は `--db-path` か `FORGE_MSG_PROJECT_ROOT` が無ければ fail closed で
+    終了する（DES-034 §7）。前置を呼び出し側の記憶に委ねると繰り返し忘れられるため、
+    引数で受け取って本関数が設定する。
+    """
+
+    def _run_with(self, **kwargs):
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps([]), stderr=""
+        )
+        with mock.patch.object(
+            thread_filter.subprocess, "run", return_value=completed
+        ) as run_mock:
+            thread_filter.fetch_history("claude", "codex", None, **kwargs)
+        return run_mock.call_args
+
+    def test_project_root_is_passed_as_env(self):
+        call_args = self._run_with(project_root="/repo/root")
+        env = call_args.kwargs["env"]
+        self.assertEqual(env[thread_filter.PROJECT_ROOT_ENV], "/repo/root")
+
+    def test_existing_environment_is_preserved(self):
+        """既存の環境変数を捨てないこと（PATH 等が消えると subprocess が壊れる）。"""
+        with mock.patch.dict(thread_filter.os.environ, {"CUSTOM_VAR": "kept"}):
+            call_args = self._run_with(project_root="/repo/root")
+        self.assertEqual(call_args.kwargs["env"]["CUSTOM_VAR"], "kept")
+
+    def test_env_is_none_when_project_root_omitted(self):
+        """未指定時は環境を差し替えない（従来どおり呼び出し元の env を継承する）。"""
+        call_args = self._run_with()
+        self.assertIsNone(call_args.kwargs["env"])
+
+
 if __name__ == "__main__":
     unittest.main()

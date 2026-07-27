@@ -16,6 +16,7 @@ import importlib.util
 import io
 import json
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -328,6 +329,60 @@ class FetchHistoryTest(unittest.TestCase):
             with self.assertRaises(RuntimeError) as ctx:
                 filter_mod.fetch_history("claude", "codex", None)
         self.assertIn("配列ではありません", str(ctx.exception))
+
+
+class ProjectRootArgumentTest(unittest.TestCase):
+    """`--project-root` を持ち、review スキルの他スクリプトと引数名が揃っていること。
+
+    この引数が無いと呼び出し側は `FORGE_MSG_PROJECT_ROOT` をシェルで前置する必要があり、
+    実運用で繰り返し忘れられて `RuntimeError: DB path could not be resolved` になった。
+    他の review スクリプト（analyze_branch_point / resolve_targets / scan_secrets /
+    collect_modified_files）はいずれも `--project-root` を持つ。
+    """
+
+    _SCRIPT_DIR = (
+        Path(__file__).resolve().parents[3]
+        / "plugins" / "forge" / "skills" / "review" / "scripts"
+    )
+    _SIBLINGS = (
+        "analyze_branch_point.py",
+        "resolve_targets.py",
+        "scan_secrets.py",
+        "collect_modified_files.py",
+    )
+
+    def test_help_lists_project_root(self):
+        result = subprocess.run(
+            [sys.executable, str(self._SCRIPT_DIR / "filter_review_history.py"), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--project-root", result.stdout)
+
+    def test_all_review_scripts_share_the_project_root_flag(self):
+        for name in self._SIBLINGS + ("filter_review_history.py",):
+            with self.subTest(script=name):
+                result = subprocess.run(
+                    [sys.executable, str(self._SCRIPT_DIR / name), "--help"],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("--project-root", result.stdout)
+
+    def test_project_root_is_forwarded_to_thread_filter(self):
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="[]", stderr=""
+        )
+        with mock.patch.object(
+            filter_mod.thread_filter.subprocess, "run", return_value=completed
+        ) as run_mock:
+            filter_mod.fetch_history("claude", "codex", None, "/repo/root")
+        env = run_mock.call_args.kwargs["env"]
+        self.assertEqual(
+            env[filter_mod.thread_filter.PROJECT_ROOT_ENV], "/repo/root"
+        )
 
 
 class _FakeStdout(io.StringIO):
