@@ -15,6 +15,12 @@
 テンプレートを Read した本文の中では展開されない。そのためテンプレートには
 `{{PLUGIN_ROOT}}/docs/...` と書き、本スクリプトが実体の絶対パスへ置換する（DES-055 §4.3）。
 
+`secrets` パターンでは例外的に `scan_secrets.py` を import して**自分でスキャンを実行する**。
+外部 JSON ファイルを受け取る形（`--scan-results-file`）を廃止したのは、`masked` の形式検証が
+「その値が本当にマスクを経たか」の証明にならないためである（実値がたまたまマスク形式に一致
+すれば通る）。検証を強めるのではなく、生成元を信頼境界の内側へ移すことで、依頼本文に実値が
+載る経路を構造的に無くしている（`sensitive_information_spec.md` §5.3 / DES-055 §8.3）。
+
 標準ライブラリのみ使用する。
 
 Usage:
@@ -31,6 +37,14 @@ Usage:
         --files-json '["docs/specs/x/design/DES-001_a_design.md"]' \
         [--project-rules-json '[...]'] [--project-specs-json '[...]']
 
+    # 今回の依頼に固有の重点観点を添える（全パターン共通・任意）
+    python3 build_review_request.py --pattern branch --project-root <path> \
+        --base-branch develop --target-branch feature/x \
+        --focus "文書内に記述された他文書への参照リンク"
+
+    # 機密情報の混入（対象軸を持たない。スキャンは本スクリプトが内部で実行する）
+    python3 build_review_request.py --pattern secrets --project-root <path>
+
 Output:
     標準出力に依頼本文（テキスト）。エラーは stderr + 非ゼロ終了。
 """
@@ -45,7 +59,9 @@ from pathlib import Path
 # 対象軸を含む「レビューのパターン」。テンプレートのファイル名に対応する（DES-055 §3）。
 RANGE_PATTERNS = ("diff", "branch")
 FILE_PATTERNS = ("code", "requirement", "design", "plan", "uxui")
-VALID_PATTERNS = RANGE_PATTERNS + FILE_PATTERNS
+# 対象軸を持たないパターン。対象は常にリポジトリ全体であり、利用者が範囲を指定しない。
+SCAN_PATTERNS = ("secrets",)
+VALID_PATTERNS = RANGE_PATTERNS + FILE_PATTERNS + SCAN_PATTERNS
 
 ROUND = 1
 
@@ -53,6 +69,12 @@ _TOKEN_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 
 _TEMPLATE_DIR_NAME = "templates"
 _NONE_MARKER = "（なし）"
+_NO_FOCUS_MARKER = "（指定なし）"
+
+# `scan_secrets.py` を同一プロセスで import する（`secrets` パターンのスキャン実行）。
+# 本ファイルと同じ `scripts/` に置かれている。
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import scan_secrets  # noqa: E402
 
 
 def plugin_root() -> Path:
@@ -78,10 +100,72 @@ def _reject_newlines(label: str, values: list[str]) -> None:
     改行を含む値をそのまま本文へ差し込むと、セクション構造・返信形式契約を偽装・分断
     できてしまう（プロトコル注入）。ファイルシステムは改行を含むファイル名を許容するため、
     通常運用では起きにくくても実在の抜け道であり、埋め込み直前に一律拒否する。
+
+    ここで扱うのはファイルパス・ブランチ名・重点観点であり、いずれも利用者が指定した値で
+    機密ではないため、拒否した値をメッセージに含めて「どれを直すべきか」を示す。
+    スキャン結果は本関数を通らない（`_scan_bullet_list` の説明を参照）。
     """
     for value in values:
         if "\n" in value or "\r" in value:
             raise ValueError(f"{label} に改行を含む値は指定できません: {value!r}")
+
+
+def _scan_bullet_list(records: list[dict], empty_marker: str) -> str:
+    """スキャン結果のレコード列を箇条書きへ変換する。
+
+    **`records` は同一プロセス内で `scan_secrets.scan()` が生成したものに限る**
+    （呼び出し元の責務。`main()` がその生成元を保証する）。したがって `masked` は必ず
+    `scan_secrets.mask()` を通っており、**マスク形式の検証は行わない**。
+
+    以前は外部 JSON ファイル（`--scan-results-file`）を受け取り、`masked` の形式を
+    正規表現で検証していた。しかし**形式は生成元の証明にならない**（実値がたまたま
+    `ABCD***[99文字]` の形であれば通る）ため、検証を強めるのではなく生成元そのものを
+    信頼境界の内側へ移した。詳細は DES-055 §8.3。
+
+    **改行の検証は生成元の保証とは独立に必要である [MANDATORY]**。`path` はファイル
+    システム由来の値であり、git は改行を含むファイル名を許容する（`scan_secrets.py` は
+    `git ls-files -z` の出力を扱うためそれをそのまま載せる）。したがって「正規のスキャン
+    結果」のままでもセクション構造・完了宣言行を偽装できる。マスクが保証されることと、
+    データが構造を壊さないことは別問題であり、後者はここで防ぐ。
+    """
+    if not records:
+        return empty_marker
+
+    lines = []
+    for index, record in enumerate(records):
+        # 拒否理由に値を含めない（`masked` は検出値の先頭を含み、`path` も混入箇所の
+        # 手がかりになる）。位置だけを示す。`sensitive_information_spec.md` §5.3。
+        for key in ("path", "rule", "masked"):
+            if "\n" in record[key] or "\r" in record[key]:
+                raise ValueError(
+                    f"スキャン結果 {index} 番目の {key} に改行が含まれています"
+                    "（本文構造を偽装しうるため拒否します。値は表示しません）"
+                )
+        lines.append(
+            f"- `{record['path']}:{record['line']}` "
+            f"種別: {record['rule']} / 値: {record['masked']}"
+        )
+    return "\n".join(lines)
+
+
+def _scan_stats_block(counts: dict) -> str:
+    """走査統計を人が読める箇条書きにする。数値の転記のみで判断を持たない。
+
+    `counts` も `scan_secrets.scan()` の出力であり（`_scan_bullet_list` と同じ前提）、
+    スキーマ検証は行わない。
+    """
+    filtered = counts["filtered"]
+    return "\n".join(
+        [
+            f"- 走査ファイル数: {counts['scanned_files']}",
+            f"- スキップ: {counts['skipped_files']} 件（バイナリ・サイズ超過・読み取り不可）",
+            f"- 検出: {counts['findings']} 件 / 抑制マーカー付き: {counts['suppressed']} 件",
+            "- filtered（機械的に秘密でないと判定）: "
+            f"プレースホルダ {filtered['placeholder']} / "
+            f"コード式 {filtered['code_expression']} / "
+            f"パス様のキー {filtered['path_like']}",
+        ]
+    )
 
 
 def _absolute_bullet_list(project_root_abs: str, paths: list[str]) -> str:
@@ -105,12 +189,19 @@ def build_body(
     target_branch: str | None = None,
     project_rules: list[str] | None = None,
     project_specs: list[str] | None = None,
+    focus: str | None = None,
     round_no: int = ROUND,
 ) -> str:
     """テンプレートを読み、トークンを置換した依頼本文を返す。
 
     契約違反（未知パターン / 改行混入 / 絶対パス混入 / 必須データ欠落 / 未消化トークン /
     テンプレートが要求しないデータ）はすべて ValueError を送出する（fail-closed）。
+
+    **スキャン結果を引数で受け取らない [MANDATORY]**。`secrets` パターンでは本関数が
+    `scan_secrets.scan()` を直接呼ぶ。呼び出し元がスキャン結果を渡せる引数を持たせると、
+    「外部由来の値を本文へ載せる経路」が CLI から Python API へ移るだけで、マスクを経ない
+    値が本文に入る可能性が残る（DES-055 §8.3）。テストでスキャン結果を制御する場合は
+    `scan_secrets.scan` を mock する。
     """
     if pattern not in VALID_PATTERNS:
         raise ValueError(
@@ -127,6 +218,9 @@ def build_body(
     _reject_newlines(
         "ブランチ名", [b for b in (base_branch, target_branch) if b is not None]
     )
+    # 重点観点は利用者の自然文をそのまま埋め込む唯一の値であり、改行を許すと見出し行・
+    # 完了宣言行を偽装できる。単一行に限定して受け取る（SKILL 側で1行へ要約する）。
+    _reject_newlines("重点観点", [focus] if focus is not None else [])
 
     for label, paths in (
         ("対象ファイル", files),
@@ -146,6 +240,23 @@ def build_body(
         )
     if pattern in FILE_PATTERNS and not files:
         raise ValueError(f"{pattern} には対象ファイル一覧が必要です")
+    scan_result = None
+    if pattern in SCAN_PATTERNS:
+        if files:
+            raise ValueError(
+                f"{pattern} は対象軸を持たない（常にリポジトリ全体）ため"
+                "対象ファイル一覧を渡せません"
+            )
+        # スキャンはここで実行する。結果を引数で受け取らないことが、マスクを経ない値が
+        # 本文へ入らないことの根拠になっている（DES-055 §8.3）。
+        scan_result = scan_secrets.scan(project_root)
+        if scan_result.get("status") != "ok":
+            # スキャンできなかったまま依頼を送ると、二段構えの片方を黙って落とすことになる
+            # （`sensitive_information_spec.md` §5.1）。fail closed とする。
+            raise ValueError(
+                "スキャンが失敗しています。依頼を組み立てません: "
+                f"{scan_result.get('error', '理由不明')}"
+            )
     if pattern == "branch":
         missing = [
             label
@@ -173,6 +284,18 @@ def build_body(
         "PROJECT_RULES": _absolute_bullet_list(project_root_abs, project_rules),
         "PROJECT_SPECS": _absolute_bullet_list(project_root_abs, project_specs),
         "TARGET_FILES": _absolute_bullet_list(project_root_abs, files),
+        "FOCUS": (focus or "").strip() or _NO_FOCUS_MARKER,
+        "SCAN_FINDINGS": _scan_bullet_list(
+            (scan_result or {}).get("findings") or [], "（検出なし）"
+        ),
+        "SCAN_SUPPRESSED": _scan_bullet_list(
+            (scan_result or {}).get("suppressed") or [], "（抑制マーカー付きの検出なし）"
+        ),
+        "SCAN_STATS": (
+            _scan_stats_block(scan_result["counts"])
+            if pattern in SCAN_PATTERNS
+            else _NONE_MARKER
+        ),
         "BASE_BRANCH": base_branch or "",
         "TARGET_BRANCH": target_branch or "",
     }
@@ -239,6 +362,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=None,
         help="query-db-specs の結果パス一覧（プロジェクトルート相対）の JSON 配列",
     )
+    parser.add_argument(
+        "--focus",
+        default=None,
+        help=(
+            "今回の依頼に固有の重点観点（自然文・単一行）。"
+            "内蔵の観点文書を置き換えるものではなく、加えて重点的に見る対象を伝える"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -267,6 +398,7 @@ def main() -> int:
     if files is None or project_rules is None or project_specs is None:
         return 1
 
+
     try:
         body = build_body(
             pattern=args.pattern,
@@ -277,6 +409,7 @@ def main() -> int:
             target_branch=args.target_branch,
             project_rules=project_rules,
             project_specs=project_specs,
+            focus=args.focus,
             round_no=ROUND,
         )
     except ValueError as exc:

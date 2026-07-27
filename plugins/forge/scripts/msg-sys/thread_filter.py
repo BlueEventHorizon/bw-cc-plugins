@@ -17,11 +17,12 @@ review プロトコル固有の completion 判定（`compute_resolved` 等）は
 
 使い方（他スクリプトからの import 専用。CLI エントリポイントは持たない）:
     import thread_filter
-    messages = thread_filter.fetch_history(agent_a, agent_b, db_path)
+    messages = thread_filter.fetch_history(agent_a, agent_b, db_path, project_root)
     filtered = thread_filter.filter_by_thread(messages, header_regex, thread_id)
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -29,14 +30,36 @@ from re import Pattern
 
 HISTORY_SCRIPT = Path(__file__).resolve().parent / "history.py"
 
+PROJECT_ROOT_ENV = "FORGE_MSG_PROJECT_ROOT"
 
-def fetch_history(agent_a: str, agent_b: str, db_path: str | None) -> list[dict]:
-    """history.py を subprocess として呼び、全履歴 JSON を取得する。"""
+
+def fetch_history(
+    agent_a: str,
+    agent_b: str,
+    db_path: str | None,
+    project_root: str | None = None,
+) -> list[dict]:
+    """history.py を subprocess として呼び、全履歴 JSON を取得する。
+
+    `history.py` は DB パスを `--db-path` か環境変数 `FORGE_MSG_PROJECT_ROOT` から解決し、
+    どちらも無ければ fail closed で終了する（DES-034 §7）。`project_root` を渡すと本関数が
+    その環境変数を subprocess へ設定するため、**呼び出し側がシェルで環境変数を前置する
+    必要がなくなる**。
+
+    引数で受け取れるようにしたのは、環境変数の前置が呼び出し側の記憶に依存し、実運用で
+    繰り返し忘れられたためである（`RuntimeError: DB path could not be resolved` になる）。
+    review スキルの他スクリプトはいずれも `--project-root` を持つのに、履歴系だけが
+    env 前置を要求していたという不整合が原因だった。
+    """
     cmd = [sys.executable, str(HISTORY_SCRIPT), agent_a, agent_b]
     if db_path:
         cmd += ["--db-path", db_path]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    env = None
+    if project_root:
+        env = {**os.environ, PROJECT_ROOT_ENV: project_root}
+
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
     if result.returncode != 0:
         raise RuntimeError(
             f"history.py が非ゼロ終了しました (code={result.returncode}): "
