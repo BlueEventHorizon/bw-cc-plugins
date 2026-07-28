@@ -432,8 +432,188 @@ class FilesModeTest(unittest.TestCase):
         self.assertEqual(result["files"], ["sub/dir/file.txt"])
 
 
+class DirsModeTest(unittest.TestCase):
+    """dirs モード: ディレクトリの実在検証と配下ファイルの列挙。
+
+    返る `files` は修正フェーズの allowlist 専用であり、依頼本文へは `dirs` を
+    そのまま渡す（REQ-013 FNC-1312。本文側の契約は
+    `test_build_review_request.DirsScopeTest` が検証する）。
+    """
+
+    def test_existing_dirs_list_their_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/a.md", "a\n")
+            _write(project_root, "docs/sub/b.md", "b\n")
+            _write(project_root, "src/c.py", "c\n")
+            _write(project_root, "outside.txt", "x\n")
+            _commit_all(project_root, "initial commit")
+
+            result = resolve_targets_mod.resolve_targets(
+                "dirs", project_root, None, "docs,src"
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["mode"], "dirs")
+        self.assertEqual(result["dirs"], ["docs", "src"])
+        # 配下は再帰的に列挙し、指定外のファイルは含めない
+        self.assertEqual(
+            set(result["files"]), {"docs/a.md", "docs/sub/b.md", "src/c.py"}
+        )
+
+    def test_untracked_file_is_included(self):
+        """未追跡の新規文書も allowlist に含まれること（追加直後にレビューできる）。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/tracked.md", "t\n")
+            _commit_all(project_root, "initial commit")
+            _write(project_root, "docs/untracked.md", "u\n")
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "docs")
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(set(result["files"]), {"docs/tracked.md", "docs/untracked.md"})
+
+    def test_gitignored_file_is_excluded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, ".gitignore", "docs/ignored.md\n")
+            _write(project_root, "docs/a.md", "a\n")
+            _commit_all(project_root, "initial commit")
+            _write(project_root, "docs/ignored.md", "secret\n")
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "docs")
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["files"], ["docs/a.md"])
+
+    def test_trailing_slash_is_normalized(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/a.md", "a\n")
+            _commit_all(project_root, "initial commit")
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "docs/")
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["dirs"], ["docs"])
+
+    def test_missing_dir_is_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/a.md", "a\n")
+            _commit_all(project_root, "initial commit")
+
+            result = resolve_targets_mod.resolve_targets(
+                "dirs", project_root, None, "docs,missing"
+            )
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("missing", result["error"])
+
+    def test_file_passed_as_dir_is_error(self):
+        """ファイルを `--dirs` に渡した場合はディレクトリ不在として拒否される。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/a.md", "a\n")
+            _commit_all(project_root, "initial commit")
+
+            result = resolve_targets_mod.resolve_targets(
+                "dirs", project_root, None, "docs/a.md"
+            )
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("docs/a.md", result["error"])
+
+    def test_empty_dir_is_error(self):
+        """配下に対象ファイルが無いディレクトリは対象 0 件として拒否される。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "keep.txt", "k\n")
+            _commit_all(project_root, "initial commit")
+            (project_root / "empty").mkdir()
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "empty")
+
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["files"], [])
+        self.assertEqual(result["dirs"], ["empty"])
+
+    def test_absolute_path_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "/etc")
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("/etc", result["error"])
+
+    def test_dotdot_path_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir) / "proj"
+            project_root.mkdir()
+            _init_repo(project_root)
+            (Path(tmpdir) / "outside").mkdir()
+
+            result = resolve_targets_mod.resolve_targets(
+                "dirs", project_root, None, "../outside"
+            )
+
+        self.assertEqual(result["status"], "error")
+        self.assertIn("../outside", result["error"])
+
+    def test_path_escaping_root_via_symlink_is_rejected(self):
+        """`..` を含まなくても resolve() 結果がルート外になるディレクトリは拒否される。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            outer = Path(tmpdir)
+            project_root = outer / "proj"
+            project_root.mkdir()
+            _init_repo(project_root)
+            sibling = outer / "sibling"
+            sibling.mkdir()
+            (sibling / "leak.txt").write_text("leak\n", encoding="utf-8")
+
+            link_path = project_root / "escape"
+            try:
+                link_path.symlink_to(sibling)
+            except OSError:
+                self.skipTest("この環境ではシンボリックリンクを作成できません")
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "escape")
+
+        self.assertEqual(result["status"], "error")
+
+    def test_no_dirs_argument_is_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, None)
+
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["files"], [])
+        self.assertEqual(result["dirs"], [])
+
+    def test_blank_dirs_argument_is_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "   ")
+
+        self.assertEqual(result["status"], "error")
+
+
 class OutputSchemaTest(unittest.TestCase):
-    """全モード共通の出力スキーマ（status/mode/base_branch/files/warnings）を検証する。"""
+    """全モード共通の出力スキーマ（status/mode/base_branch/files/dirs/warnings）を検証する。
+
+    `dirs` は dirs モード専用の値だが、全モードで返す（consumer が対象軸ごとに
+    キーの有無を場合分けせずに読めるようにするため。dirs 以外では空配列）。
+    """
 
     def test_diff_mode_error_has_expected_keys(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -445,9 +625,11 @@ class OutputSchemaTest(unittest.TestCase):
             result = resolve_targets_mod.resolve_targets("diff", project_root, None)
 
         self.assertEqual(
-            set(result.keys()), {"status", "mode", "base_branch", "files", "warnings", "error"}
+            set(result.keys()),
+            {"status", "mode", "base_branch", "files", "dirs", "warnings", "error"},
         )
         self.assertIsNone(result["base_branch"])
+        self.assertEqual(result["dirs"], [])
 
     def test_files_mode_ok_has_expected_keys(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -456,7 +638,26 @@ class OutputSchemaTest(unittest.TestCase):
 
             result = resolve_targets_mod.resolve_targets("files", project_root, "a.md")
 
-        self.assertEqual(set(result.keys()), {"status", "mode", "base_branch", "files", "warnings"})
+        self.assertEqual(
+            set(result.keys()),
+            {"status", "mode", "base_branch", "files", "dirs", "warnings"},
+        )
+        self.assertIsNone(result["base_branch"])
+        self.assertEqual(result["dirs"], [])
+
+    def test_dirs_mode_ok_has_expected_keys(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _init_repo(project_root)
+            _write(project_root, "docs/a.md", "a\n")
+            _commit_all(project_root, "initial commit")
+
+            result = resolve_targets_mod.resolve_targets("dirs", project_root, None, "docs")
+
+        self.assertEqual(
+            set(result.keys()),
+            {"status", "mode", "base_branch", "files", "dirs", "warnings"},
+        )
         self.assertIsNone(result["base_branch"])
 
 

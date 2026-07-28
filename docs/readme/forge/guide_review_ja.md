@@ -5,7 +5,7 @@
 ## review
 
 ```
-/forge:review <種別> [--diff | --branch | --files a.md,b.py,...] [--interactive | --auto-critical | --auto] [--focus "<重点観点>"]
+/forge:review <種別> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto-critical | --auto] [--focus "<重点観点>"]
 ```
 
 | 引数              | 説明                                                             |
@@ -14,6 +14,7 @@
 | `--diff`          | 現ブランチの未 commit 差分（デフォルト）                         |
 | `--branch`        | base ブランチ分岐以降の全変更                                    |
 | `--files`         | 明示指定したファイル群（カンマ区切り）                           |
+| `--dirs`          | 明示指定したディレクトリ配下すべて（カンマ区切り。後述）         |
 | `--interactive`   | 既定。現状は暫定的に `--auto` と同じ振り分け（後述「暫定運用」） |
 | `--auto`          | 🔴 + 🟡 を自動修正。🟢 minor は対象外                            |
 | `--auto-critical` | 🔴 のみを自動修正                                                |
@@ -33,7 +34,23 @@
 /forge:review requirement --files docs/specs/login_req.md  # 要件定義書
 /forge:review design --files specs/login/design.md         # 設計書
 /forge:review generic --files README.md                    # 任意の文書
+/forge:review design --dirs docs/specs/forge/design/       # ディレクトリ配下の設計書すべて
 ```
+
+### ディレクトリ指定（`--dirs`）
+
+文書がディレクトリで分類されている場合（`docs/specs/*/design/` など）、配下をまとめてレビューできます。
+
+```bash
+/forge:review design --dirs docs/specs/forge/design/
+/forge:review requirement --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
+```
+
+- **種別は必須です**。ディレクトリ名から種別（適用するレビュー観点）を推定しません。推定を誤ると、なぜその観点が適用されたのかが分からなくなるためです
+- **レビュアーへはディレクトリのまま渡します**。forge 側で配下のファイル一覧に展開しません。展開すると列挙漏れがそのままレビュー範囲の欠落になり、欠落した事実が誰にも見えなくなるためです。対象の確定はレビュアー自身が行います
+- 配下の列挙は `.gitignore` を尊重します。未追跡の新規文書も対象に含まれます
+- 対象軸なので `--diff` / `--branch` / `--files` とは併用できません（同時指定はエラー）
+- 指定ディレクトリが存在しない場合、配下に対象ファイルが 1 件も無い場合は依頼を送らずに終了します
 
 ### 機密情報レビュー（`--secrets`）
 
@@ -43,7 +60,7 @@
 /forge:review --secrets
 ```
 
-- **対象はリポジトリ全体**。種別・対象軸（`--diff` / `--branch` / `--files`）とは併用できません。過去のコミットで混入した秘密は今回の差分に現れないため、差分に絞ると目的を達成できないからです
+- **対象はリポジトリ全体**。種別・対象軸（`--diff` / `--branch` / `--files` / `--dirs`）とは併用できません。過去のコミットで混入した秘密は今回の差分に現れないため、差分に絞ると目的を達成できないからです
 - **決定論的スキャンと AI の二段構え**。まず `scan_secrets.py` が既知形式（AWS / GitHub / Slack トークン、秘密鍵ブロック、資格情報付き接続文字列、JWT、高エントロピー文字列など）を機械的に検出し、その結果を添えてレビューを依頼します。レビュアーは検出結果の真偽判定に加えて、**スキャンが拾えない混入**（形式を持たない内部エンドポイント、散文に埋もれた資格情報など）を自力で探します
 - **検出値は本文に載りません**。位置・種別・長さ・先頭数文字だけがマスクして渡されます。依頼はメッセージ DB に永続化されるため、実値を載せると検出行為そのものが複製経路になるからです
 - **自動修正しません**。`--auto` を付けても未対応所見を残した完了として報告します。commit 済みの秘密は削除しても履歴に残るため、修正は該当する秘密の失効・再発行を伴い、人間の判断が要るからです
