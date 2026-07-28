@@ -68,8 +68,8 @@ flowchart TD
 ### FNC-002 query の実行
 
 - `query-db-rules` と `query-db-specs` は、選択した backend で検索を実行する。
-- doc-advisor を選択した query wrapper は、検索前に対象 ToC の鮮度を確認する。
-- ToC が未生成、または鮮度を満たさない場合、query wrapper は ToC 更新の完了後に検索を実行する。
+- doc-advisor を選択した query wrapper は、検索前に doc-advisor の鮮度確認機能で対象 ToC の鮮度を確認する。
+- ToC が未生成、または鮮度を満たさない場合、query wrapper は対象 ToC の索引更新完了後に検索を実行する。
 - ToC が鮮度を満たす場合、query wrapper は ToC 更新を行わずに検索を実行する。
 - query wrapper は grep を backend の代替として使用しない。
 - query wrapper は、既存の `Required documents:` を先頭とする検索結果形式を維持する。
@@ -100,7 +100,8 @@ flowchart TD
 
 - doc-advisor ToC の更新日時が query 実行時点から 24 時間以内の場合、その ToC は鮮度を満たす。
 - ToC が存在しない場合、鮮度を満たさないものとして扱う。
-- ToC が鮮度を満たさない場合、query 実行前に対応する update wrapper を完了させる。
+- 鮮度の判定結果は doc-advisor の鮮度確認機能から取得する。wrapper が ToC の内部配置を直接解釈してはならない。
+- ToC が鮮度を満たさない場合、query 実行前に対象 ToC の索引更新を完了させる。
 
 ### BL-003 成功と失敗
 

@@ -76,10 +76,16 @@ OS ログイン時の自動起動、サービス登録、停止、再起動監�
 doc-advisor の installed / available 判定は、SKILL 実行時の available-skills を正とする。
 Python script は Claude Code の SKILL registry を推測しない。
 
-doc-db script が切替可能を返した場合、SKILL は対応する `doc-advisor:query-docs` または
-`doc-advisor:index-docs` が存在するときだけ切り替える。
-存在しなければ両 backend の利用不能理由を返して失敗する。
+doc-db script が切替可能を返した場合、SKILL は次の SKILL が揃っているときだけ切り替える。
+
+| 経路   | 必要な doc-advisor SKILL                                 |
+| ------ | -------------------------------------------------------- |
+| query  | `check-toc`、`query-docs`。stale 時はさらに `index-docs` |
+| update | `index-docs`                                             |
+
+いずれかが欠けていれば、その経路では doc-advisor を利用不能とし、両 backend の利用不能理由を返して失敗する。
 grep 検索は実行しない。
+forge は doc-advisor の ToC ファイル配置や `generated_at` を直接読まない。
 
 ## 3. アーキテクチャ
 
@@ -90,17 +96,17 @@ flowchart LR
     Caller[呼び出し元]
     Skill[forge wrapper SKILL]
     QueryWrapper[query / sync 固有 wrapper]
-    AdvisorWrapper[ToC / index 準備固有 wrapper]
+    AdvisorWrapper[index 準備固有 wrapper]
     Query[query_docdb.py]
     Sync[sync_docdb.py]
     Runtime[docdb_runtime.py]
     Client[docdb_client.py]
     Docs[project_documents.py]
-    Toc[check_advisor_toc.py]
     Prepare[prepare_advisor_index.py]
     DocDB[doc-db HTTP]
-    Advisor[doc-advisor SKILL]
-    Config[doc_structure / git / ToC]
+    CheckToc[doc-advisor check-toc]
+    Advisor[doc-advisor query / index]
+    Config[doc_structure / git]
 
     Caller --> Skill
     Skill --> QueryWrapper
@@ -113,37 +119,36 @@ flowchart LR
     Sync --> Docs
     Runtime --> Client
     Client --> DocDB
+    Skill --> CheckToc
     Skill --> AdvisorWrapper
-    AdvisorWrapper --> Toc
     AdvisorWrapper --> Prepare
-    Toc --> Config
     Prepare --> Config
     Skill --> Advisor
 ```
 
 依存方向は `SKILL.md → SKILL 固有 wrapper → 共有低レベル script → 外部 backend / 設定` の一方向とする。
 共有低レベル script から SKILL や SKILL 固有 wrapper を呼ばない。
+ToC 鮮度判定は forge script ではなく外部 `doc-advisor:check-toc` に委譲する。
 
 ### 3.2 モジュール一覧
 
 | モジュール                                     | 責務                                                  | 依存                                   |
 | ---------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
-| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、doc-advisor query 起動、通知         | SKILL 固有 wrapper、doc-advisor        |
+| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、check-toc / query / index 起動、通知 | SKILL 固有 wrapper、doc-advisor        |
 | 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知         | SKILL 固有 wrapper、doc-advisor        |
 | `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し | `query_docdb.py`                       |
 | `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI を透過呼び出し  | `sync_docdb.py`                        |
-| `skills/*/scripts/check_advisor_toc.py`        | category を固定して鮮度判定 CLI を透過呼び出し        | `check_advisor_toc.py`                 |
 | `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し    | `prepare_advisor_index.py`             |
 | `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析            | Python 標準ライブラリ                  |
 | `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成       | `docdb_client.py`、`doc-db` executable |
 | `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決     | 既存 doc-structure resolver、git       |
 | `scripts/doc_backend/query_docdb.py`           | doc-db query と既存出力形式の構築                     | runtime、client、project identity      |
 | `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入と完了待ち                   | runtime、client、project documents     |
-| `scripts/doc_backend/check_advisor_toc.py`     | ToC 探索、`generated_at` 読み取り、24 時間判定        | filesystem、clock                      |
 | `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決      | 既存 dprint runner、doc-structure      |
 
 共有モジュールは `plugins/forge/scripts/doc_backend/` に置く。
 4 SKILL が同じ処理を利用するため、いずれか 1 SKILL の配下には置かない。
+forge 内に ToC 探索や `generated_at` 比較の script は置かない。
 
 ## 4. doc-db 処理設計
 
@@ -210,24 +215,39 @@ JSON は結果表示と診断情報の取得にだけ使用する。
 
 ## 5. doc-advisor 処理設計
 
-### 5.1 ToC 鮮度判定
+### 5.1 ToC 鮮度判定（外部 SKILL 委譲）
 
-query wrapper が doc-advisor へ切り替える場合、先に category 対応 ToC の鮮度を確認する。
-判定 script は project root 配下の `.claude/.doc-advisor/toc/{key}-*/toc.yaml` を探索し、
-`metadata.key` が category と一致する ToC を候補とする。
+query wrapper が doc-advisor へ切り替える場合、先に `doc-advisor:check-toc` を 1 回呼ぶ。
+24 時間という鮮度閾値は forge の方針（REQ-014 BL-002）であり、呼び出し時に `--max-age 24h` として渡す。
+ToC の探索、`generated_at` の解釈、fresh / stale / missing の判定は doc-advisor の責務とする。
 
-候補が複数ある場合は `metadata.generated_at` が最も新しい有効な ToC を採用する。
-query 実行時刻との差が 24 時間以内なら fresh、それ以外は stale とする。
-ToC 不在、`generated_at` の欠落・解析不能、未来時刻は stale とする。
-ファイルシステムの mtime はコピーや checkout で変化するため鮮度の根拠にしない。
+#### 外部契約: `doc-advisor:check-toc`
 
-鮮度判定 CLI は exit code `0` と `status=fresh`、または exit code `10` と `status=stale` を返す。
-filesystem の読み取り不能など判定自体を完了できない場合だけ exit code `20` と `status=operation_error` を返す。
-SKILL は exit code だけで fresh / stale / error の経路を選択する。
+本 feature の前提として、DocAdvisor 側に次の SKILL を追加する。
+実装リポジトリは DocAdvisor であり、本設計はその公開契約だけを固定する。
+
+| 項目     | 契約                                                                 |
+| -------- | -------------------------------------------------------------------- |
+| 起動     | `/doc-advisor:check-toc --key {rules\|specs} --max-age 24h`          |
+| 役割     | 指定 key の ToC が存在するかを確認し、`--max-age` に対する鮮度を返す |
+| 副作用   | なし（read-only）                                                    |
+| 成功出力 | JSON。少なくとも `status`、`key`、`generated_at`（存在時）を含む     |
+
+| `status` | 意味                                                          | forge の後続処理                             |
+| -------- | ------------------------------------------------------------- | -------------------------------------------- |
+| `fresh`  | ToC があり、`generated_at` が `--max-age` 以内                | `query-docs` のみ実行                        |
+| `stale`  | ToC がない、鮮度超過、`generated_at` 欠落・解析不能・未来時刻 | prepare → `index-docs` → 成功時 `query-docs` |
+| `error`  | ToC store の読み取り不能など、判定自体を完了できない          | query を実行せず明示エラー                   |
+
+`status=stale` に ToC 不在を含める。呼び出し側が missing 専用分岐を持たなくてよいようにする。
+mtime を鮮度根拠にしないことは doc-advisor 側の判定規則とする。
+
+forge SKILL は `check-toc` の応答 `status` だけで後続経路を選択する。
+ToC パスや内部ディレクトリ規約を forge に埋め込まない。
 
 ### 5.2 stale 時の更新
 
-ToC が stale の場合、query SKILL は次の順で処理する。
+`check-toc` が `stale` を返した場合、query SKILL は次の順で処理する。
 
 1. `prepare_advisor_index.py` で既存 dprint runner を実行する。
 2. 同 script が `.doc_structure.yaml` から `root_dirs` / `patterns.exclude` を解決する。
@@ -235,7 +255,7 @@ ToC が stale の場合、query SKILL は次の順で処理する。
 4. index が成功した場合だけ `doc-advisor:query-docs` を 1 回呼ぶ。
 
 index 失敗時は stale ToC で query を続行しない。
-fresh の場合は index を呼ばず query のみ実行する。
+`fresh` の場合は index を呼ばず query のみ実行する。
 ファイル一覧への展開は doc-advisor 側に委ね、doc-db sync 用の `project_documents.py` は使用しない。
 
 stale 更新では対応する `update-db-*` SKILL へ再入しない。
@@ -250,6 +270,7 @@ SKILL は exit code だけで index 実行可否を選択し、準備失敗時�
 
 update SKILL が doc-advisor へ切り替える場合も、`prepare_advisor_index.py` で dprint と dirs / exclude 解決を行い、
 `doc-advisor:index-docs` を 1 回呼ぶ。
+update 経路では `check-toc` を呼ばない。索引を再構築することが目的だからである。
 doc-advisor の完了レポートは構造変換せず親へ返す。
 
 ## 6. ユースケース設計
@@ -275,9 +296,9 @@ sequenceDiagram
     participant Skill as query-db-* SKILL
     participant Script as query_documents.py
     participant DB as doc-db
-    participant Toc as check_advisor_toc.py
+    participant CheckToc as doc-advisor check-toc
     participant Prepare as prepare_advisor_index.py
-    participant Advisor as doc-advisor
+    participant Advisor as doc-advisor query/index
 
     Caller->>Skill: query(task)
     Skill->>Script: task
@@ -296,8 +317,8 @@ sequenceDiagram
             Skill-->>Caller: 通知 + Required documents
         else 再接続失敗
             Script-->>Skill: doc-advisor 切替可能 + 理由
-            Skill->>Toc: 鮮度判定
-            alt stale
+            Skill->>CheckToc: --key category --max-age 24h
+            alt status=stale
                 Skill->>Prepare: dprint + dirs / exclude
                 alt 準備成功
                     Prepare-->>Skill: index args
@@ -315,10 +336,13 @@ sequenceDiagram
                     Prepare-->>Skill: error
                     Skill-->>Caller: 明示エラー
                 end
-            else fresh
+            else status=fresh
                 Skill->>Advisor: query-docs
                 Advisor-->>Skill: Required documents
                 Skill-->>Caller: 切替通知 + result
+            else status=error
+                CheckToc-->>Skill: error
+                Skill-->>Caller: 明示エラー
             end
         end
     end
@@ -363,16 +387,17 @@ sequenceDiagram
 
 ## 7. エラーハンドリングと通知
 
-| 条件                           | 動作                                                 |
-| ------------------------------ | ---------------------------------------------------- |
-| doc-db executable 不在         | 理由を通知し doc-advisor の利用可否確認へ進む        |
-| doc-db 起動失敗 / 再接続不能   | 理由を通知し doc-advisor の利用可否確認へ進む        |
-| doc-db query / sync error      | doc-db operation 失敗として終了する                  |
-| doc-db sync 完了待ち上限       | job 情報を返して失敗する。doc-advisor へ切り替えない |
-| doc-advisor SKILL 不在         | 両 backend の利用不能理由を返して失敗する            |
-| ToC stale かつ index 失敗      | query を呼ばず失敗する                               |
-| doc-advisor query / index 失敗 | doc-advisor の失敗をそのまま返す                     |
-| doc-db query 0 件              | 成功。空の `Required documents:` を返す              |
+| 条件                                  | 動作                                                 |
+| ------------------------------------- | ---------------------------------------------------- |
+| doc-db executable 不在                | 理由を通知し doc-advisor の利用可否確認へ進む        |
+| doc-db 起動失敗 / 再接続不能          | 理由を通知し doc-advisor の利用可否確認へ進む        |
+| doc-db query / sync error             | doc-db operation 失敗として終了する                  |
+| doc-db sync 完了待ち上限              | job 情報を返して失敗する。doc-advisor へ切り替えない |
+| query に必要な doc-advisor SKILL 欠落 | 両 backend の利用不能理由を返して失敗する            |
+| `check-toc` が `error`                | query を呼ばず失敗する                               |
+| ToC stale かつ index 失敗             | query を呼ばず失敗する                               |
+| doc-advisor query / index 失敗        | doc-advisor の失敗をそのまま返す                     |
+| doc-db query 0 件                     | 成功。空の `Required documents:` を返す              |
 
 利用者向け通知は、backend、起動試行結果、切替理由、ToC 更新の有無を含める。
 正常な初回接続時は冗長な警告を出さず、使用 backend の識別だけを結果に含める。
@@ -385,12 +410,14 @@ sequenceDiagram
 | doc-structure resolver    | `plugins/forge/scripts/doc_structure/resolve_doc_structure.py`  | rules / specs の対象解決を再利用                     |
 | dprint runner             | `plugins/forge/scripts/doc_structure/run_dprint_fmt.sh`         | doc-advisor 索引作成前のフォーマットを再利用         |
 | HTTP クライアント参考実装 | `docs/references/doc-db-mcp-server/.claude/skills/`             | JSON-RPC、SSE、sync、project identity を移植元にする |
+| check-toc（新規・外部）   | DocAdvisor の `doc-advisor:check-toc`                           | ToC 鮮度判定。forge は公開契約のみ依存する           |
 
 参考実装は配布物の外にあるため runtime import しない。
 必要な処理を `plugins/forge/scripts/doc_backend/` へ移植し、forge 側の公開契約とテストに合わせて縮小する。
 既存 wrapper SKILL と doc-structure 資産は置換せず拡張する。
 query SKILL から既存の grep フォールバック手順と `Grep` の許可を削除し、doc-db と doc-advisor の両方が利用不能なら失敗する契約へ変更する。
 feature 統合時は既存の doc-advisor 単一前提を doc-db 優先選択へ置き換える。
+`check-toc` は DocAdvisor リポジトリで追加実装する。forge 実装より先、または同時に契約を満たす版を用意する。
 
 ## 9. テスト設計
 
@@ -403,10 +430,10 @@ feature 統合時は既存の doc-advisor 単一前提を doc-db 優先選択へ
 | `project_documents.py`     | worktree 共通 key、branch series、detached fallback、対象文書、exclude   |
 | `query_docdb.py`           | path 抽出、順位維持、0 件、`Required documents:` 形式                    |
 | `sync_docdb.py`            | desired state、削除追従入力、0 件防御、done / failed / timeout           |
-| `check_advisor_toc.py`     | fresh 境界、stale、不在、壊れた日時、未来時刻、複数候補                  |
 | `prepare_advisor_index.py` | dprint 失敗伝播、dirs / exclude 出力、設定エラー                         |
 
 時計、HTTP、process、filesystem は差し替え可能な境界を設け、実サーバや利用者の home 設定に依存しない。
+ToC 鮮度判定そのものの単体テストは DocAdvisor の `check-toc` 実装側で行う。
 
 ### 9.2 wrapper テスト
 
@@ -423,12 +450,19 @@ fake HTTP server を使い、次の経路を通す。
 - sync job の accepted → running → done
 - MCP JSON 応答と SSE 応答
 
-doc-advisor は外部 SKILL のため、forge 側では呼び出し条件と引数を静的テストし、検索品質そのものは重複評価しない。
+doc-advisor は外部 SKILL のため、forge 側では次を静的または契約テストする。
+
+- `check-toc` へ `--key` と `--max-age 24h` を渡すこと
+- `fresh` / `stale` / `error` 各応答に対する後続分岐
+- stale 時だけ prepare → `index-docs` → `query-docs` の順になること
+
+検索品質そのものと ToC ファイル探索の詳細は DocAdvisor 側で評価し、forge では重複評価しない。
 
 ## 10. 完全性確認
 
 - REQ-014 FNC-001: 接続、起動、再接続、doc-advisor 切替、両 backend 不在エラーを §2、§6、§7 に反映した。
-- REQ-014 FNC-002: query、ToC 鮮度、stale 更新、grep 禁止、出力互換を §4.2、§5、§6.2 に反映した。
+- REQ-014 FNC-002: query、`check-toc` による鮮度確認、stale 更新、grep 禁止、出力互換を §4.2、§5、§6.2 に反映した。
 - REQ-014 FNC-003: desired-state update と削除・リネーム追従を §4.3、§6.3 に反映した。
 - REQ-014 FNC-004: 起動、切替、ToC 更新、失敗の通知を §4.4、§7 に反映した。
 - REQ-014 NFR-001〜005: 可観測性、公開契約維持、不要処理回避、失敗非隠蔽、情報保護を各境界とテストへ反映した。
+- 外部依存: DocAdvisor に `check-toc` SKILL を追加する契約を §5.1 に固定した。
