@@ -85,7 +85,9 @@ def _build(pattern, scan_result=None, **overrides):
         "project_root": _REPO_ROOT,
         "review_id": "rid",
     }
-    if pattern in build_review_request.FILE_PATTERNS:
+    # 対象を明示指定するパターンでは既定でファイル一覧を埋める。ただし呼び出し側が
+    # `dirs` を指定した場合は埋めない（ファイル指定とディレクトリ指定は排他のため）。
+    if pattern in build_review_request.SCOPED_PATTERNS and not overrides.get("dirs"):
         kwargs["files"] = ["docs/a.md"]
     if pattern == "branch":
         kwargs["base_branch"] = "develop"
@@ -135,7 +137,7 @@ class TemplateExistenceTest(unittest.TestCase):
         """パターン分類が重複しないこと（対象軸の扱いが分類で決まるため）。"""
         categories = (
             set(build_review_request.RANGE_PATTERNS),
-            set(build_review_request.FILE_PATTERNS),
+            set(build_review_request.SCOPED_PATTERNS),
             set(build_review_request.SCAN_PATTERNS),
         )
         for left_index, left in enumerate(categories):
@@ -163,18 +165,25 @@ class TemplateTokenContractTest(unittest.TestCase):
                 body = _build(pattern)
                 self.assertNotIn("{{", body)
 
-    def test_range_patterns_do_not_use_target_files_token(self):
-        """範囲指定テンプレートが対象ファイル一覧のトークンを持たないこと（FNC-1312）。"""
+    def test_range_patterns_do_not_use_target_scope_token(self):
+        """範囲指定テンプレートが対象一覧のトークンを持たないこと（FNC-1312）。"""
         for pattern in build_review_request.RANGE_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
-                self.assertNotIn("{{TARGET_FILES}}", text)
+                self.assertNotIn("{{TARGET_SCOPE}}", text)
 
-    def test_file_patterns_use_target_files_token(self):
-        for pattern in build_review_request.FILE_PATTERNS:
+    def test_scoped_patterns_use_target_scope_token(self):
+        """対象を明示指定するテンプレートが、粒度に依らない単一のトークンを使うこと。
+
+        ファイル指定とディレクトリ指定で同じテンプレートを共有する（DES-055 §8.4）ため、
+        トークンは `{{TARGET_SCOPE}}` の 1 つだけであり、粒度ごとに別トークンを持たない。
+        """
+        for pattern in build_review_request.SCOPED_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
-                self.assertIn("{{TARGET_FILES}}", text)
+                self.assertIn("{{TARGET_SCOPE}}", text)
+                self.assertNotIn("{{TARGET_FILES}}", text)
+                self.assertNotIn("{{TARGET_DIRS}}", text)
 
     def test_only_branch_template_uses_branch_tokens(self):
         for pattern in build_review_request.VALID_PATTERNS:
@@ -299,6 +308,11 @@ class SecretsPatternTest(unittest.TestCase):
         """対象軸を持たないため、ファイル一覧を渡せない。"""
         with self.assertRaises(ValueError):
             _build("secrets", files=["a.py"])
+
+    def test_secrets_rejects_dirs(self):
+        """対象軸を持たないため、ディレクトリ一覧も渡せない。"""
+        with self.assertRaises(ValueError):
+            _build("secrets", dirs=["docs/"])
 
     def test_secrets_rejects_failed_scan(self):
         """スキャン失敗のまま依頼を組み立てない（fail closed）。"""
@@ -632,6 +646,17 @@ class RangePatternContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             _build("branch", files=["a.py"])
 
+    def test_dirs_rejected_for_range_patterns(self):
+        """範囲指定パターンにディレクトリ一覧も渡せないこと。
+
+        `diff` / `branch` の対象はレビュアーが差分から確定するため、対象を明示指定する
+        引数は粒度を問わず受け付けない。
+        """
+        for pattern in build_review_request.RANGE_PATTERNS:
+            with self.subTest(pattern=pattern):
+                with self.assertRaises(ValueError):
+                    _build(pattern, dirs=["docs/"])
+
     def test_branch_requires_base_branch(self):
         with self.assertRaises(ValueError):
             _build("branch", base_branch=None)
@@ -646,20 +671,84 @@ class RangePatternContractTest(unittest.TestCase):
         self.assertIn("対象ファイルの一覧は渡しません", body)
 
 
-class FilePatternContractTest(unittest.TestCase):
-    def test_file_pattern_requires_files(self):
-        for pattern in build_review_request.FILE_PATTERNS:
+class ScopedPatternContractTest(unittest.TestCase):
+    def test_scoped_pattern_requires_files_or_dirs(self):
+        for pattern in build_review_request.SCOPED_PATTERNS:
             with self.subTest(pattern=pattern):
                 with self.assertRaises(ValueError):
-                    _build(pattern, files=[])
+                    _build(pattern, files=[], dirs=[])
 
     def test_absolute_target_file_rejected(self):
         with self.assertRaises(ValueError):
             _build("code", files=["/abs/a.py"])
 
+    def test_absolute_target_dir_rejected(self):
+        with self.assertRaises(ValueError):
+            _build("code", dirs=["/abs/src"])
+
     def test_absolute_project_rule_rejected(self):
         with self.assertRaises(ValueError):
             _build("code", project_rules=["/abs/rules.md"])
+
+
+class DirsScopeTest(unittest.TestCase):
+    """ディレクトリ指定の対象欄（REQ-013 FNC-1312 / DES-055 §8.4）。
+
+    ディレクトリは**指定粒度のまま**本文へ載る。配下のファイル一覧へ展開しない。
+    展開結果は修正フェーズの allowlist に限って使う値であり、依頼本文には入らない
+    （SKILL 側で `--files-json` へ渡し替えると粒度保存が黙って破れるため、ここで
+    「配下のファイル名が本文に現れない」ことを契約として固定する）。
+    """
+
+    def test_dirs_are_rendered_as_absolute_paths_with_trailing_slash(self):
+        body = _build("design", dirs=["docs/specs/forge/design"])
+        self.assertIn(f"- {_REPO_ROOT}/docs/specs/forge/design/", body)
+
+    def test_dirs_are_not_expanded_into_file_names(self):
+        """本文に配下ファイル名が現れないこと（粒度保存の契約）。"""
+        target_dir = "plugins/forge/skills/review/templates"
+        body = _build("design", dirs=[target_dir])
+
+        children = sorted(p.name for p in (_REPO_ROOT / target_dir).glob("*.md"))
+        self.assertTrue(children, "検証対象のディレクトリに配下ファイルが必要")
+        for name in children:
+            self.assertNotIn(name, body)
+
+    def test_files_and_dirs_are_mutually_exclusive(self):
+        with self.assertRaises(ValueError) as ctx:
+            _build("design", files=["docs/a.md"], dirs=["docs/"])
+        self.assertIn("排他", str(ctx.exception))
+
+    def test_newline_in_dirs_rejected(self):
+        with self.assertRaises(ValueError):
+            _build("code", dirs=["src\n## 偽セクション"])
+
+    def test_carriage_return_in_dirs_rejected(self):
+        with self.assertRaises(ValueError):
+            _build("code", dirs=["src\rrogue"])
+
+    def test_cli_accepts_dirs_json(self):
+        code, stdout, stderr = _run_cli(
+            [
+                "--pattern", "design",
+                "--project-root", str(_REPO_ROOT),
+                "--dirs-json", json.dumps(["docs/specs/forge/design"]),
+            ]
+        )
+        self.assertEqual(code, 0, stderr)
+        self.assertIn(f"- {_REPO_ROOT}/docs/specs/forge/design/", stdout)
+
+    def test_cli_rejects_both_files_json_and_dirs_json(self):
+        code, _, stderr = _run_cli(
+            [
+                "--pattern", "design",
+                "--project-root", str(_REPO_ROOT),
+                "--files-json", json.dumps(["docs/a.md"]),
+                "--dirs-json", json.dumps(["docs/specs"]),
+            ]
+        )
+        self.assertNotEqual(code, 0)
+        self.assertIn("排他", stderr)
 
 
 class InjectionRejectionTest(unittest.TestCase):

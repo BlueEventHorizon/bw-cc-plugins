@@ -37,6 +37,10 @@ Usage:
         --files-json '["docs/specs/x/design/DES-001_a_design.md"]' \
         [--project-rules-json '[...]'] [--project-specs-json '[...]']
 
+    # ディレクトリ指定（配下のファイル一覧へ展開せずディレクトリのまま渡す。REQ-013 FNC-1312）
+    python3 build_review_request.py --pattern design --project-root <path> \
+        --dirs-json '["docs/specs/forge/design"]'
+
     # 今回の依頼に固有の重点観点を添える（全パターン共通・任意）
     python3 build_review_request.py --pattern branch --project-root <path> \
         --base-branch develop --target-branch feature/x \
@@ -58,10 +62,12 @@ from pathlib import Path
 
 # 対象軸を含む「レビューのパターン」。テンプレートのファイル名に対応する（DES-055 §3）。
 RANGE_PATTERNS = ("diff", "branch")
-FILE_PATTERNS = ("code", "requirement", "design", "plan", "uxui")
+# 利用者が対象を明示指定するパターン。ファイル指定（`--files`）とディレクトリ指定
+# （`--dirs`）のどちらでも同じテンプレートを使う（DES-055 §8.4）。
+SCOPED_PATTERNS = ("code", "requirement", "design", "plan", "uxui")
 # 対象軸を持たないパターン。対象は常にリポジトリ全体であり、利用者が範囲を指定しない。
 SCAN_PATTERNS = ("secrets",)
-VALID_PATTERNS = RANGE_PATTERNS + FILE_PATTERNS + SCAN_PATTERNS
+VALID_PATTERNS = RANGE_PATTERNS + SCOPED_PATTERNS + SCAN_PATTERNS
 
 ROUND = 1
 
@@ -168,16 +174,20 @@ def _scan_stats_block(counts: dict) -> str:
     )
 
 
-def _absolute_bullet_list(project_root_abs: str, paths: list[str]) -> str:
+def _absolute_bullet_list(project_root_abs: str, paths: list[str], suffix: str = "") -> str:
     """プロジェクトルート相対パスを絶対パスの箇条書きへ変換する。空なら不在を明示する。
 
     レビュアーは別プロセスであり cwd が一致する保証がないため、本文に載せるパスは
     すべて絶対にする（DES-055 §4.3）。対象ファイル・ルール文書・仕様書で扱いを
     分けない（片方だけ相対だと、レビュアーが解決に失敗した理由が分かりにくい）。
+
+    `suffix` はディレクトリ指定で `/` を付けるために使う。パスがファイルかディレクトリ
+    かをレビュアーが本文から判別できるようにするための整形であり、散文ではない
+    （DES-055 §2.1 の「スクリプトは散文を持たない」に触れない）。
     """
     if not paths:
         return _NONE_MARKER
-    return "\n".join(f"- {project_root_abs}/{p}" for p in paths)
+    return "\n".join(f"- {project_root_abs}/{p}{suffix}" for p in paths)
 
 
 def build_body(
@@ -185,6 +195,7 @@ def build_body(
     project_root: Path,
     review_id: str,
     files: list[str] | None = None,
+    dirs: list[str] | None = None,
     base_branch: str | None = None,
     target_branch: str | None = None,
     project_rules: list[str] | None = None,
@@ -209,10 +220,12 @@ def build_body(
         )
 
     files = files or []
+    dirs = dirs or []
     project_rules = project_rules or []
     project_specs = project_specs or []
 
     _reject_newlines("対象ファイル一覧", files)
+    _reject_newlines("対象ディレクトリ一覧", dirs)
     _reject_newlines("プロジェクトルール一覧", project_rules)
     _reject_newlines("プロジェクト仕様書一覧", project_specs)
     _reject_newlines(
@@ -224,6 +237,7 @@ def build_body(
 
     for label, paths in (
         ("対象ファイル", files),
+        ("対象ディレクトリ", dirs),
         ("プロジェクトルール", project_rules),
         ("プロジェクト仕様書", project_specs),
     ):
@@ -233,19 +247,29 @@ def build_body(
                     f"{label}はプロジェクトルート相対パスで渡してください: {p!r}"
                 )
 
-    if pattern in RANGE_PATTERNS and files:
+    if pattern in RANGE_PATTERNS and (files or dirs):
         raise ValueError(
-            f"{pattern} は範囲指定のため対象ファイル一覧を渡せません"
+            f"{pattern} は範囲指定のため対象ファイル一覧・対象ディレクトリ一覧を渡せません"
             "（範囲指定をファイル一覧へ展開しない。REQ-013 FNC-1312）"
         )
-    if pattern in FILE_PATTERNS and not files:
-        raise ValueError(f"{pattern} には対象ファイル一覧が必要です")
+    if pattern in SCOPED_PATTERNS:
+        # ファイル指定とディレクトリ指定は対象軸として排他である（SKILL 側でも二重指定は
+        # エラー終了する）。両方渡された場合にどちらを本文へ載せるかを推定しない。
+        if files and dirs:
+            raise ValueError(
+                f"{pattern} に対象ファイル一覧と対象ディレクトリ一覧の両方を渡せません"
+                "（対象軸は排他です）"
+            )
+        if not files and not dirs:
+            raise ValueError(
+                f"{pattern} には対象ファイル一覧または対象ディレクトリ一覧が必要です"
+            )
     scan_result = None
     if pattern in SCAN_PATTERNS:
-        if files:
+        if files or dirs:
             raise ValueError(
                 f"{pattern} は対象軸を持たない（常にリポジトリ全体）ため"
-                "対象ファイル一覧を渡せません"
+                "対象ファイル一覧・対象ディレクトリ一覧を渡せません"
             )
         # スキャンはここで実行する。結果を引数で受け取らないことが、マスクを経ない値が
         # 本文へ入らないことの根拠になっている（DES-055 §8.3）。
@@ -283,7 +307,13 @@ def build_body(
         "PROJECT_ROOT": project_root_abs,
         "PROJECT_RULES": _absolute_bullet_list(project_root_abs, project_rules),
         "PROJECT_SPECS": _absolute_bullet_list(project_root_abs, project_specs),
-        "TARGET_FILES": _absolute_bullet_list(project_root_abs, files),
+        # 対象軸がファイルでもディレクトリでも同一のトークンへ載せる。指定粒度のまま
+        # 渡すため、ディレクトリを配下ファイルへ展開しない（REQ-013 FNC-1312）。
+        "TARGET_SCOPE": (
+            _absolute_bullet_list(project_root_abs, dirs, suffix="/")
+            if dirs
+            else _absolute_bullet_list(project_root_abs, files)
+        ),
         "FOCUS": (focus or "").strip() or _NO_FOCUS_MARKER,
         "SCAN_FINDINGS": _scan_bullet_list(
             (scan_result or {}).get("findings") or [], "（検出なし）"
@@ -343,6 +373,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--dirs-json",
+        default=None,
+        help=(
+            "対象ディレクトリ一覧（プロジェクトルート相対）の JSON 配列。"
+            "ディレクトリ指定パターンでのみ使う。`--files-json` とは排他。"
+            "配下のファイル一覧へ展開せず、ディレクトリのまま本文へ載せる"
+        ),
+    )
+    parser.add_argument(
         "--base-branch",
         default=None,
         help="branch パターンの base ブランチ名（利用者が確認して確定したもの）",
@@ -393,11 +432,11 @@ def main() -> int:
     args = parse_args(sys.argv[1:])
 
     files = _load_path_list(args.files_json, "--files-json")
+    dirs = _load_path_list(args.dirs_json, "--dirs-json")
     project_rules = _load_path_list(args.project_rules_json, "--project-rules-json")
     project_specs = _load_path_list(args.project_specs_json, "--project-specs-json")
-    if files is None or project_rules is None or project_specs is None:
+    if files is None or dirs is None or project_rules is None or project_specs is None:
         return 1
-
 
     try:
         body = build_body(
@@ -405,6 +444,7 @@ def main() -> int:
             project_root=Path(args.project_root),
             review_id=uuid.uuid4().hex,
             files=files,
+            dirs=dirs,
             base_branch=args.base_branch,
             target_branch=args.target_branch,
             project_rules=project_rules,
