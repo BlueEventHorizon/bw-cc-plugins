@@ -169,7 +169,8 @@ def _scan_stats_block(counts: dict) -> str:
             "- filtered（機械的に秘密でないと判定）: "
             f"プレースホルダ {filtered['placeholder']} / "
             f"コード式 {filtered['code_expression']} / "
-            f"パス様のキー {filtered['path_like']}",
+            f"パス様のキー {filtered['path_like']} / "
+            f"定数名 {filtered['constant_name']}",
         ]
     )
 

@@ -230,4 +230,4 @@ CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う�
 ## 10. 関連文書
 
 - [REQ-003 SKILL.md と script の責務分離要件](../requirements/REQ-003_skill_script_separation.md) — 本設計の要件源
-- [DES-022 並列 agent 出力契約パターン設計](DES-022_parallel_agent_output_contract_design.md) — agent 間ファイル契約。本設計の依存方向と整合
+- [DES-022 並列 agent 出力契約パターン設計](DES-022_parallel_agent_output_contract_design.md) — 並列 agent の結果受け渡し契約（return value。中間ファイルを作らない）。本設計の依存方向と整合
