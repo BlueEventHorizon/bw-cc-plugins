@@ -104,8 +104,14 @@ REQ-014 前提条件は、鮮度確認機能を備えた最小対応バージョ
 
 上記 2 状態の判定は available-skills 上の `check-toc` の有無だけで行い、バージョン番号の比較を実装しない。
 したがって最小対応バージョンの値が未確定の段階でも、可用性判定と利用者への通知内容は確定する。
-値は DocAdvisor 側で `check-toc` を含む版がリリースされた時点で確定し、forge の導入案内（README / SKILL）へ記載する。
-用途は利用者が満たすべき版を知るための導入案内に限る。
+値は DocAdvisor 側で `check-toc` を含む版がリリースされた時点で確定する。用途は 2 つある。
+利用者が満たすべき版を知るための導入案内（README / SKILL）への記載と、forge の実装・テストが対象とする
+確定仕様の固定点（§5.1.5）である。いずれも実行時の判定には使用しない。
+
+reason code の判定は経路別に行う。§2.4 冒頭の経路表のとおり update 経路は `check-toc` を要求しないため、
+`check-toc` の不在を理由に update 経路を `advisor_outdated` としない。
+`query-docs` と `index-docs` の一方だけが存在する状態は、DocAdvisor が両者を同一プラグインとして配布するため
+実環境では発生しない。判定式としては `advisor_absent` に含める（doc-advisor を利用可能と見なさない）。
 
 旧版向けに `check-toc` 無しの鮮度判定経路を forge 内へ持つことはしない。
 forge が ToC 内部配置を解釈する経路の復活になり、REQ-014 BL-002 に反するためである。
@@ -189,6 +195,39 @@ worktree ごとに key が分裂しないよう、project root の basename よ�
 query は series を指定せず、同一 key 内の利用可能な series を検索対象とする。
 update は現在の branch を series として同期する。
 
+#### backend 間の scope 非対称
+
+**doc-advisor は series を持たない。これは doc-advisor の設計上の制限であり、forge 側で埋められない。**
+ToC は project root 単位の索引であり、実質的に当該作業ツリーの現在のスナップショットとして機能する。
+一方 doc-db は key を git common dir 基準で解決して worktree 間で共通とし、series（branch）軸を持つ。
+
+| 軸               | doc-db                                | doc-advisor                              |
+| ---------------- | ------------------------------------- | ---------------------------------------- |
+| key の範囲       | worktree 間で共通                     | project root 単位（worktree ごとに独立） |
+| series（branch） | 保持する。query は非指定（後述）      | 概念を持たない                           |
+| 検索母集団       | 同一 key に蓄積された全 series の文書 | 当該作業ツリーの現在の文書               |
+
+この差から次が生じる。
+
+| 現象                                                                   | 影響                                                        |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- |
+| backend が切り替わると検索母集団が変わる                               | 同一 query が backend によって異なる結果を返し得る          |
+| worktree を新設するたび当該 worktree の ToC が存在しない状態から始まる | doc-advisor 経路に落ちた初回 query が索引生成を伴う（§5.2） |
+
+本設計はこの非対称を解消しない。doc-advisor 側の制限は forge の設計選択では取り除けず、
+doc-db の key を worktree ごとに分割すれば同一プロジェクトの索引が分裂するためである。
+非対称の存在を利用者向け通知（§7.1）で隠さないことを条件に許容する。
+
+#### series 非指定の帰結
+
+doc-db への query が series を指定しないため、doc-db 経路の母集団には現在の branch に存在しない文書——
+他 branch で削除済みの文書や改訂前の版——が含まれ得る。doc-advisor 経路は series を持たないため
+当該作業ツリーの現在の文書に限られる。したがって現状の設定は、2 backend の母集団が最も離れる組合せである。
+
+doc-db query に現在の branch を series として指定すれば両者は近づくが、REQ-014 にはこの挙動に対応する
+要件がなく、非指定を選んだ根拠も記録されていない。要件側の裏付けが未確定であることを明示し、
+確定後に本項を改訂する。
+
 ### 4.2 query
 
 query は doc-db の `query` tool を `mode=all`、`top_n=20` で呼び出す。
@@ -258,42 +297,83 @@ JSON は結果表示と診断情報の取得にだけ使用する。
 
 query wrapper が doc-advisor へ切り替える場合、先に `doc-advisor:check-toc` を 1 回呼ぶ。
 24 時間という鮮度閾値は forge の方針（REQ-014 BL-002）であり、呼び出し時に `--max-age 86400`（秒）として渡す。
-閾値を秒の整数で渡すのは、単位付き表記の解析規則を外部契約に持ち込まないためである。24 時間を秒へ換算する定数は forge 側が持つ。
-ToC の探索、`generated_at` の解釈、fresh / stale / missing の判定は doc-advisor の責務とする。
 
-#### 外部契約: `doc-advisor:check-toc`
+#### 5.1.1 I/F の所有と本設計の役割
 
-本 feature の前提として、DocAdvisor 側に次の SKILL を追加する。
-実装リポジトリは DocAdvisor であり、本設計はその公開契約だけを固定する。
+`doc-advisor:check-toc` の公開 I/F 仕様の単一の真実源（SoT）は **DocAdvisor 側の仕様書** である。
+I/F は DocAdvisor が中心となって管理し、forge は接続する側として依拠する。適用の目標は forge との接続であり、
+そのための協議は行うが、最終的な I/F 仕様の決定権は DocAdvisor にある。
+
+したがって本設計は I/F そのものを規定しない。本設計が持つのは次の 3 種類だけである。
+
+| 種類                         | 内容                                                              | 本設計での位置 |
+| ---------------------------- | ----------------------------------------------------------------- | -------------- |
+| 依拠する確定仕様の範囲       | DocAdvisor が定めた I/F のうち forge が依存する部分と、その畳み方 | §5.1.2・§5.1.3 |
+| 契約が満たされない場合の防御 | 応答が確定仕様どおりでなかったときの forge 側の挙動               | §5.1.4         |
+| 依拠する I/F バージョン      | どの版の確定仕様に対して実装・テストするかの固定点                | §5.1.5         |
+
 内部実装（判定を script に置き SKILL を薄いラッパにする等）は doc-advisor の裁量とする。
 ただし §2.4 の可用性判定が available-skills を根拠にするため、SKILL としての公開は必須である。
 
-| 項目     | 契約                                                                                    |
-| -------- | --------------------------------------------------------------------------------------- |
-| 起動     | `/doc-advisor:check-toc --key <key> --max-age <秒>`（`--max-age` は正の整数、単位は秒） |
-| 役割     | 指定 key の ToC が存在するかを確認し、`--max-age` に対する鮮度を返す                    |
-| 副作用   | なし（read-only）                                                                       |
-| 成功出力 | JSON。少なくとも `status`、`key`、`freshness`、`generated_at`（存在時）を含む           |
-| 失敗出力 | JSON。`status` と `error_code` を含む（doc-advisor 既存 script の JSON 契約に揃える）   |
+本 feature の前提として、DocAdvisor 側に `check-toc` SKILL を追加する。役割は「指定 key の ToC が存在するかを
+確認し、`--max-age` に対する鮮度を返す」read-only な操作であり、副作用を持たない。
 
-鮮度は `status` ではなく `freshness` field で返す。`status` は doc-advisor 既存 script と同じ ok / error 系の実行結果であり、
-鮮度の値域をここへ混在させない（既存 script 群との JSON 契約の統一を優先する）。
+#### 5.1.2 依拠する確定仕様
 
-| `status` | `freshness` | 意味                                                          | forge の後続処理                             |
-| -------- | ----------- | ------------------------------------------------------------- | -------------------------------------------- |
-| `ok`     | `fresh`     | ToC があり、`generated_at` が `--max-age` 以内                | `query-docs` のみ実行                        |
-| `ok`     | `stale`     | ToC がない、鮮度超過、`generated_at` 欠落・解析不能・未来時刻 | prepare → `index-docs` → 成功時 `query-docs` |
-| `error`  | （無し）    | ToC store の読み取り不能など、判定自体を完了できない          | query を実行せず明示エラー                   |
+forge が `check-toc` に問うのは 1 つである。**「その ToC はそのまま検索に使えるか、作り直しが必要か」**。
+I/F の確定仕様は DocAdvisor の `check-toc` 要件定義書（REQ-005）が SoT であり、forge が依拠するのは次だけである。
 
-`freshness=stale` に ToC 不在を含める。呼び出し側が missing 専用分岐を持たなくてよいようにする。
-mtime を鮮度根拠にしないことは doc-advisor 側の判定規則とする。
+| # | 項目 | 依拠内容                                                                                    |
+| - | ---- | ------------------------------------------------------------------------------------------- |
+| 1 | 入力 | `--key <key> --max-age <秒>` を渡す。`--max-age` は必須で正の整数（秒）。key は不透明文字列 |
+| 2 | 判定 | `status` が判定の完了可否（`ok` / `error`）、`freshness` が判定結果（`fresh` / `stale`）    |
+| 3 | 出力 | 最終出力は JSON のみで、前後に説明文・要約を含まない                                        |
 
-`key` は doc-advisor にとって不透明文字列である。`rules` / `specs` は forge が category に応じて渡す値にすぎず、
-`check-toc` の公開契約は key の値域を列挙しない（doc-advisor の既存 ToC 取得と同じ扱いとする）。
+`--max-age` は既定値を持たない必須引数である。閾値の所有者を呼び出し側に固定するための仕様であり、
+forge は毎回 86400 を渡す（REQ-014 BL-002 が定める 24 時間。秒への換算定数は forge が持つ）。
 
-forge SKILL は `check-toc` の応答 `status` と `freshness` だけで後続経路を選択する。
-`status=error` は鮮度によらず明示エラーとし、`status=ok` の場合に `freshness` で分岐する。
+ToC 不在は `freshness=stale` に含まれる。したがって forge に不在専用の分岐は存在しない。
+
+鮮度の閾値そのものの扱い（境界値・未来時刻の許容 skew・`generated_at` の解釈・mtime を根拠にしないこと・
+ToC の探索方法）は doc-advisor の判定規則であり、forge は依拠するだけで要求も再実装もしない。
+
+#### 5.1.3 forge の後続分岐
+
+| `status` | `freshness` | forge の後続処理                             |
+| -------- | ----------- | -------------------------------------------- |
+| `ok`     | `fresh`     | `query-docs` のみ実行                        |
+| `ok`     | `stale`     | prepare → `index-docs` → 成功時 `query-docs` |
+| `error`  | （`null`）  | query を実行せず明示エラー                   |
+
+forge はこの 3 分岐だけを持つ。**経路の選択は `status` と `freshness` だけで行い、exit code では行わない。**
+`stale` は正常な判定結果であり、doc-advisor 側は `status=ok` として exit code `0` を返す。
+exit code で分岐すると `stale` を失敗と誤認する。
+
+`freshness` 以外の field（`reason` / `toc_path` / `generated_at` / `age_seconds` / `max_age_seconds`）に
+**依存しない**。`reason`（不在か鮮度超過か等の原因）は人間の切り分けと doc-advisor 側の診断のための補助情報で
+あり、値域の追加が起こり得る。forge が依存すると、その追加が破壊的変更になってしまう。
+診断としてそのまま転記することはあってよいが、経路選択にも成否判定にも使用しない。
+
 ToC パスや内部ディレクトリ規約を forge に埋め込まない。
+
+#### 5.1.4 答えが解釈できない場合の防御
+
+応答が SKILL の最終出力を経由するため、forge は JSON として解析できない出力や既知値以外の
+`status` / `freshness` を受け取り得る。その場合は **`fresh` とみなす縮退も作り直し経路への縮退も行わず、
+query を実行せず明示エラーとし**、利用不能だった backend と理由を利用者へ通知する。
+
+これは新たな判断ではなく、REQ-014 BL-003（索引更新に失敗した doc-advisor で query を続行しない）、
+NFR-004（利用不能を成功として報告しない）、FNC-004（失敗理由の通知）からの帰結である。
+
+#### 5.1.5 依拠する I/F バージョンの固定
+
+実行時の可用性判定は available-skills 上の `check-toc` の有無だけで行い、バージョン番号の比較は実装しない（§2.4）。
+一方、実装とテストが対象とする確定仕様は、REQ-014 前提条件が定める最小対応 DocAdvisor バージョン（REQ-014 TBD-001）で
+固定する。I/F の所有が DocAdvisor にあるため、契約の改訂は forge の実装とテストを後追いで無効化しうる。
+固定点を持たないと、どの版の契約に対して実装が正しいのかを判定できない。
+
+DocAdvisor 側に残る未確定事項（未来時刻の許容 skew の値など）は判定規則の内部値であり、
+`status` / `freshness` の値域を変えない限り forge の実装とテストに影響しない。
 
 ### 5.2 stale 時の更新
 
@@ -307,6 +387,14 @@ ToC パスや内部ディレクトリ規約を forge に埋め込まない。
 index 失敗時は stale ToC で query を続行しない。
 `freshness=fresh` の場合は index を呼ばず query のみ実行する。
 ファイル一覧への展開は doc-advisor 側に委ね、doc-db sync 用の `project_documents.py` は使用しない。
+
+この委譲により、索引母集団の決定経路は backend ごとに異なる。doc-db 経路は forge の doc-structure resolver が
+対象文書一覧を確定させ、doc-advisor 経路は forge が渡した dirs / exclude を doc-advisor 側が展開し、
+doc-advisor 固有の除外規則が併せて適用される。したがって**両 backend の索引母集団が一致する保証はない**。
+
+不一致の要因は 2 つあり、性質が異なる。展開規則の差は doc-advisor 側へ統一を要求すれば解消しうるが、
+series 軸の不在（§4.1）は doc-advisor の設計上の制限であり要求では解消しない。いずれも本 feature の
+範囲に含めない。
 
 stale 更新では対応する `update-db-*` SKILL へ再入しない。
 再入すると doc-db の選択を最初からやり直し、既に確定した doc-advisor 切替経路が変化しうるためである。
@@ -390,7 +478,7 @@ sequenceDiagram
                 Skill->>Advisor: query-docs
                 Advisor-->>Skill: Required documents
                 Skill-->>Caller: 切替通知 + result
-            else status=error
+            else status=error または解釈不能
                 CheckToc-->>Skill: error
                 Skill-->>Caller: 明示エラー
             end
@@ -437,21 +525,39 @@ sequenceDiagram
 
 ## 7. エラーハンドリングと通知
 
-| 条件                                | 動作                                                 |
-| ----------------------------------- | ---------------------------------------------------- |
-| doc-db executable 不在              | 理由を通知し doc-advisor の利用可否確認へ進む        |
-| doc-db 起動失敗 / 再接続不能        | 理由を通知し doc-advisor の利用可否確認へ進む        |
-| doc-db query / sync error           | doc-db operation 失敗として終了する                  |
-| doc-db sync 完了待ち上限            | job 情報を返して失敗する。doc-advisor へ切り替えない |
-| doc-advisor 未導入                  | 両 backend の利用不能理由を返して失敗する            |
-| DocAdvisor が最小対応バージョン未満 | `advisor_outdated` として更新手順を示して失敗する    |
-| `check-toc` が `status=error`       | query を呼ばず失敗する                               |
-| ToC stale かつ index 失敗           | query を呼ばず失敗する                               |
-| doc-advisor query / index 失敗      | doc-advisor の失敗をそのまま返す                     |
-| doc-db query 0 件                   | 成功。空の `Required documents:` を返す              |
+| 条件                                   | 動作                                                 |
+| -------------------------------------- | ---------------------------------------------------- |
+| doc-db executable 不在                 | 理由を通知し doc-advisor の利用可否確認へ進む        |
+| doc-db 起動失敗 / 再接続不能           | 理由を通知し doc-advisor の利用可否確認へ進む        |
+| doc-db query / sync error              | doc-db operation 失敗として終了する                  |
+| doc-db sync 完了待ち上限               | job 情報を返して失敗する。doc-advisor へ切り替えない |
+| doc-advisor 未導入                     | 両 backend の利用不能理由を返して失敗する            |
+| DocAdvisor が最小対応バージョン未満    | `advisor_outdated` として更新手順を示して失敗する    |
+| `check-toc` が `status=error` を返す   | query を呼ばず失敗する                               |
+| `check-toc` 応答が解析不能・既知値以外 | query を呼ばず失敗する（§5.1.4）                     |
+| ToC stale かつ index 失敗              | query を呼ばず失敗する                               |
+| doc-advisor query / index 失敗         | doc-advisor の失敗をそのまま返す                     |
+| doc-db query 0 件                      | 成功。空の `Required documents:` を返す              |
 
 利用者向け通知は、backend、起動試行結果、切替理由、ToC 更新の有無を含める。
 正常な初回接続時は冗長な警告を出さず、使用 backend の識別だけを結果に含める。
+
+### 7.1 検索母集団が変わったことの通知
+
+doc-advisor 経路へ切り替えた query では、上記に加えて**検索母集団が doc-db 経路と異なる**ことを通知する。
+§4.1 と §5.2 は backend 間の scope 非対称と索引母集団の不一致を解消せず許容するが、その条件は
+利用者に隠さないことである。通知しなければ、利用者は同一の query が backend によって異なる結果を返した
+理由を知る手段を持たない（REQ-014 NFR-001）。
+
+通知に含める内容は次の 2 点に限る。
+
+| 内容                                                         | 根拠                                     |
+| ------------------------------------------------------------ | ---------------------------------------- |
+| doc-advisor 経路は当該作業ツリーの現在の文書のみを対象とする | doc-advisor が series を持たない（§4.1） |
+| 対象文書の解決規則が doc-db 経路と異なる                     | 索引母集団の決定経路の差（§5.2）         |
+
+この通知は doc-advisor 経路へ切り替えた事実だけで組み立てられる。`check-toc` の `reason` 等の補助 field や
+両 backend の母集団の差分計算を必要としない。doc-db 経路で完了した query では出さない。
 
 ## 8. 使用する既存コンポーネント
 
@@ -503,12 +609,23 @@ fake HTTP server を使い、次の経路を通す。fake server の応答は §
 - MCP JSON 応答と SSE 応答
 
 doc-advisor は外部 SKILL のため、forge 側では次を静的または契約テストする。
+契約テストは §5.1.5 で固定した版の I/F に対して書く。I/F の所有は DocAdvisor にあるため、
+契約が改訂された場合は固定点の更新とテストの追従を同じ変更で行う。
 
 - `check-toc` へ `--key` と `--max-age 86400`（秒）を渡すこと
-- `status=ok` × `freshness=fresh` / `status=ok` × `freshness=stale` / `status=error` 各応答に対する後続分岐
-- stale 時だけ prepare → `index-docs` → `query-docs` の順になること
+- `freshness=fresh` / `freshness=stale` / `status=error` の 3 応答に対する後続分岐
+- `stale` 時だけ prepare → `index-docs` → `query-docs` の順になること
+- exit code ではなく `status` / `freshness` で分岐すること（`stale` × exit code `0` を失敗と誤認しない）
+- `reason` 等の補助 field に依存しないこと。補助 field の値が未知でも経路が変わらないこと
+- §5.1.4 の防御: 応答を解析できない、または `status` / `freshness` が既知値以外の場合に query を呼ばず失敗すること
+- §7.1 の通知: doc-advisor 経路の query で検索母集団の相違を通知し、doc-db 経路では通知しないこと（SKILL.md の静的確認）
 
-検索品質そのものと ToC ファイル探索の詳細は DocAdvisor 側で評価し、forge では重複評価しない。
+forge のテストは doc-advisor の判定規則に依存させない。`fresh` / `stale` は応答値として与え、
+判定そのものを再現しない。**境界値（差がちょうど `--max-age` のとき）・未来時刻の許容 skew・
+`generated_at` の解析可否に結果が依存するテストを書かない。** これらは doc-advisor の内部判断であり、
+依存すると doc-advisor 側の内部変更で forge のテストが壊れる。
+
+検索品質そのもの、ToC ファイル探索の詳細、鮮度判定規則は DocAdvisor 側で評価し、forge では重複評価しない。
 
 ## 10. 完全性確認
 
@@ -518,5 +635,10 @@ doc-advisor は外部 SKILL のため、forge 側では次を静的または契�
 - REQ-014 FNC-004: 起動、切替、ToC 更新、失敗の通知を §4.4、§7 に反映した。
 - REQ-014 NFR-001〜005: 可観測性、公開契約維持、不要処理回避、失敗非隠蔽、情報保護を各境界とテストへ反映した。
 - REQ-014 前提条件: 最小対応バージョン以降のみを後方互換の対象とする前提に従い、旧版検出時の区別を §2.4 に定めた。
-- 外部依存: DocAdvisor に `check-toc` SKILL を追加する契約を §5.1 に固定し、最小対応バージョンの明記と旧版検出時の扱いを §2.4 に定めた。
+- 外部依存: `check-toc` の I/F 所有を DocAdvisor 側とし、確定仕様（DocAdvisor REQ-005）への依拠範囲（§5.1.2）・3 値の畳み方（§5.1.3）・契約が満たされない場合の防御（§5.1.4）・依拠する版の固定（§5.1.5）を分離した。最小対応バージョンの明記と旧版検出時の扱いは §2.4 に定めた。
+- 決着済み: ToC 不在の扱いは DocAdvisor 側で `freshness=stale` に含める（`error` としない）と確定した。forge に不在専用の分岐は存在しない（§5.1.2・§5.1.3）。
+- 決着済み: 応答形式は既存 script と同じ JSON 契約（`status` / `error_code` 必須、答えは `freshness`）で確定した。原因は補助 field `reason` で返るが forge は依存しない。exit code は `status` に対応するため、経路選択には使用しない（§5.1.3）。
+- 未決: doc-db の KEY 未生成を operation 失敗とするか doc-advisor 切替とするか（§4.2）は REQ-014 の判断待ちであり、REQ-014 エラーケース表に対応する行がない。
+- 未決: query が series を指定しない選択（§4.1）の要件側の裏付けが REQ-014 に存在しない。
+- 非解消として明示: backend 間の scope 非対称（§4.1）と両 backend の索引母集団の不一致（§5.2）は、解消せず存在を記述し、通知で隠さないことを条件に許容する。doc-advisor が series を持たないことは doc-advisor の設計上の制限であり、forge の設計選択では解消しない。許容条件である通知は §7.1 に定めた。
 - 外部依存: doc-db の MCP tool 契約を §4.5 に固定し、参考実装が手元に無い状態でも実装・テストが成立するようにした。
