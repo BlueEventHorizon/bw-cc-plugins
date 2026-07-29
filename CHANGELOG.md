@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.1] - 2026-07-29
+
+### marketplace
+
+- **chore**: forge 0.4.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.4.1] - 2026-07-29
+
+### forge
+
+- **feat**: review に対象軸 `--dirs` を追加。ディレクトリ指定を利用者が指定した粒度のままレビュアーへ渡し、配下ファイルへの展開は修正フェーズの allowlist 専用とした（展開するとレビュー範囲の欠落が見えなくなるため）。`resolve_targets.py` は git ls-files で `.gitignore` を尊重して列挙し、パス安全検証を `--files` と共有する
+- **feat**: review に `--focus` 軸を追加。依頼ごとの重点観点を自然文 1 行で渡す。内蔵観点を置き換えず加算し、severity は引き上げない
+- **feat**: review に `--secrets` 軸を追加。機密情報の混入のみを対象とする独立レビューで、対象軸を持たず常にリポジトリ全体を走査する（過去のコミットで混入した秘密は差分に現れないため）
+- **feat**: 機密情報レビューの規範と機構を新設。`sensitive_information_spec.md`（SoT・重大度カタログ）、`review_criteria_secrets.md`、決定論的スキャナ `scan_secrets.py`（既知プレフィックス・秘密鍵ブロック・資格情報付き接続文字列・JWT・高エントロピー文字列を検出し値をマスク）。検出値の非露出は `build_review_request.py` が自ら `scan_secrets` を実行する構造で保証し、スキャン結果を外部から受け取る口を持たせていない
+- **feat**: 参照リンク（記法・実在性）を恒久観点化。`document_style_guide.md` に §5.3 と §5.4 重大度カタログを新設し、design / requirement / plan の criteria が P1 で委譲する。`--focus` の指定に依存せず常に検査される
+- **fix**: 受信モードで往復が静かに停止する欠陥を修正。Claude 側 Stop フックは Codex の返信では発火せず自身のターン終了で発火するため、返信後にターンを終える手順では hook が空振りしていた。送信・push 型起床・ブロッキング待機を `send_and_await_reply.py` の 1 呼び出しへ畳み、食い違う `--db-path` / `--project-root` の組み合わせは送信前にエラー終了させる
+- **fix**: push 型起床の必須性を Claude 側のあらゆる送信へ拡張（依頼モードにしか無く、往復 2 ラウンド目以降が必ず停止していた）
+- **refactor**: review スクリプト 5 本の引数名を統一し、`filter_review_history.py` に `--project-root` を追加（`FORGE_MSG_PROJECT_ROOT` の前置忘れの再発防止）
+
 ## [marketplace 0.3.0] - 2026-07-27
 
 ### marketplace

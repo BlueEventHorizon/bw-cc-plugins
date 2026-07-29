@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.4.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
+- **forge** (v0.4.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:triage-issue`。実装を担う `anvil:impl-issue` は triage-issue 経由でのみ起動）
 
 > **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
