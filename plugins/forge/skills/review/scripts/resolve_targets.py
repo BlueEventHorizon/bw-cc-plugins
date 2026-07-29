@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """review 対象解決 CLI。
 
-`/forge:review` の対象軸（diff / branch / files）ごとに対象ファイルを
-列挙し、`{"status", "mode", "base_branch", "files", "warnings"}` の単一 JSON
-を標準出力へ返す。標準ライブラリのみ使用する（`git` は subprocess で呼ぶ）。
+`/forge:review` の対象軸（diff / branch / files / dirs）ごとに対象ファイルを
+列挙し、`{"status", "mode", "base_branch", "files", "dirs", "warnings"}` の単一
+JSON を標準出力へ返す。標準ライブラリのみ使用する（`git` は subprocess で呼ぶ）。
 
 使い方:
-    python3 resolve_targets.py --mode <diff|branch|files> \
-        [--files a,b,...] [--project-root <path>]
+    python3 resolve_targets.py --mode <diff|branch|files|dirs> \
+        [--files a,b,...] [--dirs d1,d2,...] [--project-root <path>]
 
 モードの挙動:
     diff:   HEAD に対する未 commit 変更（staged + unstaged）+ 未追跡ファイル
@@ -17,8 +17,14 @@
             `main` → `master` の優先順位で、実際にリポジトリに存在する
             ブランチを採用する
     files:  指定ファイル（--files a,b,c のカンマ区切り）の存在検証のみ
+    dirs:   指定ディレクトリ（--dirs d1,d2 のカンマ区切り）の存在検証と、
+            配下ファイルの列挙
 
-対象 0 件・不在ファイルは status: error を返す。パスはすべて
+`dirs` は `files` と異なり**範囲指定**である。返す `files`（配下ファイル）は
+修正フェーズの allowlist としてのみ使い、レビュアーへは `dirs` をそのまま渡す
+（REQ-013 FNC-1312。allowlist はレビュアーへ渡さないため同要件の対象外）。
+
+対象 0 件・不在パスは status: error を返す。パスはすべて
 プロジェクトルート相対で返す。
 """
 
@@ -205,12 +211,67 @@ def get_branch_targets(project_root: Path, base_ref: str):
     return sorted(existing)
 
 
-def _result(status, mode, base_branch, files, warnings=None, error=None):
+def get_dir_targets(project_root: Path, dirs: list[str]):
+    """dirs モード: 指定ディレクトリ配下のファイルを列挙する（allowlist 用）。
+
+    `git ls-files` を使い、追跡済みファイルと未追跡ファイルの両方を対象にしつつ
+    `.gitignore` を尊重する（`scan_secrets.py` と同じ手法）。`os.walk` で自前に歩くと
+    `.git/` や `.gitignore` 対象の除外条件を独自に持つことになり、git の解釈との
+    乖離がそのまま allowlist の誤りになる。
+    """
+    code, stdout, stderr = _run_git(
+        ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *dirs],
+        project_root,
+    )
+    if code != 0:
+        raise RuntimeError(f"git ls-files の実行に失敗しました: {stderr.strip()}")
+
+    candidates = {entry for entry in stdout.split("\0") if entry}
+    # 削除済みでワークツリーに存在しないファイルはレビュー（Read）できないため除外する
+    existing = [f for f in candidates if (project_root / f).is_file()]
+    return sorted(existing)
+
+
+def _split_csv(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [token.strip() for token in raw.split(",") if token.strip()]
+
+
+def _classify_paths(candidates: list[str], project_root: Path, expect_dir: bool):
+    """指定パス群を (ルート外, 不在) に分類する。
+
+    `expect_dir` が True ならディレクトリとして、False ならファイルとして実在を判定する。
+    `files` モードと `dirs` モードでルート外判定・symlink 経由の脱出判定を共有するため
+    分離した（片方だけ緩いと、対象軸によって安全性が変わってしまう）。
+    """
+    project_root_resolved = project_root.resolve()
+
+    outside = [p for p in candidates if Path(p).is_absolute() or ".." in Path(p).parts]
+    if outside:
+        return outside, []
+
+    missing = []
+    for p in candidates:
+        resolved = (project_root / p).resolve()
+        try:
+            resolved.relative_to(project_root_resolved)
+        except ValueError:
+            # symlink 経由でルート外へ抜けるケース。不在として扱う
+            missing.append(p)
+            continue
+        if not (resolved.is_dir() if expect_dir else resolved.is_file()):
+            missing.append(p)
+    return [], missing
+
+
+def _result(status, mode, base_branch, files, dirs=None, warnings=None, error=None):
     payload = {
         "status": status,
         "mode": mode,
         "base_branch": base_branch,
         "files": files,
+        "dirs": dirs or [],
         "warnings": warnings or [],
     }
     if error is not None:
@@ -218,39 +279,23 @@ def _result(status, mode, base_branch, files, warnings=None, error=None):
     return payload
 
 
-def resolve_targets(mode: str, project_root: Path, files_arg: str | None):
+def resolve_targets(
+    mode: str, project_root: Path, files_arg: str | None, dirs_arg: str | None = None
+):
     if mode == "files":
-        if not files_arg or not files_arg.strip():
-            return _result(
-                "error", mode, None, [],
-                error="--files モードには --files でファイルパスを1つ以上指定してください",
-            )
-
-        candidates = [token.strip() for token in files_arg.split(",") if token.strip()]
+        candidates = _split_csv(files_arg)
         if not candidates:
             return _result(
                 "error", mode, None, [],
                 error="--files モードには --files でファイルパスを1つ以上指定してください",
             )
 
-        project_root_resolved = project_root.resolve()
-        outside = [f for f in candidates if Path(f).is_absolute() or ".." in Path(f).parts]
+        outside, missing = _classify_paths(candidates, project_root, expect_dir=False)
         if outside:
             return _result(
                 "error", mode, None, [],
                 error=f"プロジェクトルート外を指すパスは指定できません: {', '.join(outside)}",
             )
-
-        missing = []
-        for f in candidates:
-            resolved = (project_root / f).resolve()
-            try:
-                resolved.relative_to(project_root_resolved)
-            except ValueError:
-                missing.append(f)
-                continue
-            if not resolved.is_file():
-                missing.append(f)
         if missing:
             return _result(
                 "error", mode, None, [],
@@ -259,6 +304,44 @@ def resolve_targets(mode: str, project_root: Path, files_arg: str | None):
             )
 
         return _result("ok", mode, None, sorted(candidates))
+
+    if mode == "dirs":
+        candidates = _split_csv(dirs_arg)
+        if not candidates:
+            return _result(
+                "error", mode, None, [],
+                error="--dirs モードには --dirs でディレクトリパスを1つ以上指定してください",
+            )
+
+        outside, missing = _classify_paths(candidates, project_root, expect_dir=True)
+        if outside:
+            return _result(
+                "error", mode, None, [],
+                error=f"プロジェクトルート外を指すパスは指定できません: {', '.join(outside)}",
+            )
+        if missing:
+            return _result(
+                "error", mode, None, [],
+                error=f"指定されたディレクトリが見つかりません: {', '.join(missing)}",
+                warnings=[f"不在ディレクトリ: {d}" for d in missing],
+            )
+
+        normalized = sorted(d.rstrip("/") for d in candidates)
+        try:
+            files = get_dir_targets(project_root, normalized)
+        except RuntimeError as exc:
+            return _result("error", mode, None, [], dirs=normalized, error=str(exc))
+
+        if not files:
+            return _result(
+                "error", mode, None, [], dirs=normalized,
+                error=(
+                    "指定されたディレクトリ配下にレビュー対象ファイルがありません: "
+                    f"{', '.join(normalized)}"
+                ),
+            )
+
+        return _result("ok", mode, None, files, dirs=normalized)
 
     if mode == "diff":
         try:
@@ -308,13 +391,18 @@ def main() -> int:
     parser.add_argument(
         "--mode",
         required=True,
-        choices=["diff", "branch", "files"],
-        help="対象モード（diff|branch|files）",
+        choices=["diff", "branch", "files", "dirs"],
+        help="対象モード（diff|branch|files|dirs）",
     )
     parser.add_argument(
         "--files",
         default=None,
         help="files モード用のカンマ区切りファイルパス（例: a.md,b.py）",
+    )
+    parser.add_argument(
+        "--dirs",
+        default=None,
+        help="dirs モード用のカンマ区切りディレクトリパス（例: docs/specs/,src/）",
     )
     parser.add_argument(
         "--project-root",
@@ -325,7 +413,7 @@ def main() -> int:
 
     project_root = Path(args.project_root) if args.project_root else Path.cwd()
 
-    result = resolve_targets(args.mode, project_root, args.files)
+    result = resolve_targets(args.mode, project_root, args.files, args.dirs)
     print(json.dumps(result, ensure_ascii=False))
     return 0
 

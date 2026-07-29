@@ -20,6 +20,12 @@
 
 プロジェクトルート: `{{PROJECT_ROOT}}`
 
+## 今回の重点観点
+
+{{FOCUS}}
+
+これは下記の参照文書に基づく通常のレビューに**加えて**特に注意を払う対象であり、他の観点を免除するものではありません。`（指定なし）` の場合は通常のレビューのみを行ってください。
+
 ## 参照文書
 
 ### レビュー観点（種別別。対象に該当するものを使う）
@@ -51,6 +57,7 @@
 - `{{PLUGIN_ROOT}}/docs/adr_format.md`
 - `{{PLUGIN_ROOT}}/docs/plan_format.md`
 - `{{PLUGIN_ROOT}}/docs/spec_format.md`
+- `{{PLUGIN_ROOT}}/docs/document_style_guide.md`
 
 ### プロジェクト固有のルール文書
 

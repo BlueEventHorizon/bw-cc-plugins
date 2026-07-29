@@ -5,18 +5,21 @@ Have a resident Codex session review your code and documents, while Claude drive
 ## review
 
 ```
-/forge:review <type> [--diff | --branch | --files a.md,b.py,...] [--interactive | --auto-critical | --auto]
+/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto-critical | --auto] [--focus "<emphasis>"]
 ```
 
-| Argument          | Description                                                     |
-| ----------------- | --------------------------------------------------------------- |
-| `type`            | `code` / `requirement` / `design` / `plan` / `uxui` / `generic` |
-| `--diff`          | Uncommitted changes on the current branch (default)             |
-| `--branch`        | All changes since the base-branch divergence point              |
-| `--files`         | Explicit comma-separated file list                              |
-| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior") |
-| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                      |
-| `--auto-critical` | Auto-fix 🔴 only                                                |
+| Argument          | Description                                                         |
+| ----------------- | ------------------------------------------------------------------- |
+| `type`            | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`     |
+| `--diff`          | Uncommitted changes on the current branch (default)                 |
+| `--branch`        | All changes since the base-branch divergence point                  |
+| `--files`         | Explicit comma-separated file list                                  |
+| `--dirs`          | Everything under the given directories (comma-separated; see below) |
+| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior")     |
+| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                          |
+| `--auto-critical` | Auto-fix 🔴 only                                                    |
+| `--focus`         | What to pay extra attention to this time (free text, optional)      |
+| `--secrets`       | Standalone review for leaked secrets only (see below)               |
 
 > **There is no engine axis (`--codex` / `--claude`).** Review execution is always performed by the resident Codex session. Passing these flags logs a warning and continues with the default behavior (so existing callers migrated from the legacy pipeline keep working).
 
@@ -31,7 +34,52 @@ The user types one of these to start:
 /forge:review requirement --files docs/specs/login_req.md  # Requirement doc
 /forge:review design --files specs/login/design.md         # Design doc
 /forge:review generic --files README.md                    # Any document
+/forge:review design --dirs docs/specs/forge/design/       # Every design doc under a directory
 ```
+
+### Directory scope (`--dirs`)
+
+When documents are organized by directory (`docs/specs/*/design/` and the like), you can review a whole directory at once.
+
+```bash
+/forge:review design --dirs docs/specs/forge/design/
+/forge:review requirement --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
+```
+
+- **The type is required.** The type (and therefore which review criteria apply) is never inferred from the directory name. A wrong inference would hide why a given set of criteria was applied.
+- **The reviewer receives the directories as given.** forge does not expand them into a file list. Expansion would turn any enumeration gap into a silent gap in review coverage; the reviewer determines the scope itself.
+- Enumeration for the internal allowlist respects `.gitignore`, and untracked new documents are included.
+- It is a target axis, so it cannot be combined with `--diff` / `--branch` / `--files` (specifying two is an error).
+- If a directory does not exist, or contains no reviewable files, the request is not sent.
+
+### Secret scanning (`--secrets`)
+
+A standalone review that targets leaked secrets only — tokens, private keys, connection strings.
+
+```bash
+/forge:review --secrets
+```
+
+- **The target is the whole repository.** It cannot be combined with a type or a target axis (`--diff` / `--branch` / `--files` / `--dirs`). A secret committed earlier does not appear in today's diff but is still in the repository, so narrowing to a diff defeats the purpose.
+- **Deterministic scan plus AI, in that order.** `scan_secrets.py` first matches known shapes (AWS / GitHub / Slack tokens, private key blocks, credentialed connection strings, JWTs, high-entropy strings), and its results are attached to the request. The reviewer judges each hit and, separately, hunts for what the scanner cannot match — credentials buried in prose, internal endpoints with no fixed shape.
+- **Detected values never appear in the request.** Only position, kind, length, and a short prefix are passed, masked. The request is persisted in the message DB, so including real values would make detection itself a copying channel.
+- **Nothing is auto-fixed.** Even with `--auto`, the run completes as "findings left unaddressed". A committed secret survives deletion in history, so remediation means revoking and reissuing it — a human decision.
+
+If a test fixture legitimately needs a string that matches a pattern, end the line with `secrets-scan: ignore`. That classifies it — it does **not** drop it. Suppressed hits are always reported with their positions, and overusing the marker is itself reviewable.
+
+### Emphasis (`--focus`)
+
+Pass "please pay extra attention to X this time" as free text. Stating it conversationally works the same way — the skill interprets the intent even without the flag:
+
+```bash
+/forge:review --branch --focus "cross-document reference links written in the documents"
+```
+
+Emphasis **does not replace the built-in criteria**. The review defined by the criteria and normative documents named in the template still runs in full; the emphasis is added on top. It is not a way to narrow the review down to a single concern.
+
+Emphasis also never raises severity. Findings that answer the emphasis are still rated 🔴 / 🟡 / 🟢 by the severity catalog in the normative documents.
+
+> **Permanent perspectives live in the criteria.** Cross-document reference links (notation and dead links) are checked in design / requirement / plan / generic / uxui reviews without any `--focus`, because `document_style_guide.md` §5 is a P1 delegate of those criteria. `--focus` adjusts emphasis; it is not the only way to introduce a perspective. If a perspective should always be checked, fix the criteria instead.
 
 ### Prerequisites
 

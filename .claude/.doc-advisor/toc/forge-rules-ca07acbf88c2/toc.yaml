@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-07-26T14:22:15Z
-  file_count: 37
+  generated_at: 2026-07-27T02:49:55Z
+  file_count: 39
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
@@ -115,34 +115,35 @@ docs:
       - conformance
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Specifies design review priority-based criteria, checking order (P1-P3) including spec-design boundary verification, design principles, ADR operations, and rules for temporary feature designs
+    purpose: Specifies the criteria and workflow for reviewing design documents, including reference priority order, check sequence, and recommendation judgment rules
     content_details:
-      - "P1 SSOT reference: spec-design boundary, design principles, design format, ADR format, and project-specific architecture rules"
-      - "Check order: P1 rule conformance, P2 contradiction detection, P3 unnecessary complexity"
-      - "Temporary feature design frontmatter requirement: type: temporary-feature-design must be present"
-      - "ADR operation validation: mandatory components (Status, context, decision, alternatives)"
-      - ADR creation requirement when design decision changes (choice A to B) occur
-      - "P2 contradiction detection: internal design contradictions and requirements alignment"
-      - "P2 exclusion rule for temporary feature designs: differences with old specs are intentional"
-      - "P3 unnecessary complexity: numerical directization prohibition and inversion patterns"
+      - Priority-based SSOT reference structure (P1/P2/P3) mapping to principles/format/specs documents
+      - Design/specification boundary specification and category-specific guidelines
+      - Design principles including failure patterns and quantitative goal handling
+      - Design document format and temporary-feature-design frontmatter validation
+      - Additive development workflow rules for new feature designs
+      - ADR format requirements and decision change tracking
+      - Document style guide compliance for references and external link validation
     applicable_tasks:
-      - Design review and recommendation decision
-      - Spec-design boundary verification
-      - Design principles conformance checking
-      - ADR operation and creation validation
-      - Temporary feature design assessment
-      - Design format compliance verification
-      - Internal design contradiction detection
+      - Design document review
+      - Design/specification consistency validation
+      - ADR audit and change tracking
+      - Design decision and implementation alignment
+      - Document reference integrity checking
+      - Internal contradiction detection in design files
+      - Feature design scope verification
+      - Additive development design validation
+      - Requirement/design alignment verification
     keywords:
       - design review
-      - spec-design boundary
-      - design principles
+      - SSOT
       - ADR
-      - temporary feature design
+      - contradiction detection
+      - design principles
+      - reference validation
+      - temporary-feature-design
       - What/How boundary
       - design format
-      - frontmatter
-      - conformance
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
     purpose: Specifies generic document review priority-based criteria, checking order (P1-P3) for document style conformance, writing rules, contradiction detection, and unnecessary complexity judgment
@@ -175,69 +176,94 @@ docs:
       - writing rules
   plugins/forge/docs/criteria/review_criteria_plan.md:
     title: Plan Review Criteria
-    purpose: Defines the criteria, check procedures, and judgment rules for reviewing plan documents against format specifications, principles, design/requirements documents, and project-specific rules
+    purpose: Defines the process and delegates for reviewing plan documents (YAML format), including rules to check, verification order, and judgment criteria for recommendations
     content_details:
-      - SSOT reference list for plan review (plan_format.md, plan_principles_spec.md, additive_development_spec.md, project rules, related specs)
-      - Priority levels (P1, P2, P3) with severity catalogs from delegated sources
-      - Delegation principle (project-specific rules take priority over built-in rules)
-      - Three-level check order (P1 format/principles compliance, P2 contradictions, P3 unnecessary complexity)
-      - "Additive feature plan marker requirement (type: temporary-feature-plan frontmatter)"
-      - Additive feature exclusion for P2 contradictions (intentional differences treated as specification updates)
-      - Contradiction detection scope (internal inconsistencies, dependency order violations, plan vs specification conflicts)
-      - Complexity judgment using spec_priorities_spec.md refactoring criteria and anti-patterns
-      - Three recommendation types with adoption conditions (fix for limited-impact violations, create_issue for unspecified recurring patterns, skip for false positives)
-      - Three mandatory conditions for create_issue (no applicable rule exists, recurring or objective observation, explicitly definable as a rule)
+      - SSOT reference list with priority levels (P1/P2/P3) for plan review delegated documents
+      - "Check order: P1 format and principles conformance, P2 contradictions, P3 unnecessary complexity"
+      - Temporary feature plan detection criteria based on separation value and collision risk
+      - Plan YAML structure validation and required fields verification
+      - Task granularity, acceptance criteria, and traceability rules enforcement
+      - Reference path existence validation for design and requirement documents
+      - Contradiction detection between tasks and requirements/design, task dependency ordering
+      - Temporary feature plan exemption from old specification contradictions
+      - Recommendation types (fix, create_issue, skip) with adoption conditions
     applicable_tasks:
-      - Plan document review
-      - Plan format compliance verification
-      - Specification contradiction detection
-      - Task dependency ordering validation
-      - Review recommendation determination
-      - Additive feature plan validation
+      - Plan document review and validation
+      - YAML structure and format compliance checking
+      - Task granularity and acceptance criteria validation
+      - Reference document dependency verification
+      - Cross-document contradiction and consistency detection
     keywords:
       - plan review
-      - SSOT reference
-      - P1/P2/P3 priority
+      - plan format
+      - YAML structure
+      - task granularity
+      - acceptance criteria
+      - temporary feature plan
+      - reference path
+      - dependency ordering
       - contradiction detection
-      - create_issue recommendation
-      - temporary-feature-plan
-      - specification conflict
-      - task dependency
-      - additive development
-      - review criteria
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: Requirement Review Criteria
-    purpose: Defines the criteria, check procedures, and judgment rules for reviewing requirement definition documents against format specifications, specification priorities, design documents, and project-specific rules
+    purpose: Defines the process and delegates for reviewing requirement documents, including rules to check, verification order, and judgment criteria for recommendations
     content_details:
-      - SSOT reference list for requirement review (requirement_format.md, spec_priorities_spec.md, additive_development_spec.md, project-specific rules)
-      - Priority levels (P1, P2, P3) with severity catalogs from delegated sources
-      - Delegation principle (project-specific rules take priority over built-in rules)
-      - Fallback strategy when project-specific rules are unspecified (use forge built-in format and priorities only)
-      - Three-level check order (P1 format/specification priorities, P2 contradictions, P3 unnecessary complexity)
-      - "Additive feature requirement marker requirement (type: temporary-feature-requirement frontmatter)"
-      - P2 contradiction detection scope (requirement conflicts, design conflicts, FNC cross-references and terminology)
-      - Additive feature exclusion for P2 contradictions (intentional differences from old specs treated as updates)
-      - P3 complexity judgment using spec_priorities_spec.md (structural quality quantification prohibition, anti-patterns, alternative solutions)
-      - Three recommendation types with adoption conditions (fix for limited-impact violations, create_issue for unspecified recurring patterns, skip for false positives)
+      - SSOT reference list with priority levels (P1/P2/P3) for requirement review delegated documents
+      - "Check order: P1 format and principles conformance, P2 contradictions, P3 unnecessary complexity"
+      - Temporary feature requirement detection criteria based on separation value and collision risk
+      - Requirement format validation including metadata, unconfirmed items table, required fields
+      - Non-functional requirement category completeness and main purpose prohibition rules
+      - Document reference validation (style guide conformance, link existence)
+      - Contradiction detection between requirements and related design documents
+      - Temporary feature requirement exemption from old specification contradictions
+      - Recommendation types (fix, create_issue, skip) with adoption conditions
     applicable_tasks:
-      - Requirement definition document review
-      - Requirement format compliance verification
-      - Specification priority and category coverage validation
-      - Requirement contradiction detection
-      - Design-requirement alignment verification
-      - Additive feature requirement validation
-      - Review recommendation determination
+      - Requirement document review and validation
+      - Format and mandatory fields compliance checking
+      - Non-functional requirement category completeness validation
+      - Document reference integrity verification
+      - Internal requirement contradiction and cross-document consistency detection
     keywords:
       - requirement review
-      - SSOT
-      - P1/P2/P3 priority
-      - specification priorities
+      - requirement format
       - non-functional requirements
+      - specification priority
+      - temporary feature requirement
+      - document reference
+      - FNC
+      - metadata validation
       - contradiction detection
-      - create_issue
-      - temporary-feature-requirement
-      - design conflict
-      - requirement validation
+      - design consistency
+  plugins/forge/docs/criteria/review_criteria_secrets.md:
+    title: Secrets Review Criteria
+    purpose: Defines standards and decision process for evaluating sensitive information findings, including classification of recommendations and handling procedures
+    content_details:
+      - SSOT reference list with P1/P2/P3 documents and their roles in credential detection review
+      - Five-step check sequence for evaluating detection results
+      - False positive determination using principles and permitted representations
+      - Recommendation classification rules (fix, create_issue, skip)
+      - Three conditions for create_issue recommendation (rule absence, recurrence/objectivity, codification granularity)
+      - Ambiguity handling rule for mixed-in credentials
+      - P3 non-applicability due to lack of alternative design concept
+      - Manual detection discovery requirement for out-of-band findings
+      - Contradiction checks between detection results and actual content
+      - Permitted context and example usage patterns
+    applicable_tasks:
+      - Sensitive credential detection review
+      - False positive evaluation for security findings
+      - Finding recommendation classification
+      - Issue creation decision for credential mixed-in cases
+      - Secrets scanning result validation
+    keywords:
+      - secrets
+      - sensitive information
+      - credentials
+      - false positive
+      - SSOT
+      - recommendation
+      - detection validation
+      - principles
+      - mixed-in
+      - credential detection
   plugins/forge/docs/criteria/review_criteria_uxui.md:
     title: UX/UI Review Criteria
     purpose: Defines the criteria, check procedures, and judgment rules for reviewing UX/UI documents against platform requirements (Apple HIG), project-specific design systems, and document style guidelines
@@ -362,35 +388,35 @@ docs:
       - documentation-management
       - indexing
   plugins/forge/docs/document_style_guide.md:
-    title: Document Style Guidelines
-    purpose: Defines writing style standards and conventions for documents generated by forge plugin, including rules for tags, emphasis, formatting, and document references to ensure consistency and readability.
+    title: Document Style Guide
+    purpose: Defines writing style guidelines for forge plugin documentation, including formatting conventions, emphasis rules, reference syntax, and document structure standards
     content_details:
-      - Tag usage rules (MANDATORY, CRITICAL, IMPORTANT) with criteria for when each is appropriate
-      - Heading level constraints (H1-H4 only, specific level mapping for document structure)
-      - Emphasis conventions (bold, italic, code) with specific usage rules for each
-      - Strong language signals in explanations (NEVER, MUST, DO NOT, ALWAYS) for AI comprehension
-      - Long vowel suppression rule (JIS Z 8301 compliance) with exceptions for proper names
-      - Code block language specification requirements (bash, yaml, python, markdown, text)
-      - List structure rules (unordered vs ordered, max 2 nesting levels)
-      - Table formatting constraints (max 6 columns, content limits, no complex structures)
-      - Document reference notation standards (relative paths in docs/, absolute paths with placeholder)
-      - Abstract example naming conventions (Foo/Bar/Hoge/Fuga) prohibiting domain-specific names
+      - Tag usage rules (MANDATORY/CRITICAL/IMPORTANT) with severity criteria
+      - "Heading level restrictions (# through #### only)"
+      - Text emphasis and long vowel conventions
+      - Code block language specification requirement
+      - Document reference conventions (relative paths within docs/, placeholders for SKILL/agent/command)
+      - Document reference severity catalog with 7 violation categories
+      - Abstract example naming conventions (use Foo/Bar/Hoge, avoid specific domains)
+      - Prohibition of historical change logs in documents
+      - Prohibition of related document lists (except external URLs)
+      - List and table structure guidelines
     applicable_tasks:
-      - Writing and creating forge plugin documentation
-      - Document style review and compliance verification
-      - Refactoring existing documents to comply with style standards
-      - Reviewing requirement, design, and planning document consistency
+      - Forge plugin documentation creation
+      - Document style compliance review
+      - Design specification and requirements writing
+      - Reference format validation
+      - Documentation standards enforcement
     keywords:
-      - document style
-      - markdown formatting
-      - tag usage
-      - emphasis notation
+      - MANDATORY tags
       - heading levels
-      - reference notation
-      - code blocks
-      - list structure
-      - table formatting
-      - documentation standards
+      - relative path references
+      - severity catalog
+      - code block language
+      - emphasis formatting
+      - abstract naming
+      - document structure
+      - reference validation
   plugins/forge/docs/forge_anti_patterns.md:
     title: Forge Anti-patterns Collection
     purpose: Base anti-patterns collection referenced by /forge:review as fallback for P1 rule compliance checks when project-specific rules are unavailable
@@ -563,6 +589,36 @@ docs:
       - safety net validation
       - MVP critical
       - defensive code
+  plugins/forge/docs/sensitive_information_spec.md:
+    title: Sensitive Information Contamination Prevention
+    purpose: Defines information prohibited from repositories and judgment criteria for detecting contamination. Serves as normative reference for review security scanning and severity categorization.
+    content_details:
+      - Authentication and authorization secrets (API tokens, private keys, passwords, connection strings, sessions)
+      - Non-secret but dangerous information (internal networks, PII, customer identifiers, infrastructure details)
+      - Allowed writing methods (environment variable references, explicit placeholders, public values, revoked values with marking)
+      - Prohibition of modified-real-value examples; use officially reserved examples or zero-padding
+      - Dual-approach detection using deterministic scanning plus AI reading for context-dependent cases
+      - Suppression marker mechanism with mandatory reporting of suppressions
+      - Prohibition of republishing detected secrets in review requests, findings, or logs
+      - 10-category severity catalog from critical to minor
+    applicable_tasks:
+      - Sensitive information detection during code and documentation review
+      - Secret contamination validation and policy enforcement
+      - Review request preparation with security scanning
+      - Risk assessment for code and documentation changes
+      - Configuration of automated secrets scanning
+      - Secret revocation and reissuance planning
+    keywords:
+      - sensitive-information
+      - API-token
+      - secret-key
+      - credentials
+      - authentication
+      - PII
+      - internal-network
+      - security
+      - review-secrets
+      - suppression-marker
   plugins/forge/docs/spec_design_boundary_spec.md:
     title: Spec/Design Boundary Guide
     purpose: Defines the boundary between requirements (What) and design (How) documents, providing decision criteria and guidelines for document categorization

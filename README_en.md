@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.3.0**
+**Marketplace version: 0.3.1**
 
 The marketplace ships **2 plugins** (forge, anvil). The AI-searchable document index (**doc-advisor**) is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor); forge's search skills forward to it (`index-docs` / `query-docs`).
 
@@ -37,8 +37,8 @@ flowchart LR
 
 | Plugin    | Version | Description                                                                                              |
 | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.4.0   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
-| **anvil** | 0.1.0  | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
+| **forge** | 0.4.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **anvil** | 0.1.0   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
 
 > **doc-advisor is an external dependency**: the AI-searchable document index ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`.
 
@@ -91,23 +91,23 @@ flowchart LR
 
 #### Skills
 
-| Skill                                                                                  | Description                                                                                                                      | Trigger                        |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| [**review**](docs/readme/forge/guide_review.md)                                        | A resident Codex reviews; Claude drives evaluation, fixing, re-request, and completion (request/receive/resume modes)            | `"review"`                     |
-| **talk-to-codex**                                                                      | Free-form chat with a resident Codex session over msg-sys, one round-trip at a time, with no findings/completion contract        | `"I want to ask Codex"`        |
-| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements)    | Create requirements via dialog, reverse-engineering, or Figma                                                                    | `"requirements"`               |
-| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design)                | Create design docs from requirements. Prioritizes asset reuse                                                                    | `"start design"`               |
-| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan)                    | Extract tasks from design docs into a YAML plan                                                                                  | `"start plan"`                 |
-| [**start-implement**](docs/readme/forge/guide_implement.md)                            | Select tasks from plan, implement, review, and update                                                                            | `"start implement"`            |
-| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md)                        | Create design tokens & UI specs with UX evaluation                                                                               | `"UXUI design"`                |
-| **merge-specs**                                                                        | Merge two spec DIRs (base / additional) at content granularity. Additional is canonical; base is revised; pure-new parts migrate | `"merge spec"`                 |
-| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories                                                                            | `"setup"`                      |
-| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config)      | Generate/update `.version-config.yaml`                                                                                           | `"version config"`             |
-| [**update-version**](docs/readme/forge/guide_setup.md#update-version)                  | Bump version across files. patch/minor/major/direct                                                                              | `"version bump"`               |
-| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules)                        | Analyze and reorganize rules/ based on taxonomy                                                                                  | `"clean rules"`                |
-| [**help**](docs/readme/forge/guide_setup.md#help)                                      | Interactive help wizard                                                                                                          | `"help"`                       |
-| [_doc-structure_](docs/readme/guide_doc_structure.md)                                  | Parse and resolve paths from `.doc_structure.yaml`                                                                               | ※ Called by orchestrators      |
-| [_next-spec-id_](docs/readme/forge/guide_create_docs.md)                               | Scan all branches for spec IDs and return the next available number                                                              | ※ Called by start-requirements |
+| Skill                                                                                  | Description                                                                                                                                                 | Trigger                        |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| [**review**](docs/readme/forge/guide_review.md)                                        | A resident Codex reviews; Claude drives evaluation, fixing, re-request, and completion (request/receive/resume modes). `--secrets` scans for leaked secrets | `"review"`                     |
+| **talk-to-codex**                                                                      | Free-form chat with a resident Codex session over msg-sys, one round-trip at a time, with no findings/completion contract                                   | `"I want to ask Codex"`        |
+| [**start-requirements**](docs/readme/forge/guide_create_docs.md#start-requirements)    | Create requirements via dialog, reverse-engineering, or Figma                                                                                               | `"requirements"`               |
+| [**start-design**](docs/readme/forge/guide_create_docs.md#start-design)                | Create design docs from requirements. Prioritizes asset reuse                                                                                               | `"start design"`               |
+| [**start-plan**](docs/readme/forge/guide_create_docs.md#start-plan)                    | Extract tasks from design docs into a YAML plan                                                                                                             | `"start plan"`                 |
+| [**start-implement**](docs/readme/forge/guide_implement.md)                            | Select tasks from plan, implement, review, and update                                                                                                       | `"start implement"`            |
+| [**start-uxui-design**](docs/readme/forge/guide_uxui_design.md)                        | Create design tokens & UI specs with UX evaluation                                                                                                          | `"UXUI design"`                |
+| **merge-specs**                                                                        | Merge two spec DIRs (base / additional) at content granularity. Additional is canonical; base is revised; pure-new parts migrate                            | `"merge spec"`                 |
+| [**setup-doc-structure**](docs/readme/guide_doc_structure.md#forgesetup-doc-structure) | Generate `.doc_structure.yaml` + scaffold directories                                                                                                       | `"setup"`                      |
+| [**setup-version-config**](docs/readme/forge/guide_setup.md#setup-version-config)      | Generate/update `.version-config.yaml`                                                                                                                      | `"version config"`             |
+| [**update-version**](docs/readme/forge/guide_setup.md#update-version)                  | Bump version across files. patch/minor/major/direct                                                                                                         | `"version bump"`               |
+| [**clean-rules**](docs/readme/forge/guide_setup.md#clean-rules)                        | Analyze and reorganize rules/ based on taxonomy                                                                                                             | `"clean rules"`                |
+| [**help**](docs/readme/forge/guide_setup.md#help)                                      | Interactive help wizard                                                                                                                                     | `"help"`                       |
+| [_doc-structure_](docs/readme/guide_doc_structure.md)                                  | Parse and resolve paths from `.doc_structure.yaml`                                                                                                          | ※ Called by orchestrators      |
+| [_next-spec-id_](docs/readme/forge/guide_create_docs.md)                               | Scan all branches for spec IDs and return the next available number                                                                                         | ※ Called by start-requirements |
 
 ### anvil
 
