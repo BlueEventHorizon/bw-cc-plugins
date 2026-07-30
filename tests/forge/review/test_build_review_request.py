@@ -66,7 +66,12 @@ _MINIMAL_SCAN_RESULT = {
     "counts": {
         "findings": 0,
         "suppressed": 0,
-        "filtered": {"placeholder": 0, "code_expression": 0, "path_like": 0},
+        "filtered": {
+            "placeholder": 0,
+            "code_expression": 0,
+            "path_like": 0,
+            "constant_name": 0,
+        },
         "scanned_files": 1,
         "skipped_files": 0,
     },
@@ -386,6 +391,7 @@ class SecretsPatternTest(unittest.TestCase):
                         "placeholder": 7,
                         "code_expression": 3,
                         "path_like": 1,
+                        "constant_name": 2,
                     },
                 },
             },
@@ -393,6 +399,7 @@ class SecretsPatternTest(unittest.TestCase):
         self.assertIn("プレースホルダ 7", body)
         self.assertIn("コード式 3", body)
         self.assertIn("パス様のキー 1", body)
+        self.assertIn("定数名 2", body)
 
 
 class SecretsTrustBoundaryTest(unittest.TestCase):
@@ -689,6 +696,48 @@ class ScopedPatternContractTest(unittest.TestCase):
     def test_absolute_project_rule_rejected(self):
         with self.assertRaises(ValueError):
             _build("code", project_rules=["/abs/rules.md"])
+
+
+class ScopeInstructionContractTest(unittest.TestCase):
+    """対象欄が「範囲の宣言」ではなく「能動的な手順」を指示していること（DES-055 §8.5）。
+
+    実 Codex レビュー（review_id=1571fca6…）で、`--dirs` 指定に対しレビュアーが
+    未コミット変更の有無を見て差分レビューの枠組みへ切り替え、15 文書 3242 行を
+    読まずに `approved` を返した。原因は対象欄が範囲を宣言するだけで、列挙という
+    最初の作業を命じていなかったこと（`--files` は渡された一覧そのものが手順に
+    なるため成立していたが、`--dirs` では列挙が必要）。
+    """
+
+    _ENUMERATE = "あなた自身が列挙し"
+    _NOT_A_DIFF = "これは差分レビューではありません"
+
+    def test_scoped_templates_instruct_active_enumeration(self):
+        for pattern in build_review_request.SCOPED_PATTERNS:
+            with self.subTest(pattern=pattern):
+                text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
+                self.assertIn(self._ENUMERATE, text)
+
+    def test_scoped_templates_deny_the_diff_framing(self):
+        for pattern in build_review_request.SCOPED_PATTERNS:
+            with self.subTest(pattern=pattern):
+                text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
+                self.assertIn(self._NOT_A_DIFF, text)
+
+    def test_range_templates_do_not_deny_the_diff_framing(self):
+        """範囲指定テンプレートは実際に差分レビューなので、この否定文を持たないこと。
+
+        文言を 5 枚へ一括適用したときに、差分側へ誤って混入させないための歯止め。
+        """
+        for pattern in build_review_request.RANGE_PATTERNS:
+            with self.subTest(pattern=pattern):
+                text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
+                self.assertNotIn(self._NOT_A_DIFF, text)
+
+    def test_instruction_reaches_the_request_body(self):
+        """テンプレートに書いただけでなく、生成された依頼本文に載ること。"""
+        body = _build("design", dirs=["docs/specs/forge/design"])
+        self.assertIn(self._ENUMERATE, body)
+        self.assertIn(self._NOT_A_DIFF, body)
 
 
 class DirsScopeTest(unittest.TestCase):

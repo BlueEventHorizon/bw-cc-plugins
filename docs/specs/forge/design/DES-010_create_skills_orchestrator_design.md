@@ -46,7 +46,7 @@ start-design / start-plan / start-requirements の 3 スキルは、review ス�
 | AIレビュー             | `/forge:review {type} {差分} --auto` に委譲 | レビュー+自動修正（差分のみ対象）                                                           |
 | 後処理                 | メインコンテキスト                          | `/forge:update-db-specs` による ToC 更新、`/anvil:commit` による commit/push 確認、完了案内 |
 
-> **設計判断**: 文書作成はメインコンテキストで実行する。理由: ユーザーとの対話（AskUserQuestion）が頻繁に発生し、汎用 Agent / fork 型 SKILL では対話ができないため。
+> **設計判断**: 文書作成はメインコンテキストで実行する。理由: ユーザーとの対話（AskUserQuestion）が頻繁に発生し、Agent ツールで起動した隔離 context（汎用 Agent・カスタム Agent のいずれも）では対話ができないため。
 
 ---
 

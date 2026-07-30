@@ -57,7 +57,7 @@ create-feature-from-markdown-plan 等）から `Skill` ツール経由で呼ば�
 
 `/forge:query-db-rules` / `/forge:query-db-specs` は **継承型 read-only 検索 SKILL**
 （COMMON-DES-001 §3.1 デフォルト方針 / §6 規定リスト外、`context: fork` を指定しない）。
-転送先の `doc-advisor:query-docs` が fork 境界を持つため forge 側で二重 fork しない。
+転送先の `doc-advisor:query-docs` も継承型 dispatcher であり、実検索は read-only なカスタム Agent（`doc-advisor:query-worker`）へ隔離される。隔離境界は Agent ツール起動が担うため、forge 側・doc-advisor 側のいずれも `context: fork` を使わない。
 `allowed-tools: Skill`。書き込み・コミット・自己再帰は行わない。
 
 呼び出し側は `args` を **検索キーワード + 短い自然文タスク記述のみ**に限定する。Issue 本文・実装指示・差分等の

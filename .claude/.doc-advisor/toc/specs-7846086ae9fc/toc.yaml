@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-07-28T12:37:50Z
+  generated_at: 2026-07-28T14:15:46Z
   file_count: 37
 
 docs:
@@ -321,61 +321,58 @@ docs:
       - relative-paths
       - documentation-architecture
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: DES-001 Document Search Wrapper (forge → doc-advisor) Design
-    purpose: "Specifies the design of forge's document search wrapper SKILLs that delegate rules and specs discovery to the external doc-advisor plugin"
+    title: Forge query abstraction design
+    purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
     content_details:
-      - Four SKILL mappings (query-db-rules, query-db-specs, update-db-rules, update-db-specs) for search and index operations
-      - Query SKILL design with read-only inheritance, task description argument validation, and Required documents output contract
-      - Update SKILL design with directory resolution from .doc_structure.yaml and dirs/exclude patterns
-      - Index generation via doc-advisor:index-docs with --dirs-json and --exclude-json for directory-based targeting
-      - Desired state semantics where --dirs-json/--exclude-json represent complete state per key
-      - Preconditions including external doc-advisor installation and key reservation (rules/specs)
-      - Test coverage for path resolution validation and read-only SKILL role constraint verification
+      - Four wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) forwarding to doc-advisor
+      - Query SKILL contract design with read-only inheritance and Skill tool delegation
+      - Update SKILL workflow using directory resolution from .doc_structure.yaml and doc-advisor:index-docs forwarding
+      - Key mapping design mapping rule/spec categories to opaque keys
+      - "Output contract for query results (Required documents: path list format)"
+      - SKILL isolation constraints with specified allowed-tools and no fork context
+      - Desired-state concept for index updates ensuring complete file set replacement
+      - Prerequisites including doc-advisor installation and key naming constraints
     applicable_tasks:
-      - Implementing forge document search wrapper SKILLs
-      - Adding new query or update SKILL for doc-advisor integration
-      - Understanding document search architecture and delegation pattern
-      - Modifying SKILL execution flow and contracts
-      - Setting up doc-advisor integration with directory management
+      - Document search wrapper SKILL implementation
+      - Integration with external doc-advisor plugin
+      - Query SKILL design and testing
+      - Index update SKILL implementation
     keywords:
-      - query-db-rules
-      - query-db-specs
-      - update-db-rules
-      - update-db-specs
       - doc-advisor
-      - document search
-      - SKILL wrapper
-      - index-docs
       - query-docs
-      - key-based management
+      - index-docs
+      - wrapper-SKILL
+      - key-mapping
+      - Skill-tool
+      - read-only
+      - inheritance
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
-    title: DES-010 Create-* Skills Orchestrator Design
-    purpose: Defines orchestrator architecture and common context gathering framework for create-design, create-plan, and create-requirements skills using parallel agent coordination and return value contracts
+    title: Create skills orchestrator design
+    purpose: Specifies orchestrator pattern design for start-design, start-plan, start-requirements skills with parallel context gathering framework using specs, rules, code agents via return-value contracts
     content_details:
-      - Orchestrator structure with three parallel agents (specs, rules, code) for context gathering
-      - Return value contract using markdown bullet lists for context agent output exchange
-      - Inline prompt methodology for agent self-sufficiency and context independence (FNC-003 compliance)
-      - Parallel execution sequencing with independent agent failure handling and result integration
-      - "Progress reporting convention (5 items or fewer: all shown; 6+ items: first 3 + abbreviated)"
-      - Phase-specific context collection matrix for each skill with agent applicability and mandatory requirements
+      - Orchestrator architecture with parallel agent dispatch for specs, rules, code categories
+      - Common context gathering framework using return-value contracts in markdown bullet format
+      - Skill-specific phase definitions (start-design 5 phases, start-plan 5 phases, start-requirements mode-dependent)
+      - Agent responsibility matrix and context-gathering applicability tables per skill
+      - Return value contract format and output display rules (5 items full, 6+ items head 3 with ellipsis)
+      - "Parallel execution with failure isolation design ensuring one agent failure doesn't impact others"
+      - Inline prompt instructions in SKILL.md for agent self-completion (FNC-003 compliance)
+      - No session directory usage design decision with efficiency rationale
     applicable_tasks:
-      - Skill orchestration architecture design
-      - Context gathering framework implementation
-      - Parallel agent coordination design
-      - Create-design skill full implementation
-      - Create-plan skill full implementation
-      - Create-requirements skill with mode-specific agent collection
+      - Design document creation with parallel context gathering
+      - Plan document creation orchestration
+      - Requirement definition creation with multiple modes
+      - Parallel agent context collection framework implementation
+      - AI review integration in orchestrated workflow
     keywords:
-      - DES-010
       - orchestrator-pattern
       - context-gathering
-      - return-value-contract
       - parallel-agents
-      - specs-agent
-      - rules-agent
-      - code-agent
-      - create-design
-      - create-plan
+      - return-value-contract
+      - start-design
+      - start-plan
+      - start-requirements
+      - agent-isolation
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     title: DES-013 Context Gathering Task Specification
     purpose: Specifies three context gathering task types (spec investigation, rule investigation, code investigation) for forge create-* and start-implement skills, including skill-specific application matrix and agent instruction templates
@@ -561,33 +558,32 @@ docs:
       - resolve_rules.py
       - semantic analysis
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
-    title: DES-022 Parallel Agent Output Contract Design
-    purpose: Defines output contract patterns to prevent write conflicts when parallel agents update shared resources like YAML and JSON files
+    title: Parallel agent output contract design
+    purpose: Defines output contract for parallel agents to prevent race conditions by requiring agents to return results via return-value instead of writing shared files, with orchestrator handling all write operations
     content_details:
-      - Race condition problem in parallel writes to shared resources
-      - Three-step pattern with individual result files and orchestrator batch update
-      - Result file naming rules with prefix_identifier or prefix_index format
-      - Orchestrator responsibilities for coordination and result collection
-      - Agent write restrictions to designated output only
-      - Read operations are unrestricted without coordination overhead
-      - Batch merge implementation using script-based updates
-      - Anti-patterns including shared file direct writes and read-modify-write sequences
+      - "Problem definition: parallel write race condition when multiple agents update same file causing loss of prior agent results"
+      - Claude Code Agent environment constraints (no file locking, subprocess isolation, return-value as only message passing)
+      - "Output contract principle: agents return results via return-value, orchestrator writes shared resources after all agent completion"
+      - Agent responsibilities (return results in return-value, avoid shared resource writes, provide self-contained results, unrestricted reads)
+      - Orchestrator responsibilities (wait for all agent completion, integrate return-values in main context, handle all write operations)
+      - Anti-patterns to avoid (direct shared file writes, read-modify-write in agent, file locking dependency, intermediate files)
+      - Context collection application example (specs, rules, code agents returning markdown lists to orchestrator)
+      - Checklist for designing new parallel agents with 5 confirmation items
     applicable_tasks:
-      - Parallel agent orchestration design
-      - Race condition prevention in concurrent writes
-      - Multi-agent async workflow implementation
-      - Concurrent resource update coordination
-      - Agent coordination pattern definition
+      - Orchestrator SKILL design with parallel agents
+      - Parallel agent context gathering implementation
+      - Race condition prevention in multi-agent workflows
+      - Agent and orchestrator responsibility definition
+      - Parallel agent output contract compliance verification
     keywords:
-      - parallel agent
-      - write conflict
-      - race condition
+      - parallel-agents
+      - return-value-contract
+      - race-condition
+      - output-contract
       - orchestrator
-      - output contract
-      - individual result files
-      - batch update
-      - agent coordination
-      - shared resource
+      - agent-isolation
+      - file-locking
+      - anti-patterns
   docs/specs/forge/design/DES-023_version_management_workflow_design.md:
     title: DES-023 Version Management Workflow Design
     purpose: Designs version management workflow for multi-plugin repositories using .version-config.yaml, with scripts for scanning version files, calculating semantic versions, and updating multiple sync targets safely
@@ -618,38 +614,37 @@ docs:
       - NFR-01
       - DES-024
   docs/specs/forge/design/DES-024_skill_script_layout_design.md:
-    title: DES-024 SKILL.md and Script Layout Design
-    purpose: Defines separation of responsibilities between SKILL.md and scripts, establishing one-directional dependency and codifying wrapper decision criteria, naming conventions, and placement principles
+    title: SKILL.md and Script Placement and Contract Design
+    purpose: Defines the layout and contract design for SKILL.md, wrapper scripts, and low-level scripts, establishing one-way dependencies and clear responsibilities
     content_details:
-      - Single wrapper type for transparent subprocess calls to low-level scripts
-      - Composite wrapper exception layer with strict constraints on reuse and new schema definition
+      - "Wrapper types: primary (single subprocess passthrough) and composite exception (multiple subprocess chaining)"
       - Writer exception type for stdout-only low-level scripts with capture and write-back logic
-      - Wrapper decision criteria based on hardcoding SKILL values, composite operations, or mode semantics
-      - Two-level script classification by domain and skill-specific placement
-      - Prohibition of shared wrapper layer across multiple skills
-      - Low-level script public CLI stability requirement with internal refactoring allowed
-      - Operation-based naming conventions using verb-primary format
-      - SKILL.md restrictions to positional arguments only without flag parameters
-      - One-directional dependency enforcement from SKILL.md through wrappers to external files
+      - "Wrapper creation criteria: hardcoded SKILL values, composite operations, or mode semantic mapping required"
+      - "Two-level script layout: low-level scripts in plugins/forge/scripts/{domain}/ and SKILL-specific wrappers in plugins/forge/skills/{skill}/scripts/"
+      - "One-way dependency flow: SKILL.md → wrapper → low-level script → external files (no reverse dependencies)"
+      - "Public CLI stability requirement: low-level script path and arguments must remain stable across refactors"
+      - "Naming conventions: operation names as verbs without wrapper suffix; aligned names for same operations across skills"
+      - "SKILL.md layer rules: position arguments only, no flag combinations, no guard warnings"
+      - "Composite wrapper constraints: single-SKILL closure, existing JSON schema reuse only, no business logic beyond chaining"
+      - "Test requirements: subprocess argument validation, exit code transparency, placement in tests/forge/{skill}/"
     applicable_tasks:
-      - SKILL and script architecture design
-      - Wrapper responsibility and decision criteria definition
-      - Script placement and organization for plugin development
-      - Separation of concerns between SKILL.md and low-level scripts
-      - Wrapper implementation and testing strategy
-      - Low-level script refactoring with CLI compatibility
-      - Multi-level script hierarchy design and governance
+      - SKILL implementation planning
+      - Script architecture and dependency design
+      - Wrapper creation and validation
+      - Low-level script implementation and API maintenance
+      - Script dependency validation
+      - Wrapper test design and implementation
     keywords:
-      - wrapper
-      - low-level script
       - SKILL.md
-      - one-directional dependency
-      - hardcoded values
-      - script placement
+      - wrapper script
+      - low-level script
+      - dependency direction
       - subprocess call
+      - hardcoded values
+      - script layout
+      - one-way dependency
       - CLI stability
-      - separation of concerns
-      - composite operation
+      - public API
   docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md:
     title: DES-027 Implementation Strategy Phase Addition to start-plan (ADR)
     purpose: ADR justifying the introduction of an implementation strategy formulation phase into start-plan, defining approach selection (bottom-up, skeleton-first, risk-driven, feature-slice) and phase planning
@@ -716,34 +711,37 @@ docs:
       - Python 3.11
       - metadata
   docs/specs/forge/design/DES-055_review_request_template_design.md:
-    title: DES-055 Review Request Template Design
-    purpose: Defines the design of review request templates for the forge review skill, including 8 patterns, placeholder contracts, token replacement rules, and validation specifications.
+    title: Review Request Template Design
+    purpose: Specifies design for review request templates organized by review pattern, with natural language templates for specifications and script-based validation for placeholder substitution
     content_details:
-      - Eight template patterns (diff, branch, code, requirement, design, plan, uxui, secrets)
-      - Template placement in plugins/forge/skills/review/templates/
-      - Placeholder token contract and replacement rules using {{TOKEN}} notation
-      - Script responsibilities for build_review_request.py, analyze_branch_point.py, resolve_targets.py
-      - Validation checks for token consumption, injection prevention, and path resolution
-      - Template selection logic based on skill invocation patterns
-      - Test design covering token replacement, path resolution, and contract tests
-      - Design rationale for single-template-per-pattern approach
-      - Trust boundary design for secrets scanning preventing unmasked values in output
+      - "Template storage and organization: eight templates in plugins/forge/skills/review/templates/ for patterns (diff, branch, code, requirement, design, plan, uxui, secrets)"
+      - "Placeholder token protocol using {{TOKEN}} format with tokens: PROTOCOL_HEADER, REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, BASE_BRANCH, TARGET_BRANCH, TARGET_SCOPE, FOCUS, SCAN_FINDINGS, SCAN_SUPPRESSED, SCAN_STATS"
+      - "Constraint: scripts contain no prose; all review instruction text lives in templates only"
+      - Template-specific criteria reference lists mapping each template to named forge internal principles documents (review_criteria_*.md, format_*.md, etc.)
+      - "Fail-closed validation: uncompleted tokens, unknown tokens, newline/CR injection, absolute path checks, dual target axis prevention, required field verification, scan result presence"
+      - "Script responsibilities separated: build_review_request.py for embedding and validation; analyze_branch_point.py for base branch enumeration; resolve_targets.py for file/directory validation; scan_secrets.py for deterministic masking"
+      - "Trust boundary design: secrets pattern generates scans internally via build_review_request.py importing scan_secrets.py to ensure masked values structure-only"
+      - "Template selection: single deterministic template per pattern based on review type and target axis combination (diff, branch, or file/directory specification)"
+      - "Completeness test suite: token substitution, unknown token detection, newline injection prevention, path resolution, template existence, criteria document existence, secret detection coverage, masked-value non-re-emission validation"
     applicable_tasks:
-      - Review request template implementation
-      - Review mechanism design and maintenance
-      - Review workflow configuration
-      - Template validation and testing
-      - Security scanning implementation
+      - Review request template creation and design
+      - Review script development and implementation
+      - Placeholder token system design and validation
+      - Secrets detection and masking implementation
+      - Test design for request generation
+      - Criteria mapping and documentation
+      - Template maintenance and updates
     keywords:
-      - template design
-      - placeholder contract
-      - token replacement
-      - review patterns
-      - build_review_request
-      - secrets scanning
+      - review request template
+      - placeholder token
+      - review pattern
+      - build_review_request.py
+      - scan_secrets.py
+      - trust boundary
+      - criteria mapping
+      - template selection
+      - masking
       - validation
-      - scope preservation
-      - review criteria
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Specifies requirements for forge plugin skills to use orchestrator pattern delegating complex work to agents
@@ -868,36 +866,38 @@ docs:
       - round trip limit
       - cmux wake
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
-    title: DES-046 msg-review Intervention Axis Implementation Design Specification
-    purpose: "Specifies implementation of intervention axis (severity-based modification scope) for msg-review, bridging the gap with existing callers' expectations for critical and major finding filtering"
+    title: DES-046 msg-review Intervention Mode Implementation Design
+    purpose: "Specifies implementation design for msg-review's intervention mode (--auto-critical/--auto) that automatically fixes findings based on severity level (critical/major/minor)"
     content_details:
-      - "Three intervention modes: --interactive default (aliased to --auto), --auto-critical (critical only), --auto (critical and major)"
-      - parse_findings.py script extracting severity markers (critical, major, minor) from Codex findings in free-form markdown
-      - "Handling corner cases: multiline findings, code blocks (fenced and indented), line-middle marker occurrences"
-      - "Unclassified findings fallback: findings declared but markers not found treated as severity unclassified"
-      - gate_findings.py decision table mapping severity and mode to auto-fix versus excluded categories
-      - Finding evaluation against review_criteria with confirmed_fix grouping
-      - "Infinite loop prevention: confirmed_fix empty check ensures distinct completion states"
-      - Exclusion reporting with mode-specific reasoning (severity range, unclassified, evaluation drop)
-      - "Temporary behavior: --interactive and unspecified default to --auto pending full staged presentation implementation"
+      - Finding severity parsing logic with support for severity markers (🔴/🟡/🟢)
+      - Severity-based decision gate with decision table for auto-critical vs auto mode
+      - Code block handling in finding extraction (fenced and indented blocks)
+      - Fail-closed behavior for malformed findings (unclassified fallback)
+      - Integration with SKILL.md receive mode workflow with Steps 2a-2c
+      - Confirmation evaluation logic for auto-fix candidates against review criteria
+      - Termination condition to prevent infinite loop (empty confirmed_fix check)
+      - Finding reporting with reason codes (severity exclusion vs evaluation drop)
+      - Changes to request mode and default argument interpretation
+      - Test design for parse and gate functions with regression test cases
     applicable_tasks:
-      - msg-review intervention axis implementation
-      - Finding severity parsing and classification
-      - Automatic modification scope gating by severity
-      - Infinite loop prevention in review cycles
-      - Compatibility with /forge:review intervention modes
-      - Test implementation for finding parsing and gating
-      - Receiver mode enhancement with finding evaluation
+      - msg-review intervention mode feature implementation
+      - Finding severity classification logic implementation
+      - Finding parsing and validation
+      - Gate decision logic testing
+      - SKILL.md receive mode integration
+      - Finding evaluation and confirmation workflow
+      - Intervention mode regression testing
     keywords:
-      - parse_findings
-      - severity markers
-      - gate_findings
-      - intervention axis
-      - auto-critical
-      - auto mode
-      - unclassified findings
-      - code block handling
-      - confirmed_fix
+      - parse_findings.py
+      - gate_findings.py
+      - severity
+      - critical
+      - major
+      - minor
+      - msg-review
+      - intervention mode
+      - "--auto-critical"
+      - "--auto"
   docs/specs/msg-review/design/DES-047_msg_review_fix_safety_guardrails_design.md:
     title: DES-047 msg-review Modification Safety Guardrails Design Specification
     purpose: "Specifies safety guardrails for msg-review's direct modification by Claude, including allowlist enforcement, sequential single-finding application, and syntax validation with rollback detection"
@@ -964,35 +964,40 @@ docs:
       - self-review safety verification
       - delayed response handling
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: REQ-012 Message-Driven Review SKILL Requirements Specification
-    purpose: Specifies requirements for msg-review SKILL, which orchestrates code reviews through asynchronous messaging with Codex, enabling continuous dialogue and direct Claude-controlled evaluation and modification of findings.
+    title: "REQ-012 msg-review: Messaging-Driven Review SKILL Requirements Definition"
+    purpose: "Requirements definition for msg-review SKILL: Codex-driven ongoing dialogue reviews through msg-sys, with automated evaluation and modification orchestrated by Claude."
     content_details:
-      - Asynchronous messaging orchestration over msg-sys for continuous Codex dialogue
-      - "Standardized review initiation with three target modes: uncommitted diff, full branch changes, explicit file list"
-      - Self-contained review request format with embedded rule document paths and severity markers
-      - Claude-direct orchestration of findings evaluation, modification acceptance, and re-request
-      - "Review completion conditions: Codex approval, round-trip limit, or intervention-mode scope exhaustion"
-      - Prerequisite validation for message database connectivity and Codex listener availability
-      - Auditability through msg-sys message history without duplicate logging
-      - Command compatibility with /forge:review syntax, intervention axes (auto-critical, auto, interactive), and warning on unsupported engine flags
+      - "Background: msg-sys communication infrastructure lacks standardized review workflow and repeatable procedures"
+      - "v1 Scope: covers automated review startup, findings evaluation/modification cycles, and completion judgment; excludes evaluator/fixer agents"
+      - "FNC-001: standardized review request with support for uncommitted diff, full branch changes, or specified file groups"
+      - "FNC-006: command syntax compatibility with /forge:review for review type, target specification, and intervention axis"
+      - "FNC-002: self-contained review requests with target info, review criteria, rules document paths, and response format"
+      - "FNC-003: precondition validation including message DB accessibility and Codex session readiness checks"
+      - "FNC-004: Claude-orchestrated findings loop with evaluation, modification, implementation, and re-request within single message chain"
+      - "FNC-005: review completion by Codex approval, message turn limit, or auto-fix scope exhaustion with findings summary"
+      - "BL-001: audit trail through msg-sys message history without duplicate persistent records"
     applicable_tasks:
-      - Implementing msg-review SKILL CLI and orchestration logic
-      - Designing Codex asynchronous review coordination
-      - Evaluating and responding to review findings
-      - Integrating msg-review as alternative or unified engine for /forge:review
-      - Testing auto-critical and auto mode behavior differentiation
-      - Review completion determination and human-readable reporting
+      - Implementing msg-review SKILL
+      - Designing msg-review CLI interface and command compatibility
+      - Testing msg-review findings evaluation and modification workflow
+      - Integrating msg-review with existing /forge:review review pipelines
+      - Evaluating v1 vs existing evaluator/fixer approach effectiveness
+      - Extending automated review capabilities through messaging infrastructure
+      - Setting up msg-sys message database for review workflows
+      - Documenting review request format and Codex response handling
+      - Migrating from /forge:review to msg-review engine future
+      - Debugging review findings loop failures and completion issues
     keywords:
       - msg-review
-      - Codex
-      - findings
-      - asynchronous messaging
-      - review orchestration
-      - auto-critical
-      - msg-sys
-      - evaluation
-      - intervention axes
-      - continuous dialogue
+      - messaging-driven review
+      - Codex dialogue
+      - findings evaluation
+      - review automation
+      - msg-sys integration
+      - re-review cycle
+      - Claude orchestrator
+      - review completion criteria
+      - precondition validation
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)

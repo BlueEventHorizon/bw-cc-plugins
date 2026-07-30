@@ -151,6 +151,34 @@ class FalsePositiveTest(unittest.TestCase):
         self.assertEqual(result["findings"], [])
         self.assertEqual(result["counts"]["filtered"]["code_expression"], 1)
 
+    def test_constant_name_not_reported(self):
+        """定数名の列挙を秘密と誤認しないこと。
+
+        実運用で `.claude/.doc-advisor/toc/*/toc.yaml` の生成結果が誤検出された
+        （`with tokens: PROTOCOL_HEADER, REVIEW_TYPE, ...` というプレースホルダ名の
+        列挙。キーが `tokens` のため機密様キーに一致するが、値はトークンの名前で
+        あって値ではない）。生成物なので抑制マーカーを置けず、スキャナ側で除外する。
+        """
+        result = _scan_source("with tokens: PROTOCOL_HEADER, REVIEW_TYPE, PLUGIN_ROOT\n")
+        self.assertEqual(result["findings"], [])
+        self.assertEqual(result["counts"]["filtered"]["constant_name"], 1)
+
+    def test_single_word_uppercase_is_still_reported(self):
+        """区切りの無い大文字列は定数名として除外しないこと。
+
+        実在の資格情報と衝突させないため、除外は「アンダースコア区切りの複数語」に
+        限定する。単語 1 個の大文字列は除外対象から外す。
+
+        値を連結して組み立てるのは、このファイル自身が `--secrets` のスキャン対象であり、
+        リテラルで `secret_token = <大文字列>` と書くと自分自身を検出させてしまうため
+        （`sensitive_information_spec.md` §4。同ファイル冒頭の `_RAW_LOOKING_VALUE` と
+        同じ理由）。f-string 側の行は値が `{...}` を含むためコード式として除外される。
+        """
+        upper_without_separator = "ABCDEFGHIJ" + "KLMNOPQRST"
+        result = _scan_source(f"secret_token = {upper_without_separator}\n")
+        self.assertEqual(result["counts"]["filtered"]["constant_name"], 0)
+        self.assertEqual(len(result["findings"]), 1)
+
     def test_checksum_table_not_reported(self):
         """`design_token_template.md: <sha256>` 形式を秘密と誤認しないこと。"""
         digest = "f1c6a877274047043cd1cd7226de6813ad0d6c66f5dd894df35416f24b3c5b93"

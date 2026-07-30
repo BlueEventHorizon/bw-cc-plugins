@@ -74,6 +74,29 @@ _PATH_LIKE_KEY_RE = re.compile(
     r"\.(md|py|ya?ml|json|toml|txt|ts|tsx|js|jsx|sh|lock|cfg|ini)$", re.IGNORECASE
 )
 
+# 値が定数名・識別子（SCREAMING_SNAKE_CASE）の場合の除外。
+# 例: `with tokens: PROTOCOL_HEADER, REVIEW_TYPE, ...`（プレースホルダ名の列挙。キーが
+# `tokens` のため機密様キーに一致するが、値はトークンの名前であって値ではない）。
+#
+# 判定を「大文字のみ」ではなく「アンダースコア区切りの複数語」に限定しているのは、
+# 実在のトークンと衝突させないため。既知形式の資格情報は大文字英字だけで構成されず、
+# 数字・小文字・記号を含む（`AKIA` + 英数字、`gh?_` + 英数字等）。区切りを 1 つ以上
+# 要求することで、単語 1 個の大文字列（偶然そう見える値）も除外対象から外れる。
+_CONSTANT_NAME_RE = re.compile(r"^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$")
+
+# 機械的な除外の理由。件数は依頼本文へ必ず載せる（黙って落とさない。FNC-1317）。
+#
+# **キー集合をここ 1 箇所で定義する [MANDATORY]**: 以前は行単位の集計と全体集計で
+# 同じ辞書リテラルを 2 箇所に書いており、理由を追加したときに片方だけ直して
+# `KeyError` で全スキャンが落ちた。追加時に同期を忘れられない形にする。
+_FILTER_REASONS = ("placeholder", "code_expression", "path_like", "constant_name")
+
+
+def new_filter_counts() -> dict[str, int]:
+    """除外理由ごとの件数カウンタを 0 で初期化して返す。"""
+    return {reason: 0 for reason in _FILTER_REASONS}
+
+
 # 同一文字の繰り返し・単調な埋め草。エントロピー検出の足切りに使う。
 _MONOTONE_RE = re.compile(r"^(.)\1*$")
 
@@ -178,6 +201,8 @@ def _iter_line_matches(line: str):
             yield "assignment_to_secret_like_key", value, "path_like"
         elif _CODE_EXPRESSION_RE.search(value) or not _SECRET_CHARSET_RE.match(value):
             yield "assignment_to_secret_like_key", value, "code_expression"
+        elif _CONSTANT_NAME_RE.match(value):
+            yield "assignment_to_secret_like_key", value, "constant_name"
         else:
             yield "assignment_to_secret_like_key", value, None
 
@@ -197,7 +222,7 @@ def scan_text(path: str, text: str) -> tuple[list[dict], list[dict], dict[str, i
     """
     findings: list[dict] = []
     suppressed: list[dict] = []
-    filtered = {"placeholder": 0, "code_expression": 0, "path_like": 0}
+    filtered = new_filter_counts()
 
     for lineno, line in enumerate(text.splitlines(), start=1):
         if len(line) > MAX_LINE_CHARS:
@@ -267,7 +292,7 @@ def scan(project_root: Path, paths: list[str] | None = None) -> dict:
     findings: list[dict] = []
     suppressed: list[dict] = []
     skipped: list[dict] = []
-    filtered_total = {"placeholder": 0, "code_expression": 0, "path_like": 0}
+    filtered_total = new_filter_counts()
     scanned = 0
 
     for rel in paths:
