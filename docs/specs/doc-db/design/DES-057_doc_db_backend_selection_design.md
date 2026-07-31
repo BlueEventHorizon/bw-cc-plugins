@@ -375,13 +375,14 @@ doc-db の MCP tool I/F の所有は doc-db 側にある。forge は接続する
 契約が改訂された場合は、本項の更新とテストの追従を同じ変更で行う（§5.1.5 と同じ運用）。
 
 応答は `tools/call` 結果の `content[]` のうち `type` が `text` の要素に載る JSON を解析して得る。
+doc-db は同一内容を `structuredContent` にも載せるため、どちらから読んでも同じ dict になる（実測。下記「実測結果」）。
 
-| tool              | request                                          | 使用する response field                                                                                         |
-| ----------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `query`           | `{key, series, query, mode: "all", top_n: 20}`   | `results[].path`（順位順）、`warnings[]`                                                                        |
-| `sync_documents`  | `{key, series, documents: [{path, local_path}]}` | `job_id`                                                                                                        |
-| `get_sync_status` | `{job_id}`                                       | `status`（`running` / `done` / `failed`）、`processed`、`skipped`、`failed`、`deleted_paths_marked`、`errors[]` |
-| `list_indexes`    | `{}`                                             | KEY 一覧と各 KEY の `series[]`（当該 series の登録有無の確認に使う）                                            |
+| tool              | request                                          | 使用する response field                                                                                           |
+| ----------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `query`           | `{key, series, query, mode: "all", top_n: 20}`   | `results[].path`（順位順）、`warnings[]`（**正常時は field 自体が存在しない**）                                   |
+| `sync_documents`  | `{key, series, documents: [{path, local_path}]}` | `job_id`                                                                                                          |
+| `get_sync_status` | `{job_id}`                                       | `status`（`running` / `done` / `failed`）、`processed`、`skipped`、`failed`、`deleted_paths_marked`、`errors[]`   |
+| `list_indexes`    | `{}`                                             | `indexes[]` の各要素の `key` と `series`（当該 series の登録有無の確認に使う。**`series` は `null` になりうる**） |
 
 - `query` の `series` は任意引数である。forge は現在の branch を必ず指定する（§4.1）。
 - 参考実装の CLI は series 未登録を検索前に検証し、未登録なら検索せず専用の exit code で返す。
@@ -397,21 +398,49 @@ doc-db の MCP tool I/F の所有は doc-db 側にある。forge は接続する
   対象文書数 0 の判定を先に行う（§4.2）。
 - 上記以外の tool（`upsert_documents`、`schedule_delete_series`、`trash_index` 等）は本 feature では使用しない。
 
+#### 実測結果（doc-db 0.3.2 / 2026-07-31）
+
+実 doc-db に対する読み取り専用の実測で確認した事実。上記表の根拠であり、テストの注入応答はこの形に合わせる。
+
+| 観測点               | 実測値                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| 応答の Content-Type  | `initialize` / `tools/call` とも **`text/event-stream`（SSE）のみ**。`application/json` は観測されない |
+| `Mcp-Session-Id`     | `initialize` の応答ヘッダで返る。以降の `tools/call` の応答ヘッダには含まれない                        |
+| notification 応答    | `notifications/initialized` は空 body（Content-Type なし）                                             |
+| result の担体        | `content[].text` の JSON と `structuredContent` の両方に同一内容が載る                                 |
+| `query` 正常応答     | top-level は `results` / `stage_stats` のみ。`warnings` は **field 自体が存在しない**                  |
+| `results[]` の field | `path` / `text` / `heading_path` / `score` / `score_breakdown` / `origin_signals` / `series_keys`      |
+| `list_indexes` 応答  | `{"indexes": [{key, series, doc_count, chunk_count, last_updated_at, last_accessed_at}]}`              |
+| `series` の型        | 文字列配列、または **`null`**（doc 0 件の KEY で観測）。空配列ではない                                 |
+
+SSE のみが観測されたが、client は JSON 応答も解析できる実装を維持する（§2.2）。
+Streamable HTTP はどちらの形式も許容し、応答形式は doc-db 側の実装詳細であるため、
+片方だけを前提にすると doc-db の内部変更で壊れる。
+
+`series` が `null` を取り得るため、`series[]` の走査は `null` を空集合として扱う。
+
 #### KEY 状態に関する doc-db の挙動
 
-doc-db は次の 2 つを **致命的エラー**（MCP error response）として返す。空結果ではない。
-
-| 条件             | doc-db の挙動                                            | forge の扱い                                    |
-| ---------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| KEY が存在しない | `query` がエラーを返す                                   | 未整備。索引を作成して query を継続する（§4.2） |
-| KEY がゴミ箱状態 | `query` も書き込み系 tool もエラーを返し、復活操作を促す | 未整備ではない。復活操作の案内を伴う明示エラー  |
+| 条件                        | doc-db の挙動                                            | forge の扱い                                    |
+| --------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| KEY が存在しない            | `query` が tool error を返す                             | 未整備。索引を作成して query を継続する（§4.2） |
+| KEY がゴミ箱状態            | `query` も書き込み系 tool もエラーを返し、復活操作を促す | 未整備ではない。復活操作の案内を伴う明示エラー  |
+| 既存 KEY の series が未登録 | **error にならず 0 件で成功する**                        | 未整備。`list_indexes` で事前に検出する（§4.2） |
 
 KEY 不在とゴミ箱状態はいずれも tool error として届くため、forge は **error の内容から両者と
 その他の障害を判別する**。判別できない error は障害として扱い、索引作成を試みない（§4.2）。
 
-**判別に用いる signal は実装時に確定する。** 実 doc-db に対して「存在しない KEY への query」と
-「ゴミ箱状態の KEY への query」を実測し、得られた error の識別可能な要素を本項に追記してから実装へ進む。
-実測前に文言を推測して固定しない。判別できない場合は障害扱いに倒す既定を保ち、未整備側へは倒さない。
+series 未登録は query では検出できない。したがって未整備（exit code `30`）の判定は
+`list_indexes` の `series` による事前確認に依拠し、query の結果からは行わない（§4.2）。
+
+**KEY 不在の判別 signal（実測）**: doc-db は JSON-RPC error ではなく、`tools/call` result の
+`isError: true` と `content[].text` の日本語文言 `key "<key>" が存在しません` で返す。
+`code` / `data` は付かないため、判別は文言に依拠するほかない。
+`docdb_client.py` は `isError` を `ToolError` へ変換するため、呼び出し側には tool error として届く。
+
+**ゴミ箱状態の判別 signal は未実測である。** 実測には `trash_index` の実行が必要で、既存 KEY の
+内容を壊すため読み取り専用の検証では行えない。実装時に破棄可能な検証用 KEY を作って実測し、
+本項に追記する。それまでは判別不能な error を障害扱いに倒す既定を保ち、未整備側へは倒さない。
 ゴミ箱状態の KEY へ同期を試みても doc-db 側で拒否されるため、未整備として扱ってはならない。
 ゴミ箱からの復活そのものは KEY の運用管理であり、本 feature の対象外（REQ-014 スコープ）である。
 

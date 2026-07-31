@@ -29,12 +29,19 @@
   - `plugins/forge/scripts/doc_backend/docdb_client.py` — MCP session / JSON-RPC / JSON・SSE 解析（§2.2）。移植元から `upsert` / `upsert-batch` / `delete-series` / `sync`（プロセス内ポーリング版）を落とし、forge が使う `query` / `sync_documents` / `get_sync_status` に縮小する。通信定数は §2.2 の値（operation timeout 600s / poll 2s / 既定 port 58080 / probe timeout 1s / 起動待ち 10s / 再試行 0.25s）。
   - `plugins/forge/scripts/doc_backend/docdb_runtime.py` — 接続 probe、`shutil.which("doc-db")`、`Popen`（新規セッション・標準入出力切り離し）、期限付き再接続、理由コード生成（§2.3）。ログファイルを作らないこと・認証情報を読まないこと（NFR-005）をここで固定する。
   - `plugins/forge/scripts/doc_backend/project_documents.py` — `{project_name}-{category}` の key、branch series、detached → `main`、対象文書一覧（§4.1）。既存 `resolve_doc_structure.py --type` を subprocess で呼んで再利用し、YAML パーサを二重実装しない。`query_docdb.py` / `sync_docdb.py` の双方が本モジュール経由で件数と一覧を得る（確認事項 2）。
-  - `tests/forge/scripts/doc_backend/` に応答注入用の fixture（JSON 応答・SSE 応答・tool error・HTTP error の canned response）。時計・HTTP 送信・process・filesystem を差し替え可能な境界として設ける（§9.1 末尾）。**socket を開く fake server は作らない**（§9.3）。
+  - `tests/forge/doc_backend/` に応答注入用の fixture（JSON 応答・SSE 応答・tool error・HTTP error の canned response）。時計・HTTP 送信・process・filesystem を差し替え可能な境界として設ける（§9.1 末尾）。**socket を開く fake server は作らない**（§9.3）。
 - **検証ポイント**:
   - `python3 -m unittest discover -s tests -p 'test_*.py'` 全通過（既存テストの回帰なし）。
   - §9.1 の該当行（`docdb_client.py` / `docdb_runtime.py` / `project_documents.py`）の単体テストが緑。特に「秘密値非出力」「実行ファイル不在」「早期終了」「再接続不能」の 4 異常系。
   - 注入した JSON 応答・SSE 応答の両経路が同一の parse 結果を返すこと。
   - **中間検証（`docdb_client.py` 完成時点で先に実施し、後続に持ち越さない）**: 実際に `doc-db` を起動した状態で `initialize` → `tools/call query` が通ること。手元に doc-db 実体があるため、ここで実測して §4.5 スナップショットとのズレを早期に検出する。
+
+#### 中間検証の実施記録（doc-db 0.3.2 / 2026-07-31・読み取り専用）
+
+- **手順**: 起動済み doc-db（port 58080）に対し `docdb_client.py` を importlib でロードし、`initialize` → `notifications/initialized` → `tools/call` を実行。`list_indexes` で実在 KEY / series を確認したうえで `query`（`mode=all` / `top_n` 小）を 1 回呼び、transport 層で Content-Type とヘッダを記録した。書き込み系 tool は呼んでいない。
+- **結果**: 接続確立・`list_indexes`・`query` すべて成功。session は `initialize` 応答の `Mcp-Session-Id` で確立。**応答は全て SSE（`text/event-stream`）で、JSON 応答は観測されなかった**（client は両対応を維持）。
+- **§4.5 とのズレ（実測値へ更新済み）**: (1) `warnings` は正常時に field 自体が存在しない、(2) `list_indexes` は `indexes[]` を包む形で `series` は `null` を取り得る、(3) result は `content[].text` と `structuredContent` の両方に同一内容が載る、(4) KEY 不在は JSON-RPC error ではなく `isError: true` + 文言 `key "<key>" が存在しません`（`code` / `data` なし）、(5) **既存 KEY の未登録 series への query は error にならず 0 件成功**するため、未整備検出は `list_indexes` に依拠するほかない。
+- **持ち越し**: ゴミ箱状態 KEY の error 文言は `trash_index` が必要で読み取り専用検証では採取できない。フェーズ 2 で破棄可能な検証用 KEY を作って実測する（リスク表の 1 行目と同じ扱い）。
 
 ### フェーズ 2: operation 層と exit code 契約
 
@@ -87,22 +94,22 @@
 
 ## リスクと対策
 
-| リスク                                                                                                                                          | 影響度 | 対策（どのフェーズで潰すか）                                                                                                                                     |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| KEY 不在とゴミ箱状態を error 文言から判別する設計（§4.5）が、doc-db のメッセージ文言に依存して脆い。誤判別するとゴミ箱 KEY へ同期を試みる       | 高     | フェーズ 2 で実 doc-db から両 error を実測し、判別根拠を §4.5 に追記。判別不能な error は障害（exit 20）扱いのまま維持し、未整備側に倒さない                     |
-| series 未同期の検出手段が §4.5 の tool 表に無い（参考実装は `list_indexes` を使うが、表は `query` / `sync_documents` / `get_sync_status` のみ） | 高     | フェーズ 2 着手前に方式を確定（確認事項 4）。`list_indexes` を使うなら §4.5 スナップショットへ追記してから実装する                                               |
-| MCP Streamable HTTP + SSE を標準ライブラリのみで実装する部分が未検証                                                                            | 高     | フェーズ 1 に前倒し。注入応答で JSON / SSE 双方の解析を通し、さらに実 doc-db で中間検証する                                                                      |
-| on-demand 起動（`Popen` 新規セッション・切り離し）が環境依存で失敗する / 別 wrapper と競合起動する                                              | 中     | フェーズ 1。§2.3 のとおり「MCP 接続に成功すれば利用可能」と判定し、プロセスの生死ではなく接続で判定する。probe 上限（1s / 10s / 0.25s）で長時間ブロックしない    |
-| SKILL 側ポーリングの実装が SKILL.md 記述に依存し、AI が進捗報告を省略する（NFR-001 違反）                                                       | 中     | フェーズ 3。`--status` 1 回 = 1 報告の対応を SKILL.md に `[MANDATORY]` で固定。フェーズ 3a の実行検証で進捗がチャットに出ることを目視確認する                    |
-| SKILL.md 書き換え中に既存 doc-advisor 経路が壊れ、リポジトリ自身の `/forge:query-db-*` が使えなくなる（本リポジトリは SoT のため実害が大きい）  | 中     | フェーズ 3 を 3a（update）→ 3b（query）に分割。共有層・operation 層（フェーズ 1・2）は SKILL から参照されないため、フェーズ 2 完了時点までは既存経路が完全に無傷 |
-| doc-advisor の `check-toc` 応答が既知値以外だったときに fresh へ縮退して stale ToC で検索してしまう                                             | 中     | フェーズ 3b + 4。§5.1.4 の「縮退せず明示エラー」を実装し、契約テストで固定                                                                                       |
-| forge のテストが doc-advisor / doc-db の内部判定に依存し、外部変更で壊れる                                                                      | 中     | フェーズ 4。`fresh` / `stale` は応答値として与え判定を再現しない。境界値・skew・`generated_at` 解析に依存するテストを書かない                                    |
-| 4 SKILL × 同名 wrapper の量産で、固定値だけ違う 10 ファイルの取り違え                                                                           | 低     | フェーズ 3。wrapper テストで category 固定値を各ファイルについて明示的に assert する（DES-024 §8）                                                               |
-| 実在確認の除外が同期直後の正常結果まで削ってしまう（0 件化）                                                                                    | 低     | フェーズ 2。除外はパス存在判定のみ（内容読み取り・checksum なし）。全件除外でも operation は成功・空の `Required documents:` を返す仕様をテストで固定            |
+| リスク                                                                                                                                         | 影響度 | 対策（どのフェーズで潰すか）                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KEY 不在とゴミ箱状態を error 文言から判別する設計（§4.5）が、doc-db のメッセージ文言に依存して脆い。誤判別するとゴミ箱 KEY へ同期を試みる      | 高     | KEY 不在側は実測済み（§4.5「実測結果」。`isError: true` + 日本語文言のみで、code / data は付かない）。**ゴミ箱状態は未実測**（`trash_index` が既存 KEY を壊すため読み取り専用検証では行えない）。破棄可能な検証用 KEY を作ってフェーズ 2 で実測し §4.5 へ追記する。判別不能な error は障害（exit 20）扱いのまま維持し、未整備側に倒さない |
+| `list_indexes` の `series[]` が「未同期」と「同期済みだが 0 件」を区別できない。取り違えると 0 件の正常結果を未整備と誤判定して索引作成へ倒す  | 高     | **検出方式は決着済み**（確認事項 4 / §4.5 の tool 表に `list_indexes` を追加済み）。残るのはこの取り違えであり、フェーズ 2 で「対象文書数 0 の判定を先に行う」順序をテストで固定する                                                                                                                                                      |
+| MCP Streamable HTTP + SSE を標準ライブラリのみで実装する部分が未検証                                                                           | 高     | フェーズ 1 に前倒し。注入応答で JSON / SSE 双方の解析を通し、さらに実 doc-db で中間検証する                                                                                                                                                                                                                                               |
+| on-demand 起動（`Popen` 新規セッション・切り離し）が環境依存で失敗する / 別 wrapper と競合起動する                                             | 中     | フェーズ 1。§2.3 のとおり「MCP 接続に成功すれば利用可能」と判定し、プロセスの生死ではなく接続で判定する。probe 上限（1s / 10s / 0.25s）で長時間ブロックしない                                                                                                                                                                             |
+| SKILL 側ポーリングの実装が SKILL.md 記述に依存し、AI が進捗報告を省略する（NFR-001 違反）                                                      | 中     | フェーズ 3。`--status` 1 回 = 1 報告の対応を SKILL.md に `[MANDATORY]` で固定。フェーズ 3a の実行検証で進捗がチャットに出ることを目視確認する                                                                                                                                                                                             |
+| SKILL.md 書き換え中に既存 doc-advisor 経路が壊れ、リポジトリ自身の `/forge:query-db-*` が使えなくなる（本リポジトリは SoT のため実害が大きい） | 中     | フェーズ 3 を 3a（update）→ 3b（query）に分割。共有層・operation 層（フェーズ 1・2）は SKILL から参照されないため、フェーズ 2 完了時点までは既存経路が完全に無傷                                                                                                                                                                          |
+| doc-advisor の `check-toc` 応答が既知値以外だったときに fresh へ縮退して stale ToC で検索してしまう                                            | 中     | フェーズ 3b + 4。§5.1.4 の「縮退せず明示エラー」を実装し、契約テストで固定                                                                                                                                                                                                                                                                |
+| forge のテストが doc-advisor / doc-db の内部判定に依存し、外部変更で壊れる                                                                     | 中     | フェーズ 4。`fresh` / `stale` は応答値として与え判定を再現しない。境界値・skew・`generated_at` 解析に依存するテストを書かない                                                                                                                                                                                                             |
+| 4 SKILL × 同名 wrapper の量産で、固定値だけ違う 10 ファイルの取り違え                                                                          | 低     | フェーズ 3。wrapper テストで category 固定値を各ファイルについて明示的に assert する（DES-024 §8）                                                                                                                                                                                                                                        |
+| 実在確認の除外が同期直後の正常結果まで削ってしまう（0 件化）                                                                                   | 低     | フェーズ 2。除外はパス存在判定のみ（内容読み取り・checksum なし）。全件除外でも operation は成功・空の `Required documents:` を返す仕様をテストで固定                                                                                                                                                                                     |
 
 ## 確認事項の決着（DES-057 へ反映済み）
 
-戦略策定時に挙げた 4 件は、いずれも DES-057 側を修正して決着した。実装前に残る判断はない。
+戦略策定時に挙げた 4 件と、本戦略書のレビューで追加された 1 件（下記 5）は、いずれも DES-057 側を修正して決着した。実装前に残る判断はない。
 
 ### 1. 「共有低レベル script どうしの依存も持たない」（§3.1）の解釈 → 案 A
 
