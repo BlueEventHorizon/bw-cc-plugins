@@ -163,8 +163,10 @@ flowchart LR
 
 依存方向は `SKILL.md → SKILL 固有 wrapper → 共有低レベル script → 外部 backend / 設定` の一方向とする。
 共有低レベル script から SKILL や SKILL 固有 wrapper を呼ばない。
-共有低レベル script どうしの依存も持たない。KEY / series 未整備時に query と sync を順に実行する制御は
-SKILL が担う（§4.2）。script 間で呼び合わないため、進捗報告の位置が SKILL 側に固定される。
+**CLI エントリ script（`query_docdb.py` / `sync_docdb.py` / `prepare_advisor_index.py`）は互いを呼び出さない。**
+helper モジュール（`docdb_client.py` / `docdb_runtime.py` / `project_documents.py`）の import は同一層内でも許容する。
+KEY / series 未整備時に query と sync を順に実行する制御は SKILL が担う（§4.2）。
+CLI 相互の呼び出しを禁じることで、複数 operation の進行と進捗報告の位置が SKILL 側に固定される。
 ToC 鮮度判定は forge script ではなく外部 `doc-advisor:check-toc` に委譲する。
 
 ### 3.2 モジュール一覧
@@ -179,7 +181,7 @@ ToC 鮮度判定は forge script ではなく外部 `doc-advisor:check-toc` に�
 | `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                    | Python 標準ライブラリ                  |
 | `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                               | `docdb_client.py`、`doc-db` executable |
 | `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                             | 既存 doc-structure resolver、git       |
-| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築    | runtime、client                        |
+| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築    | runtime、client、project documents     |
 | `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入（`--start`）と単発の状態取得（`--status`）          | runtime、client、project documents     |
 | `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決                              | 既存 dprint runner、doc-structure      |
 
@@ -379,6 +381,7 @@ doc-db の MCP tool I/F の所有は doc-db 側にある。forge は接続する
 | `query`           | `{key, series, query, mode: "all", top_n: 20}`   | `results[].path`（順位順）、`warnings[]`                                                                        |
 | `sync_documents`  | `{key, series, documents: [{path, local_path}]}` | `job_id`                                                                                                        |
 | `get_sync_status` | `{job_id}`                                       | `status`（`running` / `done` / `failed`）、`processed`、`skipped`、`failed`、`deleted_paths_marked`、`errors[]` |
+| `list_indexes`    | `{}`                                             | KEY 一覧と各 KEY の `series[]`（当該 series の登録有無の確認に使う）                                            |
 
 - `query` の `series` は任意引数である。forge は現在の branch を必ず指定する（§4.1）。
 - 参考実装の CLI は series 未登録を検索前に検証し、未登録なら検索せず専用の exit code で返す。
@@ -389,7 +392,10 @@ doc-db の MCP tool I/F の所有は doc-db 側にある。forge は接続する
 - `sync_documents` は `job_id` を即時返す非同期 job であり、完了待ちは呼び出し側が `get_sync_status` を反復して行う（§4.3）。
 - 応答に `job_id` が無い場合は operation 失敗として扱う。
 - `results[]` の本文 field は使用しない。forge の出力契約は path のみである（§4.2）。
-- 上記以外の tool（`upsert_documents`、`schedule_delete_series` 等）は本 feature では使用しない。
+- `list_indexes` は当該 series が登録済みかを検索前に確認するために使う（§4.2）。参考実装も同じ手段を採る。
+  `series[]` は「一度も同期していない」と「同期済みだが対象が 0 件だった」を区別できないため、
+  対象文書数 0 の判定を先に行う（§4.2）。
+- 上記以外の tool（`upsert_documents`、`schedule_delete_series`、`trash_index` 等）は本 feature では使用しない。
 
 #### KEY 状態に関する doc-db の挙動
 
@@ -402,6 +408,10 @@ doc-db は次の 2 つを **致命的エラー**（MCP error response）とし�
 
 KEY 不在とゴミ箱状態はいずれも tool error として届くため、forge は **error の内容から両者と
 その他の障害を判別する**。判別できない error は障害として扱い、索引作成を試みない（§4.2）。
+
+**判別に用いる signal は実装時に確定する。** 実 doc-db に対して「存在しない KEY への query」と
+「ゴミ箱状態の KEY への query」を実測し、得られた error の識別可能な要素を本項に追記してから実装へ進む。
+実測前に文言を推測して固定しない。判別できない場合は障害扱いに倒す既定を保ち、未整備側へは倒さない。
 ゴミ箱状態の KEY へ同期を試みても doc-db 側で拒否されるため、未整備として扱ってはならない。
 ゴミ箱からの復活そのものは KEY の運用管理であり、本 feature の対象外（REQ-014 スコープ）である。
 
@@ -755,7 +765,10 @@ sync wrapper については `--start` / `--status <job_id>` の両操作が透�
 
 ### 9.3 統合テスト
 
-fake HTTP server を使い、次の経路を通す。fake server の応答は §4.5 の契約に従う。
+HTTP 送信境界に応答を注入して次の経路を通す。注入する応答は §4.5 の契約に従う。
+socket を開く fake server は用いない。送信は 1 つの関数境界に閉じており（§9.1 の差し替え可能な境界）、
+JSON 応答・SSE 応答・tool error・HTTP error はいずれも注入で決定論的に再現できる。
+実際に HTTP を話せることの確認は、実 doc-db に対する実行で 1 度行う（テストに含めない）。
 
 - 初回接続成功から query 完了
 - 初回接続失敗、起動後接続成功から query 完了
