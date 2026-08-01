@@ -1,20 +1,24 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-01T04:12:54Z
-file_count: 38
+generated_at: 2026-08-01T12:59:54Z
+file_count: 42
 checksums:
-  docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md: 92460e022b6835f0eb6d4a7ba4a859752accccc18ba73b63e26cbdb60a56b792
-  docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md: a7a1557117248d81a393f3abb716fc35397e7e623765ee772dbbe742ba32b072
+  docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: 76c4445fe171028551653ac2a9f16179dd0d0a06fe4ddb90dcb7f7da2dd79af2
+  docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: ec40105c80562f9a91d380918a88c98bda3f9c61c41782ce575ad42a708f8f43
+  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md: 4c72cb65cbc00618ec627abd49f09e514758559727c9a79754894e4d6d2bd71c
   docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md: f2c56193db00946283f4bb6354f2384c12dfa6b1f37137d05eb52b6d8d9983e7
-  docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 914b4a6525cf2078694add44ce21bfc5a8fdae4629d264d508114ceff687ac4d
-  docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: c3f6402c21c893ae260529df1968906d9d9d2b20e98c575679d3e61f11ef6150
+  docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 900aa9c7453f8989dbe804fb3a6b56a6b5489004062089233222a8003e0ac848
+  docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: d1b17cc46a6901e9ca9d11c334260e02b1369d3ba9c9b0b2c4f3fda1c9a4c0c1
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 492baf34a55626fa7c9c47891d9877011253d47b6c89e2bd6c1a7fd261116bec
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: f3b31a32d281aed95b448101433e00adc0a047f9df5f5961083d54deae112424
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: ebd8f7a2e3976ac9eaa614a32b2a7d40de1c6bf5ebcb492818f28320167a6353
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
+  docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md: f9ba1b0a6fba32fb5c660ce00a7dc467c5709ab0572b1b3ef8ffc1ea1dbfa060
+  docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md: afa06504e1b37d1bacf5ff01a3130e835bbdc044a44514780f365a09d1261c63
+  docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md: d715ff15a84104a4e9dbcd634d6a05907c52b32ee520559137b8d23ff076e5d0
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md: e2c98ce0bb373bc9350685b67fb515fc8efd77b353cd0ca0c61dc41b992a25c4
-  docs/specs/forge/design/ADR-058_review_backend_axis.md: 1dde7ed0a3a7c4f0ea0dfc8b115688625d97b83e4b095a870c956a2a9050523d
+  docs/specs/forge/design/ADR-060_review_backend_axis.md: 789090c98b308b0b4161662eb4acd0ca27d4ed52eb06649fa02afd08e3e19bd2
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 4bb2b465d381031ba028faf52064969d978358b4d434bd6dc4aab2ebb078dfa3
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: 3343e3cd8376d01e1432079f5a1f2b90b55d551b5bb219565e3e18854daad33a
   docs/specs/forge/design/DES-013_context_gathering_design.md: c00644d3a822f7e9aebcba635a10e73dd5fa9bd0e22da63198bbd730ee81c22b
@@ -36,7 +40,7 @@ checksums:
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md: b1a69f64a4b71a651a09feffdce368bfe47d05c5b1377c64ac29bbf444dee8a4
   docs/specs/msg-review/design/DES-047_msg_review_fix_safety_guardrails_design.md: cde7e050ac606f02aeb49690ae1f846d3eeb7391622ac122dee7cf60932a8d35
   docs/specs/msg-review/design/DES-048_msg_review_codex_liveness_local_fallback_design.md: a842bb688fe1ce87dce81f9af3dabe8b1828247abe18c468637bf23aaee7d26f
-  docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md: dcafd63a2178a40bd7c0c6bfcad4996901631905c8fed5787bad9f9db011694c
+  docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md: 5fe8a7bd5bb565b7dad94cc9a7da292440f8a330679b773bf327859de7b1f3bd
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md: 339f0e49a1d7059e069fbde0e1ca67377ddc5396f71c51ca73cad607ec6eb95a
   docs/specs/msg-sys/design/ADR-043_msg_sys_msg_review_merge_reversal.md: 395acc97039c0fbdf4cf9887f144ba3e10f38303bc6954f146014500a997b7ba
   docs/specs/msg-sys/design/DES-034_codex_review_messaging_design.md: 132769ede841749efabb975a1b2a3074f8fddfcd7bf5b48e0e4aaf09b32a55d3
