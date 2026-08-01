@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-07-31T01:09:31Z
-  file_count: 37
+  generated_at: 2026-08-01T04:12:54Z
+  file_count: 38
 
 docs:
   docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
@@ -320,6 +320,32 @@ docs:
       - symlink-automation
       - relative-paths
       - documentation-architecture
+  docs/specs/forge/design/ADR-058_review_backend_axis.md:
+    title: ADR-058 Revoke Fixed Review Execution Principal, Introduce Pluggable Backend Axis
+    purpose: Architectural decision document establishing pluggable backend abstraction for the /forge:review workflow, enabling review execution by different backends with a standardized input/output contract
+    content_details:
+      - Fixed backend problem - existing execution principal limitation prevents non-Codex projects from using review workflow
+      - Backend abstraction contract - SKILL composes request, backend executes review, returns findings
+      - Evidence format contract - markdown plus severity markers plus completion declaration, standardized across all backends
+      - Backend parameter introduction - --backend <name> flag for selecting execution backend
+      - Boundary between backend-dependent and independent code - premise checks, roundtrip, session recovery depend on backend; target resolution, finding evaluation, safety verification are backend-agnostic
+      - Alternative candidates and rejection analysis - maintaining fixed backend, configuration-file fixed, split SKILL per backend, variable evidence format
+      - Impact analysis - gains including applicability to non-Codex projects, risk of premature abstraction with single implementation
+      - Contract design rationale - no new abstraction needed, existing I/O already sufficient as contract boundary
+    applicable_tasks:
+      - Review backend architecture design
+      - Review workflow porting to new execution environments
+      - Backend plugin system implementation
+      - Review SKILL refactoring for backend abstraction
+      - Adding second review backend implementation
+    keywords:
+      - backend abstraction
+      - review workflow
+      - execution principal
+      - pluggable architecture
+      - ADR-058
+      - contract design
+      - /forge:review
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     title: Forge query abstraction design
     purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
@@ -795,37 +821,33 @@ docs:
       - forge plugin
   docs/specs/forge/requirements/REQ-013_review_policy.md:
     title: REQ-013 Review Policy Requirements
-    purpose: Defines review policy requirements for forge, establishing a three-level priority system for review findings and clarifying that review must be documentation-driven rather than exploratory
+    purpose: Defines a priority-based review framework with three levels (rule compliance, contradiction detection, unnecessary complexity) and establishes specifications for review target axes, interaction modes, backend abstraction, and secrets detection
     content_details:
-      - "Three-level priority system: P1 rule compliance, P2 internal contradiction detection, P3 unnecessary complexity"
-      - Elimination of independent review perspectives; all judgment delegated to principles documents
-      - "Target scope specification via flags: --diff, --branch, --files, --dirs with granularity preservation"
-      - "Interaction modes: --interactive, --auto-critical, --auto with severity-based filtering"
-      - Focus point mechanism for review-specific emphasis outside scope/interaction changes
-      - "Document reference validation: link syntax and existence checking as permanent review concern"
-      - Secrets/sensitive information as independent review combining machine scanning and AI validation
-      - Secret value masking in reports; scan execution within build process trust boundary
-      - "Issue creation workflow for rule gaps when three conditions met: no applicable rule, recurrence/objectivity, specification capability"
-      - Fallback to forge built-in anti-pattern rules when project rules are incomplete
+      - Three-priority review framework (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
+      - Elimination of criteria-specific perspectives and centralization of judgment into principles
+      - Target specification axes (--diff, --branch, --files, --dirs) with granularity preservation
+      - Interaction axes (--interactive, --auto-critical, --auto) for post-detection processing
+      - Focus axis for emphasizing specific review aspects via natural language
+      - Backend abstraction layer for review execution (msg-review default)
+      - Document reference permanence as permanent P1 review criterion
+      - Two-stage secrets detection (deterministic scanning + AI analysis)
+      - Review target granularity preservation requirement to prevent range-to-file-list expansion
+      - Default behavior specification (--diff --interactive equivalent)
     applicable_tasks:
-      - Review SKILL implementation
-      - Code review criteria design
-      - Requirements review process definition
-      - Secrets/sensitive information policy implementation
-      - Review priority framework establishment
-      - Design review criteria specification
-      - Plan review criteria specification
+      - Review policy specification and design
+      - Criteria framework definition
+      - Review backend integration
+      - Principles document enhancement
+      - Secrets scanning implementation
     keywords:
       - review policy
       - priority system
-      - severity levels
-      - review criteria
-      - secrets scanning
       - rule compliance
-      - review principles
-      - interaction modes
-      - document references
-      - functional requirements
+      - contradiction detection
+      - interaction axis
+      - backend abstraction
+      - secrets detection
+      - granularity preservation
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
     title: DES-045 Messaging-driven Review SKILL Design
     purpose: Design specification for msg-review subsystem orchestrating continuous dialogue code review through message infrastructure, defining protocol, module responsibilities, and multi-turn lifecycle management.
@@ -961,40 +983,39 @@ docs:
       - self-review safety verification
       - delayed response handling
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: "REQ-012 msg-review: Messaging-Driven Review SKILL Requirements Definition"
-    purpose: "Requirements definition for msg-review SKILL: Codex-driven ongoing dialogue reviews through msg-sys, with automated evaluation and modification orchestrated by Claude."
+    title: REQ-012 Messaging-Driven Review SKILL Requirements Definition
+    purpose: Specifies requirements for the msg-review SKILL, a messaging-driven review orchestration system that conducts continuous dialogue-based reviews with Codex via msg-sys infrastructure
     content_details:
-      - "Background: msg-sys communication infrastructure lacks standardized review workflow and repeatable procedures"
-      - "v1 Scope: covers automated review startup, findings evaluation/modification cycles, and completion judgment; excludes evaluator/fixer agents"
-      - "FNC-001: standardized review request with support for uncommitted diff, full branch changes, or specified file groups"
-      - "FNC-006: command syntax compatibility with /forge:review for review type, target specification, and intervention axis"
-      - "FNC-002: self-contained review requests with target info, review criteria, rules document paths, and response format"
-      - "FNC-003: precondition validation including message DB accessibility and Codex session readiness checks"
-      - "FNC-004: Claude-orchestrated findings loop with evaluation, modification, implementation, and re-request within single message chain"
-      - "FNC-005: review completion by Codex approval, message turn limit, or auto-fix scope exhaustion with findings summary"
-      - "BL-001: audit trail through msg-sys message history without duplicate persistent records"
+      - "Review request standardization with configurable targets: uncommitted diffs, full branch changes, or specified files"
+      - Self-contained request format including target specification, review criteria, applicable rules paths, and response format expectations
+      - "Prerequisite validation: message DB reachability and Codex receiver availability checks before sending requests"
+      - "Continuous feedback loop: Claude evaluates findings directly, applies modifications, and requests re-review without external Agent"
+      - "Review completion criteria: Codex approval, message turn limit reached, or auto-fix scope exhausted with unresolved findings"
+      - Command syntax compatibility with /forge:review including review types (code/design/requirement/plan/uxui/generic)
+      - Auto-critical intervention mode distinguishing severity levels for automatic fix scope determination
+      - Audit trail through msg-sys message history without duplicate local persistent records
+      - v1 experimental scope without evaluator/fixer Agent isolation or mechanical safety boundaries for pipeline comparison
+      - Compatibility with existing /forge:review callers expecting review result completion within the same turn
     applicable_tasks:
-      - Implementing msg-review SKILL
-      - Designing msg-review CLI interface and command compatibility
-      - Testing msg-review findings evaluation and modification workflow
-      - Integrating msg-review with existing /forge:review review pipelines
-      - Evaluating v1 vs existing evaluator/fixer approach effectiveness
-      - Extending automated review capabilities through messaging infrastructure
-      - Setting up msg-sys message database for review workflows
-      - Documenting review request format and Codex response handling
-      - Migrating from /forge:review to msg-review engine future
-      - Debugging review findings loop failures and completion issues
+      - Review SKILL architecture design and implementation
+      - Code review orchestration workflow specification
+      - Codex integration and continuous dialogue setup
+      - msg-sys communication infrastructure utilization
+      - Review completion judgment and result reporting
+      - Prerequisite validation for review workflows
+      - /forge:review backend refactoring and unification
+      - Finding evaluation and modification automation
     keywords:
       - msg-review
-      - messaging-driven review
-      - Codex dialogue
+      - msg-sys
+      - Codex
+      - review orchestration
       - findings evaluation
-      - review automation
-      - msg-sys integration
-      - re-review cycle
-      - Claude orchestrator
-      - review completion criteria
-      - precondition validation
+      - continuous dialogue
+      - auto-critical
+      - completion judgment
+      - evaluator/fixer
+      - review prerequisites
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)
