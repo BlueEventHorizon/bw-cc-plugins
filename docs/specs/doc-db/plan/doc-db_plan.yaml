@@ -280,7 +280,7 @@ tasks:
       - docs/specs/doc-db/plan/doc-db_strategy.md
       - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
   - task_id: TASK-005
-    title: KEY 不在とゴミ箱状態の error 実測と判別根拠の確定
+    title: doc-db 0.3.3 の error 識別子契約への適合確認と fixture 整備
     priority: 78
     status: pending
     design_id: DES-057
@@ -290,16 +290,17 @@ tasks:
     group_id: null
     build_check: per_task
     description:
-      - 存在しない KEY への検索が返す error を実 doc-db で採取する
-      - ゴミ箱状態の KEY への検索が返す error を実 doc-db で採取する
-      - 両者とその他の障害を判別できる要素を特定する
-      - 特定した判別根拠を DES-057 §4.5 に追記する
-      - 判別できない場合は障害扱いに倒す既定を維持する旨を明記する
-      - 実測前に文言を推測して固定しない
-    acceptance_criteria: DES-057 §4.5 に判別根拠が実測値として記載されている。または判別不能と結論し、その場合の扱い（障害扱い）が明記されている
+      - 存在しない KEY への query が JSON-RPC error（error.data.code == "KEY_NOT_FOUND"）で返ることを実 doc-db 0.3.3 で確認する（読み取り専用。破壊的操作を伴わない）
+      - docdb_client.py の ToolError から data.code を取り出せることを確認する
+      - KEY_NOT_FOUND / KEY_TRASHED の注入 fixture を実応答の形（ADR-058 / DES-057 §4.5）に合わせて整備する
+      - KEY_TRASHED は公開契約の値であるため trash_index を実行して採取しない（fixture は契約記述から書く）
+      - 文言・数値 code に依存する記述を fixture・テストに持ち込まない
+      - 実測と契約記述にズレがあれば DES-057 §4.5 を更新する
+    acceptance_criteria: 実 doc-db 0.3.3 で KEY_NOT_FOUND が data.code として観測され、KEY_NOT_FOUND / KEY_TRASHED の注入 fixture が契約どおりの形で存在する。判別不能な error を障害扱いに倒す既定が維持されている
     required_reading:
       - docs/specs/doc-db/plan/doc-db_strategy.md
       - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md
   - task_id: TASK-006
     title: query_docdb.py の実装
     priority: 76
