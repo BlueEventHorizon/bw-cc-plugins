@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-07-28T14:15:46Z
+  generated_at: 2026-07-31T01:09:31Z
   file_count: 37
 
 docs:
@@ -558,32 +558,32 @@ docs:
       - resolve_rules.py
       - semantic analysis
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
-    title: Parallel agent output contract design
-    purpose: Defines output contract for parallel agents to prevent race conditions by requiring agents to return results via return-value instead of writing shared files, with orchestrator handling all write operations
+    title: Parallel Agent Output Contract Pattern Design
+    purpose: Defines output contract patterns for parallel agent workflows to prevent race conditions by enforcing return-value-based result passing instead of shared file writes
     content_details:
-      - "Problem definition: parallel write race condition when multiple agents update same file causing loss of prior agent results"
-      - Claude Code Agent environment constraints (no file locking, subprocess isolation, return-value as only message passing)
-      - "Output contract principle: agents return results via return-value, orchestrator writes shared resources after all agent completion"
-      - Agent responsibilities (return results in return-value, avoid shared resource writes, provide self-contained results, unrestricted reads)
-      - Orchestrator responsibilities (wait for all agent completion, integrate return-values in main context, handle all write operations)
-      - Anti-patterns to avoid (direct shared file writes, read-modify-write in agent, file locking dependency, intermediate files)
-      - Context collection application example (specs, rules, code agents returning markdown lists to orchestrator)
-      - Checklist for designing new parallel agents with 5 confirmation items
+      - Parallel write conflict and race condition problem in Claude Code agents
+      - Lack of file locking and shared resource enforcement in Agent environment
+      - "Basic principle: agents return results via return values, not intermediate files"
+      - "Agent responsibilities: return results, provide self-contained output, unrestricted reads"
+      - "Orchestrator responsibilities: wait for all agents, merge results, single artifact write"
+      - "Anti-patterns: shared file writes, Read-Modify-Write races, file lock dependency, intermediate result files"
+      - "Application examples: context collection with specs/rules/code agents returning via return values"
+      - Design checklist for parallel agent workflows validation
     applicable_tasks:
-      - Orchestrator SKILL design with parallel agents
-      - Parallel agent context gathering implementation
-      - Race condition prevention in multi-agent workflows
-      - Agent and orchestrator responsibility definition
-      - Parallel agent output contract compliance verification
+      - Parallel agent orchestration design
+      - Race condition prevention in multi-agent systems
+      - Agent output contract definition
+      - Orchestrator implementation validation
+      - Multi-agent workflow architecture review
     keywords:
-      - parallel-agents
-      - return-value-contract
-      - race-condition
-      - output-contract
+      - parallel agent
+      - race condition
+      - output contract
+      - return value
+      - shared resource
       - orchestrator
-      - agent-isolation
-      - file-locking
-      - anti-patterns
+      - agent workflow
+      - concurrent execution
   docs/specs/forge/design/DES-023_version_management_workflow_design.md:
     title: DES-023 Version Management Workflow Design
     purpose: Designs version management workflow for multi-plugin repositories using .version-config.yaml, with scripts for scanning version files, calculating semantic versions, and updating multiple sync targets safely
@@ -744,34 +744,31 @@ docs:
       - validation
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
-    purpose: Specifies requirements for forge plugin skills to use orchestrator pattern delegating complex work to agents
+    purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
     content_details:
-      - Orchestrator design pattern and agent delegation
-      - Self-contained reference documents for agent autonomy
-      - Parallel execution structure for independent investigation tasks
-      - Document format selection criteria (YAML vs Markdown)
-      - Common completion workflow for document-generating orchestrators
-      - User input interpretation by AI not rigid scripts
-      - God-Skill problem statement and context limitations
-      - Data passing conventions using return values
-      - Applicable skills refactored to orchestrator pattern
-      - FNC-001 through FNC-007 functional requirements
+      - "God-Skill problem: context consumption, reduced accuracy, and serialized processing constraints"
+      - Orchestrator pattern design with task delegation to agents
+      - Self-contained reference documents in plugins/forge/docs/
+      - Parallel execution structure with agent return value passing (no shared intermediate files)
+      - Document format selection criteria (YAML for structured data, Markdown for natural language and diagrams)
+      - "Common completion processing flow: review --auto, update-db-specs, anvil:commit"
+      - AI-based user input interpretation without rigid parser scripts
+      - Application scope to review, start-design, start-plan, start-requirements, start-implement skills
     applicable_tasks:
-      - Forge skill design and orchestration
-      - Orchestrator architecture implementation
-      - Agent delegation structure design
-      - Workflow planning and coordination
-      - Forge specification review
+      - Design and architecture of forge skills
+      - Refactoring skills to orchestrator pattern
+      - Task delegation planning with agents
+      - Skill completion workflow design
+      - Architecture compliance review
     keywords:
       - orchestrator pattern
       - agent delegation
-      - context management
-      - forge plugin
-      - workflow orchestration
+      - God-Skill
+      - return value passing
       - parallel execution
-      - return value
-      - data passing
-      - REQ-001
+      - review automation
+      - context consumption
+      - skill composition
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md:
     title: REQ-003 SKILL.md and script responsibility separation requirements
     purpose: Defines requirements for clean separation between SKILL.md (AI decision logic) and scripts (implementation), reducing AI cognitive load
