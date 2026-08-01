@@ -1,0 +1,592 @@
+# ---
+# type: temporary-feature-plan
+# notes:
+#   - 正本は対応する追加 feature 要件定義書（REQ-014）。旧仕様と矛盾する場合は要件定義書を優先する。
+#   - 本 feature 実装完了後、この計画書は破棄される予定。
+# ---
+
+# doc-db 実装計画書
+
+# === トレーサビリティ ===
+requirements_traceability:
+  - requirement_id: FNC-001
+    title: backend の自動選択
+    design_id: DES-057
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-006
+      - TASK-011
+      - TASK-012
+      - TASK-014
+      - TASK-015
+      - TASK-018
+    status: pending
+  - requirement_id: FNC-002
+    title: query の実行
+    design_id: DES-057
+    task_ids:
+      - TASK-001
+      - TASK-003
+      - TASK-004
+      - TASK-006
+      - TASK-008
+      - TASK-009
+      - TASK-013
+      - TASK-014
+      - TASK-015
+      - TASK-018
+    status: pending
+  - requirement_id: FNC-003
+    title: update の実行
+    design_id: DES-057
+    task_ids:
+      - TASK-001
+      - TASK-004
+      - TASK-007
+      - TASK-008
+      - TASK-010
+      - TASK-011
+      - TASK-012
+      - TASK-018
+    status: pending
+  - requirement_id: FNC-004
+    title: 実行経路の通知
+    design_id: DES-057
+    task_ids:
+      - TASK-006
+      - TASK-011
+      - TASK-012
+      - TASK-014
+      - TASK-015
+      - TASK-018
+    status: pending
+  - requirement_id: BL-001
+    title: backend 選択順序
+    design_id: DES-057
+    task_ids:
+      - TASK-002
+      - TASK-014
+      - TASK-016
+      - TASK-018
+    status: pending
+  - requirement_id: BL-002
+    title: doc-advisor ToC の鮮度
+    design_id: DES-057
+    task_ids:
+      - TASK-008
+      - TASK-014
+      - TASK-015
+      - TASK-016
+      - TASK-018
+    status: pending
+  - requirement_id: BL-003
+    title: 成功と失敗
+    design_id: DES-057
+    task_ids:
+      - TASK-006
+      - TASK-007
+      - TASK-014
+      - TASK-016
+      - TASK-018
+    status: pending
+  - requirement_id: BL-004
+    title: 未整備と障害の区別
+    design_id: DES-057
+    task_ids:
+      - TASK-005
+      - TASK-006
+      - TASK-009
+      - TASK-014
+      - TASK-015
+      - TASK-018
+    status: pending
+  - requirement_id: BL-005
+    title: 検索対象の series と結果のパス
+    design_id: DES-057
+    task_ids:
+      - TASK-003
+      - TASK-006
+      - TASK-009
+      - TASK-018
+    status: pending
+  - requirement_id: NFR-001
+    title: 可観測性
+    design_id: DES-057
+    task_ids:
+      - TASK-007
+      - TASK-011
+      - TASK-012
+      - TASK-014
+      - TASK-015
+      - TASK-018
+    status: pending
+  - requirement_id: NFR-002
+    title: 後方互換性
+    design_id: DES-057
+    task_ids:
+      - TASK-009
+      - TASK-013
+      - TASK-014
+      - TASK-017
+      - TASK-018
+    status: pending
+  - requirement_id: NFR-003
+    title: 応答性
+    design_id: DES-057
+    task_ids:
+      - TASK-014
+      - TASK-016
+      - TASK-018
+    status: pending
+  - requirement_id: NFR-004
+    title: 可用性
+    design_id: DES-057
+    task_ids:
+      - TASK-006
+      - TASK-014
+      - TASK-016
+      - TASK-018
+    status: pending
+  - requirement_id: NFR-005
+    title: 情報保護
+    design_id: DES-057
+    task_ids:
+      - TASK-002
+      - TASK-018
+    status: pending
+
+design_traceability:
+  - design_id: DES-057
+    title: doc-db バックエンド選択 設計書
+    requirement_ids:
+      - FNC-001
+      - FNC-002
+      - FNC-003
+      - FNC-004
+      - BL-001
+      - BL-002
+      - BL-003
+      - BL-004
+      - BL-005
+      - NFR-001
+      - NFR-002
+      - NFR-003
+      - NFR-004
+      - NFR-005
+    task_ids:
+      - TASK-001
+      - TASK-002
+      - TASK-003
+      - TASK-004
+      - TASK-005
+      - TASK-006
+      - TASK-007
+      - TASK-008
+      - TASK-009
+      - TASK-010
+      - TASK-011
+      - TASK-012
+      - TASK-013
+      - TASK-014
+      - TASK-015
+      - TASK-016
+      - TASK-017
+      - TASK-018
+
+# === タスク一覧 ===
+tasks:
+  - task_id: TASK-001
+    title: docdb_client.py と応答注入 fixture の実装
+    priority: 95
+    status: completed
+    design_id: DES-057
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §2.2 に従い MCP session 確立と JSON-RPC 送信を実装する
+      - JSON 応答と SSE 応答の両方を解析する
+      - 移植元から forge が使う 3 tool 相当の操作へ縮小する（§4.5 の tool 表）
+      - 通信定数は §2.2 の値を用いる
+      - HTTP 送信を 1 つの関数境界に閉じ、テストから差し替え可能にする（§9.1）
+      - 応答注入用 fixture（JSON / SSE / tool error / HTTP error）を tests 側に用意する
+      - socket を開く fake server は作らない（§9.3）
+      - 単体テストで §9.1 の該当項目を検証する
+    acceptance_criteria: 注入した JSON 応答と SSE 応答が同一の parse 結果を返し、tool error と HTTP error が区別して返る。既存テストスイートが全通過する
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-002
+    title: docdb_runtime.py の実装
+    priority: 93
+    status: completed
+    design_id: DES-057
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §2.3 に従い接続 probe と on-demand 起動を実装する
+      - 起動後の再接続を期限付きで再試行する
+      - 実行ファイル不在・プロセス起動失敗・早期終了・再接続不能を理由コードとして返す
+      - プロセスの生死ではなく MCP 接続の成否で利用可否を判定する
+      - forge 側でログファイルを生成しない
+      - 認証情報を読む処理・出力する処理を持たない（NFR-005）
+      - 単体テストで §9.1 の該当項目（4 異常系と秘密値非出力）を検証する
+    acceptance_criteria: 4 つの異常系がそれぞれ固有の理由コードで返り、出力に認証情報・環境変数値・設定本文が含まれないことをテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-003
+    title: project_documents.py の実装
+    priority: 92
+    status: completed
+    design_id: DES-057
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §4.1 に従い KEY・series・対象文書一覧を解決する
+      - worktree 間で KEY が分裂しない解決方法を用いる
+      - series 取得不能および detached HEAD の扱いを §4.1 の表に合わせる
+      - 対象文書の解決は既存の doc-structure resolver を再利用し、YAML パーサを二重実装しない
+      - 対象文書数を呼び出し側が取得できる形で返す（§4.2 の 0 件先判定に使う）
+      - 単体テストで §9.1 の該当項目を検証する
+    acceptance_criteria: 同一リポジトリの異なる worktree で同一 KEY が得られ、detached HEAD で規定の series が返る。対象 0 件と 1 件以上を呼び出し側が区別できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-004
+    title: 実 doc-db に対する client の中間検証
+    priority: 90
+    status: completed
+    design_id: DES-057
+    depends_on:
+      - TASK-001
+    group_id: null
+    build_check: per_task
+    description:
+      - 実際に doc-db を起動した状態で MCP の接続確立から tool 呼び出しまでを通す
+      - JSON 応答と SSE 応答のどちらが返るかを実測する
+      - DES-057 §4.5 の依拠スナップショットと実応答のズレを確認する
+      - ズレがあれば §4.5 を実測値へ更新する（スナップショットの更新はテストの追従と同じ変更で行う）
+      - 検証手順と結果を戦略書の該当フェーズに記録する
+    acceptance_criteria: 実 doc-db に対する接続確立と tool 呼び出しが成功し、§4.5 のスナップショットが実応答と一致している（不一致なら §4.5 を更新済み）
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+  - task_id: TASK-005
+    title: doc-db 0.3.3 の error 識別子契約への適合確認と fixture 整備
+    priority: 78
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-001
+      - TASK-004
+    group_id: null
+    build_check: per_task
+    description:
+      - 存在しない KEY への query が JSON-RPC error（error.data.code == "KEY_NOT_FOUND"）で返ることを実 doc-db 0.3.3 で確認する（読み取り専用。破壊的操作を伴わない）
+      - docdb_client.py の ToolError から data.code を取り出せることを確認する
+      - KEY_NOT_FOUND / KEY_TRASHED の注入 fixture を実応答の形（ADR-058 / DES-057 §4.5）に合わせて整備する
+      - KEY_TRASHED は公開契約の値であるため trash_index を実行して採取しない（fixture は契約記述から書く）
+      - 文言・数値 code に依存する記述を fixture・テストに持ち込まない
+      - 実測と契約記述にズレがあれば DES-057 §4.5 を更新する
+    acceptance_criteria: 実 doc-db 0.3.3 で KEY_NOT_FOUND が data.code として観測され、KEY_NOT_FOUND / KEY_TRASHED の注入 fixture が契約どおりの形で存在する。判別不能な error を障害扱いに倒す既定が維持されている
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md
+  - task_id: TASK-006
+    title: query_docdb.py の実装
+    priority: 76
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-002
+      - TASK-003
+      - TASK-005
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §4.2 に従い series を指定した検索と出力構築を実装する
+      - 対象文書数 0 の判定を索引側の状態確認より先に行う
+      - 当該 series の登録確認に §4.5 の該当 tool を用いる
+      - 未整備を exit code 30 で返し、索引作成は行わない
+      - 未整備・0 件のいずれでも series を外した横断検索へ切り替えない
+      - 出力前にパスの実在を確認し、実在しないものを除外して件数を通知する
+      - KEY 不在・ゴミ箱状態・その他障害を TASK-005 の判別根拠で分類する
+      - 単体テストで §9.1 の該当項目と §9.3 の script 単体で閉じる経路を検証する
+    acceptance_criteria: exit code 0 / 20 / 30 が §4.4 の表どおりに返り、0 件先判定・実在確認の除外件数・横断検索へ切り替えないことがテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/cli_output_formatting.md
+  - task_id: TASK-007
+    title: sync_docdb.py の実装
+    priority: 75
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-002
+      - TASK-003
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §4.3 に従い投入と状態取得の 2 操作を実装する
+      - 投入は desired state を渡して即時に返る
+      - 状態取得は 1 回だけ問い合わせて即時に返り、未完了でも成功として扱う
+      - プロセス内にポーリングループを持たない
+      - 対象文書が 0 件の場合は同期せず明示エラーを返す
+      - 単体テストで §9.1 の該当項目を検証する
+    acceptance_criteria: 投入操作が job 識別子を返し、状態取得が未完了でも exit code 0 を返す。プロセス内にポーリングループが存在しない。0 件で同期が実行されない
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+      - docs/rules/cli_output_formatting.md
+  - task_id: TASK-008
+    title: prepare_advisor_index.py の実装
+    priority: 72
+    status: pending
+    design_id: DES-057
+    depends_on: []
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §5.2 末尾に従い索引入力準備の CLI を実装する
+      - 既存の dprint runner を再利用する
+      - 対象ディレクトリと除外設定を既存の doc-structure 設定から解決する
+      - 成功と失敗の exit code・status を §5.2 の規定に合わせる
+      - 単体テストで §9.1 の該当項目（失敗伝播・設定エラー）を検証する
+    acceptance_criteria: 成功時に exit code 0、dprint 失敗・設定解決失敗・入力検証失敗のいずれかで exit code 20 が返ることをテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-009
+    title: query_docdb.py の実 doc-db 中間検証と出力互換確認
+    priority: 70
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-006
+    group_id: null
+    build_check: per_task
+    description:
+      - 実 doc-db に対して query の低レベル CLI を実行する
+      - 既存 doc-advisor 経路の出力と検索結果形式が一致することを確認する（NFR-002）
+      - 当該 series 未同期の状態を作り、未整備が exit code 30 で返ることを実測する
+      - 実在しないパスを含む状態を作り、除外と件数通知を実測する
+      - 結果を戦略書の該当フェーズに記録する
+    acceptance_criteria: 実 doc-db に対する実行で検索結果形式が既存経路と一致し、未整備で exit code 30、実在しないパスの除外件数が通知されることを確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+  - task_id: TASK-010
+    title: update 系 SKILL の wrapper 実装
+    priority: 60
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-007
+      - TASK-008
+    group_id: null
+    build_check: per_task
+    description:
+      - update 系 2 SKILL に sync と索引入力準備の wrapper を配置する（§3.2）
+      - category を wrapper 側で固定する
+      - 引数・stdout・stderr・exit code を透過する
+      - sync wrapper は投入と状態取得の両操作を透過する
+      - wrapper テストで §9.2 の項目を検証し、既存の透過性 helper を再利用する
+    acceptance_criteria: 各 wrapper が固定 category を渡し、位置引数・stdout・stderr・exit code を透過することをテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/forge/design/DES-024_skill_script_layout_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-011
+    title: update 系 SKILL.md の doc-db 対応への書き換え
+    priority: 58
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-010
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §4.3・§5.3・§6.3 に従い update 系 2 SKILL の手順を書き換える
+      - doc-db 経路と doc-advisor 経路の分岐を exit code だけで選択する
+      - 状態取得を呼ぶたびに進捗をテキストで報告する手順を置く（NFR-001）
+      - 手続きロジックを SKILL.md にインライン記述しない
+      - 継承型 SKILL のまま維持し、自己再帰禁止の記述を残す
+      - doc-advisor 経路では索引入力準備を経て索引更新を 1 回呼ぶ
+    acceptance_criteria: update 系 2 SKILL.md が exit code のみで分岐し、進捗報告の手順を含み、インラインスクリプトを含まない
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/skill_authoring_notes.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-012
+    title: update 系 SKILL の実行検証
+    priority: 56
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-011
+    group_id: null
+    build_check: per_task
+    description:
+      - doc-db 起動状態で update 系 SKILL を実行する
+      - 同期の進捗がチャットに複数回報告されることを確認する
+      - doc-db 停止状態で update 系 SKILL を実行する
+      - doc-advisor 経路へ切り替わり索引更新が完了することを確認する
+      - 切替理由と使用 backend が通知されることを確認する（FNC-004）
+    acceptance_criteria: 起動状態で進捗が 2 回以上テキスト報告され、停止状態で doc-advisor 経路の完了レポートと切替理由が出力される
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+  - task_id: TASK-013
+    title: query 系 SKILL の wrapper 実装
+    priority: 54
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-006
+      - TASK-007
+      - TASK-008
+    group_id: null
+    build_check: per_task
+    description:
+      - query 系 2 SKILL に query・sync・索引入力準備の wrapper を配置する（§3.2）
+      - category を wrapper 側で固定する
+      - query wrapper は検索タスクを 1 つの位置引数として渡す
+      - 引数・stdout・stderr・exit code を透過する
+      - wrapper テストで §9.2 の項目を検証し、既存の透過性 helper を再利用する
+    acceptance_criteria: 各 wrapper が固定 category を渡し、query wrapper が検索タスクを 1 位置引数で透過し、exit code 30 を含む全 exit code が透過することをテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/forge/design/DES-024_skill_script_layout_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-014
+    title: query 系 SKILL.md の doc-db 対応への書き換えと grep フォールバック削除
+    priority: 52
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-012
+      - TASK-013
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §4.2・§5.1・§6.2 に従い query 系 2 SKILL の手順を書き換える
+      - grep フォールバック手順を削除し allowed-tools から Grep を外す
+      - 未整備の exit code を受けて索引作成と再検索を駆動する手順を置く
+      - 鮮度確認の応答 3 分岐を実装し、exit code では分岐しない
+      - 鮮度確認の応答が解釈できない場合は縮退せず明示エラーとする（§5.1.4）
+      - doc-advisor 未導入と最小対応バージョン未満を区別して通知する（§2.4）
+      - doc-advisor 経路では検索母集団の相違を通知する（§7.1）
+    acceptance_criteria: query 系 2 SKILL.md に grep 手順と Grep 許可が存在せず、鮮度確認の 3 分岐・解釈不能時の明示エラー・母集団相違の通知が含まれる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md
+      - docs/rules/skill_authoring_notes.md
+      - docs/rules/forge_doc_access_principle.md
+  - task_id: TASK-015
+    title: query 系 SKILL の実行検証
+    priority: 50
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-014
+    group_id: null
+    build_check: per_task
+    description:
+      - doc-db 起動・索引ありの条件で query 系 SKILL を実行する
+      - doc-db 起動・当該 series 未同期の条件で実行し、索引作成を経て検索が完了することを確認する
+      - doc-db 停止・ToC が鮮度を満たす条件で実行し、索引更新なしで検索されることを確認する
+      - doc-db 停止・ToC が鮮度を満たさない条件で実行し、索引更新後に検索されることを確認する
+      - 各条件で使用 backend と索引作成・更新の有無が通知されることを確認する
+    acceptance_criteria: 4 条件すべてで検索結果が返り、各条件で使用 backend と索引作成・更新の有無が通知される。未同期条件で進捗が報告される
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+  - task_id: TASK-016
+    title: doc-advisor 契約テストと静的テストの追加
+    priority: 42
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-014
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §9.3 後半の契約テストを追加する
+      - 鮮度確認へ渡す引数と閾値の秒数を検証する
+      - 3 応答に対する後続分岐と、索引更新が必要なときだけの順序を検証する
+      - exit code ではなく応答内容で分岐することを検証する
+      - 補助 field に依存しないことを検証する
+      - 応答が解釈できない場合に検索を実行せず失敗することを検証する
+      - 判定規則の内部値（境界値・時刻のずれの許容幅・解析可否）に依存するテストを書かない
+    acceptance_criteria: 契約テストが全通過し、テストコードに境界値・許容 skew・generated_at の解析可否へ依存する assert が存在しない
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-017
+    title: 導入案内と周辺文書の整合
+    priority: 40
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-014
+    group_id: null
+    build_check: per_task
+    description:
+      - 最小対応 DocAdvisor バージョンを導入案内に記載する（REQ-014 前提条件）
+      - README の「検索系は doc-advisor へ転送する」前提の記述を実装後の構成へ更新する
+      - CLAUDE.md の文書検索バックエンドに関する注記を更新する
+      - docs/readme 配下の該当記述を更新する
+      - 旧仕様の設計書は本 feature では書き換えない（統合は merge-specs で行う）
+      - CHANGELOG とバージョン関連ファイルを編集しない
+    acceptance_criteria: 導入案内に最小対応バージョンが記載され、README・CLAUDE.md・docs/readme に doc-advisor 単一前提の記述が残っていない。CHANGELOG とバージョン関連ファイルに差分がない
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/rules/document_writing_rules.md
+      - docs/rules/implementation_guidelines.md
+  - task_id: TASK-018
+    title: 全体検証と要件の突合
+    priority: 38
+    status: pending
+    design_id: DES-057
+    depends_on:
+      - TASK-015
+      - TASK-016
+      - TASK-017
+    group_id: null
+    build_check: per_task
+    description:
+      - テストスイート全体を実行して全通過を確認する
+      - dprint check を実行して整形差分がないことを確認する
+      - REQ-014 の全要件 ID に対応する実装とテストを 1 件ずつ突き合わせる
+      - 欠落があればタスクを追加して計画書を更新する
+      - CHANGELOG とバージョン関連ファイルに差分がないことを確認する
+    acceptance_criteria: テストスイートが全通過し dprint check が差分なしで終了する。REQ-014 の全 14 要件 ID に対応する実装・テストの所在が一覧化され、欠落が 0 件である
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md
+
+# === 改定履歴 ===
+revision_history:
+  - date: "2026-07-31"
+    content: 初版作成

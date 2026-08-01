@@ -462,16 +462,19 @@ commit/push の確認フローを担うスキル（例: `anvil:commit`）が ava
 2. `{candidate_dir}` が `{requirements,design,plan}` を含むディレクトリであり、さらに **その親（仕様棚）に他の兄弟仕様（別 feature ディレクトリや別の `{requirements,design,plan}` セット）が存在する** → **追加開発**の可能性が高い
 3. 仕様棚に他の仕様が見当たらず、`{candidate_dir}` のみ → **基本仕様の修正**である可能性が高い
 4. 判定が不確実な場合は AskUserQuestion で確認:
-   - 質問:「これは追加開発（後で merge-specs で本体仕様 DIR に統合する）ですか、それとも基本仕様の修正ですか？」
+   - 質問:「これは追加開発（後で merge-specs で本体仕様との齟齬を解消する）ですか、それとも基本仕様の修正ですか？」
    - 選択肢: `追加開発` / `基本仕様の修正`
 
 ディレクトリ名（`main` 等）の固定形式は存在しないため、名前一致や深さの機械的ルールには依存しない。
 
 #### Step 2A: 追加開発の場合
 
-AskUserQuestion:「追加開発の全タスクが完了しました。`/forge:merge-specs` を実行して本体仕様 DIR に統合しますか？（実行時は基本 DIR と追加 DIR の 2 引数が必要）」
+AskUserQuestion:「追加開発の全タスクが完了しました。`/forge:merge-specs` を実行して本体仕様との齟齬を解消しますか？（実行時は基本 DIR と追加 DIR の 2 引数が必要）」
 
-- **統合する** → `/forge:merge-specs <base> {feature}` を実行（`<base>` は本体仕様 DIR の短縮名 / 相対パス）→ 完了案内（merge 実行パターン）
+> merge は意味の統合であり、feature DIR を消す作業ではない。本体仕様と同一スコープの内容は本体側へ移すが、スコープが異なる内容は分離したまま維持する（`additive_development_spec.md` §4）。
+> 実行は Skill ツールで `merge-specs` を起動する（ユーザーが手で打つコマンドではない）。
+
+- **齟齬を解消する** → `/forge:merge-specs <base> {feature}` を実行（`<base>` は本体仕様 DIR の短縮名 / 相対パス）→ 完了案内（merge 実行パターン）
 - **後で実行する** → 計画書はそのまま残す → 完了案内（plan 残しパターン）
 
 #### Step 2B: 基本仕様修正の場合
@@ -519,12 +522,13 @@ Phase 5.1 が `held_groups[]` を返した場合、FAILURE したタスクを 6.
 
 全タスク完了時、6.4.1 の選択結果に応じて以下のいずれかを表示する。
 
-### merge 実行パターン（追加開発 → 統合実行）
+### merge 実行パターン（追加開発 → 齟齬解消を実行）
 
 ```
-{feature} の全タスクが完了し、本体仕様への統合を実行しました。
+{feature} の全タスクが完了し、本体仕様との齟齬解消を実行しました。
   完了タスク: {完了タスク数} / {全タスク数}
-  統合: /forge:merge-specs <base> {feature} 完了
+  merge: /forge:merge-specs <base> {feature} 完了
+  残した文書: {分離を維持した文書、または「なし」}
 ```
 
 ### plan 削除パターン（基本仕様修正 → plan 削除）
@@ -543,4 +547,4 @@ Phase 5.1 が `held_groups[]` を返した場合、FAILURE したタスクを 6.
   計画書: {plan_path}
 ```
 
-追加開発で merge を後回しにした場合、必要なタイミングで `/forge:merge-specs <base> {feature}` を実行する（`<base>` は本体仕様 DIR の短縮名 / 相対パス）。
+追加開発で merge を後回しにした場合、必要なタイミングで Skill ツールから `merge-specs` を起動する（`/forge:merge-specs <base> {feature}`。`<base>` は本体仕様 DIR の短縮名 / 相対パス）。merge は本体仕様の齟齬を解消する作業であり、feature DIR が必ず消えるわけではない。
