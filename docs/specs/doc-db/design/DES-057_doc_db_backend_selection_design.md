@@ -3,7 +3,8 @@ type: temporary-feature-design
 notes:
   - 正本は対応する追加 feature 要件定義書（REQ-014）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
-  - 本 feature 実装完了後、この文書は旧設計書へ merge され削除される予定。
+  - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
+  - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
 ---
 
 # DES-057 doc-db バックエンド選択 設計書
@@ -402,6 +403,11 @@ doc-db は同一内容を `structuredContent` にも載せるため、どちら�
 
 実 doc-db に対する読み取り専用の実測で確認した事実。上記表の根拠であり、テストの注入応答はこの形に合わせる。
 
+**error の形は 0.3.3 で変わっている。** 0.3.2 では KEY 不在が `isError: true` + 日本語文言
+（`code` / `data` なし）だったが、0.3.3 で JSON-RPC error + 識別子へ変更された（本節末尾の
+「KEY 状態に関する doc-db の挙動」が現行契約であり、そちらが正）。以下の表のうち error 以外の
+観測点（Content-Type・session・result の担体・field 構成）は 0.3.3 でも変わっていない。
+
 | 観測点               | 実測値                                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------------------------ |
 | 応答の Content-Type  | `initialize` / `tools/call` とも **`text/event-stream`（SSE）のみ**。`application/json` は観測されない |
@@ -417,32 +423,36 @@ SSE のみが観測されたが、client は JSON 応答も解析できる実装
 Streamable HTTP はどちらの形式も許容し、応答形式は doc-db 側の実装詳細であるため、
 片方だけを前提にすると doc-db の内部変更で壊れる。
 
-`series` が `null` を取り得るため、`series[]` の走査は `null` を空集合として扱う。
+`series` が `null` を取り得るため、`series[]` の走査は `null` を空集合として扱う。これは
+doc-db 側の契約でもある（`null` は「当該 KEY に現在紐づく series が 0 件」を表し、空配列 `[]`
+と同義。意味の異なる状態ではない）。
 
 #### KEY 状態に関する doc-db の挙動
 
 | 条件                        | doc-db の挙動                                            | forge の扱い                                    |
 | --------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| KEY が存在しない            | `query` が tool error を返す                             | 未整備。索引を作成して query を継続する（§4.2） |
-| KEY がゴミ箱状態            | `query` も書き込み系 tool もエラーを返し、復活操作を促す | 未整備ではない。復活操作の案内を伴う明示エラー  |
-| 既存 KEY の series が未登録 | **error にならず 0 件で成功する**                        | 未整備。`list_indexes` で事前に検出する（§4.2） |
+| KEY が存在しない            | JSON-RPC error（識別子 `KEY_NOT_FOUND`）                 | 未整備。索引を作成して query を継続する（§4.2） |
+| KEY がゴミ箱状態            | JSON-RPC error（識別子 `KEY_TRASHED`）。復活操作を促す   | 未整備ではない。復活操作の案内を伴う明示エラー  |
+| 既存 KEY の series が未登録 | **error にならず 0 件で成功する**（doc-db 側の安定契約） | 未整備。`list_indexes` で事前に検出する（§4.2） |
 
-KEY 不在とゴミ箱状態はいずれも tool error として届くため、forge は **error の内容から両者と
-その他の障害を判別する**。判別できない error は障害として扱い、索引作成を試みない（§4.2）。
+**判別は識別子に依拠する（ADR-058）。** doc-db 0.3.3 以降、KEY 不在とゴミ箱状態は
+`isError` を伴う tool result ではなく **JSON-RPC error** として届き、識別子が
+`error.data.code`（判別の正本）と `message` 先頭の両方に載る。forge は `data.code` の値
+（`KEY_NOT_FOUND` / `KEY_TRASHED`）だけで分岐し、**メッセージ文言でも数値 code でも分岐しない**。
+文言と数値 code は doc-db 側の公開契約ではなく、変更されても forge に通知されないためである。
 
-series 未登録は query では検出できない。したがって未整備（exit code `30`）の判定は
-`list_indexes` の `series` による事前確認に依拠し、query の結果からは行わない（§4.2）。
+`docdb_client.py` は JSON-RPC error を `ToolError(message, code, data)` へ変換し `data` を保持する。
+呼び出し側は `ToolError.data["code"]` を読む。識別子を読み取れない error（`data` を持たない、
+未知の識別子、0.3.3 未満の doc-db が返す tool error）は、いずれも障害として扱い索引作成を
+試みない（§4.2）。この既定により、識別子が得られない環境でも安全側に倒れる。
 
-**KEY 不在の判別 signal（実測）**: doc-db は JSON-RPC error ではなく、`tools/call` result の
-`isError: true` と `content[].text` の日本語文言 `key "<key>" が存在しません` で返す。
-`code` / `data` は付かないため、判別は文言に依拠するほかない。
-`docdb_client.py` は `isError` を `ToolError` へ変換するため、呼び出し側には tool error として届く。
-
-**ゴミ箱状態の判別 signal は未実測である。** 実測には `trash_index` の実行が必要で、既存 KEY の
-内容を壊すため読み取り専用の検証では行えない。実装時に破棄可能な検証用 KEY を作って実測し、
-本項に追記する。それまでは判別不能な error を障害扱いに倒す既定を保ち、未整備側へは倒さない。
 ゴミ箱状態の KEY へ同期を試みても doc-db 側で拒否されるため、未整備として扱ってはならない。
 ゴミ箱からの復活そのものは KEY の運用管理であり、本 feature の対象外（REQ-014 スコープ）である。
+
+series 未登録は query では検出できない。**未登録 series への query が 0 件成功で返ることは
+doc-db 側の安定契約であり、将来もエラー化しない**（series は登録状態を検証しない opaque な
+絞り込み軸であるため）。したがって未整備（exit code `30`）の判定は `list_indexes` の `series`
+による事前確認に依拠し、query の結果からは行わない（§4.2）。
 
 ## 5. doc-advisor 処理設計
 
@@ -525,9 +535,14 @@ NFR-004（利用不能を成功として報告しない）、FNC-004（失敗理
 #### 5.1.5 依拠する I/F バージョンの固定
 
 実行時の可用性判定は available-skills 上の `check-toc` の有無だけで行い、バージョン番号の比較は実装しない（§2.4）。
-一方、実装とテストが対象とする確定仕様は、REQ-014 前提条件が定める最小対応 DocAdvisor バージョン（REQ-014 TBD-001）で
-固定する。I/F の所有が DocAdvisor にあるため、契約の改訂は forge の実装とテストを後追いで無効化しうる。
-固定点を持たないと、どの版の契約に対して実装が正しいのかを判定できない。
+一方、実装とテストが対象とする確定仕様は、REQ-014 前提条件が定める最小対応 DocAdvisor バージョン
+（0.4.6）で固定する。I/F の所有が DocAdvisor にあるため、契約の改訂は forge の実装とテストを
+後追いで無効化しうる。固定点を持たないと、どの版の契約に対して実装が正しいのかを判定できない。
+
+**doc-db 側にも同じ固定点を置く。** error 識別子（`KEY_NOT_FOUND` / `KEY_TRASHED`）は
+doc-db 0.3.3 で導入された公開契約であり、これ未満の版には存在しない。実装とテストは 0.3.3 の
+契約に対して書き、それ未満向けの判別経路を持たない（ADR-058）。実行時にバージョン番号を
+比較することはしない点は DocAdvisor 側と同じで、識別子が得られなければ障害として扱う（§4.5）。
 
 判定規則の内部値（未来時刻の許容 skew 等）は DocAdvisor 側で確定済みであり、
 `status` / `freshness` の値域を変えない限り、その改訂は forge の実装とテストに影響しない。
@@ -600,14 +615,15 @@ sequenceDiagram
     Skill->>Script: task
     Script->>DB: initialize
     alt 接続成功
-        Script->>DB: tools/call query
-        alt KEY / series あり
+        Script->>Script: 対象文書数を確認（0 件なら索引に触れない）
+        Script->>DB: tools/call list_indexes
+        alt KEY と当該 series の索引あり
+            Script->>DB: tools/call query
             DB-->>Script: hits
             Script->>Script: 実在しない path を除外
             Script-->>Skill: doc-db success + 除外件数
             Skill-->>Caller: Required documents
-        else KEY / series 未整備
-            DB-->>Script: KEY / series not found
+        else KEY 不在（KEY_NOT_FOUND）または当該 series が未登録
             Script-->>Skill: exit 30 index_missing
             Skill->>SyncCLI: --start
             SyncCLI->>DB: sync_documents(desired state)
@@ -626,6 +642,7 @@ sequenceDiagram
             Script-->>Skill: doc-db success + 除外件数
             Skill-->>Caller: 索引作成の通知 + Required documents
         end
+        Note over Script,DB: query / sync が KEY_TRASHED を返した場合は<br/>未整備ではなく exit 20。復活操作を案内して失敗する（§4.5）
     else 接続失敗
         Script->>Script: doc-db 起動と再接続
         alt 再接続成功
