@@ -29,7 +29,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
   create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
   clean-rules         : ルール文書を分析し重複を検出・削除
-  merge-specs          : 2 つの仕様 DIR（基本 / 追加）を内容単位でマージ
+  merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
   setup-doc-structure : .doc_structure.yaml を対話的に生成
   setup-version-config: .version-config.yaml を対話的に生成
   update-version      : バージョンを一括更新。CHANGELOG 自動反映
