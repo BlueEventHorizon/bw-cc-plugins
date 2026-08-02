@@ -434,7 +434,7 @@ tasks:
   - task_id: TASK-009
     title: query_docdb.py の実 doc-db 中間検証と出力互換確認
     priority: 70
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-006
@@ -453,7 +453,7 @@ tasks:
   - task_id: TASK-010
     title: update 系 SKILL の wrapper 実装
     priority: 60
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-007
@@ -475,7 +475,7 @@ tasks:
   - task_id: TASK-011
     title: update 系 SKILL.md の doc-db 対応への書き換え
     priority: 58
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-010
