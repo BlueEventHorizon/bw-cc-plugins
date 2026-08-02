@@ -26,8 +26,9 @@ _SCRIPT_PATH = (
     _REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "scripts" / "build_review_request.py"
 )
 _TEMPLATE_DIR = _REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "templates"
+# 共通書式の解釈は全バックエンド共通のため配布物共通の場所にある（ADR-066 §2.3）。
 _PARSE_FINDINGS_PATH = (
-    _REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "scripts" / "parse_findings.py"
+    _REPO_ROOT / "plugins" / "forge" / "scripts" / "review" / "parse_findings.py"
 )
 
 

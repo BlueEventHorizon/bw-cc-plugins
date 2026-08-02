@@ -1,4 +1,10 @@
-# DES-045 msg-review（メッセージング駆動レビュー SKILL）設計書
+# DES-045 msg-review レビューバックエンド設計書
+
+> **本文書のスコープ（2026-08-03 改訂）[MANDATORY]**
+>
+> forge:ADR-066 により `/forge:review` 本体とレビューバックエンドが別 SKILL へ分離された。本文書が定めるのは **msg-review バックエンド**（`plugins/forge/skills/msg-review/`）——前提検査・msg-sys 経由の往復・応答の判定と所見配列化・往復履歴の復元・終了通知の受理——のみである。
+>
+> 引数解釈・対象解決・依頼本文の組み立て・所見の評価と修正・終端処理は本体の責務であり、forge:DES-066 が定める。本文書に残る本体側の記述は、分離前の経緯として読む。
 
 ## メタデータ
 
@@ -76,10 +82,7 @@ flowchart TB
 
 | モジュール名                       | 責務                                                                                                                                                                                                                                                            | 依存                                                                                             |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `SKILL.md`                         | 引数解釈（AI が直接解釈。リジッドなパーサー不使用）、各スクリプトの起動、所見の評価・修正・返信・完了判定・要約報告のオーケストレーション                                                                                                                       | 下記スクリプト、msg-sys CLI（Bash subprocess 経由）                                              |
-| `scripts/resolve_targets.py`       | `--files` の存在検証と、修正フェーズの allowlist（target_files）の供給（§3.3）                                                                                                                                                                                  | 標準ライブラリのみ（`git` を subprocess で呼ぶ）                                                 |
-| `scripts/analyze_branch_point.py`  | base ブランチ候補を `git merge-base` による分岐点解析で列挙する（採用は決めない。§3.3）                                                                                                                                                                         | 標準ライブラリのみ（`git` を subprocess で呼ぶ）                                                 |
-| `scripts/build_review_request.py`  | 依頼本文テンプレートを Read し動的データを埋めて標準出力へ書く（§3.4）。返信本文（修正報告）は AI が判断を含むため対象外                                                                                                                                        | 標準ライブラリのみ                                                                               |
+| `SKILL.md`                         | 前提検査・送信と待機・応答の判定と所見配列化・往復履歴の復元・終了通知の受理のオーケストレーション（本体から `Skill` ツールで起動される）                                                                                                                       | 下記スクリプト、msg-sys CLI（Bash subprocess 経由）                                              |
 | `scripts/filter_review_history.py` | `history.py` の全履歴を取得し、本文（`body`）先頭の `review_id=<X>` を抽出して指定した `review_id` に一致するメッセージのみへ絞り込み、往復回数・`REVIEW_RESULT` 到達有無を添えて JSON で返す（§3.6）。決定論的な列挙・抽出処理であり AI の手動パースに委ねない | 標準ライブラリのみ（`history.py` を subprocess で呼ぶ）                                          |
 | `scripts/wait_for_reply.py`        | Codex からの返信をブロッキング待機する（§3.7）。指数バックオフでポーリングし、返信検知時は自ら既読化（`ack`）してから返す                                                                                                                                       | 標準ライブラリのみ（`history.py`/`inbox.py` を subprocess で呼ぶ）                               |
 | `scripts/send_and_await_reply.py`  | **返信を期待する送信の唯一の入口（§3.9）**。送信 → push型起床（§3.8）→ 待機（§3.7）を 1 回の呼び出しに畳む。3 手順が揃わないと往復が止まるため、個別呼び出しの経路を持たせない                                                                                  | 標準ライブラリのみ（`mailbox`/`wait_for_reply` を import、`wake_codex.sh` を subprocess で呼ぶ） |
@@ -88,7 +91,9 @@ flowchart TB
 
 ### 3.2 SKILL 定義と CLI 引数仕様
 
-本 SKILL を実装するスキルの配置は `plugins/forge/skills/review/`、起動は `/forge:review` である（旧レビューパイプラインの削除に伴い、本サブシステムが `/forge:review` の実体になった）。**サブシステム名 `msg-review` とスキル名 `review` は一致しない。** これはワイヤプロトコルの識別子 `[msg-review]` を据え置いた判断（§3.4）と同じ理由による — `msg-review` は「msg-sys 駆動レビュー」というサブシステムの名であり、スキル名ではない。
+本バックエンドの配置は `plugins/forge/skills/msg-review/` であり、backend 名 `msg-review` と一致する（本体は backend 名を同名の SKILL `forge:<name>` へ解決するため。forge:DES-066 §2.1）。`user-invocable: false` とし、利用者が直接起動せず本体からの `Skill` ツール起動のみを受ける。
+
+ワイヤプロトコルの識別子 `[msg-review]` は、スキル名ではなく msg-sys の DB に永続化された通信路上の識別子であるため据え置く（§3.4）。
 
 - `allowed-tools`: `Read` / `Write` / `Bash` に加え、`Monitor` を含める（§3.9 の複合スクリプトを `run_in_background: true` で起動し監視するため。待機予算 10 分は Bash tool のフォアグラウンド上限と同値であり前景実行を前提にできない）
 - `description` に依頼モードのトリガー句・受信モードのプロトコルヘッダ文字列・再開モードの起動契機（往復上限到達の OS 通知後に利用者が状況確認・再開を指示するターン、§2.1）を記載する
@@ -99,16 +104,11 @@ flowchart TB
 - **非対応軸の警告付き続行**: 本サブシステムが持たない軸（エンジン軸等）のフラグを検出した場合、無視して続行する旨を警告したうえで既定動作で続行する。黙殺はしない。エラー終了にしない理由: `/forge:review` を発行する既存の呼び出し元が当該フラグ付きで起動するため、エラー終了にすると差し替えが成立しない
 - **警告の表示箇所を定型出力に固定する [MANDATORY]**: 警告は自由記述の注意書きではなく、依頼モードが送信前に必ず出力する「引数解釈結果」の定型表示の必須欄「無視したフラグ」として表示する。無視したフラグが無い場合も「なし」と明示する（欄自体を省略しない）。毎回出力される定型表示の一部に組み込むことで、AI の指示読み飛ばしによる警告の欠落を防ぐ
 
-### 3.3 対象の解決と allowlist の供給
+### 3.3 対象の解決と allowlist の供給（本体へ移管済み）
 
-**レビュー範囲としてレビュアーへ何を渡すかは本設計書の対象外**であり、forge 側（forge:REQ-013 の対象指定要件、forge:DES-055 の依頼テンプレート設計）が定める。範囲指定（`--diff` / `--branch`）をファイル一覧へ展開せずレビュアー自身に確定させる規定もそちら側にある。
+対象の解決（`resolve_targets.py`）と base ブランチ候補の列挙（`analyze_branch_point.py`）、および修正フェーズの allowlist の供給は、**forge:ADR-066 の分離により本体の責務となった**（forge:DES-066 §3.1）。本バックエンドはこれらを持たず、対象について何も知らない——本体が組み立てた依頼本文をそのまま運ぶだけである。
 
-本設計書が定めるのは、msg-sys 往復のなかで使う 2 つの供給だけである。
-
-| スクリプト                | 用途                                                                                                                                         |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `analyze_branch_point.py` | base ブランチ候補を分岐点解析で列挙する。採用は決めず、SKILL が利用者に確認して確定する                                                      |
-| `resolve_targets.py`      | `--files` の実在検証と、修正フェーズの allowlist（target_files）の供給。allowlist はレビュアーへ渡すものではなく、受信モードの安全検証で使う |
+レビュー範囲としてレビュアーへ何を渡すか（範囲指定をファイル一覧へ展開しない規定を含む）も同様に本体側（forge:REQ-013 FNC-1312）が定める。
 
 ### 3.4 メッセージプロトコル（REQ-012 FNC-002、TBD-002 / TBD-003 の解決）
 
@@ -169,7 +169,7 @@ python3 plugins/forge/scripts/msg-sys/check_setup.py [--project-root <path>]
 `history.py` は Claude/Codex 間の全メッセージを返すのみでレビュー単位の絞り込み手段を持たない（§3.4「`review_id`」参照）。再開モードでの未解決所見集計・要約報告のために、全履歴から対象 `review_id` のメッセージのみを抽出する処理を独立スクリプトとして切り出す（決定論的な列挙・抽出であり、SKILL.md 内で AI に手動パースさせない。`docs/rules/implementation_guidelines.md`「決定論的な定型処理は script 化する」）。
 
 ```
-python3 plugins/forge/skills/review/scripts/filter_review_history.py <agent_a> <agent_b> <review_id> [--db-path <path>]
+python3 plugins/forge/skills/msg-review/scripts/filter_review_history.py <agent_a> <agent_b> <review_id> [--db-path <path>]
 ```
 
 処理内容:
