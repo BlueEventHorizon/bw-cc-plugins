@@ -5,73 +5,110 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-07-31T01:09:31Z
-  file_count: 37
+  generated_at: 2026-08-01T12:59:54Z
+  file_count: 42
 
 docs:
-  docs/specs/anvil/issue-driven-flow/design/DES-025_issue_driven_flow_design.md:
-    title: "Issue-driven Flow Design: GitHub Issue-driven SDD Pipeline Orchestration"
-    purpose: Specifies architecture, module design, and orchestration strategy for GitHub Issue-driven SDD pipeline in anvil plugin, including forge skill coordination and error handling
+  docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md:
+    title: "ADR-059: issue-driven-flow as anvil's permanent specification"
+    purpose: "Architectural decision establishing issue-driven-flow as anvil's permanent specification and baseline for resolving differential development reconciliation."
     content_details:
-      - Plugin dependency direction with anvil → forge one-way dependency
-      - Module role assignments for 8 skills (create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node) and their responsibilities
-      - Issue document structure with HTML comment markers separating user-content, artifacts, status, and errors sections
-      - Phase state transitions with RuntimeKind determination (UI Issue vs. non-UI Issue)
-      - Prerequisite checks including gh authentication, write permissions, git repository, and FIGMA_PAT environment variable validation
-      - Figma frame resolution using REST API with support for URL, screen name, and nodeId identifiers
-      - User content immutability verification using three-point hash comparison (capture time t1, pre-edit t2, post-edit t3)
-      - Secret masking for FIGMA_PAT, GitHub tokens (gho_, ghp_, github_pat_ formats), and Authorization headers in public outputs
-      - Audit logging with TSV format, 90-day retention policy, 10MiB rotation boundaries, and correlation ID pairing for operation tracing
+      - "Context: two temporary feature documents (issue-driven-flow and triage-flow) needed reconciliation but lacked permanent base specification"
+      - "Decision: promote issue-driven-flow (REQ-005/DES-025) to permanent status in docs/specs/anvil/{requirements,design}/"
+      - "Rationale: issue-driven-flow is anvil's core specification; temporary status premise never applied since no older base existed"
+      - "Rejected alternative: create new permanent spec with new ID—would duplicate content and waste reference update effort"
+      - "Rejected alternative: delete as implemented—would eliminate specification source of truth and violate SDD principle"
+      - "Rejected alternative: keep temporary—perpetuates false premise of reconciliation with non-existent base"
+      - "Impact: establishes anvil's permanent specification location for future differential development"
+      - "Constraint: REQ-005/DES-025 now subject to normal differential feature rules"
+      - "Future work: triage-flow reconciliation and scope judgment (promote to permanent or separate)"
     applicable_tasks:
-      - Implementing GitHub Issue-driven workflow orchestration
-      - Designing multi-skill coordination architecture for specification-driven development
-      - Creating Issue state management with machine-appended sections
-      - Implementing error recovery and user notification mechanisms
-      - Building Figma design integration for UI workflow
-      - Implementing user content immutability verification with concurrent update detection
-      - Validating issue content density and required sections
+      - Anvil development flow specification review
+      - Differential development planning
+      - Specification reconciliation strategy (merge vs fold)
+      - Document status classification (temporary vs permanent)
+      - Requirements and design document structure
+      - SDD integration and baseline management
+      - Specification versioning
     keywords:
-      - anvil:impl-issue
-      - GitHub Issue
+      - anvil
+      - issue-driven-flow
+      - differential development
+      - specification reconciliation
+      - temporary-feature
+      - REQ-005
+      - DES-025
       - SDD
-      - Figma
-      - RuntimeKind
-      - Phase orchestration
-      - forge skill coordination
-      - verify_user_content.py
-      - HTML comment markers
-  docs/specs/anvil/issue-driven-flow/requirements/REQ-005_issue_driven_flow.md:
-    title: "REQ-005 Issue-Driven Flow: GitHub Issue to SDD Pipeline Integration"
-    purpose: Specifies requirements for GitHub Issue-based workflow that connects Issue tracking to the SDD pipeline, enabling Issue to serve as the entry point for coordinated requirement definition, design, planning, and implementation with bidirectional progress synchronization.
+      - triage-flow
+  docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
+    title: "DES-025: issue-driven-flow design - GitHub Issue-triggered SDD pipeline"
+    purpose: Design specification for issue-driven-flow feature orchestrating complete SDD pipeline (requirements through implementation) triggered by GitHub Issues, including Figma integration for UI-related issues and GitHub automation.
     content_details:
-      - Issue creation with mandatory sections (Bug Report and Feature Request)
-      - SDD pipeline orchestration triggered from Issue
-      - Issue write-back operation for linking artifacts and progress tracking
-      - Runtime kind selection (UI Issue vs non-UI Issue)
-      - Figma information extraction for UI-related issues
-      - Dependency constraints (anvil-to-forge unidirectional)
-      - Issue indexing property (linking without content duplication)
-      - External API constraints and audit requirements
-      - Prerequisites validation (gh CLI, git repo, Figma PAT)
-      - Main scenarios for Issue creation and SDD execution
+      - "Architecture: anvil plugins (create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node) with unidirectional dependency on forge skills for SDD phases"
+      - "Issue document structure: four HTML comment-delimited sections (user-content, artifacts, status, errors) enabling idempotent machine rewriting without modifying user content"
+      - "FNC-01 create-issue: Issue creation with kind-specific required sections (Bug/Feature) and Figma reference validation for UI-related Feature Requests"
+      - "FNC-02 impl-issue: 14-phase orchestration from Issue trigger through forge skill invocations (requirements, design, plan, implement) to PR creation"
+      - "FNC-03 update-issue: Idempotent marker rewriting with three-point hash verification (fetch/pre-edit/post-edit) for concurrent update and render verification"
+      - "FNC-04/RuntimeKind: UI vs non-UI Issue classification triggering Figma API integration via prepare-figma and resolve-figma-node"
+      - "FNC-05 Figma: Frame ID resolution (REST API) and design spec extraction (MCP) with candidate selection via AskUserQuestion"
+      - "Error handling: Five-row matrix covering forge failures, push failures, Figma resolution failures, MCP failures, PR creation failures with recovery strategies"
+      - "Security: Credential masking (FIGMA_PAT, gh tokens gho_/ghp_/github_pat_, basic auth URLs) in public channels with regex validation"
+      - "Testing: Unit tests for six shared scripts plus integration test scenarios and golden samples"
     applicable_tasks:
-      - Issue-driven development workflow implementation
-      - GitHub Issue integration design
-      - SDD pipeline orchestration design
-      - UI Issue and design system workflow implementation
-      - Requirements traceability setup
-      - Issue tracking system design
-      - Figma-to-development process integration
+      - GitHub Issue workflow implementation
+      - SDD pipeline orchestration
+      - Figma API integration and MCP gateway design
+      - GitHub automation and CLI scripting
+      - Issue state machine design
+      - Concurrent update and conflict detection
+      - Error recovery and exponential backoff strategies
+      - Credential security and masking
+      - Requirements and design document generation
+      - Integration test scenarios
     keywords:
+      - issue-driven-flow
+      - anvil
+      - SDD pipeline
+      - FNC-01
+      - impl-issue
+      - Figma MCP
+      - update-issue
+      - create-issue
+      - GitHub Issue markers
+      - RuntimeKind
+  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
+    title: "REQ-005: Issue-Driven Flow Requirements Definition"
+    purpose: Defines requirements for GitHub Issue-driven development workflow that integrates with SDD pipeline, supporting multiple issue types with Figma design integration
+    content_details:
+      - Issue creation operation with Bug Report and Feature Request type selection
+      - "Mandatory sections for Bug Report: context, phenomenon, expected behavior, reproduction steps, environment, severity, evidence, root cause"
+      - "Mandatory sections for Feature Request: context, user story, acceptance criteria, alternatives"
+      - Figma design information extraction for UI issues including frame ID, design details, tokens, and screenshots
+      - "Issue orchestration across four SDD phases: requirements, design, planning, implementation"
+      - Issue write-back operation to track progress and link deliverables back to GitHub Issue
+      - "Runtime type classification branching: UI Issue vs Non-UI Issue with different SDD execution paths"
+      - "Error handling and prerequisite validation: gh CLI, git repository, Figma PAT environment variable"
+      - Issue indexing principle where Issue serves as pointer to deliverables without duplicating content
+      - Cross-cutting invariants including dependency constraints and section preservation
+    applicable_tasks:
+      - Issue workflow design and architecture
+      - Issue template and schema specification
+      - SDD orchestration system implementation
+      - Figma integration for design-driven development
+      - Issue write-back synchronization implementation
+      - Error handling and prerequisite validation implementation
+      - Multi-phase workflow coordination
+    keywords:
+      - issue-driven-flow
       - GitHub Issue
       - SDD pipeline
-      - Issue orchestration
+      - Figma integration
       - Bug Report
       - Feature Request
-      - UI Issue
-      - Figma integration
-      - Issue indexing
-      - workflow coordination
+      - orchestration
+      - issue indexing
+      - prerequisite validation
+      - multi-phase workflow
   docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md:
     title: "ADR-039 Triage Phase Reordering: Early Decision Integration"
     purpose: Proposes reordering triage phases to enable early decisions on issues judgeable from text alone while maintaining investigation dependencies for complex decisions.
@@ -102,63 +139,62 @@ docs:
       - impl-issue
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md:
     title: "DES-038 Development Flow Branching (Triage) Design: Phase Structure and SoT Analysis with anvil Improvements"
-    purpose: Analyzes triage-issue Phase structure, identifies SoT locations and Phase dependencies, and designs Phase order improvements for efficient judgment execution without forge modifications
+    purpose: Defines the redesigned Phase structure for triage-issue skill, analyzes sources of truth for decision logic, and proposes optimized Phase ordering within anvil constrained by one-directional dependency on forge.
     content_details:
-      - Judgment logic SoT classification (fixed rules, context-dependent judgments, heuristics)
-      - Phase 0-9 purpose and structure analysis with dependency mapping
-      - Direct executability analysis of Phase 6 and Phase 7 judgments from Phase 1
-      - Phase 5 code investigation result reuse requirements and safety considerations
-      - New Phase 6.5 (additive_development_spec section 1 applicability check) design and gating logic
-      - New Phase 5.5 (code-area-key re-search) for Phase 6 and Phase 7 judgment support
-      - "Route classification (six decision paths: requirement undetermined, design undetermined early/late, high-risk early/late, lightweight implementation)"
-      - Phase 4-5 dependency preservation and Phase 2-3 repositioning as transmission-only after route determination
-      - Phase 7 condition 3 (wave diffusion) measurement unit clarification (actual file edits, not conceptual impact)
-      - Component dependency diagram showing anvil-to-forge one-direction-only constraint (REQ-005/REQ-007 NFR-01)
+      - Phase structure analysis (Phases 0-9) with decision logic classification
+      - Phase dependency analysis showing which decisions require prior investigation phases
+      - New Phase 6.5 early-gate logic for additive_development_spec section 1 applicability check
+      - New Phase 5.5 code area keyword re-search to verify existing patterns against rules
+      - "Route determination logic (six outcomes: requirements-needed, design-early, design-deferred, plan-early, plan-deferred, lightweight-implementation)"
+      - "Execution timing changes: Phase 2-3 moved to post-route-determination for handoff purposes only"
+      - Phase 4-5 position restoration before Phase 6-7 judgments to maintain investigation dependency
+      - Component dependency diagram ensuring anvil-to-forge one-directional flow (NFR-01 constraint)
     applicable_tasks:
-      - triage-issue Phase flow redesign and implementation
-      - Design review of decision point logic (Phase 6.5, Phase 5.5)
-      - Integration testing of Phase execution order and route determination
-      - Feature separation management decision support
-      - Risk assessment workflow enhancement in issue triage
+      - Designing triage flow Phase structure and ordering
+      - Implementing Phase 6.5 early-gate decision logic
+      - Implementing Phase 5.5 code-based re-search procedure
+      - Testing Phase dependency and route determination outcomes
+      - Refactoring triage-issue SKILL.md for new Phase flow
     keywords:
       - triage-issue
       - Phase structure
-      - decision point
-      - SoT
+      - source of truth
       - additive_development_spec
-      - phase 5.5
-      - risk gate
-      - wave diffusion
-      - judgment logic
+      - anvil plugin
+      - Phase 6.5
+      - Phase 5.5
+      - query-db-specs
+      - query-db-rules
+      - route determination
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
-    title: REQ-007 Development Flow Branching (Triage) Requirements Definition
-    purpose: Defines requirements for a triage system that branches Issue-driven development into lightweight implementation or SDD routes, with investigation result handoff and unified entry point control
+    title: Development Flow Triage Requirements Definition
+    purpose: Defines requirements for a single branch point (triage) that categorizes Issues into lightweight implementation or SDD route, unifying development flow entry and enabling investigation result reuse across phases
     content_details:
-      - Triage decision framework based on requirement certainty and design decision status
-      - Risk gate conditions for escalating issues from lightweight to planned implementation
-      - "Three SDD entry points: requirement definition, design, planning"
-      - "Four investigation categories: specifications, rules, similar PRs, existing code"
-      - Investigation results handoff mechanism for re-use in implementation phase
-      - Unified implementation entry point via triage only (prevents direct impl-issue invocation)
-      - Five functional requirements (FNC-01 to FNC-04 covering decision, routing, and handoff)
-      - Non-functional requirements for dependency control and auditability
-      - Flow asset re-positioning and responsibilities clarification
+      - Triage decision logic based on requirement fixedness and design clarity
+      - SDD entry point recommendations (requirements/design/plan) with justification
+      - Investigation result handoff mechanism (specs/rules/PRs/code references)
+      - Lightweight implementation route consolidation via single triage entry
+      - Risk gate for escalation from lightweight to plan-routed SDD
+      - Audit trail recording format for decision persistence
+      - Investigation procedure distribution between triage-issue and impl-issue skills
+      - Dependency direction enforcement (anvil → forge unidirectional)
     applicable_tasks:
-      - Issue triage and routing decision
-      - Development flow design definition
-      - Lightweight vs SDD route selection
-      - Implementation framework specification
-      - Anvil plugin feature specification
+      - Implementation of triage-issue SKILL decision logic
+      - Design of triage algorithm and investigation workflow
+      - Integration with query-db-specs and query-db-rules SKILLs
+      - impl-issue SKILL refactoring for investigation result consumption
+      - Investigation procedure documentation
+      - Audit trail and Issue comment recording design
     keywords:
-      - triage-flow
-      - development flow branching
-      - lightweight implementation route
+      - triage
+      - issue-driven
+      - lightweight implementation
       - SDD route
       - entry point
-      - risk gate
-      - investigation results handoff
-      - issue driven development
-      - requirement certainty
+      - investigation
+      - requirement fixedness
+      - decision audit
+      - anvil
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md:
     title: ADR-055 Prohibit Distribution Artifacts from Referencing Development Documents
     purpose: Defines architectural decision prohibiting distribution artifacts from referencing external development documents, requiring normative content to be self-contained within the distribution unit or in companion documents
@@ -294,6 +330,98 @@ docs:
       - pure function
       - exception propagation
       - error reporting
+  docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md:
+    title: "ADR-058: Error discrimination in doc-db relies on identifier contract; minimum required version is 0.3.3"
+    purpose: Specifies error discrimination strategy in forge using JSON-RPC identifier contracts instead of message text to distinguish missing keys from trashed keys
+    content_details:
+      - Two-case problem distinguishing missing KEY from trashed KEY
+      - doc-db 0.3.2 error handling based on uncontracted message text
+      - doc-db 0.3.3 introduces error.data.code as public contract for error identifiers
+      - "Primary decision: depend only on error.data.code identifier (KEY_NOT_FOUND, KEY_TRASHED)"
+      - "Minimum requirement: doc-db version 0.3.3 or higher"
+      - No fallback for older versions or message-text parsing
+      - Unidentifiable errors treated as failures, not auto-indexed
+      - "Impact: eliminates silent failure risk, prevents destructive state testing"
+    applicable_tasks:
+      - doc-db integration error handling
+      - Error response processing in forge database queries
+      - Database key state validation and recovery
+      - Version dependency requirement enforcement
+      - Error discrimination testing and validation
+    keywords:
+      - error_discrimination
+      - JSON-RPC
+      - identifier_contract
+      - KEY_NOT_FOUND
+      - KEY_TRASHED
+      - error.data.code
+      - version_requirement
+  docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
+    title: "DES-057: doc-db Backend Selection Design"
+    purpose: Specifies how forge chooses between doc-db and doc-advisor backends for document search, including connection handling, startup, index management, and fallback behavior to ensure robust document retrieval
+    content_details:
+      - "Backend selection boundary: doc-db success vs. doc-advisor fallback vs. operation failure"
+      - HTTP connection to doc-db with JSON-RPC, SSE, and session management
+      - "On-demand startup: resolving and launching doc-db executable with probe strategy"
+      - "doc-advisor fallback: availability checking via installed skills"
+      - Project key derivation from git and worktree identity
+      - "Series specification: current branch to avoid cross-series contamination"
+      - "Query operation: list_indexes verification and path existence validation"
+      - "KEY/series unprepared detection: exit code 30 for index creation"
+      - "Update operation with job-based sync: --start and --status for progress"
+      - ToC freshness judgment via doc-advisor check-toc with 24-hour threshold
+      - Error identification using error.data.code for KEY_NOT_FOUND and KEY_TRASHED
+      - Search population variance and mitigation via series limiting
+    applicable_tasks:
+      - Implementing document search backend selection
+      - doc-db HTTP connection and session management
+      - Error handling for missing and trashed keys
+      - Index synchronization and progress monitoring
+      - Fallback behavior when doc-db unavailable
+      - On-demand service startup
+      - Query result validation and filtering
+      - ToC freshness verification before queries
+      - Update job polling and progress reporting
+    keywords:
+      - doc-db
+      - backend_selection
+      - JSON-RPC
+      - series_specification
+      - KEY_NOT_FOUND
+      - KEY_TRASHED
+      - index_synchronization
+      - fallback_strategy
+      - ToC_freshness
+      - MCP_tool_contract
+  docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
+    title: REQ-014 Document DB Backend Selection Requirements Specification
+    purpose: Specifies functional and operational requirements for automatic backend selection between doc-db and doc-advisor to enable transparent search functionality without user awareness of backend setup
+    content_details:
+      - "Backend auto-selection priority: doc-db preferred over doc-advisor with fallback mechanism"
+      - "ToC freshness validation: 24-hour recency requirement before query execution on doc-advisor"
+      - "Four wrapper functions: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
+      - Distinction between uninitialized state and actual failures using doc-db machine-readable identifiers
+      - Series-limited search requirement to exclude other branches and deleted documents
+      - "Minimum version requirements: DocAdvisor 0.4.6 and doc-db 0.3.3"
+      - Index pre-initialization requirement for missing KEY/series before query execution
+      - "Observability requirements: backend selection, startup attempts, fallback transitions, and failure reasons must be user-visible"
+    applicable_tasks:
+      - Implementing wrapper backend selection logic
+      - Designing doc-db connection and retry mechanism
+      - Implementing ToC freshness validation for doc-advisor queries
+      - Handling uninitialized vs failure state distinctions
+      - Index pre-creation before query execution
+    keywords:
+      - doc-db
+      - doc-advisor
+      - backend selection
+      - query wrapper
+      - ToC freshness
+      - series
+      - KEY
+      - index pre-initialization
+      - fallback mechanism
+      - observability
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
     title: ADR-052 Cross-reference notation standardization and plugin root path access improvement
     purpose: Defines decisions for cross-reference notation within docs/ (relative paths vs absolute paths) and introduces automatic symlink mechanism for plugin root path resolution via SessionStart hook
@@ -320,6 +448,31 @@ docs:
       - symlink-automation
       - relative-paths
       - documentation-architecture
+  docs/specs/forge/design/ADR-060_review_backend_axis.md:
+    title: "ADR-060: Backend Axis for Review Execution"
+    purpose: Architecture decision record establishing a switchable backend axis for the review execution, replacing a fixed execution model with configurable contract-based backend switching.
+    content_details:
+      - Fixed review execution model limitations dependent on Codex session and msg-sys infrastructure
+      - "Two core problems: project-dependent prerequisites and non-independent review components"
+      - Backend axis introduction via --backend parameter for execution switching
+      - "Unified response contract across backends: markdown format, severity markers, completion declaration"
+      - "Backend classification: dependent parts versus independent parts for resolution, evaluation, and verification"
+      - "Rejection rationale for four alternatives: fork maintenance, per-project configuration, SKILL duplication, variable format"
+      - "Gained benefits: flow portability, explicit backend separation, contract validation through multi-backend implementation"
+      - "Constraints: explicit backend reporting, fail-closed on unknown backend, single-implementation abstraction until second backend"
+    applicable_tasks:
+      - Review backend architecture design
+      - Backend integration implementation
+      - Review SKILL contract definition
+      - Execution subject switching enhancement
+    keywords:
+      - ADR-060
+      - backend axis
+      - review execution
+      - contract
+      - FNC-1318
+      - execution subject
+      - switchable backend
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     title: Forge query abstraction design
     purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
@@ -795,37 +948,33 @@ docs:
       - forge plugin
   docs/specs/forge/requirements/REQ-013_review_policy.md:
     title: REQ-013 Review Policy Requirements
-    purpose: Defines review policy requirements for forge, establishing a three-level priority system for review findings and clarifying that review must be documentation-driven rather than exploratory
+    purpose: Defines a priority-based review framework with three levels (rule compliance, contradiction detection, unnecessary complexity) and establishes specifications for review target axes, interaction modes, backend abstraction, and secrets detection
     content_details:
-      - "Three-level priority system: P1 rule compliance, P2 internal contradiction detection, P3 unnecessary complexity"
-      - Elimination of independent review perspectives; all judgment delegated to principles documents
-      - "Target scope specification via flags: --diff, --branch, --files, --dirs with granularity preservation"
-      - "Interaction modes: --interactive, --auto-critical, --auto with severity-based filtering"
-      - Focus point mechanism for review-specific emphasis outside scope/interaction changes
-      - "Document reference validation: link syntax and existence checking as permanent review concern"
-      - Secrets/sensitive information as independent review combining machine scanning and AI validation
-      - Secret value masking in reports; scan execution within build process trust boundary
-      - "Issue creation workflow for rule gaps when three conditions met: no applicable rule, recurrence/objectivity, specification capability"
-      - Fallback to forge built-in anti-pattern rules when project rules are incomplete
+      - Three-priority review framework (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
+      - Elimination of criteria-specific perspectives and centralization of judgment into principles
+      - Target specification axes (--diff, --branch, --files, --dirs) with granularity preservation
+      - Interaction axes (--interactive, --auto-critical, --auto) for post-detection processing
+      - Focus axis for emphasizing specific review aspects via natural language
+      - Backend abstraction layer for review execution (msg-review default)
+      - Document reference permanence as permanent P1 review criterion
+      - Two-stage secrets detection (deterministic scanning + AI analysis)
+      - Review target granularity preservation requirement to prevent range-to-file-list expansion
+      - Default behavior specification (--diff --interactive equivalent)
     applicable_tasks:
-      - Review SKILL implementation
-      - Code review criteria design
-      - Requirements review process definition
-      - Secrets/sensitive information policy implementation
-      - Review priority framework establishment
-      - Design review criteria specification
-      - Plan review criteria specification
+      - Review policy specification and design
+      - Criteria framework definition
+      - Review backend integration
+      - Principles document enhancement
+      - Secrets scanning implementation
     keywords:
       - review policy
       - priority system
-      - severity levels
-      - review criteria
-      - secrets scanning
       - rule compliance
-      - review principles
-      - interaction modes
-      - document references
-      - functional requirements
+      - contradiction detection
+      - interaction axis
+      - backend abstraction
+      - secrets detection
+      - granularity preservation
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
     title: DES-045 Messaging-driven Review SKILL Design
     purpose: Design specification for msg-review subsystem orchestrating continuous dialogue code review through message infrastructure, defining protocol, module responsibilities, and multi-turn lifecycle management.
@@ -961,40 +1110,36 @@ docs:
       - self-review safety verification
       - delayed response handling
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: "REQ-012 msg-review: Messaging-Driven Review SKILL Requirements Definition"
-    purpose: "Requirements definition for msg-review SKILL: Codex-driven ongoing dialogue reviews through msg-sys, with automated evaluation and modification orchestrated by Claude."
+    title: REQ-012 Messaging-driven Review SKILL Requirements Specification
+    purpose: Defines requirements for a messaging-driven review orchestration SKILL enabling continuous-dialogue code reviews with Codex using msg-sys communication infrastructure
     content_details:
-      - "Background: msg-sys communication infrastructure lacks standardized review workflow and repeatable procedures"
-      - "v1 Scope: covers automated review startup, findings evaluation/modification cycles, and completion judgment; excludes evaluator/fixer agents"
-      - "FNC-001: standardized review request with support for uncommitted diff, full branch changes, or specified file groups"
-      - "FNC-006: command syntax compatibility with /forge:review for review type, target specification, and intervention axis"
-      - "FNC-002: self-contained review requests with target info, review criteria, rules document paths, and response format"
-      - "FNC-003: precondition validation including message DB accessibility and Codex session readiness checks"
-      - "FNC-004: Claude-orchestrated findings loop with evaluation, modification, implementation, and re-request within single message chain"
-      - "FNC-005: review completion by Codex approval, message turn limit, or auto-fix scope exhaustion with findings summary"
-      - "BL-001: audit trail through msg-sys message history without duplicate persistent records"
+      - Structured review request procedure supporting unstaged diff, branch-wide changes, or explicit file targets
+      - Findings evaluation and modification orchestration by Claude without evaluator/fixer Agent isolation
+      - Async message exchange with Codex using msg-sys communication infrastructure and reply chain semantics
+      - Completion determination covering approval, iteration limit, or auto-fix mode scope exhaustion
+      - Prerequisite validation for message DB accessibility and Codex session readiness
+      - Command syntax compatibility with /forge:review including review types and intervention mode flags
+      - Audit trail through msg-sys message history without separate persistence layer
+      - Handling unsupported engine flags with warnings while continuing with default behavior
+      - v1 experimental design without mechanical safety boundaries for modification constraints
+      - Integration pathway with existing /forge:review pipeline as backend engine
     applicable_tasks:
-      - Implementing msg-review SKILL
-      - Designing msg-review CLI interface and command compatibility
-      - Testing msg-review findings evaluation and modification workflow
-      - Integrating msg-review with existing /forge:review review pipelines
-      - Evaluating v1 vs existing evaluator/fixer approach effectiveness
-      - Extending automated review capabilities through messaging infrastructure
-      - Setting up msg-sys message database for review workflows
-      - Documenting review request format and Codex response handling
-      - Migrating from /forge:review to msg-review engine future
-      - Debugging review findings loop failures and completion issues
+      - Continuous-dialogue code review orchestration system implementation
+      - /forge:review backend architecture design for pluggable review engines
+      - Codex integration for asynchronous review feedback loops
+      - Review findings evaluation and automated response orchestration
+      - msg-sys communication protocol usage in SKILL layer
     keywords:
       - msg-review
-      - messaging-driven review
-      - Codex dialogue
+      - continuous-dialogue review
+      - Codex
+      - review orchestration
       - findings evaluation
-      - review automation
-      - msg-sys integration
-      - re-review cycle
-      - Claude orchestrator
-      - review completion criteria
-      - precondition validation
+      - msg-sys
+      - communication infrastructure
+      - automated modification
+      - reply chain
+      - fixer isolation
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)

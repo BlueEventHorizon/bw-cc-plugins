@@ -1,7 +1,5 @@
 # DES-025 issue-driven-flow 設計: GitHub Issue を起点にした SDD パイプライン連携
 
-> 本設計書は temporary-feature-design として位置付け、REQ-005（issue-driven-flow 要件定義）に対応する。要件と矛盾する場合は要件定義書を正とする。本 feature 実装完了後、本設計書は恒久的な設計書群へ merge される予定。
-
 ## メタデータ
 
 | 項目     | 値                           |
