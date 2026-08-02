@@ -264,6 +264,8 @@ python3 plugins/forge/scripts/msg-sys/wait_for_reply.py <agent_a> <agent_b> \
 
 ### 3.8 push型起床（`wake_codex.sh`、cmux環境限定）[MANDATORY]
 
+> **本節の位置づけ（2026-08-02 改訂・ADR-061）**: push 型起床の要件は REQ-012 FNC-007 が定める（本節が書かれた時点では要件の裏付けが無かったため、遡って明文化した）。起床は複数の経路を持つ構成へ拡張され、**本節はそのうち cmux 経路の設計に限る**。cmux が無い環境で使う Codex 向けの app-server 経路は DES-062 が定める。以下の「cmux で実現する」という選択は、cmux 経路を採る理由の記録として引き続き有効である。
+
 外部ツール `agmsg`（`Claude Code / Codex / Gemini CLI` 等の複数エージェント間メッセージング基盤）は、この pull 型の限界に対し `delivery` 軸（`monitor` / `turn` / `both` / `off`）という一般化された解決策を持つ。特に `monitor` ドライバーは Codex の app-server にブリッジ接続し、未読を検知すると稼働中のスレッドへ直接ターンを注入する。本 SKILL は `agmsg` に依存せず（NFR-001 と同旨、既存実装への影響を避ける）、同じ発想（「エージェントを起動するのではなく、既に動いているセッションに入力を注入してターンを起こす」）を、実運用環境（cmux 端末多重化ツール）が既に提供する同等の機能で軽量に実現する。
 
 cmux はターミナルペインへテキスト入力・キー入力を送る CLI（`cmux send` / `cmux send-key`）を提供する。常駐 Codex セッションが cmux 上の特定ペインで動いている場合、そのペインへ短い指示を送り込みキー入力で確定させることで、Codex のターンを即座に起こし、ターン終了時の Stop フック発火（したがって既存の pull 型配信）を早める。
