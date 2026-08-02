@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-01T12:59:54Z
-  file_count: 42
+  generated_at: 2026-08-02T07:32:42Z
+  file_count: 48
 
 docs:
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md:
@@ -138,63 +138,162 @@ docs:
       - SDD route
       - impl-issue
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md:
-    title: "DES-038 Development Flow Branching (Triage) Design: Phase Structure and SoT Analysis with anvil Improvements"
-    purpose: Defines the redesigned Phase structure for triage-issue skill, analyzes sources of truth for decision logic, and proposes optimized Phase ordering within anvil constrained by one-directional dependency on forge.
+    title: "Development Flow Branching Design: Phase Structure and SoT Analysis"
+    purpose: Analyzes triage-issue Phase structure and dependencies on forge-provided SoT, proposing Phase reordering and new Phases (6.5, 5.5) to improve efficiency while maintaining anvil→forge one-way dependency constraint
     content_details:
-      - Phase structure analysis (Phases 0-9) with decision logic classification
-      - Phase dependency analysis showing which decisions require prior investigation phases
-      - New Phase 6.5 early-gate logic for additive_development_spec section 1 applicability check
-      - New Phase 5.5 code area keyword re-search to verify existing patterns against rules
-      - "Route determination logic (six outcomes: requirements-needed, design-early, design-deferred, plan-early, plan-deferred, lightweight-implementation)"
-      - "Execution timing changes: Phase 2-3 moved to post-route-determination for handoff purposes only"
-      - Phase 4-5 position restoration before Phase 6-7 judgments to maintain investigation dependency
-      - Component dependency diagram ensuring anvil-to-forge one-directional flow (NFR-01 constraint)
+      - Phase SoT classification framework (fixed rules vs context-dependent vs heuristics without forge counterpart)
+      - Phase dependency analysis with direct-go-ability assessment from Phase 1
+      - "Phase 6.5 specification: early-gate for additive_development_spec §1 application condition"
+      - "Phase 5.5 specification: code-domain keyword re-search after Phase 5 investigation"
+      - Six development route outcomes with conditions (requirement-undefined, design-undecided early/late, high-risk early/late, lightweight)
+      - Mermaid control flow diagram showing decision tree and branch conditions
+      - Component dependency diagram ensuring anvil→forge one-way dependency only
+      - Manual test design with 6 verification items for Phase execution
+      - Out-of-scope forge-side changes (risk gate documentation, judgment skill creation, NFR-01 revision)
+      - Design rationale for Phase efficiency improvements and forge modification boundary
     applicable_tasks:
-      - Designing triage flow Phase structure and ordering
-      - Implementing Phase 6.5 early-gate decision logic
-      - Implementing Phase 5.5 code-based re-search procedure
-      - Testing Phase dependency and route determination outcomes
-      - Refactoring triage-issue SKILL.md for new Phase flow
+      - Triage-issue Phase redesign and implementation
+      - Phase ordering optimization in development workflow
+      - Dependency analysis between SKILL phases
+      - Risk gate criteria specification and measurement
+      - SoT location and boundary definition
+      - Development flow decision tree design
+      - Code domain keyword search implementation
+      - Early-gate judgment criteria specification
+      - Triage flow integration testing
     keywords:
       - triage-issue
       - Phase structure
-      - source of truth
+      - SoT
       - additive_development_spec
-      - anvil plugin
       - Phase 6.5
       - Phase 5.5
       - query-db-specs
       - query-db-rules
-      - route determination
+      - risk gate
+      - feature separation
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
-    title: Development Flow Triage Requirements Definition
-    purpose: Defines requirements for a single branch point (triage) that categorizes Issues into lightweight implementation or SDD route, unifying development flow entry and enabling investigation result reuse across phases
+    title: REQ-007 Development Flow Branching (Triage) Requirements Definition
+    purpose: Defines requirements for establishing a single triage point to classify GitHub Issues and route them to lightweight implementation or SDD path, with investigation result handoff
     content_details:
-      - Triage decision logic based on requirement fixedness and design clarity
-      - SDD entry point recommendations (requirements/design/plan) with justification
-      - Investigation result handoff mechanism (specs/rules/PRs/code references)
-      - Lightweight implementation route consolidation via single triage entry
-      - Risk gate for escalation from lightweight to plan-routed SDD
-      - Audit trail recording format for decision persistence
-      - Investigation procedure distribution between triage-issue and impl-issue skills
-      - Dependency direction enforcement (anvil → forge unidirectional)
+      - Two-route issue classification based on requirement maturity and risk assessment
+      - "Investigation categories: specification documents, rule documents, similar PRs, existing code"
+      - Entry point determination for SDD route across three levels (requirements, design, planning)
+      - Single unified triage point for flow control to prevent routing confusion
+      - Investigation result handoff to implementation phase for duplicate elimination
+      - Risk gate conditions for promoting confirmed requirements/design from lightweight to planned
+      - Audit trail of triage decisions recorded on GitHub Issue for verification
+      - Elimination of redundant investigation across triage and implementation phases
     applicable_tasks:
-      - Implementation of triage-issue SKILL decision logic
-      - Design of triage algorithm and investigation workflow
-      - Integration with query-db-specs and query-db-rules SKILLs
-      - impl-issue SKILL refactoring for investigation result consumption
-      - Investigation procedure documentation
-      - Audit trail and Issue comment recording design
+      - Issue triage and routing decision
+      - GitHub Issue complexity classification
+      - Entry point selection for specification-driven development
+      - Investigation coordination between triage and implementation
+      - Development workflow orchestration and control
     keywords:
-      - triage
-      - issue-driven
+      - triage-flow
+      - issue routing
       - lightweight implementation
-      - SDD route
-      - entry point
-      - investigation
-      - requirement fixedness
-      - decision audit
-      - anvil
+      - SDD
+      - entry point determination
+      - investigation coordination
+      - investigation results
+      - risk gate
+      - development branching
+      - uncertainty assessment
+  docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md:
+    title: Codex app-server as Independent Review Backend
+    purpose: Defines Codex app-server as a standalone review backend separate from msg-review, establishing thread-owned execution model without TUI session dependency
+    content_details:
+      - Thread-based execution architecture with app-server owning thread lifecycle
+      - Backend selection via --backend codex-appserver flag configuration
+      - No cmux, shim, Stop hook, or msg-sys dependencies required
+      - App-server handles common finding format conversion (markdown + severity + completion)
+      - Independent audit logging without msg-sys reliance
+      - WebSocket client implementation as backend responsibility
+      - Validation capability without manual TUI intervention
+      - Eliminates stateless execution limitation of previous approaches
+    applicable_tasks:
+      - Backend selection and configuration for review
+      - Headless review execution planning
+      - Setup for constrained environments without cmux
+      - Thread context and lifecycle management
+      - Review automation architecture design
+    keywords:
+      - app-server
+      - review backend
+      - thread management
+      - headless review
+      - Codex integration
+      - async execution
+      - backend axis
+      - WebSocket
+      - stateless elimination
+  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md:
+    title: DES-064 Codex App-Server Review Backend Design
+    purpose: Specifies the design for a headless review backend executing on Codex app-server, defining connection method, thread ownership and context continuation, response conversion to common format, round recording, and error handling without fallback
+    content_details:
+      - Unix domain socket transport for app-server connection
+      - WebSocket client implementation with HTTP Upgrade handshake, masking, and frame handling
+      - Server lifecycle management with endpoint recording per review_id and version tracking
+      - Thread management for context continuation across rounds
+      - Response event collection and conversion from streaming events to text then to findings array
+      - Prerequisite validation ensuring Codex availability and required protocol methods exist
+      - Round recording in per-review_id directory for audit purposes
+      - Error flow with seven failure scenarios and failure confirmation without fallback
+      - "Seven modules: backend entry, WebSocket client, server lifecycle, thread management, response conversion, recording, and prerequisite validation"
+    applicable_tasks:
+      - Implementing codex-appserver backend for review workflow
+      - Designing app-server connection protocol
+      - WebSocket client implementation for protocol communication
+      - Thread context continuation across multiple review rounds
+      - Error handling and failure scenario management
+      - Architecture review for headless review execution
+    keywords:
+      - codex-appserver
+      - WebSocket
+      - app-server
+      - thread management
+      - review backend
+      - response parsing
+      - JSON-RPC
+      - findings extraction
+      - Unix socket
+      - error handling
+  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md:
+    title: REQ-015 Codex App-server Review Backend Requirements
+    purpose: Specifies requirements for a review backend running on Codex app-server with thread ownership, enabling reviews without human TUI session dependency or terminal multiplexing tools
+    content_details:
+      - Backend contract fulfillment with forge:REQ-013 FNC-1318 including input/output contract and common finding format conversion
+      - Thread ownership and context continuity across multiple review rounds in same review_id
+      - Structured Codex response conversion to common finding format (severity, location, content)
+      - Pre-condition validation (Codex CLI availability, app-server support, protocol method existence)
+      - Failure detection and explicit reporting distinguishing from approval and findings
+      - Audit trail recording of request and response per review_id for traceability
+      - Permission limitation to read-only scope without change authorization
+      - Resource cleanup and lifecycle tied to termination signal from main body (not time-based heuristics)
+      - "Scope exclusions: finding assembly, observation evaluation, target resolution remain in forge:review responsibility"
+      - Independence from msg-review, msg-sys, and terminal multiplexing (cmux) tools
+    applicable_tasks:
+      - Review backend implementation for Codex app-server integration
+      - Thread ownership and context persistence architecture
+      - Codex response parsing and common format conversion
+      - Pre-condition validation and prerequisite checking
+      - Failure handling and explicit error reporting
+      - Audit logging and request-response recording design
+      - Permission and sandbox configuration for review-only access
+      - Backend contract verification and integration testing
+    keywords:
+      - codex-appserver
+      - thread ownership
+      - context continuity
+      - app-server
+      - FNC-1318
+      - finding format
+      - failure detection
+      - audit trail
+      - permission restriction
+      - resource cleanup
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md:
     title: ADR-055 Prohibit Distribution Artifacts from Referencing Development Documents
     purpose: Defines architectural decision prohibiting distribution artifacts from referencing external development documents, requiring normative content to be self-contained within the distribution unit or in companion documents
@@ -357,71 +456,76 @@ docs:
       - error.data.code
       - version_requirement
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
-    title: "DES-057: doc-db Backend Selection Design"
-    purpose: Specifies how forge chooses between doc-db and doc-advisor backends for document search, including connection handling, startup, index management, and fallback behavior to ensure robust document retrieval
+    title: DES-057 doc-db Backend Selection Design
+    purpose: Defines backend selection strategy for doc-db as primary with doc-advisor fallback, including connection management, on-demand startup, and integration with existing document search capabilities.
     content_details:
-      - "Backend selection boundary: doc-db success vs. doc-advisor fallback vs. operation failure"
-      - HTTP connection to doc-db with JSON-RPC, SSE, and session management
-      - "On-demand startup: resolving and launching doc-db executable with probe strategy"
-      - "doc-advisor fallback: availability checking via installed skills"
-      - Project key derivation from git and worktree identity
-      - "Series specification: current branch to avoid cross-series contamination"
-      - "Query operation: list_indexes verification and path existence validation"
-      - "KEY/series unprepared detection: exit code 30 for index creation"
-      - "Update operation with job-based sync: --start and --status for progress"
-      - ToC freshness judgment via doc-advisor check-toc with 24-hour threshold
-      - Error identification using error.data.code for KEY_NOT_FOUND and KEY_TRASHED
-      - Search population variance and mitigation via series limiting
+      - Backend selection boundary and operation failure classification (success / fallback available / failure)
+      - HTTP direct connection with JSON-RPC using Mcp-Session-Id and SSE response parsing
+      - On-demand startup using shutil.which and subprocess.Popen with new session
+      - doc-advisor fallback criteria and minimum DocAdvisor 0.4.6 version checking
+      - User-configurable backend preference via .claude/.forge.yaml with doc_backend section
+      - Project key as {project_name}-{category} and series as current git branch
+      - Query with series limiting to current branch and path existence validation before output
+      - Index creation for missing KEY/series with sync start/status polling and progress reporting
+      - Module architecture with separate CLI entry points (query/sync/prepare) and shared helper modules
+      - ToC freshness judgment delegated to doc-advisor check-toc with 24-hour threshold
     applicable_tasks:
-      - Implementing document search backend selection
-      - doc-db HTTP connection and session management
-      - Error handling for missing and trashed keys
-      - Index synchronization and progress monitoring
-      - Fallback behavior when doc-db unavailable
-      - On-demand service startup
-      - Query result validation and filtering
-      - ToC freshness verification before queries
-      - Update job polling and progress reporting
+      - Implementing backend selection in query/update wrapper SKILLs
+      - Adding doc-db integration to document search system
+      - Designing HTTP client for MCP JSON-RPC communication
+      - Implementing on-demand process startup and health checking
+      - Configuring backend preferences in forge settings
+      - Validating search results against current git state
+      - Implementing index sync with progress reporting
+      - Integrating doc-db and doc-advisor in same backend switching logic
+      - Testing backend fallback behavior and error handling
+      - Reviewing architecture for separation of concerns between SKILLs and shared scripts
     keywords:
+      - backend selection
       - doc-db
-      - backend_selection
-      - JSON-RPC
-      - series_specification
-      - KEY_NOT_FOUND
-      - KEY_TRASHED
-      - index_synchronization
-      - fallback_strategy
-      - ToC_freshness
-      - MCP_tool_contract
+      - HTTP client
+      - MCP JSON-RPC
+      - series (git branch)
+      - on-demand startup
+      - doc-advisor fallback
+      - ToC freshness
+      - index sync
+      - project key
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
-    title: REQ-014 Document DB Backend Selection Requirements Specification
-    purpose: Specifies functional and operational requirements for automatic backend selection between doc-db and doc-advisor to enable transparent search functionality without user awareness of backend setup
+    title: REQ-014 doc-db Backend Selection Requirements Specification
+    purpose: Specifies automatic backend selection mechanism for document search wrappers, enabling users to leverage the best available search backend without manual configuration
     content_details:
-      - "Backend auto-selection priority: doc-db preferred over doc-advisor with fallback mechanism"
-      - "ToC freshness validation: 24-hour recency requirement before query execution on doc-advisor"
-      - "Four wrapper functions: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
-      - Distinction between uninitialized state and actual failures using doc-db machine-readable identifiers
-      - Series-limited search requirement to exclude other branches and deleted documents
-      - "Minimum version requirements: DocAdvisor 0.4.6 and doc-db 0.3.3"
-      - Index pre-initialization requirement for missing KEY/series before query execution
-      - "Observability requirements: backend selection, startup attempts, fallback transitions, and failure reasons must be user-visible"
+      - Automatic backend selection logic with connection and startup attempts
+      - Query execution with ToC freshness verification for doc-advisor
+      - Update execution and index creation for both backends
+      - User notification for backend selection, switching reasons, and index operations
+      - Backend selection priority order configurable per project
+      - doc-advisor ToC freshness rule with 24-hour window
+      - Distinction between uninitialized and failure states in doc-db
+      - Series-specific search for current branch in doc-db
+      - Minimum required versions DocAdvisor 0.4.6 and doc-db 0.3.3
+      - Observability requirements for backend switching and index operations
     applicable_tasks:
-      - Implementing wrapper backend selection logic
-      - Designing doc-db connection and retry mechanism
-      - Implementing ToC freshness validation for doc-advisor queries
-      - Handling uninitialized vs failure state distinctions
-      - Index pre-creation before query execution
+      - Backend selection wrapper implementation
+      - doc-db and doc-advisor integration
+      - Query wrapper development
+      - Update wrapper development
+      - User notification system design
+      - Backend availability detection
+      - Index initialization and freshness checking
+      - Error handling and failure recovery design
+      - Requirements validation testing
     keywords:
+      - backend selection
       - doc-db
       - doc-advisor
-      - backend selection
-      - query wrapper
+      - wrapper
       - ToC freshness
       - series
       - KEY
-      - index pre-initialization
-      - fallback mechanism
-      - observability
+      - branch
+      - index
+      - query execution
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
     title: ADR-052 Cross-reference notation standardization and plugin root path access improvement
     purpose: Defines decisions for cross-reference notation within docs/ (relative paths vs absolute paths) and introduces automatic symlink mechanism for plugin root path resolution via SessionStart hook
@@ -473,6 +577,31 @@ docs:
       - FNC-1318
       - execution subject
       - switchable backend
+  docs/specs/forge/design/ADR-065_review_backend_contract_completion.md:
+    title: ADR-065 Backend Contract Completion with Failure, Termination Notification, and Location Information
+    purpose: Specifies required additions to the review backend contract to enable autonomous backends with self-owned resources to properly handle failures, signal completion, and express finding locations
+    content_details:
+      - Failure verdict addition (third state to backend output)
+      - Termination notification mechanism from main body to backend
+      - Position information format specification (filepath:line or explicit undefined)
+      - Resource management requirements for autonomous backends
+      - Limitations of msg-review human-centered design
+      - Alternative solutions and rejection rationale
+      - Impact on contract evolution toward backend-agnostic design
+    applicable_tasks:
+      - Backend contract specification and design
+      - Autonomous backend implementation
+      - Review system architecture design
+      - Resource lifecycle management planning
+    keywords:
+      - backend contract
+      - failure handling
+      - termination notification
+      - resource lifecycle
+      - position information
+      - autonomous backend
+      - codex-appserver
+      - REQ-013
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     title: Forge query abstraction design
     purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
@@ -895,6 +1024,33 @@ docs:
       - template selection
       - masking
       - validation
+  docs/specs/forge/design/DES-061_forge_settings_file_design.md:
+    title: DES-061 Forge Settings File Design
+    purpose: Defines the container specification and read semantics for the universal forge project configuration file (.claude/.forge.yaml), including placement, structure, error handling, and schema ownership rules for feature-specific sections
+    content_details:
+      - Container specification for .claude/.forge.yaml configuration file
+      - Schema ownership model where feature-owning designs define section schemas
+      - Compatibility with existing configuration files (.doc_structure.yaml, .version-config.yaml)
+      - Forward compatibility through unknown section ignoring within YAML subset
+      - Centralized reading interface via forge_settings.py module with load() and section() functions
+      - Constrained YAML subset syntax (no anchors, multiline, or flow style)
+      - Error handling model (file absence is normal, parse failure is explicit error)
+      - Value validation responsibility delegation to feature-owning designs
+    applicable_tasks:
+      - Forge configuration system implementation
+      - Feature-specific configuration section definition
+      - Settings file parsing and error handling
+      - Test design for configuration management
+      - Forward compatibility validation planning
+    keywords:
+      - settings file design
+      - forge configuration
+      - schema ownership
+      - YAML subset parsing
+      - error handling
+      - REQ-014
+      - DES-057
+      - forge_settings.py
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
@@ -947,70 +1103,99 @@ docs:
       - misuse defense
       - forge plugin
   docs/specs/forge/requirements/REQ-013_review_policy.md:
-    title: REQ-013 Review Policy Requirements
-    purpose: Defines a priority-based review framework with three levels (rule compliance, contradiction detection, unnecessary complexity) and establishes specifications for review target axes, interaction modes, backend abstraction, and secrets detection
+    title: Review Policy Requirements (REQ-013)
+    purpose: Specifies review policy establishing principle-based code review approach with priority levels, criteria structure, and backend interfaces to prevent unnecessary complexity and ensure consistent quality.
     content_details:
-      - Three-priority review framework (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
-      - Elimination of criteria-specific perspectives and centralization of judgment into principles
-      - Target specification axes (--diff, --branch, --files, --dirs) with granularity preservation
-      - Interaction axes (--interactive, --auto-critical, --auto) for post-detection processing
-      - Focus axis for emphasizing specific review aspects via natural language
-      - Backend abstraction layer for review execution (msg-review default)
-      - Document reference permanence as permanent P1 review criterion
-      - Two-stage secrets detection (deterministic scanning + AI analysis)
-      - Review target granularity preservation requirement to prevent range-to-file-list expansion
-      - Default behavior specification (--diff --interactive equivalent)
+      - "Review priority hierarchy (P1: rule compliance, P2: contradiction detection, P3: unnecessary complexity detection)"
+      - Elimination of perspective-specific criteria and judgment removal from review criteria documents
+      - Target axis specification (--diff, --branch, --files, --dirs flags with granularity preservation requirement)
+      - Interaction axis (--interactive, --auto-critical, --auto for post-detection processing modes)
+      - "Review backend axis (--backend flag with documented I/O contract: failure, termination notification, position information)"
+      - Focus axis (--focus for per-review emphasis in natural language, additive to built-in criteria)
+      - "Secrets review module (independent sensitive information detection using two-stage approach: mechanical scanning plus AI analysis)"
+      - "Secret value non-duplication rule (FNC-1316: masking and prevention of propagation through review channels)"
+      - Review criteria fixed 3-section structure (SSOT reference, check order, judgment rules)
+      - Principles expansion requirement (severity catalog and greyzone tolerance range clarification)
     applicable_tasks:
-      - Review policy specification and design
-      - Criteria framework definition
-      - Review backend integration
-      - Principles document enhancement
-      - Secrets scanning implementation
+      - Review criteria document creation and structure design
+      - Review backend implementation and I/O contract specification
+      - Review policy and requirement documentation
+      - Rule gap detection and issue creation workflow
+      - Review SKILL implementation per FNC requirements
     keywords:
-      - review policy
-      - priority system
-      - rule compliance
-      - contradiction detection
-      - interaction axis
-      - backend abstraction
+      - review
+      - priority hierarchy
+      - criteria structure
+      - backend contract
       - secrets detection
-      - granularity preservation
-  docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
-    title: DES-045 Messaging-driven Review SKILL Design
-    purpose: Design specification for msg-review subsystem orchestrating continuous dialogue code review through message infrastructure, defining protocol, module responsibilities, and multi-turn lifecycle management.
+      - severity catalog
+      - target axis
+      - interaction axis
+      - principles
+      - judgment removal
+  docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
+    title: "ADR-061: Multiplexing Codex Wake-up Paths (Adding App-Server Path)"
+    purpose: "Records evaluation of adding app-server path to Codex wake-up routing alongside cmux. Includes implementation context, decision details, alternative analysis, and impact assessment. Status: rejected, replaced by ADR-063."
     content_details:
-      - "Architecture overview with message-driven SKILL orchestration across three modes: request, receipt, and resume"
-      - Multi-turn lifecycle model with dependencies on msg-sys communication base
-      - Module design specification including resolve_targets.py, build_review_request.py, filter_review_history.py, and wait_for_reply.py
-      - Message protocol with [msg-review] header format, review_id generation, and REVIEW_RESULT completion declaration
-      - "Pre-check validation using msg-sys check_setup.py: git repo, DB path, hook registration, max round trips"
-      - Blocking wait implementation with exponential backoff polling and read status tracking for synchronous completion
-      - Push-type wake mechanism using cmux terminal multiplexer to inject turn into Codex session
-      - Composite send_and_await_reply.py script unifying send, wake, and wait operations in single call
-      - "Five use cases: request submission, finding receipt and re-request, approval completion, round trip limit, prerequisite failure"
-      - Error handling flows for missing prerequisites, files, send failure, protocol violations, and timeout fallback patterns
+      - Context on pull-type message detection limits and need for push-type wake-up
+      - Real-world measurement results from codex-cli 0.146.0 showing app-server capabilities and limitations
+      - Decision to add app-server path as priority over cmux with fallback
+      - Implementation approach using wrapper shim for Codex startup and WebSocket client in Python standard library
+      - Seven alternative approaches evaluated with detailed rejection rationales
+      - Impact analysis covering benefits including cmux-free environments and draft safety
+      - Analysis of losses and new constraints including PATH intervention and experimental interface dependency
+      - Unverified assumptions about TUI remote connection and unix:// transport support
     applicable_tasks:
-      - Design review of message-driven review infrastructure
-      - Implementation of msg-review SKILL components
-      - Testing wait-for-reply polling and exponential backoff behavior
-      - Setup and configuration of Codex-Claude message exchange routing
-      - Debugging message protocol violations and review completion detection
-      - Integration with msg-sys communication base and Stop hooks
-      - Prerequisite validation and error handling during review initiation
-      - Round trip limit monitoring and resume mode implementation
-      - cmux environment configuration for push-type Codex wake
-      - Continuous dialogue orchestration across multiple turns
+      - Architecture decision review for msg-review system
+      - Wake-up path strategy evaluation
+      - Backend integration planning for app-server as independent backend
+      - Codex session lifecycle management design
+      - Multi-backend architecture design
+    keywords:
+      - Codex wake-up
+      - app-server
+      - cmux
+      - push-type wake-up
+      - JSON-RPC
+      - WebSocket
+      - msg-sys
+      - thread routing
+  docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
+    title: "DES-045: Messaging-Driven Review Skill Design Specification"
+    purpose: Specifies design of msg-review SKILL for continuous dialogue reviews with resident Codex. Covers architecture, communication protocols, module structure, prerequisite checks, and safety mechanisms for multi-round interactions.
+    content_details:
+      - "System architecture with three operational modes: request mode, receive mode, and resume mode for round-limit recovery"
+      - Message protocol with [msg-review] headers, review_id thread identifiers, and round numbering for protocol versioning
+      - "Mandatory three-step composite for sends expecting reply: send → push-type wake-up → blocking wait, implemented in send_and_await_reply.py"
+      - Blocking wait with exponential backoff polling, delivery confirmation via inbox ack, and diagnostic timeout information (last_observed_request_read_by_agent_b)
+      - Push-type wake-up via cmux terminal multiplexer with workspace and pane discovery, busy-state detection, and TOCTOU-safe retries
+      - Message format contract specifying findings with severity markers, location information (file:line), and mandatory REVIEW_RESULT declaration line (approved or findings)
+      - History filtering script with review_id extraction from message body prefix and thread identity filtering, resolved-state detection from Codex-originated messages
+      - Prerequisite validation delegated to msg-sys check_setup.py covering git repo, database paths, hook registration, and round-trip limit configuration
+      - Target resolution with allowlist supply via resolve_targets.py for safe modification-phase validation
+      - Safety gates preventing busy-pane interruption, input-field preservation during wake-up, and undelivered-message handling via ack confirmation
+    applicable_tasks:
+      - Messaging-driven code review workflow implementation
+      - Continuous dialogue handling in multi-agent communication systems
+      - Message protocol specification for agent interaction
+      - Turn-spanning interaction safety and correctness assurance
+      - Push-type session wake-up mechanism design with terminal integration
+      - Blocking wait implementation with exponential backoff and timeout diagnostics
+      - Review round-trip limit management and session resumption
+      - Thread identification and message history filtering logic
+      - Multi-agent prerequisite validation and health checking
+      - Stop hook integration for reactive event-driven architectures
     keywords:
       - msg-review
-      - message protocol
+      - Codex session
+      - messaging protocol
       - review_id
-      - REVIEW_RESULT
-      - send_and_await_reply
+      - cmux
+      - push-type wake-up
       - blocking wait
-      - exponential backoff
-      - completion declaration
-      - round trip limit
-      - cmux wake
+      - send_and_await_reply
+      - turn-spanning
+      - agent communication
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
     title: DES-046 msg-review Intervention Mode Implementation Design
     purpose: "Specifies implementation design for msg-review's intervention mode (--auto-critical/--auto) that automatically fixes findings based on severity level (critical/major/minor)"
@@ -1110,36 +1295,38 @@ docs:
       - self-review safety verification
       - delayed response handling
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: REQ-012 Messaging-driven Review SKILL Requirements Specification
-    purpose: Defines requirements for a messaging-driven review orchestration SKILL enabling continuous-dialogue code reviews with Codex using msg-sys communication infrastructure
+    title: REQ-012 msg-review (Message-Driven Review SKILL) Requirements Specification
+    purpose: Defines requirements for a message-driven review skill that enables continuous dialogue code review with Codex through msg-sys communication infrastructure, replacing non-interactive review stages.
     content_details:
-      - Structured review request procedure supporting unstaged diff, branch-wide changes, or explicit file targets
-      - Findings evaluation and modification orchestration by Claude without evaluator/fixer Agent isolation
-      - Async message exchange with Codex using msg-sys communication infrastructure and reply chain semantics
-      - Completion determination covering approval, iteration limit, or auto-fix mode scope exhaustion
-      - Prerequisite validation for message DB accessibility and Codex session readiness
-      - Command syntax compatibility with /forge:review including review types and intervention mode flags
-      - Audit trail through msg-sys message history without separate persistence layer
-      - Handling unsupported engine flags with warnings while continuing with default behavior
-      - v1 experimental design without mechanical safety boundaries for modification constraints
-      - Integration pathway with existing /forge:review pipeline as backend engine
+      - Background and limitations of non-interactive review approach with single-use Codex sessions
+      - Relationship and differentiation from existing /forge:review pipeline (v1 independence, later integration via ADR-060)
+      - "Scope: standardized review request initiation specifying target (uncommitted diff, full branch changes, or file list)"
+      - "Scope: automated finding evaluation, modification, and re-request loop without external evaluator/fixer agents"
+      - "Scope: exclusions - no pipeline integration in v1, no fixer safety guardrails, no automatic session management"
+      - "Functional requirement FNC-002: review request self-sufficiency (target specification, review perspective, rule document paths, reply format)"
+      - "Functional requirement FNC-003: prerequisite validation (message DB connectivity, receiver notification capability)"
+      - "Functional requirement FNC-004: finding iteration - evaluation, modification, and re-request by orchestrator on same reply chain"
+      - "Functional requirement FNC-005: completion criteria (approval, message turn limit, exhaustion of auto-fixable findings by intervention mode)"
+      - "Functional requirement FNC-007: peer session wake-up using cmux with failure/success/skip distinction"
     applicable_tasks:
-      - Continuous-dialogue code review orchestration system implementation
-      - /forge:review backend architecture design for pluggable review engines
-      - Codex integration for asynchronous review feedback loops
-      - Review findings evaluation and automated response orchestration
-      - msg-sys communication protocol usage in SKILL layer
+      - Message-driven review workflow design and architecture
+      - Codex continuous dialogue integration with Claude orchestrator
+      - Finding evaluation and modification implementation
+      - Review request orchestration and command compatibility
+      - Session wake-up mechanism implementation
+      - Prerequisite validation and error handling
+      - Review completion criteria and result reporting
     keywords:
       - msg-review
-      - continuous-dialogue review
-      - Codex
+      - continuous dialogue
+      - Codex integration
+      - finding evaluation
+      - message-driven review
+      - cmux wake-up
+      - auto-fix
       - review orchestration
-      - findings evaluation
-      - msg-sys
-      - communication infrastructure
-      - automated modification
-      - reply chain
-      - fixer isolation
+      - finding iteration
+      - prerequisite validation
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)
