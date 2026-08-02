@@ -28,7 +28,7 @@ checksums:
   plugins/forge/docs/spec_format.md: 140932f086e43a097ebfddc59e5b4a08307429052fd7ff5698a3ffb4f2ec00e7
   plugins/forge/docs/spec_priorities_spec.md: a78c267026ef686bb9705d127a341faa3b5ca5ca74e1b492d47274367e5b0916
   plugins/forge/docs/strategy_formulation_spec.md: dfa05da1eef38990ca78dc991ab5a5ed7444fc2c96552ae9ee5c05342bf5b042
-  plugins/forge/docs/task_execution_spec.md: 72556bf3c8dad8cda1a7aee05186df8318c555c372214e6da97625789cd93bf3
+  plugins/forge/docs/task_execution_spec.md: 803d518e6cc67196be6f2e51fc5dbafa2a84ad9c9232ca049f9353b75a1a26a5
   plugins/forge/docs/version_migration_spec.md: 7789d9fe362fa960d9dd95841404daa734b0e35133fdb529c9d4921186665e60
   plugins/forge/skills/clean-rules/docs/taxonomy.md: cbe025933f39f74be1d11707b0a4c376c9aab7faa99973f6bfa1a6c09ee9b39a
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md: 6120b83f8bac7942c5cde5d52df2341fa978ee3f031fcb5c79651fa38ccfd746

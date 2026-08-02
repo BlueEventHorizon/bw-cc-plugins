@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-01T04:39:05Z
+  generated_at: 2026-08-02T14:17:48Z
   file_count: 39
 
 docs:
@@ -751,35 +751,33 @@ docs:
       - module dependency
       - verification point
   plugins/forge/docs/task_execution_spec.md:
-    title: Task Execution Specification for Executor Agent
-    purpose: Provides self-contained task instructions for the Executor Agent implementing a single task, including pre-preparation steps, implementation workflow, verification requirements, and completion reporting format.
+    title: Task Execution Guide (Executor Agent Edition)
+    purpose: Self-contained work instruction that orchestrators provide to task-executor agents, defining the mandatory workflow and constraints for implementing a single task
     content_details:
-      - One task per execution with mandatory completion before termination
-      - "Required documents phases: design specs, requirements, strategy, rules, reference code"
-      - Pre-implementation code exploration using Grep, Glob, Read tools
-      - Sequential implementation of each item with error handling
-      - Test-driven development (Red-Green-Refactor) when specified
-      - Build and test verification with max 1 retry limit on failure
-      - Status reporting (SUCCESS/FAILURE) in mandatory markdown format
-      - "Prohibition rules: multiple task chaining, out-of-scope tasks, document skipping, subagent launching"
+      - Mandatory principles including single-task constraint and prohibited actions
+      - 5-step workflow from task information reception through completion
+      - Preparation phase covering required document reading and existing code review
+      - Implementation guidelines with sequential item execution and test-driven development
+      - Verification requirements for build confirmation and test execution
+      - Completion reporting format with SUCCESS/FAILURE status and implementation summary
+      - Troubleshooting guidance for dependencies, build errors, and unclear requirements
     applicable_tasks:
-      - Task orchestration planning
-      - Executor agent implementation
-      - Build verification workflow design
-      - Test execution strategy
-      - Error handling and retry mechanism design
-      - Task status reporting system design
+      - Task executor agents implementing features
+      - Orchestrators dispatching and managing task-executor workflows
+      - Task planning and decomposition into atomic units
+      - Quality assurance and verification of agent implementations
+      - Developers designing multi-agent task execution systems
     keywords:
-      - task-executor
+      - task execution
+      - executor agent
+      - workflow
+      - verification
       - orchestrator
-      - build verification
-      - test execution
-      - task status
-      - TDD
-      - verification requirements
-      - failure reporting
-      - pre-preparation
-      - implementation instructions
+      - scope boundary
+      - implementation
+      - mandatory principles
+      - completion reporting
+      - single-task constraint
   plugins/forge/docs/version_migration_spec.md:
     title: Version Migration Implementation Specification
     purpose: Specifies requirements and implementation patterns for progressive version migration of data formats
