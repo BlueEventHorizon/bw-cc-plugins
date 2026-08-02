@@ -123,6 +123,46 @@ reason code の判定は経路別に行う。§2.4 冒頭の経路表のとお�
 旧版向けに `check-toc` 無しの鮮度判定経路を forge 内へ持つことはしない。
 forge が ToC 内部配置を解釈する経路の復活になり、REQ-014 BL-002 に反するためである。
 
+### 2.5 優先 backend の指定（REQ-014 BL-001）
+
+利用者は `.claude/.forge.yaml`（汎用設定ファイル。入れ物の規約は DES-061）で
+優先 backend を指定できる。**`doc_backend` セクションのスキーマは本設計が所有する。**
+
+```yaml
+doc_backend:
+  prefer: doc-advisor # doc-db | doc-advisor。省略時は既定順序（doc-db 優先）
+```
+
+指定が変えるのは選択順序だけである（REQ-014 BL-001）。可用性判定・索引整備・通知・失敗の扱いは
+指定の有無で変わらない。
+
+**許容する形**: `doc_backend` セクションは mapping であり、キーは `prefer` のみ、値は
+`doc-db` / `doc-advisor` の 2 値とする。次のいずれも設定の不正として扱う（下表の最終行）。
+
+- セクションが mapping でない（例: `doc_backend: doc-advisor`、リスト）
+- 未知のキーを含む（例: `preffer:` のような綴り誤り。黙って無視すると指定が効いていないことに気づけない）
+- `prefer` の値が上記 2 値以外
+
+**読み取り位置と分岐**: 設定は低レベル CLI（`query_docdb.py` / `sync_docdb.py`）の入口で
+`forge_settings.py` を通じて読む。SKILL は YAML を解釈しない。
+
+| `prefer` の値              | CLI の挙動                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 未指定・ファイル不在       | 従来どおり（doc-db の接続確認から始める）                                                                         |
+| `doc-db`                   | 従来どおり（既定順序の明示に過ぎない）                                                                            |
+| `doc-advisor`              | doc-db の probe・起動試行を行わず、exit `10`（`advisor_fallback`）を reason code `advisor_preferred` で返す       |
+| 不正（許容する形に反する） | exit `20`（`operation_error`）を reason code `settings_invalid` で返す。**推測で既定順序に落ちない**（§2.5 末尾） |
+
+**doc-advisor 優先が満たせない場合の復帰**: SKILL は exit `10` を受けて従来どおり doc-advisor の
+利用可否を確認する。reason code が `advisor_preferred` であり、かつ doc-advisor を利用できない場合、
+SKILL は両 backend 不能として失敗させず、**CLI を `--ignore-preference` 付きで再実行して doc-db 経路を試す**。
+このとき「指定が満たされなかったことと理由」を利用者へ通知する（REQ-014 FNC-004）。
+`--ignore-preference` は設定の読み取りだけを省く flag であり、他の挙動を変えない。
+
+不正値・解析不能の設定を黙って無視して既定順序で動くことはしない。利用者が意図した backend と
+異なる側で静かに動き続けることになるためである（DES-061 §2.4 と同じ方針。構文エラーは
+`forge_settings.py` が、値域エラーは本設計の CLI が検出する）。
+
 ## 3. アーキテクチャ
 
 ### 3.1 コンポーネント図
@@ -172,19 +212,20 @@ ToC 鮮度判定は forge script ではなく外部 `doc-advisor:check-toc` に�
 
 ### 3.2 モジュール一覧
 
-| モジュール                                     | 責務                                                                          | 依存                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
-| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、check-toc / query / index 起動、通知                         | SKILL 固有 wrapper、doc-advisor        |
-| 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知                                 | SKILL 固有 wrapper、doc-advisor        |
-| `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し                         | `query_docdb.py`                       |
-| `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI（`--start` / `--status`）を透過呼び出し | `sync_docdb.py`                        |
-| `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し                            | `prepare_advisor_index.py`             |
-| `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                    | Python 標準ライブラリ                  |
-| `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                               | `docdb_client.py`、`doc-db` executable |
-| `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                             | 既存 doc-structure resolver、git       |
-| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築    | runtime、client、project documents     |
-| `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入（`--start`）と単発の状態取得（`--status`）          | runtime、client、project documents     |
-| `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決                              | 既存 dprint runner、doc-structure      |
+| モジュール                                     | 責務                                                                          | 依存                                               |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、check-toc / query / index 起動、通知                         | SKILL 固有 wrapper、doc-advisor                    |
+| 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知                                 | SKILL 固有 wrapper、doc-advisor                    |
+| `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し                         | `query_docdb.py`                                   |
+| `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI（`--start` / `--status`）を透過呼び出し | `sync_docdb.py`                                    |
+| `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し                            | `prepare_advisor_index.py`                         |
+| `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                    | Python 標準ライブラリ                              |
+| `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                               | `docdb_client.py`、`doc-db` executable             |
+| `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                             | 既存 doc-structure resolver、git                   |
+| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築    | runtime、client、project documents、forge settings |
+| `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入（`--start`）と単発の状態取得（`--status`）          | runtime、client、project documents、forge settings |
+| `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決                              | 既存 dprint runner、doc-structure                  |
+| `scripts/forge_settings.py`                    | `.forge.yaml` の読み取り（入れ物の規約は DES-061。forge 全体の共有）          | Python 標準ライブラリ                              |
 
 共有モジュールは `plugins/forge/scripts/doc_backend/` に置く。
 4 SKILL が同じ処理を利用するため、いずれか 1 SKILL の配下には置かない。
@@ -360,6 +401,8 @@ job 進捗で示す（未完了を異常として扱わない）。
 
 SKILL は exit code だけで上記の経路を選択し、JSON field の組合せから状態を再構成しない。
 JSON は結果表示と診断情報の取得にだけ使用する。
+例外は exit `10` の `reason_code` が `advisor_preferred` の場合だけであり、doc-advisor も利用できない
+ときの復帰先（`--ignore-preference` 再実行）を選ぶためにこの 1 値のみを参照する（§2.5）。
 `startup` は未試行、起動成功、起動失敗を区別する。
 エラー本文は URL、port、reason code、doc-db が返した非機密メッセージに限定し、環境変数値や設定本文を含めない。
 
@@ -791,14 +834,14 @@ feature 統合時は既存の doc-advisor 単一前提を doc-db 優先選択へ
 
 ### 9.1 単体テスト
 
-| 対象                       | 検証項目                                                                                                                                                              |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docdb_client.py`          | initialize、session header、JSON / SSE、HTTP / tool error                                                                                                             |
-| `docdb_runtime.py`         | 接続済み、実行ファイル不在、起動成功、早期終了、再接続不能、秘密値非出力                                                                                              |
-| `project_documents.py`     | worktree 共通 key、branch series、detached fallback、対象文書、exclude                                                                                                |
-| `query_docdb.py`           | path 抽出、順位維持、0 件、`Required documents:` 形式、series 指定、実在しない path の除外と件数通知、KEY / series 未整備の exit code 30 分類、ゴミ箱状態と障害の判別 |
-| `sync_docdb.py`            | desired state、削除追従入力、0 件防御、`--start` の job_id 返却、`--status` の単発取得（未完了で exit 0）                                                             |
-| `prepare_advisor_index.py` | dprint 失敗伝播、dirs / exclude 出力、設定エラー                                                                                                                      |
+| 対象                       | 検証項目                                                                                                                                                                                                                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docdb_client.py`          | initialize、session header、JSON / SSE、HTTP / tool error                                                                                                                                                                                                                                |
+| `docdb_runtime.py`         | 接続済み、実行ファイル不在、起動成功、早期終了、再接続不能、秘密値非出力                                                                                                                                                                                                                 |
+| `project_documents.py`     | worktree 共通 key、branch series、detached fallback、対象文書、exclude                                                                                                                                                                                                                   |
+| `query_docdb.py`           | path 抽出、順位維持、0 件、`Required documents:` 形式、series 指定、実在しない path の除外と件数通知、KEY / series 未整備の exit code 30 分類、ゴミ箱状態と障害の判別、優先 backend 指定の分岐（未指定 / doc-db / doc-advisor / 非 mapping / 未知キー / 値域外）と `--ignore-preference` |
+| `sync_docdb.py`            | desired state、削除追従入力、0 件防御、`--start` の job_id 返却、`--status` の単発取得（未完了で exit 0）、優先 backend 指定の分岐                                                                                                                                                       |
+| `prepare_advisor_index.py` | dprint 失敗伝播、dirs / exclude 出力、設定エラー                                                                                                                                                                                                                                         |
 
 時計、HTTP、process、filesystem は差し替え可能な境界を設け、実サーバや利用者の home 設定に依存しない。
 ToC 鮮度判定そのものの単体テストは DocAdvisor の `check-toc` 実装側で行う。
