@@ -48,7 +48,7 @@
 - **目標**: 3 つの低レベル CLI が単体で叩けて、exit code 0 / 10 / 20 / 30 が §4.4 の表どおりに出る。SKILL からはまだ呼ばれないため、既存経路は無傷のまま。
 - **スコープ**:
   - `plugins/forge/scripts/forge_settings.py` — `.claude/.forge.yaml` の読み取り（DES-061）。共有低レベル層だがフェーズ 1 完了後の要件追加（REQ-014 優先 backend 指定）で加わったため本フェーズで実装する。load / section の 2 関数のみ・標準ライブラリの行ベースパーサ・不在は空 dict・解析不能は明示エラー。
-  - `plugins/forge/scripts/doc_backend/query_docdb.py` — `mode=all` / `top_n=20` / `series=現在の branch`、`results[].path` の順位維持抽出、**出力前のパス実在確認と除外件数**（§4.2）、`Required documents:` 文字列の決定論的構築（`origin_signals` は出さない／`warnings` は path リストの後に別掲）、対象文書 0 件の先行判定 → 索引状態確認、未整備の exit 30、KEY 不在／ゴミ箱状態／その他障害の error 判別（§4.5）、優先 backend 指定の分岐と `--ignore-preference`（§2.5）。
+  - `plugins/forge/scripts/doc_backend/query_docdb.py` — `mode=all` / `top_n=20` / `series=現在の branch`、`results[].path` の順位維持抽出、**出力前のパス実在確認と除外件数**（§4.2）、`Required documents:` 文字列の決定論的構築（`origin_signals` は出さない／`warnings` は path リストの後に別掲）、対象文書 0 件の先行判定 → 索引状態確認、未整備の exit 30、KEY 不在／ゴミ箱状態／その他障害の error 判別（§4.5）。優先 backend の分岐は持たない（責務分離により `resolve_backend_order.py` へ分離。§2.5）。
   - `plugins/forge/scripts/doc_backend/sync_docdb.py` — `--start`（desired state 投入 → `job_id` 即返し）と `--status <job_id>`（`get_sync_status` 1 回・**未完了でも exit 0**）の 2 操作のみ。**プロセス内ポーリングループを持たない**（§4.3）。0 件時は同期せず明示エラー。
   - `plugins/forge/scripts/doc_backend/prepare_advisor_index.py` — `run_dprint_fmt.sh` 実行 + `.doc_structure.yaml` からの `root_dirs` / `patterns.exclude` 解決。成功 exit 0 / `status=success`、失敗 exit 20 / `status=operation_error`（§5.2 末尾）。
   - 3 CLI 共通の JSON 契約（`status` / `backend` / `operation` / `startup` / `reason_code`）をここで 1 箇所に固定する。SKILL は exit code だけで分岐し JSON から状態を再構成しないため（§4.4）、**JSON field の組合せに意味を持たせない**ことをレビュー観点にする。
@@ -57,6 +57,13 @@
   - §9.3 の統合経路のうち script 単体で閉じるものが緑: 初回接続成功 → query 完了 / 初回接続失敗 → 起動後成功 / 0 件で索引に触れない（索引状態確認より前に判定される）/ 未整備 exit 30 / 未整備・0 件のいずれでも series を外した横断検索へ切り替えない / 障害 exit 20 で fallback しない / 実在しない path の除外と件数 / `--start` の job_id / `--status` の未完了 exit 0。
   - **中間検証（`query_docdb.py` 完成時点。`sync_docdb.py` を待たない）**: 実 doc-db に対して `query_docdb.py` を手で叩き、既存 doc-advisor 出力と `Required documents:` の形が一致すること（NFR-002 の出力互換）。
   - **識別子契約への適合確認**（確認事項 3 の決着後の残り作業）: 存在しない KEY への query が `error.data.code == "KEY_NOT_FOUND"` を返すことを実 doc-db 0.3.3 で確認し、注入 fixture をその形に合わせる。`KEY_TRASHED` は公開契約の値であるため `trash_index` を実行して確かめることはしない。識別子を読み取れない error は障害扱いのままにする（fail-safe を崩さない）。
+
+#### 識別子契約への適合確認の実施記録（doc-db 0.3.3 / 2026-08-02・読み取り専用）
+
+- **手順**: 未起動の doc-db を `docdb_runtime.ensure_available()` の on-demand 起動（非破壊）で立ち上げ、実在しない KEY（乱数 suffix 付き）へ `query` を 1 回実行した。書き込み系 tool は呼んでいない。
+- **結果**: `serverInfo.version` は 0.3.3。KEY 不在は **JSON-RPC error** として届き、`error.data.code == "KEY_NOT_FOUND"`（判別の正本）、`message` は同一の識別子トークン `KEY_NOT_FOUND:` で始まり、数値 code（-31001）は補助として載った。`docdb_client.py` の `ToolError` から `data["code"]` を取り出せることも確認した。応答は SSE（`text/event-stream`）で、フェーズ 1 の観測と変わらない。
+- **DES-057 §4.5 とのズレ**: なし（§4.5 の「KEY 状態に関する doc-db の挙動」の契約記述どおり。更新不要）。
+- **fixture 整備**: `tests/forge/doc_backend/test_docdb_client.py` の注入 fixture を実応答の形（`KEY_NOT_FOUND`）に合わせ、`KEY_TRASHED` は契約記述（ADR-058 / DES-057 §4.5）から書いた（`trash_index` による採取はしない）。判別テストは `data["code"]` と `message` 先頭トークンのみに依拠し、文言全文・数値 code に依存する記述を持ち込んでいない。
 
 ### フェーズ 3: wrapper と SKILL.md の切替（update → query の順）
 
@@ -67,7 +74,7 @@
   - DES-024 §3.2 に従い共有 wrapper 層は作らない。同名 wrapper を SKILL ごとに置き、固定値（`rules` / `specs`）だけが異なる。
 - **切替の順序（これが本フェーズの要点）**:
   - **3a. `update-db-rules` / `update-db-specs` を先に切り替える。** 理由は 2 つ。(1) update 経路は `check-toc` を呼ばず（§5.3）、分岐が「doc-db sync + ポーリング」か「prepare → index-docs」の 2 本だけで最も単純。(2) query 経路の未整備リカバリ（exit 30 → `--start` → `--status` ポーリング → query 再実行）は sync 経路そのものに依存するため、sync 経路を先に実運用で検証済みにしておくと、query 側の失敗原因を sync と query に切り分けられる。
-  - **3b. `query-db-rules` / `query-db-specs` を切り替える。** ここで初めて grep フォールバック手順の削除と `allowed-tools` からの `Grep` 削除（`Skill, Read, Bash` へ）、`check-toc` の 3 分岐（§5.1.3）、`advisor_absent` / `advisor_outdated` の区別（§2.4）、§7.1 の母集団相違通知を入れる。両段とも、優先 backend 指定（reason `advisor_preferred`）で doc-advisor も利用できない場合の `--ignore-preference` 復帰と通知（§2.5）を含む。
+  - **3b. `query-db-rules` / `query-db-specs` を切り替える。** ここで初めて grep フォールバック手順の削除と `allowed-tools` からの `Grep` 削除（`Skill, Read, Bash` へ）、`check-toc` の 3 分岐（§5.1.3）、`advisor_absent` / `advisor_outdated` の区別（§2.4）、§7.1 の母集団相違通知を入れる。両段とも、入口で `resolve_backend_order.py` による順序リスト解決（既定 doc-advisor 先位）から始め、先位不能時の切替理由の通知（§2.5・FNC-004）を含む。
   - どちらの段でも、切替済み SKILL は doc-db 不在環境で従来と同じ doc-advisor 経路に落ちる（`check-toc` が入る点だけが差分）。したがって 3a 完了・3b 未着手という中間状態でも 4 SKILL すべてが動作する。
 - **SKILL.md 側の注意（ルール文書由来の制約）**:
   - ポーリングループは SKILL 側に置き、`--status` を呼ぶたびに進捗をテキストで報告する（§4.2 / §4.3 / NFR-001）。script の stderr に委ねない。

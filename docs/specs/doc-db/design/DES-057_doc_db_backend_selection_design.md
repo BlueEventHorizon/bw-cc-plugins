@@ -19,9 +19,10 @@ notes:
 
 ## 1. 概要
 
-4 つの文書検索 wrapper に、doc-db を優先するバックエンド選択を追加する。
+4 つの文書検索 wrapper に、順序リストに基づくバックエンド選択を追加する。
+順序は設定（`.claude/.forge.yaml` の `doc_backend.prefer`）から決まり、既定値は doc-advisor 先位である（§2.5）。
+選択者は順序リストの先位から各 backend が所有する可用性判定を呼び、最初に利用可能な backend を利用する。
 doc-db との通信は登録済み MCP ツールに依存せず、Python 標準ライブラリによる Streamable HTTP クライアントで行う。
-doc-db が接続不能で起動にも失敗した場合だけ、既存の doc-advisor SKILL へ切り替える。
 
 バックエンド固有処理は共有低レベル script に閉じ、各 SKILL は category 固定の薄い wrapper と外部 SKILL の起動だけを担当する。
 これにより、選択規則を 4 つの SKILL.md に重複させず、既存の SKILL 名・引数・検索結果形式を維持する。
@@ -34,17 +35,19 @@ doc-db への接続確認、起動試行、再接続、および 1 つの doc-db
 複数の操作にまたがる進行（未整備時の索引作成 → 再検索、sync の完了待ち）は SKILL が駆動する（§4.2・§4.3）。
 script は次のいずれかを確定して返す。
 
-| 結果                  | 意味                                                         | 後続処理                              |
-| --------------------- | ------------------------------------------------------------ | ------------------------------------- |
-| doc-db 成功           | initialize と対象 operation が完了した                       | 結果を返して終了                      |
-| doc-advisor 切替可能  | doc-db が未導入、起動不能、または起動後も接続不能            | SKILL が doc-advisor の利用可否を確認 |
-| doc-db operation 失敗 | 接続確立後の query / sync が失敗または完了待ち上限に到達した | 明示エラー。別 backend へ切り替えない |
+| 結果                  | 意味                                                         | 後続処理                                                   |
+| --------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| doc-db 成功           | initialize と対象 operation が完了した                       | 結果を返して終了                                           |
+| doc-db 利用不能       | doc-db が未導入、起動不能、または起動後も接続不能            | 選択者（SKILL）が順序リストに従い残る backend の可否を確認 |
+| doc-db operation 失敗 | 接続確立後の query / sync が失敗または完了待ち上限に到達した | 明示エラー。別 backend へ切り替えない                      |
 
-接続確立後の operation 失敗を doc-advisor へ切り替えない。
+script は doc-db の可用性と操作の結果だけを返し、他方の backend・選択順序を知らない（§2.5 の責務分離）。
+「利用不能」の結果をどう使うかは選択者が順序リストから決める。
+接続確立後の operation 失敗を他方の backend へ切り替えない。
 索引内容、入力、サーバ内部処理などの障害を「doc-db が利用不能」と誤分類して隠蔽しないためである。
 
 当該 KEY が未生成、または当該 series が未同期の状態は、上記 3 分類のいずれにも該当しない。障害ではなく **未整備** であり、
-doc-advisor 切替でも失敗でもなく、**索引を作成してから query を継続する**（REQ-014 BL-004）。
+他方の backend への切替でも失敗でもなく、**索引を作成してから query を継続する**（REQ-014 BL-004）。
 doc-advisor 経路が ToC 未生成時に索引更新を完了させてから検索する規定（§5.2）と対称にするためである。
 script は未整備を専用の exit code で返し、索引作成と再検索の駆動は SKILL が行う（§4.2・§4.4）。
 索引の作成自体が失敗した場合は operation 失敗に分類する。
@@ -64,7 +67,7 @@ port は `~/.doc-db/doc-db.yaml` の `port` を読み、未設定または読み
 通信定数は参考実装の契約を引き継ぎ、通常 operation の HTTP timeout と sync 完了待ち上限（SKILL 側のポーリングに適用する上限）を 600 秒、
 sync status の poll 間隔を 2 秒、既定 port を 58080 とする。
 接続 probe は localhost の起動確認専用として HTTP timeout を 1 秒、起動待ち期限を 10 秒、再試行間隔を 0.25 秒とする。
-probe 値は利用者向け性能目標ではなく、未起動判定を長時間ブロックせず doc-advisor へ切り替えるための内部上限である。
+probe 値は利用者向け性能目標ではなく、未起動判定を長時間ブロックせず選択者へ結果を返すための内部上限である。
 
 ### 2.3 on-demand 起動
 
@@ -79,19 +82,22 @@ probe 値は利用者向け性能目標ではなく、未起動判定を長時�
 この起動は現在の wrapper 実行を完了するための on-demand 起動である。
 OS ログイン時の自動起動、サービス登録、停止、再起動監視は行わない。
 
-### 2.4 doc-advisor 切替
+### 2.4 doc-advisor の可用性判定
 
-doc-advisor の installed / available 判定は、SKILL 実行時の available-skills を正とする。
-Python script は Claude Code の SKILL registry を推測しない。
+doc-advisor が所有する可用性判定である。installed / available 判定は、SKILL 実行時の
+available-skills を正とする（doc-advisor は外部プラグインであり、導入有無は SKILL 層でしか
+観測できない）。Python script は Claude Code の SKILL registry を推測しない。
 
-doc-db script が切替可能を返した場合、SKILL は次の SKILL が揃っているときだけ切り替える。
+選択者は、順序リストで doc-advisor の番になったとき（先位として最初に、または doc-db 利用不能後の
+後位として）、次の SKILL が揃っているかで可用性を判定する。
 
 | 経路   | 必要な doc-advisor SKILL                                 |
 | ------ | -------------------------------------------------------- |
 | query  | `check-toc`、`query-docs`。stale 時はさらに `index-docs` |
 | update | `index-docs`                                             |
 
-いずれかが欠けていれば、その経路では doc-advisor を利用不能とし、両 backend の利用不能理由を返して失敗する。
+いずれかが欠けていれば、その経路では doc-advisor を利用不能とし、順序リストの残る backend の
+可否確認へ進む。残る backend も利用不能な場合に、両 backend の利用不能理由を返して失敗する。
 grep 検索は実行しない。
 forge は doc-advisor の ToC ファイル配置や `generated_at` を直接読まない。
 
@@ -101,14 +107,15 @@ forge は doc-advisor の ToC ファイル配置や `generated_at` を直接読�
 REQ-014 前提条件は、鮮度確認機能を備えた最小対応バージョン以降だけを「利用可能な doc-advisor」と定義し、
 それ未満の版を後方互換（NFR-002）の対象から除外する。本設計はその前提に従う。
 
-`query-docs` / `index-docs` だけを持つ旧版が導入されている環境では、上記判定により query 経路が失敗する。
-これを「doc-advisor が利用不能」と一括で報告すると、利用者が更新すれば復帰できる状態と区別がつかない。
+`query-docs` / `index-docs` だけを持つ旧版が導入されている環境では、上記判定により query 経路では
+doc-advisor を利用不能と判定する。これを「doc-advisor が利用不能」と一括で報告すると、
+利用者が更新すれば復帰できる状態と区別がつかない。
 そのため実行時には次を区別する。
 
-| 条件                                                    | reason code        | 利用者向け通知                                                |
-| ------------------------------------------------------- | ------------------ | ------------------------------------------------------------- |
-| `query-docs` も `index-docs` も無い                     | `advisor_absent`   | doc-advisor 未導入。両 backend の利用不能理由を返して失敗する |
-| `query-docs` / `index-docs` はあるが `check-toc` が無い | `advisor_outdated` | DocAdvisor が最小対応バージョン未満。更新手順を示して失敗する |
+| 条件                                                    | reason code        | 利用者向け通知                                                                      |
+| ------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `query-docs` も `index-docs` も無い                     | `advisor_absent`   | doc-advisor 未導入として残る backend の可否確認へ進む。両方不能なら理由を返して失敗 |
+| `query-docs` / `index-docs` はあるが `check-toc` が無い | `advisor_outdated` | 最小対応バージョン未満。更新手順を通知して残る backend の可否確認へ進む             |
 
 上記 2 状態の判定は available-skills 上の `check-toc` の有無だけで行い、バージョン番号の比較を実装しない。
 最小対応バージョンは **DocAdvisor 0.4.6**（`check-toc` を含む最初の版）である。用途は 2 つある。
@@ -126,42 +133,46 @@ forge が ToC 内部配置を解釈する経路の復活になり、REQ-014 BL-0
 ### 2.5 優先 backend の指定（REQ-014 BL-001）
 
 利用者は `.claude/.forge.yaml`（汎用設定ファイル。入れ物の規約は DES-061）で
-優先 backend を指定できる。**`doc_backend` セクションのスキーマは本設計が所有する。**
+優先 backend を指定できる。**`doc_backend` セクションのスキーマと既定値は本設計が所有する。**
 
 ```yaml
 doc_backend:
-  prefer: doc-advisor # doc-db | doc-advisor。省略時は既定順序（doc-db 優先）
+  prefer: doc-db # doc-db | doc-advisor。省略時は既定値
 ```
 
-指定が変えるのは選択順序だけである（REQ-014 BL-001）。可用性判定・索引整備・通知・失敗の扱いは
-指定の有無で変わらない。
+**責務分離 [MANDATORY]**: 可用性判定は各 backend が所有し、選択順序は選択者だけが持つデータである。
+
+- **選択者（SKILL のオーケストレーション）**: 順序リストを解決し、先頭から各 backend の
+  可用性判定を呼び、最初に利用可能な backend を選ぶ。判定の中身を知らない
+- **doc-db**: 可用性判定（probe・起動試行・再接続 = `docdb_runtime.py`）と操作（query / sync）を所有する。
+  **他方の backend・優先指定・選択順序を知らない**（`query_docdb.py` / `sync_docdb.py` は設定を読まない）
+- **doc-advisor**: 可用性判定（導入有無 + 鮮度確認機能の有無）と操作を所有する。導入有無は
+  SKILL 実行時の available-skills でのみ観測できるため、この判定は SKILL 層で行う（§2.4）
+
+**順序リストの解決**: 専用 CLI `resolve_backend_order.py` が担う。`forge_settings.py` で
+`doc_backend` セクションを読み、順序リストを JSON で返す。SKILL は YAML を解釈しない。
+
+| 設定の状態                 | `resolve_backend_order.py` の出力                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 未指定・ファイル不在       | 既定値の順序 `["doc-advisor", "doc-db"]`（既定値の定義はこの CLI の定数 1 箇所）                                |
+| `prefer: doc-advisor`      | `["doc-advisor", "doc-db"]`（既定値の明示に過ぎない）                                                           |
+| `prefer: doc-db`           | `["doc-db", "doc-advisor"]`                                                                                     |
+| 不正（許容する形に反する） | exit `20`（`operation_error`）を reason code `settings_invalid` で返す。**推測で既定値に落ちない**（§2.5 末尾） |
 
 **許容する形**: `doc_backend` セクションは mapping であり、キーは `prefer` のみ、値は
-`doc-db` / `doc-advisor` の 2 値とする。次のいずれも設定の不正として扱う（下表の最終行）。
+`doc-db` / `doc-advisor` の 2 値とする。次のいずれも設定の不正として扱う。
 
 - セクションが mapping でない（例: `doc_backend: doc-advisor`、リスト）
 - 未知のキーを含む（例: `preffer:` のような綴り誤り。黙って無視すると指定が効いていないことに気づけない）
 - `prefer` の値が上記 2 値以外
 
-**読み取り位置と分岐**: 設定は低レベル CLI（`query_docdb.py` / `sync_docdb.py`）の入口で
-`forge_settings.py` を通じて読む。SKILL は YAML を解釈しない。
+指定が変えるのは選択順序だけである（REQ-014 BL-001）。可用性判定・索引整備・通知・失敗の扱いは
+指定の有無で変わらない。SKILL は順序リストの先位から試し、先位が利用不能なら理由を通知して
+後位を試す（REQ-014 FNC-004）。いずれも不能なら明示エラーとする。
 
-| `prefer` の値              | CLI の挙動                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 未指定・ファイル不在       | 従来どおり（doc-db の接続確認から始める）                                                                         |
-| `doc-db`                   | 従来どおり（既定順序の明示に過ぎない）                                                                            |
-| `doc-advisor`              | doc-db の probe・起動試行を行わず、exit `10`（`advisor_fallback`）を reason code `advisor_preferred` で返す       |
-| 不正（許容する形に反する） | exit `20`（`operation_error`）を reason code `settings_invalid` で返す。**推測で既定順序に落ちない**（§2.5 末尾） |
-
-**doc-advisor 優先が満たせない場合の復帰**: SKILL は exit `10` を受けて従来どおり doc-advisor の
-利用可否を確認する。reason code が `advisor_preferred` であり、かつ doc-advisor を利用できない場合、
-SKILL は両 backend 不能として失敗させず、**CLI を `--ignore-preference` 付きで再実行して doc-db 経路を試す**。
-このとき「指定が満たされなかったことと理由」を利用者へ通知する（REQ-014 FNC-004）。
-`--ignore-preference` は設定の読み取りだけを省く flag であり、他の挙動を変えない。
-
-不正値・解析不能の設定を黙って無視して既定順序で動くことはしない。利用者が意図した backend と
+不正値・解析不能の設定を黙って無視して既定値で動くことはしない。利用者が意図した backend と
 異なる側で静かに動き続けることになるためである（DES-061 §2.4 と同じ方針。構文エラーは
-`forge_settings.py` が、値域エラーは本設計の CLI が検出する）。
+`forge_settings.py` が、値域エラーは `resolve_backend_order.py` が検出する）。
 
 ## 3. アーキテクチャ
 
@@ -173,6 +184,7 @@ flowchart LR
     Skill[forge wrapper SKILL]
     QueryWrapper[query / sync 固有 wrapper]
     AdvisorWrapper[index 準備固有 wrapper]
+    Resolve[resolve_backend_order.py]
     Query[query_docdb.py]
     Sync[sync_docdb.py]
     Runtime[docdb_runtime.py]
@@ -185,6 +197,7 @@ flowchart LR
     Config[doc_structure / git]
 
     Caller --> Skill
+    Skill --> Resolve
     Skill --> QueryWrapper
     QueryWrapper --> Query
     QueryWrapper --> Sync
@@ -212,20 +225,21 @@ ToC 鮮度判定は forge script ではなく外部 `doc-advisor:check-toc` に�
 
 ### 3.2 モジュール一覧
 
-| モジュール                                     | 責務                                                                          | 依存                                               |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
-| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、check-toc / query / index 起動、通知                         | SKILL 固有 wrapper、doc-advisor                    |
-| 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知                                 | SKILL 固有 wrapper、doc-advisor                    |
-| `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し                         | `query_docdb.py`                                   |
-| `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI（`--start` / `--status`）を透過呼び出し | `sync_docdb.py`                                    |
-| `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し                            | `prepare_advisor_index.py`                         |
-| `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                    | Python 標準ライブラリ                              |
-| `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                               | `docdb_client.py`、`doc-db` executable             |
-| `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                             | 既存 doc-structure resolver、git                   |
-| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築    | runtime、client、project documents、forge settings |
-| `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入（`--start`）と単発の状態取得（`--status`）          | runtime、client、project documents、forge settings |
-| `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決                              | 既存 dprint runner、doc-structure                  |
-| `scripts/forge_settings.py`                    | `.forge.yaml` の読み取り（入れ物の規約は DES-061。forge 全体の共有）          | Python 標準ライブラリ                              |
+| モジュール                                     | 責務                                                                             | 依存                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------- |
+| 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、check-toc / query / index 起動、通知                            | SKILL 固有 wrapper、doc-advisor        |
+| 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知                                    | SKILL 固有 wrapper、doc-advisor        |
+| `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し                            | `query_docdb.py`                       |
+| `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI（`--start` / `--status`）を透過呼び出し    | `sync_docdb.py`                        |
+| `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し                               | `prepare_advisor_index.py`             |
+| `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                       | Python 標準ライブラリ                  |
+| `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                                  | `docdb_client.py`、`doc-db` executable |
+| `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                                | 既存 doc-structure resolver、git       |
+| `scripts/doc_backend/resolve_backend_order.py` | 設定から backend 順序リストを解決（既定値の定義点。値域検証と settings_invalid） | forge settings                         |
+| `scripts/doc_backend/query_docdb.py`           | doc-db query（series 指定）、KEY / series 未整備の検出、既存出力形式の構築       | runtime、client、project documents     |
+| `scripts/doc_backend/sync_docdb.py`            | desired-state sync の投入（`--start`）と単発の状態取得（`--status`）             | runtime、client、project documents     |
+| `scripts/doc_backend/prepare_advisor_index.py` | dprint 適用と doc-advisor 用 dirs / exclude 解決                                 | 既存 dprint runner、doc-structure      |
+| `scripts/forge_settings.py`                    | `.forge.yaml` の読み取り（入れ物の規約は DES-061。forge 全体の共有）             | Python 標準ライブラリ                  |
 
 共有モジュールは `plugins/forge/scripts/doc_backend/` に置く。
 4 SKILL が同じ処理を利用するため、いずれか 1 SKILL の配下には置かない。
@@ -389,20 +403,20 @@ JSON は少なくとも `status`、`backend`、`operation`、`startup`、`reason
 query 成功時は構築済みの `Required documents:` 文字列、`--start` 成功時は `job_id`、
 `--status` 成功時はその時点の job 進捗を含む。
 
-| exit code | `status`           | SKILL の動作                                              |
-| --------- | ------------------ | --------------------------------------------------------- |
-| 0         | `success`          | doc-db 結果を返して終了                                   |
-| 10        | `advisor_fallback` | doc-advisor の利用可否確認へ進む                          |
-| 20        | `operation_error`  | エラーを返して終了。backend を切り替えない                |
-| 30        | `index_missing`    | 索引を作成（`--start` → `--status` ポーリング）して再試行 |
+| exit code | `status`          | SKILL の動作                                                                |
+| --------- | ----------------- | --------------------------------------------------------------------------- |
+| 0         | `success`         | doc-db 結果を返して終了                                                     |
+| 10        | `unavailable`     | doc-db は利用不能。SKILL が順序リスト（§2.5）と走査位置から次の処理を決める |
+| 20        | `operation_error` | エラーを返して終了。backend を切り替えない                                  |
+| 30        | `index_missing`   | 索引を作成（`--start` → `--status` ポーリング）して再試行                   |
 
-exit code `30` は query 経路でのみ返る。`--status` は job が未完了でも `0` を返し、状態は JSON の
-job 進捗で示す（未完了を異常として扱わない）。
+exit `10` は doc-db が所有する可用性判定（§2.3）の失敗のみを意味する。doc-db の CLI は
+優先指定・選択順序を知らないため（§2.5 の責務分離）、この結果をどう使うかは選択者（SKILL）が
+順序リストから決める。exit code `30` は query 経路でのみ返る。`--status` は job が未完了でも
+`0` を返し、状態は JSON の job 進捗で示す（未完了を異常として扱わない）。
 
 SKILL は exit code だけで上記の経路を選択し、JSON field の組合せから状態を再構成しない。
 JSON は結果表示と診断情報の取得にだけ使用する。
-例外は exit `10` の `reason_code` が `advisor_preferred` の場合だけであり、doc-advisor も利用できない
-ときの復帰先（`--ignore-preference` 再実行）を選ぶためにこの 1 値のみを参照する（§2.5）。
 `startup` は未試行、起動成功、起動失敗を区別する。
 エラー本文は URL、port、reason code、doc-db が返した非機密メッセージに限定し、環境変数値や設定本文を含めない。
 
@@ -634,14 +648,20 @@ doc-advisor の完了レポートは構造変換せず親へ返す。
 | doc-db で query            | 接続済み doc-db を使い検索結果を返す                        |
 | doc-db 索引作成後に query  | KEY / series 未整備を検出し、同期の進捗を報告しつつ検索する |
 | doc-db 起動後に query      | 未起動 doc-db を on-demand 起動して検索する                 |
-| doc-advisor で fresh query | doc-db を利用できず、fresh ToC で doc-advisor 検索する      |
-| doc-advisor 更新後に query | doc-db を利用できず、stale ToC を更新してから検索する       |
+| doc-advisor で fresh query | doc-advisor を選択し、fresh ToC で検索する                  |
+| doc-advisor 更新後に query | doc-advisor を選択し、stale ToC を更新してから検索する      |
 | doc-db で update           | 現在 branch の文書集合を desired-state 同期する             |
-| doc-advisor で update      | doc-db を利用できず、従来の ToC を再構築する                |
+| doc-advisor で update      | doc-advisor を選択し、従来の ToC を再構築する               |
 | backend 不在               | 両 backend の利用不能理由を返して失敗する                   |
 | backend operation 失敗     | 選択済み backend の処理失敗を隠さず返す                     |
 
 ### 6.2 query シーケンス
+
+SKILL は最初に `resolve_backend_order.py` で順序リストを解決し（§2.5。不正は settings_invalid の
+明示エラー）、先位から可用性判定を行う。以下の図は **doc-db を先に試す順序**（`prefer: doc-db`、
+または doc-advisor が先位で利用不能だった後）の経路である。既定値（doc-advisor 先位）で
+doc-advisor が利用可能な場合は、図中の doc-advisor 経路（check-toc 以降）だけを実行し、
+doc-db には触れない。
 
 ```mermaid
 sequenceDiagram
@@ -655,6 +675,7 @@ sequenceDiagram
     participant Advisor as doc-advisor query/index
 
     Caller->>Skill: query(task)
+    Note over Skill: resolve_backend_order.py で順序を解決済み<br/>（この図は doc-db を先に試す経路）
     Skill->>Script: task
     Script->>DB: initialize
     alt 接続成功
@@ -694,7 +715,7 @@ sequenceDiagram
             Script-->>Skill: doc-db success + startup notice
             Skill-->>Caller: 通知 + Required documents
         else 再接続失敗
-            Script-->>Skill: doc-advisor 切替可能 + 理由
+            Script-->>Skill: doc-db 利用不能 + 理由
             Skill->>CheckToc: --key category --max-age 86400
             alt freshness=stale
                 Skill->>Prepare: dprint + dirs / exclude
@@ -738,6 +759,7 @@ sequenceDiagram
     participant Advisor as doc-advisor
 
     Caller->>Skill: update
+    Note over Skill: resolve_backend_order.py で順序を解決済み<br/>（この図は doc-db を先に試す経路。doc-advisor 先位で<br/>利用可能なら Prepare 以降だけを実行する）
     Skill->>Script: category 固定で実行
     Script->>DB: initialize / 必要時起動
     alt doc-db 利用可能
@@ -753,7 +775,7 @@ sequenceDiagram
         end
         Skill-->>Caller: backend + result
     else doc-db 利用不能
-        Script-->>Skill: doc-advisor 切替可能 + 理由
+        Script-->>Skill: doc-db 利用不能 + 理由
         Skill->>Prepare: dprint + dirs / exclude
         alt 準備成功
             Prepare-->>Skill: index args
@@ -769,22 +791,23 @@ sequenceDiagram
 
 ## 7. エラーハンドリングと通知
 
-| 条件                                   | 動作                                                   |
-| -------------------------------------- | ------------------------------------------------------ |
-| doc-db executable 不在                 | 理由を通知し doc-advisor の利用可否確認へ進む          |
-| doc-db 起動失敗 / 再接続不能           | 理由を通知し doc-advisor の利用可否確認へ進む          |
-| doc-db query / sync error              | doc-db operation 失敗として終了する                    |
-| doc-db sync 完了待ち上限               | job 情報を返して失敗する。doc-advisor へ切り替えない   |
-| doc-advisor 未導入                     | 両 backend の利用不能理由を返して失敗する              |
-| DocAdvisor が最小対応バージョン未満    | `advisor_outdated` として更新手順を示して失敗する      |
-| `check-toc` が `status=error` を返す   | query を呼ばず失敗する                                 |
-| `check-toc` 応答が解析不能・既知値以外 | query を呼ばず失敗する（§5.1.4）                       |
-| ToC stale かつ index 失敗              | query を呼ばず失敗する                                 |
-| doc-advisor query / index 失敗         | doc-advisor の失敗をそのまま返す                       |
-| doc-db query 0 件                      | 成功。空の `Required documents:` を返す                |
-| doc-db の当該 KEY / series が未整備    | 索引を作成し、完了後に query を継続する（§4.2）        |
-| doc-db の索引作成が失敗した            | operation 失敗として終了する。切り替えない（§4.2）     |
-| 検索結果に実在しないパスが含まれた     | 該当パスを除外し件数を通知する。成功として扱う（§4.2） |
+| 条件                                   | 動作                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| 設定が不正で順序を解決できない         | `settings_invalid` の明示エラー。既定値へ落ちない                        |
+| doc-db executable 不在                 | 理由を通知し、順序リストの残る backend の可否確認へ進む                  |
+| doc-db 起動失敗 / 再接続不能           | 理由を通知し、順序リストの残る backend の可否確認へ進む                  |
+| doc-db query / sync error              | doc-db operation 失敗として終了する                                      |
+| doc-db sync 完了待ち上限               | job 情報を返して失敗する。他方の backend へ切り替えない                  |
+| doc-advisor 未導入                     | 残る backend の可否確認へ進む。両方不能なら理由を返して失敗する          |
+| DocAdvisor が最小対応バージョン未満    | `advisor_outdated` として更新手順を通知し、残る backend の可否確認へ進む |
+| `check-toc` が `status=error` を返す   | query を呼ばず失敗する                                                   |
+| `check-toc` 応答が解析不能・既知値以外 | query を呼ばず失敗する（§5.1.4）                                         |
+| ToC stale かつ index 失敗              | query を呼ばず失敗する                                                   |
+| doc-advisor query / index 失敗         | doc-advisor の失敗をそのまま返す                                         |
+| doc-db query 0 件                      | 成功。空の `Required documents:` を返す                                  |
+| doc-db の当該 KEY / series が未整備    | 索引を作成し、完了後に query を継続する（§4.2）                          |
+| doc-db の索引作成が失敗した            | operation 失敗として終了する。切り替えない（§4.2）                       |
+| 検索結果に実在しないパスが含まれた     | 該当パスを除外し件数を通知する。成功として扱う（§4.2）                   |
 
 利用者向け通知は、backend、起動試行結果、切替理由、索引の作成・更新の有無を含める。
 正常な初回接続時は冗長な警告を出さず、使用 backend の識別だけを結果に含める。
@@ -827,21 +850,22 @@ series を現在の branch に限定したことで検索対象の範囲は両 b
 必要な処理を `plugins/forge/scripts/doc_backend/` へ移植し、forge 側の公開契約とテストに合わせて縮小する。
 既存 wrapper SKILL と doc-structure 資産は置換せず拡張する。
 query SKILL から既存の grep フォールバック手順と `Grep` の許可を削除し、doc-db と doc-advisor の両方が利用不能なら失敗する契約へ変更する。
-feature 統合時は既存の doc-advisor 単一前提を doc-db 優先選択へ置き換える。
+feature 統合時は既存の doc-advisor 単一前提を、順序リストに基づく backend 選択（§2.5）へ置き換える。
 `check-toc` は DocAdvisor リポジトリで追加実装する。forge 実装より先、または同時に契約を満たす版を用意する。
 
 ## 9. テスト設計
 
 ### 9.1 単体テスト
 
-| 対象                       | 検証項目                                                                                                                                                                                                                                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docdb_client.py`          | initialize、session header、JSON / SSE、HTTP / tool error                                                                                                                                                                                                                                |
-| `docdb_runtime.py`         | 接続済み、実行ファイル不在、起動成功、早期終了、再接続不能、秘密値非出力                                                                                                                                                                                                                 |
-| `project_documents.py`     | worktree 共通 key、branch series、detached fallback、対象文書、exclude                                                                                                                                                                                                                   |
-| `query_docdb.py`           | path 抽出、順位維持、0 件、`Required documents:` 形式、series 指定、実在しない path の除外と件数通知、KEY / series 未整備の exit code 30 分類、ゴミ箱状態と障害の判別、優先 backend 指定の分岐（未指定 / doc-db / doc-advisor / 非 mapping / 未知キー / 値域外）と `--ignore-preference` |
-| `sync_docdb.py`            | desired state、削除追従入力、0 件防御、`--start` の job_id 返却、`--status` の単発取得（未完了で exit 0）、優先 backend 指定の分岐                                                                                                                                                       |
-| `prepare_advisor_index.py` | dprint 失敗伝播、dirs / exclude 出力、設定エラー                                                                                                                                                                                                                                         |
+| 対象                       | 検証項目                                                                                                                                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docdb_client.py`          | initialize、session header、JSON / SSE、HTTP / tool error                                                                                                                                                  |
+| `docdb_runtime.py`         | 接続済み、実行ファイル不在、起動成功、早期終了、再接続不能、秘密値非出力                                                                                                                                   |
+| `project_documents.py`     | worktree 共通 key、branch series、detached fallback、対象文書、exclude                                                                                                                                     |
+| `resolve_backend_order.py` | 未指定・ファイル不在で既定値の順序、`prefer: doc-db` / `doc-advisor` の反映、不正（非 mapping / 未知キー / 値域外 / 解析不能）の exit 20 `settings_invalid`（既定値へ落ちない）                            |
+| `query_docdb.py`           | path 抽出、順位維持、0 件、`Required documents:` 形式、series 指定、実在しない path の除外と件数通知、KEY / series 未整備の exit code 30 分類、ゴミ箱状態と障害の判別。設定を読まないこと（責務分離 §2.5） |
+| `sync_docdb.py`            | desired state、削除追従入力、0 件防御、`--start` の job_id 返却、`--status` の単発取得（未完了で exit 0）。設定を読まないこと（責務分離 §2.5）                                                             |
+| `prepare_advisor_index.py` | dprint 失敗伝播、dirs / exclude 出力、設定エラー                                                                                                                                                           |
 
 時計、HTTP、process、filesystem は差し替え可能な境界を設け、実サーバや利用者の home 設定に依存しない。
 ToC 鮮度判定そのものの単体テストは DocAdvisor の `check-toc` 実装側で行う。

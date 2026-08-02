@@ -18,6 +18,7 @@ requirements_traceability:
       - TASK-006
       - TASK-007
       - TASK-019
+      - TASK-020
       - TASK-011
       - TASK-012
       - TASK-014
@@ -72,6 +73,7 @@ requirements_traceability:
       - TASK-006
       - TASK-007
       - TASK-019
+      - TASK-020
       - TASK-014
       - TASK-016
       - TASK-018
@@ -207,6 +209,7 @@ design_traceability:
       - TASK-016
       - TASK-017
       - TASK-018
+      - TASK-020
 
 # === タスク一覧 ===
 tasks:
@@ -296,7 +299,7 @@ tasks:
   - task_id: TASK-005
     title: doc-db 0.3.3 の error 識別子契約への適合確認と fixture 整備
     priority: 78
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-001
@@ -318,7 +321,7 @@ tasks:
   - task_id: TASK-019
     title: forge_settings.py の実装（.claude/.forge.yaml の読み取り）
     priority: 77
-    status: pending
+    status: completed
     design_id: DES-061
     depends_on: []
     group_id: null
@@ -336,10 +339,30 @@ tasks:
       - docs/specs/forge/design/DES-061_forge_settings_file_design.md
       - docs/specs/doc-db/plan/doc-db_strategy.md
       - docs/rules/implementation_guidelines.md
+  - task_id: TASK-020
+    title: backend 選択の責務分離（resolve_backend_order.py と CLI からの設定分岐撤去）
+    priority: 74
+    status: completed
+    design_id: DES-057
+    depends_on:
+      - TASK-019
+    group_id: null
+    build_check: per_task
+    description:
+      - DES-057 §2.5 に従い resolve_backend_order.py を新設する（既定値 doc-advisor 先位の定義点・settings_invalid の検出）
+      - query_docdb.py / sync_docdb.py から優先 backend 設定の読み取り・分岐・--ignore-preference を撤去する（責務分離）
+      - exit 10 の status を advisor_fallback から unavailable へ改名する（§4.4）
+      - テストを追従させる（分岐テストは resolve_backend_order 側へ移動）
+    acceptance_criteria: resolve_backend_order.py が §2.5 の表（未指定 / doc-db / doc-advisor / 不正 4 種）どおりに動き、query_docdb.py / sync_docdb.py が設定を読まず、exit 10 の status が unavailable であることがテストで確認できる
+    required_reading:
+      - docs/specs/doc-db/plan/doc-db_strategy.md
+      - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
+      - docs/specs/forge/design/DES-061_forge_settings_file_design.md
+      - docs/rules/implementation_guidelines.md
   - task_id: TASK-006
     title: query_docdb.py の実装
     priority: 76
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-002
@@ -350,9 +373,7 @@ tasks:
     build_check: per_task
     description:
       - DES-057 §4.2 に従い series を指定した検索と出力構築を実装する
-      - DES-057 §2.5 に従い入口で優先 backend 設定を読み、doc-advisor 指定時は probe せず exit 10（reason advisor_preferred）を返す
       - 設定の不正（非 mapping・未知キー・値域外・解析不能）は exit 20（reason settings_invalid）とし、既定順序へ黙って落ちない
-      - --ignore-preference で設定の読み取りだけを省略できるようにする
       - 対象文書数 0 の判定を索引側の状態確認より先に行う
       - 当該 series の登録確認に §4.5 の該当 tool を用いる
       - 未整備を exit code 30 で返し、索引作成は行わない
@@ -360,7 +381,7 @@ tasks:
       - 出力前にパスの実在を確認し、実在しないものを除外して件数を通知する
       - KEY 不在・ゴミ箱状態・その他障害を TASK-005 の判別根拠で分類する
       - 単体テストで §9.1 の該当項目と §9.3 の script 単体で閉じる経路を検証する
-    acceptance_criteria: exit code 0 / 10 / 20 / 30 が §4.4 の表どおりに返り、0 件先判定・実在確認の除外件数・横断検索へ切り替えないこと、および優先 backend 指定の分岐（未指定 / doc-db / doc-advisor / 非 mapping / 未知キー / 値域外 / --ignore-preference）がテストで確認できる
+    acceptance_criteria: exit code 0 / 10 / 20 / 30 が §4.4 の表どおりに返り、0 件先判定・実在確認の除外件数・横断検索へ切り替えないことがテストで確認できる（優先指定の分岐は TASK-020 で resolve_backend_order.py へ分離）
     required_reading:
       - docs/specs/doc-db/plan/doc-db_strategy.md
       - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
@@ -370,7 +391,7 @@ tasks:
   - task_id: TASK-007
     title: sync_docdb.py の実装
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-002
@@ -380,13 +401,12 @@ tasks:
     build_check: per_task
     description:
       - DES-057 §4.3 に従い投入と状態取得の 2 操作を実装する
-      - DES-057 §2.5 に従い入口で優先 backend 設定を読み、doc-advisor 指定・設定不正・--ignore-preference を query 側と同じ規則で扱う
       - 投入は desired state を渡して即時に返る
       - 状態取得は 1 回だけ問い合わせて即時に返り、未完了でも成功として扱う
       - プロセス内にポーリングループを持たない
       - 対象文書が 0 件の場合は同期せず明示エラーを返す
       - 単体テストで §9.1 の該当項目を検証する
-    acceptance_criteria: 投入操作が job 識別子を返し、状態取得が未完了でも exit code 0 を返す。プロセス内にポーリングループが存在しない。0 件で同期が実行されない。優先 backend 指定の分岐が query 側と同じ規則で動くことがテストで確認できる
+    acceptance_criteria: 投入操作が job 識別子を返し、状態取得が未完了でも exit code 0 を返す。プロセス内にポーリングループが存在しない。0 件で同期が実行されないことがテストで確認できる（優先指定の分岐は TASK-020 で resolve_backend_order.py へ分離）
     required_reading:
       - docs/specs/doc-db/plan/doc-db_strategy.md
       - docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md
@@ -395,7 +415,7 @@ tasks:
   - task_id: TASK-008
     title: prepare_advisor_index.py の実装
     priority: 72
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on: []
     group_id: null
@@ -464,7 +484,8 @@ tasks:
     description:
       - DES-057 §4.3・§5.3・§6.3 に従い update 系 2 SKILL の手順を書き換える
       - doc-db 経路と doc-advisor 経路の分岐を exit code だけで選択する
-      - 優先 backend 指定（reason advisor_preferred）で doc-advisor も利用できない場合、--ignore-preference で CLI を再実行して doc-db を試し、指定が満たされなかったことと理由を通知する（DES-057 §2.5）
+      - 入口で resolve_backend_order.py により順序リストを解決し（既定は doc-advisor 先位）、先位から可用性判定を行う。設定不正（settings_invalid）は既定値へ落ちず明示エラーとする（DES-057 §2.5）
+      - 先位を利用できず後位を利用した場合、その理由と利用 backend を通知する（FNC-004）
       - 状態取得を呼ぶたびに進捗をテキストで報告する手順を置く（NFR-001）
       - 手続きロジックを SKILL.md にインライン記述しない
       - 継承型 SKILL のまま維持し、自己再帰禁止の記述を残す
@@ -530,7 +551,8 @@ tasks:
     description:
       - DES-057 §4.2・§5.1・§6.2 に従い query 系 2 SKILL の手順を書き換える
       - grep フォールバック手順を削除し allowed-tools から Grep を外す
-      - 優先 backend 指定（reason advisor_preferred）で doc-advisor も利用できない場合、--ignore-preference で CLI を再実行して doc-db を試し、指定が満たされなかったことと理由を通知する（DES-057 §2.5）
+      - 入口で resolve_backend_order.py により順序リストを解決し（既定は doc-advisor 先位）、先位から可用性判定を行う。設定不正（settings_invalid）は既定値へ落ちず明示エラーとする（DES-057 §2.5）
+      - 先位を利用できず後位を利用した場合、その理由と利用 backend を通知する（FNC-004）
       - 未整備の exit code を受けて索引作成と再検索を駆動する手順を置く
       - 鮮度確認の応答 3 分岐を実装し、exit code では分岐しない
       - 鮮度確認の応答が解釈できない場合は縮退せず明示エラーとする（§5.1.4）
