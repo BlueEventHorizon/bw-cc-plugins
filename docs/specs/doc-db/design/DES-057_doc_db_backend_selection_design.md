@@ -435,12 +435,12 @@ doc-db の MCP tool I/F の所有は doc-db 側にある。forge は接続する
 応答は `tools/call` 結果の `content[]` のうち `type` が `text` の要素に載る JSON を解析して得る。
 doc-db は同一内容を `structuredContent` にも載せるため、どちらから読んでも同じ dict になる（実測。下記「実測結果」）。
 
-| tool              | request                                          | 使用する response field                                                                                           |
-| ----------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `query`           | `{key, series, query, mode: "all", top_n: 20}`   | `results[].path`（順位順）、`warnings[]`（**正常時は field 自体が存在しない**）                                   |
-| `sync_documents`  | `{key, series, documents: [{path, local_path}]}` | `job_id`                                                                                                          |
-| `get_sync_status` | `{job_id}`                                       | `status`（`running` / `done` / `failed`）、`processed`、`skipped`、`failed`、`deleted_paths_marked`、`errors[]`   |
-| `list_indexes`    | `{}`                                             | `indexes[]` の各要素の `key` と `series`（当該 series の登録有無の確認に使う。**`series` は `null` になりうる**） |
+| tool              | request                                          | 使用する response field                                                                                                                                |
+| ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `query`           | `{key, series, query, mode: "all", top_n: 20}`   | `results[].path`（順位順。**chunk 単位のため同一 path が複数回現れうる**）、`warnings[]`（**正常時は field 自体が存在しない**）                        |
+| `sync_documents`  | `{key, series, documents: [{path, local_path}]}` | `job_id`                                                                                                                                               |
+| `get_sync_status` | `{job_id}`                                       | `status`（`running` / `done` / `failed`）、`processed`、`skipped`、`failed`、`deleted_paths_marked`、`errors[]`（**正常時は field 自体が存在しない**） |
+| `list_indexes`    | `{}`                                             | `indexes[]` の各要素の `key` と `series`（当該 series の登録有無の確認に使う。**`series` は `null` になりうる**）                                      |
 
 - `query` の `series` は任意引数である。forge は現在の branch を必ず指定する（§4.1）。
 - 参考実装の CLI は series 未登録を検索前に検証し、未登録なら検索せず専用の exit code で返す。
@@ -450,6 +450,10 @@ doc-db は同一内容を `structuredContent` にも載せるため、どちら�
 - `top_n` の doc-db 既定値は 10 だが、doc-db 側の指針が重要な検索に 20〜30 を推奨しているため 20 を渡す。
 - `sync_documents` は `job_id` を即時返す非同期 job であり、完了待ちは呼び出し側が `get_sync_status` を反復して行う（§4.3）。
 - 応答に `job_id` が無い場合は operation 失敗として扱う。
+- `get_sync_status` の `errors` は、エラーが 0 件の応答では **field 自体が省略される**（doc-db 0.3.3 実測。
+  `query` の `warnings` と同じ省略形）。forge は不在・`null` を空リストとして扱い、契約違反にしない。
+- `query` の `results[]` は chunk 単位で返るため、同一文書の `path` が複数の要素として現れうる
+  （doc-db 0.3.3 実測。§4.2 の path 抽出は順位どおりにそのまま返す現行契約であり、重複除去は規定していない）。
 - `results[]` の本文 field は使用しない。forge の出力契約は path のみである（§4.2）。
 - `list_indexes` は当該 series が登録済みかを検索前に確認するために使う（§4.2）。参考実装も同じ手段を採る。
   `series[]` は「一度も同期していない」と「同期済みだが対象が 0 件だった」を区別できないため、

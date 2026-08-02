@@ -87,7 +87,67 @@
   - **3b 完了時点で実行検証**: `/forge:query-db-rules` を (a) doc-db 起動・索引あり (b) doc-db 起動・当該 series 未同期（exit 30 → 同期 → 再検索） (c) doc-db 停止・ToC fresh (d) doc-db 停止・ToC stale の 4 条件で実行する。
   - 静的検証: 4 SKILL.md に `Grep` 許可と grep 手順が残っていないこと。
 
-### フェーズ 4: 契約テストと周辺文書の整合
+#### 実測記録: query_docdb.py の実 doc-db 中間検証と出力互換確認（doc-db 0.3.3 / 2026-08-02）
+
+フェーズ 2 で規定した `query_docdb.py` の中間検証（実 doc-db への手動実行と NFR-002 出力互換）と、
+3a/3b が自動化する経路（未整備 exit 30 → `--start` → `--status` ポーリング → query 再実行）の手動での通し実測。
+sync は本リポジトリの project identity（KEY `bw-cc-plugins-rules`）と現在の branch（series `feature/forge-settings`）
+のみに対して行い、破壊的操作（`trash_index` / `schedule_delete_series` 等）は実行していない。
+
+- **未整備の exit 30**: KEY `bw-cc-plugins-rules` が未生成の状態で
+  `query_docdb.py rules "<task>"` を実行 → exit `30` / `status=index_missing` / `reason_code=key_not_found` を実測
+  （検出は `list_indexes` 依拠。対象文書数 7 件の先行判定を通過してからの判定であることも JSON の `document_count` で確認）。
+- **同期 → 再検索**: `sync_docdb.py rules --start` が `job_id` を即時返却（count=7）、`--status` 1 回目で
+  `done`（processed=7）。query 再実行は exit `0` で `Required documents:` を返した。
+- **出力互換（NFR-002）**: JSON の `result` は `Required documents:` ヘッダ + `- <相対パス>` 列挙であり、
+  DocAdvisor 0.4.6 `query-worker` の Output Format（形式 A: `Required documents:` + `- docs/...` 列挙・相対パス・
+  0 件はヘッダのみ）と一致することを確認。差はヘッダ直後の空行 1 行のみで、これは DES-057 §4.2 が規定する
+  forge 側契約どおり。
+- **実在しないパスの除外**: 一時文書 `docs/rules/task009_zxqprobe_temp.md`（untracked・一意キーワード入り）を
+  作成 → sync（done / processed=1・skipped=7）→ ファイル削除 → 当該キーワードで query。結果は exit `0` の成功で、
+  `excluded_count: 1` と notice「実在しないパス 1 件を検索結果から除外しました」を実測（git 追跡ファイルには
+  触れていない）。実測後に再 sync し、`deleted_paths_marked: 1` で索引を現状（7 件）へ収束させた。
+- **§4.5 とのズレ（同じ変更で §4.5 を更新済み）**:
+  1. `get_sync_status` の実応答（done）に `errors` field が存在せず、`sync_docdb.py` の契約検証が exit 20 で
+     誤失敗した。`warnings` と同じ省略形と判断し、不在・`null` を空リストへ正規化する形へ `sync_docdb.py` と
+     テストを修正（リスト以外の値は従来どおり契約違反）。
+  2. `query` の `results[]` は chunk 単位で返り、同一 path が複数回現れる（top_n=20 が 4 文書程度に畳まれる）。
+     §4.5 へ実測事実として追記した。§4.2 の現行契約（順位どおりにそのまま返す・重複除去は未規定）は
+     変更していない。重複除去の要否は設計判断として未決着（本記録で顕在化した論点）。
+
+#### 実行検証記録: update 系 SKILL の手順トレース（doc-db 0.3.3 / 2026-08-03）
+
+フェーズ 3a が規定する `update-db-rules` の実行検証。agent からは `Skill` ツールを起動できないため、
+書き換え済み `update-db-rules/SKILL.md` の各 Step のコマンドを手順どおり直接実行して代替した。
+sync は現在 branch の series（`feature/forge-settings`）のみに対して行い、破壊的操作は実行していない。
+`update-db-specs` は category 固定値（`specs`）だけが異なる同一手順のため、rules 側の実測で代表させた。
+
+- **(b) doc-advisor 経路（設定なし・既定順序）**: `resolve_backend_order.py` は exit `0` /
+  `order=["doc-advisor", "doc-db"]` / `source=default` を返し、順序リスト先頭が doc-advisor であることを確認
+  （Step 1 → Step 2 → Step 4 の分岐）。Step 4.2 の `prepare_advisor_index.py` wrapper は exit `0` /
+  `status=success` / `root_dirs=["docs/rules/"]` / `exclude=[]` の成功 JSON を返し、dprint 適用による
+  作業ツリー差分は発生しなかった。Step 4.3 の `doc-advisor:index-docs` は Skill 起動を要するため
+  agent からは実行できず、その直前（index 引数の確定）までの経路を確認した。
+- **(a) doc-db 経路（`prefer: doc-db`）**: 一時的に `.claude/.forge.yaml` へ
+  `doc_backend.prefer: doc-db` を書き、`resolve_backend_order.py` が exit `0` /
+  `order=["doc-db", "doc-advisor"]` / `source=setting` を返すことを確認。`sync_documents.py --start` は
+  exit `0` で `job_id` を即時返却（key `bw-cc-plugins-rules` / series `feature/forge-settings` / count=7）。
+  `--status <job_id>` を 2 秒間隔で 2 回呼び、いずれも exit `0` で job 進捗
+  （`status=done` / processed=0 / skipped=7 / failed=0 / errors=[]）が呼び出しごとに取得できた。
+  「`--status` 1 回 = 1 進捗報告」の SKILL 手順（Step 3.2）が成立する材料が毎回得られることを確認。
+- **(c) doc-db 停止状態の切替**: `pkill -x doc-db` で自ユーザーの doc-db を停止したうえで 2 通り実測した。
+  1. **通常 PATH（実行ファイルあり）**: `--start` は on-demand 起動に成功し exit `0` /
+     `startup=succeeded` で投入まで完了した（§2.3 の設計どおり。**プロセス停止だけでは後位への切替は
+     発生しない**。起動試行の結果は `startup` field で通知材料になる = FNC-004）。
+  2. **実行ファイル解決不能（PATH から除外して再現）**: exit `10` / `status=unavailable` /
+     `startup=failed` / `reason_code=docdb_executable_missing` を実測。これが SKILL Step 3.1 の表の
+     「後位が残っていれば Step 2 の次の backend へ進む」条件である。
+- **後始末**: `.claude/.forge.yaml` は検証後に削除した（検証前は不在。git status に残存なし）。
+  doc-db は (c-1) の on-demand 起動で稼働状態に復帰している。
+- **人間セッションでの残確認事項**: `Skill` ツール起動を伴う完全な end-to-end
+  （`/forge:update-db-rules` 起動時の `--status` ごとの進捗チャット報告、`doc-advisor:index-docs` の
+  実行と完了レポートの転記、Step 5 の経路通知の文面）は agent からは検証できない。
+  人間セッションで doc-db 起動状態・停止状態の両方について `/forge:update-db-rules` を起動して確認する。
 
 - **目標**: doc-advisor 側 I/F への依拠が機械検証され、本変更で古くなる文書が同じ変更内で直っている。
 - **スコープ**:

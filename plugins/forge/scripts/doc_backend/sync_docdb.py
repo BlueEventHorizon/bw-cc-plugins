@@ -243,13 +243,19 @@ _JOB_COUNT_FIELDS = ("processed", "skipped", "failed", "deleted_paths_marked")
 
 
 def _validate_job_progress(job, *, startup) -> None:
-    """`get_sync_status` 応答が DES-057 §4.5 の契約を満たすか検証する。
+    """`get_sync_status` 応答が DES-057 §4.5 の契約を満たすか検証・正規化する。
 
     SKILL は `job.status` でポーリングの終了・失敗を判定するため、未知の status や
     field 欠落を無検証で success として返すと、上限まで誤って待つ・失敗を成功扱いに
     する誤動作につながる（BL-004: 接続確立後の応答の不正は明示エラー）。
     メッセージには field 名と期待だけを載せ、応答本文の値は載せない。
     `startup` は起動試行結果の通知（FNC-004）を保つためエラーへそのまま載せる。
+
+    `errors` は実測（doc-db 0.3.3）で **field 自体が存在しない** ことがある
+    （`query` の `warnings` と同じ省略形）。省略が許されるのは failed == 0 の
+    ときだけであり、その場合に限り空リストへ正規化して SKILL 側が常に
+    `job.errors` をリストとして読める形で返す。failed が正なのに errors が
+    不在・`null` の応答、およびリスト以外の値は契約違反とする。
     """
 
     def _invalid(reason: str):
@@ -270,8 +276,16 @@ def _validate_job_progress(job, *, startup) -> None:
     for field in _JOB_COUNT_FIELDS:
         if not isinstance(job.get(field), int) or isinstance(job.get(field), bool):
             raise _invalid(f"{field} が整数ではありません（または欠落）")
-    if not isinstance(job.get("errors"), list):
-        raise _invalid("errors がリストではありません（または欠落）")
+    errors = job.get("errors")
+    if errors is None:
+        # 不在・null は「エラー 0 件」の省略形（doc-db 0.3.3 実測）。ただし省略が
+        # 許されるのは failed == 0 のときだけである。失敗件数が正なのに errors が
+        # 無い応答をそのまま空リスト化すると、失敗文書の診断情報が静かに失われる
+        if job["failed"] != 0:
+            raise _invalid("failed が正なのに errors がありません")
+        job["errors"] = []
+    elif not isinstance(errors, list):
+        raise _invalid("errors がリストではありません")
 
 
 def get_status(

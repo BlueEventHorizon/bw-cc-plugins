@@ -400,10 +400,45 @@ class StatusSingleShotTest(unittest.TestCase):
     def test_status_wrong_type_count_field_is_operation_error(self):
         self._assert_contract_violation(dict(_JOB_RUNNING, failed="0"))
 
-    def test_status_missing_errors_field_is_operation_error(self):
-        broken = dict(_JOB_RUNNING)
+    def test_status_missing_errors_field_normalizes_to_empty_list(self):
+        """`errors` field 不在は正常応答（doc-db 0.3.3 実測: 正常完了時は省略される）。
+
+        SKILL が常に `job.errors` をリストとして読めるよう、空リストへ正規化して返す。
+        """
+        real_done = {
+            # 実 doc-db 0.3.3 の done 応答そのままの形（errors 不在）
+            "status": "done",
+            "processed": 7,
+            "skipped": 0,
+            "failed": 0,
+            "deleted_paths_marked": 0,
+        }
+        payload = self._status(_FakeClient(status_result=real_done))
+        self.assertEqual(payload["status"], "success")
+        self.assertEqual(payload["job"]["errors"], [])
+
+    def test_status_null_errors_field_normalizes_to_empty_list(self):
+        payload = self._status(_FakeClient(status_result=dict(_JOB_RUNNING, errors=None)))
+        self.assertEqual(payload["status"], "success")
+        self.assertEqual(payload["job"]["errors"], [])
+
+    def test_status_non_list_errors_field_is_operation_error(self):
+        self._assert_contract_violation(dict(_JOB_RUNNING, errors="oops"))
+
+    def test_status_missing_errors_with_positive_failed_is_operation_error(self):
+        """`errors` の省略が許されるのは failed == 0 のときだけ。
+
+        失敗件数が正なのに errors が無い応答を空リスト化すると、失敗文書の
+        診断情報が静かに失われるため契約不正として扱う。
+        """
+        broken = dict(_JOB_RUNNING, status="done", failed=1)
         del broken["errors"]
         self._assert_contract_violation(broken)
+
+    def test_status_null_errors_with_positive_failed_is_operation_error(self):
+        self._assert_contract_violation(
+            dict(_JOB_RUNNING, status="done", failed=2, errors=None)
+        )
 
     def test_contract_violation_after_startup_keeps_startup_succeeded(self):
         """起動成功後の不正応答でも startup=succeeded を通知する（FNC-004）。"""
