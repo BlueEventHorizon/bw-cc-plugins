@@ -34,35 +34,24 @@ hash 一致文書の再計算要否は doc-db に委ねる。
 同期を投入すると、当該 series の全文書が切り離される。空集合への意図的な同期は
 wrapper の責務に含めないため、索引に触れる前に明示エラー（exit 20）で止める。
 
-## 優先 backend 設定（`.claude/.forge.yaml` の `doc_backend` セクション）
+## 責務分離 [MANDATORY]
 
-入口で `forge_settings.py` を通じて優先 backend 設定を読む。
-許容する形は mapping `{prefer: doc-db | doc-advisor}` のみである。
-
-| `prefer` の値              | 本 CLI の挙動                                                              |
-| -------------------------- | --------------------------------------------------------------------------- |
-| 未指定・ファイル不在       | 従来どおり（doc-db の接続確認から始める）                                   |
-| `doc-db`                   | 従来どおり（既定順序の明示に過ぎない）                                      |
-| `doc-advisor`              | doc-db の probe・起動試行を行わず exit `10` / reason `advisor_preferred`    |
-| 不正（許容する形に反する） | exit `20` / reason `settings_invalid`。**推測で既定順序に落ちない**         |
-
-不正には、セクションが mapping でない・未知のキーを含む（綴り誤りを黙って無視すると
-指定が効いていないことに気づけない）・`prefer` の値が 2 値以外、の全てを含む。
-構文エラー（`SettingsError`）も同じく `settings_invalid` とする。
-`--ignore-preference` は設定の読み取りだけを省く flag であり、他の挙動を変えない
-（doc-advisor 優先が満たせなかったときの SKILL の復帰経路で使う）。
+可用性判定は doc-db が所有し、選択順序は選択者（SKILL）だけが持つデータである。
+本 CLI は設定（`.claude/.forge.yaml`）・優先 backend 指定・他方の backend・選択順序を
+知らない。順序リストの解決は専用 CLI `resolve_backend_order.py` が担う。
 
 ## exit code / status 契約
 
-| exit code | `status`           | 意味                                                     |
-| --------- | ------------------ | -------------------------------------------------------- |
-| 0         | `success`          | 操作が完了した（`--status` は job 未完了でも成功）       |
-| 10        | `advisor_fallback` | doc-db を試行しない/できない。doc-advisor の確認へ進む   |
-| 20        | `operation_error`  | 明示エラー。backend を切り替えてはならない               |
+| exit code | `status`          | 意味                                                 |
+| --------- | ----------------- | ---------------------------------------------------- |
+| 0         | `success`         | 操作が完了した（`--status` は job 未完了でも成功）   |
+| 10        | `unavailable`     | doc-db を利用できない（未導入・起動不能・接続不能） |
+| 20        | `operation_error` | 明示エラー。backend を切り替えてはならない           |
 
 exit code `30`（`index_missing`）は query 経路専用であり、本 CLI は返さない。
-SKILL は exit code だけで経路を選択し、JSON は結果表示と診断情報の取得にだけ使う
-（例外は exit `10` の `reason_code` が `advisor_preferred` かどうかの 1 値のみ）。
+SKILL は exit code だけで経路を選択し、JSON は結果表示と診断情報の取得にだけ使う。
+exit 10 は doc-db が所有する可用性判定の失敗のみを意味し、この結果をどう使うかは
+選択者（SKILL）が順序リストから決める。
 
 ## 情報保護 [MANDATORY]
 
@@ -72,9 +61,8 @@ HTTP エラーはサーバ応答 body を含み得るため、status code と UR
 
 ## テスト境界
 
-設定読み取り（`settings_section=`）、対象文書解決（`resolve=`）、doc-db 利用可否
-（`ensure=`）はいずれも引数で差し替えられる。テストは実 doc-db・実 git・利用者の
-home 設定に依存しない。
+対象文書解決（`resolve=`）と doc-db 利用可否（`ensure=`）は引数で差し替えられる。
+テストは実 doc-db・実 git・利用者の home 設定に依存しない。
 
 ## 依存
 
@@ -93,7 +81,6 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 sys.path.insert(0, str(_SCRIPT_DIR.parent))
 import docdb_client  # noqa: E402
 import docdb_runtime  # noqa: E402
-import forge_settings  # noqa: E402
 import project_documents  # noqa: E402
 
 # --- 定数 ---------------------------------------------------------------------
@@ -101,15 +88,15 @@ import project_documents  # noqa: E402
 #: 成功
 EXIT_SUCCESS = 0
 
-#: doc-advisor の利用可否確認へ進んでよい（doc-db を試行しない/できない）
-EXIT_ADVISOR_FALLBACK = 10
+#: doc-db 利用不能（可用性判定の失敗）。後続は選択者（SKILL）が順序リストから決める
+EXIT_UNAVAILABLE = 10
 
 #: 明示エラー。backend を切り替えてはならない
 EXIT_OPERATION_ERROR = 20
 
 #: JSON contract の `status` 値
 STATUS_SUCCESS = "success"
-STATUS_ADVISOR_FALLBACK = "advisor_fallback"
+STATUS_UNAVAILABLE = "unavailable"
 STATUS_OPERATION_ERROR = "operation_error"
 
 #: JSON contract の `backend` / `operation` 値
@@ -117,16 +104,7 @@ BACKEND = "doc-db"
 OPERATION_SYNC_START = "sync_start"
 OPERATION_SYNC_STATUS = "sync_status"
 
-#: 優先 backend 設定のセクションとスキーマ（DES-057 が所有）
-SETTINGS_SECTION_NAME = "doc_backend"
-SETTINGS_PREFER_KEY = "prefer"
-PREFER_DOC_DB = "doc-db"
-PREFER_DOC_ADVISOR = "doc-advisor"
-ALLOWED_PREFER_VALUES = (PREFER_DOC_DB, PREFER_DOC_ADVISOR)
-
 #: reason code
-REASON_ADVISOR_PREFERRED = "advisor_preferred"
-REASON_SETTINGS_INVALID = "settings_invalid"
 REASON_INVALID_INPUT = "invalid_input"
 REASON_DOCUMENTS_UNRESOLVED = "documents_unresolved"
 REASON_NO_DOCUMENTS = "no_documents"
@@ -167,70 +145,6 @@ class SyncDocDbError(Exception):
             "reason_code": self.reason_code,
             "message": str(self),
         }
-
-
-# --- 優先 backend 設定 ----------------------------------------------------------
-
-
-def enforce_backend_preference(
-    project_root,
-    ignore_preference: bool = False,
-    settings_section=forge_settings.section,
-) -> None:
-    """優先 backend 設定を読み、doc-db 経路を続行してよいかを確定する。
-
-    続行してよい場合は何もせず返る。doc-advisor 優先指定は exit 10 /
-    `advisor_preferred`、設定不正は exit 20 / `settings_invalid` の
-    `SyncDocDbError` として送出する。
-
-    `ignore_preference` が真の場合は設定を**読まない**（読んで無視するのではない。
-    解析不能なファイルがあっても復帰経路を止めないための仕様である）。
-
-    不正値・解析不能の設定を黙って無視して既定順序で動くことはしない。
-    利用者が意図した backend と異なる側で静かに動き続けることになるためである。
-    """
-    if ignore_preference:
-        return
-
-    try:
-        section = settings_section(project_root, SETTINGS_SECTION_NAME)
-    except forge_settings.SettingsError as exc:
-        raise SyncDocDbError(
-            EXIT_OPERATION_ERROR, STATUS_OPERATION_ERROR, REASON_SETTINGS_INVALID, str(exc)
-        ) from exc
-
-    if not section:
-        # セクション不在・ファイル不在は既定順序（doc-db 優先）
-        return
-
-    unknown_keys = sorted(k for k in section if k != SETTINGS_PREFER_KEY)
-    if unknown_keys:
-        raise SyncDocDbError(
-            EXIT_OPERATION_ERROR,
-            STATUS_OPERATION_ERROR,
-            REASON_SETTINGS_INVALID,
-            f"'{SETTINGS_SECTION_NAME}' セクションに未知のキーがあります: "
-            f"{', '.join(unknown_keys)}（許容するキーは '{SETTINGS_PREFER_KEY}' のみ）",
-        )
-
-    prefer = section.get(SETTINGS_PREFER_KEY)
-    if prefer not in ALLOWED_PREFER_VALUES:
-        raise SyncDocDbError(
-            EXIT_OPERATION_ERROR,
-            STATUS_OPERATION_ERROR,
-            REASON_SETTINGS_INVALID,
-            f"'{SETTINGS_SECTION_NAME}.{SETTINGS_PREFER_KEY}' の値が不正です: {prefer!r}"
-            f"（{' / '.join(ALLOWED_PREFER_VALUES)} のみ）",
-        )
-
-    if prefer == PREFER_DOC_ADVISOR:
-        raise SyncDocDbError(
-            EXIT_ADVISOR_FALLBACK,
-            STATUS_ADVISOR_FALLBACK,
-            REASON_ADVISOR_PREFERRED,
-            "設定（.claude/.forge.yaml）で doc-advisor が優先指定されています。"
-            "doc-db の接続確認・起動試行は行っていません",
-        )
 
 
 # --- 操作: --start --------------------------------------------------------------
@@ -274,8 +188,8 @@ def start_sync(
     availability = ensure()
     if not availability.available:
         raise SyncDocDbError(
-            EXIT_ADVISOR_FALLBACK,
-            STATUS_ADVISOR_FALLBACK,
+            EXIT_UNAVAILABLE,
+            STATUS_UNAVAILABLE,
             availability.reason_code,
             availability.detail or "doc-db を利用できません",
             startup=availability.startup,
@@ -377,8 +291,8 @@ def get_status(
     availability = ensure()
     if not availability.available:
         raise SyncDocDbError(
-            EXIT_ADVISOR_FALLBACK,
-            STATUS_ADVISOR_FALLBACK,
+            EXIT_UNAVAILABLE,
+            STATUS_UNAVAILABLE,
             availability.reason_code,
             availability.detail or "doc-db を利用できません",
             startup=availability.startup,
@@ -438,11 +352,6 @@ def parse_args(argv=None):
         default=None,
         help="プロジェクトルートのパス（省略時: カレントディレクトリ）",
     )
-    parser.add_argument(
-        "--ignore-preference",
-        action="store_true",
-        help="優先 backend 設定（.claude/.forge.yaml）を読まない",
-    )
     return parser.parse_args(argv)
 
 
@@ -452,7 +361,6 @@ def main(argv=None) -> int:
     operation = OPERATION_SYNC_START if args.start else OPERATION_SYNC_STATUS
 
     try:
-        enforce_backend_preference(project_root, ignore_preference=args.ignore_preference)
         if args.start:
             payload = start_sync(args.category, project_root)
         else:

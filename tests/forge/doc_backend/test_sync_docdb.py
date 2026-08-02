@@ -9,13 +9,11 @@
 - 0 件防御（同期せず明示エラー。doc-db に触れない）
 - `--start` の job_id 返却（即時に返り、状態取得を行わない）
 - `--status` の単発取得（1 回だけ問い合わせ、未完了でも exit 0 / 成功）
-- 優先 backend 指定の分岐（未指定 / doc-db / doc-advisor / 非 mapping / 未知キー /
-  値域外 / 構文エラー）と `--ignore-preference`
+- 設定を読まないこと（責務分離。順序リストの解決は `resolve_backend_order.py`）
 - プロセス内にポーリングループを持たないこと（静的検証）
 
 doc-db・git・利用者の home 設定には依存しない。doc-db 利用可否（`ensure=`）と
-対象文書解決（`resolve=`）は注入 fixture で閉じ、優先 backend 設定は tempdir に
-実ファイルを組み立てて実 `forge_settings` を通す。
+対象文書解決（`resolve=`）は注入 fixture で閉じる。
 
 実行:
   python3 -m unittest tests.forge.doc_backend.test_sync_docdb -v
@@ -269,7 +267,7 @@ class StartFailureTest(unittest.TestCase):
         self.assertEqual(ctx.exception.exit_code, sync_docdb.EXIT_OPERATION_ERROR)
         self.assertEqual(ctx.exception.reason_code, sync_docdb.REASON_INVALID_INPUT)
 
-    def test_unavailable_docdb_yields_advisor_fallback(self):
+    def test_unavailable_docdb_yields_exit_10_unavailable(self):
         ensure = _RecordingEnsure(_unavailable())
         with self.assertRaises(sync_docdb.SyncDocDbError) as ctx:
             sync_docdb.start_sync(
@@ -279,8 +277,8 @@ class StartFailureTest(unittest.TestCase):
                 ensure=ensure,
             )
         exc = ctx.exception
-        self.assertEqual(exc.exit_code, sync_docdb.EXIT_ADVISOR_FALLBACK)
-        self.assertEqual(exc.status, sync_docdb.STATUS_ADVISOR_FALLBACK)
+        self.assertEqual(exc.exit_code, sync_docdb.EXIT_UNAVAILABLE)
+        self.assertEqual(exc.status, sync_docdb.STATUS_UNAVAILABLE)
         self.assertEqual(exc.reason_code, docdb_runtime.REASON_EXECUTABLE_MISSING)
         self.assertEqual(exc.startup, docdb_runtime.STARTUP_FAILED)
 
@@ -429,7 +427,7 @@ class StatusSingleShotTest(unittest.TestCase):
         # 応答本文の値をメッセージへ載せない
         self.assertNotIn("running", str(exc))
 
-    def test_status_unavailable_docdb_yields_advisor_fallback(self):
+    def test_status_unavailable_docdb_yields_exit_10_unavailable(self):
         with self.assertRaises(sync_docdb.SyncDocDbError) as ctx:
             sync_docdb.get_status(
                 "rules",
@@ -439,99 +437,32 @@ class StatusSingleShotTest(unittest.TestCase):
                     _unavailable(docdb_runtime.REASON_RECONNECT_FAILED, "timeout")
                 ),
             )
-        self.assertEqual(ctx.exception.exit_code, sync_docdb.EXIT_ADVISOR_FALLBACK)
+        self.assertEqual(ctx.exception.exit_code, sync_docdb.EXIT_UNAVAILABLE)
+        self.assertEqual(ctx.exception.status, sync_docdb.STATUS_UNAVAILABLE)
         self.assertEqual(
             ctx.exception.reason_code, docdb_runtime.REASON_RECONNECT_FAILED
         )
 
 
-# --- 優先 backend 指定の分岐 --------------------------------------------------------
+# --- 責務分離（設定を読まないこと） ------------------------------------------------
 
 
-class BackendPreferenceTest(unittest.TestCase):
-    """`.claude/.forge.yaml` の `doc_backend` セクションの分岐（query 側と同じ規則）。"""
+class NoSettingsDependencyTest(unittest.TestCase):
+    """本 CLI は設定・優先指定・選択順序を知らない（責務分離）。
 
-    def setUp(self):
-        self._tmpdir = tempfile.TemporaryDirectory()
-        self.root = Path(self._tmpdir.name).resolve()
+    順序リストの解決（`.claude/.forge.yaml` の読み取り）は
+    `resolve_backend_order.py` が担い、その分岐テストも同 CLI 側にある。
+    """
 
-    def tearDown(self):
-        self._tmpdir.cleanup()
-
-    def write_settings(self, content):
-        claude_dir = self.root / ".claude"
-        claude_dir.mkdir(exist_ok=True)
-        (claude_dir / ".forge.yaml").write_text(content, encoding="utf-8")
-
-    def _assert_settings_invalid(self):
-        with self.assertRaises(sync_docdb.SyncDocDbError) as ctx:
-            sync_docdb.enforce_backend_preference(self.root)
-        exc = ctx.exception
-        self.assertEqual(exc.exit_code, sync_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(exc.status, sync_docdb.STATUS_OPERATION_ERROR)
-        self.assertEqual(exc.reason_code, sync_docdb.REASON_SETTINGS_INVALID)
-        return exc
-
-    def test_no_settings_file_proceeds_with_default_order(self):
-        sync_docdb.enforce_backend_preference(self.root)  # 例外なし = 続行
-
-    def test_no_doc_backend_section_proceeds(self):
-        self.write_settings("other_feature:\n  bar: value\n")
-        sync_docdb.enforce_backend_preference(self.root)
-
-    def test_prefer_doc_db_proceeds(self):
-        self.write_settings("doc_backend:\n  prefer: doc-db\n")
-        sync_docdb.enforce_backend_preference(self.root)
-
-    def test_prefer_doc_advisor_exits_10_with_advisor_preferred(self):
-        self.write_settings("doc_backend:\n  prefer: doc-advisor\n")
-        with self.assertRaises(sync_docdb.SyncDocDbError) as ctx:
-            sync_docdb.enforce_backend_preference(self.root)
-        exc = ctx.exception
-        self.assertEqual(exc.exit_code, sync_docdb.EXIT_ADVISOR_FALLBACK)
-        self.assertEqual(exc.status, sync_docdb.STATUS_ADVISOR_FALLBACK)
-        self.assertEqual(exc.reason_code, sync_docdb.REASON_ADVISOR_PREFERRED)
-        self.assertEqual(exc.startup, docdb_runtime.STARTUP_NOT_ATTEMPTED)
-
-    def test_non_mapping_section_is_settings_invalid(self):
-        self.write_settings("doc_backend: doc-advisor\n")
-        self._assert_settings_invalid()
-
-    def test_list_section_is_settings_invalid(self):
-        self.write_settings("doc_backend:\n  - doc-advisor\n")
-        self._assert_settings_invalid()
-
-    def test_unknown_key_is_settings_invalid(self):
-        """綴り誤り（preffer）を黙って無視しないこと。"""
-        self.write_settings("doc_backend:\n  preffer: doc-advisor\n")
-        exc = self._assert_settings_invalid()
-        self.assertIn("preffer", str(exc))
-
-    def test_out_of_range_value_is_settings_invalid(self):
-        self.write_settings("doc_backend:\n  prefer: grep\n")
-        exc = self._assert_settings_invalid()
-        self.assertIn("grep", str(exc))
-
-    def test_unparsable_file_is_settings_invalid(self):
-        self.write_settings("doc_backend:\n  prefer: [doc-db]\n")
-        self._assert_settings_invalid()
-
-    def test_ignore_preference_skips_reading_settings(self):
-        """`--ignore-preference` は「読んで無視」ではなく「読まない」であること。"""
-        calls = []
-
-        def recording_section(project_root, name):
-            calls.append(name)
-            return {}
-
-        sync_docdb.enforce_backend_preference(
-            self.root, ignore_preference=True, settings_section=recording_section
-        )
-        self.assertEqual(calls, [])
-
-    def test_ignore_preference_proceeds_even_with_invalid_settings(self):
-        self.write_settings("doc_backend:\n  prefer: grep\n")
-        sync_docdb.enforce_backend_preference(self.root, ignore_preference=True)
+    def test_does_not_import_forge_settings(self):
+        tree = ast.parse(_SCRIPT_PATH.read_text(encoding="utf-8"))
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+        self.assertNotIn("forge_settings", imported, "設定を読んではならない")
 
 
 # --- CLI 契約（exit code / JSON） --------------------------------------------------
@@ -546,11 +477,6 @@ class CliContractTest(unittest.TestCase):
 
     def tearDown(self):
         self._tmpdir.cleanup()
-
-    def write_settings(self, content):
-        claude_dir = self.root / ".claude"
-        claude_dir.mkdir(exist_ok=True)
-        (claude_dir / ".forge.yaml").write_text(content, encoding="utf-8")
 
     def write_empty_doc_structure(self):
         (self.root / "docs" / "rules").mkdir(parents=True)
@@ -574,34 +500,6 @@ class CliContractTest(unittest.TestCase):
             check=False,
         )
 
-    def test_advisor_preferred_exits_10_before_touching_docdb(self):
-        self.write_settings("doc_backend:\n  prefer: doc-advisor\n")
-        result = self._run_cli("rules", "--start", "--project-root", str(self.root))
-        self.assertEqual(result.returncode, sync_docdb.EXIT_ADVISOR_FALLBACK)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["status"], "advisor_fallback")
-        self.assertEqual(payload["reason_code"], "advisor_preferred")
-        self.assertEqual(payload["operation"], "sync_start")
-        self.assertEqual(payload["startup"], "not_attempted")
-
-    def test_advisor_preferred_applies_to_status_operation_too(self):
-        self.write_settings("doc_backend:\n  prefer: doc-advisor\n")
-        result = self._run_cli(
-            "rules", "--status", "job-42", "--project-root", str(self.root)
-        )
-        self.assertEqual(result.returncode, sync_docdb.EXIT_ADVISOR_FALLBACK)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["reason_code"], "advisor_preferred")
-        self.assertEqual(payload["operation"], "sync_status")
-
-    def test_invalid_settings_exit_20_with_settings_invalid(self):
-        self.write_settings("doc_backend:\n  preffer: doc-advisor\n")
-        result = self._run_cli("rules", "--start", "--project-root", str(self.root))
-        self.assertEqual(result.returncode, sync_docdb.EXIT_OPERATION_ERROR)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["status"], "operation_error")
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-
     def test_zero_documents_exit_20_with_no_documents(self):
         self.write_empty_doc_structure()
         result = self._run_cli("rules", "--start", "--project-root", str(self.root))
@@ -609,20 +507,15 @@ class CliContractTest(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(payload["status"], "operation_error")
         self.assertEqual(payload["reason_code"], "no_documents")
+        self.assertEqual(payload["operation"], "sync_start")
+        self.assertEqual(payload["startup"], "not_attempted")
 
-    def test_ignore_preference_skips_invalid_settings(self):
-        """不正設定があっても --ignore-preference なら設定を読まず先へ進むこと。
-
-        先の経路（0 件防御）で止まることで、設定読み取りが省かれたことを確認する。
-        """
-        self.write_settings("doc_backend:\n  prefer: grep\n")
-        self.write_empty_doc_structure()
+    def test_ignore_preference_flag_is_removed(self):
+        """設定を知らない CLI に --ignore-preference は存在しない（責務分離）。"""
         result = self._run_cli(
             "rules", "--start", "--ignore-preference", "--project-root", str(self.root)
         )
-        self.assertEqual(result.returncode, sync_docdb.EXIT_OPERATION_ERROR)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["reason_code"], "no_documents")
+        self.assertEqual(result.returncode, 2, "argparse が未知の flag として拒否する")
 
     def test_invalid_category_exits_20_not_argparse_2(self):
         result = self._run_cli("readme", "--start", "--project-root", str(self.root))

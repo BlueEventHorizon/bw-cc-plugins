@@ -10,12 +10,11 @@
 - 対象文書 0 件の先行判定（索引側の状態確認より前）
 - KEY / series 未整備の exit code 30 分類（`list_indexes` 依拠）
 - ゴミ箱状態と障害の判別（`error.data.code` 正本。ADR-058）
-- 優先 backend 指定の 7 分岐
-  （未指定 / doc-db / doc-advisor / 非 mapping / 未知キー / 値域外 / --ignore-preference）
-- 初回接続成功・起動後接続成功・利用不能（exit 10）の各経路
+- 初回接続成功・起動後接続成功・利用不能（exit 10 `unavailable`）の各経路
+- 設定を読まないこと（責務分離。順序リストの解決は `resolve_backend_order.py`）
 - MCP JSON 応答と SSE 応答（実 Client + transport 注入）
 
-HTTP は transport 境界へ、runtime / resolver / settings は `run()` の引数へ注入する。
+HTTP は transport 境界へ、runtime / resolver は `run()` の引数へ注入する。
 実サーバ・実 git・利用者の home 設定には依存しない。
 
 実行:
@@ -159,11 +158,6 @@ class _Base(unittest.TestCase):
     def tearDown(self):
         self._tmpdir.cleanup()
 
-    def write_settings(self, content):
-        claude_dir = self.root / ".claude"
-        claude_dir.mkdir(exist_ok=True)
-        (claude_dir / ".forge.yaml").write_text(content, encoding="utf-8")
-
     def write_doc(self, relative):
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,8 +165,7 @@ class _Base(unittest.TestCase):
         return relative
 
     def run_query(self, client=None, docs_paths=("docs/rules/a.md",),
-                  availability=None, ignore_preference=False, task="task",
-                  category="rules", docs=None):
+                  availability=None, task="task", category="rules", docs=None):
         client = client if client is not None else _FakeClient()
         availability = availability or _FakeAvailability(client=client)
         docs = docs or _FakeDocs(self.root, docs_paths)
@@ -180,116 +173,33 @@ class _Base(unittest.TestCase):
             category,
             task,
             self.root,
-            ignore_preference=ignore_preference,
             ensure_available=lambda: availability,
             resolve_documents=lambda c, r: docs,
         )
         return exit_code, payload, client
 
 
-# --- 優先 backend 指定（acceptance の 7 分岐） ------------------------------------
+# --- 責務分離（設定を読まないこと） ------------------------------------------------
 
 
-class PreferenceBranchTest(_Base):
-    """§2.5 の分岐表: 設定は入口で読み、不正は既定順序へ黙って落ちない。"""
+class NoSettingsDependencyTest(unittest.TestCase):
+    """本 CLI は設定・優先指定・選択順序を知らない（§2.5 の責務分離）。
 
-    def _success_paths(self):
-        rel = self.write_doc("docs/rules/a.md")
-        client = _FakeClient(query_result=_query_response([rel]))
-        return rel, client
+    順序リストの解決（`.claude/.forge.yaml` の読み取り）は
+    `resolve_backend_order.py` が担い、その分岐テストも同 CLI 側にある。
+    """
 
-    def test_unspecified_proceeds_with_default_order(self):
-        """未指定（ファイル不在）は従来どおり doc-db の接続確認から始める。"""
-        rel, client = self._success_paths()
-        exit_code, payload, client = self.run_query(client=client, docs_paths=(rel,))
-        self.assertEqual(exit_code, query_docdb.EXIT_SUCCESS)
-        self.assertEqual(payload["status"], "success")
-        self.assertEqual(len(client.query_calls), 1)
+    def test_does_not_import_forge_settings(self):
+        import ast
 
-    def test_prefer_doc_db_is_default_order(self):
-        """`prefer: doc-db` は既定順序の明示に過ぎない。"""
-        self.write_settings("doc_backend:\n  prefer: doc-db\n")
-        rel, client = self._success_paths()
-        exit_code, payload, client = self.run_query(client=client, docs_paths=(rel,))
-        self.assertEqual(exit_code, query_docdb.EXIT_SUCCESS)
-        self.assertEqual(len(client.query_calls), 1)
-
-    def test_prefer_doc_advisor_exits_10_without_probe(self):
-        """`prefer: doc-advisor` は probe せず exit 10（reason advisor_preferred）。"""
-        self.write_settings("doc_backend:\n  prefer: doc-advisor\n")
-        ensure = _RefusingEnsure()
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root,
-            ensure_available=ensure,
-            resolve_documents=lambda c, r: _FakeDocs(self.root, ["docs/rules/a.md"]),
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_ADVISOR_FALLBACK)
-        self.assertEqual(payload["status"], "advisor_fallback")
-        self.assertEqual(payload["reason_code"], "advisor_preferred")
-        self.assertEqual(payload["startup"], docdb_runtime.STARTUP_NOT_ATTEMPTED)
-        self.assertFalse(ensure.called)
-
-    def test_non_mapping_section_is_settings_invalid(self):
-        """非 mapping（`doc_backend: doc-advisor`）は exit 20 settings_invalid。"""
-        self.write_settings("doc_backend: doc-advisor\n")
-        ensure = _RefusingEnsure()
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root, ensure_available=ensure,
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(payload["status"], "operation_error")
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-        self.assertFalse(ensure.called)
-
-    def test_unknown_key_is_settings_invalid(self):
-        """未知キー（綴り誤り）は黙って無視せず exit 20 settings_invalid。"""
-        self.write_settings("doc_backend:\n  preffer: doc-advisor\n")
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root, ensure_available=_RefusingEnsure(),
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-        self.assertIn("preffer", payload["message"])
-
-    def test_out_of_range_value_is_settings_invalid(self):
-        """値域外（`prefer: grep`）は exit 20 settings_invalid。値は出力しない。"""
-        self.write_settings("doc_backend:\n  prefer: grep\n")
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root, ensure_available=_RefusingEnsure(),
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-        # 設定本文（値）をエラー経路へ流さない
-        self.assertNotIn("grep", payload["message"])
-
-    def test_unparseable_settings_file_is_settings_invalid(self):
-        """解析不能な設定ファイルも exit 20（既定順序へ黙って落ちない）。"""
-        self.write_settings("doc_backend: {prefer: doc-advisor}\n")  # flow style は対象外構文
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root, ensure_available=_RefusingEnsure(),
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-
-    def test_ignore_preference_skips_settings_read_only(self):
-        """--ignore-preference は設定の読み取りだけを省き、他の挙動を変えない。"""
-        # doc-advisor 指定 + 解析不能でも、読まないため doc-db 経路が動く
-        self.write_settings("doc_backend: {prefer: doc-advisor}\n")
-        rel, client = self._success_paths()
-        exit_code, payload, client = self.run_query(
-            client=client, docs_paths=(rel,), ignore_preference=True
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_SUCCESS)
-        self.assertEqual(len(client.query_calls), 1)
-
-    def test_prefer_without_value_is_settings_invalid(self):
-        """`prefer:`（値なし）は値域外として扱う。"""
-        self.write_settings("doc_backend:\n  prefer:\n")
-        exit_code, payload = query_docdb.run(
-            "rules", "task", self.root, ensure_available=_RefusingEnsure(),
-        )
-        self.assertEqual(exit_code, query_docdb.EXIT_OPERATION_ERROR)
-        self.assertEqual(payload["reason_code"], "settings_invalid")
+        tree = ast.parse(_SCRIPT_PATH.read_text(encoding="utf-8"))
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+        self.assertNotIn("forge_settings", imported, "設定を読んではならない")
 
 
 # --- 対象文書 0 件の先行判定 -------------------------------------------------------
@@ -466,6 +376,7 @@ class OutputConstructionTest(_Base):
     def test_absolute_path_outside_root_is_excluded_even_if_it_exists(self):
         """実在する外部の絶対パスは除外する（BL-005: worktree 内に限定）。"""
         outside = tempfile.NamedTemporaryFile(suffix=".md", delete=False)
+        outside.close()
         self.addCleanup(os.unlink, outside.name)
         rel = self.write_doc("docs/rules/a.md")
         client = _FakeClient(query_result=_query_response([outside.name, rel]))
@@ -552,8 +463,8 @@ class AvailabilityPathTest(_Base):
             detail="doc-db 実行ファイルが PATH 上に見つかりません",
         )
         exit_code, payload, _ = self.run_query(availability=availability)
-        self.assertEqual(exit_code, query_docdb.EXIT_ADVISOR_FALLBACK)
-        self.assertEqual(payload["status"], "advisor_fallback")
+        self.assertEqual(exit_code, query_docdb.EXIT_UNAVAILABLE)
+        self.assertEqual(payload["status"], "unavailable")
         self.assertEqual(payload["reason_code"], docdb_runtime.REASON_EXECUTABLE_MISSING)
         self.assertEqual(payload["startup"], docdb_runtime.STARTUP_FAILED)
         self.assertEqual(payload["port"], 58080)
@@ -701,37 +612,23 @@ class CliContractTest(_Base):
             check=False,
         )
 
-    def test_prefer_doc_advisor_exits_10(self):
-        self.write_settings("doc_backend:\n  prefer: doc-advisor\n")
-        result = self._run_cli("rules", "task", "--project-root", str(self.root))
-        self.assertEqual(result.returncode, query_docdb.EXIT_ADVISOR_FALLBACK)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["status"], "advisor_fallback")
-        self.assertEqual(payload["reason_code"], "advisor_preferred")
-        self.assertEqual(payload["backend"], "doc-db")
-        self.assertEqual(payload["operation"], "query")
-
-    def test_invalid_settings_exits_20(self):
-        self.write_settings("doc_backend:\n  preffer: doc-db\n")
-        result = self._run_cli("rules", "task", "--project-root", str(self.root))
-        self.assertEqual(result.returncode, query_docdb.EXIT_OPERATION_ERROR)
-        payload = json.loads(result.stdout)
-        self.assertEqual(payload["status"], "operation_error")
-        self.assertEqual(payload["reason_code"], "settings_invalid")
-
     def test_invalid_category_exits_20_not_argparse_2(self):
         result = self._run_cli("readme", "task", "--project-root", str(self.root))
         self.assertEqual(result.returncode, query_docdb.EXIT_OPERATION_ERROR)
         payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "operation_error")
         self.assertEqual(payload["reason_code"], "invalid_input")
+        self.assertEqual(payload["backend"], "doc-db")
+        self.assertEqual(payload["operation"], "query")
 
-    def test_ignore_preference_flag_is_accepted(self):
-        args = query_docdb.parse_args(
-            ["rules", "task", "--ignore-preference", "--project-root", "/tmp/x"]
-        )
-        self.assertTrue(args.ignore_preference)
-        self.assertEqual(args.category, "rules")
-        self.assertEqual(args.task, "task")
+    def test_ignore_preference_flag_is_removed(self):
+        """設定を知らない CLI に --ignore-preference は存在しない（責務分離）。"""
+        import contextlib
+        import io
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                query_docdb.parse_args(["rules", "task", "--ignore-preference"])
 
 
 # --- 契約定数 -----------------------------------------------------------------
@@ -742,13 +639,13 @@ class ContractConstantsTest(unittest.TestCase):
 
     def test_exit_codes(self):
         self.assertEqual(query_docdb.EXIT_SUCCESS, 0)
-        self.assertEqual(query_docdb.EXIT_ADVISOR_FALLBACK, 10)
+        self.assertEqual(query_docdb.EXIT_UNAVAILABLE, 10)
         self.assertEqual(query_docdb.EXIT_OPERATION_ERROR, 20)
         self.assertEqual(query_docdb.EXIT_INDEX_MISSING, 30)
 
     def test_status_values(self):
         self.assertEqual(query_docdb.STATUS_SUCCESS, "success")
-        self.assertEqual(query_docdb.STATUS_ADVISOR_FALLBACK, "advisor_fallback")
+        self.assertEqual(query_docdb.STATUS_UNAVAILABLE, "unavailable")
         self.assertEqual(query_docdb.STATUS_OPERATION_ERROR, "operation_error")
         self.assertEqual(query_docdb.STATUS_INDEX_MISSING, "index_missing")
 
