@@ -3,7 +3,7 @@
 ## 前提の共有（読み取った現状）
 
 - 対象は forge プラグインのみ。現行 4 SKILL（`plugins/forge/skills/{query,update}-db-{rules,specs}/SKILL.md`）は **script を 1 つも持たず**、`doc-advisor:query-docs` / `index-docs` へ `Skill` ツールで転送するだけの薄い SKILL である（query 系は grep フォールバックを内包、`allowed-tools: Skill, Read, Grep, Glob, Bash`）。
-- したがって本 feature は「既存 script の改修」ではなく **共有低レベル層（新規 6 モジュール）+ SKILL 固有 wrapper（新規 10 ファイル）+ SKILL.md 4 本の書き換え** の新規追加が主体である。既存資産で再利用するのは `resolve_doc_structure.py`（`--type rules|specs` が既に project-root 相対のファイル一覧を JSON で返す）と `run_dprint_fmt.sh` の 2 つ。
+- したがって本 feature は「既存 script の改修」ではなく **共有低レベル層（新規 7 モジュール。`.claude/.forge.yaml` を読む forge_settings.py を含む）+ SKILL 固有 wrapper（新規 10 ファイル）+ SKILL.md 4 本の書き換え** の新規追加が主体である。既存資産で再利用するのは `resolve_doc_structure.py`（`--type rules|specs` が既に project-root 相対のファイル一覧を JSON で返す）と `run_dprint_fmt.sh` の 2 つ。
 - 移植元は doc-db-mcp-server 同梱の `docdb_client.py`（589 行・JSON-RPC/SSE/session/`sync-start`/`sync-status`/`--series` 検証を実装済み）、`resolve_docs.py`（`detect_project_name` = `git rev-parse --git-common-dir` の親、`detect_git_branch` = detached は `main`）、`run_sync.py`（`--start-only` の 0 件防御）。DES-057 §4.5 のスナップショットは実装と一致している。
 - 移植元 `docdb_client.py` は **HTTP 送信を `_post()` の 1 箇所に閉じ、応答解析を `_parse_response(raw, content_type)` の純関数に分離している**。したがって統合テストに socket を開く fake server は不要で、送信境界への応答注入で JSON / SSE / tool error / HTTP error をすべて決定論的に再現できる（DES-057 §9.3）。
 - 移植元に Python テストは存在しない（doc-db 側のテストは Go の `internal/`）。テスト資産は移植できないため、forge 側で新規に書く。
@@ -47,7 +47,8 @@
 
 - **目標**: 3 つの低レベル CLI が単体で叩けて、exit code 0 / 10 / 20 / 30 が §4.4 の表どおりに出る。SKILL からはまだ呼ばれないため、既存経路は無傷のまま。
 - **スコープ**:
-  - `plugins/forge/scripts/doc_backend/query_docdb.py` — `mode=all` / `top_n=20` / `series=現在の branch`、`results[].path` の順位維持抽出、**出力前のパス実在確認と除外件数**（§4.2）、`Required documents:` 文字列の決定論的構築（`origin_signals` は出さない／`warnings` は path リストの後に別掲）、対象文書 0 件の先行判定 → 索引状態確認、未整備の exit 30、KEY 不在／ゴミ箱状態／その他障害の error 判別（§4.5）。
+  - `plugins/forge/scripts/forge_settings.py` — `.claude/.forge.yaml` の読み取り（DES-061）。共有低レベル層だがフェーズ 1 完了後の要件追加（REQ-014 優先 backend 指定）で加わったため本フェーズで実装する。load / section の 2 関数のみ・標準ライブラリの行ベースパーサ・不在は空 dict・解析不能は明示エラー。
+  - `plugins/forge/scripts/doc_backend/query_docdb.py` — `mode=all` / `top_n=20` / `series=現在の branch`、`results[].path` の順位維持抽出、**出力前のパス実在確認と除外件数**（§4.2）、`Required documents:` 文字列の決定論的構築（`origin_signals` は出さない／`warnings` は path リストの後に別掲）、対象文書 0 件の先行判定 → 索引状態確認、未整備の exit 30、KEY 不在／ゴミ箱状態／その他障害の error 判別（§4.5）、優先 backend 指定の分岐と `--ignore-preference`（§2.5）。
   - `plugins/forge/scripts/doc_backend/sync_docdb.py` — `--start`（desired state 投入 → `job_id` 即返し）と `--status <job_id>`（`get_sync_status` 1 回・**未完了でも exit 0**）の 2 操作のみ。**プロセス内ポーリングループを持たない**（§4.3）。0 件時は同期せず明示エラー。
   - `plugins/forge/scripts/doc_backend/prepare_advisor_index.py` — `run_dprint_fmt.sh` 実行 + `.doc_structure.yaml` からの `root_dirs` / `patterns.exclude` 解決。成功 exit 0 / `status=success`、失敗 exit 20 / `status=operation_error`（§5.2 末尾）。
   - 3 CLI 共通の JSON 契約（`status` / `backend` / `operation` / `startup` / `reason_code`）をここで 1 箇所に固定する。SKILL は exit code だけで分岐し JSON から状態を再構成しないため（§4.4）、**JSON field の組合せに意味を持たせない**ことをレビュー観点にする。
@@ -66,7 +67,7 @@
   - DES-024 §3.2 に従い共有 wrapper 層は作らない。同名 wrapper を SKILL ごとに置き、固定値（`rules` / `specs`）だけが異なる。
 - **切替の順序（これが本フェーズの要点）**:
   - **3a. `update-db-rules` / `update-db-specs` を先に切り替える。** 理由は 2 つ。(1) update 経路は `check-toc` を呼ばず（§5.3）、分岐が「doc-db sync + ポーリング」か「prepare → index-docs」の 2 本だけで最も単純。(2) query 経路の未整備リカバリ（exit 30 → `--start` → `--status` ポーリング → query 再実行）は sync 経路そのものに依存するため、sync 経路を先に実運用で検証済みにしておくと、query 側の失敗原因を sync と query に切り分けられる。
-  - **3b. `query-db-rules` / `query-db-specs` を切り替える。** ここで初めて grep フォールバック手順の削除と `allowed-tools` からの `Grep` 削除（`Skill, Read, Bash` へ）、`check-toc` の 3 分岐（§5.1.3）、`advisor_absent` / `advisor_outdated` の区別（§2.4）、§7.1 の母集団相違通知を入れる。
+  - **3b. `query-db-rules` / `query-db-specs` を切り替える。** ここで初めて grep フォールバック手順の削除と `allowed-tools` からの `Grep` 削除（`Skill, Read, Bash` へ）、`check-toc` の 3 分岐（§5.1.3）、`advisor_absent` / `advisor_outdated` の区別（§2.4）、§7.1 の母集団相違通知を入れる。両段とも、優先 backend 指定（reason `advisor_preferred`）で doc-advisor も利用できない場合の `--ignore-preference` 復帰と通知（§2.5）を含む。
   - どちらの段でも、切替済み SKILL は doc-db 不在環境で従来と同じ doc-advisor 経路に落ちる（`check-toc` が入る点だけが差分）。したがって 3a 完了・3b 未着手という中間状態でも 4 SKILL すべてが動作する。
 - **SKILL.md 側の注意（ルール文書由来の制約）**:
   - ポーリングループは SKILL 側に置き、`--status` を呼ぶたびに進捗をテキストで報告する（§4.2 / §4.3 / NFR-001）。script の stderr に委ねない。
