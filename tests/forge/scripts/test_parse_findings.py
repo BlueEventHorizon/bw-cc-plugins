@@ -19,7 +19,7 @@ from pathlib import Path
 
 _SCRIPT_PATH = (
     Path(__file__).resolve().parents[3]
-    / "plugins" / "forge" / "skills" / "review" / "scripts" / "parse_findings.py"
+    / "plugins" / "forge" / "scripts" / "review" / "parse_findings.py"
 )
 
 _spec = importlib.util.spec_from_file_location("msg_review_parse_findings", _SCRIPT_PATH)

@@ -38,8 +38,8 @@ import re
 import sys
 from pathlib import Path
 
-# plugins/forge/skills/review/scripts/filter_review_history.py から見て
-# plugins/forge/scripts/msg-sys/ へのパス。parents[0]=scripts, [1]=review, [2]=skills, [3]=forge
+# plugins/forge/skills/msg-review/scripts/filter_review_history.py から見て
+# plugins/forge/scripts/msg-sys/ へのパス。parents[0]=scripts, [1]=msg-review, [2]=skills, [3]=forge
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "msg-sys"))
 import thread_filter  # noqa: E402
 

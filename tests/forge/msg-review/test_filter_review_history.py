@@ -23,7 +23,7 @@ from unittest import mock
 
 _SCRIPT_PATH = (
     Path(__file__).resolve().parents[3]
-    / "plugins" / "forge" / "skills" / "review" / "scripts" / "filter_review_history.py"
+    / "plugins" / "forge" / "skills" / "msg-review" / "scripts" / "filter_review_history.py"
 )
 
 _spec = importlib.util.spec_from_file_location(
@@ -332,19 +332,21 @@ class FetchHistoryTest(unittest.TestCase):
 
 
 class ProjectRootArgumentTest(unittest.TestCase):
-    """`--project-root` を持ち、review スキルの他スクリプトと引数名が揃っていること。
+    """`--project-root` を持ち、レビュー本体・バックエンド双方で引数名が揃っていること。
 
     この引数が無いと呼び出し側は `FORGE_MSG_PROJECT_ROOT` をシェルで前置する必要があり、
     実運用で繰り返し忘れられて `RuntimeError: DB path could not be resolved` になった。
-    他の review スクリプト（analyze_branch_point / resolve_targets / scan_secrets /
-    collect_modified_files）はいずれも `--project-root` を持つ。
+    本体側のスクリプト（analyze_branch_point / resolve_targets / scan_secrets /
+    collect_modified_files）はいずれも `--project-root` を持つ。本スクリプトは
+    ADR-066 の分離で msg-review バックエンド側へ移ったが、引数名は揃え続ける
+    （呼び出し側から見た作法が backend 境界をまたいで変わると同じ失敗が再発する）。
     """
 
-    _SCRIPT_DIR = (
+    _BODY_SCRIPT_DIR = (
         Path(__file__).resolve().parents[3]
         / "plugins" / "forge" / "skills" / "review" / "scripts"
     )
-    _SIBLINGS = (
+    _BODY_SIBLINGS = (
         "analyze_branch_point.py",
         "resolve_targets.py",
         "scan_secrets.py",
@@ -353,7 +355,7 @@ class ProjectRootArgumentTest(unittest.TestCase):
 
     def test_help_lists_project_root(self):
         result = subprocess.run(
-            [sys.executable, str(self._SCRIPT_DIR / "filter_review_history.py"), "--help"],
+            [sys.executable, str(_SCRIPT_PATH), "--help"],
             capture_output=True,
             text=True,
         )
@@ -361,10 +363,12 @@ class ProjectRootArgumentTest(unittest.TestCase):
         self.assertIn("--project-root", result.stdout)
 
     def test_all_review_scripts_share_the_project_root_flag(self):
-        for name in self._SIBLINGS + ("filter_review_history.py",):
-            with self.subTest(script=name):
+        targets = [self._BODY_SCRIPT_DIR / name for name in self._BODY_SIBLINGS]
+        targets.append(_SCRIPT_PATH)
+        for script in targets:
+            with self.subTest(script=script.name):
                 result = subprocess.run(
-                    [sys.executable, str(self._SCRIPT_DIR / name), "--help"],
+                    [sys.executable, str(script), "--help"],
                     capture_output=True,
                     text=True,
                 )
