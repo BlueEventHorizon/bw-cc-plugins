@@ -142,8 +142,11 @@ class ToolError(DocDbClientError):
     """`tools/call` が tool 実行エラーを返した。
 
     接続確立後の障害であり、別 backend への切り替え理由にしない。
-    KEY 不在・ゴミ箱状態もこの経路で届くため、呼び出し側は `message` の内容から
-    未整備と障害を判別する。判別できないものは障害として扱う。
+    KEY 不在・ゴミ箱状態もこの経路で届く（doc-db 0.3.3 以降は JSON-RPC error）。
+    呼び出し側は `data["code"]` の識別子（`KEY_NOT_FOUND` / `KEY_TRASHED`）で
+    未整備と障害を判別する。メッセージ文言・数値 `code` では判別しない。
+    識別子を読み取れないもの（`data` なし・未知の識別子・isError 経路）は
+    障害として扱う。
     """
 
     def __init__(self, message: str, code: int | None = None, data=None):

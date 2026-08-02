@@ -40,7 +40,7 @@ INITIALIZE_RESULT_JSON = json.dumps({
     "result": {
         "protocolVersion": "2025-03-26",
         "capabilities": {},
-        "serverInfo": {"name": "doc-db", "version": "0.3.2"},
+        "serverInfo": {"name": "doc-db", "version": "0.3.3"},
     },
 })
 
@@ -130,24 +130,47 @@ SSE_WITHOUT_MATCHING_ID = (
     "\n"
 )
 
-#: tool error（JSON-RPC error 経路）。KEY 不在はこの形で届く
-TOOL_ERROR_JSON = json.dumps({
+#: KEY 不在の tool error（JSON-RPC error 経路）。doc-db 0.3.3 の識別子契約
+#: （ADR-058）に基づく実応答の形（2026-08-02 実測）。判別の正本は `error.data.code`
+#: であり、`message` 先頭の識別子トークンは補助。文言全文・数値 code を判別根拠にしない。
+KEY_NOT_FOUND_ERROR_JSON = json.dumps({
     "jsonrpc": "2.0",
     "id": 2,
     "error": {
-        "code": -32603,
-        "message": "key not found: sample-rules",
-        "data": {"key": "sample-rules"},
+        "code": -31001,
+        "message": 'KEY_NOT_FOUND: key "sample-rules" が存在しません',
+        "data": {"code": "KEY_NOT_FOUND", "key": "sample-rules"},
     },
 })
 
-#: tool error（result.isError 経路）
+#: ゴミ箱状態の tool error（JSON-RPC error 経路）。`KEY_TRASHED` は公開契約の値で
+#: あるため `trash_index` を実行して採取せず、契約記述（ADR-058 / DES-057 §4.5）から
+#: 書く。message の文言は公開契約ではない（契約は先頭の識別子トークンのみ）。
+KEY_TRASHED_ERROR_JSON = json.dumps({
+    "jsonrpc": "2.0",
+    "id": 2,
+    "error": {
+        "code": -31002,
+        "message": "KEY_TRASHED: 文言は公開契約ではない（先頭トークンのみ契約）",
+        "data": {"code": "KEY_TRASHED", "key": "sample-rules"},
+    },
+})
+
+#: 識別子を持たない tool error（JSON-RPC error だが `data` が無い）。
+#: 0.3.3 未満の doc-db や未知の障害はこの形で届きうる。呼び出し側は障害として扱う
+UNIDENTIFIED_ERROR_JSON = json.dumps({
+    "jsonrpc": "2.0",
+    "id": 2,
+    "error": {"code": -32603, "message": "internal error"},
+})
+
+#: tool error（result.isError 経路）。識別子契約の対象外であり、障害として扱う
 TOOL_IS_ERROR_JSON = json.dumps({
     "jsonrpc": "2.0",
     "id": 2,
     "result": {
         "isError": True,
-        "content": [{"type": "text", "text": "index is trashed: restore it first"}],
+        "content": [{"type": "text", "text": "tool execution failed"}],
     },
 })
 
@@ -623,18 +646,24 @@ class ResponseFormatEquivalenceTest(unittest.TestCase):
 
 
 class ToolErrorTest(unittest.TestCase):
-    """tool error が HTTP error と区別して返ること。"""
+    """tool error が HTTP error と区別して返り、error の各要素が保持されること。"""
 
-    def test_jsonrpc_error_raises_tool_error_with_code_and_message(self):
-        client, _ = _client(_initialize_frames() + [_json_frame(TOOL_ERROR_JSON)])
+    def test_jsonrpc_error_raises_tool_error_with_wire_error_preserved(self):
+        """message / code / data が wire の error オブジェクトのまま保持されること。
+
+        比較対象は fixture の値そのもの（透過性の検証）であり、数値 code・文言の
+        特定の値を doc-db の契約として固定するものではない。
+        """
+        client, _ = _client(_initialize_frames() + [_json_frame(KEY_NOT_FOUND_ERROR_JSON)])
         with self.assertRaises(docdb_client.ToolError) as ctx:
             client.query(key="sample-rules", series="main", query="task")
-        self.assertEqual(ctx.exception.code, -32603)
-        self.assertIn("key not found", ctx.exception.message)
-        self.assertEqual(ctx.exception.data, {"key": "sample-rules"})
+        wire_error = json.loads(KEY_NOT_FOUND_ERROR_JSON)["error"]
+        self.assertEqual(ctx.exception.message, wire_error["message"])
+        self.assertEqual(ctx.exception.code, wire_error["code"])
+        self.assertEqual(ctx.exception.data, wire_error["data"])
 
     def test_tool_error_is_not_http_error(self):
-        client, _ = _client(_initialize_frames() + [_json_frame(TOOL_ERROR_JSON)])
+        client, _ = _client(_initialize_frames() + [_json_frame(KEY_NOT_FOUND_ERROR_JSON)])
         with self.assertRaises(docdb_client.ToolError) as ctx:
             client.query(key="sample-rules", series="main", query="task")
         self.assertNotIsInstance(ctx.exception, docdb_client.HttpError)
@@ -644,20 +673,78 @@ class ToolErrorTest(unittest.TestCase):
         client, _ = _client(_initialize_frames() + [_json_frame(TOOL_IS_ERROR_JSON)])
         with self.assertRaises(docdb_client.ToolError) as ctx:
             client.query(key="sample-rules", series="main", query="task")
-        self.assertIn("trashed", ctx.exception.message)
+        self.assertIn("tool execution failed", ctx.exception.message)
 
     def test_tool_error_delivered_over_sse_is_also_tool_error(self):
         client, _ = _client(_initialize_frames() + [
-            _sse_frame("data: " + TOOL_ERROR_JSON + "\n"),
+            _sse_frame("data: " + KEY_NOT_FOUND_ERROR_JSON + "\n"),
         ])
         with self.assertRaises(docdb_client.ToolError) as ctx:
             client.query(key="sample-rules", series="main", query="task")
-        self.assertEqual(ctx.exception.code, -32603)
+        self.assertEqual(ctx.exception.data["code"], "KEY_NOT_FOUND")
 
     def test_empty_tool_call_response_is_protocol_error(self):
         client, _ = _client(_initialize_frames() + [_empty_frame()])
         with self.assertRaises(docdb_client.ProtocolError):
             client.query(key="sample-rules", series="main", query="task")
+
+
+class ErrorIdentifierContractTest(unittest.TestCase):
+    """doc-db 0.3.3 の error 識別子契約（ADR-058 / DES-057 §4.5）。
+
+    判別の正本は `ToolError.data["code"]`（`KEY_NOT_FOUND` / `KEY_TRASHED`）であり、
+    `message` 先頭の識別子トークンは補助。メッセージ文言の全文・数値 code では
+    判別しない。識別子を読み取れない error は呼び出し側が障害として扱う。
+    """
+
+    def _tool_error(self, frame):
+        client, _ = _client(_initialize_frames() + [frame])
+        with self.assertRaises(docdb_client.ToolError) as ctx:
+            client.query(key="sample-rules", series="main", query="task")
+        return ctx.exception
+
+    def test_key_not_found_identifier_is_readable_from_data_code(self):
+        exc = self._tool_error(_json_frame(KEY_NOT_FOUND_ERROR_JSON))
+        self.assertEqual(exc.data["code"], "KEY_NOT_FOUND")
+
+    def test_key_trashed_identifier_is_readable_from_data_code(self):
+        exc = self._tool_error(_json_frame(KEY_TRASHED_ERROR_JSON))
+        self.assertEqual(exc.data["code"], "KEY_TRASHED")
+
+    def test_message_leading_token_matches_data_code(self):
+        """補助識別子: message は `data.code` と同一の識別子トークンで始まる。
+
+        契約はトークンのみであり、トークン以降の文言には依拠しない。
+        """
+        for fixture, identifier in (
+            (KEY_NOT_FOUND_ERROR_JSON, "KEY_NOT_FOUND"),
+            (KEY_TRASHED_ERROR_JSON, "KEY_TRASHED"),
+        ):
+            with self.subTest(identifier=identifier):
+                exc = self._tool_error(_json_frame(fixture))
+                self.assertTrue(exc.message.startswith(identifier + ":"))
+                self.assertEqual(exc.data["code"], identifier)
+
+    def test_identifier_is_readable_over_sse(self):
+        exc = self._tool_error(_sse_frame("data: " + KEY_NOT_FOUND_ERROR_JSON + "\n"))
+        self.assertEqual(exc.data["code"], "KEY_NOT_FOUND")
+
+    def test_error_without_data_has_none_data(self):
+        """識別子を持たない error（0.3.3 未満・未知障害）は `data` が None のまま届く。
+
+        呼び出し側はこれを判別不能とみなし、障害として扱う（索引作成へ倒さない）。
+        """
+        exc = self._tool_error(_json_frame(UNIDENTIFIED_ERROR_JSON))
+        self.assertIsNone(exc.data)
+
+    def test_is_error_result_has_no_identifier(self):
+        """result.isError 経路には識別子が無い（`data` / `code` とも None）。
+
+        識別子契約の対象外であり、呼び出し側は障害として扱う。
+        """
+        exc = self._tool_error(_json_frame(TOOL_IS_ERROR_JSON))
+        self.assertIsNone(exc.data)
+        self.assertIsNone(exc.code)
 
 
 class HttpErrorTest(unittest.TestCase):

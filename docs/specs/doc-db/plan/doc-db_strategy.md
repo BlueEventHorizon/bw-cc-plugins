@@ -58,6 +58,13 @@
   - **中間検証（`query_docdb.py` 完成時点。`sync_docdb.py` を待たない）**: 実 doc-db に対して `query_docdb.py` を手で叩き、既存 doc-advisor 出力と `Required documents:` の形が一致すること（NFR-002 の出力互換）。
   - **識別子契約への適合確認**（確認事項 3 の決着後の残り作業）: 存在しない KEY への query が `error.data.code == "KEY_NOT_FOUND"` を返すことを実 doc-db 0.3.3 で確認し、注入 fixture をその形に合わせる。`KEY_TRASHED` は公開契約の値であるため `trash_index` を実行して確かめることはしない。識別子を読み取れない error は障害扱いのままにする（fail-safe を崩さない）。
 
+#### 識別子契約への適合確認の実施記録（doc-db 0.3.3 / 2026-08-02・読み取り専用）
+
+- **手順**: 未起動の doc-db を `docdb_runtime.ensure_available()` の on-demand 起動（非破壊）で立ち上げ、実在しない KEY（乱数 suffix 付き）へ `query` を 1 回実行した。書き込み系 tool は呼んでいない。
+- **結果**: `serverInfo.version` は 0.3.3。KEY 不在は **JSON-RPC error** として届き、`error.data.code == "KEY_NOT_FOUND"`（判別の正本）、`message` は同一の識別子トークン `KEY_NOT_FOUND:` で始まり、数値 code（-31001）は補助として載った。`docdb_client.py` の `ToolError` から `data["code"]` を取り出せることも確認した。応答は SSE（`text/event-stream`）で、フェーズ 1 の観測と変わらない。
+- **DES-057 §4.5 とのズレ**: なし（§4.5 の「KEY 状態に関する doc-db の挙動」の契約記述どおり。更新不要）。
+- **fixture 整備**: `tests/forge/doc_backend/test_docdb_client.py` の注入 fixture を実応答の形（`KEY_NOT_FOUND`）に合わせ、`KEY_TRASHED` は契約記述（ADR-058 / DES-057 §4.5）から書いた（`trash_index` による採取はしない）。判別テストは `data["code"]` と `message` 先頭トークンのみに依拠し、文言全文・数値 code に依存する記述を持ち込んでいない。
+
 ### フェーズ 3: wrapper と SKILL.md の切替（update → query の順）
 
 - **目標**: 4 SKILL が doc-db 優先で動き、doc-db 不在時に doc-advisor へ落ち、両方不在なら失敗する。grep フォールバックが消える。

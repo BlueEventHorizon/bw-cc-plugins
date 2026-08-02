@@ -296,7 +296,7 @@ tasks:
   - task_id: TASK-005
     title: doc-db 0.3.3 の error 識別子契約への適合確認と fixture 整備
     priority: 78
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-001
@@ -318,7 +318,7 @@ tasks:
   - task_id: TASK-019
     title: forge_settings.py の実装（.claude/.forge.yaml の読み取り）
     priority: 77
-    status: pending
+    status: completed
     design_id: DES-061
     depends_on: []
     group_id: null
@@ -339,7 +339,7 @@ tasks:
   - task_id: TASK-006
     title: query_docdb.py の実装
     priority: 76
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-002
@@ -370,7 +370,7 @@ tasks:
   - task_id: TASK-007
     title: sync_docdb.py の実装
     priority: 75
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-002
@@ -395,7 +395,7 @@ tasks:
   - task_id: TASK-008
     title: prepare_advisor_index.py の実装
     priority: 72
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on: []
     group_id: null
