@@ -171,23 +171,23 @@ class TemplateTokenContractTest(unittest.TestCase):
                 body = _build(pattern)
                 self.assertNotIn("{{", body)
 
-    def test_range_patterns_do_not_use_target_scope_token(self):
+    def test_range_patterns_do_not_use_target_paths_token(self):
         """範囲指定テンプレートが対象一覧のトークンを持たないこと（FNC-1312）。"""
         for pattern in build_review_request.RANGE_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
-                self.assertNotIn("{{TARGET_SCOPE}}", text)
+                self.assertNotIn("{{TARGET_PATHS}}", text)
 
-    def test_scoped_patterns_use_target_scope_token(self):
+    def test_scoped_patterns_use_target_paths_token(self):
         """対象を明示指定するテンプレートが、粒度に依らない単一のトークンを使うこと。
 
         ファイル指定とディレクトリ指定で同じテンプレートを共有する（DES-055 §8.4）ため、
-        トークンは `{{TARGET_SCOPE}}` の 1 つだけであり、粒度ごとに別トークンを持たない。
+        トークンは `{{TARGET_PATHS}}` の 1 つだけであり、粒度ごとに別トークンを持たない。
         """
         for pattern in build_review_request.SCOPED_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
-                self.assertIn("{{TARGET_SCOPE}}", text)
+                self.assertIn("{{TARGET_PATHS}}", text)
                 self.assertNotIn("{{TARGET_FILES}}", text)
                 self.assertNotIn("{{TARGET_DIRS}}", text)
 

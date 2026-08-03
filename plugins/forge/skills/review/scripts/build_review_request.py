@@ -371,7 +371,7 @@ def build_body(
         "PROJECT_SPECS": _absolute_bullet_list(project_root_abs, project_specs),
         # 対象軸がファイルでもディレクトリでも同一のトークンへ載せる。指定粒度のまま
         # 渡すため、ディレクトリを配下ファイルへ展開しない（REQ-013 FNC-1312）。
-        "TARGET_SCOPE": (
+        "TARGET_PATHS": (
             _absolute_bullet_list(project_root_abs, dirs, suffix="/")
             if dirs
             else _absolute_bullet_list(project_root_abs, files)
