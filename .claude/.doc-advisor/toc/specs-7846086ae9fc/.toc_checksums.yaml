@@ -1,7 +1,7 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-02T16:34:49Z
-file_count: 50
+generated_at: 2026-08-03T07:38:06Z
+file_count: 51
 checksums:
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: 76c4445fe171028551653ac2a9f16179dd0d0a06fe4ddb90dcb7f7da2dd79af2
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: ec40105c80562f9a91d380918a88c98bda3f9c61c41782ce575ad42a708f8f43
@@ -10,8 +10,8 @@ checksums:
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 9814049dc3f857ca121226f26ea9863735068e880f9003f65a6bc9767ae91e9c
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: 815be9ef1a6a97b571b043a486560e7fad0fc0fd9580f2cc5fad47eac983a2d6
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md: c023a86c8e3be086e39968217ab92210f6fde0f414f2e724068c3b8608243656
-  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: a26f25f55f3ec1e36ae37ad0234327cc61d5356b9b298fbed88a2f4287a21336
-  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: d741c35c56962258ee2944f075606d562f56a3cc0b4ad914897671e60efa29b9
+  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: b4f61d5581ddd6a991592138f942fba85f937a899604466caee8c95530488dca
+  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: e8ce5e64b56bd14b350b8a0c12ef00b9655fd695824aa933ae1be4d05902d2f2
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 492baf34a55626fa7c9c47891d9877011253d47b6c89e2bd6c1a7fd261116bec
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: f3b31a32d281aed95b448101433e00adc0a047f9df5f5961083d54deae112424
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: ebd8f7a2e3976ac9eaa614a32b2a7d40de1c6bf5ebcb492818f28320167a6353
@@ -24,6 +24,7 @@ checksums:
   docs/specs/forge/design/ADR-060_review_backend_axis.md: 789090c98b308b0b4161662eb4acd0ca27d4ed52eb06649fa02afd08e3e19bd2
   docs/specs/forge/design/ADR-065_review_backend_contract_completion.md: d86b7af9fcfa56a6d7555788f6925f6854407617ec4ebb908e4d64cfa6ba26b8
   docs/specs/forge/design/ADR-066_review_body_backend_separation.md: ac41ae5e146666b388011697c30ab9001415b5d88312d125b6541463d9d93dd9
+  docs/specs/forge/design/ADR-067_backend_availability_probe.md: e569a34d66f4218856f2a466c9e9bd773630b448d3a143a7dff13f7c4a0532cc
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 4bb2b465d381031ba028faf52064969d978358b4d434bd6dc4aab2ebb078dfa3
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: 3343e3cd8376d01e1432079f5a1f2b90b55d551b5bb219565e3e18854daad33a
   docs/specs/forge/design/DES-013_context_gathering_design.md: c00644d3a822f7e9aebcba635a10e73dd5fa9bd0e22da63198bbd730ee81c22b
@@ -39,10 +40,10 @@ checksums:
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md: 0e56c8b729d59c1cce06a864ddb7abedbb293109edaff93756b2632e74a022b2
   docs/specs/forge/design/DES-055_review_request_template_design.md: 170d05a0905709083080e47382e4e9f5a605b444924b08d9f520b8b4e45b0b53
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: fb5d41c403b20e0853df20c44bfdcc56c9389a6040066e0789cfa738d916a01b
-  docs/specs/forge/design/DES-066_review_body_design.md: 31b9bfc147caa236f0e2a71dc181f1fd43e240f08b751a3eaa1eba3b1a5c8840
+  docs/specs/forge/design/DES-066_review_body_design.md: 420567f4556057ed00693d0cf74ba8ec19014a3d0f51e47f581df3749d171672
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: a5490f033d39f588f235a9710b91a3ba712beb0b8113c60f787005c7864d1582
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 61c41caf741b964dfbbe8a798ce6236eb14abd3102180362c737895042d9ea33
-  docs/specs/forge/requirements/REQ-013_review_policy.md: 5bb0611a786516853170b2db1b8174df9283cd862911721a530fb165f6e42036
+  docs/specs/forge/requirements/REQ-013_review_policy.md: c5c3112c0d29e52bcd94c5014b2a1aaac1e0412f8829f245a43ad7bc1f24d6ab
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md: 76c624e48ec1e3566a90b54c88d1dbcc0171b207c9c8a415a2d902937f68a415
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md: 97f3848d97c480af1b55ffa76370abd3b15a9a676d7cf297015fda2e5b54d00d
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md: b1a69f64a4b71a651a09feffdce368bfe47d05c5b1377c64ac29bbf444dee8a4
