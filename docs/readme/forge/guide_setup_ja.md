@@ -135,7 +135,7 @@ git:
 4. ユーザー確認後に実行:
    - **削除**: forge でカバーされるセクションを除去
    - **再構築**: Content Type が混在する大ファイルを分割・統合
-5. `.doc_structure.yaml` と ToC を更新
+5. `.doc_structure.yaml` と検索インデックスを更新
 6. commit 確認
 
 ### 安全性

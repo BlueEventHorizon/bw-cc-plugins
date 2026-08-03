@@ -149,6 +149,56 @@ sync は現在 branch の series（`feature/forge-settings`）のみに対して
   実行と完了レポートの転記、Step 5 の経路通知の文面）は agent からは検証できない。
   人間セッションで doc-db 起動状態・停止状態の両方について `/forge:update-db-rules` を起動して確認する。
 
+#### 実行検証記録（query）: query 系 SKILL の手順トレース（doc-db 0.3.3 / 2026-08-03）
+
+フェーズ 3b が規定する `query-db-rules` の実行検証。agent からは `Skill` ツールを起動できないため、
+書き換え済み `query-db-rules/SKILL.md` の各 Step のコマンドを手順どおり直接実行して代替した。
+sync は現在 branch の series（`feature/issue-forge-settings`）のみに対して行い、破壊的操作は実行していない。
+`query-db-specs` は category 固定値（`specs`）だけが異なる同一手順のため、rules 側の実測で代表させた。
+
+- **条件 1: doc-db 起動・索引ありで query（`prefer: doc-db` 一時設定）**: `.claude/.forge.yaml` へ
+  `doc_backend.prefer: doc-db` を一時設定し、`resolve_backend_order.py` が exit `0` /
+  `order=["doc-db", "doc-advisor"]` / `source=setting` を返すことを確認（Step 1 → Step 3 の分岐）。
+  `query_documents.py "<task>"` は exit `0` / `status=success` / `startup=not_attempted` で、
+  `result` は `Required documents:` ヘッダ + `- docs/rules/...` 列挙（key `bw-cc-plugins-rules` /
+  series `feature/issue-forge-settings` / `document_count=7` / `excluded_count=0` / `warnings=[]`）。
+  chunk 単位のため同一 path が複数回現れる §4.5 の実測事実も再現した。
+  補足: 初回 1 回のみ exit `20` / `reason_code=docdb_tool_error`（query 中の接続 timeout）を観測した。
+  直後の `initialize` 単発 probe は 0.01 秒で応答し、再試行は 1.2 秒で成功したため一過性と判断。
+  SKILL Step 3.1 の表どおり exit `20` は「backend を切り替えない明示エラー」であり、挙動の材料
+  （JSON の `message` に非機密の URL・原因のみ）が得られることを確認した。
+- **条件 2: 当該 series 未同期 → exit 30 → sync → 再検索**: 現在 branch の series は同期済み
+  （`list_indexes` 実測: key `bw-cc-plugins-rules` の `series` に `feature/issue-forge-settings` が
+  登録済み・last_updated 2026-08-02）のため、exit `30` は本 branch では観測できない。低レベル CLI へ
+  任意 series を渡せず、branch を切り替えない制約下では未同期状態を非破壊で再現できないため、
+  タスク規定どおり「同期済み扱いの確認」とした。exit `30` → `--start` → `--status` → 再検索の通し実測は
+  フェーズ 3 冒頭の実測記録（2026-08-02・KEY 未生成状態からの通し）で実施済みである。
+  sync wrapper 自体は今回も実測した: `sync_documents.py --start` は exit `0` で `job_id` を即時返却
+  （count=7）、2 秒後の `--status <job_id>` は exit `0` / `job.status=done` / processed=0 / skipped=7 /
+  failed=0 / errors=[]（冪等収束。全件 skip = embedding 再計算なし）。再検索も exit `0` で成功した。
+- **条件 3: 設定なし・既定順序で doc-advisor 先位**: `.forge.yaml` を削除した状態で
+  `resolve_backend_order.py` は exit `0` / `order=["doc-advisor", "doc-db"]` / `source=default` を返し、
+  Step 2 の先位が doc-advisor になること（Step 4 分岐）を確認。Step 4.3 の
+  `prepare_advisor_index.py` wrapper は exit `0` / `status=success` / `root_dirs=["docs/rules/"]` /
+  `exclude=[]` の成功 JSON を返した。`doc-advisor:check-toc` / `query-docs` の Skill 起動は
+  agent からは実行できず、残確認とした。
+- **条件 4: ToC が鮮度を満たす場合の索引更新なし分岐**: DocAdvisor 0.4.6 キャッシュ実体
+  （`~/.claude/plugins/cache/DocAdvisor/doc-advisor/0.4.6/scripts/check_toc.py`）を
+  `--key rules --max-age 86400` で直接実行し、exit `0` / `status=ok` / `freshness=fresh`
+  （age_seconds=16913 < 86400）を実測。SKILL Step 4.2 の表の「fresh → ToC を更新せず Step 4.4 へ」の
+  分岐条件が成立する応答形式（`status` / `freshness` のみで分岐可能な JSON 単独出力）であることを
+  確認した。stale 側の応答は ToC を意図的に古くする操作を要するため実測せず、残確認とした。
+- **後始末**: `.claude/.forge.yaml` は検証後に削除した（検証前は不在）。本検証由来の作業ツリー差分はない
+  （検証中に現れた `CLAUDE.md` / `README.md` の差分は並行タスク TASK-016/017 由来の内容変更であり、
+  本検証では触れていない）。doc-db は稼働状態のまま。
+- **人間セッションでの残確認事項**: `Skill` ツール起動を伴う完全な end-to-end
+  （`/forge:query-db-rules` 起動時の `doc-advisor:check-toc` → `query-docs` の実行、stale 時の
+  `index-docs` 経路、`--status` ごとの進捗チャット報告、Step 5 の経路通知と doc-advisor 経路の
+  検索母集団相違通知の文面）は agent からは検証できない。人間セッションで doc-db 起動状態・
+  停止状態の両方について `/forge:query-db-rules` を起動して確認する。
+
+### フェーズ 4: 契約テスト・文書整合・全体検証（TASK-016〜018）
+
 - **目標**: doc-advisor 側 I/F への依拠が機械検証され、本変更で古くなる文書が同じ変更内で直っている。
 - **スコープ**:
   - §9.3 後半の doc-advisor 契約テスト／静的テスト: `--key` と `--max-age 86400` を渡すこと、`fresh` / `stale` / `status=error` の 3 分岐、`stale` 時だけ prepare → `index-docs` → `query-docs` の順になること、exit code ではなく `status` / `freshness` で分岐すること、`reason` 等の補助 field に依存しないこと、§5.1.4 の防御（解析不能・既知値以外で query を呼ばず失敗）、§7.1 の通知が doc-advisor 経路だけに出ること。**境界値・skew 60 秒・`generated_at` の解析可否に依存するテストを書かない**（§9.3 末尾。書くと DocAdvisor の内部変更で forge のテストが壊れる）。

@@ -568,7 +568,7 @@ tasks:
   - task_id: TASK-015
     title: query 系 SKILL の実行検証
     priority: 50
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-014
@@ -587,7 +587,7 @@ tasks:
   - task_id: TASK-016
     title: doc-advisor 契約テストと静的テストの追加
     priority: 42
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-014
@@ -609,7 +609,7 @@ tasks:
   - task_id: TASK-017
     title: 導入案内と周辺文書の整合
     priority: 40
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-014
