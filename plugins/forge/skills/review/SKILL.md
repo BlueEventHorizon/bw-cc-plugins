@@ -48,13 +48,13 @@ allowed-tools: Skill, Read, Write, Bash, AskUserQuestion
 **`--secrets`（独立起動）**: 上表の軸とは別に、機密情報の混入だけを対象とする独立したレビューを持つ。
 
 ```
-/forge:review --secrets [--focus "<自然文>"] [--backend <name>]
+/forge:review --secrets [--focus "<自然文>"] [--scope "<到達目標と意図的な未実装>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
 ```
 
 - **種別・対象軸と相互排他**（`--secrets --branch` 等はエラー終了する）。対象は常にリポジトリ全体であり、利用者が範囲を選ばない
 - 対象を差分に絞らない理由: 過去のコミットで混入した秘密は今回の差分に現れないが、リポジトリには残っており漏洩の対象である。差分に絞った時点でこのレビューの目的を達成できない
 - 介入軸は受け付けるが、**自動修正の対象にしない**（Step 7 の分岐）。混入の修正は削除だけでは完了せず、該当する秘密の失効・再発行を伴うため、人間の判断が要る
-- `--focus` / `--backend` は併用できる
+- `--focus` / `--scope` / `--project-rules` / `--project-specs` / `--backend` は併用できる（種別・対象軸を持たないだけで、その他の共通引数は他パターンと同じに扱う）
 
 引数解釈は AI が自然言語混在を許容して直接行う（リジッドなパーサーは使わない。`docs/rules/implementation_guidelines.md`）。種別・対象が不足・曖昧な場合は AskUserQuestion で補完する。
 
