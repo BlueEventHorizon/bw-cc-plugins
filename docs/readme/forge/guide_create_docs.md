@@ -1,6 +1,6 @@
 # Document Creation Guide
 
-Create development documents in three stages: requirements → design → plan. Each skill takes the previous stage's output as input and ends with a common completion flow: AI review → ToC update → commit.
+Create development documents in three stages: requirements → design → plan. Each skill takes the previous stage's output as input and ends with a common completion flow: AI review → search-index update → commit.
 
 ```
 start-requirements → start-design → start-plan → start-implement
@@ -24,7 +24,7 @@ All three skills share a common context-gathering pattern. Before document creat
 After document creation, the following steps execute sequentially:
 
 1. `/forge:review {type} --auto` — AI review + auto-fix
-2. `/forge:update-db-specs` — ToC update (when available)
+2. `/forge:update-db-specs` — search-index update (when available)
 3. `/anvil:commit` — commit/push confirmation
 
 ---
@@ -70,7 +70,7 @@ Create requirements documents. Supports three modes with different input sources
 1. Confirm mode, Feature name, and new/add
 2. Context gathering (parallel)
 3. Mode-specific workflow (dialog / source analysis / Figma analysis)
-4. Completion flow (review → ToC → commit)
+4. Completion flow (review → search-index update → commit)
 
 ### Output
 
@@ -117,7 +117,7 @@ Create design documents from requirements. Emphasizes reuse of existing implemen
    - Explore existing implementation assets (codebase scan)
 3. Detailed requirements analysis
 4. Create design document (ID assignment, format application)
-5. Completion flow (review → ToC → commit)
+5. Completion flow (review → search-index update → commit)
 
 ### Design Principles
 
@@ -162,7 +162,7 @@ Extract tasks from design documents and create a YAML plan.
    - Collect plan rules
 3. Check for existing plan (update mode)
 4. Create/update plan (task extraction → granularity check → ID assignment)
-5. Completion flow (review → ToC → commit)
+5. Completion flow (review → search-index update → commit)
 
 ### Task Granularity Criteria
 

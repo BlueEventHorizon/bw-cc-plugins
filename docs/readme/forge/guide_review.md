@@ -238,10 +238,10 @@ Findings whose severity could not be determined are excluded from auto-fix and l
 
 The request embeds the paths of the type-specific criteria file and the project documents relevant to the target. Codex reads them itself, read-only.
 
-| Source             | Content                                                                         |
-| ------------------ | ------------------------------------------------------------------------------- |
-| **Plugin-bundled** | `review_criteria_<type>.md` per type (always included)                          |
-| **DocAdvisor**     | Project documents returned by `/forge:query-db-rules` / `/forge:query-db-specs` |
+| Source                 | Content                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| **Plugin-bundled**     | `review_criteria_<type>.md` per type (always included)                          |
+| **Doc-search backend** | Project documents returned by `/forge:query-db-rules` / `/forge:query-db-specs` |
 
 ### Interim Behavior: `--interactive`
 

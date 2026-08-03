@@ -9,9 +9,11 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - **forge** (v0.4.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
 - **anvil** — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:triage-issue`。実装を担う `anvil:impl-issue` は triage-issue 経由でのみ起動）
 
-> **文書検索バックエンド（doc-advisor）は外部依存**: AI 検索可能なドキュメントインデックスは別リポジトリ
-> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（doc-advisor / `index-docs`・`query-docs`）が提供する。
-> forge の `/forge:query-db-rules` 等はこの外部 doc-advisor へ転送する。
+> **文書検索バックエンドは外部依存の 2 backend 構成（doc-advisor / doc-db）**: forge の `/forge:query-db-rules` 等の
+> 検索・索引更新系スキルは、順序リストに基づいて backend を選択する（既定は doc-advisor 先位。
+> `.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。doc-advisor は別リポジトリ
+> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（`check-toc`・`index-docs`・`query-docs`）が提供し、
+> doc-db はローカルで稼働する文書検索サーバである。最小対応バージョンは DocAdvisor 0.4.6・doc-db 0.3.3。
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。
 

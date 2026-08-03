@@ -1,6 +1,6 @@
 # 文書作成ガイド
 
-要件定義 → 設計 → 計画の 3 段階で開発文書を作成する。各スキルは前段階の成果物を入力とし、AI レビュー → ToC 更新 → commit の共通完了処理で締める。
+要件定義 → 設計 → 計画の 3 段階で開発文書を作成する。各スキルは前段階の成果物を入力とし、AI レビュー → 検索インデックス更新 → commit の共通完了処理で締める。
 
 ```
 start-requirements → start-design → start-plan → start-implement
@@ -24,7 +24,7 @@ start-requirements → start-design → start-plan → start-implement
 文書作成後は以下を順次実行する:
 
 1. `/forge:review {type} --auto` — AI レビュー + 自動修正
-2. `/forge:update-db-specs` — ToC 更新（利用可能な場合）
+2. `/forge:update-db-specs` — 検索インデックス更新（利用可能な場合）
 3. `/anvil:commit` — commit/push 確認
 
 ---
@@ -70,7 +70,7 @@ start-requirements → start-design → start-plan → start-implement
 1. モード・Feature 名・新規/追加の確定
 2. コンテキスト収集（並列）
 3. モード別ワークフロー実行（対話 / ソース解析 / Figma 解析）
-4. 完了処理（レビュー → ToC → commit）
+4. 完了処理（レビュー → 検索インデックス更新 → commit）
 
 ### 出力
 
@@ -117,7 +117,7 @@ start-requirements → start-design → start-plan → start-implement
    - 既存実装資産の探索（コードベーススキャン）
 3. 要件定義書の詳細分析
 4. 設計書の作成（ID 採番・フォーマット適用）
-5. 完了処理（レビュー → ToC → commit）
+5. 完了処理（レビュー → 検索インデックス更新 → commit）
 
 ### 設計原則
 
@@ -162,7 +162,7 @@ start-requirements → start-design → start-plan → start-implement
    - 計画書ルールの収集
 3. 既存計画書の確認（更新モードの場合）
 4. 計画書の作成・更新（タスク抽出 → 粒度チェック → ID 採番）
-5. 完了処理（レビュー → ToC → commit）
+5. 完了処理（レビュー → 検索インデックス更新 → commit）
 
 ### タスク粒度の基準
 

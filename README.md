@@ -6,7 +6,7 @@
 
 **マーケットプレイスバージョン: 0.3.1**
 
-マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。AI 検索可能なドキュメントインデックス（**doc-advisor**）は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供し、forge の検索系スキルがこれへ転送する（`index-docs` / `query-docs`）。
+マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。forge の検索系スキルは、順序リストに基づいて文書検索 backend（**doc-advisor** / **doc-db**）を選択する。既定は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供する（`check-toc` / `index-docs` / `query-docs`）。
 
 [English README (README_en.md)](README_en.md)
 
@@ -16,14 +16,19 @@
 
 → 哲学と追加開発ワークフローの詳細は [仕様駆動開発ガイド](docs/readme/guide_sdd_ja.md) を参照。
 
-## 文書検索（外部 doc-advisor）の役割
+## 文書検索 backend（doc-advisor / doc-db）の役割
 
-プロジェクトが大きくなると、ルール・規約・設計文書が蓄積される。AI がそれらを見つけられなければ活用できない。外部の **doc-advisor**（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）はこれらの文書を ToC（キーワード／メタデータ）でインデックス化し、forge の重要な場面で自動的に提供する:
+プロジェクトが大きくなると、ルール・規約・設計文書が蓄積される。AI がそれらを見つけられなければ活用できない。文書検索 backend はこれらの文書をインデックス化し、forge の重要な場面で自動的に提供する:
 
 - **実装時** — コードを書く前にプロジェクト固有の実装ルールと関連仕様を収集する。
 - **レビュー時** — 適用すべきルールをレビュー観点として追加し、汎用的なベストプラクティスではなくプロジェクトの実際の基準で検査する。
 
-forge の `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` が doc-advisor の `query-docs` / `index-docs` へ転送する。これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
+forge の `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` は、順序リストに基づいて backend を選択して検索・索引更新を実行する。backend は 2 つある:
+
+- **doc-advisor**（外部プラグイン。[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）— 文書を ToC（キーワード／メタデータ）でインデックス化する
+- **doc-db** — ローカルで稼働する文書検索サーバ
+
+既定の選択順序は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。先位の backend を利用できない場合は理由を通知して後位の backend を利用する。これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
 
 ## ワークフロー
 
@@ -33,7 +38,7 @@ flowchart LR
         R(["要件定義"]) --> D(["設計"]) --> P(["計画"]) --> I(["実装"]) --> RF(["レビュー / 修正"])
     end
     RF --> DL(["成果物"])
-    DA["doc-advisor（外部）"] -. "コンテキスト収集" .-> forge
+    DA["文書検索 backend（doc-advisor / doc-db）"] -. "コンテキスト収集" .-> forge
     AV[anvil] -- "コミット & PR" --> DL
 ```
 
@@ -44,7 +49,7 @@ flowchart LR
 | **forge**  | 0.4.1      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.1.0      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 
-> **doc-advisor は外部依存**: AI 検索可能な文書インデックスは別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。
+> **文書検索 backend（doc-advisor / doc-db）は外部依存**: doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。doc-db はローカルで稼働する文書検索サーバで、`doc-db` コマンドとして導入されていれば利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する。**最小対応バージョンは DocAdvisor 0.4.6・doc-db 0.3.3**（これ未満の版は後方互換の対象外）。
 
 ## スキル一覧
 
@@ -134,9 +139,9 @@ flowchart LR
 
 > **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
-### doc-advisor（外部プラグイン）
+### 文書検索 backend（doc-advisor / doc-db、外部）
 
-文書検索は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) の doc-advisor が提供する（`index-docs` / `query-docs`）。forge の `/forge:query-db-rules` 等から呼び出される。詳細は同リポジトリの README を参照。
+文書検索は 2 つの backend が提供する。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) のプラグイン（`check-toc` / `index-docs` / `query-docs`。詳細は同リポジトリの README を参照）、doc-db はローカルで稼働する文書検索サーバ。forge の `/forge:query-db-rules` 等が順序リストに基づいて選択して呼び出す（既定は doc-advisor 先位。`.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。
 
 ## インストール
 
@@ -149,10 +154,12 @@ Claude Code セッション内で:
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
 
-# 文書検索（doc-advisor）は別マーケットプレイス
+# 文書検索 backend の doc-advisor は別マーケットプレイス（0.4.6 以上）
 /plugin marketplace add BlueEventHorizon/DocAdvisor
 /plugin install doc-advisor@DocAdvisor
 ```
+
+もう 1 つの文書検索 backend である doc-db（0.3.3 以上）を使う場合は、`doc-db` コマンドを PATH に導入する。導入すると利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する（既定は doc-advisor 先位のため、doc-db を先に使うには `.claude/.forge.yaml` で `doc_backend.prefer: doc-db` を指定する。doc-advisor が利用不能な場合にも選択される）。
 
 `/plugin install` を実行するとインストールスコープの選択を求められます（`--scope` で直接指定することも可能）:
 
@@ -205,7 +212,7 @@ claude plugin update forge@bw-cc-plugins --scope local    # local スコープ�
 
 ## 文書構造管理 (.doc_structure.yaml)
 
-`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge が参照する（`/forge:update-db-rules` 等が対象パスを解決して doc-advisor に渡す）。`/forge:setup-doc-structure` で生成する。
+`.doc_structure.yaml` はプロジェクトのドキュメント配置場所と種別を宣言する設定ファイル。forge が参照する（`/forge:update-db-rules` 等が対象パスを解決して、選択した文書検索 backend に渡す）。`/forge:setup-doc-structure` で生成する。
 → [文書構造ガイド](docs/readme/guide_doc_structure_ja.md) | [スキーマ仕様](plugins/forge/docs/doc_structure_format.md)
 
 ## Git 情報キャッシュ (.git_information.yaml)
@@ -217,7 +224,7 @@ claude plugin update forge@bw-cc-plugins --scope local    # local スコープ�
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
-- 文書検索を使う場合は外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor)（Python 標準ライブラリのみ・追加 API キー不要）
+- 文書検索を使う場合はいずれかの backend: 外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor) 0.4.6 以上（Python 標準ライブラリのみ・追加 API キー不要）、または doc-db 0.3.3 以上（ローカル文書検索サーバ）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 
 ## ライセンス
