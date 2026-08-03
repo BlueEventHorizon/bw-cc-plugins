@@ -24,7 +24,7 @@ requirements_traceability:
       - TASK-014
       - TASK-015
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: FNC-002
     title: query の実行
     design_id: DES-057
@@ -39,7 +39,7 @@ requirements_traceability:
       - TASK-014
       - TASK-015
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: FNC-003
     title: update の実行
     design_id: DES-057
@@ -52,7 +52,7 @@ requirements_traceability:
       - TASK-011
       - TASK-012
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: FNC-004
     title: 実行経路の通知
     design_id: DES-057
@@ -64,7 +64,7 @@ requirements_traceability:
       - TASK-014
       - TASK-015
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: BL-001
     title: backend 選択順序
     design_id: DES-057
@@ -77,7 +77,7 @@ requirements_traceability:
       - TASK-014
       - TASK-016
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: BL-002
     title: doc-advisor ToC の鮮度
     design_id: DES-057
@@ -87,7 +87,7 @@ requirements_traceability:
       - TASK-015
       - TASK-016
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: BL-003
     title: 成功と失敗
     design_id: DES-057
@@ -97,7 +97,7 @@ requirements_traceability:
       - TASK-014
       - TASK-016
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: BL-004
     title: 未整備と障害の区別
     design_id: DES-057
@@ -108,7 +108,7 @@ requirements_traceability:
       - TASK-014
       - TASK-015
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: BL-005
     title: 検索対象の series と結果のパス
     design_id: DES-057
@@ -117,7 +117,7 @@ requirements_traceability:
       - TASK-006
       - TASK-009
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: NFR-001
     title: 可観測性
     design_id: DES-057
@@ -128,7 +128,7 @@ requirements_traceability:
       - TASK-014
       - TASK-015
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: NFR-002
     title: 後方互換性
     design_id: DES-057
@@ -139,7 +139,7 @@ requirements_traceability:
       - TASK-017
       - TASK-018
       - TASK-019
-    status: pending
+    status: completed
   - requirement_id: NFR-003
     title: 応答性
     design_id: DES-057
@@ -147,7 +147,7 @@ requirements_traceability:
       - TASK-014
       - TASK-016
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: NFR-004
     title: 可用性
     design_id: DES-057
@@ -156,14 +156,14 @@ requirements_traceability:
       - TASK-014
       - TASK-016
       - TASK-018
-    status: pending
+    status: completed
   - requirement_id: NFR-005
     title: 情報保護
     design_id: DES-057
     task_ids:
       - TASK-002
       - TASK-018
-    status: pending
+    status: completed
 
 design_traceability:
   - design_id: DES-061
@@ -631,7 +631,7 @@ tasks:
   - task_id: TASK-018
     title: 全体検証と要件の突合
     priority: 38
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-015
