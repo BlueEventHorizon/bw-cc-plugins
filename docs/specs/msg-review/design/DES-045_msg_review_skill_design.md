@@ -11,8 +11,8 @@
 | 項目     | 値                                                                       |
 | -------- | ------------------------------------------------------------------------ |
 | 設計ID   | DES-045                                                                  |
-| 関連要件 | REQ-012（FNC-001〜FNC-006 / BL-001 / NFR-001〜NFR-003）、msg-sys:REQ-006 |
-| 関連設計 | msg-sys:DES-034（通信基盤。本設計はその利用者）                          |
+| 関連要件 | REQ-012（FNC-001〜FNC-008 / BL-001 / NFR-001〜NFR-003）、msg-sys:REQ-006 |
+| 関連設計 | msg-sys:DES-034（通信基盤。本設計はその利用者）、ADR-068、forge:ADR-067  |
 | 作成日   | 2026-07-18                                                               |
 
 ## 1. 概要
@@ -40,9 +40,18 @@ flowchart TB
         Inbox["inbox.py（--ack）"]
         Hook["hooks/check_inbox.py<br/>（Stop フック・往復上限・返信ヒント）"]
     end
+    subgraph Cmux["plugins/forge/scripts/msg-sys/cmux/"]
+        WakeAvail["check_cmux_available.py<br/>軸 A: 起床手段の可用性"]
+        FindPane["find_codex_pane.py<br/>軸 B: 相手セッションの常駐"]
+    end
+    Probe["scripts/probe_availability.py<br/>可用性検査の集約（§3.5）"]
     Criteria["plugins/forge/docs/criteria/<br/>review_criteria_&lt;種別&gt;.md"]
     DB[("messages.db")]
 
+    Skill -->|"Bash subprocess（可用性検査）"| Probe
+    Probe -->|"Bash subprocess（軸 A）"| WakeAvail
+    Probe -->|"Bash subprocess（軸 B）"| FindPane
+    Probe -->|"Bash subprocess（設定の健全性）"| Prereq
     Skill -->|"Bash subprocess（前提検査）"| Prereq
     Skill -->|"Bash subprocess"| Targets
     Skill -->|"Bash subprocess"| Builder
@@ -68,6 +77,7 @@ flowchart TB
 
 | モード         | 起動契機                                                                                                                                                                                  | 責務                                                                                                                                                                           |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **可用性検査** | 本体がラウンド実行より前に、候補バックエンドとして本サブシステムを検査するために起動する（forge:REQ-013 FNC-1318 の解決順）                                                               | §3.5 の集約スクリプトを 1 回呼び、利用可能かと不足している前提を返す。**依頼を送らず、レビュアーのターンも起こさない**（REQ-012 FNC-003）                                      |
 | **依頼モード** | 利用者による `/forge:review <種別> ...` の明示起動                                                                                                                                        | 前提検査 → 対象解決 → 依頼組み立て → §3.9 の複合スクリプト（送信 → 起床 → 待機）→ 成功時は同一ターン内で受信モードへ合流、タイムアウト時は確定した失敗を報告してターンを終える |
 | **受信モード** | 依頼モードの待機が成功した場合の同一ターン内の合流、または（待機予算超過後に）Claude 側 Stop フックが差し戻した配信メッセージの本文に msg-review プロトコルヘッダ（§3.4）が含まれるターン | 所見の評価 → 修正 → 返信（再依頼）、または完了判定 → 要約報告                                                                                                                  |
 | **再開モード** | 往復上限到達（UC-4）の OS 通知を受けた利用者が、状況確認・再開を明示指示したターン                                                                                                        | `filter_review_history.py`（§3.6）で対象レビューの往復履歴のみを取得し、未解決所見を集計して要約報告し、人間の判断を仰ぐ                                                       |
@@ -86,8 +96,16 @@ flowchart TB
 | `scripts/filter_review_history.py` | `history.py` の全履歴を取得し、本文（`body`）先頭の `review_id=<X>` を抽出して指定した `review_id` に一致するメッセージのみへ絞り込み、往復回数・`REVIEW_RESULT` 到達有無を添えて JSON で返す（§3.6）。決定論的な列挙・抽出処理であり AI の手動パースに委ねない | 標準ライブラリのみ（`history.py` を subprocess で呼ぶ）                                          |
 | `scripts/wait_for_reply.py`        | Codex からの返信をブロッキング待機する（§3.7）。指数バックオフでポーリングし、返信検知時は自ら既読化（`ack`）してから返す                                                                                                                                       | 標準ライブラリのみ（`history.py`/`inbox.py` を subprocess で呼ぶ）                               |
 | `scripts/send_and_await_reply.py`  | **返信を期待する送信の唯一の入口（§3.9）**。送信 → push型起床（§3.8）→ 待機（§3.7）を 1 回の呼び出しに畳む。3 手順が揃わないと往復が止まるため、個別呼び出しの経路を持たせない                                                                                  | 標準ライブラリのみ（`mailbox`/`wait_for_reply` を import、`wake_codex.sh` を subprocess で呼ぶ） |
+| `scripts/probe_availability.py`    | **可用性検査の集約（§3.5）**。軸 A・軸 B・設定の健全性をそれぞれの判定スクリプトへ委ね、結果を契約の形（利用可否 + 不足の個別列挙）へまとめて返す。判定そのものは持たない                                                                                       | 標準ライブラリのみ（下記 2 スクリプトと `check_setup.py` を subprocess で呼ぶ）                  |
 
-前提検査は本 SKILL 配下に置かず、msg-sys 側の自己診断 CLI `check_setup.py` を利用する（§3.5）。スクリプトはいずれも `plugins/` 配下の Python のためテスト必須（§7）。SKILL.md にロジックをインライン記述しない（`docs/rules/implementation_guidelines.md`）。
+可用性検査の**判定**は軸ごとに独立したスクリプトが担う（REQ-012 FNC-003「判定を軸ごとに独立させること」・ADR-068 §2.1）。いずれも cmux 前提の部品であり、msg-sys 本体が cmux 非依存で単独動作することと区別するため `plugins/forge/scripts/msg-sys/cmux/` に配置する（§3.8 の配置規則と同一）。
+
+| 判定スクリプト                                               | 軸                      | 責務                                                                                                                                                                                                     |
+| ------------------------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins/forge/scripts/msg-sys/cmux/check_cmux_available.py` | A: 起床手段の可用性     | `cmux` コマンドが実行可能かを判定する。read-only・副作用なし                                                                                                                                             |
+| `plugins/forge/scripts/msg-sys/cmux/find_codex_pane.py`      | B: 相手セッションの常駐 | プロジェクトルートの作業ディレクトリと一致する workspace の中で、**稼働中の Codex プロセスがアタッチされた surface** を発見する（§3.8 で既存。可用性検査はこれを**再利用する**。同型の別実装を作らない） |
+
+設定の健全性検査は本 SKILL 配下に置かず、msg-sys 側の自己診断 CLI `check_setup.py` を利用する（§3.5）。スクリプトはいずれも `plugins/` 配下の Python のためテスト必須（§7）。SKILL.md にロジックをインライン記述しない（`docs/rules/implementation_guidelines.md`）。
 
 ### 3.2 SKILL 定義と CLI 引数仕様
 
@@ -143,9 +161,13 @@ Claude→Codex・Codex→Claude の全メッセージ本文の先頭に、次の
 
 **所見評価の判断基準 [MANDATORY]**: 受信モードで Claude が所見の妥当性・要修正判断を行う際は、依頼時に Codex へ渡したものと同じ `review_criteria_<種別>.md`（および同文書が委譲する principles の重大度カタログ・グレーゾーン許容範囲）を Read して基準とする。依頼側と受信側で判断基準を揃えることで、Codex の指摘を Claude が別基準で棄却する恣意性を防ぐ。
 
-### 3.5 前提検査（msg-sys 側自己診断 CLI `check_setup.py` の利用、REQ-012 FNC-003）
+### 3.5 前提検査（REQ-012 FNC-003）
 
-前提検査の検査対象は下表のとおり**すべて msg-sys 自身の設定・健全性**であり、レビュー固有の検査を含まない。責務分割規範（資産は、それを責務として使い保守するコンポーネントの配下に置く）に従い、検査 CLI は本 SKILL 配下ではなく **msg-sys 側の自己診断 CLI `check_setup.py`**（`plugins/forge/scripts/msg-sys/check_setup.py`）として追加する（本 feature に伴う msg-sys 側改訂。msg-sys:DES-034 §3.1 / §9 に反映済み）。`lib/mailbox.py` の DB パス導出をそのまま共有するため、導出規則を msg-review 側で再実装して将来ずれるリスクが構造的に生じない。本 SKILL は Bash subprocess でこれを呼ぶ利用者である。
+前提検査は 2 つの契機を持つ（REQ-012 FNC-003）。**設定の健全性検査**（§3.5.1）はラウンド実行の前に本サブシステム自身が行い、**可用性検査**（§3.5.2）は本体がラウンド実行より前の候補選定として要求する。前者は「送信できるか」を、後者は「そもそもこのバックエンドが使えるか」を判定する。
+
+#### 3.5.1 設定の健全性検査（msg-sys 側自己診断 CLI `check_setup.py` の利用）
+
+検査対象は下表のとおり**すべて msg-sys 自身の設定・健全性**であり、レビュー固有の検査を含まない。責務分割規範（資産は、それを責務として使い保守するコンポーネントの配下に置く）に従い、検査 CLI は本 SKILL 配下ではなく **msg-sys 側の自己診断 CLI `check_setup.py`**（`plugins/forge/scripts/msg-sys/check_setup.py`）として追加する（本 feature に伴う msg-sys 側改訂。msg-sys:DES-034 §3.1 / §9 に反映済み）。`lib/mailbox.py` の DB パス導出をそのまま共有するため、導出規則を msg-review 側で再実装して将来ずれるリスクが構造的に生じない。本 SKILL は Bash subprocess でこれを呼ぶ利用者である。
 
 ```
 python3 plugins/forge/scripts/msg-sys/check_setup.py [--project-root <path>]
@@ -153,16 +175,57 @@ python3 plugins/forge/scripts/msg-sys/check_setup.py [--project-root <path>]
 
 出力（標準出力に単一 JSON）: `{"status": "ok|error", "checks": [{"name", "ok", "detail"}], "warnings": [...]}`
 
-| 検査項目                                                                                        | 不成立時                     |
-| ----------------------------------------------------------------------------------------------- | ---------------------------- |
-| git リポジトリルートの解決（`git rev-parse --show-toplevel`）                                   | error（依頼送信しない）      |
-| DB パスの導出可能性（msg-sys:DES-034 §7 と同じ導出規則）                                        | error                        |
-| `.claude/settings.json` に `check_inbox.py` の Stop フック登録（`FORGE_MSG_AGENT_NAME=claude`） | error                        |
-| `.codex/hooks.json` の存在と `check_inbox.py` 登録（`FORGE_MSG_AGENT_NAME=codex`）              | error                        |
-| 両登録エントリの `FORGE_MSG_MAX_ROUND_TRIPS` 設定有無（未設定は自動往復が一切発生しない）       | error                        |
-| **検査不能項目**: Codex セッションの常駐有無・Codex 側 trust 登録（`/hooks`）の完了有無         | warnings に明示（fail-open） |
+| 検査項目                                                                                              | 不成立時                     |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------- |
+| git リポジトリルートの解決（`git rev-parse --show-toplevel`）                                         | error（依頼送信しない）      |
+| DB パスの導出可能性（msg-sys:DES-034 §7 と同じ導出規則）                                              | error                        |
+| forge プラグイン同梱の `hooks/hooks.json` への `check_inbox.py` 登録（`FORGE_MSG_AGENT_NAME=claude`） | error                        |
+| `.codex/hooks.json` の存在と `check_inbox.py` 登録（`FORGE_MSG_AGENT_NAME=codex`）                    | error                        |
+| 両登録エントリの `FORGE_MSG_MAX_ROUND_TRIPS` 設定有無（未設定は自動往復が一切発生しない）             | error                        |
+| **検査不能項目**: Codex 側 trust 登録（`/hooks`）の完了有無                                           | warnings に明示（fail-open） |
 
-検査不能項目を warnings として利用者に提示する理由: Codex の常駐・trust はプロセス外・ローカル手続きであり機械検査の手段がない（msg-sys:DES-034 §6）。依頼は送信できるが返信が来ない可能性があることを、送信前に利用者へ知らせる。
+Claude 側の登録先はプロジェクト固有の `.claude/settings.json` ではなく**プラグイン同梱の `hooks/hooks.json`** である（Claude Code のプラグイン hooks 自動登録機構により、プラグイン導入だけで有効化されるため）。
+
+trust 登録を warnings として利用者に提示する理由: これはプロセス外のローカル手続きであり機械検査の手段がない（msg-sys:DES-034 §6）。依頼は送信できるが返信が来ない可能性があることを、送信前に利用者へ知らせる。
+
+**相手セッションの常駐は検査不能項目ではない**（ADR-068 §1）。プロジェクトルートの cwd と一致する pane を発見する手段が既に存在する（§3.8 の `find_codex_pane.py`）ため、§3.5.2 の可用性検査で確実に判定する。msg-sys 側がこれを検査不能と表明している記述の訂正は msg-sys 側の変更にあたるため、REQ-012 NFR-001 の改訂経路を経る（REQ-012 §5 TBD-005）。
+
+#### 3.5.2 可用性検査（`probe_availability.py`、ADR-068）
+
+本体からの可用性検査要求に対し、本サブシステムが利用可能かと**不足している前提を個別に**返す。判定は軸ごとに独立したスクリプトへ委ね、集約スクリプトは判定そのものを持たない（§3.1）。
+
+```
+python3 plugins/forge/skills/msg-review/scripts/probe_availability.py [--project-root <path>]
+```
+
+集約の手順:
+
+1. 軸 A（起床手段の可用性）を `check_cmux_available.py` で判定する
+2. 軸 B（相手セッションの常駐）を `find_codex_pane.py` で判定する。`found` のみを常駐とみなし、`not_found` / `ambiguous` / `error` はいずれも常駐を確認できなかったものとして扱う（`ambiguous` と `error` は理由を区別して返す。「複数候補があって決められない」と「cmux への問い合わせ自体が失敗した」は利用者の対処が異なる）
+3. 設定の健全性（§3.5.1）を `check_setup.py` で判定する
+4. 3 者の結果を集約する。**いずれかが不成立なら利用不可**とし、不足を個別に列挙して返す
+
+出力（標準出力に単一 JSON）:
+
+```json
+{
+  "available": false,
+  "missing": [
+    { "axis": "wake", "detail": "...", "remedy": "..." },
+    { "axis": "peer", "detail": "...", "remedy": "..." }
+  ],
+  "warnings": ["..."]
+}
+```
+
+`missing` の各要素は不足 1 件に対応し、`axis` で軸を、`remedy` で利用者が取れる対処を示す。**空の `missing` と `available: true` は同義であり、両者が食い違う出力を作らない。**
+
+設計上の制約:
+
+- **副作用を持たないこと [MANDATORY]**: 3 つの判定はいずれも read-only である。依頼を送らず、`cmux send` / `send-key` によるテキスト注入も行わない（§3.8 の push 型起床とは別の経路であり、起床は一切起こさない）。本体は複数候補を順に検査するため、検査自体が相手の状態を変えてはならない
+- **画面内容からの推測を判定に使わないこと [MANDATORY]**: 軸 B は稼働中の Codex プロセスを直接確認する（§3.1 の判定スクリプト表）。画面表示から応答可能性を推測する判定は、これに材料を追加しない。推測を根拠に利用不可を返すと、実際には応答できたレビュアーの機会を奪う（ADR-068 §2.1 / §2.2）
+- **軸 A と軸 B の判定を一体化しないこと [MANDATORY]**: 現時点では往復の成立に両方が必要だが、判定は独立させる。将来 A を必要としない起床経路が成立した場合、集約側の条件のみを変えれば足り、判定ロジックを解体せずに済む（REQ-012 FNC-007）
+- **代替手段へ倒さないこと**: 利用不可は確定した結果として本体へ返す。本サブシステム内で別の起床経路や別のレビュー手段を選ばない（REQ-012 FNC-008 / forge:ADR-060）
 
 ### 3.6 履歴の review_id 絞り込み（`filter_review_history.py`、BL-001 / FNC-005）
 
@@ -264,7 +327,7 @@ python3 plugins/forge/scripts/msg-sys/wait_for_reply.py <agent_a> <agent_b> \
 
 ### 3.8 push型起床（`wake_codex.sh`、cmux環境限定）[MANDATORY]
 
-> **本節の位置づけ（2026-08-02 改訂）**: push 型起床の要件は REQ-012 FNC-007 が定める（本節が書かれた時点では要件の裏付けが無かったため、遡って明文化した）。**本バックエンドの起床手段は cmux 単一である。** cmux を満たせない環境では本バックエンド自体が使えないものとして前提検査（FNC-003）で検出し、利用者に別バックエンドの選択を促す（forge:ADR-060 のバックエンド軸）。app-server を第 2 の起床経路として本バックエンドに足す案は検討のうえ採らなかった（ADR-061 を棄却し、codex-appserver:ADR-063 で独立バックエンドとした）。
+> **本節の位置づけ（2026-08-02 改訂）**: push 型起床の要件は REQ-012 FNC-007 が定める（本節が書かれた時点では要件の裏付けが無かったため、遡って明文化した）。**本バックエンドの起床手段は cmux 単一である。** cmux を満たせない環境では本バックエンド自体が使えないものとして**可用性検査の軸 A**（§3.5.2）で不足として返し、代替の選択は本体に委ねる（forge:ADR-060 のバックエンド軸）。app-server を第 2 の起床経路として本バックエンドに足す案は検討のうえ採らなかった（ADR-061 を棄却し、codex-appserver:ADR-063 で独立バックエンドとした）。
 
 外部ツール `agmsg`（`Claude Code / Codex / Gemini CLI` 等の複数エージェント間メッセージング基盤）は、この pull 型の限界に対し `delivery` 軸（`monitor` / `turn` / `both` / `off`）という一般化された解決策を持つ。特に `monitor` ドライバーは Codex の app-server にブリッジ接続し、未読を検知すると稼働中のスレッドへ直接ターンを注入する。本 SKILL は `agmsg` に依存せず（NFR-001 と同旨、既存実装への影響を避ける）、同じ発想（「エージェントを起動するのではなく、既に動いているセッションに入力を注入してターンを起こす」）を、実運用環境（cmux 端末多重化ツール）が既に提供する同等の機能で軽量に実現する。
 
@@ -279,9 +342,11 @@ plugins/forge/scripts/msg-sys/cmux/wake_codex.sh <project_root>
 処理内容:
 
 1. `cmux` コマンドの存在を確認する。無ければ `{"status": "skipped", ...}` を返して終了する
-2. **対象ペインの発見（毎回その場で行う。ファイルへのキャッシュはしない）[MANDATORY・改訂]**: `find_codex_pane.py <project_root>`（read-only・副作用無しの独立スクリプト）を呼ぶ。同スクリプトは内部で `cmux workspace list --json --id-format uuids` で project_root の cwd と一致する workspace を探し、その中で `cmux list-panels --json --id-format uuids` を使い、Codex セッションの pane（`resume_binding.kind == "codex"`、または `resume_binding` が null でも `initial_command` に cmux 生成の Codex 再開スクリプトパス `cmux-surface-resume/codex-<uuid>.zsh` が残っている場合はそれを第二の判定シグナルとして扱う。通常のターミナル surface で codex CLI を直接起動した構成では `resume_binding` が反映されないことがあるため。ユーザー報告バグ）を探す。`status: "not_found"`・`"ambiguous"` は意図的な安全上の見送りとして `skipped`、`"error"`（cmux 問い合わせ失敗・JSON の構文／スキーマ不正等）は配信失敗を隠さないため `failed` で終了する。matching workspace の `list-panels` を調べられない場合や、matching workspace の ID が欠ける場合も「pane が無い」とは断定せず `error` とする。
+2. **対象ペインの発見（毎回その場で行う。ファイルへのキャッシュはしない）[MANDATORY・改訂]**: `find_codex_pane.py <project_root>`（read-only・副作用無しの独立スクリプト）を呼ぶ。同スクリプトは内部で `cmux workspace list --json --id-format uuids` で project_root の作業ディレクトリと一致する workspace を探し、その中で **`cmux top --processes --json --id-format uuids` により実際に稼働しているプロセスを確認**して、Codex 実行バイナリがアタッチされた surface を探す。`status: "not_found"`・`"ambiguous"` は意図的な安全上の見送りとして `skipped`、`"error"`（cmux 問い合わせ失敗・JSON の構文／スキーマ不正等）は配信失敗を隠さないため `failed` で終了する。matching workspace の問い合わせができない場合や、matching workspace の ID が欠ける場合も「surface が無い」とは断定せず `error` とする。
+
+   - **判定を実プロセスの直接確認に統合した理由（実インシデントで発見）**: 旧設計は `resume_binding.kind == "codex"`、および `resume_binding` が null の場合の `initial_command` の正規表現一致という、cmux 自身の「codex として再開した」という構造化記録に依拠していた。しかし利用者が通常のターミナル surface で `codex` コマンドを直接起動した構成では、この記録が一切残らず、Codex が実際に稼働していても必ず `not_found` になる実バグがあった。`cmux top --processes` は surface にアタッチされた実プロセス名を返す一次情報であり、起動経路に関わらず稼働中の Codex を捕捉できる。したがって「メタデータ判定を先に試し、失敗したらプロセス確認へ倒す」二段構えにはせず、実プロセス確認 1 本に統合した（後者が前者を包含するため、前者を残す保守上の理由がない）。**この一次情報性が、可用性検査の軸 B を推測なしの決定論的判定として成立させている**（§3.5.2 / ADR-068 §1）
    - **旧設計からの変更点（ユーザー指摘による設計変更）**: 以前は発見結果を `<project_root>/.codex/cmux_target.json` にキャッシュし、以後はこのファイルの存在確認のみで済ませていた。しかし cmux は同じ pane（surface）を維持したまま workspace ID だけを再発行することがあり、キャッシュされた workspace ID が stale 化して push 起床が恒久的に機能しなくなる実事故が起きた。発見処理自体は数回の cmux subprocess 呼び出しで軽量であり、依頼往復ごとに高々1回しか呼ばれないため、キャッシュによる高速化のメリットより stale 化のリスクの方が大きいと判断し、毎回発見し直す方式に統一した。この変更に伴い、旧 `discover_cmux_target.py`（キャッシュファイルの自己修復スクリプト）は削除した
-   - **発見ロジックの独立スクリプト化（実 Codex レビューで発見）**: 発見ロジックを本 Step（`wake_codex.sh`）の inline Python に閉じ込めると、DES-048（未実装）の Step 1.6・`check_codex_liveness.py` が同じ発見を再利用できず、「同型だが別実装」を重複して持つことになり、修正の反映漏れ・liveness 判定と push 起床対象のずれを招く。`find_codex_pane.py` として独立スクリプトに切り出し、`wake_codex.sh` と DES-048 の双方が同一スクリプトを呼ぶことで一貫性を保つ
+   - **発見ロジックの独立スクリプト化（実 Codex レビューで発見）**: 発見ロジックを本 Step（`wake_codex.sh`）の inline Python に閉じ込めると、他の利用者が同じ発見を再利用できず、「同型だが別実装」を重複して持つことになり、修正の反映漏れ・判定対象と push 起床対象のずれを招く。`find_codex_pane.py` として独立スクリプトに切り出し、**可用性検査の軸 B**（§3.5.2）と本 Step が同一スクリプトを呼ぶことで一貫性を保つ
 3. **送信前の稼働状態確認 [MANDATORY・改訂]**: `cmux read-screen --workspace <ws> --surface <sf> --lines 8` で対象ペインの直近画面を取得する。コマンドが非ゼロ終了した場合は対象の状態を判定できない cmux 障害として `failed` で終了する。成功して画面が空、または以下のいずれかに該当する場合は、テキスト注入を行わず `skipped` で終了する:
    - 画面が空 → 対象ペインが既に閉じている等
    - 画面に稼働中を示す文字列（`esc to interrupt`）が含まれる → Codex が既に別のターンを実行中
@@ -368,6 +433,7 @@ python3 plugins/forge/scripts/msg-sys/send_and_await_reply.py <sender> <recipien
 | UC-3 承認による完了           | 受信モード。`REVIEW_RESULT: approved` を受領 → 要約報告（FNC-005）を出力して終了                                                                                                                                                                                                                                    |
 | UC-4 往復上限到達             | msg-sys が人間通知へ降格（msg-sys:DES-034 §8）。対象メッセージは配信されず受信側 SKILL は起動しない。人間が OS 通知を受けて対話を再開した時点で、再開モード（§2.1）として SKILL が `filter_review_history.py`（§3.6）で当該レビューの往復履歴を取得し、未解決所見を集計して報告する（自動発火ではない人間介在契機） |
 | UC-5 前提不成立               | 依頼モード。`check_setup.py` が error → 不足項目を報告して依頼を送信せず終了（fail closed）                                                                                                                                                                                                                         |
+| UC-6 可用性検査               | 本体がラウンド実行より前に候補選定として要求（§2.1）。`probe_availability.py`（§3.5.2）で軸 A・軸 B・設定の健全性を判定 → 利用可否と不足の個別列挙を返して終了。依頼を送らず、相手のターンも起こさない                                                                                                              |
 
 ### 4.2 シーケンス図（UC-1 → UC-2 → UC-3 の正常フロー）
 
@@ -442,6 +508,8 @@ sequenceDiagram
 | `review_id` を msg-sys 側の永続列ではなく本文埋め込みトークンとする                                   | `history.py` は `in_reply_to` を返さずレビュー単位の絞り込み手段を持たない（レビュー指摘により発見）。msg-sys 側にスキーマ変更を加える代替も検討したが、NFR-001（既存実装・既存テストの不変更）を破り、msg-sys 側の改訂は「相当の理由」を要する重い変更になる。`build_review_request.py` が生成する不透明トークンを本文（`body`）に埋め込むだけなら、msg-sys の追記専用ストレージにそのまま保存され、新しい永続化機構を持たない（BL-001 と両立）。既存の `chain_length`（往復回数管理、上表参照）と同じ「msg-sys の機構を尊重し SKILL 側に重複状態を持たない」思想を貫く |
 | 依頼直後のブロッキング待機を Stop フックの改修ではなく独立スクリプト（`wait_for_reply.py`）で実現する | Claude 側 Stop フック（`check_inbox.py`）を「届くまで内部でリトライする」よう改修する代替も検討したが、Codex 以外の通常の非同期チャット用途にも影響する共有基盤（msg-sys）の Stop フック挙動を変えることになり、NFR-001 の重い改訂になる。read-only な `history.py`/`inbox.py --ack` の組み合わせだけで、msg-sys 側を一切変更せず本 SKILL 側のスクリプト追加のみで実現できるため、こちらを採る                                                                                                                                                                           |
 | 待機の停止条件を `resolved`（承認）ではなく「返信の増加」にする                                       | `filter_review_history.py` の `resolved` は `REVIEW_RESULT: approved` のみを見る。`findings`（指摘あり）の返信でも後続の所見評価に進む必要があるため、停止条件は `sender: codex` のメッセージの増加とし、`approved`/`findings` いずれでも待機を終える                                                                                                                                                                                                                                                                                                                    |
+| 可用性検査の判定を軸ごとに別スクリプトへ分け、集約スクリプトは判定を持たない                          | 起床手段の可用性と相手の常駐は独立した前提であり（REQ-012 FNC-007）、必要な組み合わせが将来変わる。1 つのスクリプトに畳むと、A が不要になったときに判定ロジックの解体が必要になる。集約側に条件だけを置けば、判定は差し替えずに済む（ADR-068 §2.1）                                                                                                                                                                                                                                                                                                                      |
+| 画面表示からの推測を前提の判定に使わない（起床の安全ゲートとしての画面読み取りは維持する）            | 軸 B が `cmux top --processes` で稼働中の Codex プロセスを直接確認するため（§3.8 手順 2）、画面表示からの推測は前提の判定材料を追加しない。推測を根拠に利用不可を返せば、応答できた相手の機会を奪う。待機短縮を目的に別経路として持つ案も検討したが、常駐が決定論的に確認できる以上、短縮の対象となる状態は可用性検査の段階で分離されるため到達しない。一方 §3.8 手順 3 の画面読み取りは、注入によって相手の作業を壊さないための安全ゲートであり目的が異なるため維持する（ADR-068 §2.2）                                                                                 |
 | 待機予算超過時にフォールバックしない                                                                  | `docs/rules/implementation_guidelines.md`「フォールバックを反射的に書かない」に従う。非同期往復へ委ねて次工程へ進めると、呼び出し元（`/forge:start-implement` Phase 5 等）が確定した結果を受け取れないまま先に進めなくなる。`/forge:review` のレビューエンジンが失敗した場合と同様、確定したタイムアウト失敗として報告する                                                                                                                                                                                                                                               |
 
 ## 7. テスト設計
@@ -452,6 +520,9 @@ sequenceDiagram
   - `test_filter_review_history.py`: `history.py` 呼び出しをモックし、複数 `review_id` が混在する履歴から指定 `review_id` のみを抽出すること、`round`/`resolved` の算出が正しいこと、一致 0 件時に空配列・`resolved: false` を返すこと（エラーにしない）、`sent_at` 昇順で返すこと
   - `test_send_and_await_reply.py`（`tests/forge/msg-sys/` に配置）: 送信・起床・待機を差し替え、(1) 3 手順が `send → wake → wait` の順で必ず実行されること、(2) 送信失敗時は起床・待機に進まないこと（来ない返信を待たない）、(3) 起床が `failed` でも待機が継続すること、(4) 起床結果が `skipped` でも最終 JSON に必ず残ること、(5) 待機結果（`status`/`messages`/`delivered_ids`）が `wait_for_reply.py` 単体と同じ位置に置かれること、(6) DB パスが `--project-root` から `FORGE_MSG_PROJECT_ROOT` 無しで解決されること、(7) 本文の標準入力経路を持たないこと、(8) `--db-path` が `--project-root` から導出される DB と食い違う場合は送信も起床もせずエラー終了し、一致する場合は許容され起床も抑制されないこと（§3.9「DB と相手セッションは独立した軸ではない」）
   - `test_wait_for_reply.py`: `history.py`/`inbox.py` 呼び出しをモックし、(1) `sender: codex` のメッセージが増えた時点で `status: "replied"` を返すこと（`resolved` 未達=`findings` でも停止すること）、(2) 検知したメッセージを `inbox.py --ack` で既読化してから返すこと、(3) `--max-seconds` 到達時に `status: "timeout"` を返すこと、(4) ポーリング間隔が指数バックオフ（1, 2, 4, 8, 10, 10, ...）で増加すること、(5) `--progress-interval` ごとに進捗行を標準出力へ出すこと
+- **可用性検査のテスト**（ADR-068 / §3.5.2。テストは対象スクリプトの帰属に合わせて配置する。本バックエンド配下のスクリプトは `tests/forge/msg-review/`、cmux 層のスクリプトは `tests/forge/msg-sys/`）:
+  - `test_check_cmux_available.py`: `cmux` が実行可能な場合と不在の場合をそれぞれ判定できること、判定が read-only であること（`send`/`send-key` を一切呼ばないこと）
+  - `test_probe_availability.py`: 3 つの判定スクリプトの呼び出しを差し替え、(1) すべて成立時に `available: true` かつ `missing` が空であること、(2) 軸 A のみ不成立・軸 B のみ不成立・両方不成立の各ケースで `missing` に**該当する軸のみ**が個別に列挙されること（「使えません」への畳み込みが起きないこと）、(3) `find_codex_pane.py` の `not_found` / `ambiguous` / `error` が理由を区別して返ること、(4) 設定の健全性（`check_setup.py`）が error の場合も `missing` に載ること、(5) `available` と `missing` の空・非空が食い違う出力を作らないこと、(6) **画面の読み取り（`cmux capture-pane` / `read-screen`）を一切行わないこと**（推測を判定に混ぜない境界がテストで固定されること。ADR-068 §2.1）、(7) 依頼送信・起床のいずれも行わないこと
 - **前提検査 CLI のテスト**: `check_setup.py` は msg-sys 側の資産のため、テストも `tests/forge/msg-sys/test_check_setup.py` に置く（msg-sys:DES-034 §9 を正本とする）
 - **統合テスト対象**（手動）: 実 Codex セッションとの 1 往復（依頼 → 所見 → 修正報告 → approved）、前提不成立時の fail closed、完了宣言行欠落時の再送依頼、複数レビューが混在する状態での再開モードの review_id 絞り込み動作、待機予算超過時のタイムアウト報告
 - SKILL.md 自体は自動テスト対象外（プロジェクトルールの例外規定どおり）

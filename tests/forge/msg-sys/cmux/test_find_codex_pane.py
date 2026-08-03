@@ -1,9 +1,8 @@
 """find_codex_pane.py の単体テスト（DES-045 §3.8 補足）。
 
-`wake_codex.sh` の inline Python として存在していた発見ロジックを、DES-048（未実装）の
-Step 1.6・`check_codex_liveness.py` からも再利用できるよう独立スクリプトへ切り出した
-（実 Codex レビューで発見: 発見ロジックを重複実装すると liveness 判定と push 起床対象が
-ずれる恐れがある）。本テストは `find_codex_pane()` を直接 import し、`subprocess.run` を
+`wake_codex.sh` の inline Python として存在していた発見ロジックを、可用性検査の軸 B
+（DES-045 §3.5.2）からも再利用できるよう独立スクリプトへ切り出した（実 Codex レビューで
+発見: 発見ロジックを重複実装すると判定対象と push 起床対象がずれる恐れがある）。本テストは `find_codex_pane()` を直接 import し、`subprocess.run` を
 モックすることで、`wake_codex.sh` 経由の bash subprocess 実行より高速・直接的に検証する。
 
 検出方式は `cmux top --processes --json --id-format uuids` による実プロセス確認のみ

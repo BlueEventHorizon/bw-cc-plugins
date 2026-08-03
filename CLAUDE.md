@@ -24,6 +24,7 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
 - プロジェクト仕様の参照には `query-db-specs` SKILL を使う
 - プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
+- **ToC 再生成（`update-db-*`）は main / develop でのみ行う**: 他ブランチで実行すると並行開発と衝突し merge で破棄される。feature ブランチでは未実施である旨を完了報告に明記し、**利用者が merge したと告げたターン**で実行する。レビューで ToC の古さを指摘されても feature ブランチでは直さない
 - **ルールは `docs/rules/` で管理**: CLAUDE.md にルールを詰め込まない（コンテキスト肥大化防止）
 - **設計文書は `docs/specs/**/{requirements,design}/` に保存**: plan モードで作成した重要設計は ID プレフィックス（REQ-, DES-, ADR-）で命名
 - **プラグインランタイム文書の境界**: `plugins/doc-advisor/{workflows,formats}/` 配下は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）
