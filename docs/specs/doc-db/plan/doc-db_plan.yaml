@@ -499,7 +499,7 @@ tasks:
   - task_id: TASK-012
     title: update 系 SKILL の実行検証
     priority: 56
-    status: pending
+    status: completed
     design_id: DES-057
     depends_on:
       - TASK-011

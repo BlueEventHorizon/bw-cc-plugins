@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-07-18T00:10:25Z
+  generated_at: 2026-08-03T06:52:17Z
   file_count: 7
 
 docs:
@@ -42,192 +42,194 @@ docs:
       - accessibility
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Defines unified document structure, formatting standards, terminology, and style guidelines to ensure consistency across all project documentation and plugins
+    purpose: Defines unified conventions for document writing including heading tags, terminology, structure, formatting, and reference notation to ensure consistency across project documentation
     content_details:
-      - Tag placement rules (MANDATORY, CRITICAL, IMPORTANT) in heading lines
-      - Heading level hierarchy (H1-H4 usage patterns)
-      - Terminology standardization and unified vocabulary for document types
-      - Document structure requirements by type (workflow, rules, skills) with frontmatter
-      - Markdown formatting conventions (bold, code blocks, lists, tables)
-      - Document separation principles (docs/rules, docs/specs, plugins/*/docs, .claude/skills)
-      - Absolute path reference rules and scope-specific omission conditions
-      - Placeholder naming conventions (Foo, Bar, Hoge, Fuga) for generic examples
-      - specs/ metadata requirements for related requirement tracking
-      - Common formatting mistakes and validation checks via grep
+      - Heading tags and precedence rules [MANDATORY], [CRITICAL], [IMPORTANT]
+      - English phrase conventions for AI instruction (NEVER, MUST, DO NOT, ALWAYS)
+      - Long vowel rules following JIS Z 8301 standard
+      - Mandatory section templates for workflows and rules documents
+      - Document metadata format (frontmatter) for SKILLs and workflows
+      - Emphasis and formatting conventions (bold, code, blockquotes, tables)
+      - Document reference notation principles and markdown link format
+      - Directory categorization (docs/rules/ vs specs/ vs plugins/docs/)
+      - "Current-state-only rule: historical narratives in CHANGELOG only, not in document body"
+      - Generic placeholder rules for examples (Foo, Bar, Hoge, Fuga instead of project-specific names)
     applicable_tasks:
-      - Document creation and review
-      - Rule enforcement and compliance checking
-      - Style guide maintenance
-      - Document structure validation
-      - Cross-document reference management
-      - Markdown formatting audits
-      - Protocol standardization
+      - Writing new rule documents
+      - Updating existing specifications
+      - SKILL documentation creation
+      - Document structure review and validation
+      - Ensuring documentation consistency across teams
+      - Establishing writing standards for projects
+      - Creating project guidelines and standards documentation
     keywords:
-      - document-writing
-      - Markdown
-      - style-guide
-      - formatting
-      - structure
-      - terminology
+      - document conventions
+      - heading tags
       - MANDATORY
       - frontmatter
-      - validation
-      - reference-rules
+      - markdown formatting
+      - terminology standardization
+      - document structure
+      - reference notation
+      - placeholder usage
+      - changelog management
   docs/rules/forge_doc_access_principle.md:
-    title: forge Document Access Principle
-    purpose: Establishes the canonical paths and methods for accessing documentation from within forge plugin internals, defining which documents are directly referenced versus dynamically queried
+    title: Forge Document Access Principle
+    purpose: "Defines development rules for how forge plugin internal components access documentation, specifying two allowed routes: direct reference for forge-bundled docs and query SKILLs for project-specific specifications"
     content_details:
-      - "Two paths principle: direct reference for forge internal docs, query for project specs/rules"
-      - "Direct reference (Path A): use ${CLAUDE_PLUGIN_ROOT}/docs/xxx.md for forge internal docs in Read calls"
-      - "Query (Path B): call /forge:query-db-specs and /forge:query-db-rules for project specifications and rules"
-      - "Rationale: forge docs stay synchronized with plugin releases (fixed paths stable), project docs change frequently (dynamic query necessary)"
-      - "Anti-pattern: querying forge internal docs (redundant, fixed path available)"
-      - "Anti-pattern: hardcoding project spec paths in SKILL.md (paths rot, maintenance cost explosion)"
-      - "Anti-pattern: placing forge internal procedural logic in documentation (docs declarative, procedures in SKILL/scripts)"
-      - "Anti-pattern: passing session_dir to agents and using file-based result transfer (use agent return values)"
-      - "External access: /forge:query-forge-rules provides access to forge internal docs from project users"
-      - "Design rationale: based on removal of context_gathering_spec.md contradiction and elimination of session/refs mechanism"
+      - Direct reference route for forge-bundled docs using CLAUDE_PLUGIN_ROOT or CLAUDE_SKILL_DIR environment variables
+      - Query route via /forge:query-db-specs and /forge:query-db-rules SKILLs for project specs and rules
+      - "Route A scope limitation: skill-specific docs can only be referenced by that skill itself, not cross-skill"
+      - "Rationale for two-route design: forge-bundled docs have fixed non-rotting paths; project docs require dynamic query discovery"
+      - "Prohibited access patterns: querying forge-bundled docs, referencing project specs from distributed code, procedure logic in docs"
+      - "File passing anti-pattern: using session_dir or refs/*.yaml files as undocumented third access route"
+      - Cross-skill document reference prohibition to prevent silent breakage during structural changes
+      - "External access: end users query forge documentation via /forge:query-forge-rules SKILL, outside internal rules"
+      - Design rationale rooted in deleted context_gathering_spec and deprecated session/refs mechanism
     applicable_tasks:
-      - Implementing forge SKILL documents
-      - Developing forge agent logic
-      - Writing forge internal scripts
-      - Code review of forge implementations
-      - Maintaining forge documentation patterns
-      - Onboarding new forge developers
-      - Integrating new documentation sources
+      - Implementing forge plugin SKILLs
+      - Reviewing forge internal architecture
+      - Adding documentation to forge plugin
+      - Designing forge plugin module structure
+      - Enforcing documentation access pattern consistency
+      - Migrating docs between shared and skill-specific locations
+      - Training developers on forge internals
     keywords:
+      - document access pattern
+      - forge plugin architecture
       - direct reference
-      - query method
-      - forge internal docs
-      - ${CLAUDE_PLUGIN_ROOT}
-      - /forge:query-db-specs
-      - /forge:query-db-rules
-      - anti-pattern
-      - document access path
-      - session_dir
-      - docs paths
+      - query SKILL
+      - path resolution
+      - skill documentation
+      - development rules
+      - plugin-bundled docs
+      - project specs
+      - documentation governance
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for plugin script language selection, testing requirements, code organization, and version management to ensure consistency and maintainability
+    purpose: Defines development guidelines for implementing plugin scripts (Python/Bash) and SKILL.md files, covering language selection, testing requirements, code organization, and distribution boundaries
     content_details:
-      - Script language selection (Python vs Bash criteria)
-      - Mandatory testing for Python scripts in plugins/ directory
-      - Test placement and naming conventions
-      - Prohibition of inline scripts in SKILL.md files
-      - Design document maintenance requirements
-      - Deletion of unused code
-      - Restriction on custom parsers for user input interpretation
-      - Version file editing restrictions and release workflow
+      - "Script language selection: Python for data transformation and YAML/JSON operations; Bash for external commands and file operations; PyYAML as sole permitted external library"
+      - "Testing requirements: plugins/*.py scripts require unit tests; Bash scripts require integration/manual testing; SKILL.md exempted as AI-interpreted behavior; .claude/ directory excluded"
+      - Test directory structure under tests/{plugin_name}/{skill_name}/ with test_{module}.py naming convention matching skill directory names
+      - "SKILL.md inline script prohibition: process logic must be external scripts called via environment variables, never embedded in SKILL.md"
+      - "Script and document placement rules: skill-specific assets under skills/{skill}/, shared assets under plugins/{plugin}/ based on reuse count"
+      - "Cross-skill direct reference prohibition: other skill's docs cannot be hardcoded; multi-skill dependencies must be elevated to plugins/{plugin}/docs/"
+      - "Design document maintenance via ADR: placement at docs/specs/{plugin}/design/ADR-{NNN}_{topic}.md following forge design principles"
+      - "Distribution boundary rule: plugins/ code cannot reference docs/ project documents (neither path-based nor ID-based); use dynamic query via /forge:query-db-specs and /forge:query-db-rules"
+      - "Unused code deletion: non-deprecated markers or commented code prohibited; git history preserves recovery path"
+      - "Version management: feature/fix/refactor PRs must never edit version-related files; only /forge:update-version handles version updates"
     applicable_tasks:
-      - Script implementation
-      - Plugin development
-      - Code review
-      - Test creation
-      - Release management
+      - Implementing plugin scripts and SKILLs
+      - Setting up test directory structure for plugins
+      - Designing plugin file organization and reusability
+      - Creating SKILL.md workflows and documentation
+      - Reviewing plugin distribution and reference boundaries
+      - Managing design documentation via ADR
+      - Training developers on plugin implementation standards
     keywords:
-      - script language
-      - Python
-      - Bash
-      - testing
+      - plugin script implementation
+      - Python vs Bash selection
       - SKILL.md
+      - testing requirements
+      - file organization
+      - distribution boundary
       - version management
-      - test placement
-      - design documents
+      - design document (ADR)
+      - fallback patterns
+      - cross-skill reference
   docs/rules/skill_authoring_notes.md:
-    title: SKILL.md Authoring Guidelines
-    purpose: Specifies rules and best practices for writing Claude Code SKILL.md files, including frontmatter structure, execution models, security constraints, and multi-layered defense principles
+    title: SKILL.md Authoring Notes
+    purpose: Guidance for creating and editing Claude Code plugin SKILL.md files, covering frontmatter fields, execution models, custom agent design, and multi-layer defense strategy
     content_details:
-      - frontmatter fields structure (name, description, user-invocable, argument-hint, disable-model-invocation, allowed-tools, context, agent)
-      - user-invocable and disable-model-invocation combinations and their effects on menu visibility and auto-invocation
-      - "Execution models: inherited-type SKILL (only adopted pattern) vs fork-type SKILL (deprecated)"
-      - "Role constraint layers and multi-layered defense (A: Agent boundary, B: Role constraints, C: allowlist, D: physical deny)"
-      - "Mandatory rules: SKILL must be inherited-type only, no context:fork, responsibility boundary declaration at SKILL.md start"
-      - "Custom Agent requirements (from DES-029: 4 constraints for fixing agents - single finding, allowed_files, no refactor, syntax validation)"
-      - "description field writing: specific what/when/trigger conditions for auto-invocation matching"
-      - Argument references (, /bin/zsh-, positional) and available variables (CLAUDE_PLUGIN_ROOT, CLAUDE_SKILL_DIR, CLAUDE_SESSION_ID)
-      - "Skill recursion prohibition: forbidding self-invocation of query-db-*, prevent infinite loops"
-      - "Agent background execution and ScheduleWakeup operational discipline: cancel fallback on task-notification receipt"
-      - AskUserQuestion tool usage for all user interactions (no plain text questions)
-      - Directory structure (SKILL.md, reference.md for details, scripts/)
+      - SKILL frontmatter field requirements and settings
+      - Inheritance-type SKILL execution model (fork-type abolished due to 9 structural bugs)
+      - Custom Agent role constraints and parent context boundary enforcement
+      - "Multi-layer defense strategy: Agent boundary, Role constraint, allowlist, physical deny"
+      - Self-recursion prohibition for query-db-rules, query-db-specs, and query-forge-rules
+      - ScheduleWakeup discipline and task-notification handling for background agents
+      - AskUserQuestion requirement for all user prompts and confirmations
+      - "SKILL.md splitting criteria: workflow vs templates vs detailed guidelines"
+      - "description field guidelines: explicit what/when/trigger specification"
+      - Agent tool invocation argument passing (no parent prompt embedding)
     applicable_tasks:
-      - SKILL creation and writing
-      - frontmatter configuration
-      - execution model design
-      - Agent architecture decisions
-      - Security constraint implementation
-      - Code review for SKILL compliance
-      - Agent integration planning
-      - Multi-layered defense setup
+      - SKILL.md authoring and editing
+      - Custom Agent design and implementation
+      - Plugin architecture review and SKILL design decisions
+      - Role constraint definition for security enforcement
+      - Frontmatter field configuration
     keywords:
-      - SKILL
+      - SKILL.md
       - frontmatter
-      - custom-agent
-      - execution-model
-      - inheritance
-      - context
+      - inheritance-type
+      - Custom Agent
+      - Role constraint
       - allowed-tools
       - AskUserQuestion
-      - security-constraints
-      - recursion-prohibition
-  docs/rules/skill_launch_paths_definitions.md:
-    title: Definitions of SKILL / Agent / subagent Launch Paths and Names
-    purpose: Defines the 5 launch paths for work delegation in Claude Code and establishes unified terminology conventions to prevent naming confusion
-    content_details:
-      - "5 launch path types: inherited SKILL, fork SKILL (deprecated), general-purpose Agent, custom Agent, Bash subprocess"
-      - Launch path comparison table with context inheritance models (inherited vs. isolated)
-      - Fork-type SKILL deprecation rationale and structural bugs in anthropics/claude-code
-      - "Mandatory naming conventions: use specific short names, never use subagent alone"
-      - Valid subagent_type values for custom Agents with plugin prefix format
-      - "Invalid subagent_type examples: skill names, slash command notation, file paths"
-      - Custom Agent replacement mechanism for deprecated fork SKILL functions (forge:reviewer/evaluator/fixer)
-    applicable_tasks:
-      - SKILL.md authoring and design review
-      - Custom Agent definition and naming
-      - Agent tool configuration and subagent_type selection
-      - Design and guide document writing with terminology compliance
-      - Launch path selection for work-delegation scenarios
-      - Fork SKILL deprecation and migration planning
-    keywords:
-      - SKILL
-      - Agent
+      - fork-type
+      - ScheduleWakeup
       - subagent_type
-      - fork SKILL
-      - context
-      - launch path
+  docs/rules/skill_launch_paths_definitions.md:
+    title: SKILL / Agent / Subagent Launch Paths and Nomenclature Definition
+    purpose: "Defines official terminology and classification for five skill and agent invocation paths: inheritance-type SKILL, fork-type SKILL (deprecated), general-purpose Agent, custom Agent, and Bash subprocess"
+    content_details:
+      - Five launch paths with official short names and execution models
+      - Fork-type SKILL abolished due to 9 structural bugs in anthropic/claude-code
+      - "Context isolation: inheritance-type SKILL inherits parent context; other 4 paths use isolated context"
+      - Custom Agent definition in agents/<name>.md with system prompt as procedure book
+      - "Procedure location difference: general-purpose Agent gets prompt per invocation; custom Agent uses agents/<name>.md"
+      - subagent_type parameter value domain for Agent tool invocation
+      - "Terminology unification: avoid ambiguous 'subagent' singular; use inheritance-type SKILL, fork-type SKILL, general-purpose Agent, or custom Agent"
+      - "Invalid subagent_type values: skill names, slash command notation, file paths"
+      - Skill tool vs Agent tool invocation patterns
+      - Historical equivalence of fork-type SKILL and custom Agent (both isolated context plus predefined role)
+    applicable_tasks:
+      - Skill and Agent architecture design
+      - Launch path selection and terminology specification
+      - SKILL/Agent naming and invocation decision
+      - subagent_type value validation
+      - Plugin documentation and SKILL.md authoring
+    keywords:
+      - subagent_type
+      - inheritance-type SKILL
+      - fork-type SKILL
       - custom Agent
       - general-purpose Agent
-      - delegation
-      - anthropics
+      - launch path
+      - context boundary
+      - Skill tool
+      - Agent tool
+      - context isolation
   docs/rules/version_migration_design.md:
-    title: Version Migration Design Rules
-    purpose: Defines design patterns and best practices for implementing safe, reliable version migrations across configuration files, databases, and data structures to handle major version updates
+    title: Version Migration and Upgrade Design Rules
+    purpose: Design principles and implementation patterns for safely migrating data structures across version changes, covering YAML/JSON config, Swift Codable, and database migrations
     content_details:
-      - "Why migrations are needed: key renaming, structure changes (flat to nested), type changes (numeric to string), key additions and deletions"
-      - "Anti-patterns to avoid: reading old data directly without conversion, using fixed original data in multi-step migration (DocAdvisor v4-v6 issue example)"
-      - "Pipeline principle: each migration step receives output of previous step, enabling safe version skips (v4 to v6 through v5)"
-      - "Five core principles: pipeline pattern, single source of truth for version numbers, idempotency (same migration applied twice yields same result), forward compatibility (preserve unknown keys), migration history logging"
-      - "YAML/JSON implementation: MIGRATIONS dictionary with versioned functions (fn(dict)->dict signature), apply_migrations loop passing current output forward"
-      - "Swift Codable/PropertyList: versioned struct types, VersionedData wrapper with version number, migrateToLatest() switch statement for step-by-step conversion"
-      - "Database pattern: numbered migration files, schema_migrations history table for tracking applied versions, transaction wrapping for rollback safety"
-      - "Version skipping logic: filtering migrations where current_version<v<=target_version, with sorted() ordering"
-      - "Pre-release checklist: design verification, implementation verification, multi-stage testing including skip-version tests (v4→v6), idempotency tests"
+      - "Pipeline principle: each migration receives previous step output as input, not original data"
+      - "Single Source of Truth for version numbers: manage in code and embed in data"
+      - "Idempotency: applying same migration twice produces identical result"
+      - "Forward compatibility: preserve unknown keys instead of deleting them"
+      - "Migration history persistence: record applied versions for re-run prevention"
+      - YAML/JSON pattern with MIGRATIONS table and pipeline function
+      - Swift Codable pattern with versioned struct types for each version
+      - Database migration with numbered files, transaction wrapping, and schema_migrations history table
+      - Version skipping (e.g., v4 to v6) through intermediate migration steps
+      - "Release pre-check: version management, data embedding, pipeline compliance, forward compatibility, testing"
     applicable_tasks:
-      - Version upgrade planning
-      - Migration implementation and testing
-      - Database schema evolution
-      - Configuration file format changes
-      - Data structure modernization
-      - Rollback procedure design
-      - Multi-version compatibility testing
-      - Data transformation validation
+      - Version upgrade planning and implementation
+      - Database schema migration design
+      - Configuration file versioning strategy
+      - Data structure evolution handling
+      - Migration testing and validation
+      - Rollback procedure definition
+      - Multi-version data format compatibility
     keywords:
       - migration
-      - version-upgrade
-      - pipeline
+      - version management
+      - pipeline principle
       - idempotency
-      - forward-compatibility
-      - Single-Source-of-Truth
+      - data structure
+      - Single Source of Truth
+      - forward compatibility
+      - transaction
       - rollback
-      - schema-evolution
-      - data-transformation
-      - multi-step
+      - versioning
