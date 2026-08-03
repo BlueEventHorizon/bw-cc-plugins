@@ -976,9 +976,9 @@ class InjectionRejectionTest(unittest.TestCase):
 
 
 class UnknownAndLeftoverTokenTest(unittest.TestCase):
-    """未知トークン・未消化トークンの検出（fail-closed）。"""
+    """未知トークン・テンプレート側の波括弧書き損じの検出（fail-closed）。"""
 
-    def _build_with_template(self, template_text: str, pattern: str = "diff"):
+    def _build_with_template(self, template_text: str, pattern: str = "diff", **kwargs):
         """一時ディレクトリにテンプレートを置いて build_body を通す。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_template = Path(tmpdir) / f"{pattern}_review_request_template.md"
@@ -987,10 +987,21 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
             build_review_request.template_path = lambda p: tmp_template
             try:
                 return build_review_request.build_body(
-                    pattern=pattern, project_root=_REPO_ROOT, review_id="rid"
+                    pattern=pattern, project_root=_REPO_ROOT, review_id="rid", **kwargs
                 )
             finally:
                 build_review_request.template_path = original
+
+    def test_malformed_brace_in_template_raises(self):
+        """トークンとして解釈できない波括弧がテンプレートにあれば検出する。
+
+        `_TOKEN_RE` は `{{UPPER_SNAKE_CASE}}` にしか合致しないため、`{{lowercase}}` の
+        ような書き損じは「未知トークン」検査をすり抜ける。置換前のテンプレートから正規
+        トークンを取り除いて検査することで、これを捕まえる。
+        """
+        with self.assertRaises(ValueError) as ctx:
+            self._build_with_template("{{PROTOCOL_HEADER}}\n{{lowercase}}\n")
+        self.assertIn("波括弧", str(ctx.exception))
 
     def test_unknown_token_raises(self):
         with self.assertRaises(ValueError) as ctx:
@@ -1020,6 +1031,35 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
             build_review_request.build_body(
                 pattern="not-a-pattern", project_root=_REPO_ROOT, review_id="rid"
             )
+
+
+class TokenNotationInValuesTest(unittest.TestCase):
+    """`--focus` / `--scope` の値にトークン記法を含めても通ること（回帰）。
+
+    かつて置換後の本文を走査して未消化トークンを検出していたため、値に含まれる
+    `{{...}}` をテンプレート由来の書き損じと誤認して失敗していた。トークン名そのものを
+    議論する依頼（このリポジトリでは日常的に発生する）が通らず、しかもエラーが原因を
+    テンプレートだと誤って指していた。検査を置換前のテンプレートへ移して解消した。
+    """
+
+    _NOTATION = "{{SCOPE}} と {{TARGET_PATHS}} の使い分け"
+
+    def test_focus_may_contain_token_notation(self):
+        body = _build("design", focus=f"{self._NOTATION}を重点的に見てください")
+        self.assertIn(self._NOTATION, body)
+
+    def test_scope_may_contain_token_notation(self):
+        body = _build("design", scope=f"到達目標: {self._NOTATION}を整理する")
+        self.assertIn(self._NOTATION, body)
+
+    def test_value_braces_are_not_substituted_again(self):
+        """値の中の波括弧は再置換されず、そのままテキストとして残る。"""
+        body = _build("design", focus="{{PROJECT_ROOT}} という表記について")
+        self.assertIn("{{PROJECT_ROOT}} という表記について", body)
+
+    def test_range_pattern_also_accepts_token_notation(self):
+        body = _build("diff", scope=f"{self._NOTATION}は今回の対象外")
+        self.assertIn(self._NOTATION, body)
 
 
 class ReplyContractTest(unittest.TestCase):
