@@ -5,21 +5,24 @@ Have a resident Codex session review your code and documents, while Claude drive
 ## review
 
 ```
-/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto-critical | --auto] [--focus "<emphasis>"]
+/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto-critical | --auto] [--focus "<emphasis>"] [--scope "<target completeness>"] [--project-rules a.md,b.md] [--project-specs c.md]
 ```
 
-| Argument          | Description                                                         |
-| ----------------- | ------------------------------------------------------------------- |
-| `type`            | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`     |
-| `--diff`          | Uncommitted changes on the current branch (default)                 |
-| `--branch`        | All changes since the base-branch divergence point                  |
-| `--files`         | Explicit comma-separated file list                                  |
-| `--dirs`          | Everything under the given directories (comma-separated; see below) |
-| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior")     |
-| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                          |
-| `--auto-critical` | Auto-fix 🔴 only                                                    |
-| `--focus`         | What to pay extra attention to this time (free text, optional)      |
-| `--secrets`       | Standalone review for leaked secrets only (see below)               |
+| Argument          | Description                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `type`            | `code` / `requirement` / `design` / `plan` / `uxui` / `generic`                                      |
+| `--diff`          | Uncommitted changes on the current branch (default)                                                  |
+| `--branch`        | All changes since the base-branch divergence point                                                   |
+| `--files`         | Explicit comma-separated file list                                                                   |
+| `--dirs`          | Everything under the given directories (comma-separated; see below)                                  |
+| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior")                                      |
+| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                                                           |
+| `--auto-critical` | Auto-fix 🔴 only                                                                                     |
+| `--focus`         | What to pay extra attention to this time (free text, optional)                                       |
+| `--scope`         | How complete this change is meant to be, plus deliberate omissions (multi-line, optional; see below) |
+| `--project-rules` | Rule documents to hand to the reviewer (comma-separated, optional; see below)                        |
+| `--project-specs` | Specification documents to hand to the reviewer (comma-separated, optional; see below)               |
+| `--secrets`       | Standalone review for leaked secrets only (see below)                                                |
 
 > **There is no engine axis (`--codex` / `--claude`).** Review execution is always performed by the resident Codex session. Passing these flags logs a warning and continues with the default behavior (so existing callers migrated from the legacy pipeline keep working).
 
@@ -35,6 +38,7 @@ The user types one of these to start:
 /forge:review design --files specs/login/design.md         # Design doc
 /forge:review generic --files README.md                    # Any document
 /forge:review design --dirs docs/specs/forge/design/       # Every design doc under a directory
+/forge:review code --files src/a.py --scope "Creating a.py only"  # State the target completeness of a staged change
 ```
 
 ### Directory scope (`--dirs`)
@@ -80,6 +84,40 @@ Emphasis **does not replace the built-in criteria**. The review defined by the c
 Emphasis also never raises severity. Findings that answer the emphasis are still rated 🔴 / 🟡 / 🟢 by the severity catalog in the normative documents.
 
 > **Permanent perspectives live in the criteria.** Cross-document reference links (notation and dead links) are checked in design / requirement / plan / generic / uxui reviews without any `--focus`, because `document_style_guide.md` §5 is a P1 delegate of those criteria. `--focus` adjusts emphasis; it is not the only way to introduce a perspective. If a perspective should always be checked, fix the criteria instead.
+
+### Target completeness (`--scope`)
+
+Tells the reviewer how complete this change is meant to be, and which items were deliberately left out. Multiple lines are allowed:
+
+```bash
+/forge:review code --files src/fm_to_pending.py --scope "Creating fm_to_pending.py and its tests only.
+
+The following are out of scope for this change.
+
+- Adding _meta.extracted_by — TASK-011 (split off because the writer and the reader must change together, or the field is dead)"
+```
+
+**This is a different axis from `--focus`.** `--focus` is what to look at **in addition to** the normal review; `--scope` is **which level of completeness to evaluate against**. Mixing them leaves the reviewer unable to tell "look here harder" apart from "judge against this bar".
+
+You need it when an implementation is split into stages. Reviewing one stage in isolation makes the reviewer report items planned for later tasks as defects, and every review costs a round trip explaining "that belongs to a later task". `--scope` supplies that explanation up front.
+
+**Omitting it means "the target is the final form"** — not "no information available". Even when nothing is out of scope, say so explicitly if you pass `--scope`, because the reviewer cannot tell an empty section from a deliberate one.
+
+**It is not a way to suppress out-of-scope findings.** If a declared omission contradicts what the design or specification documents state, the reviewer reports that divergence. Being "planned for a later task" does not excuse the fact that design and implementation currently disagree. In that case the fix may belong to the document rather than the code (for example, annotating the staging in the design doc).
+
+> `/forge:start-implement` builds this from the implementation plan and passes it automatically. When several tasks are reviewed as one group, it subtracts the items owned by the other members of that same group first — otherwise items just implemented would be declared "not implemented". You pass it by hand when you request a review directly from the conversation.
+
+### Bringing your own norms (`--project-rules` / `--project-specs`)
+
+Names the rule and specification documents to hand to the reviewer. For each axis you pass, the skill does not run `/forge:query-db-rules` / `/forge:query-db-specs` itself:
+
+```bash
+/forge:review code --files src/foo.py --project-rules docs/rules/implementation_guidelines.md
+```
+
+The main purpose is to avoid running the same search twice for one task when an upstream skill (such as `/forge:start-implement`) has already done it. If you pass only one axis, only the other one is queried.
+
+An incomplete list does not silently degrade the review. The template instructs the reviewer to report the absence of applicable norms as a finding, so gaps surface as findings.
 
 ### Prerequisites
 
