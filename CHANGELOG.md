@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.2] - 2026-08-05
+
+### marketplace
+
+- **chore**: forge 0.4.2 / anvil 0.1.1 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.4.2] - 2026-08-05
+
+### forge
+
+- **feat**: レビュー本体とレビューバックエンドを別 SKILL へ分離（ADR-066）。`--backend` 軸・`failure` 判定・終了通知を実装し、バックエンドの可用性検査と解決順（未指定時は候補を順に検査して最初に使えたものを採る）を追加。可用性検査は初期化の後に置き、判定を exit code から切り離したうえで、不足時には全経路で初期化の失敗理由を添える。`.forge.yaml` の review セクションから `backend_order` を削除し、候補順の決定は設計側へ戻した
+- **feat**: doc-db backend を新設。低レベル CLI 群・`forge_settings`・MCP クライアント・runtime / project identity を実装し、query 系・update 系 SKILL を backend 順序リスト選択へ切替（既定は doc-advisor 先位）、grep フォールバックを削除
+- **feat**: review 依頼に `--scope` 軸を追加。到達目標と意図的な未実装をレビュアーへ明示的に渡す (#4)
+- **feat**: onboarding が汎用規範をプロジェクトの CLAUDE.md へ承認のうえ転記する機構を追加（スキルを経由しない会話直の作業でも規範が文脈に入るようにする）
+- **fix**: ToC 索引更新を常時化しバージョン下限を全廃。生成物 ToC の commit 確認を anvil:commit 側へ追加
+- **fix**: テンプレートのトークン検査を置換前のテンプレートへ移し、置換値に含まれる波括弧の誤検知を解消
+- **fix**: `--secrets` の共通引数欠落を補い、直列化の根拠をバックエンド限定に修正
+- **fix**: start-implement の executor 起動前確認を削除し、`-n` の並列実行確認を提示のみに変更
+- **fix**: `--dirs` レビューの対象欄に能動的な手順を指示し、設計書の古い記述を削除
+- **refactor**: `${CLAUDE_PLUGIN_ROOT}` symlink の自己修復機構を廃止（ADR-069）
+- **refactor**: テンプレートトークン `TARGET_SCOPE` を `TARGET_PATHS` へ改名し、`--scope` 系 2 軸を要件・設計へ反映
+- **docs**: merge を意味の統合として定義し直し、スコープ判断を規約化。msg-review の可用性検査を要件・設計へ反映し、画面推測による生存確認設計を廃止
+
+## [anvil 0.1.1] - 2026-08-05
+
+### anvil
+
+- **feat**: commit に生成物 ToC（検索インデックス）の commit 確認を追加。`classify_generated_index.py` が生成物インデックスを判別する
+- **docs**: triage-issue の Phase 1 に、Issue 記述を鵜呑みにせず批判的に読み、より単純な解決策を検討する指示を追加
+
 ## [marketplace 0.3.1] - 2026-07-29
 
 ### marketplace

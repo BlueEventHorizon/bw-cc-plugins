@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-03T06:52:17Z
+  generated_at: 2026-08-04T17:36:43Z
   file_count: 7
 
 docs:
@@ -107,37 +107,37 @@ docs:
       - documentation governance
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines development guidelines for implementing plugin scripts (Python/Bash) and SKILL.md files, covering language selection, testing requirements, code organization, and distribution boundaries
+    purpose: Defines rules for plugin scripts (Python and Bash) and SKILL.md implementations, including language selection criteria, testing requirements, and distribution boundaries
     content_details:
-      - "Script language selection: Python for data transformation and YAML/JSON operations; Bash for external commands and file operations; PyYAML as sole permitted external library"
-      - "Testing requirements: plugins/*.py scripts require unit tests; Bash scripts require integration/manual testing; SKILL.md exempted as AI-interpreted behavior; .claude/ directory excluded"
-      - Test directory structure under tests/{plugin_name}/{skill_name}/ with test_{module}.py naming convention matching skill directory names
-      - "SKILL.md inline script prohibition: process logic must be external scripts called via environment variables, never embedded in SKILL.md"
-      - "Script and document placement rules: skill-specific assets under skills/{skill}/, shared assets under plugins/{plugin}/ based on reuse count"
-      - "Cross-skill direct reference prohibition: other skill's docs cannot be hardcoded; multi-skill dependencies must be elevated to plugins/{plugin}/docs/"
-      - "Design document maintenance via ADR: placement at docs/specs/{plugin}/design/ADR-{NNN}_{topic}.md following forge design principles"
-      - "Distribution boundary rule: plugins/ code cannot reference docs/ project documents (neither path-based nor ID-based); use dynamic query via /forge:query-db-specs and /forge:query-db-rules"
-      - "Unused code deletion: non-deprecated markers or commented code prohibited; git history preserves recovery path"
-      - "Version management: feature/fix/refactor PRs must never edit version-related files; only /forge:update-version handles version updates"
+      - Script language selection (Python for data transformation, Bash for file operations and piping)
+      - Python standard library only with PyYAML exception
+      - Testing mandatory for plugins/ Python scripts with directory structure (tests/{plugin}/{skill}/)
+      - Script placement rules (skill-specific vs plugin-common)
+      - Design document maintenance and ADR placement (docs/specs/{plugin}/design/ADR-{NNN}_{topic}.md)
+      - Cross-skill reference prohibition and distribution boundaries
+      - Unused code deletion requirement (no deprecated markers)
+      - Script parser prohibition for user input (use AI for natural language)
+      - Fallback design principles (specific recovery only, no reflexive fallbacks)
+      - ToC commit confirmation and version file editing prohibition
     applicable_tasks:
-      - Implementing plugin scripts and SKILLs
-      - Setting up test directory structure for plugins
-      - Designing plugin file organization and reusability
-      - Creating SKILL.md workflows and documentation
-      - Reviewing plugin distribution and reference boundaries
-      - Managing design documentation via ADR
-      - Training developers on plugin implementation standards
+      - Plugin script implementation planning and language selection
+      - Plugin Python script test structure design and verification
+      - SKILL.md and agent implementation review
+      - Script placement architecture (skill vs plugin common)
+      - Design document and ADR creation review
+      - Cross-plugin dependency and reference validation
+      - Version management workflow enforcement
     keywords:
-      - plugin script implementation
-      - Python vs Bash selection
+      - implementation guidelines
+      - plugin scripts
+      - Python Bash selection
+      - testing mandatory
       - SKILL.md
-      - testing requirements
-      - file organization
-      - distribution boundary
+      - script placement
+      - design documents
+      - ADR
       - version management
-      - design document (ADR)
-      - fallback patterns
-      - cross-skill reference
+      - ToC
   docs/rules/skill_authoring_notes.md:
     title: SKILL.md Authoring Notes
     purpose: Guidance for creating and editing Claude Code plugin SKILL.md files, covering frontmatter fields, execution models, custom agent design, and multi-layer defense strategy

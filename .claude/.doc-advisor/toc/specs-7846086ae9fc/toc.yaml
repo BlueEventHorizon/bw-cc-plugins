@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-04T11:48:47Z
+  generated_at: 2026-08-04T17:38:30Z
   file_count: 52
 
 docs:
@@ -459,68 +459,66 @@ docs:
       - error.data.code
       - version_requirement
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
-    title: Backend Selection Design for Document Search
-    purpose: Specifies design for selecting between doc-db and doc-advisor backends in document queries, including connection management, fallback logic, and synchronization strategies
+    title: DES-057 doc-db Backend Selection Design
+    purpose: Defines the architecture and implementation approach for selecting between doc-db and doc-advisor backends based on configuration, availability, and operational status
     content_details:
-      - Backend selection logic based on configuration preference
-      - Doc-db connection handling and on-demand startup
-      - HTTP MCP client for doc-db communication
-      - ToC freshness checking and stale update mechanism
-      - Document synchronization with desired-state tracking
-      - Series and key management for doc-db
-      - Error classification and failure handling
-      - Fallback between backends for unavailability scenarios
-      - Integration with doc-advisor for query operations
-      - Test design for connection, operation, and error paths
+      - "Backend selection ordered list based on doc_backend.prefer configuration (default: doc-advisor first)"
+      - HTTP direct MCP client using JSON-RPC and SSE (port from ~/.doc-db/doc-db.yaml)
+      - On-demand doc-db startup via subprocess.Popen with 1-second probe timeout
+      - Series-specific query operation (current branch) to prevent stale/deleted document mixing
+      - Index missing detection (exit code 30) for uninitialized KEY or series
+      - Desired-state sync for update with single pathway for add/change/delete/rename
+      - Path existence verification post-query to exclude non-existent paths from results
+      - "Error classification: success (0), unavailable (10), operation_error (20), index_missing (30)"
+      - Backend order resolution via resolve_backend_order.py with settings validation
+      - doc-advisor pathway with prepare → index-docs → query-docs workflow (mandatory index before query)
     applicable_tasks:
-      - Implementing document search backend infrastructure
-      - Configuring backend preferences for document queries
-      - Troubleshooting document search unavailability
-      - Designing fallback behavior for search systems
-      - Testing document search backend operations
+      - Implementing backend selection orchestration in query-db-* and update-db-* SKILLs
+      - Building HTTP/MCP client for doc-db operations (initialize, query, sync_documents, get_sync_status)
+      - Designing on-demand startup probe and reconnection logic for doc-db
+      - Handling series-specific query with path existence verification and exclusion
+      - Implementing desired-state sync for document updates with progress reporting
+      - Testing backend failure scenarios and availability judgment fallback paths
     keywords:
-      - backend selection
-      - doc-db
-      - doc-advisor
-      - synchronization
-      - freshness judgment
+      - doc-db backend
+      - doc-advisor backend
       - MCP protocol
-      - desired-state
-      - series management
-      - HTTP client
-      - error handling
+      - series (branch index)
+      - KEY (index identifier)
+      - desired-state sync
+      - resolve_backend_order.py
+      - docdb_client.py
+      - exit code classification
+      - availability judgment
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
     title: REQ-014 doc-db Backend Selection Requirements Specification
-    purpose: Defines requirements for forge wrapper scripts to automatically select between doc-db and doc-advisor backends based on availability, with fallback behavior and user notification rules
+    purpose: Specifies requirements for automatic backend selection between doc-db and doc-advisor, enabling users to access optimal search and index functionality without managing backend setup
     content_details:
-      - Backend automatic selection mechanism
-      - Backend selection order based on configuration with doc-advisor as default
-      - Availability judgment for each backend (doc-db connection check, doc-advisor installation check)
-      - ToC freshness checking (24-hour threshold) before query execution
-      - Index creation for missing KEY or series in doc-db
-      - Distinction between uninitialized and recovery-needed states using doc-db status identifiers
-      - Query execution with index preparation before search
-      - Update operations reflecting current document state to selected backend
-      - User notification for backend switching, index creation, non-existent path removal
+      - Automatic backend selection with availability checking
+      - "Configurable backend selection order (default: doc-advisor then doc-db)"
+      - Mandatory index preparation before query execution
+      - Index update execution reflecting document changes
+      - Notification of backend switching and index operations
+      - Distinction between uninitialized state and failures via machine-readable identifiers
+      - Series-limited search preventing stale documents from other branches
+      - Path existence verification with non-existent file exclusion
     applicable_tasks:
-      - Backend selection mechanism implementation
-      - Index freshness management implementation
-      - Search wrapper implementation
-      - doc-db integration implementation
-      - Backend availability checking implementation
-      - Error case handling for missing indices
-      - Configuration validation with error reporting
+      - Backend availability assessment and selection
+      - Query execution with dynamic backend fallback
+      - Index creation for new KEY and series
+      - Document search with path filtering
+      - Backend switching and error handling
+      - Index update operations
     keywords:
+      - backend selection
       - doc-db
       - doc-advisor
-      - backend selection
-      - ToC freshness
-      - query wrapper
-      - index management
+      - availability checking
+      - ToC
+      - KEY
       - series
-      - configuration
-      - availability judgment
-      - error handling
+      - query wrapper
+      - index update
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
     title: "ADR-052: Documentation Cross-Reference Notation and Plugin Root Link Access"
     purpose: Standardizes cross-reference notation within forge plugin documentation and establishes rules for relative vs full paths. Addresses plugin root variable resolution inconsistencies and downstream environment access costs.
@@ -687,36 +685,34 @@ docs:
       - self-repair
       - mechanism deprecation
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: "DES-001: Document Search Wrapper Design"
-    purpose: "Defines the abstraction layer and design for forge's 4 document search and index update skills that delegate to external backends (doc-advisor or doc-db). Specifies key mapping, output contracts, inheritance-type skill patterns, and backend selection logic."
+    title: DES-001 Document Search Wrapper Design
+    purpose: "Specifies forge's document search wrapper architecture, covering 4 query/update SKILLs, backend selection strategy, and integration contracts with doc-advisor and doc-db backends"
     content_details:
-      - "Two document search backends supported: doc-advisor (external) and doc-db (local server) with configurable preference order via .claude/.forge.yaml"
-      - "Four wrapper skills: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
-      - "Key mapping: forge category (rules/specs) mapped to opaque doc-advisor keys"
-      - "Query flow: resolve backend order, check ToC freshness, update index if stale, execute search, return Required documents path list"
-      - "Update flow: prepare index via wrapper, resolve directories and exclude patterns from .doc_structure.yaml, transfer via doc-advisor API with --dirs-json and --exclude-json"
-      - Skills are inheritance-type read-only, no fork context, allowed tools limited to Skill, Read, Bash
-      - "Desired-state synchronization: .doc_structure.yaml is source of truth for both backends"
-      - Test coverage includes structure resolution, skill isolation, backend selection, and contract verification
+      - Overview of document search wrapper delegating to external backends
+      - 4 SKILL definitions for query and update operations with key mapping
+      - Query system flow with backend selection and doc-advisor path transfer contract
+      - Update system flow with desired-state synchronization and index preparation
+      - Backend selection strategy and availability checking logic
+      - SKILL contract requirements for inheritance-type SKILLs with tool restrictions
+      - "Key assumptions: backend availability, key format, directory resolution by forge"
+      - Test coverage for doc-structure resolution, query skill isolation, and backend contracts
     applicable_tasks:
-      - Document search backend integration design
-      - Backend selection and fallback logic implementation
-      - Search skill wrapper development
-      - Index update process design
-      - Document discovery mechanism debugging
-      - Backend contract verification
-      - Search result contract validation
+      - Architecture review of document search integration
+      - Design review of SKILL contract and backend interface
+      - Backend integration implementation
+      - Document indexing infrastructure setup
+      - Inherited SKILL interface verification
     keywords:
-      - document search
-      - wrapper abstraction
-      - backend selection
+      - document-search
+      - backend-selection
+      - SKILL-architecture
+      - index-docs
+      - query-docs
+      - DES-001
       - doc-advisor
       - doc-db
-      - key mapping
-      - ToC freshness
-      - index update
-      - skill isolation
-      - inheritance-type skill
+      - desired-state
+      - wrapper
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: Create skills orchestrator design
     purpose: Specifies orchestrator pattern design for start-design, start-plan, start-requirements skills with parallel context gathering framework using specs, rules, code agents via return-value contracts
@@ -1137,38 +1133,38 @@ docs:
       - DES-057
       - forge_settings.py
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review Body (Backend-Independent) Design Document
-    purpose: Defines architecture and design for the backend-independent review execution engine, specifying request assembly, finding evaluation, modification safety verification, and multi-round orchestration
+    title: DES-066 /forge:review Body Design
+    purpose: Specifies the backend-agnostic design of /forge:review orchestration layer, covering argument interpretation, target resolution, backend delegation, findings evaluation, fix verification, and terminal decision flow
     content_details:
-      - Backend resolution procedure from explicit specification and configuration
-      - Default backend candidate order with msg-review as current implementation
-      - Four-path terminal processing with single exit point via finalize_review.py
-      - Three-value judgment handling (approved, findings, failure) and terminal routing
-      - Safety verification with allowlist validation and syntax baseline preservation
-      - Two-axis request information (focus point {{FOCUS}} and scope goal {{SCOPE}}) with template tokens
-      - Module responsibilities (resolve_targets, build_review_request, gate_findings, verify_fix_safety, finalize_review)
-      - Target specification granularity preservation (range expansion in allowlist but granularity in request body)
-      - Configuration schema for .claude/.forge.yaml review section (backend, backend_order)
-      - Use case sequences demonstrating multi-round review orchestration and terminal path routing
+      - Architecture overview with module layout separating body orchestration from backend-specific implementation
+      - "Backend resolution algorithm: explicit specification via --backend and configuration, candidate order with fail-closed behavior"
+      - Default backend candidate order with single resolution point in resolve_review_backend.py to prevent duplication
+      - "Single exit point for review finalization: approved, findings with confirmation, failure, and interrupted paths all routed through finalize_review.py"
+      - 3-value judgment handling and non-fallback behavior on backend failure
+      - Finding evaluation and safe fix verification with allowlist enforcement and syntax checking per-finding and round-end
+      - Configuration schema for .claude/.forge.yaml review section with backend selection key only (no candidate order override)
+      - 8 request templates and shared findings parsing mechanism across all backends
+      - "Use case design: 9 use cases from request assembly through terminal decisions and backend termination"
+      - Test strategy for finalization paths, backend resolution, explicit vs candidate-order distinction, and existing script component coverage
     applicable_tasks:
-      - Review skill backend-independent implementation
-      - Backend integration and SKILL registration
-      - Review request assembly and orchestration design
-      - Finding evaluation and modification verification design
-      - Multi-round review orchestration implementation
-      - Backend resolution and availability checking implementation
-      - Safety verification for modified files and allowlist validation
+      - Review orchestration layer architecture implementation
+      - Backend integration contract design and validation
+      - Backend selection mechanism implementation and fail-closed enforcement
+      - Finalization path and flow design with single exit point
+      - Review request template design and token injection (FOCUS, SCOPE)
+      - Safe fix verification and allowlist enforcement implementation
+      - Review configuration schema management
     keywords:
-      - review-backend
-      - backend resolution
-      - finding evaluation
-      - finalize_review.py
+      - review-orchestration
+      - backend-selection
+      - fail-closed
+      - finalization-paths
+      - findings-evaluation
+      - request-templates
+      - DES-066
       - msg-review
-      - safety verification
-      - terminal processing
-      - request assembly
-      - allowlist validation
-      - modification verification
+      - candidate-order
+      - resolve_review_backend
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
@@ -1306,36 +1302,37 @@ docs:
       - wake-up safety gates
       - independent backend
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
-    title: "DES-045: msg-review Review Backend Design"
-    purpose: Specifies complete architecture and behavior of the msg-review backend skill including SKILL orchestration, message protocol with Codex, availability checks (deterministic judgments only), blocking wait for replies, push-type wake-up for cmux environments, and integration of scripts ensuring critical sequences are never forgotten
+    title: DES-045 msg-review Review Backend Design Specification
+    purpose: Specifies the design of the msg-review backend skill that orchestrates continuous dialogue code review with resident Codex sessions via msg-sys communication infrastructure
     content_details:
-      - "Architecture overview: msg-review backend orchestrates request assembly, response evaluation and modification, completion determination using msg-sys communication foundation"
-      - "Four operational modes: availability check (no send/wake), request mode (user triggered), receive mode (same turn continuation), resume mode (human-reinitiated after round trip limit)"
-      - "Message protocol with review_id and round numbering: all messages carry header [msg-review] type review_id=X round=N; review_id is opaque token for filtering history in resume/limit modes"
-      - "Availability checks split into three independent axes: A) wake-up tool (cmux), B) session residency (actual running Codex process), C) response capability (heuristic, explicitly excluded); deterministic only, no remote party effect"
-      - "Blocking wait-for-reply with exponential backoff (1,2,4,8,10...): detects Codex message increase, performs ack to claim delivery, 10-minute maximum, includes last_observed_request_read diagnostic"
-      - "Push-type wake-up via cmux: discovers target pane with actual process verification, reads screen for busy status, injects text+enter, retries up to 3 times on command failures"
-      - "Single entry point send_and_await_reply.py: combines send→wake→wait to prevent forgotten steps; enforces DB and project-root consistency (fail closed on mismatch)"
-      - "Test strategy with subprocess mocking: verifies ordering (send→wake→wait), partial failure handling, JSON contracts, zero remote party interference"
+      - Architecture components and message flow diagram
+      - "Ternary operating modes: availability check, request, receipt, and resumption"
+      - Module interfaces and responsibilities
+      - Message protocol with [msg-review] header and review_id tracking
+      - Prerequisite health checks via check_setup.py
+      - "Availability checks with independent axes: wake availability and peer session presence"
+      - History filtering by review_id for mode resumption
+      - Blocking wait mechanism with exponential backoff polling
+      - Push-type Codex session wake via cmux
+      - Composite send_and_await_reply orchestration combining send, wake, and wait
     applicable_tasks:
-      - Continuous dialogue review architecture design
-      - Message protocol design for agent communication
-      - Availability check determinism boundaries
-      - Push-type wake-up for terminal environments
-      - Blocking wait with timeout implementation
-      - Backend skill orchestration and error handling
-      - History filtering by conversation thread
-      - Fail-closed design patterns
+      - Implement msg-review backend skill with orchestration logic
+      - Design and review message protocol with round-trip tracking
+      - Implement wait and wake mechanisms for Codex integration
+      - Design prerequisite and availability checking systems
+      - Test async messaging workflows and error handling
+      - Debug Codex session activation and message delivery
     keywords:
-      - msg-sys backend SKILL
-      - Codex availability check
-      - push-type wake-up
-      - cmux pane discovery
-      - message protocol header
-      - review_id threading
-      - blocking wait with backoff
-      - deterministic judgment
-      - agent communication
+      - msg-review
+      - msg-sys
+      - Codex
+      - review_id
+      - send_and_await_reply.py
+      - cmux
+      - REVIEW_RESULT
+      - check_setup.py
+      - probe_availability.py
+      - filter_review_history.py
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
     title: DES-046 msg-review Intervention Mode Implementation Design
     purpose: "Specifies implementation design for msg-review's intervention mode (--auto-critical/--auto) that automatically fixes findings based on severity level (critical/major/minor)"
