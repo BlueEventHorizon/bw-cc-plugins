@@ -345,6 +345,48 @@ class InitializeBeforeCheckingTest(unittest.TestCase):
         self.assertIn("人間由来の実体", entry["detail"])
         self.assertIn("手動で解消", entry["remedy"])
 
+    def test_initialization_reason_survives_when_check_setup_is_unrunnable(self):
+        """前提検査が実行不能な経路でも初期化の失敗理由を落とさないこと [MANDATORY]。
+
+        以前は `check_setup.py` が `status: error` を返す経路にのみ理由を添えており、
+        `check_setup.py` 自体が実行不能・タイムアウト・JSON 不正だった経路では
+        `init_note` を捨てていた。初期化が conflict で失敗しかつ前提検査も実行できない
+        組み合わせでは、返る不足が「設定を判定できませんでした」だけになり、初期化に
+        失敗した事実が利用者へ届かなかった（実レビューで指摘）。
+        """
+        recorder = _Recorder(
+            {
+                "ensure_codex_hook.py": {
+                    "symlink": {"status": "conflict", "path": "/proj/.codex/msg-sys/scripts"},
+                    "hooks_json": {"status": "skipped_due_to_symlink_conflict"},
+                }
+            },
+            errors={"check_setup.py": "check_setup.py の実行に失敗しました: OSError"},
+        )
+        entry = next(
+            e
+            for e in probe_mod.probe(_PROJECT_ROOT, run_json=recorder)["missing"]
+            if e["axis"] == probe_mod.AXIS_SETUP
+        )
+        # 前提検査を判定できなかった事実と、初期化に失敗した事実の両方が残る
+        self.assertIn("判定できませんでした", entry["detail"])
+        self.assertIn("人間由来の実体", entry["detail"])
+        # 軸固有の対処を捨てず、初期化の対処を併記する
+        self.assertIn("forge プラグインの導入状態", entry["remedy"])
+        self.assertIn("手動で解消", entry["remedy"])
+
+    def test_shortfall_assembly_has_a_single_definition_point(self):
+        """不足の組み立てが 1 箇所（`_setup_shortfall`）に閉じていること。
+
+        経路ごとに書き分けると、片方だけ理由を落とす形が再発する。
+        """
+        without = probe_mod._setup_shortfall("詳細", "対処", None)
+        self.assertEqual(without, {"axis": probe_mod.AXIS_SETUP, "detail": "詳細", "remedy": "対処"})
+        with_note = probe_mod._setup_shortfall("詳細", "対処", "初期化できませんでした")
+        self.assertIn("初期化できませんでした", with_note["detail"])
+        self.assertIn("初期化できませんでした", with_note["remedy"])
+        self.assertTrue(with_note["remedy"].startswith("対処"))
+
     def test_initialization_failure_alone_is_not_a_shortfall(self):
         """初期化の結果そのものを不足として数えない（実際の状態は前提検査が判定する）。"""
         recorder = _Recorder(

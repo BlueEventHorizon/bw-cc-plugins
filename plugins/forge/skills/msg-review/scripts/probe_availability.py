@@ -293,11 +293,36 @@ def _evaluate_peer(project_root, run_json) -> dict | None:
     }
 
 
+def _setup_shortfall(detail: str, remedy: str, init_note) -> dict:
+    """軸 `setup` の不足要素を組み立てる。
+
+    **初期化を完了できなかった理由は、不足を返すすべての経路で添える [MANDATORY]**。
+    以前は `check_setup.py` が `status: error` を返す経路にのみ添えており、
+    `check_setup.py` 自体が実行不能・タイムアウト・JSON 不正だった経路
+    （`error is not None`）では `init_note` を捨てていた。その結果、初期化が
+    conflict で失敗しかつ前提検査も実行できない組み合わせでは、返る不足が
+    「設定を判定できませんでした」だけになり、**初期化に失敗した事実が利用者へ
+    届かなかった**（実レビューで指摘。DES-045 §3.5.2 手順 4 は経路を限定していない）。
+    組み立てを本関数 1 箇所に閉じ、経路ごとの書き分けを無くす。
+
+    軸固有の `remedy` は捨てずに残し、初期化の対処を**併記**する（前提検査が
+    実行できないことと初期化が失敗していることは、利用者の対処が別々である）。
+    """
+    if init_note is not None:
+        detail = f"{detail}（初期化: {init_note}）"
+        remedy = (
+            f"{remedy}。あわせて初期化を完了できていません（{init_note}）ため"
+            "手動で解消してください"
+        )
+    return {"axis": AXIS_SETUP, "detail": detail, "remedy": remedy}
+
+
 def _evaluate_setup(project_root, run_json, init_note=None) -> tuple[dict | None, list]:
     """軸 `setup` を評価する。戻り値は `(missing 要素 | None, warnings)`。
 
     **初期化（`_initialize`）を済ませた状態に対して呼ぶ**。`init_note` は初期化を
-    完了できなかった理由（完了時は None）で、不足を返す場合に添える。
+    完了できなかった理由（完了時は None）で、不足を返すすべての経路で添える
+    （組み立ては `_setup_shortfall()` に閉じている）。
     """
     payload, error = run_json(
         [
@@ -309,11 +334,11 @@ def _evaluate_setup(project_root, run_json, init_note=None) -> tuple[dict | None
     )
     if error is not None:
         return (
-            {
-                "axis": AXIS_SETUP,
-                "detail": f"msg-sys の設定を判定できませんでした（{error}）",
-                "remedy": "forge プラグインの導入状態を確認してください",
-            },
+            _setup_shortfall(
+                f"msg-sys の設定を判定できませんでした（{error}）",
+                "forge プラグインの導入状態を確認してください",
+                init_note,
+            ),
             [],
         )
 
@@ -338,12 +363,7 @@ def _evaluate_setup(project_root, run_json, init_note=None) -> tuple[dict | None
         "forge プラグインの再インストール、または .codex/hooks.json の"
         "登録状態を確認してください"
     )
-    if init_note is not None:
-        # 初期化が完了していれば起きないはずの不足である。初期化の失敗を隠すと、
-        # 利用者は「なぜ用意されなかったのか」を知らずに設定の再確認へ誘導される
-        detail = f"{detail}（初期化: {init_note}）"
-        remedy = f"初期化を完了できていません。{init_note}。手動で解消してください"
-    return ({"axis": AXIS_SETUP, "detail": detail, "remedy": remedy}, warnings)
+    return (_setup_shortfall(detail, remedy, init_note), warnings)
 
 
 # --- 集約 ----------------------------------------------------------------------
