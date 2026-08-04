@@ -14,7 +14,7 @@
 
 forge は文書検索（ルール・仕様の発見）と索引更新を外部の文書検索 backend に委譲する。
 backend は 2 つある: 外部プラグイン doc-advisor
-（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)、`check-toc` / `index-docs` / `query-docs`）と、
+（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)、`index-docs` / `query-docs`）と、
 ローカルで稼働する文書検索サーバ doc-db である。
 forge 自身は検索・索引生成を実装せず、`plugins/forge/skills/` 配下の 4 つのラッパー SKILL が
 **順序リストに基づいて backend を選択**し、選択した側の経路を実行する。
@@ -57,8 +57,7 @@ doc-db 経路では、各 SKILL の `scripts/` 配下の SKILL 固有 wrapper（
 
 1. `resolve_backend_order.py` で backend の順序リストを解決する（設定不正は既定値へ落ちず明示エラー。DES-057 §2.5）。
 2. 順序リストの先位から可用性を判定し、最初に利用可能な backend の経路を実行する。
-   - **doc-advisor 経路**: `doc-advisor:check-toc` で ToC の鮮度を確認し（fresh / stale / error の 3 分岐。
-     応答内容で分岐し exit code では分岐しない）、stale なら索引更新を完了させてから
+   - **doc-advisor 経路**: 検索前に索引更新を完了させてから（要否は判定せず常に行う。DES-057 §5.1）
      `doc-advisor:query-docs --key {rules|specs} {task}` を呼び、応答をそのまま親に返す。
    - **doc-db 経路**: query wrapper 経由で低レベル CLI を呼ぶ（未整備時の索引作成を含む。DES-057 §4.2）。
 3. いずれの backend も利用できなければ、両者の理由を並べて明示エラーとする。grep 等による代替検索は行わない。
@@ -110,7 +109,7 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 
 ## 5. 前提
 
-- いずれかの文書検索 backend が利用可能であること。最小対応バージョンは DocAdvisor 0.4.6・doc-db 0.3.3
+- いずれかの文書検索 backend が利用可能であること。可用性はバージョンではなく、必要な機能が利用できるかで判定する（DES-057 §2.4）
   （REQ-014 前提条件）。片方が利用できない場合は残る backend を試し、両方利用できないときに限り失敗する。
 - key `rules` / `specs` は doc-advisor の予約語 `all` と衝突しない。
 - doc-advisor は `.doc_structure.yaml` を読まない。対象ディレクトリ（`dirs`/`exclude`）は forge が解決して

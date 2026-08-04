@@ -12,8 +12,8 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 > **文書検索バックエンドは外部依存の 2 backend 構成（doc-advisor / doc-db）**: forge の `/forge:query-db-rules` 等の
 > 検索・索引更新系スキルは、順序リストに基づいて backend を選択する（既定は doc-advisor 先位。
 > `.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。doc-advisor は別リポジトリ
-> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（`check-toc`・`index-docs`・`query-docs`）が提供し、
-> doc-db はローカルで稼働する文書検索サーバである。最小対応バージョンは DocAdvisor 0.4.6・doc-db 0.3.3。
+> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（`index-docs`・`query-docs`）が提供し、
+> doc-db はローカルで稼働する文書検索サーバである。いずれの backend もバージョンを条件にせず、必要な機能が利用できるかで判定する。
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。
 
@@ -24,7 +24,6 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 - プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
 - プロジェクト仕様の参照には `query-db-specs` SKILL を使う
 - プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
-- **ToC 再生成（`update-db-*`）は main / develop でのみ行う**: 他ブランチで実行すると並行開発と衝突し merge で破棄される。feature ブランチでは未実施である旨を完了報告に明記し、**利用者が merge したと告げたターン**で実行する。レビューで ToC の古さを指摘されても feature ブランチでは直さない
 - **ルールは `docs/rules/` で管理**: CLAUDE.md にルールを詰め込まない（コンテキスト肥大化防止）
 - **設計文書は `docs/specs/**/{requirements,design}/` に保存**: plan モードで作成した重要設計は ID プレフィックス（REQ-, DES-, ADR-）で命名
 - **プラグインランタイム文書の境界**: `plugins/doc-advisor/{workflows,formats}/` 配下は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）

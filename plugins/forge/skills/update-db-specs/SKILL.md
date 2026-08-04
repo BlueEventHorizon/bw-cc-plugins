@@ -90,7 +90,8 @@ sleep 2 && python3 "${CLAUDE_SKILL_DIR}/scripts/sync_documents.py" --status <job
 #### Step 4.1: 可用性を判定する
 
 システムリマインダの available-skills に `doc-advisor:index-docs` が存在するかで判定する。
-update 経路が要求するのはこの 1 SKILL のみであり、`check-toc` の有無は判定に使わない。
+update 経路が要求するのはこの 1 SKILL のみである。**バージョン番号を条件にせず、特定の SKILL の有無から
+バージョンを推測することもしない [MANDATORY]**。
 
 存在しない場合、doc-advisor は未導入（利用不能）である。後位が残っていれば理由を控えて
 Step 2 の次の backend へ、残っていなければ明示エラーとして終了する。
