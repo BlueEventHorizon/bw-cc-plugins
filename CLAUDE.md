@@ -2,126 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+配布先プロジェクトの CLAUDE.md はほぼ空であり、汎用規範の主たる担い手は `/forge:onboarding` である。本ファイルはその写しではない。本ファイルに汎用規範を重複させるのは、onboarding が起動されない会話直の作業で規範が 0 になることを防ぐためである。
+
 ## Project Overview
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.4.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応
-- **anvil** — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）（`/anvil:commit`, `/anvil:create-pr`, `/anvil:create-issue`, `/anvil:triage-issue`。実装を担う `anvil:impl-issue` は triage-issue 経由でのみ起動）
+- **forge** (v0.4.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューと相談は常駐 Codex セッションとの往復で行う（`review` / `talk-to-codex` / `msg-review`）
+- **anvil** (v0.1.0) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
-> **文書検索バックエンドは外部依存の 2 backend 構成（doc-advisor / doc-db）**: forge の `/forge:query-db-rules` 等の
-> 検索・索引更新系スキルは、順序リストに基づいて backend を選択する（既定は doc-advisor 先位。
-> `.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。doc-advisor は別リポジトリ
-> [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)（`index-docs`・`query-docs`）が提供し、
-> doc-db はローカルで稼働する文書検索サーバである。いずれの backend もバージョンを条件にせず、必要な機能が利用できるかで判定する。
+> 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
 
 全体像・スキル一覧・ワークフロー図は [README.md](README.md) を参照。
 
+forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どちらも本リポジトリの外にある**。doc-advisor の原本は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)、doc-db はローカル稼働の文書検索サーバである。backend 側の不具合を本リポジトリで回避してはならない（下記 SoT 項）。
+
+## ドッグフーディング
+
+本リポジトリは forge / anvil の原本であると同時に、**その 2 プラグインに管理される利用プロジェクトでもある**。
+
+この二重性は、**自分の設定を製品の仕様と取り違える**という固有の罠を生む。プラグインが規定しているのは仕組み（`.doc_structure.yaml` による rules / specs のパス解決）だけで、**パスそのものは各プロジェクトの設定値**である。本リポジトリが `docs/rules/` / `docs/specs/**/` を使うのは設定の結果に過ぎず、他プロジェクトは `rules/` / `specs/*/` 等の別の配置を取る。
+
 ## 重要規約 [MANDATORY]
 
-- **実装・文書改編に着手する前に `/forge:query-forge-rules`・`/forge:query-db-rules` で関連する原則・ルールを特定して読む**（スキル経由の作業は各スキルの調査 Phase がこれを担う。会話直の作業でも省略しない）
-- プロジェクトルール文書の参照には `query-db-rules` SKILL を使う
-- プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
-- プロジェクト仕様の参照には `query-db-specs` SKILL を使う
-- プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
-- **ルールは `docs/rules/` で管理**: CLAUDE.md にルールを詰め込まない（コンテキスト肥大化防止）
-- **設計文書は `docs/specs/**/{requirements,design}/` に保存**: plan モードで作成した重要設計は ID プレフィックス（REQ-, DES-, ADR-）で命名
-- **プラグインランタイム文書の境界**: `plugins/{forge,anvil}/docs/` 配下は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）
+- **記述を事実の証拠にしない**: 文書・設定の記載内容、未コミットの作業中成果物、未合意の前提を根拠に判断・報告しない。実体を確認してから述べる
+- **認識した不整合・疑問は必ず出す**: 自分で気づいた矛盾・非対称・判断の分岐点を、現状維持や省略の理由にしない。黙って進めたものは報告漏れではなく隠蔽である
+- **破棄を伴う操作は現状確認から**: 差し戻し・上書き・削除を提案または実行する前に、対象の未コミット変更を確認する
+- **プロジェクトの不具合は担当と無関係に最優先**: スキル・スクリプト・テストの異常を見つけたら、自分が作った箇所か否かを問わず、進行中の作業を直ちに中断して修正に全力を当てる。「自分の変更とは無関係」「担当外」は放置の理由にならない。AI の責任はこのプロジェクトのすべての要素が正しく動くことにある
+- **設計文書は `docs/specs/**/{requirements,design}/` に保存**: plan モードで作成した重要設計も ID プレフィックス（`REQ-` / `DES-` / `ADR-`）で命名する
+- **プラグインランタイム文書の境界**: `plugins/*/docs/`（現状 forge のみ）は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）
+- **配布物（`plugins/` 配下）に具体パスを書かない**: rules / specs のパスは常に `.doc_structure.yaml` 経由で解決する。本リポジトリ固有の事情（`forge` / `anvil` という具体名、`meta/`、worktree 配置、原本 SoT である立場）も埋め込まない
 - **配布物（`plugins/` 配下）からプロジェクト開発文書（`docs/` 配下）を参照しない**: パス直書きも spec ID 参照（`DES-028 §3.4.1 に従う` 等）も禁止。規範は配布物側に持たせる。置き場は「参照元に本文を書く」か「配布物内に別文書を作って参照する」のどちらでもよい（[implementation_guidelines.md](docs/rules/implementation_guidelines.md)）
-- **プロジェクト文書（`docs/` 配下）では、必要でない参照リンクを書かない**: 参照先の発見は `query-docs` に委ねる。文書には「何に依存するか（概念・ID）」だけ残す。**書かなければ本文の意味が通じない場合に限り**参照を書き、その場合はマークダウンリンク方式（`[表示名](相対パス)`）を使う。地の文でのパス直書き・リンクなしのファイル名言及は使わない
-- **配布物（`plugins/` 配下）は上記の対象外**: 配布物は決定論的に閉じた木として配布されるため、開発者責任で内部リンクを書く。記法は forge の `document_style_guide.md` §5.1 に従う
-- **feature/fix PR では CHANGELOG.md・version 関連ファイルを編集しない**。リリースコミットでまとめて更新（`/forge:update-version` を使う）
-- **本リポジトリは下流プロジェクトを導く SoT である**。配布された SKILL / agent / script を使っている最中に不具合・不足を発見したら、`~/.claude/plugins/cache/` のキャッシュ実体や下流プロジェクトでの回避策で済ませず、必ず本リポジトリ (`plugins/{anvil,forge}/...`) の原本を直す（doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が原本である）。キャッシュは次回 install で再生成されるため、原本を直すことが下流すべてへの正しい伝播経路になる。「刹那的に今のセッションで動くようにする」ではなく「プロジェクトを正しいものに完遂し、すべての他のプロジェクトを正しく導く」が目的。memory に回避策を保存するのは原本修正の代替にならない
-- **`.toc_work/` 等の消えるべき一時物は `.gitignore` に入れない**。残存が `git status` に untracked として出ることで異常を検知できる
+- **`docs/` 配下では必要でない参照リンクを書かない**: 参照先の発見は検索に委ねる。文書には「何に依存するか（概念・ID）」だけ残す。**書かなければ本文の意味が通じない場合に限り**マークダウンリンク方式（`[表示名](相対パス)`）で書く。地の文でのパス直書き・リンクなしのファイル名言及は使わない。**配布物は対象外**（決定論的に閉じた木として配布されるため開発者責任で内部リンクを書く。記法は forge の `document_style_guide.md` §5.1）
+- **本リポジトリは下流プロジェクトを導く SoT である**。配布された SKILL / agent / script を使っている最中に不具合・不足を発見したら、`~/.claude/plugins/cache/` のキャッシュ実体や下流プロジェクトでの回避策で済ませず、必ず本リポジトリ（`plugins/{anvil,forge}/...`）の原本を直す。キャッシュは次回 install で再生成されるため、原本を直すことが下流すべてへの正しい伝播経路になる。「刹那的に今のセッションで動くようにする」ではなく「プロジェクトを正しいものに完遂し、すべての他のプロジェクトを正しく導く」が目的。memory に回避策を保存するのは原本修正の代替にならない
 - **決定論的な定型処理（列挙・転記・集計・ファイル生成）は script 化する**。AI は判断のみ担い、手転記・手列挙をしない
 - **agent/SKILL のプロンプト指示は混入点でなく出力構築点に 1 箇所だけ置く**。近接した複数箇所への同一指示は重複であり追記しない
-- **`/forge:merge-specs` の merge は意味の統合であり、文書の物理的な結合ではない**。新しい仕様を正として既存文書の齟齬・不足・誤りを正す作業であり、追加 DIR を消すことが目的ではない。既存文書と同一スコープの内容は既存側へ移すが、**スコープが異なるもの（別 backend・サブシステム相当）を無理に一体化してはならない**。分離できるものは分離したまま維持する。計画書のみ実装済みとして破棄する（`additive_development_spec.md` §4）
 
-## Repository Layout
+## meta/ ディレクトリ（現在不在）
 
-| Path                                              | 役割                                                                      |
-| ------------------------------------------------- | ------------------------------------------------------------------------- |
-| `.claude-plugin/marketplace.json`                 | マーケットプレイスマニフェスト                                            |
-| `plugins/{plugin}/.claude-plugin/plugin.json`     | 各プラグインマニフェスト                                                  |
-| `plugins/{plugin}/skills/{skill}/SKILL.md`        | スキル定義（frontmatter + 本文）                                          |
-| `plugins/{plugin}/scripts/`                       | スキルから呼ばれる Python / Bash                                          |
-| `plugins/{plugin}/docs/`                          | プラグイン内部仕様（forge は `/forge:query-forge-rules` 対象）            |
-| `plugins/forge/toc/rules/rules_toc.yaml`          | forge 内蔵知識ベースの ToC                                                |
-| `docs/rules/`                                     | プロジェクトルール（`/forge:query-db-rules` 対象）                        |
-| `docs/specs/{plugin}/{requirements,design,plan}/` | プラグインごとの仕様文書（`/forge:query-db-specs` 対象）                  |
-| `docs/readme/`                                    | ユーザー向けガイド（日英併記、`guide_*_ja.md`）                           |
-| `docs/references/`                                | 外部参考資料                                                              |
-| `tests/{common,forge}/`                           | プラグイン別テスト                                                        |
-| `meta/`                                           | 研究・評価・ゴールデンセット（git 管理外、下記ルール参照）                |
-| `.claude/settings.json`                           | 権限・hooks 設定（プロジェクトレベル）                                    |
-| `.claude/skills/`                                 | ローカル限定 skill（配布対象外、`update-forge-toc` 等）                   |
-| `.agents/skills/`                                 | agent 向け skill                                                          |
-| `.doc_structure.yaml`                             | rules/specs のパス解決設定                                                |
-| `.version-config.yaml`                            | バージョン一括更新の対象設定                                              |
-| `dprint.jsonc`                                    | フォーマッタ設定（JSON/TOML/Markdown/YAML）                               |
-| `AGENTS.md`                                       | `CLAUDE.md` へのシンボリックリンク（Codex 向け、内容は CLAUDE.md と同一） |
+`meta/` は研究・評価・ゴールデンセット用の作業領域であり、**いつでも削除される**。現時点ではこのワークツリーにもメインワークツリーにも存在しない。
 
-### meta/ ディレクトリのルール [MANDATORY]
-
-`meta/` は研究・評価・ゴールデンセット用の作業領域であり、**いつでも削除される可能性がある**。
-
-- `plugins/` / `tests/` / `docs/` 配下のコード・文書は `meta/` 内のファイルに依存してはならない
-- `meta/` 内のスクリプトが `plugins/` のモジュールを呼び出すのは許容される（逆方向は禁止）
+- `plugins/` / `tests/` / `docs/` 配下のコード・文書は `meta/` 内のファイルに依存してはならない（`meta/` から `plugins/` のモジュールを呼ぶ逆方向は許容）
 - SKILL として配布しない（ユーザー環境に `meta/` は存在しない）
-
-## Information Sources
-
-タスクに応じて以下の入口を使う:
-
-| 対象                                                       | 入口                                                                                                               |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| プロジェクト全体の鳥瞰                                     | `README.md`（ワークフロー図 + 全スキル一覧 + トリガー句）                                                          |
-| 仕様駆動開発の思想・What/How 境界                          | `docs/readme/guide_sdd_ja.md`                                                                                      |
-| 各スキルの挙動・引数・使用例                               | `docs/readme/forge/guide_{create_docs,implement,review,setup,uxui_design}_ja.md` / `docs/readme/guide_anvil_ja.md` |
-| プロジェクトルール（実装・文書・CLI・SKILL 作成）          | `/forge:query-db-rules` → `docs/rules/`                                                                            |
-| プロジェクト仕様（要件/設計/計画）                         | `/forge:query-db-specs` → `docs/specs/`                                                                            |
-| forge 内部仕様（ID体系・フォーマット・原則・レビュー基準） | `/forge:query-forge-rules` → `plugins/forge/docs/`                                                                 |
-| Claude Code / SDK / API 仕様                               | `claude-code-guide` agent                                                                                          |
-| 最新の変更意図                                             | `git log main..HEAD` / `CHANGELOG.md`                                                                              |
+- 検索品質（精度・再現率）の評価スクリプトとゴールデンセットの置き場。ユニットテストはバグの不在を保証するが、検索品質はここで測る
 
 ## Development
 
-ビルドシステム・パッケージマネージャーは使用していない。Python スクリプトは標準ライブラリのみで動作する（外部依存なし）。
+ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみで動作する（外部依存を追加しない）**。`makefile` はビルドではなくインストール・外部接続用（`make install-forge` / `install-anvil` / `install-all`、Codex 向けは `install-*-codex`）。
 
-### フォーマット
-
-JSON / TOML / Markdown / YAML は [dprint](https://dprint.dev/) でフォーマット。設定は `dprint.jsonc`。
-
-```bash
-dprint fmt          # フォーマット適用
-dprint check        # チェックのみ
-```
-
-### プラグインのローカルテスト
-
-詳細な手順は [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
-
-```bash
-# 両プラグインを同時にロード（推奨）
-claude --plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil
-
-# セッション限定でプラグインをロード
-claude --plugin-dir ./plugins/forge
-
-# マーケットプレイス経由
-/plugin marketplace add BlueEventHorizon/bw-cc-plugins
-/plugin install forge@bw-cc-plugins
-```
-
-### スクリプト動作確認
-
-```bash
-# base ブランチ候補の分岐点解析
-python3 plugins/forge/skills/review/scripts/analyze_branch_point.py
-
-# ディレクトリスキャン（メタデータ JSON 出力）
-python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクトルート]
-```
+- **CI（`.github/workflows/ci.yml`）のゲートは 2 つ**: `python3 -m unittest discover -s tests -p 'test_*.py'` と `dprint check`。JSON / TOML / Markdown / YAML を編集したら [dprint](https://dprint.dev/) で `dprint fmt` を通す（設定は `dprint.jsonc`）。通さないと CI が落ちる
+- ローカル読み込み: `claude --plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil`。詳細は [DEVELOPMENT.md](DEVELOPMENT.md)
+- `AGENTS.md` は `CLAUDE.md` へのシンボリックリンク（Codex 向け）。どちらを編集しても同一実体が変わる
 
 ## Debugging [MANDATORY]
 
@@ -141,7 +72,7 @@ echo $PATH | tr ':' '\n' | grep -iE 'advisor|plugin'
 
 キャッシュ版（`~/.claude/plugins/cache/`）とローカル開発版（`--plugin-dir` 指定）は**同じバージョン番号でも実装が異なる**場合がある。キャッシュ版を実測した結果をローカル版に適用すると誤った結論になる。
 
-**実体パスを特定したら、次に「どのブランチか」を確認する [MANDATORY]**。ローカル開発版は作業中の feature ブランチがチェックアウトされていることがあり、そこでは**リリース済みの契約が既に書き換えられている**。ここを確認せずに読むと、未リリースの変更を「現在の仕様」と誤認し、正しい自プロジェクトの記述を不具合として報告してしまう（実際に、doc-advisor の `index-docs` 引数契約で発生した）。契約の正本は当該リポジトリの `main` である。
+**実体パスを特定したら、次に「どのブランチか」を確認する。** ローカル開発版は作業中の feature ブランチがチェックアウトされていることがあり、そこでは**リリース済みの契約が既に書き換えられている**。ここを確認せずに読むと、未リリースの変更を「現在の仕様」と誤認し、正しい自プロジェクトの記述を不具合として報告してしまう（実際に、doc-advisor の `index-docs` 引数契約で発生した）。契約の正本は当該リポジトリの `main` である。
 
 ```bash
 # 実体ディレクトリのブランチと、契約の正本（main）との差を確認する
@@ -154,20 +85,7 @@ git -C <実体パス> show main:<契約を定める SKILL.md やスクリプト>
 `plugins/` 配下の Python スクリプトにはテストが必須。SKILL.md はテスト困難なため例外。
 `.claude/` 配下のローカルスキル・スクリプトはテスト対象外。
 
-### テストの配置
-
-`tests/` にプラグイン名・スキル名で分類:
-
-```
-tests/
-├── common/                 # プラグイン横断（マニフェスト整合性等）
-├── forge/
-│   ├── review/
-│   └── scripts/
-└── {plugin}/               # 新プラグイン追加時も同構造
-```
-
-### テスト実行
+テストは `tests/` にプラグイン名・スキル名で分類して配置する。
 
 ```bash
 # 一括実行
@@ -177,10 +95,33 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-### 品質評価テスト
+<!-- FORGE_ONBOARDING_START hash=3c0bd8a39c4b -->
 
-ユニットテストはバグがないことを保証する。**検索品質**（精度・再現率）は `meta/test_docs/` で測定する（git 管理外、ローカルのみ）。
+> このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
+> `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
 
-- doc-advisor の ToC 検索品質を同一ゴールデンセットで測定
-- 評価スクリプト: `meta/test_docs/` 配下（`run_search_test.py` / `evaluate_toc_results.py` 等）
-- 詳細・実行手順は `meta/test_docs/README.md`
+## forge 必読文書 [MANDATORY]
+
+**NEVER skip.** 下記を全て読み込み、深く理解すること。
+
+- `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md` — 文書を書く・直すときの記述スタイル
+- `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` — ADR を直接起票するときの書式
+- `${CLAUDE_PLUGIN_ROOT}/docs/forge_anti_patterns.md` — 実装・文書で踏んではならないアンチパターン
+- `${CLAUDE_PLUGIN_ROOT}/docs/sensitive_information_spec.md` — リポジトリに含めてはならない情報
+- `${CLAUDE_PLUGIN_ROOT}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）
+
+## forge プロジェクト文書 [MANDATORY]
+
+- プロジェクトルール文書の参照には `query-db-rules` SKILL を使う
+- プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
+- プロジェクト仕様の参照には `query-db-specs` SKILL を使う
+- プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
+
+## forge 重要規約 [MANDATORY]
+
+- **実装・文書改編に着手する前に `/forge:query-forge-rules`・`/forge:query-db-rules` で関連する原則・ルールを特定して読む**（スキル経由の作業は各スキルの調査 Phase がこれを担う。会話直の作業でも省略しない）
+- **ルールはルール文書管理**: コンテキスト肥大化防止のため、CLAUDE.md にルールを詰め込まないことを推奨する
+- **一般の作業で CHANGELOG.md・version 関連ファイルを編集しない**。リリースコミットでまとめて更新（`/forge:update-version` を使う）
+- **`.toc_work/` 等の消えるべき一時物は `.gitignore` に入れない**。残存が `git status` に untracked として出ることで異常を検知できる
+
+<!-- FORGE_ONBOARDING_END -->

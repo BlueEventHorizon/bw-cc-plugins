@@ -49,6 +49,9 @@ targets:
         pattern: "| **anvil** | {version} |"
         filter: "| **anvil**"
         optional: true
+      - path: CLAUDE.md
+        pattern: "**anvil** (v{version})"
+        filter: "**anvil** (v"
 
 changelog:
   file: CHANGELOG.md
