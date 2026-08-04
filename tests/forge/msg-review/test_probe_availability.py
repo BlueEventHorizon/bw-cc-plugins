@@ -10,8 +10,11 @@
 """
 
 import importlib.util
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 _SCRIPT_PATH = (
     Path(__file__).resolve().parents[3]
@@ -24,8 +27,13 @@ _spec.loader.exec_module(probe_mod)
 
 _PROJECT_ROOT = "/tmp/project"
 
-#: 3 軸すべてが成立している応答
+#: 初期化が完了し、3 軸すべてが成立している応答
 _OK_RESPONSES = {
+    "ensure_codex_hook.py": {
+        "gitignore": {"status": "already_present"},
+        "symlink": {"status": "unchanged"},
+        "hooks_json": {"status": "unchanged"},
+    },
     "check_cmux_available.py": {"status": "available", "path": "/opt/bin/cmux"},
     "find_codex_pane.py": {"status": "found", "workspace": "W", "surface": "S"},
     "check_setup.py": {"status": "ok", "checks": [], "warnings": []},
@@ -68,12 +76,17 @@ class AllAxesSatisfiedTest(unittest.TestCase):
         self.assertTrue(result["available"])
         self.assertEqual(result["missing"], [])
 
-    def test_all_three_axes_are_evaluated(self):
+    def test_all_three_axes_are_evaluated_after_initialization(self):
         recorder = _Recorder()
         probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
         self.assertEqual(
             sorted(recorder.scripts),
-            ["check_cmux_available.py", "check_setup.py", "find_codex_pane.py"],
+            [
+                "check_cmux_available.py",
+                "check_setup.py",
+                "ensure_codex_hook.py",
+                "find_codex_pane.py",
+            ],
         )
 
     def test_project_root_is_passed_to_the_axes_that_need_it(self):
@@ -272,6 +285,123 @@ class WarningsArePassedThroughTest(unittest.TestCase):
         )
         result = probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
         self.assertEqual(result["warnings"], [])
+
+
+class InitializeBeforeCheckingTest(unittest.TestCase):
+    """初期化（イニシャルセットアップ）を判定より前に実行する [MANDATORY]。
+
+    Codex 側フック登録と非追跡 symlink `.codex/msg-sys/scripts` は、新規クローン・
+    新規 worktree では必ず不在である（壊れているのではなく、まだ作られていない）。
+    検査を初期化より前に置くと、初期化すれば使える環境を「使えない」と判定し、
+    初期化する唯一の経路が封じられる（実際にこの順序で `/forge:review` が新規環境で
+    恒久的に fail closed した）。順序は静かに壊れるためテストで固定する。
+    """
+
+    def test_initialization_runs_before_every_axis(self):
+        recorder = _Recorder()
+        probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
+        self.assertEqual(recorder.scripts[0], "ensure_codex_hook.py")
+
+    def test_initialization_receives_project_root_and_plugin_dir(self):
+        recorder = _Recorder()
+        probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
+        init_call = recorder.calls[0]
+        self.assertIn("--project-root", init_call)
+        self.assertIn(_PROJECT_ROOT, init_call)
+        self.assertIn("--plugin-msg-sys-dir", init_call)
+        self.assertIn(str(probe_mod._MSG_SYS_DIR), init_call)
+
+    def test_setup_axis_checks_the_full_precondition_set(self):
+        """検査項目を契機ごとに作り分けない（前提検査へ除外フラグを渡さない）。"""
+        recorder = _Recorder()
+        probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
+        setup_call = next(
+            call for call in recorder.calls if Path(call[1]).name == "check_setup.py"
+        )
+        self.assertNotIn("--skip-codex-hook", setup_call)
+
+    def test_initialization_conflict_is_added_to_the_setup_shortfall(self):
+        """初期化を完了できなかった理由を検査結果に添える（失敗を隠さない）。"""
+        recorder = _Recorder(
+            {
+                "ensure_codex_hook.py": {
+                    "symlink": {"status": "conflict", "path": "/proj/.codex/msg-sys/scripts"},
+                    "hooks_json": {"status": "skipped_due_to_symlink_conflict"},
+                },
+                "check_setup.py": {
+                    "status": "error",
+                    "checks": [
+                        {"name": "codex_hooks_registration", "ok": False, "detail": "..."}
+                    ],
+                    "warnings": [],
+                },
+            }
+        )
+        entry = next(
+            e
+            for e in probe_mod.probe(_PROJECT_ROOT, run_json=recorder)["missing"]
+            if e["axis"] == probe_mod.AXIS_SETUP
+        )
+        self.assertIn("人間由来の実体", entry["detail"])
+        self.assertIn("手動で解消", entry["remedy"])
+
+    def test_initialization_failure_alone_is_not_a_shortfall(self):
+        """初期化の結果そのものを不足として数えない（実際の状態は前提検査が判定する）。"""
+        recorder = _Recorder(
+            errors={"ensure_codex_hook.py": "実行に失敗しました: OSError"}
+        )
+        result = probe_mod.probe(_PROJECT_ROOT, run_json=recorder)
+        # check_setup が ok を返す限り、初期化の実行失敗だけでは利用不可にしない
+        self.assertTrue(result["available"])
+
+
+class ExitCodeIsNotUsedForJudgmentTest(unittest.TestCase):
+    """判定は JSON の `status` で行い、exit code では分岐しない [MANDATORY]。
+
+    `find_codex_pane.py` は `found` 以外で exit 1 を返す（`wake_codex.sh` が注入対象の
+    確定を exit code で判定するため、そちらの契約は変えられない）。exit code で先に
+    切ると `not_found` / `ambiguous` が「判定できなかった」へ畳み込まれ、常駐していない
+    だけの利用者に「cmux の動作を確認してください」という誤った対処を示す状態になる。
+
+    差し替え不可の `_run_json`（本番の subprocess 境界）を実際に呼んで固定する。
+    軸ごとの応答を差し替えるテストではこの不一致を検出できないため。
+    """
+
+    def _fake_script(self, tmpdir, payload, exit_code):
+        script = Path(tmpdir) / "find_codex_pane.py"
+        script.write_text(
+            "import json, sys\n"
+            f"print(json.dumps({payload!r}))\n"
+            f"sys.exit({exit_code})\n",
+            encoding="utf-8",
+        )
+        return script
+
+    def test_json_on_stdout_is_used_even_when_exit_code_is_nonzero(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            script = self._fake_script(tmpdir, {"status": "not_found"}, 1)
+            payload, error = probe_mod._run_json([sys.executable, str(script)])
+        self.assertIsNone(error)
+        self.assertEqual(payload, {"status": "not_found"})
+
+    def test_nonzero_exit_without_json_is_reported_as_failure(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            script = Path(tmpdir) / "find_codex_pane.py"
+            script.write_text("import sys\nsys.exit(1)\n", encoding="utf-8")
+            payload, error = probe_mod._run_json([sys.executable, str(script)])
+        self.assertIsNone(payload)
+        self.assertIn("find_codex_pane.py", error)
+
+    def test_not_found_reaches_the_residency_remedy_through_the_real_boundary(self):
+        """exit 1 の `not_found` が「常駐していない」の remedy に到達すること。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            script = self._fake_script(tmpdir, {"status": "not_found"}, 1)
+            with mock.patch.object(probe_mod, "FIND_PANE_SCRIPT", script):
+                result = probe_mod.probe(_PROJECT_ROOT, run_json=probe_mod._run_json)
+        peer = next(e for e in result["missing"] if e["axis"] == probe_mod.AXIS_PEER)
+        self.assertIn("常駐 Codex セッションが", peer["detail"])
+        self.assertIn("常駐起動", peer["remedy"])
+        self.assertNotIn("判定できませんでした", peer["detail"])
 
 
 class ScriptPathsExistTest(unittest.TestCase):
