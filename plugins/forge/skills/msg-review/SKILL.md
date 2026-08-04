@@ -48,6 +48,16 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/probe_availability.py" \
   --project-root "$(git rev-parse --show-toplevel)"
 ```
 
+**このコマンドは検査の前に初期化（イニシャルセットアップ）を済ませる [MANDATORY]**。
+Codex 側 Stop フックの登録と、その実体への symlink（`.codex/msg-sys/scripts`）は
+マシン固有のため非追跡であり、**新規クローン・新規 git worktree・プラグイン実体パスの
+変更後には必ず不在**である（壊れているのではなく、そのチェックアウトでまだ作られて
+いない）。初期化は冪等で、済んでいれば何もしない。
+
+**未初期化の状態を検査してはならない**。初期化前に検査すると、初期化すれば使える環境を
+「使えない」と判定し、初期化する唯一の経路が封じられる。初期化は本コマンドの内側で
+行われるため、SKILL 側で別途呼ぶ必要はない（順序を散文ではなく構造で保証している）。
+
 出力（標準出力に単一 JSON）:
 
 ```json
@@ -60,7 +70,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/probe_availability.py" \
 
 `missing` の各要素は不足 1 件に対応する。`axis` は `wake`（起床手段 = cmux）/ `peer`（相手セッションの常駐）/ `setup`（msg-sys 側の設定）のいずれかである。
 
-**この Step で依頼を送らない・起床しない [MANDATORY]**。検査は読み取りのみである。本体は複数の候補バックエンドを順に検査するため、検査自体が相手の状態を変えてはならない。Step 1（フックの自己修復）も実行しない——あれはファイルを書き換える処理であり、検査の副作用にしてはならない。
+**この Step で依頼を送らない・起床しない [MANDATORY]**。本体は複数の候補バックエンドを順に検査するため、検査自体が**相手（レビュアー）の状態**を変えてはならない。自分の設定の初期化はこれに含まれない（検査対象を成立させる前準備であり、相手にも他候補にも作用しない）。
 
 **判定を自分で書かない [MANDATORY]**。cmux の有無・相手の常駐・設定の健全性はいずれも上記スクリプトが軸ごとの判定スクリプトへ委ねている。SKILL.md 側で `command -v cmux` 等を直接実行して判定を再実装しない（同型の別実装を持つと、判定と起床の対象がずれる）。
 
@@ -72,9 +82,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/probe_availability.py" \
 
 ## ラウンド実行
 
-### Step 1: Codex 側フックの自己修復 [MANDATORY]
+### Step 1: 初期化（イニシャルセットアップ） [MANDATORY]
 
-Codex は Claude Code のプラグイン hooks 自動登録機構を持たず、`.codex/hooks.json`（Codex CLI 自身が固定のプロジェクトルート直下でのみ読む設定）の登録コマンドが指すスクリプトパスは常に静的な文字列である。このパスが実在しないまま Codex の Stop フックが発火すると、コマンド自体が実行に失敗し、Codex はそれを解消されるまでブロックし続ける無限ループに陥る。これを避けるため、依頼を送信する**前に毎回**次を実行し、symlink・登録内容を自己修復する:
+Codex は Claude Code のプラグイン hooks 自動登録機構を持たず、`.codex/hooks.json`（Codex CLI 自身が固定のプロジェクトルート直下でのみ読む設定）の登録コマンドが指すスクリプトパスは常に静的な文字列である。このパスが実在しないまま Codex の Stop フックが発火すると、コマンド自体が実行に失敗し、Codex はそれを解消されるまでブロックし続ける無限ループに陥る。これを避けるため、依頼を送信する**前に毎回**次を実行し、symlink・登録内容を用意する（冪等。済んでいれば何もしない）:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/ensure_codex_hook.py" \
@@ -84,7 +94,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/ensure_codex_hook.py" \
 
 このスクリプトは `<project_root>/.codex/msg-sys/scripts` を、現在ロードされている forge プラグイン自身の `scripts/msg-sys/` への symlink にする（コピーではない。プラグインが更新されても再インストール作業なしで常に最新版を参照する）。あわせて `<project_root>/.codex/hooks.json` の Stop フックに、この symlink 経由の git-root-relative パス（`$(git rev-parse --show-toplevel)/.codex/msg-sys/scripts/hooks/check_inbox.py`）を指すエントリが無い・古ければ追加・修復する（既存の無関係な Stop フックは変更しない）。
 
-`symlink.status` が `"conflict"`（symlink であるべき場所に人間由来の実ファイル・ディレクトリが存在する）、または `hooks_json.status` が `"error"`（既存 `.codex/hooks.json` が壊れた JSON 等）の場合は書き換えを行わないため、その旨を利用者に報告し手動での確認を促す（自動修復を諦めるのみで、送信の可否は Step 2 の結果に従う）。
+`symlink.status` が `"conflict"`（symlink であるべき場所に人間由来の実ファイル・ディレクトリが存在する）、または `hooks_json.status` が `"error"`（既存 `.codex/hooks.json` が壊れた JSON 等）の場合は書き換えを行わないため、その旨を利用者に報告し手動での確認を促す（初期化を諦めるのみで、送信の可否は Step 2 の結果に従う）。
+
+> **可用性検査を経てここへ来た場合、初期化は既に済んでいる**（可用性検査のコマンドが内側で同じ処理を行う）。本 Step は冪等であり、可用性検査を経ない経路でも初期化を保証するために残す。定義点は `ensure_codex_hook.py` の 1 つである。
 
 ### Step 2: 前提検査
 
@@ -92,7 +104,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/ensure_codex_hook.py" \
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/check_setup.py" [--project-root <path>]
 ```
 
-出力 JSON の `status` が `error` の場合、依頼を送信せず **`failure` を本体へ返す**（fail closed）。失敗理由には `checks` の中で `ok: false` の項目と、その対処を含める。`claude_plugin_hook_registration` が失敗している場合は forge プラグイン自体の破損・古いバージョンを疑い再インストールを、`codex_hooks_registration` が Step 1 の自己修復後もなお失敗している場合は Step 1 の `conflict`/`error` 報告を参照して手動確認を、それぞれ理由に含める。
+出力 JSON の `status` が `error` の場合、依頼を送信せず **`failure` を本体へ返す**（fail closed）。失敗理由には `checks` の中で `ok: false` の項目と、その対処を含める。`claude_plugin_hook_registration` が失敗している場合は forge プラグイン自体の破損・古いバージョンを疑い再インストールを、`codex_hooks_registration` が Step 1 の初期化後もなお失敗している場合は Step 1 の `conflict`/`error` 報告を参照して手動確認を、それぞれ理由に含める。
 
 `warnings`（Codex 側 trust 登録は機械検査不能）は送信前の予告として提示するが、これのみでは送信を止めない（fail-open）。**相手セッションの常駐はここでは扱わない**——可用性検査（上記）が稼働中のプロセスを直接確認して判定しており、ラウンド実行に到達している時点で常駐は確認済みである。
 
