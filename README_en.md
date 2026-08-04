@@ -4,7 +4,7 @@ Claude Code plugins for **Spec-Driven Development** — write specs first, then 
 
 **Marketplace version: 0.3.1**
 
-The marketplace ships **2 plugins** (forge, anvil). forge's search skills select a document-search backend (**doc-advisor** / **doc-db**) from an ordered list. The default puts doc-advisor first; you can change the order with `doc_backend.prefer` in `.claude/.forge.yaml`. doc-advisor is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) (`check-toc` / `index-docs` / `query-docs`).
+The marketplace ships **2 plugins** (forge, anvil). forge's search skills select a document-search backend (**doc-advisor** / **doc-db**) from an ordered list. The default puts doc-advisor first; you can change the order with `doc_backend.prefer` in `.claude/.forge.yaml`. doc-advisor is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) (`index-docs` / `query-docs`).
 
 [Japanese README (README.md)](README.md)
 
@@ -45,7 +45,7 @@ flowchart LR
 | **forge** | 0.4.1   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
 | **anvil** | 0.1.0   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
 
-> **The document-search backends (doc-advisor / doc-db) are external dependencies**: doc-advisor ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`. doc-db is a locally running document-search server; when the `doc-db` command is installed, it becomes an available candidate, and forge starts and uses it automatically when the ordered list selects it. **Minimum supported versions: DocAdvisor 0.4.6 and doc-db 0.3.3** (older versions are not covered by backward compatibility).
+> **The document-search backends (doc-advisor / doc-db) are external dependencies**: doc-advisor ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`. doc-db is a locally running document-search server; when the `doc-db` command is installed, it becomes an available candidate, and forge starts and uses it automatically when the ordered list selects it. Neither backend is gated on a version: availability is judged by whether the required features can be used.
 
 ## Skills
 
@@ -130,7 +130,7 @@ flowchart LR
 
 ### Document-search backends (doc-advisor / doc-db, external)
 
-Document search is provided by two backends: doc-advisor, the external [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) plugin (`check-toc` / `index-docs` / `query-docs`; see that repository's README for details), and doc-db, a locally running document-search server. forge's `/forge:query-db-rules` etc. select one from an ordered list (doc-advisor first by default; change with `doc_backend.prefer` in `.claude/.forge.yaml`).
+Document search is provided by two backends: doc-advisor, the external [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) plugin (`index-docs` / `query-docs`; see that repository's README for details), and doc-db, a locally running document-search server. forge's `/forge:query-db-rules` etc. select one from an ordered list (doc-advisor first by default; change with `doc_backend.prefer` in `.claude/.forge.yaml`).
 
 ## Installation
 
@@ -143,12 +143,12 @@ Inside a Claude Code session:
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
 
-# The doc-advisor document-search backend ships from a separate marketplace (0.4.6 or later)
+# The doc-advisor document-search backend ships from a separate marketplace
 /plugin marketplace add BlueEventHorizon/DocAdvisor
 /plugin install doc-advisor@DocAdvisor
 ```
 
-To use the other document-search backend, doc-db (0.3.3 or later), install the `doc-db` command on your PATH. This makes it an available candidate; forge starts and uses it automatically when the ordered list selects it (doc-advisor comes first by default, so set `doc_backend.prefer: doc-db` in `.claude/.forge.yaml` to try doc-db first; it is also selected when doc-advisor is unavailable).
+To use the other document-search backend, doc-db, install the `doc-db` command on your PATH. This makes it an available candidate; forge starts and uses it automatically when the ordered list selects it (doc-advisor comes first by default, so set `doc_backend.prefer: doc-db` in `.claude/.forge.yaml` to try doc-db first; it is also selected when doc-advisor is unavailable).
 
 To re-enable a disabled plugin, from your terminal:
 
@@ -189,7 +189,7 @@ On first run, `/anvil:create-pr` detects your GitHub repo from `git remote` and 
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3 (for setup scan)
 - [Codex CLI](https://github.com/openai/codex) (optional, for Codex engine; falls back to Claude if unavailable)
-- For document search, either backend: the external [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor) 0.4.6 or later (Python standard library only; no API key required), or doc-db 0.3.3 or later (a locally running document-search server)
+- For document search, either backend: the external [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor) (Python standard library only; no API key required), or doc-db (a locally running document-search server)
 - [gh CLI](https://cli.github.com/) (for anvil, authenticated)
 
 ## License

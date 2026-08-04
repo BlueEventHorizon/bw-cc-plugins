@@ -114,26 +114,40 @@ class SettingBackendTest(unittest.TestCase):
         self.assertEqual(payload["order"], ["msg-review"])
         self.assertEqual(payload["source"], resolve_mod.SOURCE_SETTING)
 
-    def test_backend_beats_backend_order(self):
-        settings = _FakeSettings({"backend": "chosen", "backend_order": ["a", "b"]})
-        _, payload = resolve_mod.run(_PROJECT_ROOT, settings=settings)
-        self.assertEqual(payload["mode"], resolve_mod.MODE_EXPLICIT)
-        self.assertEqual(payload["order"], ["chosen"])
 
+class SettingsMayNotDefineTheOrderTest(unittest.TestCase):
+    """設定ファイルに候補順を書くキーを置かない（復活防止）。
 
-class SettingOrderTest(unittest.TestCase):
-    def test_backend_order_is_order_mode(self):
+    `.forge.yaml` は既定の挙動を 1 点だけ矯正する手段であり、無くても全機能が
+    既定で動く（DES-061 §2.1）。候補順は選択ではなく解決アルゴリズムの定義であり、
+    設定へ出すと順序を決めた理由が設計書に残ったまま結果だけが外部化される。
+    """
+
+    def test_only_backend_is_allowed(self):
+        self.assertEqual(resolve_mod._ALLOWED_KEYS, (resolve_mod.SETTINGS_BACKEND_KEY,))
+
+    def test_backend_order_is_rejected_as_unknown_key(self):
+        """かつて存在した `backend_order` を書いても、未知キーとして拒否される。"""
         settings = _FakeSettings({"backend_order": ["a", "b"]})
         code, payload = resolve_mod.run(_PROJECT_ROOT, settings=settings)
-        self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
-        self.assertEqual(payload["mode"], resolve_mod.MODE_ORDER)
-        self.assertEqual(payload["order"], ["a", "b"])
-        self.assertEqual(payload["source"], resolve_mod.SOURCE_SETTING)
+        self.assertEqual(code, resolve_mod.EXIT_OPERATION_ERROR)
+        self.assertEqual(payload["reason_code"], resolve_mod.REASON_SETTINGS_INVALID)
+        self.assertIn("backend_order", payload["message"])
+        self.assertIsNone(payload["order"])
 
-    def test_order_is_preserved(self):
-        settings = _FakeSettings({"backend_order": ["z", "m", "a"]})
-        _, payload = resolve_mod.run(_PROJECT_ROOT, settings=settings)
-        self.assertEqual(payload["order"], ["z", "m", "a"])
+    def test_backend_order_alongside_backend_is_also_rejected(self):
+        """`backend` が正しく書かれていても、未知キーの同居は許さない。
+
+        許してしまうと、効いていない設定が書かれたまま残り、利用者は順序を
+        指定できたつもりになる。
+        """
+        settings = _FakeSettings({"backend": "chosen", "backend_order": ["a", "b"]})
+        code, _ = resolve_mod.run(_PROJECT_ROOT, settings=settings)
+        self.assertEqual(code, resolve_mod.EXIT_OPERATION_ERROR)
+
+    def test_module_has_no_order_key_constant(self):
+        """順序を読むキーの定数自体を持たない。"""
+        self.assertFalse(hasattr(resolve_mod, "SETTINGS_ORDER_KEY"))
 
 
 class SettingsInvalidTest(unittest.TestCase):
@@ -163,22 +177,6 @@ class SettingsInvalidTest(unittest.TestCase):
 
     def test_backend_is_blank(self):
         self._assert_invalid({"backend": "   "})
-
-    def test_backend_order_is_not_a_list(self):
-        self._assert_invalid({"backend_order": "msg-review"})
-
-    def test_backend_order_is_empty(self):
-        self._assert_invalid({"backend_order": []})
-
-    def test_backend_order_has_blank_item(self):
-        self._assert_invalid({"backend_order": ["msg-review", "  "]})
-
-    def test_backend_order_has_non_string_item(self):
-        self._assert_invalid({"backend_order": ["msg-review", 3]})
-
-    def test_backend_order_has_duplicates(self):
-        """重複を黙って畳むと、書いた順序と試す順序がずれる。"""
-        self._assert_invalid({"backend_order": ["a", "b", "a"]})
 
     def test_message_does_not_leak_setting_values(self):
         payload = self._assert_invalid({"backend": "   "})

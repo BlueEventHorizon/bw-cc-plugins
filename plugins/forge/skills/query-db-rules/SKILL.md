@@ -101,48 +101,31 @@ Step 3.1 と同じコマンド・同じ引数で query を **もう 1 回だけ*
   返す。再同期・検索対象の拡大をしない）
 - それ以外（10 / 20 / 30）→ 明示エラーとして終了する。再同期せず、backend も切り替えない
 
-### Step 4: doc-advisor 経路（ToC 鮮度確認 → 検索）
+### Step 4: doc-advisor 経路（索引更新 → 検索）
 
 #### Step 4.1: 可用性を判定する
 
 システムリマインダの available-skills で判定する。query 経路に必要な doc-advisor SKILL は
-`doc-advisor:check-toc` と `doc-advisor:query-docs`（stale 時はさらに `doc-advisor:index-docs`）である。
-判定は available-skills 上の SKILL の有無だけで行い、バージョン番号の比較はしない。
+`doc-advisor:index-docs` と `doc-advisor:query-docs` の 2 つである。
 
-**3 SKILL がすべて揃っている場合にのみ Step 4.2 へ進む。** 揃っていない場合は次の 2 状態を
-区別して通知する（`query-docs` / `index-docs` の一方だけが存在する状態は、DocAdvisor が両者を
-同一プラグインとして配布するため実環境では発生しないが、判定式としては `advisor_absent` に含める）:
+**判定は SKILL の有無だけで行う。バージョン番号を条件にしない [MANDATORY]**。特定の SKILL の
+有無からバージョンを推測することもしない（成果物の有無はバージョンではなく、fork・部分インストール・
+提供側の改名で推測が誤る）。
 
-| 条件                                                                        | 状態               | 動作                                                                                                  |
-| --------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
-| `doc-advisor:query-docs` と `doc-advisor:index-docs` の少なくとも一方が無い | `advisor_absent`   | doc-advisor 未導入として利用不能。理由を控えて残る backend の可否確認へ進む                           |
-| `query-docs` / `index-docs` は両方あるが `doc-advisor:check-toc` が無い     | `advisor_outdated` | 最小対応バージョン（DocAdvisor 0.4.6）未満。更新が必要である旨を通知し、残る backend の可否確認へ進む |
+| 条件                     | 状態             | 動作                                                                        |
+| ------------------------ | ---------------- | --------------------------------------------------------------------------- |
+| 2 SKILL のいずれかが無い | `advisor_absent` | doc-advisor 未導入として利用不能。理由を控えて残る backend の可否確認へ進む |
 
-いずれの場合も、後位が残っていれば Step 2 の次の backend へ、残っていなければ明示エラーとして終了する。
+後位が残っていれば Step 2 の次の backend へ、残っていなければ明示エラーとして終了する。
 
-#### Step 4.2: ToC の鮮度を確認する [MANDATORY]
+#### Step 4.2: 索引を更新する [MANDATORY]
 
-`Skill` ツールで `doc-advisor:check-toc` を **1 回だけ** 呼ぶ:
+**検索前に必ず索引を更新する。更新の要否を判定しない [MANDATORY]**。差分の判断は `index-docs` の
+desired-state 処理が行い、対象文書に変更がなければ ToC は書き換わらない。
 
-```
-/doc-advisor:check-toc --key rules --max-age 86400
-```
-
-応答（最終出力の JSON）の `status` / `freshness` **だけ** で分岐する。**exit code では分岐しない**
-（`stale` は正常な判定結果であり exit code `0` で返る。exit code で分岐すると `stale` を失敗と誤認する）:
-
-| `status` | `freshness` | 動作                                                           |
-| -------- | ----------- | -------------------------------------------------------------- |
-| `ok`     | `fresh`     | ToC を更新せず Step 4.4 へ進む                                 |
-| `ok`     | `stale`     | Step 4.3 へ進む（ToC 不在も `stale` に含まれる）               |
-| `error`  | （`null`）  | 検索を実行せず明示エラーとして終了する。backend を切り替えない |
-
-応答が JSON として解析できない場合、または `status` / `freshness` が既知値以外の場合は、
-**`fresh` とみなす縮退も ToC 作り直し経路への縮退も行わず**、検索を実行せず明示エラーとして
-終了し、利用不能だった backend と理由を通知する。`reason` 等の補助 field は診断として
-そのまま転記してよいが、経路選択にも成否判定にも使用しない。
-
-#### Step 4.3: ToC を更新する（stale 時のみ）
+前回生成からの経過時間で更新の要否を判定してはならない。ToC が正しいかどうかは対象文書が
+変わったかどうかで決まり、経過時間では決まらない（rules / specs の索引は他の作業者・他ブランチの
+更新とも独立であり、時間は指標にならない）。
 
 索引入力を準備する:
 
@@ -166,10 +149,10 @@ exit code だけで分岐する:
 
 `exclude` が空の場合は `--exclude-json '[]'` を渡す（省略も可）。
 
-- index 成功 → Step 4.4 へ進む。**ToC 更新を伴った事実を Step 5 の通知に含める**
-- index 失敗 → stale な ToC で検索を続行せず、明示エラーとして終了する（backend を切り替えない）
+- index 成功 → Step 4.3 へ進む。**ToC が書き換わった場合はその事実を Step 5 の通知に含める**
+- index 失敗 → 検索を続行せず、明示エラーとして終了する（backend を切り替えない）
 
-#### Step 4.4: 検索を実行する
+#### Step 4.3: 検索を実行する
 
 `Skill` ツールで `doc-advisor:query-docs` を **1 回だけ** 呼ぶ:
 
@@ -212,4 +195,4 @@ Step 5 の通知は path リストの後に添える。
   同一の series を検索する。key の意味（rules）は forge が決定し、backend へ opaque key として渡す。
 - doc-db 経路の検索結果は最後の同期時点の索引に基づくため、実在しないパスは script が除外する。
   除外は検索の失敗ではない。
-- ToC 鮮度の閾値（24 時間 = 86400 秒）は forge の方針であり、`--max-age` として毎回明示的に渡す。
+- 検索前の索引更新は常に行う。更新の要否を forge が判定しないため、閾値の設定を持たない。

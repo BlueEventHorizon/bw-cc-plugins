@@ -6,7 +6,7 @@
 
 **マーケットプレイスバージョン: 0.3.1**
 
-マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。forge の検索系スキルは、順序リストに基づいて文書検索 backend（**doc-advisor** / **doc-db**）を選択する。既定は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供する（`check-toc` / `index-docs` / `query-docs`）。
+マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。forge の検索系スキルは、順序リストに基づいて文書検索 backend（**doc-advisor** / **doc-db**）を選択する。既定は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供する（`index-docs` / `query-docs`）。
 
 [English README (README_en.md)](README_en.md)
 
@@ -49,7 +49,7 @@ flowchart LR
 | **forge**  | 0.4.1      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
 | **anvil**  | 0.1.0      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 
-> **文書検索 backend（doc-advisor / doc-db）は外部依存**: doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。doc-db はローカルで稼働する文書検索サーバで、`doc-db` コマンドとして導入されていれば利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する。**最小対応バージョンは DocAdvisor 0.4.6・doc-db 0.3.3**（これ未満の版は後方互換の対象外）。
+> **文書検索 backend（doc-advisor / doc-db）は外部依存**: doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。doc-db はローカルで稼働する文書検索サーバで、`doc-db` コマンドとして導入されていれば利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する。いずれの backend もバージョンを条件にせず、必要な機能が利用できるかで判定する。
 
 ## スキル一覧
 
@@ -141,7 +141,7 @@ flowchart LR
 
 ### 文書検索 backend（doc-advisor / doc-db、外部）
 
-文書検索は 2 つの backend が提供する。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) のプラグイン（`check-toc` / `index-docs` / `query-docs`。詳細は同リポジトリの README を参照）、doc-db はローカルで稼働する文書検索サーバ。forge の `/forge:query-db-rules` 等が順序リストに基づいて選択して呼び出す（既定は doc-advisor 先位。`.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。
+文書検索は 2 つの backend が提供する。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) のプラグイン（`index-docs` / `query-docs`。詳細は同リポジトリの README を参照）、doc-db はローカルで稼働する文書検索サーバ。forge の `/forge:query-db-rules` 等が順序リストに基づいて選択して呼び出す（既定は doc-advisor 先位。`.claude/.forge.yaml` の `doc_backend.prefer` で変更可）。
 
 ## インストール
 
@@ -154,12 +154,12 @@ Claude Code セッション内で:
 /plugin install forge@bw-cc-plugins
 /plugin install anvil@bw-cc-plugins
 
-# 文書検索 backend の doc-advisor は別マーケットプレイス（0.4.6 以上）
+# 文書検索 backend の doc-advisor は別マーケットプレイス
 /plugin marketplace add BlueEventHorizon/DocAdvisor
 /plugin install doc-advisor@DocAdvisor
 ```
 
-もう 1 つの文書検索 backend である doc-db（0.3.3 以上）を使う場合は、`doc-db` コマンドを PATH に導入する。導入すると利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する（既定は doc-advisor 先位のため、doc-db を先に使うには `.claude/.forge.yaml` で `doc_backend.prefer: doc-db` を指定する。doc-advisor が利用不能な場合にも選択される）。
+もう 1 つの文書検索 backend である doc-db を使う場合は、`doc-db` コマンドを PATH に導入する。導入すると利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する（既定は doc-advisor 先位のため、doc-db を先に使うには `.claude/.forge.yaml` で `doc_backend.prefer: doc-db` を指定する。doc-advisor が利用不能な場合にも選択される）。
 
 `/plugin install` を実行するとインストールスコープの選択を求められます（`--scope` で直接指定することも可能）:
 
@@ -224,7 +224,7 @@ claude plugin update forge@bw-cc-plugins --scope local    # local スコープ�
 - [Claude Code](https://claude.ai/code) CLI
 - Python 3（setup スキャン用）
 - [Codex CLI](https://github.com/openai/codex)（任意。Codex エンジン使用時に必要。未インストールの場合は Claude にフォールバック）
-- 文書検索を使う場合はいずれかの backend: 外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor) 0.4.6 以上（Python 標準ライブラリのみ・追加 API キー不要）、または doc-db 0.3.3 以上（ローカル文書検索サーバ）
+- 文書検索を使う場合はいずれかの backend: 外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor)（Python 標準ライブラリのみ・追加 API キー不要）、または doc-db（ローカル文書検索サーバ）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
 
 ## ライセンス
