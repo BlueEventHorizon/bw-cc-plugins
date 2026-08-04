@@ -9,11 +9,11 @@ FNC-1318「バックエンド固有の事情を本体に持ち込まない」）
 
 ## 解決の手順（DES-066 §2.1）
 
-| 順 | 条件                         | 本 CLI が返すもの                              |
-| -- | ---------------------------- | ---------------------------------------------- |
-| 1  | `--backend X` が指定された   | `mode=explicit`、`order=[X]`（source=argument） |
-| 2  | `.forge.yaml` の `backend`   | `mode=explicit`、`order=[X]`（source=setting）  |
-| 3  | どちらも無い                 | `mode=order`、`order=候補順`                    |
+| 順 | 条件                       | 本 CLI が返すもの                                     |
+| -- | -------------------------- | ----------------------------------------------------- |
+| 1  | `--backend X` が指定された | `mode=explicit`、`order=[X]`（source=argument）        |
+| 2  | `.forge.yaml` の `backend` | `mode=explicit`、`order=[X]`（source=setting）         |
+| 3  | どちらも無い               | `mode=order`、`order=DEFAULT_ORDER`（source=default）  |
 
 `mode` は可用性検査が不可だったときの本体の動作を分ける。`explicit` は
 **fail closed**（代替を選ばない。利用者・プロジェクトが選んだ以上、満たせない
@@ -24,7 +24,7 @@ FNC-1318「バックエンド固有の事情を本体に持ち込まない」）
 
 ## 既定の候補順
 
-`.forge.yaml` に `backend_order` が無いときの順序は本モジュールの `DEFAULT_ORDER`
+明示指定が無いときの順序は本モジュールの `DEFAULT_ORDER`
 1 箇所で定義する（DES-066 §2.1「既定の候補順」に対応する実装点）。現時点の候補は
 `msg-review` のみである——唯一の実装済みバックエンドであり、**実装されていない
 backend 名を先に書かない**（解決時に不在の SKILL を引くだけで、可用性検査にも
@@ -37,19 +37,20 @@ backend 名を先に書かない**（解決時に不在の SKILL を引くだけ
 
 ## 設定（`.claude/.forge.yaml` の `review` セクション）
 
-許容キーは `backend`（文字列）と `backend_order`（文字列リスト）のみ。
-`backend` が指定されていれば `backend_order` は参照しない（明示指定が候補順に勝つ）。
+**許容キーは `backend`（文字列）のみである。** 設定ファイルは既定の挙動を 1 点だけ
+矯正する手段であり（DES-061 §2.1 のとおりファイルは任意で、無くても全機能が既定で
+動く）、機能の一翼を担わせない。候補順を設定から差し替えるキーは置かない——それは
+選択ではなく解決アルゴリズムの定義であり、設定ファイルへ出す対象ではない。
 
-| 設定の状態                     | 出力                                                     |
-| ------------------------------ | -------------------------------------------------------- |
-| 未指定・ファイル不在           | `mode=order` / 既定の候補順（`source=default`）           |
-| `backend: X`                   | `mode=explicit` / `[X]`（`source=setting`）               |
-| `backend_order: [A, B]`        | `mode=order` / `[A, B]`（`source=setting`）               |
-| 不正（許容する形に反する）     | exit 20 / `settings_invalid`。**推測で既定値に落ちない**  |
+| 設定の状態                 | 出力                                                    |
+| -------------------------- | ------------------------------------------------------- |
+| 未指定・ファイル不在       | `mode=order` / 既定の候補順（`source=default`）          |
+| `backend: X`               | `mode=explicit` / `[X]`（`source=setting`）              |
+| 不正（許容する形に反する） | exit 20 / `settings_invalid`。**推測で既定値に落ちない** |
 
 不正には、セクションが mapping でない・未知のキーを含む（綴り誤りを黙って無視すると
-指定が効いていないことに気づけない）・値が空文字列・`backend_order` がリストでない・
-リストが空・要素に重複がある・解析不能（`SettingsError`）を含む。
+指定が効いていないことに気づけない）・値が空でない文字列でない・解析不能
+（`SettingsError`）を含む。
 
 ## exit code / JSON 契約
 
@@ -114,10 +115,15 @@ SOURCE_DEFAULT = "default"
 DEFAULT_ORDER = ("msg-review",)
 
 #: 設定のセクション名とスキーマ（スキーマの所有は DES-066 §2.2）
+#:
+#: **許容キーは `backend` だけである [MANDATORY]**。候補順を設定から書き替えるキー
+#: （かつて存在した `backend_order`）は置かない。設定ファイルは既定の挙動を 1 点
+#: 矯正する手段であり、解決アルゴリズムの定義を持つ場所ではない。順序は本モジュールの
+#: `DEFAULT_ORDER` と DES-066 §2.1 が持つ。ここへキーを足すと、順序を決めた理由
+#: （前提が重いものから先に試す）が設計書に残ったまま結果だけが外部化される。
 SETTINGS_SECTION = "review"
 SETTINGS_BACKEND_KEY = "backend"
-SETTINGS_ORDER_KEY = "backend_order"
-_ALLOWED_KEYS = (SETTINGS_BACKEND_KEY, SETTINGS_ORDER_KEY)
+_ALLOWED_KEYS = (SETTINGS_BACKEND_KEY,)
 
 _DISPLAY_NAME = ".claude/.forge.yaml"
 
@@ -161,37 +167,6 @@ def _read_backend(section) -> str | None:
     return value.strip()
 
 
-def _read_order(section) -> list | None:
-    if SETTINGS_ORDER_KEY not in section:
-        return None
-    value = section[SETTINGS_ORDER_KEY]
-    if not isinstance(value, list):
-        raise _SettingsInvalid(
-            f"{_DISPLAY_NAME} の {SETTINGS_SECTION}.{SETTINGS_ORDER_KEY} が"
-            "文字列リストではありません"
-        )
-    items = []
-    for item in value:
-        if not isinstance(item, str) or not item.strip():
-            raise _SettingsInvalid(
-                f"{_DISPLAY_NAME} の {SETTINGS_SECTION}.{SETTINGS_ORDER_KEY} に"
-                "空でない文字列でない要素があります"
-            )
-        items.append(item.strip())
-    if not items:
-        raise _SettingsInvalid(
-            f"{_DISPLAY_NAME} の {SETTINGS_SECTION}.{SETTINGS_ORDER_KEY} が空です"
-            "（候補が 1 つも無いと、どの実行主体も試せない）"
-        )
-    if len(set(items)) != len(items):
-        # 重複を黙って畳むと、利用者が書いた順序と実際に試す順序がずれる
-        raise _SettingsInvalid(
-            f"{_DISPLAY_NAME} の {SETTINGS_SECTION}.{SETTINGS_ORDER_KEY} に"
-            "重複する要素があります"
-        )
-    return items
-
-
 # --- 解決 ----------------------------------------------------------------------
 
 
@@ -216,15 +191,12 @@ def run(project_root, *, backend_argument=None, settings=forge_settings):
         section = _read_section(project_root, settings)
         _validate_keys(section)
         backend = _read_backend(section)
-        order = _read_order(section)
     except _SettingsInvalid as exc:
         return EXIT_OPERATION_ERROR, _error_payload(str(exc))
 
     if backend is not None:
         # 明示指定が候補順に勝つ（DES-066 §2.2）
         return EXIT_SUCCESS, _success_payload(MODE_EXPLICIT, [backend], SOURCE_SETTING)
-    if order is not None:
-        return EXIT_SUCCESS, _success_payload(MODE_ORDER, order, SOURCE_SETTING)
     return EXIT_SUCCESS, _success_payload(
         MODE_ORDER, list(DEFAULT_ORDER), SOURCE_DEFAULT
     )
