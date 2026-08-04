@@ -123,12 +123,13 @@ An incomplete list does not silently degrade the review. The template instructs 
 
 The review body is **independent of who performs the review**. It resolves targets, builds the request, evaluates and applies findings, and decides completion; the round trip itself (prerequisite checks, sending, waiting, interpreting the reply) is delegated to a **review backend**.
 
-| Selection                                       | Behavior                                                                                        |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Nothing specified                               | Probe candidates in order and take the first available one (`msg-review` is the only one today) |
-| `--backend <name>`                              | Run on that subject. If unavailable, **fail closed** — no substitute is chosen                  |
-| `review.backend` in `.claude/.forge.yaml`       | Project-level explicit choice (same fail-closed treatment as `--backend`)                       |
-| `review.backend_order` in `.claude/.forge.yaml` | Override the candidate order                                                                    |
+| Selection                                 | Behavior                                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Nothing specified                         | Probe candidates in order and take the first available one (`msg-review` is the only one today) |
+| `--backend <name>`                        | Run on that subject. If unavailable, **fail closed** — no substitute is chosen                  |
+| `review.backend` in `.claude/.forge.yaml` | Project-level explicit choice (same fail-closed treatment as `--backend`)                       |
+
+The candidate order itself lives on the design side (`DEFAULT_ORDER` and the design document). What configuration selects is only _which_ subject to use.
 
 An explicit choice never falls back, so "I picked one but another ran" cannot happen. **The chosen backend and how it was chosen (argument / setting / candidate order) are always printed in the argument-interpretation output**, because the origin of the findings must be visible.
 
