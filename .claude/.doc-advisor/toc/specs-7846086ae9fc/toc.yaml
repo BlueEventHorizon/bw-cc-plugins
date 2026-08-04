@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-03T07:38:06Z
-  file_count: 51
+  generated_at: 2026-08-04T11:48:47Z
+  file_count: 52
 
 docs:
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md:
@@ -459,100 +459,97 @@ docs:
       - error.data.code
       - version_requirement
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
-    title: DES-057 doc-db Backend Selection Design
-    purpose: Specifies backend selection between doc-db and doc-advisor, connection management, query/sync operations, and ToC freshness validation with fallback strategies
+    title: Backend Selection Design for Document Search
+    purpose: Specifies design for selecting between doc-db and doc-advisor backends in document queries, including connection management, fallback logic, and synchronization strategies
     content_details:
-      - Backend selection order based on doc_backend.prefer setting
-      - Connection probe and on-demand doc-db startup
-      - HTTP/JSON-RPC communication with MCP session management
-      - Query operation with series specification and non-existent path filtering
-      - Sync operation for desired-state document updates
-      - ToC freshness judgment via check-toc SKILL with stale update flow
-      - Key and series resolution from git branch state
-      - Module architecture with separation of concerns (CLI, runtime, client, project documents)
-      - Error classification (unavailable vs operation error vs index missing)
-      - Fallback from doc-db to doc-advisor with availability judgment
+      - Backend selection logic based on configuration preference
+      - Doc-db connection handling and on-demand startup
+      - HTTP MCP client for doc-db communication
+      - ToC freshness checking and stale update mechanism
+      - Document synchronization with desired-state tracking
+      - Series and key management for doc-db
+      - Error classification and failure handling
+      - Fallback between backends for unavailability scenarios
+      - Integration with doc-advisor for query operations
+      - Test design for connection, operation, and error paths
     applicable_tasks:
-      - doc-db integration implementation
-      - Backend selection wrapper script implementation
-      - Query operation wrapper design and testing
-      - Sync operation wrapper design and testing
-      - doc-advisor fallback integration and check-toc integration
-      - Error handling and status code mapping
-      - HTTP client and MCP session implementation
+      - Implementing document search backend infrastructure
+      - Configuring backend preferences for document queries
+      - Troubleshooting document search unavailability
+      - Designing fallback behavior for search systems
+      - Testing document search backend operations
     keywords:
+      - backend selection
       - doc-db
       - doc-advisor
-      - backend selection
-      - check-toc
-      - query
-      - sync
-      - MCP
-      - JSON-RPC
-      - series
-      - doc-structure
-      - KEY
+      - synchronization
+      - freshness judgment
+      - MCP protocol
       - desired-state
-      - freshness
-      - availability
+      - series management
+      - HTTP client
+      - error handling
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
-    title: REQ-014 Backend Selection Requirements Specification
-    purpose: Defines requirements for automatic document search backend selection in forge wrappers, enabling seamless fallback between doc-db and doc-advisor based on availability without requiring user backend setup awareness.
+    title: REQ-014 doc-db Backend Selection Requirements Specification
+    purpose: Defines requirements for forge wrapper scripts to automatically select between doc-db and doc-advisor backends based on availability, with fallback behavior and user notification rules
     content_details:
-      - Backend auto-selection flow with priority-based ordering and availability detection
-      - Query execution with doc-advisor ToC freshness checking before search
-      - Index update mechanisms for both doc-db and doc-advisor backends
-      - "Availability detection: doc-db connection and startup attempt, doc-advisor installation and feature checks"
-      - Distinction between uninitialized index state and garbage state using machine-readable identifiers from doc-db
-      - Series-based search limiting to current branch, with path existence verification in results
-      - Backend fallback notification including backend selection reason and failure details
-      - Configuration-based preferred backend specification with explicit error on invalid settings
-      - Error handling cases covering missing indices, garbage states, connection failures, and both backends unavailable
+      - Backend automatic selection mechanism
+      - Backend selection order based on configuration with doc-advisor as default
+      - Availability judgment for each backend (doc-db connection check, doc-advisor installation check)
+      - ToC freshness checking (24-hour threshold) before query execution
+      - Index creation for missing KEY or series in doc-db
+      - Distinction between uninitialized and recovery-needed states using doc-db status identifiers
+      - Query execution with index preparation before search
+      - Update operations reflecting current document state to selected backend
+      - User notification for backend switching, index creation, non-existent path removal
     applicable_tasks:
-      - Query wrapper implementation for backend selection
-      - Update wrapper implementation for index management
-      - Backend availability detection implementation
-      - ToC freshness validation before search execution
-      - Configuration validation for preferred backend settings
-      - Error handling for backend fallback scenarios
-      - Integration testing for multi-backend fallback support
+      - Backend selection mechanism implementation
+      - Index freshness management implementation
+      - Search wrapper implementation
+      - doc-db integration implementation
+      - Backend availability checking implementation
+      - Error case handling for missing indices
+      - Configuration validation with error reporting
     keywords:
-      - query-db-rules
-      - query-db-specs
-      - update-db-rules
-      - update-db-specs
       - doc-db
       - doc-advisor
       - backend selection
-      - availability detection
-      - freshness
+      - ToC freshness
+      - query wrapper
+      - index management
       - series
+      - configuration
+      - availability judgment
+      - error handling
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
-    title: ADR-052 Cross-reference notation standardization and plugin root path access improvement
-    purpose: Defines decisions for cross-reference notation within docs/ (relative paths vs absolute paths) and introduces automatic symlink mechanism for plugin root path resolution via SessionStart hook
+    title: "ADR-052: Documentation Cross-Reference Notation and Plugin Root Link Access"
+    purpose: Standardizes cross-reference notation within forge plugin documentation and establishes rules for relative vs full paths. Addresses plugin root variable resolution inconsistencies and downstream environment access costs.
     content_details:
-      - Cross-reference notation standardization within docs/ using relative Markdown links
-      - Distinction between internal docs references and external references from SKILL.md/agents/commands
-      - SessionStart hook integration with ensure_plugin_root_link.py for automatic symlink creation
-      - Symlink behavior limited to docs/ subdirectory only (scope proportionality)
-      - Plugin root path resolution behavior varies across direct Read, execution, and environment pathways
-      - Alternative approaches evaluation including scope, automation strategy, and maintenance cost
+      - "Three identified problems: plugin root variable resolution variations across access paths"
+      - Cross-reference notation issues within docs/ using unnecessary plugin root variables
+      - Downstream environment path resolution costs in cached installations
+      - Decision to use relative Markdown links for docs/ internal references
+      - Decision to maintain plugin root format for external references from SKILL.md and other files
+      - Updates to document_style_guide.md section 5.1 to clarify reference type distinctions
+      - "Impact: 15+ files modified with cross-reference conversions"
+      - Symlink automation via SessionStart hook (later superseded by ADR-069)
     applicable_tasks:
-      - Documentation reference architecture validation
-      - Plugin infrastructure design review
-      - Internal documentation cross-reference standardization
-      - Plugin root path access mechanism implementation
-      - Symbol resolution and linking strategy design
-      - Documentation style guide update and maintenance
+      - Documentation cross-reference review
+      - Plugin documentation structure improvement
+      - Reference format standardization
+      - Plugin variable handling assessment
+      - Documentation path resolution optimization
     keywords:
-      - ADR-052
-      - cross-reference-notation
-      - CLAUDE_PLUGIN_ROOT
-      - SessionStart-hook
-      - ensure_plugin_root_link.py
-      - symlink-automation
-      - relative-paths
-      - documentation-architecture
+      - cross-reference
+      - relative paths
+      - plugin root
+      - markdown links
+      - style guide
+      - symlink
+      - hooks
+      - reference notation
+      - downstream environment
+      - path resolution
   docs/specs/forge/design/ADR-060_review_backend_axis.md:
     title: "ADR-060: Backend Axis for Review Execution"
     purpose: Architecture decision record establishing a switchable backend axis for the review execution, replacing a fixed execution model with configurable contract-based backend switching.
@@ -659,32 +656,67 @@ docs:
       - cmux
       - Codex session
       - backend encapsulation
-  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: Forge query abstraction design
-    purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
+  docs/specs/forge/design/ADR-069_remove_plugin_root_symlink_mechanism.md:
+    title: "ADR-069: Removal of Plugin Root Symlink Self-Repair Mechanism"
+    purpose: Reverses the symlink auto-repair mechanism introduced in ADR-052 §2.4 due to unintended side effects on consuming projects and zero identified consumers of the mechanism.
     content_details:
-      - Four wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) forwarding to doc-advisor
-      - Query SKILL contract design with read-only inheritance and Skill tool delegation
-      - Update SKILL workflow using directory resolution from .doc_structure.yaml and doc-advisor:index-docs forwarding
-      - Key mapping design mapping rule/spec categories to opaque keys
-      - "Output contract for query results (Required documents: path list format)"
-      - SKILL isolation constraints with specified allowed-tools and no fork context
-      - Desired-state concept for index updates ensuring complete file set replacement
-      - Prerequisites including doc-advisor installation and key naming constraints
+      - "Context: ADR-052 introduced symlink self-repair for non-deterministic cached plugin paths in marketplace installations"
+      - "Problem 1: Unintended side effects where plugin modifies .claude/ and .gitignore of all consuming projects without permission"
+      - "Problem 2: Exhaustive audit found zero consumers of the symlink mechanism across all hooks, skills, scripts, and Codex integrations"
+      - "Three resolution paths function without symlinks: hooks command substitution, SKILL context injection, external reviewer path handling"
+      - Direct Read path can use existing process argument reverse-lookup procedure from CLAUDE.md documentation
+      - Decision to remove SessionStart hook registration, self-repair script, unit tests, and .gitignore entries
+      - "Other ADR-052 decisions remain valid: relative paths, external full paths, style guide updates"
+      - Impact eliminates unintended project modifications and maintenance burden
     applicable_tasks:
-      - Document search wrapper SKILL implementation
-      - Integration with external doc-advisor plugin
-      - Query SKILL design and testing
-      - Index update SKILL implementation
+      - Plugin symlink mechanism review
+      - Hook lifecycle management update
+      - Plugin tool installation assessment
+      - Side effect removal from consuming projects
+      - Plugin integration cleanup
+      - Marketplace installation handling
     keywords:
+      - symlink removal
+      - hook mechanism
+      - plugin root
+      - downstream projects
+      - gitignore
+      - marketplace
+      - decision reversal
+      - side effects
+      - self-repair
+      - mechanism deprecation
+  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
+    title: "DES-001: Document Search Wrapper Design"
+    purpose: "Defines the abstraction layer and design for forge's 4 document search and index update skills that delegate to external backends (doc-advisor or doc-db). Specifies key mapping, output contracts, inheritance-type skill patterns, and backend selection logic."
+    content_details:
+      - "Two document search backends supported: doc-advisor (external) and doc-db (local server) with configurable preference order via .claude/.forge.yaml"
+      - "Four wrapper skills: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
+      - "Key mapping: forge category (rules/specs) mapped to opaque doc-advisor keys"
+      - "Query flow: resolve backend order, check ToC freshness, update index if stale, execute search, return Required documents path list"
+      - "Update flow: prepare index via wrapper, resolve directories and exclude patterns from .doc_structure.yaml, transfer via doc-advisor API with --dirs-json and --exclude-json"
+      - Skills are inheritance-type read-only, no fork context, allowed tools limited to Skill, Read, Bash
+      - "Desired-state synchronization: .doc_structure.yaml is source of truth for both backends"
+      - Test coverage includes structure resolution, skill isolation, backend selection, and contract verification
+    applicable_tasks:
+      - Document search backend integration design
+      - Backend selection and fallback logic implementation
+      - Search skill wrapper development
+      - Index update process design
+      - Document discovery mechanism debugging
+      - Backend contract verification
+      - Search result contract validation
+    keywords:
+      - document search
+      - wrapper abstraction
+      - backend selection
       - doc-advisor
-      - query-docs
-      - index-docs
-      - wrapper-SKILL
-      - key-mapping
-      - Skill-tool
-      - read-only
-      - inheritance
+      - doc-db
+      - key mapping
+      - ToC freshness
+      - index update
+      - skill isolation
+      - inheritance-type skill
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: Create skills orchestrator design
     purpose: Specifies orchestrator pattern design for start-design, start-plan, start-requirements skills with parallel context gathering framework using specs, rules, code agents via return-value contracts
@@ -1105,37 +1137,38 @@ docs:
       - DES-057
       - forge_settings.py
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: "DES-066: Review Body Design (Backend-Independent Component)"
-    purpose: Specifies the design for the /forge:review main body that executes independent of the backend implementation, including argument interpretation, pattern resolution, request assembly, findings evaluation, and finalization
+    title: DES-066 /forge:review Body (Backend-Independent) Design Document
+    purpose: Defines architecture and design for the backend-independent review execution engine, specifying request assembly, finding evaluation, modification safety verification, and multi-round orchestration
     content_details:
-      - Backend resolution strategy (explicit vs. availability-based order)
-      - Module responsibilities (SKILL.md, resolve_targets.py, build_review_request.py, gate_findings.py, finalize_review.py and others)
-      - Single exit point (finalize_review.py) for 4 terminal paths (approved, findings, failure, interrupted)
-      - "Request assembly axes: focus point ({{FOCUS}}) and scope level ({{SCOPE}})"
-      - .forge.yaml review section schema with backend and backend_order configuration
-      - Three-value judgment handling (approved/findings/failure) and confirmed_fix logic
-      - "Target granularity preservation: directory-level request vs. allowlist expansion"
-      - "Safety verification: individual finding validation plus independent end-of-round validation"
+      - Backend resolution procedure from explicit specification and configuration
+      - Default backend candidate order with msg-review as current implementation
+      - Four-path terminal processing with single exit point via finalize_review.py
+      - Three-value judgment handling (approved, findings, failure) and terminal routing
+      - Safety verification with allowlist validation and syntax baseline preservation
+      - Two-axis request information (focus point {{FOCUS}} and scope goal {{SCOPE}}) with template tokens
+      - Module responsibilities (resolve_targets, build_review_request, gate_findings, verify_fix_safety, finalize_review)
+      - Target specification granularity preservation (range expansion in allowlist but granularity in request body)
+      - Configuration schema for .claude/.forge.yaml review section (backend, backend_order)
+      - Use case sequences demonstrating multi-round review orchestration and terminal path routing
     applicable_tasks:
-      - Backend-independent review body implementation
-      - Backend resolution and fallback strategy implementation
-      - Multi-round findings evaluation and modification handling
-      - Configuration schema design (.forge.yaml review section)
-      - Error handling for unknown backends and unavailable backends
-      - Terminal state handling and exit notification management
-      - Integration testing for finalization pathways
-      - Safety validation framework
+      - Review skill backend-independent implementation
+      - Backend integration and SKILL registration
+      - Review request assembly and orchestration design
+      - Finding evaluation and modification verification design
+      - Multi-round review orchestration implementation
+      - Backend resolution and availability checking implementation
+      - Safety verification for modified files and allowlist validation
     keywords:
+      - review-backend
       - backend resolution
-      - fail closed
-      - availability probe
-      - finalization exit points
-      - findings evaluation
-      - confirmed_fix
-      - target granularity
-      - backend independence
-      - configuration schema
+      - finding evaluation
+      - finalize_review.py
+      - msg-review
       - safety verification
+      - terminal processing
+      - request assembly
+      - allowlist validation
+      - modification verification
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
@@ -1219,67 +1252,90 @@ docs:
       - secrets review
       - severity mapping
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
-    title: "ADR-061: Multiplexing Codex Wake-up Paths (Adding App-Server Path)"
-    purpose: "Records evaluation of adding app-server path to Codex wake-up routing alongside cmux. Includes implementation context, decision details, alternative analysis, and impact assessment. Status: rejected, replaced by ADR-063."
+    title: "ADR-061: Codex Wake-up Path Multiplexing (Adding app-server Route)"
+    purpose: Documents a rejected architectural decision to multiplex Codex wake-up paths by adding app-server route alongside cmux, including technical investigation, alternatives analysis, and impact assessment
     content_details:
-      - Context on pull-type message detection limits and need for push-type wake-up
-      - Real-world measurement results from codex-cli 0.146.0 showing app-server capabilities and limitations
-      - Decision to add app-server path as priority over cmux with fallback
-      - Implementation approach using wrapper shim for Codex startup and WebSocket client in Python standard library
-      - Seven alternative approaches evaluated with detailed rejection rationales
-      - Impact analysis covering benefits including cmux-free environments and draft safety
-      - Analysis of losses and new constraints including PATH intervention and experimental interface dependency
-      - Unverified assumptions about TUI remote connection and unix:// transport support
+      - "Context of wake-up problem: pull-type message detection causes delays in Codex sessions lasting 7+ hours with recurring stops"
+      - "Practical measurements of Codex CLI 0.146.0: app-server subcommand, JSON-RPC protocol, WebSocket-over-UDS transport, TUI connection limitations"
+      - "Proposed decision: multi-path wake-up with app-server prioritized over cmux, sibling wrapper, Python WebSocket client"
+      - "Alternative solutions analyzed: moving wake-up to msg-sys scope, replacing cmux, external dependencies (agmsg), app-server daemon/proxy usage"
+      - "Gains: push wake-up in cmux-less environments, eliminates draft destruction risk, protocol self-documentation"
+      - "Losses and constraints: Codex launch wrapper required, app-server is experimental interface, Codex-only applicability, unverified TUI prerequisites"
+      - "Status: proposed and rejected on 2026-08-02 in favor of ADR-063's independent backend approach"
+      - "Relationship to msg-sys: decision does not change msg-sys requirements (REQ-006)"
     applicable_tasks:
-      - Architecture decision review for msg-review system
-      - Wake-up path strategy evaluation
-      - Backend integration planning for app-server as independent backend
-      - Codex session lifecycle management design
-      - Multi-backend architecture design
+      - Codex architectural design review
+      - Wake-up mechanism multiplexing strategy
+      - Push-type messaging system planning
+      - Backend availability and fallback design
+      - Alternative solution evaluation
+      - Integration with msg-sys framework
     keywords:
-      - Codex wake-up
-      - app-server
-      - cmux
+      - Codex app-server
       - push-type wake-up
-      - JSON-RPC
-      - WebSocket
-      - msg-sys
-      - thread routing
-  docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
-    title: DES-045 msg-review review backend design specification
-    purpose: Specifies the architecture, module design, and message-passing protocol for the msg-review backend that orchestrates continuous code reviews between Claude and Codex through msg-sys, covering the three execution modes, blocking wait mechanisms, push-type wake mechanics, and complete use case flows
+      - JSON-RPC protocol
+      - WebSocket transport
+      - cmux multiplexing
+      - backend routing
+      - msg-sys integration
+  docs/specs/msg-review/design/ADR-068_availability_probe_determinism_boundary.md:
+    title: "ADR-068: Limit Availability Checks to Deterministic Judgment and Abandon Screen-based Liveness Detection"
+    purpose: Defines the decision to restrict availability checks to deterministic judgments (tool availability and direct process verification) and to remove heuristic screen-based liveness detection, organizing checks into independent scripts for future extensibility
     content_details:
-      - msg-review backend module architecture and CLI specifications
-      - Protocol header with review_id, round tracking and message body structure
-      - "Three execution modes: request mode, receive mode, and resume mode with lifecycle design"
-      - Blocking wait script (wait_for_reply.py) with exponential backoff polling and message filtering
-      - Push-type wake mechanism via cmux terminal multiplexer for Codex pane injection
-      - Composite send_and_await_reply.py script combining send, wake, and wait in single call
-      - "Message format contract: markdown body, severity markers (critical/major/minor), and REVIEW_RESULT completion line"
-      - review_id generation as unguessable token and filtering logic for multi-review scenarios
-      - Prerequisite checks via msg-sys check_setup.py validating DB path, hook registration, and environment
-      - "Five use cases: request submission (UC-1), findings reception and modification (UC-2), approval completion (UC-3), round-trip limit handling (UC-4), and prerequisite failure (UC-5)"
+      - "Context: forge:ADR-067 mandates availability checks on review backends; prior design (DES-048) inferred Codex liveness from cmux screen display"
+      - "Decision to separate availability into three axes: A) wake-up tool availability (deterministic), B) session residency via Codex process verification (deterministic), C) response capability via screen inference (heuristic, excluded)"
+      - Deterministic checks on axes A and B must be independent scripts enabling future extensibility when wake-up paths change
+      - Axis C judgment (screen-based inference) removed because Codex process verification already confirms residency making screen heuristics redundant
+      - Insufficient prerequisites returned individually allowing users to understand what to provision
+      - Availability checks must not affect remote party when evaluating multiple candidate backends
+      - Existing safety gates for push wake-up retained separately; only pre-premise screen inference abolished
+      - Local review fallback route removed because it lacks independent context and cannot provide true independent review
     applicable_tasks:
-      - Implementing message-based code review backend with continuous alternation
-      - Designing review protocol and state machine across multiple execution modes
-      - Integrating msg-sys communication base with review-specific orchestration
-      - Implementing blocking wait with timeout and exponential backoff polling
-      - Designing and implementing push-type wake mechanism for terminal multiplexers
-      - "Testing module integration: prerequisites, message building, history filtering, wait logic"
-      - Troubleshooting message loop failures, round-trip exhaustion, and async coordination
-      - Implementing multi-round review iteration with approval-based completion semantics
-      - Validating msg-sys setup and prerequisite checks before review dispatch
+      - Backend availability probe design
+      - Deterministic vs heuristic judgment boundaries
+      - Multi-backend candidate selection
+      - Test strategy for reachable vs unreachable code branches
+      - Push-type wake-up safety gate design
+      - Independent backend architecture
     keywords:
-      - msg-review
-      - review_id
-      - send_and_await_reply.py
-      - wait_for_reply.py
-      - REVIEW_RESULT
-      - check_setup.py
-      - cmux
-      - message protocol
-      - review modes
-      - chain_length
+      - availability check determinism
+      - Codex process verification
+      - cmux tool availability
+      - screen-based inference
+      - backend candidate selection
+      - wake-up safety gates
+      - independent backend
+  docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
+    title: "DES-045: msg-review Review Backend Design"
+    purpose: Specifies complete architecture and behavior of the msg-review backend skill including SKILL orchestration, message protocol with Codex, availability checks (deterministic judgments only), blocking wait for replies, push-type wake-up for cmux environments, and integration of scripts ensuring critical sequences are never forgotten
+    content_details:
+      - "Architecture overview: msg-review backend orchestrates request assembly, response evaluation and modification, completion determination using msg-sys communication foundation"
+      - "Four operational modes: availability check (no send/wake), request mode (user triggered), receive mode (same turn continuation), resume mode (human-reinitiated after round trip limit)"
+      - "Message protocol with review_id and round numbering: all messages carry header [msg-review] type review_id=X round=N; review_id is opaque token for filtering history in resume/limit modes"
+      - "Availability checks split into three independent axes: A) wake-up tool (cmux), B) session residency (actual running Codex process), C) response capability (heuristic, explicitly excluded); deterministic only, no remote party effect"
+      - "Blocking wait-for-reply with exponential backoff (1,2,4,8,10...): detects Codex message increase, performs ack to claim delivery, 10-minute maximum, includes last_observed_request_read diagnostic"
+      - "Push-type wake-up via cmux: discovers target pane with actual process verification, reads screen for busy status, injects text+enter, retries up to 3 times on command failures"
+      - "Single entry point send_and_await_reply.py: combines send→wake→wait to prevent forgotten steps; enforces DB and project-root consistency (fail closed on mismatch)"
+      - "Test strategy with subprocess mocking: verifies ordering (send→wake→wait), partial failure handling, JSON contracts, zero remote party interference"
+    applicable_tasks:
+      - Continuous dialogue review architecture design
+      - Message protocol design for agent communication
+      - Availability check determinism boundaries
+      - Push-type wake-up for terminal environments
+      - Blocking wait with timeout implementation
+      - Backend skill orchestration and error handling
+      - History filtering by conversation thread
+      - Fail-closed design patterns
+    keywords:
+      - msg-sys backend SKILL
+      - Codex availability check
+      - push-type wake-up
+      - cmux pane discovery
+      - message protocol header
+      - review_id threading
+      - blocking wait with backoff
+      - deterministic judgment
+      - agent communication
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
     title: DES-046 msg-review Intervention Mode Implementation Design
     purpose: "Specifies implementation design for msg-review's intervention mode (--auto-critical/--auto) that automatically fixes findings based on severity level (critical/major/minor)"
@@ -1346,71 +1402,42 @@ docs:
       - ast.parse
       - git status
       - collect_modified_files
-  docs/specs/msg-review/design/DES-048_msg_review_codex_liveness_local_fallback_design.md:
-    title: DES-048 msg-review Codex Liveness Check and Local Review Path Design
-    purpose: Specifies Codex liveness detection and fallback local review path for msg-review. Covers screen-based confirmation, reduced-timeout wait integration, claim/lease state tracking, and local review execution with safety verification.
-    content_details:
-      - Screen-based liveness confirmation script (check_codex_liveness.py) that analyzes cmux capture-pane output using heuristic rules to detect Claude Code UI or plain shell state
-      - "Liveness detection rules (priority-ordered): capture command failure → Claude Code UI detection (2+ signals in last 5 lines) → plain shell prompt detection → default to live"
-      - "Claude Code UI signals: auto mode on, shift+tab to cycle, Claude model tag format, context remaining percentage display"
-      - "Integration with request mode: cmux pane discovery (Step 1.6), liveness check, request send → reduced-timeout wait (Step 6.6) on not_live"
-      - Reduced wait timeout (90 seconds) for not_live case, with fallback to local review path only if timeout occurs after screen confirmation
-      - "Mark_review_resolved.py state machine: claim in_progress before starting local review, transition to completed/failed, TTL-based automatic stale detection (10 minutes)"
-      - "Receive mode integration: check review_id state before processing, hold in_progress cases, skip completed, treat stale as failed-equivalent"
-      - "Local review execution: analyze review_criteria directly, apply intervention axis (DES-046) for auto-fix decisions, apply safety verification (DES-047)"
-    applicable_tasks:
-      - Implementing Codex liveness detection for msg-review
-      - Extending msg-review with local fallback review path
-      - Configuring claim/lease-based state tracking for review_id
-      - Debugging Codex connectivity and unresponsiveness scenarios
-      - Integrating reduced-timeout wait logic for liveness-negative case
-      - Implementing safety verification for locally-executed reviews
-      - Designing fallback review execution and completion reporting
-      - Handling delayed Codex responses with state-based filtering
-    keywords:
-      - check_codex_liveness
-      - cmux capture-pane
-      - local review fallback
-      - mark_review_resolved
-      - claim/lease state tracking
-      - reduced-timeout wait
-      - Codex UI detection
-      - liveness heuristics
-      - self-review safety verification
-      - delayed response handling
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: REQ-012 msg-review (Message-Driven Review SKILL) Requirements Definition
-    purpose: Defines requirements for a message-driven review SKILL enabling continuous dialogue reviews with Codex using the msg-sys communication infrastructure
+    title: REQ-012 msg-review (Messaging-driven Review SKILL) Requirements Definition
+    purpose: Defines requirements for msg-review SKILL, a messaging-driven review orchestration system enabling continuous dialogue with Codex through msg-sys communication backend with prerequisite validation and automated turn wakeup
     content_details:
-      - Background on review procedure problems and lack of standardization
-      - "v1 scope: standardized review requests, continuous feedback loops, peer turn activation, finding evaluation by Claude orchestrator"
-      - "Explicit exclusions: /forge:review pipeline integration, separate evaluator/fixer agents, safety boundaries, Codex session auto-management"
-      - "FNC-001: Standardized review request initiation with target specification (uncommitted diff, full branch changes, or specified files)"
-      - "FNC-002: Self-contained review requests with target identification, review criteria/granularity, document paths, response format"
-      - "FNC-003: Pre-submission prerequisite verification (message DB reachability, receiver notification capability)"
-      - "FNC-004: Autonomous finding evaluation, modification, re-request loop by Claude orchestrator without separate agents"
-      - "FNC-006: Command syntax compatibility with /forge:review including review type, target axes, and intervention modes"
-      - "FNC-007: Peer turn activation using cmux as single mechanism for asynchronous message round-trip continuation"
-      - "FNC-008: Backend contract compliance returning approved/findings/failure with positioned findings and notification handling"
+      - Review request definition with target specification (code/design/requirement/plan/uxui/generic types)
+      - Prerequisite validation for DB accessibility, Codex session availability, and cmux wakeup mechanism
+      - Continuous dialogue with automated finding evaluation and modification without separate evaluator/fixer agents
+      - Review completion criteria including Codex approval, round limit reached, or auto-fix mode target exhaustion
+      - Turn wakeup implementation using cmux for immediate finding delivery
+      - Backend contract with /forge:review returning three-value states (approved/findings/failure)
+      - Audit trail through msg-sys message database without separate persistence layer
+      - API parameter compatibility including review types, diff targets, and intervention modes
+      - Availability check reporting distinguishing between specific missing prerequisites
+      - Prompt handling with review criteria paths resolved at runtime
     applicable_tasks:
-      - Requirements specification documentation
-      - SKILL design and implementation planning
-      - Backend contract definition and validation
-      - Integration point design with /forge:review
-      - msg-sys communication infrastructure analysis
-      - Codex review automation workflow design
-      - Finding evaluation and modification workflow
-      - Asynchronous message round-trip protocol design
+      - msg-review SKILL implementation
+      - msg-review SKILL design and architecture
+      - msg-review API specification creation
+      - Integration with /forge:review backend
+      - Prerequisite validation mechanism implementation
+      - Finding feedback loop and re-request workflow
+      - Review backend contract implementation
+      - msg-sys communication setup for review workflow
+      - Codex session management integration
+      - Turn wakeup mechanism implementation
     keywords:
       - msg-review
       - Codex
-      - message-driven
-      - review orchestration
       - msg-sys
-      - continuous dialogue
-      - backend contract
-      - finding evaluation
       - cmux
+      - prerequisite validation
+      - review findings
+      - backend contract
+      - turn wakeup
+      - messaging protocol
+      - review orchestration
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)
@@ -1473,34 +1500,36 @@ docs:
       - check_inbox.py
       - decision reversal
   docs/specs/msg-sys/design/DES-034_codex_review_messaging_design.md:
-    title: msg-sys Codex Continuous Dialog Messaging Design (DES-034)
-    purpose: Defines asynchronous messaging system architecture for bidirectional Claude-Codex communication via SQLite mailbox with Stop hooks, reply hints, and round-trip limits
+    title: DES-034 msg-sys Codex Continuous Dialogue Messaging Design
+    purpose: Defines asynchronous message passing architecture between Claude and Codex sessions using sqlite3 mailbox, Stop hook implementation, and self-describing reply hints for agent-to-agent communication
     content_details:
-      - SQLite WAL mailbox with append-only MESSAGES table, in_reply_to self-reference FK, and limit_notified_at column
-      - Unified Python Stop hook check_inbox.py shared by Claude and Codex with FORGE_MSG_AGENT_NAME environment variable
-      - "Reply hint format: safe CLI argument quoting via shlex.join(), stdin file redirection, three-step executable workflow"
-      - Round-trip limiting via reply_chain_length() calculation and FORGE_MSG_MAX_ROUND_TRIPS environment variable
-      - DB path resolution using git rev-parse --show-toplevel for project-independent execution from any working directory
-      - "CLI modules: inbox.py with --next / --ack / --mark-notified, send.py with --in-reply-to / --db-path, history.py for audit"
-      - Conditional-UPDATE rowcount validation in mailbox.ack() to prevent double-delivery on concurrent Stop hook processes
-      - Human notification via lib/notify.py using subprocess array form for safe AppleScript escaping
-      - "Error flow with 8-stage decision tree: FORGE_MSG_AGENT_NAME validation, db_path resolution, JSON parsing, sender validation, chain_length check, decision construction, ack, stdout write"
+      - SQLite3 WAL-based append-only mailbox with per-project isolation using .claude/.temp/msg-sys/messages.db
+      - Single unified Stop hook script (hooks/check_inbox.py) shared by Claude and Codex, differentiated by FORGE_MSG_AGENT_NAME environment variable
+      - Reply hints as executable shell commands using shlex.join() for safe argument quoting and shell-independent file I/O
+      - Message reply chain tracking via in_reply_to self-referential foreign key and reply_chain_length calculation for round-trip counting
+      - Round-trip limit enforcement via FORGE_MSG_MAX_ROUND_TRIPS environment variable with human OS notification fallback (lib/notify.py)
+      - Dynamic repository root resolution using git rev-parse --show-toplevel to handle arbitrary session cwd locations
+      - "CLI modules for message operations: send.py (enqueue), inbox.py (poll/ack/mark-notified), history.py (audit), check_setup.py (diagnostics)"
+      - Eight-step processing order for Stop hook with catch-all exception handling and ack-before-output ordering guarantee
     applicable_tasks:
-      - msg-sys base implementation and maintenance
-      - msg-review (review messaging) feature development
-      - Claude-Codex continuous dialog debugging and troubleshooting
-      - msg-sys setup validation using check_setup.py
-      - Stop hook configuration and environment variable tuning
+      - Implementing bidirectional message flow between Claude and Codex review sessions
+      - Constructing safe self-describing reply hint commands for agent execution
+      - Polling message inbox and deciding continuation at Stop hook
+      - Enforcing round-trip limits in multi-turn agent-to-agent dialogue
+      - Isolating message databases per project when forge is cached globally
+      - Handling error cases with safe fallback behavior in Stop hooks
+      - Integrating Codex .codex/hooks.json hook trust registration
+      - Testing bidirectional message delivery and reply chain formation
     keywords:
       - msg-sys
-      - check_inbox.py
-      - reply_chain_length
+      - Stop hook
+      - reply hint
+      - in_reply_to
+      - chain_length
       - FORGE_MSG_MAX_ROUND_TRIPS
-      - FORGE_MSG_AGENT_NAME
-      - reply hints
+      - check_inbox.py
       - shlex.join
-      - sqlite3 mailbox
-      - Stop hooks
+      - mailbox
   docs/specs/msg-sys/requirements/REQ-006_codex_review_messaging.md:
     title: Codex Continuous Dialogue Messaging Requirements
     purpose: Establishes infrastructure requirements for asynchronous message exchange between Claude and Codex sessions with stop hook integration, enabling autonomous inter-agent communication with continuation limits and self-contained reply instructions.
