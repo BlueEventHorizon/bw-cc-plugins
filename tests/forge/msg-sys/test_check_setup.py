@@ -625,17 +625,32 @@ class RunChecksTest(unittest.TestCase):
         mrt_check = next(c for c in result["checks"] if c["name"] == "max_round_trips_configured")
         self.assertFalse(mrt_check["ok"])
 
-    def test_warnings_always_contain_two_unverifiable_items(self):
+    def test_warnings_always_contain_the_unverifiable_items(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = self._setup_full_repo(tmpdir)
             result = check_setup.run_checks(project_root)
-        self.assertEqual(len(result["warnings"]), 2)
+        self.assertEqual(result["warnings"], list(check_setup.UNVERIFIABLE_WARNINGS))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # error ケースでも warnings は変わらず含まれる
             project_root = Path(tmpdir)
             result = check_setup.run_checks(project_root)
-        self.assertEqual(len(result["warnings"]), 2)
+        self.assertEqual(result["warnings"], list(check_setup.UNVERIFIABLE_WARNINGS))
+
+    def test_warnings_do_not_claim_peer_residency_is_unverifiable(self):
+        """相手セッションの常駐を「機械検査できない」と表明しないこと。
+
+        かつてこの警告を出していたが事実ではなかった（稼働中のプロセスを直接
+        確認すれば判定できる）。常駐の判定は、それを前提として必要とする側
+        （レビューバックエンドの可用性検査）が行う。本 CLI が「検査できない」と
+        言い続けると、可用性検査が常駐を判定した直後に矛盾する警告が並び、
+        利用者はどちらを信じるべきか判断できなくなる。
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = self._setup_full_repo(tmpdir)
+            result = check_setup.run_checks(project_root)
+        joined = " ".join(result["warnings"])
+        self.assertNotIn("常駐", joined)
 
 
 class OutputSchemaTest(unittest.TestCase):

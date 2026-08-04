@@ -46,6 +46,11 @@ Usage:
         --base-branch develop --target-branch feature/x \
         --focus "文書内に記述された他文書への参照リンク"
 
+    # 今回到達すべき範囲と意図的な未実装を添える（全パターン共通・任意・複数行可）
+    python3 build_review_request.py --pattern code --project-root <path> \
+        --files-json '["src/a.py"]' \
+        --scope "$(printf '%s\n' 'a.py の新規作成まで。' '- b.py への組み込み — TASK-008')"
+
     # 機密情報の混入（対象軸を持たない。スキャンは本スクリプトが内部で実行する）
     python3 build_review_request.py --pattern secrets --project-root <path>
 
@@ -76,6 +81,17 @@ _TOKEN_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 _TEMPLATE_DIR_NAME = "templates"
 _NONE_MARKER = "（なし）"
 _NO_FOCUS_MARKER = "（指定なし）"
+# 到達目標・意図的な未実装が渡されなかったことを表すマーカー。**この語の意味づけ
+# （「対象は最終形であるとみなす」）はテンプレート側が書く**（本スクリプトは散文を持たない）。
+_NO_SCOPE_MARKER = "（指定なし）"
+
+# 複数行を許す値に対して、行頭が構造行に見える行を拒否するためのパターン。
+# markdown の見出しは行頭の空白 3 個までを許容するため、そこまでを見出しとして扱う。
+_HEADING_LINE_RE = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
+_FENCE_LINE_RE = re.compile(r"^ {0,3}(?:```|~~~)")
+# 行全体（前後の空白を除去後）がこれらで始まる行を拒否する。前者は完了宣言行、
+# 後者はプロトコルヘッダ行であり、いずれも受信側が機械的に照合する契約行である。
+_PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:", "[msg-review]")
 
 # `scan_secrets.py` を同一プロセスで import する（`secrets` パターンのスキャン実行）。
 # 本ファイルと同じ `scripts/` に置かれている。
@@ -114,6 +130,47 @@ def _reject_newlines(label: str, values: list[str]) -> None:
     for value in values:
         if "\n" in value or "\r" in value:
             raise ValueError(f"{label} に改行を含む値は指定できません: {value!r}")
+
+
+def _reject_structure_lines(label: str, value: str | None) -> None:
+    """複数行を許す値の中に、本文の構造を偽装する行がある場合は ValueError を送出する。
+
+    `_reject_newlines` は改行そのものを禁じることで注入を防ぐが、到達目標・意図的な未実装は
+    項目が複数になりうるため単一行に収めると読めなくなる（Issue #4）。そこで改行は許し、
+    **構造として意味を持つ行だけ**を拒否する:
+
+    - 見出し行（`#`〜`######`）— 節を偽装して以降の内容を別の節に見せられる
+    - コードフェンス行（``` / ~~~）— 閉じないフェンスで以降の本文を literal に飲み込める
+    - `REVIEW_RESULT:` 始まりの行 — 完了宣言行の偽装（`parse_findings.py` / 受信モードの契約）
+    - `[msg-review]` 始まりの行 — プロトコルヘッダの偽装（`filter_review_history.py` の契約）
+
+    CR は行区切りとして扱わず一律拒否する。CR/LF の混在は受信側の行分割と本文の見た目を
+    食い違わせるため、許す理由がない。
+
+    拒否時は行番号を添える。値は利用者（または上位 SKILL）が指定したものであり機密ではない。
+    """
+    if value is None:
+        return
+    if "\r" in value:
+        raise ValueError(f"{label} に CR を含む値は指定できません（改行は LF のみ）")
+    for lineno, raw_line in enumerate(value.split("\n"), start=1):
+        if _HEADING_LINE_RE.match(raw_line):
+            raise ValueError(
+                f"{label} の {lineno} 行目が見出し行です（節の偽装を防ぐため拒否します）: "
+                f"{raw_line!r}"
+            )
+        if _FENCE_LINE_RE.match(raw_line):
+            raise ValueError(
+                f"{label} の {lineno} 行目がコードフェンス行です"
+                f"（以降の本文を飲み込むため拒否します）: {raw_line!r}"
+            )
+        stripped = raw_line.strip()
+        for prefix in _PROTOCOL_LINE_PREFIXES:
+            if stripped.startswith(prefix):
+                raise ValueError(
+                    f"{label} の {lineno} 行目が契約行（{prefix}）で始まっています"
+                    f"（偽装を防ぐため拒否します）: {raw_line!r}"
+                )
 
 
 def _scan_bullet_list(records: list[dict], empty_marker: str) -> str:
@@ -169,7 +226,8 @@ def _scan_stats_block(counts: dict) -> str:
             "- filtered（機械的に秘密でないと判定）: "
             f"プレースホルダ {filtered['placeholder']} / "
             f"コード式 {filtered['code_expression']} / "
-            f"パス様のキー {filtered['path_like']}",
+            f"パス様のキー {filtered['path_like']} / "
+            f"定数名 {filtered['constant_name']}",
         ]
     )
 
@@ -201,12 +259,15 @@ def build_body(
     project_rules: list[str] | None = None,
     project_specs: list[str] | None = None,
     focus: str | None = None,
+    scope: str | None = None,
     round_no: int = ROUND,
 ) -> str:
     """テンプレートを読み、トークンを置換した依頼本文を返す。
 
-    契約違反（未知パターン / 改行混入 / 絶対パス混入 / 必須データ欠落 / 未消化トークン /
-    テンプレートが要求しないデータ）はすべて ValueError を送出する（fail-closed）。
+    契約違反（未知パターン / 改行混入 / 絶対パス混入 / 必須データ欠落 / テンプレートの
+    トークン書き損じ / テンプレートが要求しないデータ）はすべて ValueError を送出する
+    （fail-closed）。トークン検査はいずれも**テンプレートに対して**行い、置換後の本文は
+    走査しない（値に含まれる波括弧を誤検知しないため）。
 
     **スキャン結果を引数で受け取らない [MANDATORY]**。`secrets` パターンでは本関数が
     `scan_secrets.scan()` を直接呼ぶ。呼び出し元がスキャン結果を渡せる引数を持たせると、
@@ -234,6 +295,9 @@ def build_body(
     # 重点観点は利用者の自然文をそのまま埋め込む唯一の値であり、改行を許すと見出し行・
     # 完了宣言行を偽装できる。単一行に限定して受け取る（SKILL 側で1行へ要約する）。
     _reject_newlines("重点観点", [focus] if focus is not None else [])
+    # 到達目標・意図的な未実装は複数行を許す（項目が複数になりうる）。改行を一律拒否する
+    # 代わりに、構造行の偽装のみを拒否する。
+    _reject_structure_lines("到達目標と意図的な未実装", scope)
 
     for label, paths in (
         ("対象ファイル", files),
@@ -309,12 +373,13 @@ def build_body(
         "PROJECT_SPECS": _absolute_bullet_list(project_root_abs, project_specs),
         # 対象軸がファイルでもディレクトリでも同一のトークンへ載せる。指定粒度のまま
         # 渡すため、ディレクトリを配下ファイルへ展開しない（REQ-013 FNC-1312）。
-        "TARGET_SCOPE": (
+        "TARGET_PATHS": (
             _absolute_bullet_list(project_root_abs, dirs, suffix="/")
             if dirs
             else _absolute_bullet_list(project_root_abs, files)
         ),
         "FOCUS": (focus or "").strip() or _NO_FOCUS_MARKER,
+        "SCOPE": (scope or "").strip() or _NO_SCOPE_MARKER,
         "SCAN_FINDINGS": _scan_bullet_list(
             (scan_result or {}).get("findings") or [], "（検出なし）"
         ),
@@ -338,13 +403,32 @@ def build_body(
             f"{', '.join('{{' + t + '}}' for t in unknown)}"
         )
 
-    body = _TOKEN_RE.sub(lambda m: values[m.group(1)], template)
-
-    leftover = _TOKEN_RE.findall(body)
-    if leftover or "{{" in body:
+    # 渡された値をテンプレートが受け取らない場合は黙って捨てず、エラーにする。到達目標を
+    # 渡したつもりでレビュアーに届いていない状態は、渡せていないことに気付けないため
+    # 「渡さなかった場合」より悪い。
+    if (scope or "").strip() and "SCOPE" not in used:
         raise ValueError(
-            f"テンプレート {path.name} に未消化のトークンが残りました: {leftover}"
+            f"テンプレート {path.name} は到達目標と意図的な未実装を受け取りません"
+            "（{{SCOPE}} を持たないテンプレートに --scope を渡せません）"
         )
+
+    # テンプレート側の書き損じ（`{{lowercase}}` のように _TOKEN_RE に合致しない波括弧）を
+    # **置換前に**検出する。置換後の本文を走査すると、`--focus` / `--scope` の値に含まれる
+    # 波括弧をテンプレート由来の未消化トークンと誤認する（実運用で踏んだ。トークン名を
+    # 議論する依頼——例:「SCOPE と TARGET_PATHS の使い分けを重点的に」——が通らなくなり、
+    # かつエラーが原因をテンプレートだと誤って指す）。
+    #
+    # 上の検査で「テンプレートが使う正規トークンはすべて values に存在する」ことは確認済み
+    # なので、正規トークンを取り除いてなお `{{` が残れば、それはテンプレートの書き損じである。
+    if "{{" in _TOKEN_RE.sub("", template):
+        raise ValueError(
+            f"テンプレート {path.name} に、トークンとして解釈できない波括弧が残っています"
+            "（トークンは {{UPPER_SNAKE_CASE}} 形式で書いてください）"
+        )
+
+    # 値は再置換されない（sub はテンプレートを 1 度走査するのみ）。したがって値に含まれる
+    # 波括弧が新たなトークンとして展開されることはなく、そのまま本文のテキストになる。
+    body = _TOKEN_RE.sub(lambda m: values[m.group(1)], template)
 
     return body
 
@@ -409,6 +493,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "内蔵の観点文書を置き換えるものではなく、加えて重点的に見る対象を伝える"
         ),
     )
+    parser.add_argument(
+        "--scope",
+        default=None,
+        help=(
+            "今回の変更が到達すべき範囲と、意図的に含めなかった項目（複数行可）。"
+            "見出し行・コードフェンス行・契約行（REVIEW_RESULT: / [msg-review]）で"
+            "始まる行は拒否する。未指定なら依頼本文は「（指定なし）」になる"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -450,6 +543,7 @@ def main() -> int:
             project_rules=project_rules,
             project_specs=project_specs,
             focus=args.focus,
+            scope=args.scope,
             round_no=ROUND,
         )
     except ValueError as exc:

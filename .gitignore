@@ -42,5 +42,3 @@ __pycache__/
 # Index
 
 .claude/doc-advisor/index/
-# セッション開始時に自動生成される ${CLAUDE_PLUGIN_ROOT} 実体への symlink（マシン固有の絶対パスを含むため非追跡、ensure_plugin_root_link.py）
-.claude/forge-docs

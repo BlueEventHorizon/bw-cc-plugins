@@ -103,6 +103,12 @@ When multiple tasks are specified with `--task TASK-001,TASK-003`:
 
 Runs `/forge:review code --auto` on the implementation diff. Fix-induced issues are also auto-detected and fixed.
 
+**The target completeness is handed to the reviewer.** The scope this task must reach, and the out-of-scope items owned by later tasks (with their task IDs), are derived from the implementation plan and passed to both the executor and the reviewer. Reviewing a staged task in isolation makes the reviewer report items planned for later tasks as defects, costing a round trip on every review to explain the scope.
+
+When tasks sharing a `group_id` are reviewed together, items owned by **other members of that same group are subtracted** from the out-of-scope list. Without that, items just implemented in this batch would be declared deliberate omissions.
+
+> Implementation instructions, reference code, and verification requirements go to the executor but **not** to the reviewer. Passing the instructions degrades the review into checking conformance to them, so an error in the instructions themselves becomes undetectable; reference code invites "it matches the existing code, so it is fine"; and verification requirements (build/test skips) would excuse the legitimate finding that tests are missing.
+
 ### Completion
 
 1. Update plan: change task status from `pending` to `completed`

@@ -11,15 +11,13 @@
 
 > 対象プラグイン: forge | 適用範囲: 全オーケストレーター
 
-> **注**: 本書中の `plan.yaml` / `findings_state.yaml` / `review_<種別>.md` / `findings_<種別>.json` は、いずれも削除済みの旧 review パイプライン（セッションディレクトリ駆動）のファイル名であり、現在これらを生成する実装は存在しない。本書はこれらを **並列書き込み競合を説明するための例示** として保持する。本書が示す race condition の構造・出力契約パターンそのものは現行のオーケストレーターにも有効であり、変更なし。
-
 ---
 
 ## 1. 概要
 
-Claude Code の Agent ツールで複数の汎用 Agent を並列起動する場合、共有リソース（YAML/JSON ファイル等）への同時書き込みが競合する問題がある。Agent ツールは OS プロセスレベルの排他制御を提供しないため、並列 Agent が同一ファイルに Write すると後勝ちで上書きされ、先の Agent の結果が消失する。
+Claude Code の Agent ツールで複数の Agent を並列起動する場合、共有リソース（YAML/JSON ファイル等）への同時書き込みが競合する問題がある。Agent ツールは OS プロセスレベルの排他制御を提供しないため、並列 Agent が同一ファイルに Write すると後勝ちで上書きされ、先の Agent の結果が消失する。
 
-本設計書は、この問題を根本的に排除する**出力契約パターン**を定義する。
+本設計書は、この問題を**発生させない**出力契約を定義する。競合を検出・調停するのではなく、agent に共有リソースを書かせないことで race condition の成立条件そのものを無くす。
 
 ---
 
@@ -29,174 +27,127 @@ Claude Code の Agent ツールで複数の汎用 Agent を並列起動する場
 
 ```
 orchestrator
-  ├─ Agent A ──Write──→ plan.yaml  ← 書き込み①
-  └─ Agent B ──Write──→ plan.yaml  ← 書き込み②（①を上書き）
+  ├─ Agent A ──Write──→ 共有ファイル  ← 書き込み①
+  └─ Agent B ──Write──→ 共有ファイル  ← 書き込み②（①を上書き）
 ```
 
-Agent A と Agent B が同時に `plan.yaml` を更新すると、最後に Write した agent の内容のみが残る。Read-Modify-Write の間に他の agent が割り込む典型的な race condition である。
+Agent A と Agent B が同時に同一ファイルを更新すると、最後に Write した agent の内容のみが残る。Read-Modify-Write の間に他の agent が割り込む典型的な race condition である。
 
 ### 2.2 Claude Code 環境での制約
 
 - Agent ツールは独立したサブプロセスとして実行される
 - ファイルロック機構は提供されない
-- agent 間のメッセージパッシングは Agent ツールの戻り値のみ（完了通知）
+- agent 間のメッセージパッシングは Agent ツールの戻り値のみ
 
 ---
 
-## 3. 出力契約パターン [MANDATORY]
+## 3. 出力契約 [MANDATORY]
+
+### 3.0 適用範囲
+
+本契約が規定するのは**並列 agent の結果を orchestrator へ受け渡す経路**である。
+
+書き込み系 agent（start-implement の実装 executor 等）が**担当範囲の成果物を編集すること自体は本契約の対象ではない**。その安全性は編集可能ファイルの allowlist・対象を絞った起動・指摘と無関係なリファクタリングの禁止・構文検証が担う（COMMON-DES-001 §6.2）。並列起動する場合も、allowlist が担当範囲を分離していれば複数 agent が同一リソースを触らないため、§2.1 の競合は成立しない。
 
 ### 3.1 基本原則
 
-**並列実行される agent は共有リソースに直接書き込まない。**
+**agent は結果の受け渡しに共有リソースを使わない。結果は Agent ツールの return value として orchestrator へ返す。**
 
-代わりに以下の3ステップに従う:
-
-1. **各 agent は個別の結果ファイルを Write する**（書き込み先が重ならない）
-2. **各 agent は完了通知のみを orchestrator に返す**（Agent ツールの戻り値）
-3. **orchestrator は全 agent の完了後に結果ファイルを収集し、共有リソースを1回だけ更新する**
+1. 各 agent は**結果そのものを return value で返す**（markdown / 構造化テキスト）
+2. orchestrator は return value を **main context に保持**し、必要なら統合する
+3. **収集系 agent**（調査・検索・レビュー等）は成果物を書かない。収集結果に基づく成果物（文書・設定ファイル等）への書き込みは **orchestrator が main context で行う**
 
 ```
 orchestrator
-  ├─ Agent A ──Write──→ result_a.json  ← 個別ファイル（競合なし）
-  └─ Agent B ──Write──→ result_b.json  ← 個別ファイル（競合なし）
+  ├─ Agent A → return value  ← ファイルを介さない（競合の余地がない）
+  └─ Agent B → return value
   │
   ▼ 全 agent 完了後
-  orchestrator ──収集──→ result_a.json + result_b.json
-               ──更新──→ plan.yaml（1回だけ）
+  orchestrator が return value を統合し、必要なら成果物を1回だけ書く
 ```
 
-### 3.2 結果ファイルの命名規則
+### 3.2 結果受け渡しのための中間ファイルを作らない [MANDATORY]
 
-結果ファイル名には agent の識別子を含め、書き込み先が一意になることを保証する:
+agent の結果を orchestrator へ渡すための**中間ファイル・セッションディレクトリを作らない**。
 
-| パターン                      | 例                                        |
-| ----------------------------- | ----------------------------------------- |
-| `{prefix}_{identifier}.{ext}` | `review_logic.md`, `eval_resilience.json` |
-| `{prefix}_{index}.{ext}`      | `result_0.json`, `result_1.json`          |
+理由:
 
-**禁止**: 複数の agent が同一ファイル名に書き込むこと。
+- 受け渡し経路をファイルにすると、命名規則・収集・後片付け・部分失敗時のマージ戦略という付随的な仕組みが一式必要になる。return value ならいずれも不要である
+- 中間ファイルは処理が途中で終わったときに残骸として残る。作らなければ残骸も生じない
 
-### 3.3 orchestrator の責務
+### 3.3 agent の責務
 
-| 責務                     | 説明                                                         |
-| ------------------------ | ------------------------------------------------------------ |
-| 個別ファイルの命名を指示 | 各 agent に一意な出力先を渡す                                |
-| 全 agent の完了を待機    | `run_in_background` で起動した場合、全通知を受け取るまで待つ |
-| 結果ファイルの収集       | glob または明示的パスで収集する                              |
-| 共有リソースの一括更新   | スクリプト（`--batch` モード等）で1回だけ更新する            |
-| エラーハンドリング       | 一部の agent が失敗した場合の部分マージ戦略を決定する        |
+| 責務                       | 説明                                                 |
+| -------------------------- | ---------------------------------------------------- |
+| 結果を return value で返す | 結果の受け渡しに共有リソースも中間ファイルも使わない |
+| 自己完結した結果を返す     | orchestrator が後処理できる構造で返す                |
+| 読み取りは自由             | Read は競合しないため制限なし                        |
 
-### 3.4 agent の責務
+### 3.4 orchestrator の責務
 
-| 責務                         | 説明                                              |
-| ---------------------------- | ------------------------------------------------- |
-| 指示された出力先にのみ Write | 共有リソースには書き込まない                      |
-| 自己完結した結果を出力       | orchestrator が後処理できる構造化データを出力する |
-| 読み取りは自由               | 共有リソースの Read は競合しないため制限なし      |
+| 責務                  | 説明                                                                             |
+| --------------------- | -------------------------------------------------------------------------------- |
+| 全 agent の完了を待機 | `run_in_background` で起動した場合、全通知を受け取るまで待つ                     |
+| return value の統合   | main context で行う                                                              |
+| 成果物への書き込み    | 収集系 agent の結果に基づく書き込みは orchestrator のみが行う（§3.0）            |
+| 部分失敗の扱い        | 一部 agent が結果を返さなかった場合の方針を決める（収集系は fail-open。DES-013） |
 
 ---
 
 ## 4. 適用例
 
-### 4.1 review パイプライン — reviewer (歴史的例)
-
-> 注: 観点軸で reviewer を並列分割する方式は撤廃済み（当該パイプライン自体が廃止された）。以下は本設計が制定された当時の例示として保存する。並列出力契約の 3 原則 (個別書き込み / 完了通知のみ / オーケストレータ一括更新) 自体は現行でも有効。
+### 4.1 コンテキスト収集（start-requirements / start-design / start-plan / start-implement）
 
 ```
-(旧設計の例)
-review orchestrator
-  ├─ reviewer(logic)          → review_logic.md
-  ├─ reviewer(resilience)     → review_resilience.md
-  └─ reviewer(maintainability)→ review_maintainability.md
-  │
-  ▼ 全 reviewer 完了後
-  extract_review_findings.py → review.md + plan.yaml
-```
-
-現行の review パイプラインは reviewer 1 起動 → `review_<種別>.md` を 1 ファイルに出力する。
-
-### 4.2 review パイプライン — evaluator (歴史的例)
-
-> 注: evaluator も同様に 1 起動で動作していた。以下は本設計当時の例示として保存する。
-
-```
-(旧設計の例)
-review orchestrator
-  ├─ evaluator(logic)          → eval_logic.json
-  ├─ evaluator(resilience)     → eval_resilience.json
-  └─ evaluator(maintainability)→ eval_maintainability.json
-  │
-  ▼ 全 evaluator 完了後
-  update_plan.py --batch → plan.yaml（1回だけ更新）
-```
-
-### 4.3 start-implement — コンテキスト収集
-
-```
-start-implement orchestrator
-  ├─ rules agent  → return value（ルールリスト）
-  └─ code agent   → return value（既存コードリスト）
+orchestrator
+  ├─ specs agent → return value（仕様書リスト）
+  ├─ rules agent → return value（ルールリスト）
+  └─ code agent  → return value（既存コードリスト）
   │
   ▼ 全 agent 完了後
-  orchestrator が return value を統合し、task-executor に渡す
+  orchestrator が return value を統合し、必要なファイルを Read して後続工程へ進む
 ```
+
+タスクの内容・返却形式は DES-013 が定める。
 
 ---
 
-## 5. 一括マージの実装パターン
+## 5. アンチパターン
 
-### 5.1 スクリプトによるバッチ更新
-
-```bash
-# 結果ファイルを収集して plan.yaml を1回で更新
-cat eval_*.json | python3 update_plan.py {session_dir} --batch
-```
-
-スクリプトは `{"updates": [...]}` 形式と JSON 配列 `[...]` 形式の両方を受け付ける。
-
-### 5.2 専用スクリプトによる統合
-
-```bash
-# 複数の review_*.md を統合して review.md + plan.yaml を生成
-python3 extract_review_findings.py {session_dir}
-```
-
-session_dir モードでは `review_*.md` を glob で自動収集し、重複除去・重大度統合を行う。
-
----
-
-## 6. アンチパターン
-
-### 6.1 共有ファイルへの直接書き込み [MANDATORY]
+### 5.1 共有ファイルへの直接書き込み [MANDATORY]
 
 ```
 # NG: 並列 agent が同一ファイルに書き込む
-Agent A → plan.yaml
-Agent B → plan.yaml  ← Agent A の結果が消失
+Agent A → 共有ファイル
+Agent B → 共有ファイル  ← Agent A の結果が消失
 ```
 
-### 6.2 agent 内での Read-Modify-Write
+### 5.2 agent 内での Read-Modify-Write
 
 ```
 # NG: agent が共有リソースを Read → 加工 → Write
-Agent A: Read plan.yaml → 加工 → Write plan.yaml
-Agent B: Read plan.yaml → 加工 → Write plan.yaml  ← Agent A の変更が消失
+Agent A: Read 共有ファイル → 加工 → Write
+Agent B: Read 共有ファイル → 加工 → Write  ← Agent A の変更が消失
 ```
 
 Read は安全だが、Read した内容に基づく Write は race condition を引き起こす。
 
-### 6.3 ファイルロックによる排他制御
+### 5.3 ファイルロックによる排他制御
 
-Claude Code の Agent 環境ではファイルロック（`flock` 等）の信頼性が保証されない。ロックに依存するのではなく、書き込み先を分離する本パターンを使用する。
+Claude Code の Agent 環境ではファイルロック（`flock` 等）の信頼性が保証されない。ロックに依存するのではなく、結果の受け渡しを return value へ集約する本契約を使用する。
+
+### 5.4 結果受け渡しのための中間ファイル
+
+§3.2 のとおり作らない。「個別ファイルへ書かせて orchestrator が収集する」方式は、書き込み先を分離することで競合は避けられるが、§3.2 の付随的な仕組みを丸ごと抱えることになる。return value で足りる場面でこれを選ばない。
 
 ---
 
-## 7. 新しい並列 agent を設計する際のチェックリスト
+## 6. 新しい並列 agent を設計する際のチェックリスト
 
-| # | 確認項目                                                      |
-| - | ------------------------------------------------------------- |
-| 1 | 各 agent の出力先ファイル名は一意か                           |
-| 2 | 共有リソースへの Write は orchestrator のみが行うか           |
-| 3 | orchestrator は全 agent の完了を待機してからマージするか      |
-| 4 | 一部の agent が失敗した場合の部分マージ戦略は定義されているか |
-| 5 | 結果ファイルの命名規則はプロジェクト内で一貫しているか        |
+| # | 確認項目                                                                             |
+| - | ------------------------------------------------------------------------------------ |
+| 1 | agent は結果を return value で返すか（ファイルを介していないか）                     |
+| 2 | 収集系 agent が共有リソース・成果物へ Write していないか（書き込み系 agent は §3.0） |
+| 3 | orchestrator は全 agent の完了を待機してから統合するか                               |
+| 4 | 一部の agent が結果を返さなかった場合の方針は定義されているか                        |
+| 5 | 結果の受け渡しに中間ファイル・セッションディレクトリを使っていないか                 |

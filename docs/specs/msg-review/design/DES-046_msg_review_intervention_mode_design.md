@@ -24,7 +24,7 @@
 
 `/forge:start-implement` Phase 5 等の既存呼び出し元は `--auto` を明示して `/forge:review` を起動している。msg-review がこの軸を無視したまま `/forge:review` の代替として使われると、**「critical のみ直すつもりが、Claude の裁量で全部直ってしまう」**といった、呼び出し元の意図と異なる挙動になる。本設計はこのギャップを埋める。
 
-**`--interactive` の本来の実装（`/forge:present-findings` 相当の段階的提示）はスコープ外とする**（理由は §2 参照）。
+**`--interactive` の本来の実装（所見を 1 件ずつ提示して人間の判断を仰ぐ段階的提示）はスコープ外とする**（理由は §2 参照）。
 
 **暫定運用（ユーザー指示・ユーザー責任 [2026-07-19]）**: `--interactive` 本来の実装は次回以降に持ち越すが、それまでの間、この介入軸の仕組み（DES-046 §3.1〜§3.3）を早期に多くのプロジェクトで実運用し問題を洗い出すため、`--interactive` 指定時・介入軸未指定時（既定）は、**内部的に `--auto` と同じ振り分け（🔴🟡自動修正・🟢対象外）を適用する**。これは「Claude が全件を直接評価・修正する」という旧来の既定動作からの意図的な変更であり、`/forge:review` の `--interactive`（本来は段階的提示）とは異なる暫定挙動である。ユーザーが明示的に指示し、責任を負うことを確認済み。`--interactive` 本来の実装（§2「やらないこと」）に着手する際は、この暫定エイリアスを解除する。
 
@@ -38,7 +38,7 @@
 
 ### やらないこと（明示的に対象外）
 
-- **`--interactive` 本来の実装（`/forge:present-findings` 相当の段階的提示）**: `/forge:review` の対話モードは `/forge:present-findings` に委譲している。調査の結果、`present-findings` は session_dir・findings_state.yaml・`forge:fixer` Agent 起動など、review パイプラインのセッション基盤に強く結合している。唯一 session_dir 不要な `--inline` モードも、SKILL.md 上に明記の通り「修正実行・単独修正レビュー・`status: fixed` 確定は行わない」ため、実際の修正を Claude が直接行う msg-review の方式（FNC-004）とは接続できない。かといって独自に簡易な対話UIを再実装すると、重大度表示・優先順位ソート・スキップ理由収集等の既存UXの劣化コピーになる。したがって本来の段階的提示は本設計では対応しない（上記「暫定運用」により `--auto` へのエイリアスで代替する）
+- **`--interactive` 本来の実装（所見を 1 件ずつ提示して人間の判断を仰ぐ段階的提示）**: 本設計では対応しない（上記「暫定運用」により `--auto` へのエイリアスで代替する）。検討時点では旧 review パイプラインの `/forge:present-findings` へ委譲する案があったが、同スキルはセッション基盤（session_dir・findings_state.yaml・`forge:fixer` Agent 起動）に強く結合しており、実際の修正を Claude が直接行う本方式（REQ-012 FNC-004）とは接続できなかった。その後 `present-findings` はパイプラインごと削除されたため、委譲先自体が存在しない。実装する際は**本スキル内で完結させる**（受信本文から `parse_findings.py` で得た所見配列をそのまま AskUserQuestion で提示する）
 - **evaluator/fixer Agent の分離**: `/forge:review` の allowlist・単一 finding 起動等の安全境界は導入しない。修正の実施主体は引き続き Claude 自身（REQ-012 FNC-004・v1 の意図的な判断）
 - **エンジン軸（`--codex`/`--claude`）への対応**: msg-review は引き続き常駐 Codex 固定
 - **`/forge:review` を置き換える／切り替える判断（TBD-001）そのもの**: 本設計はその判断とは独立に、msg-review 単体の機能ギャップを埋めるものである。TBD-001 の結論（置き換えるか・共存するか）を左右しない

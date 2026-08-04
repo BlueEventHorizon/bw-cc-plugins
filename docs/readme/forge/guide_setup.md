@@ -135,7 +135,7 @@ No arguments. Default is analysis report only (no changes).
 4. After user confirmation:
    - **Delete**: Remove sections covered by forge
    - **Restructure**: Split large files with mixed Content Types; merge small files
-5. Update `.doc_structure.yaml` and ToC
+5. Update `.doc_structure.yaml` and the search index
 6. Confirm commit
 
 ### Safety

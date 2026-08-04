@@ -5,35 +5,42 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-07-27T02:49:55Z
+  generated_at: 2026-08-02T14:17:48Z
   file_count: 39
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, including feature concept, application conditions, priority rules, and merge timing.
+    purpose: Defines judgment criteria and procedures for additive development workflow when adding features to existing projects
     content_details:
-      - Feature as namespace for distinguishing requirement groups
-      - Application conditions for additive development - when changes affect existing documents
-      - Exclusion conditions for feature usage - when direct editing of existing documents is acceptable
-      - Priority of new requirement specification over old specifications
-      - New file separation rules - old specification files not modified during implementation
-      - Merge timing and procedures for integrating temporary documents into existing specifications
-      - Frontmatter definitions for temporary requirement, design, and plan documents
+      - Feature namespace concept for distinguishing requirement groups
+      - Feature necessity conditions and when to use feature naming
+      - Priority rules - additive development requirements take precedence over old specifications
+      - Documentation separation strategy - old files unchanged during development
+      - Merge semantics definition - semantic integration not physical file combination
+      - Merge scope judgment based on content consistency
+      - Frontmatter definitions for temporary feature documents
+      - Conflict resolution with existing specifications
+      - Feature naming conventions for base and foundational requirements
+      - Complete merge procedure with verification and cleanup phases
     applicable_tasks:
-      - Feature specification creation
-      - Additive development planning
-      - Requirement merging and integration
-      - Specification document organization
-      - Design document management
+      - Additive feature development planning
+      - Feature namespace judgment and structuring
+      - Temporary documentation management
+      - Specification merge and reconciliation
+      - Conflict resolution between new and old requirements
+      - Documentation scope determination
     keywords:
       - additive development
       - feature namespace
-      - temporary-feature-requirement
+      - temporary feature marker
       - specification merge
-      - frontmatter
-      - requirement specification
-      - design document
+      - scope consistency
+      - requirement prioritization
+      - documentation separation
+      - feature naming
+      - semantic integration
+      - merge procedure
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format
     purpose: Defines standard format and guidelines for Architecture Decision Records when project-specific ADR format is not available, including status values, naming conventions, template structure, and reference guidelines.
@@ -299,29 +306,36 @@ docs:
       - interaction design
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
-    purpose: Specifies the default format and template for design documents used when no project-specific format is defined
+    purpose: Specifies the generic design document format used when project-specific design format is not available
     content_details:
-      - Frontmatter specification for temporary feature designs with type and notes fields
-      - File naming convention using design ID and function name (DES-{id}_{name}_design.md)
-      - Template structure including metadata table, overview, architecture sections
-      - Module design documentation with component lists and class diagrams
-      - Use case design with prerequisites, normal flow, and error flow specifications
-      - Test design section covering unit and integration test targets
-      - References to related design principles and additive development specifications
+      - Generic design document template and structure
+      - Temporary feature design frontmatter specification and conditions
+      - File naming conventions using DES-XXX pattern
+      - Metadata section with design ID and related requirements
+      - Overview section describing problem statement and approach
+      - Architecture overview with component diagrams and layer structure
+      - Module design including module lists and class diagrams
+      - Use case design with sequence diagrams and interaction flows
+      - Existing component usage and integration point documentation
+      - Test design strategy for unit and integration testing
     applicable_tasks:
-      - Design document creation
-      - Feature design specification
-      - System architecture documentation
-      - Design document authoring and formatting
+      - Creating new design documents
+      - Documenting additive feature design
+      - Defining module and component architecture
+      - Designing use cases and interactions
+      - Creating class diagrams and relationships
+      - Planning test coverage for designs
     keywords:
-      - design-document
-      - design-format
-      - template
+      - design document
+      - temporary feature design
+      - module design
+      - class diagram
+      - use case
+      - sequence diagram
       - architecture
-      - frontmatter
-      - module-design
-      - use-case
-      - test-design
+      - component
+      - metadata
+      - test design
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Specifies universal principles for creating design documents when project-specific rules are not defined, covering content guidelines, required structural elements, and design maintenance policies
@@ -444,32 +458,37 @@ docs:
       - hardcoding
   plugins/forge/docs/plan_format.md:
     title: Plan Document Default Format
-    purpose: Defines the YAML schema, field definitions, and format for project plan documents including requirements traceability, design traceability, task management, and status transitions
+    purpose: Specifies the generic plan document format in YAML used when project-specific plan format is not available
     content_details:
-      - YAML schema structure with requirements_traceability, design_traceability, tasks, and revision_history sections
-      - Feature-specific frontmatter markers for temporary feature plans
-      - Task field definitions including task_id, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading
-      - Priority levels (70-99 high, 40-69 medium, 1-39 low)
-      - Status transitions pending to in_progress to completed
-      - Requirements traceability linking requirements to designs
-      - Design traceability linking designs to tasks
+      - YAML format selection rationale for structured task data and machine parsing
+      - Temporary feature plan marker specification and applicability conditions
+      - Requirements traceability section with requirement ID and design mapping
+      - Design traceability with requirement and task associations
+      - Task structure definition including ID, title, priority, and status
+      - Task dependencies and grouping strategy
+      - Build check configuration (per_task/skip/on_group_complete)
+      - Acceptance criteria documentation and required reading references
+      - Priority level guidelines with ranges (high 70-99, medium 40-69, low 1-39)
+      - Status transitions and revision history tracking
     applicable_tasks:
-      - Plan document creation
-      - Task planning and definition
-      - Implementation planning with traceability
-      - Feature implementation planning for additive development
-      - Plan document validation
-      - Task dependency management
+      - Creating plan documents for feature implementation
+      - Documenting additive feature planning
+      - Establishing requirement to task traceability
+      - Defining task dependencies and grouping
+      - Priority planning and scheduling
+      - Tracking task status and completion
+      - Building acceptance criteria
     keywords:
-      - plan_format
-      - YAML schema
-      - requirements_traceability
-      - design_traceability
-      - task_id
+      - plan document
+      - YAML format
+      - task management
+      - traceability
+      - requirements mapping
+      - design mapping
+      - dependency
       - priority
-      - additive-feature
-      - frontmatter
       - status
+      - acceptance criteria
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Document Creation Principles
     purpose: Specifies mandatory structural rules, task design guidelines, traceability requirements, test coverage mandates, dependency patterns, and severity catalogs for creating plan documents
@@ -505,34 +524,31 @@ docs:
       - implicit_dependency
       - severity_catalog
   plugins/forge/docs/requirement_format.md:
-    title: Default Requirement Definition Format
-    purpose: Defines the default structure and content guidelines for requirement definition documents when project-specific formats are unavailable, including handling of temporary feature requirements and conflict resolution
+    title: Default Format for Requirement Definitions
+    purpose: Specifies the default template and structure for requirement definition documents, including guidance on additional feature frontmatter and format compliance severity levels.
     content_details:
-      - "Frontmatter template for additional feature requirements (type: temporary-feature-requirement)"
-      - Main body sections (ID, feature name, overview, prerequisites, requirement list)
-      - Requirement subsections (display requirements, operation requirements, error cases)
-      - Conflict resolution priority (this document takes precedence over old specifications)
-      - Temporary feature document merge and deletion workflow
-      - TBD (To Be Determined) items tracking structure
-      - Severity catalog for review violations
-      - Distinction between substantive changes and formal document operations
+      - Default requirement definition template with Overview, Prerequisites, Requirements list, and Undefined items sections
+      - Temporary-feature-requirement frontmatter for separating additional features from base specifications
+      - Rules for when additional feature frontmatter is required vs. exempt cases
+      - Merge strategy and priority rules when feature implementation completes
+      - Template sections including Display, Operation, and Error case requirements
+      - Severity level catalog for format violation review (major for missing required frontmatter)
+      - "References to related specifications: spec_priorities_spec.md, spec_design_boundary_spec.md, additive_development_spec.md"
     applicable_tasks:
-      - Requirement definition document creation
-      - Feature specification planning
-      - Requirement document review
-      - Conflict resolution in specification updates
-      - Temporary feature handling
+      - Creating requirement definition documents
+      - Reviewing requirement definition documents for format compliance
+      - Determining if a change qualifies as an additional feature requiring separate temporary spec
+      - Planning specification document structure
+      - Understanding specification precedence and merge procedures
     keywords:
-      - requirement
-      - specification
+      - requirement definition
       - frontmatter
-      - feature
-      - temporary
-      - severity
-      - prerequisites
-      - error-cases
-      - TBD
-      - merge
+      - temporary-feature-requirement
+      - additive development
+      - feature scope
+      - format template
+      - merge strategy
+      - severity level
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
     purpose: Defines the priority system (P1/P2/P3) for review perspectives, the relationship between priority and severity, and delegates judgment authority (severity and gray-zone handling) to principles documents. Establishes mandatory structure for review_criteria files.
@@ -735,35 +751,33 @@ docs:
       - module dependency
       - verification point
   plugins/forge/docs/task_execution_spec.md:
-    title: Task Execution Specification for Executor Agent
-    purpose: Provides self-contained task instructions for the Executor Agent implementing a single task, including pre-preparation steps, implementation workflow, verification requirements, and completion reporting format.
+    title: Task Execution Guide (Executor Agent Edition)
+    purpose: Self-contained work instruction that orchestrators provide to task-executor agents, defining the mandatory workflow and constraints for implementing a single task
     content_details:
-      - One task per execution with mandatory completion before termination
-      - "Required documents phases: design specs, requirements, strategy, rules, reference code"
-      - Pre-implementation code exploration using Grep, Glob, Read tools
-      - Sequential implementation of each item with error handling
-      - Test-driven development (Red-Green-Refactor) when specified
-      - Build and test verification with max 1 retry limit on failure
-      - Status reporting (SUCCESS/FAILURE) in mandatory markdown format
-      - "Prohibition rules: multiple task chaining, out-of-scope tasks, document skipping, subagent launching"
+      - Mandatory principles including single-task constraint and prohibited actions
+      - 5-step workflow from task information reception through completion
+      - Preparation phase covering required document reading and existing code review
+      - Implementation guidelines with sequential item execution and test-driven development
+      - Verification requirements for build confirmation and test execution
+      - Completion reporting format with SUCCESS/FAILURE status and implementation summary
+      - Troubleshooting guidance for dependencies, build errors, and unclear requirements
     applicable_tasks:
-      - Task orchestration planning
-      - Executor agent implementation
-      - Build verification workflow design
-      - Test execution strategy
-      - Error handling and retry mechanism design
-      - Task status reporting system design
+      - Task executor agents implementing features
+      - Orchestrators dispatching and managing task-executor workflows
+      - Task planning and decomposition into atomic units
+      - Quality assurance and verification of agent implementations
+      - Developers designing multi-agent task execution systems
     keywords:
-      - task-executor
+      - task execution
+      - executor agent
+      - workflow
+      - verification
       - orchestrator
-      - build verification
-      - test execution
-      - task status
-      - TDD
-      - verification requirements
-      - failure reporting
-      - pre-preparation
-      - implementation instructions
+      - scope boundary
+      - implementation
+      - mandatory principles
+      - completion reporting
+      - single-task constraint
   plugins/forge/docs/version_migration_spec.md:
     title: Version Migration Implementation Specification
     purpose: Specifies requirements and implementation patterns for progressive version migration of data formats
