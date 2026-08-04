@@ -1,7 +1,7 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-02T15:27:07Z
-file_count: 50
+generated_at: 2026-08-04T06:16:25Z
+file_count: 51
 checksums:
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: 76c4445fe171028551653ac2a9f16179dd0d0a06fe4ddb90dcb7f7da2dd79af2
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: ec40105c80562f9a91d380918a88c98bda3f9c61c41782ce575ad42a708f8f43
@@ -10,21 +10,22 @@ checksums:
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 9814049dc3f857ca121226f26ea9863735068e880f9003f65a6bc9767ae91e9c
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: 815be9ef1a6a97b571b043a486560e7fad0fc0fd9580f2cc5fad47eac983a2d6
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md: c023a86c8e3be086e39968217ab92210f6fde0f414f2e724068c3b8608243656
-  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: f3a19082cc679810c95c2688219ea9b14ead3d6eb2b19f966ed1b9ab2716e86d
-  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: aa0a988a7eb36e9531e382f559653e42dff08900ebadd9110cc4bf82ae266098
+  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: a26f25f55f3ec1e36ae37ad0234327cc61d5356b9b298fbed88a2f4287a21336
+  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: d741c35c56962258ee2944f075606d562f56a3cc0b4ad914897671e60efa29b9
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 492baf34a55626fa7c9c47891d9877011253d47b6c89e2bd6c1a7fd261116bec
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: f3b31a32d281aed95b448101433e00adc0a047f9df5f5961083d54deae112424
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: ebd8f7a2e3976ac9eaa614a32b2a7d40de1c6bf5ebcb492818f28320167a6353
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md: f9ba1b0a6fba32fb5c660ce00a7dc467c5709ab0572b1b3ef8ffc1ea1dbfa060
-  docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md: d45612fce599a171ae1f8a8098b3fa45977e77904ec0531c63e186e8a6dd3830
-  docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md: 81a142ef3f1c1afc9a9fa61d32678575262c80191793e96b869d8cc40a47a78e
-  docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md: e2c98ce0bb373bc9350685b67fb515fc8efd77b353cd0ca0c61dc41b992a25c4
+  docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md: c99e693a985da2c980a90e8feb29fe0047ce43b2502d36555d66561f60553cd8
+  docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md: 17fe301b8c28661e51aab565a5f5b8249c2780b179961b67b1d8c436afc92195
+  docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md: 790d593390c3a1f49fc2ca0db095be1cf00af2e600af8283afeed6e0a60f074e
   docs/specs/forge/design/ADR-060_review_backend_axis.md: 789090c98b308b0b4161662eb4acd0ca27d4ed52eb06649fa02afd08e3e19bd2
   docs/specs/forge/design/ADR-065_review_backend_contract_completion.md: d86b7af9fcfa56a6d7555788f6925f6854407617ec4ebb908e4d64cfa6ba26b8
   docs/specs/forge/design/ADR-066_review_body_backend_separation.md: ac41ae5e146666b388011697c30ab9001415b5d88312d125b6541463d9d93dd9
-  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 4bb2b465d381031ba028faf52064969d978358b4d434bd6dc4aab2ebb078dfa3
+  docs/specs/forge/design/ADR-069_remove_plugin_root_symlink_mechanism.md: f6d7c91e82732b46fe14ad3cb96ce73acf99336cafcfd0a3f040569c2b344284
+  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: dda0f45eb31cf6334116f2d0f326b0efb2bc630ae4dbe7465920b86b7cacc593
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: 3343e3cd8376d01e1432079f5a1f2b90b55d551b5bb219565e3e18854daad33a
   docs/specs/forge/design/DES-013_context_gathering_design.md: c00644d3a822f7e9aebcba635a10e73dd5fa9bd0e22da63198bbd730ee81c22b
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md: b9c602734ead8bd6c1e5664903ec818c446eec8adefa253b0b8e0bd28b8ebabb

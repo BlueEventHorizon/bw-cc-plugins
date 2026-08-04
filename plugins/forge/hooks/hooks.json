@@ -1,5 +1,5 @@
 {
-  "description": "review: 常駐 Codex セッションからの返信を Stop イベントで検知する（Claude 側）。SessionStart: ${CLAUDE_PLUGIN_ROOT}/docs 実体への symlink（.claude/forge-docs）を自己修復する",
+  "description": "review: 常駐 Codex セッションからの返信を Stop イベントで検知する（Claude 側）",
   "hooks": {
     "Stop": [
       {
@@ -7,16 +7,6 @@
           {
             "type": "command",
             "command": "FORGE_MSG_MAX_ROUND_TRIPS=20 FORGE_MSG_AGENT_NAME=claude FORGE_MSG_PROJECT_ROOT=\"$(git rev-parse --show-toplevel)\" python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/hooks/check_inbox.py\""
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/ensure_plugin_root_link.py\" --project-root \"$(git rev-parse --show-toplevel)\" --plugin-root \"${CLAUDE_PLUGIN_ROOT}/docs\" --link-name forge-docs"
           }
         ]
       }
