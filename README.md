@@ -117,6 +117,7 @@ flowchart LR
 | [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                                                                                            | `"バージョン更新"`                  |
 | [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules)                        | rules/ を分類学に基づいて分析・再構築                                                                                                     | `"rules を整理"`                    |
 | [**help**](docs/readme/forge/guide_setup_ja.md#help)                                      | インタラクティブヘルプ                                                                                                                    | `"ヘルプ"`                          |
+| **onboarding**                                                                            | セッション起動直後に 1 回実行。スキルを経由しない直接作業でも守るべき基盤文書を全件 Read する                                             | `"作業をやって"`                    |
 | [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                                                                                  | ※ 各オーケストレーターが呼び出し    |
 | [_next-spec-id_](docs/readme/forge/guide_create_docs_ja.md)                               | 全ブランチをスキャンして仕様書 ID の次番を取得                                                                                            | ※ start-requirements が呼び出し     |
 
