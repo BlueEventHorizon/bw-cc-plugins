@@ -15,9 +15,15 @@
        ごとの手動登録が必要）
     5. 上記2つの登録エントリの `FORGE_MSG_MAX_ROUND_TRIPS` 設定有無
 
-機械検査できない項目（Codex セッションの常駐・trust 登録の完了）は
-`warnings` に文字列として明示する（fail-open）。5 検査項目のいずれかが
-不成立なら `status` を `error` にする。
+機械検査できない項目（Codex 側 trust 登録の完了）は `warnings` に文字列として
+明示する（fail-open）。5 検査項目のいずれかが不成立なら `status` を `error` にする。
+
+**相手セッションの常駐は本 CLI の検査対象でも警告対象でもない**。かつては
+「機械検査できない」項目として警告に挙げていたが、これは事実ではなかった——
+稼働中のプロセスを直接確認すれば判定できる。常駐の判定は、それを前提として
+必要とする側（レビューバックエンドの可用性検査）が行う。本 CLI は msg-sys 自身の
+設定・健全性だけを扱い、msg-sys を使う個々の応用が何を前提とするかを知らない
+（cmux 前提の常駐という概念自体が msg-sys の関心ではない）。
 
 使い方:
     python3 check_setup.py [--project-root <path>]
@@ -37,7 +43,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import mailbox  # noqa: E402
 
 UNVERIFIABLE_WARNINGS = [
-    "Codex セッションの常駐有無は機械検査できません（人間が手動で常駐起動しているか確認してください）",
     "Codex 側 trust 登録（/hooks コマンドでの明示的信頼登録）の完了有無は機械検査できません"
     "（git worktree / チェックアウトごとに個別に必要です）",
 ]
