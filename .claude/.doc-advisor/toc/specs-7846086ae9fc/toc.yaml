@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-04T06:16:25Z
+  generated_at: 2026-08-03T07:38:06Z
   file_count: 51
 
 docs:
@@ -231,69 +231,72 @@ docs:
       - stateless elimination
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md:
     title: DES-064 Codex-AppServer Review Backend Design
-    purpose: Design specification for the codex-appserver review backend, covering architecture, connection management, response handling, lifecycle management, and error patterns
+    purpose: Specifies the architecture and implementation design for a headless review backend running on codex app-server, handling request-response cycles with verdict and findings generation without direct human TUI interaction
     content_details:
-      - Architecture overview with thread ownership and WebSocket protocol
-      - Unix domain socket transport by default
-      - WebSocket client implementation with HTTP Upgrade handshake and masking
-      - Per-review app-server startup with endpoint and thread ID recording
-      - Thread context continuation across rounds using recorded state
-      - Codex version tracking to detect version changes
-      - Response event stream conversion to text and common format interpretation
-      - Permission limitations enforced for read-only execution
-      - Round-trip logging to per-review directories for audit
-      - Prerequisites checking and failure confirmation without fallback to other backends
+      - "WebSocket client with RFC 6455 minimum implementation: handshake, masking, frame continuation, ping/pong, close (no TLS, compression, non-loopback)"
+      - Server lifecycle management per review_id with endpoint and thread recording and reconnection validation
+      - Thread start on initial round, resume on subsequent rounds, release on /forge:review termination notification
+      - "Response event collection and conversion to common format: event sequence to text to verdicts with findings array"
+      - Round-by-round audit logging of requests and responses in review-scoped directories
+      - "Prerequisite checks before transmission: Codex CLI availability, app-server existence, required protocol methods"
+      - "Orphan process handling: detection of stale processes from abnormal parent termination with user visibility"
+      - "Fail-closed error handling: independent failure returns for missing prerequisites, startup failures, response parsing failures"
+      - "Read-only permission mode: no write operations or approval requests in generated turns"
+      - "Unattended operation advantage: no TUI dependency enabling complete automated integration testing"
     applicable_tasks:
-      - Implementing the codex-appserver review backend
-      - Implementing WebSocket client for JSON-RPC protocol
-      - Designing server lifecycle management
-      - Implementing response parsing and format conversion
-      - Implementing error handling without fallback
-      - Planning integration tests for headless review execution
-      - Understanding backend contract with /forge:review
+      - Backend implementation design review and validation
+      - WebSocket client implementation and testing planning
+      - Server and thread lifecycle design review
+      - Response conversion pipeline implementation planning
+      - Audit logging mechanism implementation
+      - Prerequisite validation implementation planning
+      - Orphan process handling design review
+      - Fail-closed error handling implementation and testing
+      - Permission constraints and unattended operation validation
+      - Integration testing setup without TUI interaction
     keywords:
       - codex-appserver
+      - review backend
       - WebSocket
+      - thread management
+      - headless
       - JSON-RPC
-      - review backend
-      - thread lifecycle
-      - Unix socket
-      - response conversion
-      - failure confirmation
-      - backend contract
-      - headless review
+      - protocol
+      - verdict
+      - findings
+      - unix socket
   docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md:
-    title: REQ-015 Codex-appserver Review Backend Requirements Specification
-    purpose: Defines requirements for a Codex app-server based review backend that manages review execution on independent threads with context persistence across rounds
+    title: REQ-015 Codex App-Server Review Backend Requirements Definition
+    purpose: Specifies requirements for implementing an independent review backend on Codex app-server with self-owned threads, eliminating terminal dependencies and enabling continuous context across review rounds.
     content_details:
-      - Codex app-server thread ownership per review with persistence across multiple rounds
-      - Conversion of Codex structured responses to unified findings format with severity markers and location information
-      - "Prerequisite validation before request dispatch: Codex CLI availability, protocol methods, app-server startup capability"
-      - Failure confirmation and explicit reporting distinct from findings with no silent fallback behavior
-      - "Resource lifecycle management triggered by body's end notification, with explicit handling of missing notifications"
-      - Audit trail recording keyed by review_id with round-by-round traceability
-      - "Position information extraction from findings: file path + line number or explicit undetermined position marker"
-      - Read-only authority scope limiting to review needs without modifications to target
-      - Independent thread management without connection to human-operated TUI sessions
-      - Contract enforcement against backend-specific implementation details leaking to caller
+      - Backend contract requirements (forge:REQ-013 FNC-1318) with structure of review request inputs, outputs (approved/findings/failure), and common finding format with position information
+      - Self-owned thread lifecycle (creation, continuation across multiple review rounds, explicit resource release triggered by backend-received termination signal)
+      - Structured response conversion to common format (markdown findings with severity markers, position as file path plus line number or explicit unconfirmed notation)
+      - Prerequisite checking before request execution (Codex CLI availability, app-server protocol method existence, startup or reuse capability)
+      - Failure confirmation and explicit reporting (no silent approval misconversion, no implicit fallback to other backends, failure return value required)
+      - Audit trail recording by review_id (request and response pairs retrievable per review, no message database dependency)
+      - Permission limitation enforcement (read-only review operations, no target file modification, sandbox and approval policy details TBD)
+      - Unresolved implementation items (TBD-001 through TBD-009 including app-server headless round validation, availability checks per ADR-067, history restoration design)
     applicable_tasks:
-      - Implementing the Codex app-server review backend
-      - Designing backend contract implementation for /forge:review
-      - Specifying resource lifecycle management for review threads
-      - Defining finding format conversion logic
-      - Establishing permission boundaries for review execution
-      - Validating backend contract compliance
+      - Review backend implementation
+      - Codex integration design
+      - Contract compliance validation
+      - Thread management system design
+      - Response format conversion implementation
+      - Prerequisite validation implementation
+      - Audit logging system design
+      - Permission model implementation
     keywords:
-      - Codex app-server
       - review backend
-      - findings format conversion
+      - Codex app-server
       - thread ownership
-      - failure confirmation
-      - location determination
-      - prerequisite validation
+      - context continuation
+      - contract compliance
+      - failure handling
       - audit trail
-      - resource lifecycle
-      - end notification
+      - availability checks
+      - response conversion
+      - permission limitation
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md:
     title: ADR-055 Prohibit Distribution Artifacts from Referencing Development Documents
     purpose: Defines architectural decision prohibiting distribution artifacts from referencing external development documents, requiring normative content to be self-contained within the distribution unit or in companion documents
@@ -457,93 +460,99 @@ docs:
       - version_requirement
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
     title: DES-057 doc-db Backend Selection Design
-    purpose: Specifies backend selection mechanism for document search wrappers, preference configuration, probe logic, and synchronization design for doc-db and doc-advisor integration
+    purpose: Specifies backend selection between doc-db and doc-advisor, connection management, query/sync operations, and ToC freshness validation with fallback strategies
     content_details:
-      - Backend selection order from .forge.yaml prefer setting with default doc-advisor first priority
-      - HTTP direct connection to doc-db:58080 with JSON-RPC initialization and SSE response parsing
-      - On-demand startup of doc-db executable via subprocess with 10-second probe timeout and 0.25-second retry interval
-      - doc-advisor availability check based on SKILL registry (check-toc, query-docs, index-docs) and DocAdvisor 0.4.6 minimum version
-      - Query operation with series=current branch, list_indexes pre-check, and path existence filtering on results
-      - Uninitialized KEY/series detection returns exit code 30, triggering SKILL-driven desired-state sync with status polling
-      - Sync operations with job-based status checking, 600-second timeout, 2-second poll interval for progress reporting
-      - doc-advisor check-toc with 24-hour freshness threshold, stale condition triggering prepare+index-docs sequence
-      - Four wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with fixed category values
-      - "Error classification: unavailable (exit 10, backend fallback), operation error (exit 20, no fallback), missing index (exit 30, create then retry)"
+      - Backend selection order based on doc_backend.prefer setting
+      - Connection probe and on-demand doc-db startup
+      - HTTP/JSON-RPC communication with MCP session management
+      - Query operation with series specification and non-existent path filtering
+      - Sync operation for desired-state document updates
+      - ToC freshness judgment via check-toc SKILL with stale update flow
+      - Key and series resolution from git branch state
+      - Module architecture with separation of concerns (CLI, runtime, client, project documents)
+      - Error classification (unavailable vs operation error vs index missing)
+      - Fallback from doc-db to doc-advisor with availability judgment
     applicable_tasks:
-      - Document search backend selection and configuration implementation
-      - doc-db integration with query operation handling
-      - Backend availability detection and fallback logic
-      - Database synchronization and index management with progress tracking
-      - ToC freshness checking and conditional reindexing
-      - SKILL wrapper implementation for rules and specs document search
+      - doc-db integration implementation
+      - Backend selection wrapper script implementation
+      - Query operation wrapper design and testing
+      - Sync operation wrapper design and testing
+      - doc-advisor fallback integration and check-toc integration
+      - Error handling and status code mapping
+      - HTTP client and MCP session implementation
     keywords:
       - doc-db
       - doc-advisor
       - backend selection
-      - series
-      - JSON-RPC
-      - sync_documents
       - check-toc
+      - query
+      - sync
       - MCP
-      - query-db
-      - update-db
+      - JSON-RPC
+      - series
+      - doc-structure
+      - KEY
+      - desired-state
+      - freshness
+      - availability
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
-    title: REQ-014 doc-db Backend Selection Requirements Specification
-    purpose: "Specifies how forge'\\\\''s query-db-* and update-db-* skills automatically select and fall back between doc-advisor and doc-db backends based on availability, configuration, and capability detection."
+    title: REQ-014 Backend Selection Requirements Specification
+    purpose: Defines requirements for automatic document search backend selection in forge wrappers, enabling seamless fallback between doc-db and doc-advisor based on availability without requiring user backend setup awareness.
     content_details:
-      - Backend automatic selection with availability detection and priority-based ordering
-      - Query execution with ToC freshness checking (24-hour window) for doc-advisor and index creation for doc-db
-      - Update execution with backend-specific indexing strategies
-      - User notification requirements for backend selection, startup attempts, fallback reasons, and index operations
-      - Business rules for distinguishing uninitialized vs trash-state indexes in doc-db
-      - Error handling for configuration resolution, missing indexes, connection failures, and invalid paths in results
-      - Backend preference specification per project with explicit error on invalid configuration
-      - Non-functional requirements covering observability, backward compatibility, responsiveness, and information protection
+      - Backend auto-selection flow with priority-based ordering and availability detection
+      - Query execution with doc-advisor ToC freshness checking before search
+      - Index update mechanisms for both doc-db and doc-advisor backends
+      - "Availability detection: doc-db connection and startup attempt, doc-advisor installation and feature checks"
+      - Distinction between uninitialized index state and garbage state using machine-readable identifiers from doc-db
+      - Series-based search limiting to current branch, with path existence verification in results
+      - Backend fallback notification including backend selection reason and failure details
+      - Configuration-based preferred backend specification with explicit error on invalid settings
+      - Error handling cases covering missing indices, garbage states, connection failures, and both backends unavailable
     applicable_tasks:
-      - Backend selection strategy design for query-db-* and update-db-* wrapper implementation
-      - Availability detection and fallback mechanism implementation
-      - ToC freshness checking for doc-advisor
-      - Index state machine implementation for doc-db
-      - Configuration validation and error reporting
+      - Query wrapper implementation for backend selection
+      - Update wrapper implementation for index management
+      - Backend availability detection implementation
+      - ToC freshness validation before search execution
+      - Configuration validation for preferred backend settings
+      - Error handling for backend fallback scenarios
+      - Integration testing for multi-backend fallback support
     keywords:
-      - backend selection
-      - doc-advisor
+      - query-db-rules
+      - query-db-specs
+      - update-db-rules
+      - update-db-specs
       - doc-db
+      - doc-advisor
+      - backend selection
       - availability detection
-      - fallback
-      - ToC freshness
-      - index initialization
-      - configuration priority
-      - query wrapper
-      - update wrapper
+      - freshness
+      - series
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
-    title: ADR-052 Unified documentation cross-reference notation and CLAUDE_PLUGIN_ROOT path resolution
-    purpose: Standardizes internal cross-reference notation in docs/ using relative paths and implements automated symlink-based plugin root path resolution
+    title: ADR-052 Cross-reference notation standardization and plugin root path access improvement
+    purpose: Defines decisions for cross-reference notation within docs/ (relative paths vs absolute paths) and introduces automatic symlink mechanism for plugin root path resolution via SessionStart hook
     content_details:
-      - CLAUDE_PLUGIN_ROOT resolution behavior differs by access path (hooks.json substitution vs direct Read tool access)
-      - Unified internal cross-references within docs/ use relative path Markdown link syntax
-      - SKILL.md and external files reference docs/ using ${CLAUDE_PLUGIN_ROOT}/docs/ format
-      - document_style_guide.md updated to distinguish internal vs external reference formats
-      - SessionStart hook automatically creates and maintains .claude/forge-docs symlink pointing to current plugin docs path
-      - Approximately 15 docs files migrated with 20+ internal cross-references converted to relative format
-      - ensure_plugin_root_link.py script automates symlink creation and repair with 12 test cases
+      - Cross-reference notation standardization within docs/ using relative Markdown links
+      - Distinction between internal docs references and external references from SKILL.md/agents/commands
+      - SessionStart hook integration with ensure_plugin_root_link.py for automatic symlink creation
+      - Symlink behavior limited to docs/ subdirectory only (scope proportionality)
+      - Plugin root path resolution behavior varies across direct Read, execution, and environment pathways
+      - Alternative approaches evaluation including scope, automation strategy, and maintenance cost
     applicable_tasks:
-      - Documentation structure review and internal link validation
-      - Plugin development environment setup and hook configuration
-      - Documentation writing and editing with new cross-reference guidelines
-      - Downstream environment setup with automated path resolution
-      - Plugin root path resolution troubleshooting and symlink maintenance
+      - Documentation reference architecture validation
+      - Plugin infrastructure design review
+      - Internal documentation cross-reference standardization
+      - Plugin root path access mechanism implementation
+      - Symbol resolution and linking strategy design
+      - Documentation style guide update and maintenance
     keywords:
+      - ADR-052
+      - cross-reference-notation
       - CLAUDE_PLUGIN_ROOT
-      - cross-reference notation
-      - relative path
-      - SessionStart hook
-      - symlink
-      - documentation style
-      - path resolution
+      - SessionStart-hook
       - ensure_plugin_root_link.py
-      - plugin root
-      - Markdown links
+      - symlink-automation
+      - relative-paths
+      - documentation-architecture
   docs/specs/forge/design/ADR-060_review_backend_axis.md:
     title: "ADR-060: Backend Axis for Review Execution"
     purpose: Architecture decision record establishing a switchable backend axis for the review execution, replacing a fixed execution model with configurable contract-based backend switching.
@@ -621,63 +630,61 @@ docs:
       - termination notification
       - responsibility boundary
       - codex-appserver
-  docs/specs/forge/design/ADR-069_remove_plugin_root_symlink_mechanism.md:
-    title: ADR-069 Removal of plugin root symlink self-repair mechanism
-    purpose: Reverses the SessionStart hook symlink automation from ADR-052 by removing unused mechanism that creates unintended side effects on downstream projects
+  docs/specs/forge/design/ADR-067_backend_availability_probe.md:
+    title: "ADR-067: Backend Availability Probe and Default Backend Resolution"
+    purpose: Defines architecture decision to add availability probes to backend contract and change default backend selection from fixed value to resolution order based on availability checks
     content_details:
-      - SessionStart hook and symlink self-repair machine from ADR-052 §2.4 introduced unintended side effects to downstream project work trees and .gitignore
-      - Dependency analysis across all hooks, SKILLs, scripts, and Codex integrations found zero consumers of the auto-generated symlink
-      - "CLAUDE_PLUGIN_ROOT resolution functions correctly without symlink: native code substitution for hooks/SKILL contexts and __file__ reverse-lookup for scripts"
-      - Symlink self-repair script, 12 unit test cases, and corresponding .gitignore entries are deleted
-      - "Path resolution standardized to four context-specific strategies: native substitution, __file__ lookup, and manual process argument reverse-lookup"
-      - ADR-052 decisions on relative path notation, external reference format, and style guide updates remain valid and unaffected
-      - Existing downstream projects must manually clean up pre-generated symlinks and .gitignore entries
+      - Availability probe as contract requirement
+      - Backend returns availability status and missing prerequisites
+      - Default backend resolution order strategy
+      - Explicit backend specification handling (--backend and .forge.yaml)
+      - History restoration added to contract table
+      - "Failure modes: fail closed on explicit specification, resolution order otherwise"
+      - Backend-specific implementation details remain encapsulated
+      - Prerequisite reporting mechanism for dependencies (cmux, Codex session)
     applicable_tasks:
-      - Plugin symlink mechanism removal and SessionStart hook deletion
-      - Downstream project symlink cleanup and .gitignore manual update
-      - Plugin path resolution strategy validation and testing
-      - Documentation of alternative plugin root access patterns
-      - Release notes creation for symlink deprecation communication
+      - Backend implementation for availability probe support
+      - Contract specification review for forge main body
+      - Configuration schema update (.forge.yaml review section)
+      - Backend compliance audit (msg-review and codex-appserver adaptation)
+      - Error handling strategy review for failed backend attempts
     keywords:
-      - plugin root
-      - symlink removal
-      - SessionStart hook
-      - path resolution
-      - CLAUDE_PLUGIN_ROOT
-      - downstream project
-      - .gitignore
-      - dependency analysis
-      - hook deletion
-      - ADR-052
+      - availability probe
+      - backend availability
+      - default backend resolution
+      - fail closed
+      - contract requirements
+      - backend selection strategy
+      - prerequisite detection
+      - cmux
+      - Codex session
+      - backend encapsulation
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: DES-001 Document search wrapper abstraction design for forge backend integration
-    purpose: Specifies abstraction layer for 4 wrapper SKILLs that delegate document search and index updates to pluggable backends (doc-advisor or doc-db) with standardized key mapping and output contracts
+    title: Forge query abstraction design
+    purpose: Specifies wrapper SKILL design delegating document search and indexing to external doc-advisor plugin through key-based management and four wrapper SKILLs
     content_details:
-      - Four wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with category-to-key mapping for rules and specs document collections
-      - "Backend selection logic via resolve_backend_order.py: priority-ordered list determines which backend to execute first"
-      - "doc-advisor path: check-toc validates freshness (fresh/stale/error states), triggers index update if stale, executes query-docs with key and task keywords"
-      - "Output contract standardized across backends: Required documents list in project-root-relative paths with no structural transformation"
-      - Query SKILLs are inheritance-type read-only SKILLs with allowed-tools Skill, Read, Bash (no Grep fallback, no write operations)
-      - Update SKILLs via prepare_advisor_index.py resolve dirs and exclude patterns from .doc_structure.yaml, pass as JSON to doc-advisor:index-docs
-      - "Desired state validation: paths from .doc_structure.yaml define complete set; unlisted paths are deleted from index"
-      - "Test coverage: backend selection logic, order list resolution, doc-advisor contract validation, SKILL wrapper transparency"
+      - Four wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) forwarding to doc-advisor
+      - Query SKILL contract design with read-only inheritance and Skill tool delegation
+      - Update SKILL workflow using directory resolution from .doc_structure.yaml and doc-advisor:index-docs forwarding
+      - Key mapping design mapping rule/spec categories to opaque keys
+      - "Output contract for query results (Required documents: path list format)"
+      - SKILL isolation constraints with specified allowed-tools and no fork context
+      - Desired-state concept for index updates ensuring complete file set replacement
+      - Prerequisites including doc-advisor installation and key naming constraints
     applicable_tasks:
-      - Document search SKILL implementation and testing
-      - Backend selection and availability checking
-      - Document index update and synchronization
-      - Backend abstraction layer design
-      - Query keyword and task description matching for documents
+      - Document search wrapper SKILL implementation
+      - Integration with external doc-advisor plugin
+      - Query SKILL design and testing
+      - Index update SKILL implementation
     keywords:
-      - forge
-      - query abstraction
       - doc-advisor
-      - doc-db
-      - backend selection
-      - key mapping
-      - index update
-      - ToC freshness
-      - resolve_backend_order.py
-      - prepare_advisor_index.py
+      - query-docs
+      - index-docs
+      - wrapper-SKILL
+      - key-mapping
+      - Skill-tool
+      - read-only
+      - inheritance
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: Create skills orchestrator design
     purpose: Specifies orchestrator pattern design for start-design, start-plan, start-requirements skills with parallel context gathering framework using specs, rules, code agents via return-value contracts
@@ -1044,36 +1051,32 @@ docs:
       - metadata
   docs/specs/forge/design/DES-055_review_request_template_design.md:
     title: Review Request Template Design
-    purpose: Specifies design for review request templates organized by review pattern, with natural language templates for specifications and script-based validation for placeholder substitution
+    purpose: Specifies the design of review request templates for /forge:review skill, ensuring templates serve as the specification and are separated from script logic
     content_details:
-      - "Template storage and organization: eight templates in plugins/forge/skills/review/templates/ for patterns (diff, branch, code, requirement, design, plan, uxui, secrets)"
-      - "Placeholder token protocol using {{TOKEN}} format with tokens: PROTOCOL_HEADER, REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, BASE_BRANCH, TARGET_BRANCH, TARGET_SCOPE, FOCUS, SCAN_FINDINGS, SCAN_SUPPRESSED, SCAN_STATS"
-      - "Constraint: scripts contain no prose; all review instruction text lives in templates only"
-      - Template-specific criteria reference lists mapping each template to named forge internal principles documents (review_criteria_*.md, format_*.md, etc.)
-      - "Fail-closed validation: uncompleted tokens, unknown tokens, newline/CR injection, absolute path checks, dual target axis prevention, required field verification, scan result presence"
-      - "Script responsibilities separated: build_review_request.py for embedding and validation; analyze_branch_point.py for base branch enumeration; resolve_targets.py for file/directory validation; scan_secrets.py for deterministic masking"
-      - "Trust boundary design: secrets pattern generates scans internally via build_review_request.py importing scan_secrets.py to ensure masked values structure-only"
-      - "Template selection: single deterministic template per pattern based on review type and target axis combination (diff, branch, or file/directory specification)"
-      - "Completeness test suite: token substitution, unknown token detection, newline injection prevention, path resolution, template existence, criteria document existence, secret detection coverage, masked-value non-re-emission validation"
+      - Review pattern taxonomy (diff, branch, code, requirement, design, plan, uxui, secrets)
+      - Placeholder token contract ({{PROTOCOL_HEADER}}, {{REVIEW_TYPE}}, {{PLUGIN_ROOT}}, {{PROJECT_ROOT}}, {{SCOPE}}, {{FOCUS}}, {{TARGET_PATHS}})
+      - Per-template review criteria document references and observation points
+      - "Design constraints: scripts must not contain prose and branching must not occur per target axis"
+      - Fail-closed validation framework (token remnants, newline injection, absolute path requirements, dual-axis detection)
+      - Test design for token replacement, injection detection, template coverage, and observation document existence
+      - Trust boundary positioning for secrets scanning result generation
+      - Template selection logic based on /forge:review command patterns
+      - Distinction between {{SCOPE}} (evaluation target) and {{TARGET_PATHS}} (what to examine)
     applicable_tasks:
-      - Review request template creation and design
-      - Review script development and implementation
-      - Placeholder token system design and validation
-      - Secrets detection and masking implementation
-      - Test design for request generation
-      - Criteria mapping and documentation
-      - Template maintenance and updates
+      - Design review of /forge:review skill implementation
+      - Code review of template rendering and validation logic
+      - Architecture review of pattern dispatch and template organization
+      - Implementation of placeholder validation and fail-closed checks
+      - Testing of secrets scanning trust boundary
     keywords:
       - review request template
-      - placeholder token
-      - review pattern
-      - build_review_request.py
-      - scan_secrets.py
+      - placeholder tokens
+      - pattern-based dispatch
+      - fail-closed validation
+      - prose-free design
       - trust boundary
-      - criteria mapping
-      - template selection
-      - masking
-      - validation
+      - injection prevention
+      - token replacement
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: DES-061 Forge Settings File Design
     purpose: Defines the container specification and read semantics for the universal forge project configuration file (.claude/.forge.yaml), including placement, structure, error handling, and schema ownership rules for feature-specific sections
@@ -1102,36 +1105,37 @@ docs:
       - DES-057
       - forge_settings.py
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review body (backend-independent) design
-    purpose: Defines the design for the backend-independent main body of /forge:review SKILL, covering architecture, module responsibilities, termination handling, and testing strategy
+    title: "DES-066: Review Body Design (Backend-Independent Component)"
+    purpose: Specifies the design for the /forge:review main body that executes independent of the backend implementation, including argument interpretation, pattern resolution, request assembly, findings evaluation, and finalization
     content_details:
-      - Architecture overview of backend-agnostic review body with module organization
-      - Mandatory backend resolution mechanism (1-to-1 name-to-SKILL mapping without fallback)
-      - Module responsibilities (analyze_branch_point, resolve_targets, build_review_request, gate_findings, capture_syntax_baseline, verify_fix_safety, collect_modified_files, finalize_review)
-      - Single exit point for termination (finalize_review.py) with four termination paths
-      - Three-value judgment handling (approved, findings, failure) with findings-based continuation logic
-      - Granularity preservation (range specifications passed to backend without file expansion)
-      - Independent fix safety verification by script without automatic rollback
-      - Seven use cases (request assembly, finding evaluation, approval, cutoff, failure handling, user interruption, unknown backend rejection)
-      - Test design for finalization script covering all termination paths and edge cases
+      - Backend resolution strategy (explicit vs. availability-based order)
+      - Module responsibilities (SKILL.md, resolve_targets.py, build_review_request.py, gate_findings.py, finalize_review.py and others)
+      - Single exit point (finalize_review.py) for 4 terminal paths (approved, findings, failure, interrupted)
+      - "Request assembly axes: focus point ({{FOCUS}}) and scope level ({{SCOPE}})"
+      - .forge.yaml review section schema with backend and backend_order configuration
+      - Three-value judgment handling (approved/findings/failure) and confirmed_fix logic
+      - "Target granularity preservation: directory-level request vs. allowlist expansion"
+      - "Safety verification: individual finding validation plus independent end-of-round validation"
     applicable_tasks:
-      - Review body SKILL implementation and development
-      - Backend-agnostic architecture design and review
-      - Module design and responsibility boundary definition
-      - Termination handling implementation
-      - Test strategy development for finalization logic
-      - Backend integration verification and design
-      - Fail-closed error handling design review
+      - Backend-independent review body implementation
+      - Backend resolution and fallback strategy implementation
+      - Multi-round findings evaluation and modification handling
+      - Configuration schema design (.forge.yaml review section)
+      - Error handling for unknown backends and unavailable backends
+      - Terminal state handling and exit notification management
+      - Integration testing for finalization pathways
+      - Safety validation framework
     keywords:
-      - finalize_review.py
       - backend resolution
-      - termination notification
-      - judgment 3-value
-      - granularity preservation
-      - fix safety verification
-      - parse_findings.py
       - fail closed
-      - ADR-066
+      - availability probe
+      - finalization exit points
+      - findings evaluation
+      - confirmed_fix
+      - target granularity
+      - backend independence
+      - configuration schema
+      - safety verification
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
@@ -1184,36 +1188,36 @@ docs:
       - misuse defense
       - forge plugin
   docs/specs/forge/requirements/REQ-013_review_policy.md:
-    title: Review Policy Requirements (REQ-013)
-    purpose: Specifies review policy establishing principle-based code review approach with priority levels, criteria structure, and backend interfaces to prevent unnecessary complexity and ensure consistent quality.
+    title: REQ-013 Review Policy Requirements
+    purpose: Defines requirements for /forge:review SKILL including review observation priority hierarchy, target/interaction/backend specification axes, and handling of focus/scope/rule-carrying inputs
     content_details:
-      - "Review priority hierarchy (P1: rule compliance, P2: contradiction detection, P3: unnecessary complexity detection)"
-      - Elimination of perspective-specific criteria and judgment removal from review criteria documents
-      - Target axis specification (--diff, --branch, --files, --dirs flags with granularity preservation requirement)
-      - Interaction axis (--interactive, --auto-critical, --auto for post-detection processing modes)
-      - "Review backend axis (--backend flag with documented I/O contract: failure, termination notification, position information)"
-      - Focus axis (--focus for per-review emphasis in natural language, additive to built-in criteria)
-      - "Secrets review module (independent sensitive information detection using two-stage approach: mechanical scanning plus AI analysis)"
-      - "Secret value non-duplication rule (FNC-1316: masking and prevention of propagation through review channels)"
-      - Review criteria fixed 3-section structure (SSOT reference, check order, judgment rules)
-      - Principles expansion requirement (severity catalog and greyzone tolerance range clarification)
+      - "Three-level review priority hierarchy (P1: Rule matching, P2: Contradiction detection, P3: Unnecessary complexity)"
+      - Four mutually exclusive target specification axes (--diff, --branch, --files, --dirs) with granularity preservation requirement
+      - Three interaction modes for detected findings (--interactive, --auto-critical, --auto) with severity-based filtering
+      - Focus axis to specify per-request review concerns as supplementary to base criteria
+      - Scope axis to specify completion level and intentional omissions with out-of-scope finding handling
+      - Backend resolution mechanism with availability checking and failure/termination/position-information contract
+      - Rule-carrying mechanism to avoid duplicate searches when upstream SKILL provides rules/specs
+      - Secrets review as independent review type with value non-reproduction requirement
+      - Severity catalog and gray zone tolerance range specifications in principles documents
+      - Document reference normalization as permanent review perspective
     applicable_tasks:
-      - Review criteria document creation and structure design
-      - Review backend implementation and I/O contract specification
-      - Review policy and requirement documentation
-      - Rule gap detection and issue creation workflow
-      - Review SKILL implementation per FNC requirements
+      - Review criteria specification writing
+      - Review backend integration implementation
+      - Review template design and implementation
+      - Principles document expansion for severity catalogs
+      - Design review execution planning
     keywords:
-      - review
-      - priority hierarchy
-      - criteria structure
-      - backend contract
-      - secrets detection
-      - severity catalog
-      - target axis
-      - interaction axis
-      - principles
-      - judgment removal
+      - FNC-1301
+      - FNC-1318
+      - FNC-1315
+      - review priority
+      - backend delegation
+      - interaction mode
+      - focus axis
+      - scope axis
+      - secrets review
+      - severity mapping
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: "ADR-061: Multiplexing Codex Wake-up Paths (Adding App-Server Path)"
     purpose: "Records evaluation of adding app-server path to Codex wake-up routing alongside cmux. Includes implementation context, decision details, alternative analysis, and impact assessment. Status: rejected, replaced by ADR-063."
