@@ -201,16 +201,6 @@ def _match_registration_target(command: str, agent_name: str) -> str | None:
     return exec_target
 
 
-def _find_registration(commands: list[str], agent_name: str) -> str | None:
-    """check_inbox.py が実際に python 実行されるフックコマンドを探す（後方互換）。
-
-    マッチした command 文字列全体を返す。exec_target（スクリプトパストークン）
-    も必要な場合は `_find_registration_with_target()` を使う。
-    """
-    command, _exec_target = _find_registration_with_target(commands, agent_name)
-    return command
-
-
 def _find_registration_with_target(commands: list[str], agent_name: str) -> tuple[str | None, str | None]:
     """登録済みコマンドとその exec_target（スクリプトパストークン）を両方返す。"""
     for command in commands:

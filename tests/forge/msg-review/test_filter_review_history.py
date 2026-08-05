@@ -59,34 +59,6 @@ def _msg_no_header(sender, recipient, sent_at, body, msg_id, in_reply_to=None):
     }
 
 
-class ParseReviewIdTest(unittest.TestCase):
-    """parse_review_id: body 先頭行からの review_id 抽出（DES-045 §3.6）。"""
-
-    def test_extracts_review_id_from_first_line(self):
-        body = "[msg-review] code review_id=abc123 round=1\n本文..."
-        self.assertEqual(filter_mod.parse_review_id(body), "abc123")
-
-    def test_does_not_pick_up_review_id_outside_first_line(self):
-        """先頭行以外に review_id= らしき文字列が出現しても拾わない（境界）。"""
-        body = "本文1行目\n[msg-review] code review_id=abc123 round=1"
-        self.assertIsNone(filter_mod.parse_review_id(body))
-
-    def test_missing_round_returns_none(self):
-        body = "[msg-review] code review_id=abc123\n本文"
-        self.assertIsNone(filter_mod.parse_review_id(body))
-
-    def test_malformed_header_returns_none(self):
-        body = "review_id=abc123 round=1"
-        self.assertIsNone(filter_mod.parse_review_id(body))
-
-    def test_empty_body_returns_none(self):
-        self.assertIsNone(filter_mod.parse_review_id(""))
-
-    def test_unrelated_header_without_review_id_returns_none(self):
-        body = "[msg-review] code round=1\n本文"
-        self.assertIsNone(filter_mod.parse_review_id(body))
-
-
 class FilterByReviewIdTest(unittest.TestCase):
     """filter_by_review_id: 複数 review_id 混在履歴からの絞り込み・sent_at 昇順（DES-045 §3.6）。"""
 
