@@ -120,8 +120,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/send_and_await_reply.py" claude c
   --header-regex '^\[msg-review\]\s+\S+\s+review_id=(\S+)\s+round=\d+\s*$' \
   --thread-id <review_id> \
   --project-root "$(git rev-parse --show-toplevel)" \
-  [--in-reply-to <直前に受信した Codex メッセージの id>] \
-  --max-seconds 600 --progress-interval 10
+  [--in-reply-to <直前に受信した Codex メッセージの id>]
 ```
 
 送信後、一時ファイルを削除する。`--project-root` を渡すため **`FORGE_MSG_PROJECT_ROOT` のシェル前置は不要**（前置は呼び出し側の記憶に依存し、実運用で繰り返し忘れられた）。

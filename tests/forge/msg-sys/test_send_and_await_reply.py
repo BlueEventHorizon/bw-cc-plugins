@@ -213,6 +213,32 @@ class TimeoutTest(unittest.TestCase):
         self.assertIn("wake", payload)
 
 
+class WaitDefaultsTest(unittest.TestCase):
+    """待機方針値は wait_for_reply.py の定義をそのまま使う。"""
+
+    def test_omitted_wait_options_use_waiter_defaults(self):
+        h = _Harness()
+        _run(h)
+
+        self.assertEqual(h.wait_kwargs["max_seconds"], composite.waiter.DEFAULT_MAX_SECONDS)
+        self.assertEqual(
+            h.wait_kwargs["progress_interval"],
+            composite.waiter.DEFAULT_PROGRESS_INTERVAL,
+        )
+        self.assertEqual(
+            h.wait_kwargs["initial_interval"],
+            composite.waiter.DEFAULT_INITIAL_INTERVAL,
+        )
+        self.assertEqual(
+            h.wait_kwargs["backoff_factor"],
+            composite.waiter.DEFAULT_BACKOFF_FACTOR,
+        )
+        self.assertEqual(
+            h.wait_kwargs["max_interval"],
+            composite.waiter.DEFAULT_MAX_INTERVAL,
+        )
+
+
 class DbPathResolutionTest(unittest.TestCase):
     """DB パスは `--project-root` から解決する（env 前置を要求しない）。"""
 

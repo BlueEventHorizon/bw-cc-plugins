@@ -1,3 +1,37 @@
+---
+type: doc-advisor
+title: SKILL.md and Script Placement and Contract Design
+purpose: Defines the one-way dependency, wrapper classifications, placement rules, CLI stability, and invocation contract separating forge SKILL.md files from scripts.
+content_details:
+  - Single and composite wrapper classifications
+  - Positional-only wrapper contract and transparent process results
+  - Wrapper creation and omission criteria
+  - Skill-specific and shared script placement rules
+  - Public low-level CLI stability requirements
+  - SKILL.md one-line invocation rules
+  - One-way dependency direction from SKILL.md to external files
+  - Single and composite wrapper implementation templates
+  - Wrapper testing principles
+applicable_tasks:
+  - Wrapper creation and removal
+  - SKILL.md script invocation changes
+  - Script placement review
+  - CLI compatibility review
+  - Wrapper test design
+keywords:
+  - DES-024
+  - SKILL.md
+  - wrapper
+  - low-level script
+  - subprocess
+  - CLI contract
+  - positional arguments
+  - dependency direction
+  - script placement
+  - writer wrapper
+body_hash: sha256:e0d64495d1b3388f361ea950a53e6e1fcc1805272a6e3bf50d5367d897a6ba8c
+---
+
 # DES-024 SKILL.md と script の配置・契約設計
 
 ## メタデータ
@@ -153,7 +187,7 @@ flowchart LR
 """{skill} の {対象} を解決する薄いラッパー。
 
 {低レベル script} を subprocess で呼び出し、exit code / stdout / stderr を
-そのまま透過する (§2.1.1 共通原則)。
+そのまま透過する (§2.3 共通原則)。
 """
 import subprocess, sys
 from pathlib import Path
