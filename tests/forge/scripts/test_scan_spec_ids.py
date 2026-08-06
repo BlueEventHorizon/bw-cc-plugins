@@ -100,7 +100,7 @@ class TestFindDuplicates(unittest.TestCase):
         ]
         result = find_duplicates(entries)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['id'], 'SCR-001')
+        self.assertEqual(result[0]['ids'], ['SCR-001'])
         self.assertIn('main', result[0]['branches'])
         self.assertIn('feature/foo', result[0]['branches'])
         self.assertEqual(
@@ -117,7 +117,7 @@ class TestFindDuplicates(unittest.TestCase):
         ]
         result = find_duplicates(entries)
         self.assertEqual(len(result), 2)
-        ids = [d['id'] for d in result]
+        ids = [id_value for duplicate in result for id_value in duplicate['ids']]
         self.assertIn('SCR-013', ids)
         self.assertIn('SCR-014', ids)
 
@@ -427,7 +427,7 @@ class TestScanSpecIds(unittest.TestCase):
 
         self.assertEqual(result['next_id'], 'SCR-004')
         self.assertEqual(len(result['duplicates']), 1)
-        self.assertEqual(result['duplicates'][0]['id'], 'SCR-003')
+        self.assertEqual(result['duplicates'][0]['ids'], ['SCR-003'])
         self.assertIn('feature/a', result['duplicates'][0]['branches'])
         self.assertIn('feature/b', result['duplicates'][0]['branches'])
 

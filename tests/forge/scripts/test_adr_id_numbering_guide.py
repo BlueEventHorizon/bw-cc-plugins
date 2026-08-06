@@ -111,7 +111,11 @@ class TestADRScanBehavior(unittest.TestCase):
 
         result = scan_spec_ids("ADR", "/tmp/project", cwd="/tmp/project")
 
-        duplicate_ids = {d["id"] for d in result["duplicates"]}
+        duplicate_ids = {
+            id_value
+            for duplicate in result["duplicates"]
+            for id_value in duplicate["ids"]
+        }
         self.assertIn("ADR-003", duplicate_ids)
 
 

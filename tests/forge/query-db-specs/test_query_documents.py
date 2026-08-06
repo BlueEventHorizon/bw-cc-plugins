@@ -98,6 +98,21 @@ class TestQueryDocumentsWrapper(unittest.TestCase):
         )
         helpers.assert_transparent_subprocess_kwargs(self, mock_run)
 
+    def test_rejects_missing_or_extra_task_without_calling_low_level(self):
+        """検索タスクは空でない 1 位置引数だけを公開する"""
+        for argv in (
+            ["query_documents.py"],
+            ["query_documents.py", ""],
+            ["query_documents.py", "task", "extra"],
+            ["query_documents.py", "--mode", "all"],
+        ):
+            with self.subTest(argv=argv):
+                rc, mock_run = helpers.invoke_with_mocked_run(
+                    self.wrapper, argv=argv
+                )
+                self.assertEqual(rc, 20)
+                mock_run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

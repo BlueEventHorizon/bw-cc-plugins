@@ -292,7 +292,7 @@ Claude 側の Stop フック（`check_inbox.py`）は Stop イベント 1 回に
 ```
 python3 plugins/forge/scripts/msg-sys/wait_for_reply.py <agent_a> <agent_b> \
     --header-regex '^\[msg-review\]\s+\S+\s+review_id=(\S+)\s+round=\d+\s*$' --thread-id <review_id> \
-    [--max-seconds 600] [--progress-interval 10] [--db-path <path>]
+    [--max-seconds <秒>] [--progress-interval <秒>] [--db-path <path>]
 ```
 
 処理内容:
@@ -382,7 +382,7 @@ plugins/forge/scripts/msg-sys/cmux/wake_codex.sh <project_root>
 python3 plugins/forge/scripts/msg-sys/send_and_await_reply.py <sender> <recipient> \
     --body-file <path> --header-regex '<正規表現>' --thread-id <id> \
     [--in-reply-to <id>] [--project-root <path>] [--db-path <path>] \
-    [--max-seconds 600] [--progress-interval 10] [--no-wake]
+    [--max-seconds <秒>] [--progress-interval <秒>] [--no-wake]
 ```
 
 適用範囲は「返信を期待する送信」すべて（依頼モードの初回依頼・受信モードの修正報告・完了宣言行が無いときの再送）。レビューを終える UC-3 / 未対応所見を残した完了は送信そのものを行わないため対象外。

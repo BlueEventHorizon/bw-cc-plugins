@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-02T14:17:48Z
+  generated_at: 2026-08-06T04:00:51Z
   file_count: 39
 
 docs:
@@ -42,31 +42,34 @@ docs:
       - semantic integration
       - merge procedure
   plugins/forge/docs/adr_format.md:
-    title: ADR (Architecture Decision Record) Default Format
-    purpose: Defines standard format and guidelines for Architecture Decision Records when project-specific ADR format is not available, including status values, naming conventions, template structure, and reference guidelines.
+    title: Default Architecture Decision Record (ADR) Format
+    purpose: Defines the fallback ADR format, lifecycle rules, naming, status values, and required decision-record structure when no project-specific format exists.
     content_details:
-      - ADR as append-only decision records - once accepted, decision text is not modified
-      - Status values for decisions - proposed, accepted, rejected, superseded
-      - File naming convention - ADR-{NNN}_{topic}.md placed in design document directory
-      - ID numbering rule - use next-spec-id skill with shared prefix for ADR and DES
-      - Template structure with sections for metadata, context, decision, alternatives, impact, and status history
-      - Superseded decisions - reference successor ADR ID in metadata
-      - Reference guidelines - use metadata references instead of hardcoded file paths to avoid obsolescence
+      - ADRs are append-only decision records whose accepted context, decision, and alternatives must not be rewritten
+      - Superseding a decision requires a new ADR and changes the previous ADR status to superseded
+      - ADR files use ADR-{NNN}_{topic}.md and reside beside design documents rather than in a dedicated directory
+      - ADR and DES identifiers share one numbering sequence via next-spec-id with --share-prefixes ADR,DES
+      - Allowed statuses are proposed, accepted, rejected, and superseded with defined implementation authority
+      - The ADR template requires metadata, context, decision, considered alternatives, impacts, and status history
+      - Impact sections must describe positive and negative consequences without enumerating concrete changed file paths
+      - Related requirements, designs, and ADRs are recorded by ID while implementation file details belong in issues or plan.yaml
     applicable_tasks:
-      - Architecture decision documentation
-      - ADR creation and approval
-      - Decision status tracking
-      - Design traceability management
-      - ADR format validation
+      - Creating an ADR when no project-specific format exists
+      - Reviewing ADR lifecycle and immutability compliance
+      - Assigning a shared ADR and DES identifier
+      - Updating an ADR status after a decision is superseded
+      - Auditing ADR structure and impact descriptions
     keywords:
       - ADR
-      - Architecture Decision Record
+      - architecture decision record
+      - superseded
       - proposed
       - accepted
-      - superseded
-      - status tracking
-      - decision record
-      - template
+      - rejected
+      - next-spec-id
+      - share-prefixes
+      - status history
+      - ADR-{NNN}_{topic}.md
   plugins/forge/docs/ai_user_inquiry_pattern.md:
     title: Template for Presenting Multiple Options from AI to Users
     purpose: Defines a template pattern for presenting multiple design options to users when decisions need to be made

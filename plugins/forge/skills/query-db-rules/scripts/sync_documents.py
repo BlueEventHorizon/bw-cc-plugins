@@ -2,11 +2,11 @@
 """query-db-rules の doc-db desired-state 同期を駆動する薄いラッパー。
 
 低レベル CLI sync_docdb.py を category=rules 固定で subprocess 呼び出しし、
-残りの引数（--start / --status <job_id> 等）・stdout・stderr・exit code を
-そのまま透過する。投入（--start）と状態取得（--status）の両操作を透過する。
+投入（--start）と状態取得（--status <job_id>）だけを公開し、stdout・stderr・
+exit code をそのまま透過する。
 KEY / series 未整備（query の exit 30）からの索引作成に SKILL が使用する。
 
-引数: 低レベル CLI へそのまま渡す（category はラッパー内にハードコード）
+引数: --start または --status <job_id>（category はラッパー内にハードコード）
 """
 import subprocess
 import sys
@@ -21,9 +21,35 @@ LOW_LEVEL = (
 CATEGORY = "rules"
 
 
+def build_command(args: list[str]) -> list[str] | None:
+    if args == ["--start"]:
+        return [sys.executable, str(LOW_LEVEL), CATEGORY, "--start"]
+    if (
+        len(args) == 2
+        and args[0] == "--status"
+        and args[1]
+        and args[1] == args[1].strip()
+    ):
+        return [
+            sys.executable,
+            str(LOW_LEVEL),
+            CATEGORY,
+            "--status",
+            args[1],
+        ]
+    return None
+
+
 def main() -> int:
+    command = build_command(sys.argv[1:])
+    if command is None:
+        print(
+            "usage: sync_documents.py --start | --status <job_id>",
+            file=sys.stderr,
+        )
+        return 20
     result = subprocess.run(
-        [sys.executable, str(LOW_LEVEL), CATEGORY, *sys.argv[1:]],
+        command,
         check=False,
     )
     return result.returncode

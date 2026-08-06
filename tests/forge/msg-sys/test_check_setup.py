@@ -194,6 +194,78 @@ class CheckDbPathResolutionTest(unittest.TestCase):
         self.assertIn("boom", result["detail"])
 
 
+class MatchRegistrationTargetTest(unittest.TestCase):
+    """_match_registration_target(): 単一 command 文字列に対する登録判定の境界（DES-034 §3.1）。
+
+    3 条件（python 実行トークンの存在・前置トークンが全て env 代入かつ agent 名一致・
+    python 直後の非フラグ引数が check_inbox.py）を個別に崩した入力で、いずれも
+    非登録と判定されることを固定する。文字列一致だけの素朴な実装では誤検知する
+    敵対的入力（偽装 `echo`・`-m module` 経由）を含む。
+    """
+
+    def test_matches_real_registration_pattern(self):
+        command = (
+            "FORGE_MSG_AGENT_NAME=claude FORGE_MSG_PROJECT_ROOT=/repo "
+            "python3 /repo/plugins/forge/scripts/msg-sys/hooks/check_inbox.py"
+        )
+        exec_target = check_setup._match_registration_target(command, "claude")
+        self.assertEqual(exec_target, "/repo/plugins/forge/scripts/msg-sys/hooks/check_inbox.py")
+
+    def test_matches_with_python_executable(self):
+        command = "FORGE_MSG_AGENT_NAME=codex python /repo/hooks/check_inbox.py"
+        exec_target = check_setup._match_registration_target(command, "codex")
+        self.assertEqual(exec_target, "/repo/hooks/check_inbox.py")
+
+    def test_no_match_for_wrong_agent_name(self):
+        command = "FORGE_MSG_AGENT_NAME=codex python3 /repo/hooks/check_inbox.py"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_for_fake_echo_string(self):
+        command = "echo check_inbox.py FORGE_MSG_AGENT_NAME=claude"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_for_module_flag_not_executing_check_inbox(self):
+        command = "FORGE_MSG_AGENT_NAME=claude python3 -m module /tmp/check_inbox.py"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_when_prefix_has_non_env_token(self):
+        command = (
+            "not_an_env_assignment FORGE_MSG_AGENT_NAME=claude "
+            "python3 /repo/hooks/check_inbox.py"
+        )
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_when_python_token_missing(self):
+        command = "FORGE_MSG_AGENT_NAME=claude /usr/bin/check_inbox.py"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_for_unparsable_shlex(self):
+        command = "FORGE_MSG_AGENT_NAME=claude python3 'unterminated"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+    def test_no_match_when_exec_target_does_not_end_with_check_inbox(self):
+        command = "FORGE_MSG_AGENT_NAME=claude python3 /repo/hooks/other_script.py"
+        self.assertIsNone(check_setup._match_registration_target(command, "claude"))
+
+
+class FindRegistrationWithTargetTest(unittest.TestCase):
+    """_find_registration_with_target(): 複数 command の走査（先頭一致・不一致時の返り値）。"""
+
+    def test_first_matching_command_returned_among_multiple(self):
+        good = "FORGE_MSG_AGENT_NAME=claude python3 /repo/hooks/check_inbox.py"
+        other = "echo unrelated"
+        command, exec_target = check_setup._find_registration_with_target([other, good], "claude")
+        self.assertEqual(command, good)
+        self.assertEqual(exec_target, "/repo/hooks/check_inbox.py")
+
+    def test_returns_none_pair_when_nothing_matches(self):
+        commands = ["echo unrelated", "FORGE_MSG_AGENT_NAME=codex python3 /repo/hooks/check_inbox.py"]
+        self.assertEqual(
+            check_setup._find_registration_with_target(commands, "claude"),
+            (None, None),
+        )
+
+
 _EXPECTED_CODEX_TOKEN = "$(git rev-parse --show-toplevel)/.codex/msg-sys/scripts/hooks/check_inbox.py"
 
 

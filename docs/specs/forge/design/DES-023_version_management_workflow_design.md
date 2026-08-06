@@ -26,13 +26,13 @@
 
 ### 設計原則
 
-| 原則                                     | 説明                                                                                                                                                                                    |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **低レベルは非破壊・ラッパーが書き戻し** | 低レベル `update_version_files.py` は元ファイルを書き換えず stdout に出力する（NFR-01）。writer ラッパー（DES-024 §2.3.1）が stdout を capture して対象ファイルへ書き戻す（Issue #139） |
-| **テキストベース置換**                   | JSON/TOML の AST パースではなくテキスト操作で置換する。フォーマット（インデント・コメント）を保持するため                                                                               |
-| **filter による安全な絞り込み**          | 同一ファイル内に複数 target のバージョンが存在する場合、filter で置換対象を限定する                                                                                                     |
-| **標準ライブラリのみ**                   | 外部依存なし（PyYAML 等不要）                                                                                                                                                           |
-| **冪等性**                               | scan_version_targets は同一入力に対して同一出力を返す                                                                                                                                   |
+| 原則                                     | 説明                                                                                                                                                 |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **低レベルは非破壊・ラッパーが書き戻し** | 低レベル `update_version_files.py` は元ファイルを書き換えず stdout に出力する（NFR-01）。I/O アダプタが stdout を capture して対象ファイルへ書き戻す |
+| **テキストベース置換**                   | JSON/TOML の AST パースではなくテキスト操作で置換する。フォーマット（インデント・コメント）を保持するため                                            |
+| **filter による安全な絞り込み**          | 同一ファイル内に複数 target のバージョンが存在する場合、filter で置換対象を限定する                                                                  |
+| **標準ライブラリのみ**                   | 外部依存なし（PyYAML 等不要）                                                                                                                        |
+| **冪等性**                               | scan_version_targets は同一入力に対して同一出力を返す                                                                                                |
 
 ---
 
@@ -221,7 +221,7 @@ git:
 
 **責務**: ファイル内のバージョン文字列を置換し、更新後の内容を stdout に出力する。元ファイルは書き換えない（NFR-01）。
 
-> **直接呼び出さない [MANDATORY]**: 本ワークフロー（Step 6）からは本スクリプトを直接呼ばず、必ず対応する **writer ラッパー** (`update_main_version.py` / `update_required_dependent.py` / `update_optional_dependent.py` / `update_required_filtered.py` / `update_optional_filtered.py`) を経由する。ラッパーが stdout を capture して対象ファイルへ書き戻す責務を持つ（DES-024 §2.3.1 / Issue #139）。本スクリプトを単独で実行した場合、呼び出し側が stdout を必ずファイルへ書き戻す必要がある。
+> **直接呼び出さない [MANDATORY]**: 本ワークフロー（Step 6）からは本スクリプトを直接呼ばず、必ず対応する **I/O アダプタ** (`update_main_version.py` / `update_required_dependent.py` / `update_optional_dependent.py` / `update_required_filtered.py` / `update_optional_filtered.py`) を経由する。I/O アダプタが stdout を capture して対象ファイルへ書き戻す責務を持つ。本スクリプトを単独で実行した場合、呼び出し側が stdout を必ずファイルへ書き戻す必要がある。
 
 **配置**: `plugins/forge/skills/update-version/scripts/update_version_files.py`
 
@@ -401,7 +401,7 @@ AI がコミットメッセージを Conventional Commits 形式で分類し、�
 
 #### Step 6 の詳細
 
-version_file と各 sync_file に対して、対応する **writer ラッパー** を呼び出す（DES-024 §2.3.1 writer 例外類型 / Issue #139）。ラッパーは内部で `update_version_files.py` を `capture_output` 付きで呼び、成功時 (`rc==0` かつ stdout 非空) に対象ファイルへ書き戻す責務を持つ。低レベル `update_version_files.py` は引き続き stdout-only（NFR-01）で、本ワークフローから直接呼ばない。
+version_file と各 sync_file に対して、対応する **I/O アダプタ** を呼び出す。I/O アダプタは内部で `update_version_files.py` を `capture_output` 付きで呼び、成功時 (`rc==0` かつ stdout 非空) に対象ファイルへ書き戻す責務を持つ。低レベル `update_version_files.py` は引き続き stdout-only（NFR-01）で、本ワークフローから直接呼ばない。
 
 | 対象                                   | ラッパー                       | 低レベルへの追加引数             |
 | -------------------------------------- | ------------------------------ | -------------------------------- |

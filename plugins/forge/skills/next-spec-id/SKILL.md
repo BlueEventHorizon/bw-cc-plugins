@@ -78,7 +78,6 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
   "ids_found": 17,
   "duplicates": [
     {
-      "id": "SCR-013",
       "ids": ["SCR-013"],
       "branches": ["feature/edit_pickup", "origin/feature/print_letter"],
       "paths": [
@@ -90,7 +89,6 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
 }
 ```
 
-- `id`: 代表 ID（衝突に関与する ID の先頭）
 - `ids`: 衝突に関与する全 ID（共有採番モードでは `["ADR-007", "DES-007"]` のように複数になりうる）
 - `paths`: 同じ番号を主張している異なるファイルパス
 - `branches`: 該当ファイルが存在するブランチ
