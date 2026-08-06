@@ -45,7 +45,7 @@ Claude のターン終了で発火する）。同じ欠陥が同じ場所で 2 �
     python3 send_and_await_reply.py <sender> <recipient> --body-file <path> \
         --header-regex "<正規表現>" --thread-id <id> \
         [--in-reply-to <id>] [--project-root <path>] [--db-path <path>] \
-        [--max-seconds 600] [--progress-interval 10] [--no-wake]
+        [--max-seconds <秒>] [--progress-interval <秒>] [--no-wake]
 
 本文は**必ずファイルから読む**（`--body-file`）。シェル経由（heredoc / echo / printf）で
 本文を組み立てる経路を持たせないため、標準入力からは受け取らない。
@@ -217,11 +217,27 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "返信が成立しないため）。起床を止めたい場合は `--no-wake` を使う"
         ),
     )
-    parser.add_argument("--max-seconds", type=float, default=600.0)
-    parser.add_argument("--progress-interval", type=float, default=10.0)
-    parser.add_argument("--initial-interval", type=float, default=1.0)
-    parser.add_argument("--backoff-factor", type=float, default=2.0)
-    parser.add_argument("--max-interval", type=float, default=10.0)
+    parser.add_argument(
+        "--max-seconds", type=float, default=waiter.DEFAULT_MAX_SECONDS
+    )
+    parser.add_argument(
+        "--progress-interval",
+        type=float,
+        default=waiter.DEFAULT_PROGRESS_INTERVAL,
+    )
+    parser.add_argument(
+        "--initial-interval",
+        type=float,
+        default=waiter.DEFAULT_INITIAL_INTERVAL,
+    )
+    parser.add_argument(
+        "--backoff-factor",
+        type=float,
+        default=waiter.DEFAULT_BACKOFF_FACTOR,
+    )
+    parser.add_argument(
+        "--max-interval", type=float, default=waiter.DEFAULT_MAX_INTERVAL
+    )
     parser.add_argument(
         "--no-wake",
         action="store_true",

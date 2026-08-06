@@ -23,8 +23,8 @@ Stop イベント1回につき受信箱を1度だけ確認して即座に返す�
 
 使い方:
     python3 wait_for_reply.py <agent_a> <agent_b> --header-regex "<正規表現>" --thread-id <id> \
-        [--max-seconds 600] [--progress-interval 10] \
-        [--initial-interval 1] [--backoff-factor 2] [--max-interval 10] \
+        [--max-seconds <秒>] [--progress-interval <秒>] \
+        [--initial-interval <秒>] [--backoff-factor <倍率>] [--max-interval <秒>] \
         [--db-path <path>]
 """
 
@@ -40,6 +40,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import thread_filter  # noqa: E402
 
 INBOX_SCRIPT = Path(__file__).resolve().parent / "inbox.py"
+DEFAULT_MAX_SECONDS = 600.0
+DEFAULT_PROGRESS_INTERVAL = 10.0
+DEFAULT_INITIAL_INTERVAL = 1.0
+DEFAULT_BACKOFF_FACTOR = 2.0
+DEFAULT_MAX_INTERVAL = 10.0
 
 
 def ack_message(agent_name: str, message_id: str, db_path: str | None) -> bool:
@@ -178,11 +183,13 @@ def main() -> int:
         help="body 先頭行から thread_id を抽出する正規表現（capture group 1 が thread_id）",
     )
     parser.add_argument("--thread-id", required=True)
-    parser.add_argument("--max-seconds", type=float, default=600.0)
-    parser.add_argument("--progress-interval", type=float, default=10.0)
-    parser.add_argument("--initial-interval", type=float, default=1.0)
-    parser.add_argument("--backoff-factor", type=float, default=2.0)
-    parser.add_argument("--max-interval", type=float, default=10.0)
+    parser.add_argument("--max-seconds", type=float, default=DEFAULT_MAX_SECONDS)
+    parser.add_argument(
+        "--progress-interval", type=float, default=DEFAULT_PROGRESS_INTERVAL
+    )
+    parser.add_argument("--initial-interval", type=float, default=DEFAULT_INITIAL_INTERVAL)
+    parser.add_argument("--backoff-factor", type=float, default=DEFAULT_BACKOFF_FACTOR)
+    parser.add_argument("--max-interval", type=float, default=DEFAULT_MAX_INTERVAL)
     parser.add_argument(
         "--db-path",
         default=None,

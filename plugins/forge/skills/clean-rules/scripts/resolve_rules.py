@@ -2,7 +2,7 @@
 """clean-rules のルール文書ディレクトリを解決する薄いラッパー。
 
 resolve_doc_structure.py --type rules を subprocess で呼び出し、
-exit code / stdout / stderr をそのまま透過する（DES-024 §2.1.1 共通原則）。
+exit code / stdout / stderr をそのまま透過する（DES-024 §2.3 共通原則）。
 
 引数: なし（--type rules はラッパー内にハードコード）
 """

@@ -50,11 +50,6 @@ FINDINGS_LINE = "REVIEW_RESULT: findings"
 COMPLETION_LINES = (APPROVED_LINE, FINDINGS_LINE)
 
 
-def parse_review_id(body: str) -> str | None:
-    """body 先頭行から review_id=<X> をパースする。無ければ None を返す。"""
-    return thread_filter.parse_thread_id(body, REVIEW_ID_RE)
-
-
 def filter_by_review_id(messages: list[dict], review_id: str) -> list[dict]:
     """指定した review_id のスレッドに属するメッセージのみを sent_at 昇順で抽出する。
 

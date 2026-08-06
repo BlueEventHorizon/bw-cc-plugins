@@ -334,6 +334,35 @@ class MainSmokeTest(unittest.TestCase):
                     exit_code = wait_mod.main()
         self.assertEqual(exit_code, 1)
 
+    def test_omitted_wait_options_use_module_defaults(self):
+        captured = {}
+
+        def fake_wait(*_args, **kwargs):
+            captured.update(kwargs)
+            return {"status": "timeout"}
+
+        argv = [
+            "wait_for_reply.py", "claude", "codex",
+            "--header-regex", REVIEW_ID_RE.pattern, "--thread-id", "rev-A",
+            "--db-path", "/tmp/messages.db",
+        ]
+        with mock.patch.object(wait_mod, "wait_for_reply", side_effect=fake_wait):
+            with mock.patch.object(wait_mod.sys, "argv", argv):
+                exit_code = wait_mod.main()
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(captured["max_seconds"], wait_mod.DEFAULT_MAX_SECONDS)
+        self.assertEqual(
+            captured["progress_interval"], wait_mod.DEFAULT_PROGRESS_INTERVAL
+        )
+        self.assertEqual(
+            captured["initial_interval"], wait_mod.DEFAULT_INITIAL_INTERVAL
+        )
+        self.assertEqual(
+            captured["backoff_factor"], wait_mod.DEFAULT_BACKOFF_FACTOR
+        )
+        self.assertEqual(captured["max_interval"], wait_mod.DEFAULT_MAX_INTERVAL)
+
     def test_invalid_header_regex_returns_exit_code_1(self):
         argv = [
             "wait_for_reply.py", "claude", "codex",

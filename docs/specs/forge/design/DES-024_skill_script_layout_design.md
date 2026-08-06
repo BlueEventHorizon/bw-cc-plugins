@@ -1,3 +1,38 @@
+---
+type: doc-advisor
+title: SKILL.md and Script Placement and Contract Design
+purpose: Defines the one-way dependency, wrapper classifications, placement rules, CLI stability, and invocation contract separating forge SKILL.md files from scripts.
+content_details:
+  - Single and composite wrapper classifications
+  - Positional-only wrapper contract and transparent process results
+  - Wrapper creation and omission criteria
+  - Intentional duplication rationale for skill-local fixed-value bindings
+  - Skill-specific and shared script placement rules
+  - Public low-level CLI stability requirements
+  - SKILL.md one-line invocation rules
+  - One-way dependency direction from SKILL.md to external files
+  - Single and composite wrapper implementation templates
+  - Wrapper testing principles
+applicable_tasks:
+  - Wrapper creation and removal
+  - SKILL.md script invocation changes
+  - Script placement review
+  - CLI compatibility review
+  - Wrapper test design
+keywords:
+  - DES-024
+  - SKILL.md
+  - wrapper
+  - intentional duplication
+  - low-level script
+  - CLI contract
+  - positional arguments
+  - dependency direction
+  - script placement
+  - writer wrapper
+body_hash: sha256:060f26393c6ea12f108fa9b413f7ba38a2436f5c29b7902d75f66ce14e8dd0d9
+---
+
 # DES-024 SKILL.md と script の配置・契約設計
 
 ## メタデータ
@@ -16,6 +51,8 @@
 本設計は REQ-003「SKILL.md と script の責務分離」の How を定める。
 
 **SKILL.md → wrapper → 低レベル script → 外部ファイル** の一方向依存を確立し、ラッパーの判断基準・命名規則・配置原則を明文化する。SKILL.md は 1 行指示のみを保持し、状態遷移・flag 合成・JSON スキーマは低レベル script に閉じる。
+
+低レベル script は複数 SKILL が再利用する汎用処理を所有し、各 SKILL 配下のラッパーは SKILL 固有値を束縛したローカル操作入口を所有する。ラッパー同士が固定値以外で同一でも、この配置は AI の引数選択を除去し、SKILL 間の依存と共有領域への固有値混入を防ぐための意図的な境界である。
 
 ## 2. ラッパーの型
 
@@ -66,7 +103,20 @@
 - パス短縮のみ (深いディレクトリ参照を浅くするだけ)
 - 引数フォーマット変換のみ (位置引数 → flag 名前付け、hardcode 値なし)
 
-判断基準の根拠: 命名変換・パス短縮・引数フォーマット変換のみのラッパーは、複数 SKILL に同一実装が量産され DRY 違反になる、ラッパー名と低レベル CLI 名が 1:1 対応で意味的差分がなく間接層の意義がない、保守時に低レベル変更がラッパー全コピーに波及する、の 3 点で害が利を上回る。
+判断基準の根拠: 命名変換・パス短縮・引数フォーマット変換のみのラッパーは、複数 SKILL に同一実装が量産され DRY 違反になる、ラッパー名と低レベル CLI 名が 1:1 対応で意味的差分がなく間接層の意義がない、保守時に低レベル変更がラッパー全コピーに波及する、の 3 点で害が利を上回る。SKILL 固有値の束縛は意味的差分であるため、この「作らない」基準には該当しない。
+
+### 2.5 意図的な重複の設計意図 [MANDATORY]
+
+ラッパーの類似性や行数だけを理由に、削除または共有化してはならない。重複しているのは実体ロジックではなく、SKILL ごとに確定した低レベル CLI の呼び出し契約である。
+
+- **AI の判断領域を減らす**: SKILL.md に固定値を記載しても、自然言語を実行する AI はパス・flag・値を組み立てる必要がある。ラッパー名と自然に得られる位置引数だけを渡す構造にして、固定値の省略・取り違え・別 SKILL との混同を構造的に除く
+- **SKILL のローカル操作面を保つ**: 各 SKILL は他 SKILL のラッパーや固定値を知らず、自身のディレクトリにある操作入口だけを呼ぶ。ここでいう独立性は低レベル実装の複製ではなく、呼び出し契約の局所性を指す
+- **共有領域を汎用処理に限定する**: `plugins/forge/scripts/{domain}/` は複数 SKILL が使う実体ロジックだけを持つ。SKILL 名・文書種別・カテゴリ等の利用文脈は各 SKILL 配下で束縛し、共有低レベル script に個別用途を持ち込まない
+- **独立した変更余地を残す**: 現時点で同一形でも、各 SKILL の操作契約は別々に変更できる。共有ラッパーや単一 dispatcher に統合して、無関係な SKILL 同士を同じ分岐・引数契約へ結合しない
+
+この設計は、ラッパーファイルと対応テストが増える保守コストを受け入れる。各テストが保証する中心事項は subprocess 配管そのものではなく、SKILL 固有値、呼び出す低レベル CLI、公開する位置引数の組合せが正しいことである。共通の透過動作に対する assert helper は共有してよいが、SKILL ごとの束縛契約の検証は残す。
+
+削除または低レベル script の直接呼び出しへ変更できるのは、§2.4 の「作る」基準を全て満たさなくなり、AI に固定値・モード・flag の選択を戻さない場合に限る。
 
 ## 3. 配置基準
 
@@ -79,7 +129,7 @@
 
 ### 3.2 共有ラッパー層を作らない
 
-複数 SKILL から同じ operation を呼びたくなった場合、それは wrapper ではなく低レベル script の責務である。中間に「共有ラッパー層」を作ると配置判断が複雑化し、二重実装の温床になる。各 SKILL はそれぞれ薄いラッパーで委譲する (またはラッパーなしで低レベルを直接呼ぶ)。
+複数 SKILL から同じ operation を呼びたくなった場合、実体ロジックは wrapper ではなく低レベル script の責務である。中間に「共有ラッパー層」を作ると配置判断が複雑化し、二重実装の温床になる。SKILL 固有値を束縛する必要がある場合、各 SKILL はそれぞれローカルな薄いラッパーで委譲する。§2.4 の「作る」基準に該当しない場合のみ、ラッパーなしで低レベルを直接呼ぶ。
 
 ### 3.3 低レベル script の public CLI は安定させる [MANDATORY]
 
@@ -153,7 +203,7 @@ flowchart LR
 """{skill} の {対象} を解決する薄いラッパー。
 
 {低レベル script} を subprocess で呼び出し、exit code / stdout / stderr を
-そのまま透過する (§2.1.1 共通原則)。
+そのまま透過する (§2.3 共通原則)。
 """
 import subprocess, sys
 from pathlib import Path
@@ -216,12 +266,15 @@ CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う�
 - 配置: `tests/forge/{skill}/test_{operation}.py`
 - wrapper テストの assert ロジックは共通 helper へ寄せてよい
 - 各 wrapper テストファイルは、SKILL 固有値 (`--skill`, `--doc-type` 等) が正しいことを確認する
+- 固定値以外が同一のラッパーでも、SKILL ごとの束縛契約を別々に検証する
 
 ## 9. 非採用案
 
 | 案                                                                | 不採用理由                                                                                                      |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `plugins/forge/scripts/` に共通ラッパー層を新設                   | §3.2 で禁止 (共有ラッパー層は作らない)。複合ラッパーは SKILL 配下に閉じた別物                                   |
+| SKILL 固有値を SKILL.md に戻して低レベル script を直接呼ぶ        | AI にパス・flag・固定値の組み立てを戻し、REQ-003 FNC-002 / FNC-006 の判断領域削減とローカル操作境界を失う       |
+| 固定値だけを引数に取る共有 dispatcher へ統合                      | AI に SKILL 名・カテゴリ等の選択を戻し、SKILL 間を同じ分岐契約へ結合する                                        |
 | 低レベル script に use-case 関数 API を追加して SKILL から import | SKILL.md → wrapper → 低レベル script の一方向依存に反する。低レベル内部の共通化とは別物                         |
 | 単一 wrapper から `--optional` flag 等で分岐                      | REQ-003 FNC-003 (flag 分岐構造を避ける) に違反                                                                  |
 | ラッパーに新規ガード / エラーメッセージ / help を実装             | §2.3 共通原則 (subprocess 呼び出しのみ) に違反                                                                  |
