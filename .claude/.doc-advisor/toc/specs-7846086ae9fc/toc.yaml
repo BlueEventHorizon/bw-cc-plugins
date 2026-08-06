@@ -5,10 +5,70 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-06T04:01:30Z
-  file_count: 53
+  generated_at: 2026-08-06T12:12:50Z
+  file_count: 56
 
 docs:
+  docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
+    title: DES-072 Agent Review Backend Design
+    purpose: Defines a stateless, read-only custom Agent backend that launches a fresh reviewer for each review round and converts validated responses into common review results.
+    content_details:
+      - Responsibility split among the agent-review SKILL, reviewer Agent, common findings parser, and forge review orchestrator
+      - Reviewer tool restrictions permitting Read, Grep, Glob, and read-only git while prohibiting edits, subagents, skills, and external communication
+      - Side-effect-free availability checks for Agent resolution, launch support, permission mode, prohibited tools, and response instructions
+      - Per-round lifecycle that launches a fresh reviewer, validates only its final response, and retains no resume ID or transcript
+      - No-op termination notification and explicit unsupported response for history restoration requests
+      - REVIEW_RESULT mapping to approved, findings, or failure with required severity, text, and location fields
+      - Failure stages for availability, launch, execution, and response validation without backend fallback
+      - Non-persistence constraints covering Agent sessions, transcripts, review history, database records, and resident processes
+      - Contract tests for lifecycle isolation, read-only enforcement, wire neutrality, response parsing, and resource cleanup
+    applicable_tasks:
+      - Implementing the agent-review backend SKILL
+      - Implementing the read-only reviewer custom Agent
+      - Reviewing backend availability and lifecycle behavior
+      - Writing contract tests for stateless review rounds
+      - Validating common review response conversion
+    keywords:
+      - agent-review
+      - reviewer Agent
+      - REVIEW_RESULT
+      - read-only git
+      - permission mode
+      - stateless
+      - availability check
+      - findings parser
+      - history unsupported
+      - no-op termination
+  docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md:
+    title: Agent-Review Backend Requirements
+    purpose: Specifies a dependency-free, read-only custom Agent backend that performs stateless review rounds under the shared review backend contract.
+    content_details:
+      - FNC-1601 read-only reviewer prohibition on file, git, project, and external-service writes
+      - FNC-1602 one fresh reviewer Agent per round without implicit context inheritance
+      - FNC-1603 approved, findings, and failure outcomes using the shared finding schema
+      - FNC-1604 side-effect-free availability checks for Agent definition, launch capability, and read-only constraints
+      - FNC-1605 no-op termination notification without resource cleanup or follow-up communication
+      - FNC-1606 non-persistent history with explicit rejection of same-review_id restoration
+      - FNC-1607 backend-neutral request body without msg-review wire headers
+      - NFR-1602 dependency limited to the forge plugin and host custom Agent runtime
+      - NFR-1603 fail-closed behavior for unverifiable availability, responses, output, or tool constraints
+    applicable_tasks:
+      - Implementing the agent-review backend
+      - Testing review round isolation and shared result contracts
+      - Reviewing reviewer Agent read-only tool restrictions
+      - Validating backend availability probes and fail-closed behavior
+      - Testing review history restoration rejection
+    keywords:
+      - agent-review
+      - reviewer
+      - FNC-1601
+      - one Agent per round
+      - read-only
+      - stateless
+      - review_id
+      - fail closed
+      - availability probe
+      - shared finding schema
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md:
     title: "ADR-059: issue-driven-flow as anvil's permanent specification"
     purpose: "Architectural decision establishing issue-driven-flow as anvil's permanent specification and baseline for resolving differential development reconciliation."
@@ -230,73 +290,66 @@ docs:
       - WebSocket
       - stateless elimination
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md:
-    title: DES-064 Codex-AppServer Review Backend Design
-    purpose: Specifies the architecture and implementation design for a headless review backend running on codex app-server, handling request-response cycles with verdict and findings generation without direct human TUI interaction
+    title: DES-064 Codex App-Server Review Backend Design
+    purpose: Designs a headless Codex app-server review backend, including transport, thread lifecycle, response conversion, audit records, and fail-closed behavior.
     content_details:
-      - "WebSocket client with RFC 6455 minimum implementation: handshake, masking, frame continuation, ping/pong, close (no TLS, compression, non-loopback)"
-      - Server lifecycle management per review_id with endpoint and thread recording and reconnection validation
-      - Thread start on initial round, resume on subsequent rounds, release on /forge:review termination notification
-      - "Response event collection and conversion to common format: event sequence to text to verdicts with findings array"
-      - Round-by-round audit logging of requests and responses in review-scoped directories
-      - "Prerequisite checks before transmission: Codex CLI availability, app-server existence, required protocol methods"
-      - "Orphan process handling: detection of stale processes from abnormal parent termination with user visibility"
-      - "Fail-closed error handling: independent failure returns for missing prerequisites, startup failures, response parsing failures"
-      - "Read-only permission mode: no write operations or approval requests in generated turns"
-      - "Unattended operation advantage: no TUI dependency enabling complete automated integration testing"
+      - JSON-RPC communication over WebSocket using Unix domain sockets by default
+      - Standard-library RFC 6455 client scope covering upgrade, masking, fragmentation, ping/pong, and close
+      - Per-review app-server lifecycle and thread continuation keyed by review_id
+      - Mandatory resource release on explicit review completion notification and orphan reporting without automatic termination
+      - Read-only unattended permission constraints that prohibit writes and approval prompts
+      - Two-stage conversion from incremental app-server events to common review findings with location preservation
+      - Append-only request and response audit records stored per review_id and round
+      - Fail-closed error flows for unavailable Codex, protocol mismatch, reconnect failure, timeout, parse failure, and approval requests
+      - Unit and integration test strategy for WebSocket transport, response parsing, lifecycle, prerequisite probes, and headless review
+      - Implementation blockers TBD-001 through TBD-004 covering headless validation, permissions, turn method, and timeout
     applicable_tasks:
-      - Backend implementation design review and validation
-      - WebSocket client implementation and testing planning
-      - Server and thread lifecycle design review
-      - Response conversion pipeline implementation planning
-      - Audit logging mechanism implementation
-      - Prerequisite validation implementation planning
-      - Orphan process handling design review
-      - Fail-closed error handling implementation and testing
-      - Permission constraints and unattended operation validation
-      - Integration testing setup without TUI interaction
+      - Implementing the codex-appserver review backend
+      - Designing review backend lifecycle and cleanup
+      - Implementing a standard-library WebSocket client
+      - Reviewing fail-closed backend error handling
+      - Testing headless Codex review round trips
     keywords:
       - codex-appserver
-      - review backend
-      - WebSocket
-      - thread management
-      - headless
+      - review_id
       - JSON-RPC
-      - protocol
-      - verdict
-      - findings
-      - unix socket
+      - WebSocket
+      - Unix domain socket
+      - RFC 6455
+      - app-server
+      - thread resume
+      - failure
+      - orphan process
   docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md:
-    title: REQ-015 Codex App-Server Review Backend Requirements Definition
-    purpose: Specifies requirements for implementing an independent review backend on Codex app-server with self-owned threads, eliminating terminal dependencies and enabling continuous context across review rounds.
+    title: REQ-015 Codex App-Server Review Backend Requirements
+    purpose: Specifies requirements for a review backend that owns Codex app-server threads and implements the forge review backend contract.
     content_details:
-      - Backend contract requirements (forge:REQ-013 FNC-1318) with structure of review request inputs, outputs (approved/findings/failure), and common finding format with position information
-      - Self-owned thread lifecycle (creation, continuation across multiple review rounds, explicit resource release triggered by backend-received termination signal)
-      - Structured response conversion to common format (markdown findings with severity markers, position as file path plus line number or explicit unconfirmed notation)
-      - Prerequisite checking before request execution (Codex CLI availability, app-server protocol method existence, startup or reuse capability)
-      - Failure confirmation and explicit reporting (no silent approval misconversion, no implicit fallback to other backends, failure return value required)
-      - Audit trail recording by review_id (request and response pairs retrievable per review, no message database dependency)
-      - Permission limitation enforcement (read-only review operations, no target file modification, sandbox and approval policy details TBD)
-      - Unresolved implementation items (TBD-001 through TBD-009 including app-server headless round validation, availability checks per ADR-067, history restoration design)
+      - Backend contract inputs, approved/findings/failure outcomes, and explicit finding locations
+      - Review-owned app-server threads preserving context across rounds by review_id
+      - Resource release only upon explicit review termination notification, without inferred timeout cleanup
+      - Conversion of Codex structured responses into the common review finding format
+      - Preflight checks for Codex CLI, app-server protocol methods, and server startup availability
+      - Fail-closed handling that reports failures without approval coercion or implicit backend fallback
+      - Read-only execution permissions and auditable per-review request-response history
+      - Standard-library-only Python implementation with WebSocket JSON-RPC and no messaging or terminal-multiplexer dependency
+      - Outstanding availability-probe conformance work tracked as TBD-008
     applicable_tasks:
-      - Review backend implementation
-      - Codex integration design
-      - Contract compliance validation
-      - Thread management system design
-      - Response format conversion implementation
-      - Prerequisite validation implementation
-      - Audit logging system design
-      - Permission model implementation
+      - Implementing the Codex app-server review backend
+      - Designing review thread lifecycle and cleanup
+      - Validating forge review backend contract compliance
+      - Implementing structured finding conversion and failure reporting
+      - Reviewing availability probe requirements
     keywords:
-      - review backend
-      - Codex app-server
-      - thread ownership
-      - context continuation
-      - contract compliance
-      - failure handling
-      - audit trail
-      - availability checks
-      - response conversion
-      - permission limitation
+      - codex-appserver
+      - app-server
+      - review_id
+      - JSON-RPC
+      - WebSocket
+      - backend contract
+      - availability probe
+      - failure
+      - termination notification
+      - audit history
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md:
     title: ADR-055 Prohibit Distribution Artifacts from Referencing Development Documents
     purpose: Defines architectural decision prohibiting distribution artifacts from referencing external development documents, requiring normative content to be self-contained within the distribution unit or in companion documents
@@ -625,34 +678,34 @@ docs:
       - responsibility boundary
       - codex-appserver
   docs/specs/forge/design/ADR-067_backend_availability_probe.md:
-    title: "ADR-067: Backend Availability Probe and Default Backend Resolution"
-    purpose: Defines architecture decision to add availability probes to backend contract and change default backend selection from fixed value to resolution order based on availability checks
+    title: "ADR-067: Add Availability Probing to the Contract and Resolve the Default Backend by Order"
+    purpose: Records the superseded decision to require side-effect-free backend availability probes and select the first available default backend before sending a review request.
     content_details:
-      - Availability probe as contract requirement
-      - Backend returns availability status and missing prerequisites
-      - Default backend resolution order strategy
-      - Explicit backend specification handling (--backend and .forge.yaml)
-      - History restoration added to contract table
-      - "Failure modes: fail closed on explicit specification, resolution order otherwise"
-      - Backend-specific implementation details remain encapsulated
-      - Prerequisite reporting mechanism for dependencies (cmux, Codex session)
+      - Availability probing is added as a backend contract request that returns usability and individually missing prerequisites
+      - Probe logic remains inside each backend while the review orchestrator consumes only its result
+      - Availability probes must be read-only, side-effect-free, inexpensive, and must not send review requests
+      - Explicit CLI and .forge.yaml backend selections fail closed without choosing an alternative
+      - Unspecified backends are resolved in candidate order before transmission, with all-unavailable results failing closed
+      - Runtime failures never trigger fallback, preserving the prohibition established by ADR-060
+      - History restoration is added to the backend contract alongside round execution and completion notification
+      - msg-review and codex-appserver are identified as not yet conforming to availability and history-restoration requirements
+      - ADR-067 was accepted on 2026-08-03 and superseded by ADR-071 on 2026-08-06
     applicable_tasks:
-      - Backend implementation for availability probe support
-      - Contract specification review for forge main body
-      - Configuration schema update (.forge.yaml review section)
-      - Backend compliance audit (msg-review and codex-appserver adaptation)
-      - Error handling strategy review for failed backend attempts
+      - Designing backend availability probes
+      - Implementing default review backend resolution
+      - Reviewing explicit backend fail-closed behavior
+      - Updating review backend contracts
+      - Assessing msg-review or codex-appserver contract conformance
     keywords:
+      - ADR-067
       - availability probe
-      - backend availability
-      - default backend resolution
+      - backend resolution
       - fail closed
-      - contract requirements
-      - backend selection strategy
-      - prerequisite detection
-      - cmux
-      - Codex session
-      - backend encapsulation
+      - msg-review
+      - codex-appserver
+      - history restoration
+      - .forge.yaml
+      - ADR-071
   docs/specs/forge/design/ADR-069_remove_plugin_root_symlink_mechanism.md:
     title: "ADR-069: Removal of Plugin Root Symlink Self-Repair Mechanism"
     purpose: Reverses the symlink auto-repair mechanism introduced in ADR-052 §2.4 due to unintended side effects on consuming projects and zero identified consumers of the mechanism.
@@ -711,6 +764,37 @@ docs:
       - positional arguments
       - CLI contract
       - ADR-070
+  docs/specs/forge/design/ADR-071_agent_review_default_backend.md:
+    title: "ADR-071: Make Dependency-Free agent-review the First Default Backend"
+    purpose: Defines agent-review as the first default review backend and revises shared backend boundaries for availability, history restoration, wire headers, and synchronous rounds.
+    content_details:
+      - Default backend order selects agent-review before msg-review when no backend is explicitly specified
+      - Backend selection completes before sending and never switches after a round failure
+      - Explicitly configured unavailable backends fail closed
+      - Shared backend contract requires round execution, availability probing, and termination notification
+      - History restoration becomes an optional extension limited to persistent backends such as msg-review
+      - Interrupted stateless agent-review sessions restart with a new review_id instead of resuming
+      - PROTOCOL_HEADER and the msg-review wire header are removed from the shared request body
+      - msg-review adds and validates its protocol header internally immediately before sending
+      - msg-review send, wake, wait, and response interpretation form one synchronous round boundary
+      - Response timeout produces a final failure without automatically processing delayed replies
+    applicable_tasks:
+      - Selecting or configuring the default review backend
+      - Implementing the shared review backend contract
+      - Refactoring msg-review wire protocol handling
+      - Designing review interruption and resumption behavior
+      - Reviewing backend fallback and fail-closed semantics
+    keywords:
+      - ADR-071
+      - agent-review
+      - msg-review
+      - review backend
+      - availability probe
+      - history restoration
+      - PROTOCOL_HEADER
+      - review_id
+      - synchronous round
+      - fail closed
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     title: "DES-001: Document Search Wrapper Design for Forge-to-Backend Integration"
     purpose: Defines the abstraction, key mapping, output contract, SKILL contract, and doc-advisor forwarding path for Forge rule/spec query and index-update wrappers.
@@ -1112,33 +1196,38 @@ docs:
       - Python 3.11
       - metadata
   docs/specs/forge/design/DES-055_review_request_template_design.md:
-    title: Review Request Template Design
-    purpose: Specifies the design of review request templates for /forge:review skill, ensuring templates serve as the specification and are separated from script logic
+    title: "DES-055: Review Request Template Design"
+    purpose: Defines backend-neutral natural-language review request templates, placeholder contracts, validation rules, target granularity, and secret-scan trust boundaries for /forge:review.
     content_details:
-      - Review pattern taxonomy (diff, branch, code, requirement, design, plan, uxui, secrets)
-      - Placeholder token contract ({{PROTOCOL_HEADER}}, {{REVIEW_TYPE}}, {{PLUGIN_ROOT}}, {{PROJECT_ROOT}}, {{SCOPE}}, {{FOCUS}}, {{TARGET_PATHS}})
-      - Per-template review criteria document references and observation points
-      - "Design constraints: scripts must not contain prose and branching must not occur per target axis"
-      - Fail-closed validation framework (token remnants, newline injection, absolute path requirements, dual-axis detection)
-      - Test design for token replacement, injection detection, template coverage, and observation document existence
-      - Trust boundary positioning for secrets scanning result generation
-      - Template selection logic based on /forge:review command patterns
-      - Distinction between {{SCOPE}} (evaluation target) and {{TARGET_PATHS}} (what to examine)
+      - Eight pattern-specific templates cover diff, branch, code, requirement, design, plan, UX/UI, and secrets reviews
+      - Scripts contain no review prose and branch only once when selecting a complete template
+      - Shared templates exclude backend identifiers, destinations, sessions, and wire headers
+      - Placeholder contract defines REVIEW_TYPE, path, project document, target, focus, scope, and scan tokens
+      - TARGET_PATHS preserves file or directory granularity while SCOPE independently defines evaluation completeness
+      - build_review_request.py performs token replacement, absolute-path resolution, fail-closed validation, and JSON envelope generation
+      - Secrets requests execute scan_secrets.scan inside build_review_request.py so unmasked external results cannot enter the request
+      - Newline validation remains mandatory for trusted scan output to prevent Markdown structure and contract injection
+      - Explicit-target templates require reviewers to enumerate directories, read every file fully, and avoid diff-review framing
+      - Contract tests verify template coverage, backend neutrality, token consistency, reference existence, granularity preservation, and secret non-disclosure
     applicable_tasks:
-      - Design review of /forge:review skill implementation
-      - Code review of template rendering and validation logic
-      - Architecture review of pattern dispatch and template organization
-      - Implementation of placeholder validation and fail-closed checks
-      - Testing of secrets scanning trust boundary
+      - Implementing or modifying review request templates
+      - Extending build_review_request.py placeholder handling
+      - Adding a review pattern or target mode
+      - Reviewing review-request backend neutrality
+      - Testing fail-closed token and path validation
+      - Auditing secrets-review trust boundaries
+      - Debugging directory-scope review omissions
     keywords:
-      - review request template
-      - placeholder tokens
-      - pattern-based dispatch
-      - fail-closed validation
-      - prose-free design
-      - trust boundary
-      - injection prevention
-      - token replacement
+      - DES-055
+      - build_review_request.py
+      - TARGET_PATHS
+      - SCOPE
+      - FOCUS
+      - SCAN_FINDINGS
+      - scan_secrets.scan
+      - backend neutrality
+      - template contract
+      - target granularity
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: DES-061 Forge Settings File Design
     purpose: Defines the container specification and read semantics for the universal forge project configuration file (.claude/.forge.yaml), including placement, structure, error handling, and schema ownership rules for feature-specific sections
@@ -1167,65 +1256,65 @@ docs:
       - DES-057
       - forge_settings.py
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review Body Design
-    purpose: Specifies the backend-agnostic design of /forge:review orchestration layer, covering argument interpretation, target resolution, backend delegation, findings evaluation, fix verification, and terminal decision flow
+    title: DES-066 /forge:review Core Backend-Independent Design
+    purpose: Defines the backend-independent orchestration, backend resolution, request construction, finding evaluation, fix safety, and termination behavior of /forge:review.
     content_details:
-      - Architecture overview with module layout separating body orchestration from backend-specific implementation
-      - "Backend resolution algorithm: explicit specification via --backend and configuration, candidate order with fail-closed behavior"
-      - Default backend candidate order with single resolution point in resolve_review_backend.py to prevent duplication
-      - "Single exit point for review finalization: approved, findings with confirmation, failure, and interrupted paths all routed through finalize_review.py"
-      - 3-value judgment handling and non-fallback behavior on backend failure
-      - Finding evaluation and safe fix verification with allowlist enforcement and syntax checking per-finding and round-end
-      - Configuration schema for .claude/.forge.yaml review section with backend selection key only (no candidate order override)
-      - 8 request templates and shared findings parsing mechanism across all backends
-      - "Use case design: 9 use cases from request assembly through terminal decisions and backend termination"
-      - Test strategy for finalization paths, backend resolution, explicit vs candidate-order distinction, and existing script component coverage
+      - Backend names map one-to-one to forge:<name> skills without a central mapping table
+      - Explicit backend selection through --backend or .forge.yaml fails closed when unavailable
+      - Default backend order is agent-review followed by msg-review and is defined only in resolve_review_backend.py DEFAULT_ORDER
+      - finalize_review.py centralizes approved, no-fix findings, failure, and interruption termination paths and backend notification
+      - Review target granularity is preserved in requests while expanded target_files serve only as a modification allowlist
+      - FOCUS and SCOPE tokens separately represent review emphasis and completion target without raising severity
+      - Pre-supplied project rules and specifications bypass duplicate query-db searches on their respective axes
+      - Finding fixes use sequential apply-verify-decide processing plus independent round-end safety verification
+      - Optional history restoration is used only when the selected backend supports it, otherwise a new review is required
     applicable_tasks:
-      - Review orchestration layer architecture implementation
-      - Backend integration contract design and validation
-      - Backend selection mechanism implementation and fail-closed enforcement
-      - Finalization path and flow design with single exit point
-      - Review request template design and token injection (FOCUS, SCOPE)
-      - Safe fix verification and allowlist enforcement implementation
-      - Review configuration schema management
+      - Implementing or modifying /forge:review orchestration
+      - Adding or ordering a review backend
+      - Reviewing backend-independent review behavior
+      - Implementing termination and backend notification logic
+      - Testing backend resolution, finding handling, or fix safety
+      - Configuring review.backend in .forge.yaml
     keywords:
-      - review-orchestration
-      - backend-selection
-      - fail-closed
-      - finalization-paths
-      - findings-evaluation
-      - request-templates
-      - DES-066
+      - /forge:review
+      - resolve_review_backend.py
+      - DEFAULT_ORDER
+      - finalize_review.py
+      - agent-review
       - msg-review
-      - candidate-order
-      - resolve_review_backend
+      - review.backend
+      - fail closed
+      - FOCUS
+      - SCOPE
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
-    purpose: Defines requirements for the forge plugin orchestrator pattern, covering design principles, task delegation, and completion workflows for all user-invocable skills
+    purpose: Specifies the orchestration, delegation, data-transfer, document-format, and completion-flow requirements for all user-invocable forge skills.
     content_details:
-      - "God-Skill problem: context consumption, reduced accuracy, and serialized processing constraints"
-      - Orchestrator pattern design with task delegation to agents
-      - Self-contained reference documents in plugins/forge/docs/
-      - Parallel execution structure with agent return value passing (no shared intermediate files)
-      - Document format selection criteria (YAML for structured data, Markdown for natural language and diagrams)
-      - "Common completion processing flow: review --auto, update-db-specs, anvil:commit"
-      - AI-based user input interpretation without rigid parser scripts
-      - Application scope to review, start-design, start-plan, start-requirements, start-implement skills
+      - User-invocable skills act as orchestrators responsible for progress control, decisions, and user interaction
+      - Detailed work is delegated to general-purpose or custom agents, while SKILL.md states what to delegate rather than execution details
+      - Agent reference documents must be self-contained and stored in distributed runtime documentation, with skill-specific exceptions
+      - Independent research and execution run in parallel, exchange results through return values, and avoid shared intermediate files
+      - Prompts pass only structured arguments such as paths, types, and flags; agents read document and code bodies themselves
+      - YAML is required for mechanically parsed and updated artifacts, while Markdown is used for expressive requirements and designs
+      - Document-generating orchestrators complete review, specification ToC update when available, and commit confirmation
+      - User command input is interpreted by AI; scripts are limited to structured YAML or JSON processing
     applicable_tasks:
-      - Design and architecture of forge skills
-      - Refactoring skills to orchestrator pattern
-      - Task delegation planning with agents
-      - Skill completion workflow design
-      - Architecture compliance review
+      - Designing a forge user-invocable skill orchestrator
+      - Reviewing agent delegation and result-transfer contracts
+      - Selecting YAML or Markdown for forge-managed artifacts
+      - Implementing completion flows for document-generating skills
+      - Validating AI-versus-script responsibility for command input
     keywords:
       - orchestrator pattern
-      - agent delegation
       - God-Skill
-      - return value passing
+      - agent delegation
+      - return value
       - parallel execution
-      - review automation
-      - context consumption
-      - skill composition
+      - self-contained references
+      - completion flow
+      - FNC-004
+      - FNC-006
+      - FNC-007
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md:
     title: REQ-003 SKILL.md and Script Responsibility Separation Requirements
     purpose: Defines the responsibility boundary between forge SKILL.md orchestration and deterministic scripts, including local operation entry points and misuse safeguards.
@@ -1258,35 +1347,36 @@ docs:
       - DES-024
   docs/specs/forge/requirements/REQ-013_review_policy.md:
     title: REQ-013 Review Policy Requirements
-    purpose: Defines requirements for /forge:review SKILL including review observation priority hierarchy, target/interaction/backend specification axes, and handling of focus/scope/rule-carrying inputs
+    purpose: Defines the document-driven review policy, review axes, backend contract, findings handling, and secret-review safeguards for forge review.
     content_details:
-      - "Three-level review priority hierarchy (P1: Rule matching, P2: Contradiction detection, P3: Unnecessary complexity)"
-      - Four mutually exclusive target specification axes (--diff, --branch, --files, --dirs) with granularity preservation requirement
-      - Three interaction modes for detected findings (--interactive, --auto-critical, --auto) with severity-based filtering
-      - Focus axis to specify per-request review concerns as supplementary to base criteria
-      - Scope axis to specify completion level and intentional omissions with out-of-scope finding handling
-      - Backend resolution mechanism with availability checking and failure/termination/position-information contract
-      - Rule-carrying mechanism to avoid duplicate searches when upstream SKILL provides rules/specs
-      - Secrets review as independent review type with value non-reproduction requirement
-      - Severity catalog and gray zone tolerance range specifications in principles documents
-      - Document reference normalization as permanent review perspective
+      - Review detection is limited to P1 rule conformance, P2 contradictions, and P3 unjustified complexity; criteria-specific perspectives are prohibited
+      - All reviewer judgments, severity mappings, and gray-zone allowances must be visible to authors in principles or rules at design time
+      - "Target axes --diff, --branch, --files, and --dirs are mutually exclusive, default to --diff, and preserve the user's original granularity"
+      - Interaction axes default to --interactive; --auto-critical fixes critical findings and --auto fixes critical plus major findings but never minor findings
+      - "--focus adds a one-line emphasis without changing P1-P3 or severity, while --scope conveys the intended completion boundary"
+      - Review backends are resolved before sending; explicit CLI or configuration choices fail closed, otherwise agent-review precedes msg-review
+      - Backend contracts cover side-effect-free availability checks, round verdicts, finding locations, explicit failure, and mandatory termination notification
+      - "--project-rules and --project-specs reuse caller-provided document paths and prevent duplicate searches"
+      - Independent --secrets review scans the whole repository, combines deterministic and AI detection, never auto-fixes, and never reproduces secret values
+      - Missing explicit rules become issues only when no SSOT rule exists, the problem is recurring or objective, and a concrete rule can be written
     applicable_tasks:
-      - Review criteria specification writing
-      - Review backend integration implementation
-      - Review template design and implementation
-      - Principles document expansion for severity catalogs
-      - Design review execution planning
+      - Implementing or modifying /forge:review behavior
+      - Designing a review backend and its lifecycle contract
+      - Building review request target, interaction, focus, or scope parsing
+      - Evaluating findings and automatic-fix eligibility
+      - Implementing repository secret review safeguards
+      - Refactoring review criteria and principles documents
     keywords:
-      - FNC-1301
-      - FNC-1318
-      - FNC-1315
-      - review priority
-      - backend delegation
-      - interaction mode
-      - focus axis
-      - scope axis
+      - P1 P2 P3
+      - "--diff"
+      - "--interactive"
+      - "--focus"
+      - "--scope"
+      - "--backend"
+      - agent-review
+      - msg-review
+      - failure verdict
       - secrets review
-      - severity mapping
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: "ADR-061: Codex Wake-up Path Multiplexing (Adding app-server Route)"
     purpose: Documents a rejected architectural decision to multiplex Codex wake-up paths by adding app-server route alongside cmux, including technical investigation, alternatives analysis, and impact assessment
@@ -1343,138 +1433,128 @@ docs:
       - independent backend
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
     title: DES-045 msg-review Review Backend Design
-    purpose: Defines the msg-review backend for persistent Codex review exchanges over msg-sys, including availability checks, messaging, reply delivery, history recovery, and completion handling.
+    purpose: Defines the synchronous msg-review backend that exchanges one review round with a persistent Codex session for /forge:review.
     content_details:
-      - "Backend scope separates msg-review transport and response processing from the main review skill's target resolution and finding remediation"
-      - Four operating modes cover availability probing, request initiation, response handling, and human-triggered resumption after round-trip limits
-      - Protocol headers use [msg-review], review_id, and round to isolate concurrent review histories without adding msg-sys storage columns
-      - probe_availability.py initializes hooks before independently checking cmux wake capability, resident Codex process, and msg-sys setup health
-      - send_and_await_reply.py structurally combines message sending, cmux push wake-up, and blocking reply wait as the sole path for review messages expecting replies
-      - wait_for_reply.py polls with exponential backoff, claims delivery through inbox acknowledgment, and returns delivered_ids to prevent duplicate processing
-      - filter_review_history.py extracts one review_id thread and recognizes exact REVIEW_RESULT approved or findings declaration lines from reviewer messages
-      - Project root, message database, and resident peer session are treated as one identity; conflicting project-root and db-path inputs fail closed
-      - Timeout, malformed reply, send failure, unavailable prerequisites, and round-trip-limit behaviors are explicitly defined without asynchronous fallback
-      - Test design covers availability axes, initialization order, acknowledgment races, protocol filtering, send-wake-wait sequencing, and manual Codex integration
+      - "Four operating modes: availability probe, round execution, completion notification, and explicit history restoration"
+      - Availability checks independently assess cmux wake capability, persistent Codex peer presence, and msg-sys setup health
+      - send_review_and_await_reply.py adds one canonical wire header and delegates once to the shared send, wake, and wait CLI
+      - Reply ownership is restricted to delivered_ids acknowledged by the current call to prevent duplicate processing
+      - Optional echoed wire headers are validated against review type, review_id, and round before removal
+      - parse_findings.py accepts only a unique final REVIEW_RESULT declaration with valid severity and location metadata
+      - Timeouts produce terminal failure diagnostics and never auto-process delayed replies
+      - filter_review_history.py reconstructs threads by root review_id and fixed-point in_reply_to traversal
+      - Completion notifications are idempotent and retain message history as the audit record
+      - Tests cover availability ordering, single delegation, header validation, history isolation, and parser contract enforcement
     applicable_tasks:
-      - Implementing or modifying the msg-review backend
-      - Reviewing msg-review and msg-sys responsibility boundaries
-      - Debugging stalled or duplicated Codex review exchanges
-      - Implementing availability probes and cmux wake behavior
-      - Testing review reply delivery, acknowledgment, and history recovery
-      - Validating msg-review protocol and timeout behavior
+      - Implementing the msg-review backend
+      - Modifying synchronous review round transport
+      - Reviewing wire-header and reply-ownership behavior
+      - Debugging review timeouts and delayed replies
+      - Implementing explicit review history restoration
+      - Testing msg-review protocol compliance
     keywords:
       - msg-review
-      - send_and_await_reply.py
-      - probe_availability.py
-      - wait_for_reply.py
-      - filter_review_history.py
-      - review_id
-      - REVIEW_RESULT
+      - send_review_and_await_reply.py
+      - wire_body.py
       - delivered_ids
-      - cmux
-      - msg-sys
-  docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
-    title: DES-046 msg-review Intervention Mode Implementation Design
-    purpose: "Specifies implementation design for msg-review's intervention mode (--auto-critical/--auto) that automatically fixes findings based on severity level (critical/major/minor)"
-    content_details:
-      - Finding severity parsing logic with support for severity markers (🔴/🟡/🟢)
-      - Severity-based decision gate with decision table for auto-critical vs auto mode
-      - Code block handling in finding extraction (fenced and indented blocks)
-      - Fail-closed behavior for malformed findings (unclassified fallback)
-      - Integration with SKILL.md receive mode workflow with Steps 2a-2c
-      - Confirmation evaluation logic for auto-fix candidates against review criteria
-      - Termination condition to prevent infinite loop (empty confirmed_fix check)
-      - Finding reporting with reason codes (severity exclusion vs evaluation drop)
-      - Changes to request mode and default argument interpretation
-      - Test design for parse and gate functions with regression test cases
-    applicable_tasks:
-      - msg-review intervention mode feature implementation
-      - Finding severity classification logic implementation
-      - Finding parsing and validation
-      - Gate decision logic testing
-      - SKILL.md receive mode integration
-      - Finding evaluation and confirmation workflow
-      - Intervention mode regression testing
-    keywords:
+      - review_id
+      - in_reply_to
       - parse_findings.py
+      - filter_review_history.py
+      - REVIEW_RESULT
+      - probe_availability.py
+  docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
+    title: DES-046 Review Core Intervention Axis Design
+    purpose: Defines how /forge:review classifies backend findings by severity into automatic-fix candidates and excluded findings.
+    content_details:
+      - Backend findings are limited by the shared parser contract to critical, major, and minor severities
+      - Default, --interactive, and --auto all map to auto mode, where critical and major are automatic-fix candidates
+      - "--auto-critical maps only critical findings to automatic-fix candidates and excludes major and minor"
+      - gate_findings.py returns separate auto_fix and excluded arrays without confirming repairs
+      - The review core validates each candidate against review criteria, actual target state, focus areas, and goals before confirmed_fix
+      - Zero confirmed fixes terminates without requesting another review round
+      - One or more confirmed fixes trigger repair, safety validation, and the next round under the same review_id
+      - Findings with no confirmed fixes terminate as unresolved findings, distinct from approval
+      - Invalid severities are defensively excluded, though the parser normally rejects missing severity as failure
+      - Responsibility boundaries keep finding evaluation, repair, safety checks, and termination decisions in the review core
+    applicable_tasks:
+      - Implementing severity-based review intervention modes
+      - Modifying gate_findings.py classification
+      - Reviewing automatic-fix eligibility rules
+      - Implementing review-core repair and rerun control
+      - Testing critical, major, minor, and invalid severity handling
+    keywords:
       - gate_findings.py
-      - severity
+      - auto-critical
+      - auto_fix
+      - excluded
+      - confirmed_fix
       - critical
       - major
       - minor
-      - msg-review
-      - intervention mode
-      - "--auto-critical"
-      - "--auto"
+      - review_id
+      - severity
   docs/specs/msg-review/design/DES-047_msg_review_fix_safety_guardrails_design.md:
-    title: DES-047 msg-review Modification Safety Guardrails Design Specification
-    purpose: "Specifies safety guardrails for msg-review's direct modification by Claude, including allowlist enforcement, sequential single-finding application, and syntax validation with rollback detection"
+    title: DES-047 Review Core Fix Safety Guardrails Design
+    purpose: Defines safety boundaries for applying confirmed review fixes through sequential edits, file allowlists, and deterministic syntax checks.
     content_details:
-      - "Four safety boundaries from deprecated fixer Agent: single finding application, allowlist enforcement, no unrelated refactoring, syntax validation with baseline rollback"
-      - "Decision to port three boundaries (#1, #2, #4) sequentially; refactoring constraint (#3) remains Role-level guidance only"
-      - "Sequential application loop: per-finding Edit, self-report modified files, validate, Claude judges keep versus rollback"
-      - "capture_syntax_baseline.py: pre-modification baseline detection for dprint-managed files (.md, .json, .yaml, .toml)"
-      - "verify_fix_safety.py: allowlist validation and syntax checking (dprint, Python ast.parse, bash -n) with baseline-aware pre-existing judgment"
-      - Verification is detection-only with no automatic rollback; Claude self-declares modified files and judges violations
-      - "End-of-round independent verification: collect_modified_files.py uses git status -z to detect unreported changes"
-      - Python syntax uses ast.parse (not py_compile) to avoid __pycache__ generation side effects
-      - "Deleted file handling: existence confirmation before syntax validation with syntax_skipped_deleted tracking"
+      - capture_syntax_baseline.py records preexisting syntax and formatting violations before confirmed fixes are applied
+      - Each confirmed_fix is applied and verified independently rather than batching multiple findings
+      - Repairs are limited to the finding and prohibit unrelated formatting changes or refactoring
+      - verify_fix_safety.py reports modified files outside the target allowlist as allowlist_violations
+      - Markdown, JSON, YAML, and TOML files are checked with dprint
+      - Python files are checked with ast.parse without generating artifacts, and shell files with bash -n
+      - Deleted and unsupported files are skipped with explicit reasons instead of producing errors
+      - Safety scripts only detect and report; the review core decides rollback or justified propagation
+      - collect_modified_files.py independently derives changed files from NUL-delimited git porcelain output at round end
+      - Final verification allows only target_files plus explicitly justified propagation files and distinguishes violations from preexisting issues
     applicable_tasks:
-      - msg-review modification safety guardrails implementation
-      - Sequential single-finding application loop design
-      - Allowlist enforcement for file modification scope
-      - Syntax validation with baseline-aware pre-existing judgment
-      - Rollback detection and manual judgment workflow
-      - End-of-round independent verification integration
-      - Test implementation for baseline capture and safety verification
-      - Python syntax validation without side effects
+      - Implementing review fix safety checks
+      - Modifying syntax baseline capture
+      - Enforcing review target-file allowlists
+      - Adding language-specific syntax validators
+      - Reviewing rollback and propagation decisions
+      - Testing modified, added, deleted, renamed, and untracked file detection
     keywords:
-      - allowlist
-      - verify_fix_safety
-      - capture_syntax_baseline
-      - sequential application
-      - syntax validation
-      - rollback detection
-      - pre-existing violations
+      - confirmed_fix
+      - capture_syntax_baseline.py
+      - verify_fix_safety.py
+      - collect_modified_files.py
+      - allowlist_violations
+      - syntax_errors
       - ast.parse
-      - git status
-      - collect_modified_files
+      - bash -n
+      - dprint
+      - git porcelain
   docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: REQ-012 msg-review (Messaging-driven Review SKILL) Requirements Definition
-    purpose: Defines requirements for msg-review SKILL, a messaging-driven review orchestration system enabling continuous dialogue with Codex through msg-sys communication backend with prerequisite validation and automated turn wakeup
+    title: REQ-012 msg-review Review Backend Requirements
+    purpose: Specifies requirements for synchronous review rounds between /forge:review and a persistent Codex session over msg-sys.
     content_details:
-      - Review request definition with target specification (code/design/requirement/plan/uxui/generic types)
-      - Prerequisite validation for DB accessibility, Codex session availability, and cmux wakeup mechanism
-      - Continuous dialogue with automated finding evaluation and modification without separate evaluator/fixer agents
-      - Review completion criteria including Codex approval, round limit reached, or auto-fix mode target exhaustion
-      - Turn wakeup implementation using cmux for immediate finding delivery
-      - Backend contract with /forge:review returning three-value states (approved/findings/failure)
-      - Audit trail through msg-sys message database without separate persistence layer
-      - API parameter compatibility including review types, diff targets, and intervention modes
-      - Availability check reporting distinguishing between specific missing prerequisites
-      - Prompt handling with review criteria paths resolved at runtime
+      - Availability checks independently validate wake capability, persistent peer session, and configuration without sending a request
+      - Synchronous round execution combines wire-header insertion, sending, peer wake-up, waiting, and response parsing in one path
+      - Round results are strictly approved, findings, or failure, with malformed declarations and missing finding metadata treated as failure
+      - Wire protocol uses [msg-review] headers, review_id and round validation, plus in_reply_to chains for thread continuity
+      - Timeouts are final failures with elapsed time, review_id, read state, and wake failure diagnostics; delayed replies never auto-resume
+      - Optional history restoration reads existing msg-sys records without mutation or separate persistence
+      - cmux wake-up is best-effort and reports sent, skipped, or failed while waiting continues
+      - Python helpers must use only the standard library and include unit tests
     applicable_tasks:
-      - msg-review SKILL implementation
-      - msg-review SKILL design and architecture
-      - msg-review API specification creation
-      - Integration with /forge:review backend
-      - Prerequisite validation mechanism implementation
-      - Finding feedback loop and re-request workflow
-      - Review backend contract implementation
-      - msg-sys communication setup for review workflow
-      - Codex session management integration
-      - Turn wakeup mechanism implementation
+      - Implementing the msg-review backend
+      - Reviewing synchronous review-round behavior
+      - Testing wire-header and thread-chain validation
+      - Diagnosing msg-review timeout and availability failures
+      - Implementing review history restoration
     keywords:
       - msg-review
-      - Codex
       - msg-sys
+      - review_id
+      - in_reply_to
+      - wire header
       - cmux
-      - prerequisite validation
-      - review findings
-      - backend contract
-      - turn wakeup
-      - messaging protocol
-      - review orchestration
+      - approved
+      - findings
+      - failure
+      - history restoration
   docs/specs/msg-sys/design/ADR-042_msg_sys_msg_review_separation.md:
     title: "ADR-042: Maintaining Separation Between msg-sys and msg-review"
     purpose: Documents the architectural decision to maintain msg-sys and msg-review as separate permanent specifications to preserve msg-sys generic reusability (superseded by ADR-043)

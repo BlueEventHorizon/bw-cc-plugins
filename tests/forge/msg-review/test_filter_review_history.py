@@ -4,7 +4,7 @@ filter_review_history.py のテスト（DES-045 §3.6 / §7 テスト設計）
 
 history.py への subprocess 呼び出しはモックし、複数 review_id が混在する履歴から
 指定 review_id のみを sent_at 昇順で抽出する挙動・round/resolved の算出・一致 0 件時の
-フォールバックを検証する（`tests/forge/review/test_resolve_targets.py` の
+not_found 契約を検証する（`tests/forge/review/test_resolve_targets.py` の
 importlib 直接ロード・`tests/forge/msg-sys/test_check_setup.py` の
 subprocess.run モック・main() 契約テストパターンを踏襲）。
 
@@ -238,7 +238,7 @@ class ComputeResolvedTest(unittest.TestCase):
 
 
 class ZeroMatchTest(unittest.TestCase):
-    """一致 0 件時に messages: [] / round: 0 / resolved: false を返しエラーにしない（DES-045 §3.6）。"""
+    """一致 0 件は空履歴に見せず not_found として区別する（DES-045 §3.6）。"""
 
     def test_zero_match_end_to_end_via_fetch_and_filter(self):
         all_messages = [
@@ -404,6 +404,7 @@ class MainTest(unittest.TestCase):
         lines = [line for line in stdout.splitlines() if line.strip()]
         # 単一 JSON 出力（indent 付きでも json.loads で 1 オブジェクトとして読めること）
         payload = json.loads("\n".join(lines))
+        self.assertEqual(payload["status"], "ok")
         self.assertEqual(payload["review_id"], "rev-A")
         self.assertEqual([m["id"] for m in payload["messages"]], ["m1", "m3"])
         self.assertEqual(payload["round"], 2)
@@ -423,10 +424,12 @@ class MainTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "not_found")
         self.assertEqual(payload["review_id"], "rev-X")
-        self.assertEqual(payload["messages"], [])
-        self.assertEqual(payload["round"], 0)
-        self.assertFalse(payload["resolved"])
+        self.assertIn("履歴がありません", payload["reason"])
+        self.assertNotIn("messages", payload)
+        self.assertNotIn("round", payload)
+        self.assertNotIn("resolved", payload)
 
     def test_exit_code_1_and_no_json_when_history_fails(self):
         completed = subprocess.CompletedProcess(

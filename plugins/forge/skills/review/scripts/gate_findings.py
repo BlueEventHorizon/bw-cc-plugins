@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """review: 介入軸（--auto-critical/--auto）による所見の振り分け CLI。
 
-`parse_findings.py` が抽出した所見（severity 別）を、指定された介入軸の
+バックエンドが共通 parser 契約に従って返した所見（severity 別）を、指定された介入軸の
 モードに応じて「自動修正する（auto_fix）」「対象外として報告する（excluded）」
 に振り分ける。決定表は DES-046 §3.2 参照。
 
-`--interactive`（既定）・介入軸未指定時は本スクリプトを呼ばない（DES-046 §3.3。
-Claude が全件を直接評価・修正する既存の受信モードフローのまま）。
+`--interactive`（既定）・介入軸未指定時は、現在の本体契約に従い `auto` として
+本スクリプトを呼ぶ。
 
 使い方:
     python3 gate_findings.py --findings-json '<parse_findings.py の出力の findings 配列>' \
@@ -27,10 +27,9 @@ AUTO_FIX_SEVERITIES = {
 def gate_findings(findings: list[dict], mode: str) -> dict:
     """findings を mode の決定表に従って auto_fix / excluded に振り分ける。
 
-    severity が既知の値（critical/major/minor）以外、または重大度不明
-    （parse_findings.py がマーカー無し逸脱で空リストを返した場合はここに
-    到達しないが、個別の finding に不正な severity が混入した場合）は、
-    安全側に倒して excluded とする（自動修正しない）。
+    severity が既知の値（critical/major/minor）以外の finding が混入した場合は、
+    防御的に excluded とする。通常、重大度欠落はバックエンドの共通 parser が
+    failure とするため本スクリプトへ到達しない。
     """
     auto_fix_set = AUTO_FIX_SEVERITIES.get(mode, set())
     auto_fix: list[dict] = []

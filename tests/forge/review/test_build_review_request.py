@@ -26,10 +26,6 @@ _SCRIPT_PATH = (
     _REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "scripts" / "build_review_request.py"
 )
 _TEMPLATE_DIR = _REPO_ROOT / "plugins" / "forge" / "skills" / "review" / "templates"
-# 共通書式の解釈は全バックエンド共通のため配布物共通の場所にある（ADR-066 §2.3）。
-_PARSE_FINDINGS_PATH = (
-    _REPO_ROOT / "plugins" / "forge" / "scripts" / "review" / "parse_findings.py"
-)
 
 
 def _load(path: Path, name: str):
@@ -40,7 +36,6 @@ def _load(path: Path, name: str):
 
 
 build_review_request = _load(_SCRIPT_PATH, "forge_build_review_request")
-parse_findings = _load(_PARSE_FINDINGS_PATH, "forge_parse_findings")
 
 _TOKEN_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 
@@ -89,7 +84,6 @@ def _build(pattern, scan_result=None, **overrides):
     kwargs = {
         "pattern": pattern,
         "project_root": _REPO_ROOT,
-        "review_id": "rid",
     }
     # 対象を明示指定するパターンでは既定でファイル一覧を埋める。ただし呼び出し側が
     # `dirs` を指定した場合は埋めない（ファイル指定とディレクトリ指定は排他のため）。
@@ -202,11 +196,18 @@ class TemplateTokenContractTest(unittest.TestCase):
                 else:
                     self.assertFalse(has_branch_tokens)
 
-    def test_every_template_carries_the_protocol_header_token(self):
+    def test_no_template_or_generated_body_starts_with_backend_header(self):
+        header_re = re.compile(
+            r"^\[msg-review\]\s+\S+\s+review_id=\S+\s+round=\d+\s*$"
+        )
         for pattern in build_review_request.VALID_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
-                self.assertTrue(text.startswith("{{PROTOCOL_HEADER}}"))
+                self.assertNotIn("{{PROTOCOL_HEADER}}", text)
+                self.assertIsNone(header_re.fullmatch(text.splitlines()[0]))
+
+                body = _build(pattern)
+                self.assertIsNone(header_re.fullmatch(body.splitlines()[0]))
 
 
 class FocusTest(unittest.TestCase):
@@ -366,9 +367,9 @@ class ScopeArgumentTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     _build("diff", scope=f"到達目標\n{line}")
 
-    def test_protocol_header_in_scope_rejected(self):
-        with self.assertRaises(ValueError):
-            _build("diff", scope="到達目標\n[msg-review] code review_id=x round=9")
+    def test_backend_header_is_not_a_common_scope_contract(self):
+        body = _build("diff", scope="到達目標\n[msg-review] という文字列を整理する")
+        self.assertIn("[msg-review]", body)
 
     def test_carriage_return_in_scope_rejected(self):
         with self.assertRaises(ValueError):
@@ -388,7 +389,7 @@ class ScopeArgumentTest(unittest.TestCase):
             template_dir = Path(tmp) / "templates"
             template_dir.mkdir()
             (template_dir / "diff_review_request_template.md").write_text(
-                "{{PROTOCOL_HEADER}}\n本文のみ（SCOPE を持たない）\n", encoding="utf-8"
+                "本文のみ（SCOPE を持たない）\n", encoding="utf-8"
             )
             with mock.patch.object(
                 build_review_request,
@@ -397,13 +398,12 @@ class ScopeArgumentTest(unittest.TestCase):
             ):
                 # scope なしなら通る
                 build_review_request.build_body(
-                    pattern="diff", project_root=_REPO_ROOT, review_id="rid"
+                    pattern="diff", project_root=_REPO_ROOT
                 )
                 with self.assertRaises(ValueError):
                     build_review_request.build_body(
                         pattern="diff",
                         project_root=_REPO_ROOT,
-                        review_id="rid",
                         scope="到達目標",
                     )
 
@@ -460,7 +460,7 @@ class SecretsPatternTest(unittest.TestCase):
             return_value=_MINIMAL_SCAN_RESULT,
         ) as scan_mock:
             build_review_request.build_body(
-                pattern="secrets", project_root=_REPO_ROOT, review_id="rid"
+                pattern="secrets", project_root=_REPO_ROOT
             )
         scan_mock.assert_called_once()
 
@@ -587,8 +587,10 @@ class SecretsTrustBoundaryTest(unittest.TestCase):
             ["--pattern", "secrets", "--project-root", str(_REPO_ROOT)]
         )
         self.assertEqual(returncode, 0, stderr)
-        self.assertTrue(stdout.startswith("[msg-review] secrets review_id="))
-        self.assertIn("走査ファイル数:", stdout)
+        payload = json.loads(stdout)
+        self.assertIn("review_id", payload)
+        self.assertNotIn("[msg-review]", payload["body"])
+        self.assertIn("走査ファイル数:", payload["body"])
 
     def test_build_uses_the_scanner_output_directly(self):
         """`main()` が `scan_secrets.scan()` の戻り値をそのまま使うこと。
@@ -727,43 +729,24 @@ class TemplateReferencedDocsExistTest(unittest.TestCase):
         self.assertGreater(checked, 0, "観点文書への参照が 1 件も見つからない")
 
 
-class ProtocolHeaderTest(unittest.TestCase):
-    """プロトコルヘッダの形式が下流スクリプトの前提と噛み合うこと。"""
+class RequestEnvelopeTest(unittest.TestCase):
+    """共通依頼は backend 非依存の JSON envelope で返る。"""
 
-    def test_header_is_first_line_and_contains_review_id(self):
-        body = _build("diff", review_id="abc123")
-        self.assertEqual(
-            body.splitlines()[0], "[msg-review] diff review_id=abc123 round=1"
+    def test_python_api_returns_review_id_and_pure_body(self):
+        payload = build_review_request.build_request(
+            "diff", _REPO_ROOT, review_id="abc123"
         )
-
-    def test_header_matches_parse_findings_regex(self):
-        for pattern in build_review_request.VALID_PATTERNS:
-            with self.subTest(pattern=pattern):
-                first_line = _build(pattern).splitlines()[0]
-                self.assertIsNotNone(parse_findings.HEADER_RE.match(first_line))
-
-    def test_header_matches_wait_for_reply_regex(self):
-        """`wait_for_reply.py --header-regex` が SKILL.md で渡す正規表現と一致すること。"""
-        wait_regex = re.compile(
-            r"^\[msg-review\]\s+\S+\s+review_id=(\S+)\s+round=\d+\s*$"
-        )
-        first_line = _build("branch", review_id="deadbeef").splitlines()[0]
-        match = wait_regex.match(first_line)
-        self.assertIsNotNone(match)
-        self.assertEqual(match.group(1), "deadbeef")
+        self.assertEqual(payload["review_id"], "abc123")
+        self.assertNotIn("[msg-review]", payload["body"])
+        self.assertTrue(payload["body"].startswith("## レビュー依頼"))
 
     def test_review_id_is_unique_across_cli_invocations(self):
         argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT)]
         _, stdout1, _ = _run_cli(argv)
         _, stdout2, _ = _run_cli(argv)
-
-        def _extract(body):
-            token = [
-                p for p in body.splitlines()[0].split() if p.startswith("review_id=")
-            ][0]
-            return token.split("=", 1)[1]
-
-        self.assertNotEqual(_extract(stdout1), _extract(stdout2))
+        self.assertNotEqual(
+            json.loads(stdout1)["review_id"], json.loads(stdout2)["review_id"]
+        )
 
 
 class AbsolutePathResolutionTest(unittest.TestCase):
@@ -987,7 +970,7 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
             build_review_request.template_path = lambda p: tmp_template
             try:
                 return build_review_request.build_body(
-                    pattern=pattern, project_root=_REPO_ROOT, review_id="rid", **kwargs
+                    pattern=pattern, project_root=_REPO_ROOT, **kwargs
                 )
             finally:
                 build_review_request.template_path = original
@@ -1000,17 +983,17 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
         トークンを取り除いて検査することで、これを捕まえる。
         """
         with self.assertRaises(ValueError) as ctx:
-            self._build_with_template("{{PROTOCOL_HEADER}}\n{{lowercase}}\n")
+            self._build_with_template("{{lowercase}}\n")
         self.assertIn("波括弧", str(ctx.exception))
 
     def test_unknown_token_raises(self):
         with self.assertRaises(ValueError) as ctx:
-            self._build_with_template("{{PROTOCOL_HEADER}}\n{{NOT_A_REAL_TOKEN}}\n")
+            self._build_with_template("{{NOT_A_REAL_TOKEN}}\n")
         self.assertIn("NOT_A_REAL_TOKEN", str(ctx.exception))
 
     def test_all_known_tokens_are_replaced(self):
         body = self._build_with_template(
-            "{{PROTOCOL_HEADER}}\n{{REVIEW_TYPE}}\n{{PLUGIN_ROOT}}\n{{PROJECT_ROOT}}\n"
+            "{{REVIEW_TYPE}}\n{{PLUGIN_ROOT}}\n{{PROJECT_ROOT}}\n"
         )
         self.assertNotIn("{{", body)
 
@@ -1020,7 +1003,7 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
         try:
             with self.assertRaises(ValueError) as ctx:
                 build_review_request.build_body(
-                    pattern="diff", project_root=_REPO_ROOT, review_id="rid"
+                    pattern="diff", project_root=_REPO_ROOT
                 )
         finally:
             build_review_request.template_path = original
@@ -1029,7 +1012,7 @@ class UnknownAndLeftoverTokenTest(unittest.TestCase):
     def test_unknown_pattern_raises(self):
         with self.assertRaises(ValueError):
             build_review_request.build_body(
-                pattern="not-a-pattern", project_root=_REPO_ROOT, review_id="rid"
+                pattern="not-a-pattern", project_root=_REPO_ROOT
             )
 
 
@@ -1108,7 +1091,9 @@ class MainCliTest(unittest.TestCase):
         )
         self.assertEqual(returncode, 0, stderr)
         self.assertEqual(stderr, "")
-        self.assertTrue(stdout.startswith("[msg-review] diff review_id="))
+        payload = json.loads(stdout)
+        self.assertEqual(set(payload), {"review_id", "body"})
+        self.assertNotIn("[msg-review]", payload["body"])
 
     def test_branch_pattern_requires_branches_and_exits_nonzero(self):
         returncode, stdout, stderr = _run_cli(

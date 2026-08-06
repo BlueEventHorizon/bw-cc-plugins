@@ -6,7 +6,7 @@ Claude/Codex 間の全メッセージ履歴を取得したうえで、指定し�
 メッセージのみを `sent_at` 昇順で抽出する。
 
 **スレッド判定は `in_reply_to`（DB の構造化フィールド）の連鎖を主とし、body 先頭行の
-プロトコルヘッダ（`[msg-review] <種別> review_id=<review_id> round=<n>`、DES-045 §3.4）
+プロトコルヘッダ（`[msg-review] <種別> review_id=<review_id> round=<n>`）
 のパースは「連鎖の起点（root）をどのメッセージから始めるか」の特定にのみ使う（実 Codex
 レビューで発見の不具合対応）。ヘッダは AI が自由記述本文の一部として手で書く自己申告値
 であり、書き忘れ・省略に対して無防備だった（実際に Codex の返信でヘッダ行が丸ごと欠落し、
@@ -14,8 +14,8 @@ Claude/Codex 間の全メッセージ履歴を取得したうえで、指定し�
 一方 `in_reply_to` は `send.py --in-reply-to` が機械的に設定する構造化フィールドであり、
 本文のテキスト内容に依存しない。したがって「ヘッダが一致する」または「`in_reply_to` を
 辿って既にスレッドに含まれるメッセージへ到達する」のいずれかを満たすメッセージをスレッドに
-含める（両方の判定を OR で合成する fixed-point 探索。`docs/rules/implementation_guidelines.md`
-「決定論的な定型処理は script 化する」）。
+含める（両方の判定を OR で合成する fixed-point 探索）。決定論的な列挙・抽出・集計は
+スクリプトで実装し、AI の手作業へ委ねない。
 
 **履歴取得・スレッド判定の汎用部分は `plugins/forge/scripts/msg-sys/thread_filter.py` に
 委譲する**（talk-to-codex 等、レビュー以外のプロトコルでも同じ判定ロジックを再利用
@@ -43,7 +43,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "msg-sys"))
 import thread_filter  # noqa: E402
 
-# body 先頭行のみを対象にする（本文中の別箇所の偶然の一致を拾わない、DES-045 §3.6）。
+# body 先頭行のみを対象にし、本文中の別箇所の偶然の一致を拾わない。
 REVIEW_ID_RE = re.compile(r"^\[msg-review\]\s+\S+\s+review_id=(\S+)\s+round=\d+\s*$")
 APPROVED_LINE = "REVIEW_RESULT: approved"
 FINDINGS_LINE = "REVIEW_RESULT: findings"
@@ -66,8 +66,8 @@ def compute_round(messages: list[dict]) -> int:
 def compute_resolved(messages: list[dict], reviewer: str) -> bool:
     """review_id 一致メッセージのうち `reviewer`（レビュー実施者）発の完了宣言行のみから判定する。
 
-    受信モード（SKILL.md 受信モード Step 1）と同じ規則: 依頼メッセージ自身が
-    返信形式の説明として `REVIEW_RESULT: approved` という部分文字列を含むため、
+    明示的な履歴復元では、依頼メッセージ自身が返信形式の説明として
+    `REVIEW_RESULT: approved` という部分文字列を含むため、
     単純な部分一致では依頼側（reviewer 以外の送信者）のメッセージも承認済みと
     誤判定してしまう（Codex レビュー review_id=043e2823... で発見）。前後の空白を
     除去した上で行全体が完全一致する行のみを完了宣言行の候補とし、reviewer 発の
@@ -127,12 +127,20 @@ def main() -> int:
 
     filtered = filter_by_review_id(all_messages, args.review_id)
 
-    output = {
-        "review_id": args.review_id,
-        "messages": filtered,
-        "round": compute_round(filtered),
-        "resolved": compute_resolved(filtered, args.agent_b),
-    }
+    if not filtered:
+        output = {
+            "status": "not_found",
+            "review_id": args.review_id,
+            "reason": f"review_id={args.review_id} に一致する履歴がありません",
+        }
+    else:
+        output = {
+            "status": "ok",
+            "review_id": args.review_id,
+            "messages": filtered,
+            "round": compute_round(filtered),
+            "resolved": compute_resolved(filtered, args.agent_b),
+        }
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
 
