@@ -3,8 +3,7 @@
 
 `update_version_files.py {file} {cur} {new}` を subprocess で呼び出し、
 成功時は stdout (更新後のファイル内容) を対象ファイルへ書き戻す。低レベルは
-NFR-01 により元ファイルを書き換えないため、書き戻しはラッパーの責務
-（DES-024 §2.3 の writer 例外類型 / Issue #139）。
+NFR-01 により元ファイルを書き換えないため、書き戻しはラッパーの責務である。
 
 位置引数: {file} {current_version} {new_version}
 """

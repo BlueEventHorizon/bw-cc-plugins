@@ -180,8 +180,8 @@ def find_duplicates(id_entries, shared_numbering=False):
             （--share-prefixes 指定時。`ADR-007` と `DES-007` は共有番号 007 の衝突として報告する）
 
     Returns:
-        list[dict]: 各要素は {'id', 'ids', 'branches', 'paths'}。
-            'id' は代表 ID（後方互換）、'ids' は衝突に関与する全 ID。
+        list[dict]: 各要素は {'ids', 'branches', 'paths'}。
+            'ids' は衝突に関与する全 ID。
     """
     id_num_pattern = re.compile(r'^(.+)-(\d+)$')
     groups = {}
@@ -202,7 +202,6 @@ def find_duplicates(id_entries, shared_numbering=False):
         if len(group['paths']) > 1:
             ids = sorted(group['ids'])
             duplicates.append({
-                'id': ids[0],
                 'ids': ids,
                 'branches': sorted(group['branches']),
                 'paths': sorted(group['paths']),

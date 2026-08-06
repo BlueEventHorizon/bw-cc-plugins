@@ -4,7 +4,7 @@
 `update_version_files.py {file} {cur} {new} --filter {filter} --optional` を
 subprocess で呼び出し、成功時は stdout (更新後のファイル内容) を対象ファイルへ
 書き戻す。低レベルは NFR-01 により元ファイルを書き換えないため、書き戻しは
-ラッパーの責務（DES-024 §2.3 の writer 例外類型 / Issue #139）。
+ラッパーの責務である。
 
 `--optional` でパターン未マッチ時は stderr に `status: skipped` が出力され
 stdout は空。この場合は書き戻しをスキップして exit 0 を維持する。

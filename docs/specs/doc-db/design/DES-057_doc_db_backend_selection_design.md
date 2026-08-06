@@ -210,9 +210,9 @@ CLI 相互の呼び出しを禁じることで、複数 operation の進行と�
 | ---------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------- |
 | 各 `query-db-*/SKILL.md`                       | doc-db 結果返却、index / query 起動、通知                                        | SKILL 固有 wrapper、doc-advisor        |
 | 各 `update-db-*/SKILL.md`                      | doc-db 結果返却、doc-advisor index 起動、通知                                    | SKILL 固有 wrapper、doc-advisor        |
-| `skills/*/scripts/query_documents.py`          | category を固定して query 低レベル CLI を透過呼び出し                            | `query_docdb.py`                       |
-| `skills/*/scripts/sync_documents.py`           | category を固定して sync 低レベル CLI（`--start` / `--status`）を透過呼び出し    | `sync_docdb.py`                        |
-| `skills/*/scripts/prepare_advisor_index.py`    | category を固定して索引入力準備 CLI を透過呼び出し                               | `prepare_advisor_index.py`             |
+| `skills/*/scripts/query_documents.py`          | category を固定し、検索タスク 1 件だけを query 低レベル CLI へ渡す               | `query_docdb.py`                       |
+| `skills/*/scripts/sync_documents.py`           | category を固定し、同期の `--start` / `--status <job_id>` だけを公開する         | `sync_docdb.py`                        |
+| `skills/*/scripts/prepare_advisor_index.py`    | category を固定し、引数なしで索引入力準備 CLI を呼ぶ                             | `prepare_advisor_index.py`             |
 | `scripts/doc_backend/docdb_client.py`          | MCP session、JSON-RPC、JSON / SSE 応答解析                                       | Python 標準ライブラリ                  |
 | `scripts/doc_backend/docdb_runtime.py`         | 接続 probe、doc-db 起動、再接続、理由コード生成                                  | `docdb_client.py`、`doc-db` executable |
 | `scripts/doc_backend/project_documents.py`     | category 対象文書、project key、git series の解決                                | 既存 doc-structure resolver、git       |
@@ -364,6 +364,11 @@ update は既存 `.doc_structure.yaml` の category 設定から対象 Markdown 
 | ------------------- | --------------------------------------------------------------- | ---------------- |
 | `--start`           | 一覧を解決し `sync_documents` を投入して即時に返る              | `job_id`         |
 | `--status <job_id>` | `get_sync_status` を 1 回呼び、その時点の進捗を返して即時に返る | job の状態と件数 |
+
+この 2 操作は同一場面で競合する方針ではなく、同一同期ジョブの「投入→観測」という順序付き位相である。
+SKILL の各場面では呼び出し全体が一意に決まるため、1 つのローカル操作入口の明示モードとして維持する
+（ADR-070、DES-024 §2.2）。別 script へ分けても選択対象が mode からファイル名へ移るだけであり、AI の
+判断領域は減らない。
 
 SKILL は `--start` で `job_id` を得たあと、`--status` を間隔を空けて繰り返し呼び、**そのたびに進捗を
 テキストで報告する**。ポーリングのループを script 内に持たない（理由は §4.2 と同じ）。
@@ -772,9 +777,10 @@ feature 統合時は既存の doc-advisor 単一前提を、順序リストに�
 
 ### 9.2 wrapper テスト
 
-各 SKILL 固有 wrapper について、category の固定値、位置引数の透過、stdout / stderr / exit code の透過を検証する。
-query wrapper が task を 1 つの位置引数として渡し、update wrapper が利用者入力を要求しないことを確認する。
-sync wrapper については `--start` / `--status <job_id>` の両操作が透過することを確認する。
+各 SKILL 固有 wrapper について、category の固定値、許可された operation、stdout / stderr / exit code の契約を検証する。
+query wrapper が task を 1 つだけ受理し、prepare wrapper が利用者入力を受理しないことを確認する。
+sync wrapper は `--start` / `--status <job_id>` の両操作を受理し、欠落値・余分な引数・未知 operation を
+低レベルへ渡さず拒否することを確認する。
 
 ### 9.3 統合テスト
 

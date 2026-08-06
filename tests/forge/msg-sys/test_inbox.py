@@ -50,7 +50,7 @@ class InboxTest(unittest.TestCase):
     # --- bare form（フラグなし） ---
 
     def test_bare_form_does_not_mark_read(self):
-        """inbox.py <recipient>（--peek 無指定）は既読化しない（INT-001/INT-004）。"""
+        """inbox.py <recipient> は既読化しない（INT-001/INT-004）。"""
         mailbox.send("claude", "codex", "review this diff", db_path=self.db_path)
 
         exit_code, output = self._run_main(["codex", "--db-path", str(self.db_path)])
@@ -146,7 +146,7 @@ class InboxTest(unittest.TestCase):
         self.assertEqual(actual["id"], m1)
         self.assertEqual(actual["chain_length"], 0)
 
-        # --next は既読化しない（peek と同様に副作用がない）
+        # --next は既読化せず、副作用がない
         unread = mailbox.inbox("claude", db_path=self.db_path)
         self.assertEqual(len(unread), 1)
         self.assertEqual(unread[0]["id"], m1)
@@ -169,7 +169,7 @@ class InboxTest(unittest.TestCase):
             inbox.mailbox, "resolve_db_path", wraps=inbox.mailbox.resolve_db_path
         ) as mock_resolve:
             exit_code, output = self._run_main(
-                ["codex", "--peek", "--db-path", str(self.db_path)]
+                ["codex", "--db-path", str(self.db_path)]
             )
 
         self.assertEqual(exit_code, 0)
@@ -190,7 +190,7 @@ class InboxTest(unittest.TestCase):
             with mock.patch.object(
                 inbox.mailbox, "resolve_db_path", wraps=inbox.mailbox.resolve_db_path
             ) as mock_resolve:
-                exit_code, output = self._run_main(["codex", "--peek"])
+                exit_code, output = self._run_main(["codex"])
 
         self.assertEqual(exit_code, 0)
         mock_resolve.assert_called_once_with(None)
@@ -203,12 +203,34 @@ class InboxTest(unittest.TestCase):
     def test_missing_db_path_and_env_fails_closed(self):
         env_backup = os.environ.pop("FORGE_MSG_PROJECT_ROOT", None)
         try:
-            with mock.patch.object(inbox.sys, "argv", ["inbox.py", "codex", "--peek"]):
+            with mock.patch.object(inbox.sys, "argv", ["inbox.py", "codex"]):
                 with self.assertRaises(RuntimeError):
                     inbox.main()
         finally:
             if env_backup is not None:
                 os.environ["FORGE_MSG_PROJECT_ROOT"] = env_backup
+
+    def test_removed_peek_option_is_rejected(self):
+        exit_code, output = self._run_main(
+            ["codex", "--peek", "--db-path", str(self.db_path)]
+        )
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(output, "")
+
+    def test_malformed_options_are_rejected(self):
+        for argv in (
+            ["codex", "--unknown"],
+            ["codex", "--ack"],
+            ["codex", "--db-path", "--next"],
+            ["codex", "--next", "--next"],
+            ["codex", "--ack", "m1", "--next"],
+            ["codex", "--ack", "m1", "--mark-notified", "m2"],
+            ["codex", "--mark-notified", "m1", "--next"],
+        ):
+            with self.subTest(argv=argv):
+                exit_code, output = self._run_main(argv)
+                self.assertEqual(exit_code, 1)
+                self.assertEqual(output, "")
 
 
 if __name__ == "__main__":

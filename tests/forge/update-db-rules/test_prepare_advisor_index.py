@@ -71,25 +71,14 @@ class TestPrepareAdvisorIndexWrapper(unittest.TestCase):
         )
         helpers.assert_transparent_subprocess_kwargs(self, mock_run)
 
-    def test_extra_args_transparent(self):
-        """残りの引数が category 前置で低レベル CLI へそのまま渡る"""
+    def test_rejects_extra_args_without_calling_low_level(self):
+        """SKILL が使わない低レベル引数を公開しない"""
         rc, mock_run = helpers.invoke_with_mocked_run(
             self.wrapper,
             argv=["prepare_advisor_index.py", "--project-root", "/tmp/project"],
         )
-        self.assertEqual(rc, 0)
-        cmd = helpers.command_from_mock(mock_run)
-        self.assertEqual(
-            cmd,
-            [
-                sys.executable,
-                str(self.wrapper.LOW_LEVEL),
-                EXPECTED_CATEGORY,
-                "--project-root",
-                "/tmp/project",
-            ],
-        )
-        helpers.assert_transparent_subprocess_kwargs(self, mock_run)
+        self.assertEqual(rc, 20)
+        mock_run.assert_not_called()
 
     def test_exit_code_transparent(self):
         """低レベル CLI の exit code をそのまま返す"""
