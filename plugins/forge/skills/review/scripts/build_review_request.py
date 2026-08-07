@@ -3,13 +3,11 @@
 
 `templates/<pattern>_review_request_template.md` を Read し、`{{TOKEN}}` を動的データで
 置換して標準出力へ書く。**本スクリプトは散文を持たない。** 依頼本文の文言・レビュー観点の
-名指しはすべてテンプレート側にあり、本スクリプトの責務は次の 4 点に限られる。
+名指しはすべてテンプレート側にあり、本スクリプトの責務は次の 3 点に限られる。
 
     1. review_id の生成（uuid4）
-    2. プロトコルヘッダの形式の担保（parse_findings.py / wait_for_reply.py /
-       filter_review_history.py が同一形式を前提に噛み合う）
-    3. 絶対パスの算出（{{PLUGIN_ROOT}} / {{PROJECT_ROOT}}）
-    4. 埋め込むデータの検証（fail-closed）
+    2. 絶対パスの算出（{{PLUGIN_ROOT}} / {{PROJECT_ROOT}}）
+    3. 埋め込むデータの検証（fail-closed）
 
 `${CLAUDE_PLUGIN_ROOT}` は SKILL.md がロードされるときにのみ展開される変数であり、
 テンプレートを Read した本文の中では展開されない。そのためテンプレートには
@@ -55,7 +53,8 @@ Usage:
     python3 build_review_request.py --pattern secrets --project-root <path>
 
 Output:
-    標準出力に依頼本文（テキスト）。エラーは stderr + 非ゼロ終了。
+    標準出力に JSON envelope `{"review_id": "...", "body": "..."}`。
+    エラーは stderr + 非ゼロ終了。
 """
 
 import argparse
@@ -74,8 +73,6 @@ SCOPED_PATTERNS = ("code", "requirement", "design", "plan", "uxui")
 SCAN_PATTERNS = ("secrets",)
 VALID_PATTERNS = RANGE_PATTERNS + SCOPED_PATTERNS + SCAN_PATTERNS
 
-ROUND = 1
-
 _TOKEN_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 
 _TEMPLATE_DIR_NAME = "templates"
@@ -90,8 +87,9 @@ _NO_SCOPE_MARKER = "（指定なし）"
 _HEADING_LINE_RE = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
 _FENCE_LINE_RE = re.compile(r"^ {0,3}(?:```|~~~)")
 # 行全体（前後の空白を除去後）がこれらで始まる行を拒否する。前者は完了宣言行、
-# 後者はプロトコルヘッダ行であり、いずれも受信側が機械的に照合する契約行である。
-_PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:", "[msg-review]")
+# 共通本文の完了宣言行を偽装する入力は拒否する。バックエンド固有のワイヤヘッダは
+# 共通本文の契約ではなく、必要なバックエンドが送信直前に検証する。
+_PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:",)
 
 # `scan_secrets.py` を同一プロセスで import する（`secrets` パターンのスキャン実行）。
 # 本ファイルと同じ `scripts/` に置かれている。
@@ -141,8 +139,7 @@ def _reject_structure_lines(label: str, value: str | None) -> None:
 
     - 見出し行（`#`〜`######`）— 節を偽装して以降の内容を別の節に見せられる
     - コードフェンス行（``` / ~~~）— 閉じないフェンスで以降の本文を literal に飲み込める
-    - `REVIEW_RESULT:` 始まりの行 — 完了宣言行の偽装（`parse_findings.py` / 受信モードの契約）
-    - `[msg-review]` 始まりの行 — プロトコルヘッダの偽装（`filter_review_history.py` の契約）
+    - `REVIEW_RESULT:` 始まりの行 — 完了宣言行の偽装（共通応答契約）
 
     CR は行区切りとして扱わず一律拒否する。CR/LF の混在は受信側の行分割と本文の見た目を
     食い違わせるため、許す理由がない。
@@ -251,7 +248,6 @@ def _absolute_bullet_list(project_root_abs: str, paths: list[str], suffix: str =
 def build_body(
     pattern: str,
     project_root: Path,
-    review_id: str,
     files: list[str] | None = None,
     dirs: list[str] | None = None,
     base_branch: str | None = None,
@@ -260,7 +256,6 @@ def build_body(
     project_specs: list[str] | None = None,
     focus: str | None = None,
     scope: str | None = None,
-    round_no: int = ROUND,
 ) -> str:
     """テンプレートを読み、トークンを置換した依頼本文を返す。
 
@@ -365,7 +360,6 @@ def build_body(
     project_root_abs = str(project_root.resolve())
 
     values = {
-        "PROTOCOL_HEADER": f"[msg-review] {pattern} review_id={review_id} round={round_no}",
         "REVIEW_TYPE": pattern,
         "PLUGIN_ROOT": str(plugin_root()),
         "PROJECT_ROOT": project_root_abs,
@@ -433,6 +427,21 @@ def build_body(
     return body
 
 
+def build_request(
+    pattern: str,
+    project_root: Path,
+    *,
+    review_id: str | None = None,
+    **kwargs,
+) -> dict:
+    """バックエンド非依存の依頼 envelope を構築する。"""
+    request_id = review_id or uuid.uuid4().hex
+    return {
+        "review_id": request_id,
+        "body": build_body(pattern=pattern, project_root=project_root, **kwargs),
+    }
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="review 依頼メッセージ本文の組み立て（テンプレート方式）",
@@ -498,7 +507,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=None,
         help=(
             "今回の変更が到達すべき範囲と、意図的に含めなかった項目（複数行可）。"
-            "見出し行・コードフェンス行・契約行（REVIEW_RESULT: / [msg-review]）で"
+            "見出し行・コードフェンス行・契約行（REVIEW_RESULT:）で"
             "始まる行は拒否する。未指定なら依頼本文は「（指定なし）」になる"
         ),
     )
@@ -532,10 +541,9 @@ def main() -> int:
         return 1
 
     try:
-        body = build_body(
+        envelope = build_request(
             pattern=args.pattern,
             project_root=Path(args.project_root),
-            review_id=uuid.uuid4().hex,
             files=files,
             dirs=dirs,
             base_branch=args.base_branch,
@@ -544,13 +552,12 @@ def main() -> int:
             project_specs=project_specs,
             focus=args.focus,
             scope=args.scope,
-            round_no=ROUND,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
-    sys.stdout.write(body)
+    print(json.dumps(envelope, ensure_ascii=False))
     return 0
 
 

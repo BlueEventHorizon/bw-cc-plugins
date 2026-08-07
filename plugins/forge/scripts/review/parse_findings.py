@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""review: Codex 返信本文の重大度別 finding 分解 CLI。
+"""review: バックエンド共通のレビュー応答解釈 CLI。
 
-Codex の返信本文は自由記述markdown（DES-045 §3.4 の契約: 重大度マーカー
-（🔴/🟡/🟢）+ `ファイルパス:行` を含む自由記述、厳密な JSON 構造ではない）。
+レビュー応答は、重大度マーカー（🔴/🟡/🟢）と位置を含む自由記述 markdown
+（厳密な JSON 構造ではない）である。
 本文を行単位に走査し、行頭（箇条書き記号・番号付けを除く）に severity マーカーが
 ある行を「新しい finding の開始」とみなして、次の finding 開始行（または完了宣言行）
 までをその finding の本文として束ねる。
+
+応答本文を厳密な完了宣言と所見契約に照らし、`approved` / `findings` /
+`failure` の 3 値へ変換する。標準ライブラリのみ使用する。
 
 使い方:
     python3 parse_findings.py --body-file <path>
@@ -18,8 +21,35 @@ from pathlib import Path
 
 SEVERITY_MARKERS = {"🔴": "critical", "🟡": "major", "🟢": "minor"}
 COMPLETION_LINES = ("REVIEW_RESULT: approved", "REVIEW_RESULT: findings")
-HEADER_RE = re.compile(r"^\[msg-review\]\s")
 FENCE_RE = re.compile(r"^(```|~~~)")
+LOCATION_RE = re.compile(
+    r"(?<![\w./\\-])(?P<quote>`)?"
+    r"(?P<path>(?:[A-Za-z]:[\\/])?[^`\s:\"'()[\]{}<>,;!?。、，；：！？「」『』【】]+):"
+    r"(?P<line>\d+)(?:-(?P<end_line>\d+))?"
+    r"(?(quote)`)(?![\w./\\-])"
+)
+UNKNOWN_LOCATION_MARKERS = ("位置未確定", "location unknown", "unknown location")
+LOCATION_OPENING_WRAPPERS = frozenset("([{<「『【")
+LOCATION_CLOSING_WRAPPERS = frozenset(")]}>」』】")
+CONVENTIONAL_EXTENSIONLESS_FILES = {
+    "AUTHORS",
+    "Brewfile",
+    "CHANGELOG",
+    "CONTRIBUTING",
+    "Containerfile",
+    "COPYING",
+    "Dockerfile",
+    "Gemfile",
+    "Justfile",
+    "LICENSE",
+    "Makefile",
+    "NOTICE",
+    "Procfile",
+    "README",
+    "Rakefile",
+    "SECURITY",
+    "Vagrantfile",
+}
 
 # 行頭（任意の箇条書き記号 `-`/`*` または番号付け `1.` を除いた直後）に severity
 # マーカーがある行のみを finding の開始とみなす。文中・引用・コード例に偶然出現する
@@ -52,60 +82,102 @@ def _finding_start_severity(raw_line: str) -> str | None:
     return SEVERITY_MARKERS[match.group(1)]
 
 
+def _looks_like_file_path(path: str) -> bool:
+    """一般ラベルや数値ではなく、ファイルパスらしい決定論的な形かを判定する。"""
+    if not path or path.isdigit() or path.startswith("//"):
+        return False
+    if re.match(r"^[A-Za-z]:[\\/]", path):
+        return True
+    if path.startswith("/") or "/" in path or "\\" in path:
+        return True
+
+    basename = path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    if basename in CONVENTIONAL_EXTENSIONLESS_FILES:
+        return True
+    if basename.startswith(".") and len(basename) > 1:
+        return True
+    stem, separator, suffix = basename.rpartition(".")
+    return bool(separator and stem and suffix)
+
+
+def _extract_location(text: str) -> dict | None:
+    """所見本文からファイルパスらしい明示位置だけを抽出する。"""
+    for match in LOCATION_RE.finditer(text):
+        before = text[match.start() - 1] if match.start() > 0 else ""
+        after = text[match.end()] if match.end() < len(text) else ""
+        path = match.group("path")
+        line = int(match.group("line"))
+        end_line_text = match.group("end_line")
+        end_line = int(end_line_text) if end_line_text is not None else None
+        if (
+            before in LOCATION_OPENING_WRAPPERS
+            or after in LOCATION_CLOSING_WRAPPERS
+            or not _looks_like_file_path(path)
+            or line < 1
+            or (end_line is not None and end_line < line)
+        ):
+            continue
+        location = {
+            "path": path,
+            "line": line,
+        }
+        if end_line is not None:
+            location["end_line"] = end_line
+        return location
+    lowered = text.lower()
+    if any(marker in lowered for marker in UNKNOWN_LOCATION_MARKERS):
+        return {"unknown": True}
+    return None
+
+
+def _completion_declarations(body: str) -> tuple[list[tuple[int, str]], int | None]:
+    """コードブロック外の完了宣言と、意味のある最終行の位置を返す。"""
+    declarations: list[tuple[int, str]] = []
+    last_meaningful_index: int | None = None
+    in_fence = False
+    for index, raw_line in enumerate(body.splitlines()):
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        last_meaningful_index = index
+        if FENCE_RE.match(stripped):
+            in_fence = not in_fence
+            continue
+        if in_fence or _is_indented_code_line(raw_line):
+            continue
+        if stripped in COMPLETION_LINES:
+            declarations.append(
+                (index, stripped.removeprefix("REVIEW_RESULT: "))
+            )
+    return declarations, last_meaningful_index
+
+
 def parse_findings(body: str) -> list[dict]:
     """本文から severity 別の finding リストを抽出する。
 
     finding の開始行（行頭に severity マーカー）が現れるたびに新しい finding を
-    開始し、次の開始行（または本文中で最後に出現する完了宣言行）までを束ねてその
-    finding の本文とする。プロトコルヘッダ行（本文先頭の `[msg-review] ...`）・
-    最後に出現した完了宣言行以降（Stop フックが付与する返信ヒント等）はどの finding
-    の本文にも含めない。
-
-    **形式違反への fail-closed 対応**: 完了宣言行が `REVIEW_RESULT: findings`
-    （指摘ありの宣言）であるにもかかわらず finding 開始行が一つも見つからない場合、
-    本文全体を `severity: "unclassified"` の単一 finding として返す（空リストを
-    返して所見を黙って落とさない。実 Codex レビューで発見: マーカーを欠いた実所見が
-    空リストになり、受信モードが「重大度不明として対象外に報告する」ことすら
-    できず見落としていた）。`REVIEW_RESULT: approved`（指摘なしの宣言）の場合は
-    この fallback を適用しない——承認宣言と矛盾するため、本文中のマーカー無し
-    説明文（「所見はありません」等）を偽の finding として抽出してしまう
-    （approved なのに finding が0件でないという矛盾）ことを避ける。
-    `gate_findings.py` の決定表は `critical`/`major` のみを自動修正対象とするため、
-    `unclassified` は常に対象外（`excluded`）に振り分けられ、人間の確認に委ねられる。
-    finding 開始行が1件以上見つかった場合は、その前後にある非自明なマーカー無し
-    テキスト（前置き・要約等）は finding として扱わない（既存所見の narrative の
-    一部とみなす）。
+    開始し、次の開始行（または最初の完了宣言行）までを束ねてその finding の本文と
+    する。この関数は低レベル抽出 API であり、完了宣言・severity・位置を含む共通契約の
+    検証は `interpret_response()` が担う。severity マーカーのない本文を推測で finding
+    に変換しない。
 
     **fenced code block 内は finding 開始として扱わない**: 自由記述 Markdown では
     返信形式の例や既存所見の引用をコードブロック（\\`\\`\\` または ~~~ で囲まれた範囲）
     で示すことがあり、その中に severity マーカーが含まれていても実在しない finding
     として抽出してしまう（実 Codex レビューで発見）。フェンス行（\\`\\`\\` 始まりの行）を
     追跡し、フェンス内では finding の開始判定を行わない（既存 finding の本文継続、
-    またはマーカー無しの fallback 扱いとする）。
+    または抽出対象外とする）。
     """
     lines = body.splitlines()
-
-    # 採用する完了宣言行を先に確定する（本文中で最後に出現したもの。SKILL.md 受信モード
-    # Step 1「完了宣言行の照合」と同じ「最後に出現した行を採用する」規則）。この行より
-    # 後ろの行（Stop フックが付与する複数行の返信ヒント等）は finding の本文に一切
-    # 含めない。`continue` で完了宣言行自体だけを読み飛ばすと、宣言後に連結される
-    # 返信ヒントが直前の finding の本文へ混入する（実 Codex レビューで発見。本セッション
-    # で実際に観測した Stop フックの返信ヒント連結と同型の回帰）。
-    last_completion_index: int | None = None
-    declared_findings = False
-    for index, raw_line in enumerate(lines):
-        stripped = raw_line.strip()
-        if stripped in COMPLETION_LINES:
-            last_completion_index = index
-            declared_findings = stripped == "REVIEW_RESULT: findings"
-
-    content_lines = lines if last_completion_index is None else lines[:last_completion_index]
+    declarations, _ = _completion_declarations(body)
+    first_completion_index = declarations[0][0] if declarations else None
+    content_lines = (
+        lines if first_completion_index is None else lines[:first_completion_index]
+    )
 
     findings: list[dict] = []
     current_severity: str | None = None
     current_lines: list[str] = []
-    any_marker_found = False
-    fallback_lines: list[str] = []
     in_fence = False
 
     def flush() -> None:
@@ -113,22 +185,21 @@ def parse_findings(body: str) -> list[dict]:
             return
         text = "\n".join(current_lines).strip()
         if text:
-            findings.append({"severity": current_severity, "text": text})
+            findings.append(
+                {
+                    "severity": current_severity,
+                    "text": text,
+                    "location": _extract_location(text),
+                }
+            )
 
-    for index, raw_line in enumerate(content_lines):
+    for raw_line in content_lines:
         stripped = raw_line.strip()
-        if index == 0 and HEADER_RE.match(stripped):
-            continue
-        if stripped in COMPLETION_LINES:
-            # 最後の宣言行より前に出現した別の宣言行（防御的なケース）。本文には含めない。
-            continue
 
         if FENCE_RE.match(stripped):
             in_fence = not in_fence
             if current_severity is not None:
                 current_lines.append(raw_line)
-            elif stripped:
-                fallback_lines.append(raw_line)
             continue
 
         if in_fence or _is_indented_code_line(raw_line):
@@ -136,35 +207,80 @@ def parse_findings(body: str) -> list[dict]:
         else:
             severity = _finding_start_severity(raw_line)
         if severity is not None:
-            any_marker_found = True
             flush()
             current_severity = severity
             current_lines = [raw_line]
         elif current_severity is not None:
             current_lines.append(raw_line)
-        elif stripped:
-            fallback_lines.append(raw_line)
 
     flush()
-
-    if not any_marker_found and declared_findings:
-        fallback_text = "\n".join(fallback_lines).strip()
-        if fallback_text:
-            return [{"severity": "unclassified", "text": fallback_text}]
-
     return findings
+
+
+def interpret_response(body: str) -> dict:
+    """レビュー応答を共通の 3 値判定へ変換する。契約違反は fail closed とする。"""
+    declarations, last_meaningful_index = _completion_declarations(body)
+    if not declarations:
+        return {
+            "judgment": "failure",
+            "findings": [],
+            "error": "完了宣言行がありません",
+        }
+    if len(declarations) != 1:
+        return {
+            "judgment": "failure",
+            "findings": [],
+            "error": "完了宣言行は厳密に 1 行だけ必要です",
+        }
+    completion_index, declaration = declarations[0]
+    if completion_index != last_meaningful_index:
+        return {
+            "judgment": "failure",
+            "findings": [],
+            "error": "完了宣言行の後に本文があります",
+        }
+
+    findings = parse_findings(body)
+    if declaration == "approved":
+        if findings:
+            return {
+                "judgment": "failure",
+                "findings": [],
+                "error": "approved 宣言と所見が矛盾しています",
+            }
+        return {"judgment": "approved", "findings": []}
+
+    if not findings:
+        return {
+            "judgment": "failure",
+            "findings": [],
+            "error": "findings 宣言には重大度マーカー付き所見が必要です",
+        }
+
+    missing_location = [
+        index + 1 for index, finding in enumerate(findings) if finding["location"] is None
+    ]
+    if missing_location:
+        return {
+            "judgment": "failure",
+            "findings": [],
+            "error": (
+                "位置情報がない所見があります: "
+                + ", ".join(str(index) for index in missing_location)
+            ),
+        }
+    return {"judgment": "findings", "findings": findings}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Codex 返信本文の重大度別 finding 分解 CLI",
+        description="レビュー応答本文の共通契約解釈 CLI",
     )
-    parser.add_argument("--body-file", required=True, help="Codex 返信本文が書かれたファイルのパス")
+    parser.add_argument("--body-file", required=True, help="レビュー応答本文のファイルパス")
     args = parser.parse_args()
 
     body = Path(args.body_file).read_text(encoding="utf-8")
-    findings = parse_findings(body)
-    print(json.dumps({"findings": findings}, ensure_ascii=False))
+    print(json.dumps(interpret_response(body), ensure_ascii=False))
     return 0
 
 

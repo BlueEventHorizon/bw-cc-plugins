@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-04T17:36:43Z
+  generated_at: 2026-08-06T12:11:43Z
   file_count: 7
 
 docs:
@@ -170,36 +170,34 @@ docs:
       - ScheduleWakeup
       - subagent_type
   docs/rules/skill_launch_paths_definitions.md:
-    title: SKILL / Agent / Subagent Launch Paths and Nomenclature Definition
-    purpose: "Defines official terminology and classification for five skill and agent invocation paths: inheritance-type SKILL, fork-type SKILL (deprecated), general-purpose Agent, custom Agent, and Bash subprocess"
+    title: SKILL, Agent, and Subagent Launch Paths and Naming Definitions
+    purpose: Defines the five delegation launch paths, their official short names, context behavior, tool boundaries, and valid subagent_type values for Claude Code documentation.
     content_details:
-      - Five launch paths with official short names and execution models
-      - Fork-type SKILL abolished due to 9 structural bugs in anthropic/claude-code
-      - "Context isolation: inheritance-type SKILL inherits parent context; other 4 paths use isolated context"
-      - Custom Agent definition in agents/<name>.md with system prompt as procedure book
-      - "Procedure location difference: general-purpose Agent gets prompt per invocation; custom Agent uses agents/<name>.md"
-      - subagent_type parameter value domain for Agent tool invocation
-      - "Terminology unification: avoid ambiguous 'subagent' singular; use inheritance-type SKILL, fork-type SKILL, general-purpose Agent, or custom Agent"
-      - "Invalid subagent_type values: skill names, slash command notation, file paths"
-      - Skill tool vs Agent tool invocation patterns
-      - Historical equivalence of fork-type SKILL and custom Agent (both isolated context plus predefined role)
+      - Five-path taxonomy covering inherited SKILL, forked SKILL, general Agent, custom Agent, and Bash subprocess
+      - Official short-name usage required in SKILL.md, design documents, and guides
+      - Forked SKILL is deprecated because context isolation, argument substitution, output delivery, and recursion are structurally unreliable
+      - General Agent and custom Agent differ by whether procedures live in each invocation prompt or an agents/<name>.md system prompt
+      - Only inherited SKILL preserves parent context; all other launch paths use isolated context
+      - Standalone use of the ambiguous term subagent is prohibited in favor of precise launch-path names
+      - subagent_type accepts built-in Agent names and names of defined custom Agents only
+      - SKILL names, slash-command notation, and SKILL.md file paths are invalid subagent_type values
     applicable_tasks:
-      - Skill and Agent architecture design
-      - Launch path selection and terminology specification
-      - SKILL/Agent naming and invocation decision
-      - subagent_type value validation
-      - Plugin documentation and SKILL.md authoring
+      - Selecting a Claude Code delegation launch path
+      - Authoring or reviewing SKILL.md launch instructions
+      - Naming Agent and SKILL execution paths consistently in design documents
+      - Validating subagent_type values
+      - Migrating forked SKILL behavior to a custom Agent
     keywords:
-      - subagent_type
-      - inheritance-type SKILL
-      - fork-type SKILL
+      - inherited SKILL
+      - forked SKILL
+      - general Agent
       - custom Agent
-      - general-purpose Agent
-      - launch path
-      - context boundary
-      - Skill tool
+      - Bash subprocess
+      - subagent_type
+      - "context: fork"
       - Agent tool
-      - context isolation
+      - Skill tool
+      - launch path
   docs/rules/version_migration_design.md:
     title: Version Migration and Upgrade Design Rules
     purpose: Design principles and implementation patterns for safely migrating data structures across version changes, covering YAML/JSON config, Swift Codable, and database migrations

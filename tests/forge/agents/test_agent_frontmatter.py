@@ -9,7 +9,7 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
 1. 各 .md ファイルが YAML frontmatter を持つこと
 2. 必須キー (`name` / `description` / `tools` / `model`) がすべて存在すること
 3. `tools` 値が DES-032 §3.1 の worker 表で規定された allowlist と一致すること
-   - reviewer: Read, Write, Bash
+   - reviewer: Read, Grep, Glob, Bash
    - evaluator: Read, Bash
    - fixer: Read, Edit, Write, Bash
 4. `name` がファイル名 (拡張子除く) と一致すること
@@ -32,7 +32,7 @@ AGENTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'agents'
 
 # DES-032 §3.1 worker 表で確定した tools allowlist (frozenset で順序非依存に比較)
 EXPECTED_TOOLS: dict[str, frozenset[str]] = {
-    'reviewer': frozenset({'Read', 'Write', 'Bash'}),
+    'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'evaluator': frozenset({'Read', 'Bash'}),
     'fixer': frozenset({'Read', 'Edit', 'Write', 'Bash'}),
 }
@@ -156,6 +156,16 @@ class TestAgentFrontmatter(unittest.TestCase):
                     f"DES-032 §3.1 と一致しない。"
                     f"expected={sorted(expected)} actual={sorted(actual)}",
                 )
+
+    def test_reviewer_is_read_only_and_inherits_model(self):
+        reviewer = AGENTS_DIR / 'reviewer.md'
+        self.assertTrue(reviewer.is_file())
+        fm = _parse_frontmatter_keys(_extract_frontmatter(reviewer))
+        tools = _parse_tools(fm['tools'])
+        self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob', 'Bash'}))
+        self.assertTrue({'Edit', 'Write', 'Agent'}.isdisjoint(tools))
+        self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
+        self.assertEqual(fm.get('permissionMode'), 'plan')
 
 
 if __name__ == '__main__':
