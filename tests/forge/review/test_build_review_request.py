@@ -218,6 +218,19 @@ class FocusTest(unittest.TestCase):
     同じ扱い）。
     """
 
+    def test_every_template_requires_the_marker_at_the_head_of_each_finding(self):
+        """返信形式契約が重大度マーカーの置き場を述べていること（REQ-013 FNC-1318）。
+
+        置き場を書かないと、レビュアーは重大度を見出しでグループ化した応答を返しうる。
+        その形は共通 parser が finding として抽出できず、ラウンド全体が `failure` になる
+        （実測: agent-review 初回実行で発生）。契約は parser が受理できる形で述べる。
+        """
+        for pattern in build_review_request.VALID_PATTERNS:
+            with self.subTest(pattern=pattern):
+                text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
+                self.assertIn("1 行目の行頭に重大度マーカー", text)
+                self.assertIn("重大度を見出し", text)
+
     def test_every_template_has_the_focus_token(self):
         for pattern in build_review_request.VALID_PATTERNS:
             with self.subTest(pattern=pattern):

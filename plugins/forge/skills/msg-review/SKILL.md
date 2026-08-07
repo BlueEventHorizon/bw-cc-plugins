@@ -171,7 +171,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
   --body-file "<純粋応答の一時ファイル>"
 ```
 
-出力の `judgment`（`approved` / `findings` / `failure`）と `findings` をそのまま本体へ返す。`failure` の `error` は理由として返す。完了宣言行は応答の最終有効行に厳密に 1 行だけ必要であり、`findings` の各所見には重大度マーカーが必要である。重大度が欠落した応答は共通 parser が `failure` にする。位置は `path` + `line` または `unknown: true` のどちらかであり、位置表現が欠落した応答も parser が `failure` にする。
+出力の `judgment`（`approved` / `findings` / `failure`）と `findings` をそのまま本体へ返す。`failure` の `error` は理由として返す。完了宣言行は応答の最終有効行に厳密に 1 行だけ必要であり、`findings` の各所見には重大度マーカーが必要である。重大度が欠落した応答は共通 parser が `failure` にする。位置は `path` + `line` または `unknown: true` のどちらかである。**位置表現が欠落した所見は parser が `unknown: true` として受理し、件数を `warnings` で返す**（1 件の欠落で他の所見を捨てない）。`warnings` はそのまま本体へ渡す。
 
 **解釈に失敗したことを `approved` に畳み込まない [MANDATORY]**。完了宣言行や重大度マーカーを取り出せないことは「指摘が無い」ことを意味しない。
 

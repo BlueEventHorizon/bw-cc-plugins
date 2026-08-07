@@ -224,10 +224,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
 - 宣言は `REVIEW_RESULT: approved` または `REVIEW_RESULT: findings` である
 - `findings` 宣言には重大度マーカー付きの所見が 1 件以上ある
 - 各所見は `critical` / `major` / `minor` の重大度を持つ
-- 各所見は `path` + `line` または `unknown: true` の位置を持つ
 - `approved` 宣言と所見が同時に存在しない
 
 違反時は所見を推測で補完せず `failure` を返す。`severity: unclassified` は生成しない。
+
+位置は例外である。各所見は `path` + `line` または `unknown: true` の位置を持つが、**応答から
+位置を取り出せない所見は `unknown: true` として受理し、件数を `warnings` で返す**。位置の欠落を
+理由にラウンドを `failure` にしない（1 件の欠落で他の所見を捨てないため。REQ-013 の共通書式契約）。
+位置が確定していない所見は本体側で自動修正の対象外となる（DES-046 §3.2）。
 
 ### 5.6 タイムアウト
 
@@ -340,17 +344,18 @@ sequenceDiagram
 
 ## 9. エラーフロー
 
-| 異常系                            | 挙動                                             |
-| --------------------------------- | ------------------------------------------------ |
-| 初期化または設定検査の不成立      | 送信せず `failure`                               |
-| 送信失敗                          | 起床・待機へ進まず `failure`                     |
-| 起床見送り・失敗                  | 結果を保持して待機を継続                         |
-| 待機タイムアウト                  | 診断情報付き `failure`、遅延返信を自動処理しない |
-| ワイヤヘッダ不正                  | `failure`                                        |
-| 完了宣言の欠落・複数・最終行違反  | 共通 parser の `failure`                         |
-| `findings` 所見の重大度・位置欠落 | 共通 parser の `failure`                         |
-| 履歴対象なし                      | `status: "not_found"` と理由                     |
-| 重複終了通知                      | 冪等に受理                                       |
+| 異常系                           | 挙動                                             |
+| -------------------------------- | ------------------------------------------------ |
+| 初期化または設定検査の不成立     | 送信せず `failure`                               |
+| 送信失敗                         | 起床・待機へ進まず `failure`                     |
+| 起床見送り・失敗                 | 結果を保持して待機を継続                         |
+| 待機タイムアウト                 | 診断情報付き `failure`、遅延返信を自動処理しない |
+| ワイヤヘッダ不正                 | `failure`                                        |
+| 完了宣言の欠落・複数・最終行違反 | 共通 parser の `failure`                         |
+| `findings` 所見の重大度欠落      | 共通 parser の `failure`                         |
+| `findings` 所見の位置表記の欠落  | 共通 parser が位置未確定として受理し `warnings`  |
+| 履歴対象なし                     | `status: "not_found"` と理由                     |
+| 重複終了通知                     | 冪等に受理                                       |
 
 ## 10. テスト設計
 
@@ -375,7 +380,7 @@ sequenceDiagram
 - `test_parse_findings.py`
   - 完了宣言行が最終有効行かつ一意である
   - 重大度欠落を `failure` とする
-  - 位置欠落を `failure` とする
+  - 位置表記の欠落を位置未確定として受理し、件数を `warnings` で返す（他の所見を捨てない）
   - `approved` と所見の矛盾を `failure` とする
 
 手動統合テストでは、既存 DB 履歴、ワイヤヘッダ送信、`in_reply_to` スレッド連鎖、
