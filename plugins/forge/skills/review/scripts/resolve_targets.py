@@ -7,15 +7,16 @@ JSON を標準出力へ返す。標準ライブラリのみ使用する（`git` 
 
 使い方:
     python3 resolve_targets.py --mode <diff|branch|files|dirs> \
-        [--files a,b,...] [--dirs d1,d2,...] [--project-root <path>]
+        [--files a,b,...] [--dirs d1,d2,...] [--base-branch <name>] \
+        [--project-root <path>]
 
 モードの挙動:
     diff:   HEAD に対する未 commit 変更（staged + unstaged）+ 未追跡ファイル
     branch: base ブランチとの merge-base 以降の全変更
             （commit 済み + 未 commit + 未追跡）。base ブランチは
+            `--base-branch` で明示的に受け取る。省略時に限り
             `.git_information.yaml` の `default_base_branch` → `develop` →
-            `main` → `master` の優先順位で、実際にリポジトリに存在する
-            ブランチを採用する
+            `main` → `master` の優先順位で自前解決する
     files:  指定ファイル（--files a,b,c のカンマ区切り）の存在検証のみ
     dirs:   指定ディレクトリ（--dirs d1,d2 のカンマ区切り）の存在検証と、
             配下ファイルの列挙
@@ -23,6 +24,11 @@ JSON を標準出力へ返す。標準ライブラリのみ使用する（`git` 
 `dirs` は `files` と異なり**範囲指定**である。返す `files`（配下ファイル）は
 修正フェーズの allowlist としてのみ使い、レビュアーへは `dirs` をそのまま渡す
 （REQ-013 FNC-1312。allowlist はレビュアーへ渡さないため同要件の対象外）。
+
+`branch` モードで `--base-branch` を受け取るのは、base を利用者への確認で確定する
+という REQ-013 の要求に allowlist 側も従わせるためである。呼び出し側が確定した base を
+渡せないと、依頼本文の差分範囲と allowlist が別々の base を起点にして食い違い、
+範囲内のファイルへの修正が allowlist 逸脱として上がる。
 
 対象 0 件・不在パスは status: error を返す。パスはすべて
 プロジェクトルート相対で返す。
@@ -280,8 +286,27 @@ def _result(status, mode, base_branch, files, dirs=None, warnings=None, error=No
 
 
 def resolve_targets(
-    mode: str, project_root: Path, files_arg: str | None, dirs_arg: str | None = None
+    mode: str,
+    project_root: Path,
+    files_arg: str | None,
+    dirs_arg: str | None = None,
+    base_branch_arg: str | None = None,
 ):
+    if base_branch_arg is not None and mode != "branch":
+        return _result(
+            "error", mode, None, [],
+            error=f"--base-branch は branch モードでのみ指定できます（指定モード: {mode}）",
+        )
+
+    # 空文字・空白のみを「省略」と同義にしない。省略と同義にすると、呼び出し側が
+    # 空の値を渡した場合に自前解決へ落ち、確定した base を渡していない事実が
+    # 出力から見えなくなる（非 branch モードでは error にしているため非対称にもなる）
+    if base_branch_arg is not None and not base_branch_arg.strip():
+        return _result(
+            "error", mode, None, [],
+            error="--base-branch に空の値は指定できません（省略する場合は引数自体を渡さないでください）",
+        )
+
     if mode == "files":
         candidates = _split_csv(files_arg)
         if not candidates:
@@ -355,16 +380,31 @@ def resolve_targets(
         return _result("ok", mode, None, files)
 
     if mode == "branch":
-        base_branch, base_ref = resolve_base_branch(project_root)
-        if base_branch is None:
-            return _result(
-                "error", mode, None, [],
-                error=(
-                    "base ブランチを解決できません（.git_information.yaml の "
-                    "default_base_branch / develop / main / master のいずれも"
-                    "リポジトリに存在しません）"
-                ),
-            )
+        if base_branch_arg is not None:
+            # 明示指定された base が存在しなければ fail closed とする。自前解決へ
+            # 落とすと、利用者が確定した base とは別の起点で allowlist が作られ、
+            # その食い違いが出力からは見えない
+            base_branch = base_branch_arg
+            base_ref = _branch_ref_if_exists(base_branch, project_root)
+            if base_ref is None:
+                return _result(
+                    "error", mode, base_branch, [],
+                    error=(
+                        f"指定された base ブランチが見つかりません: {base_branch}"
+                        "（ローカル・origin のいずれにも存在しません）"
+                    ),
+                )
+        else:
+            base_branch, base_ref = resolve_base_branch(project_root)
+            if base_branch is None:
+                return _result(
+                    "error", mode, None, [],
+                    error=(
+                        "base ブランチを解決できません（.git_information.yaml の "
+                        "default_base_branch / develop / main / master のいずれも"
+                        "リポジトリに存在しません）"
+                    ),
+                )
 
         try:
             files = get_branch_targets(project_root, base_ref)
@@ -405,6 +445,14 @@ def main() -> int:
         help="dirs モード用のカンマ区切りディレクトリパス（例: docs/specs/,src/）",
     )
     parser.add_argument(
+        "--base-branch",
+        default=None,
+        help=(
+            "branch モードの base ブランチ名（呼び出し側が利用者への確認で確定した値）。"
+            "省略時のみ .git_information.yaml / develop / main / master から自前解決する"
+        ),
+    )
+    parser.add_argument(
         "--project-root",
         default=None,
         help="プロジェクトルート（省略時は cwd を使う）",
@@ -413,7 +461,9 @@ def main() -> int:
 
     project_root = Path(args.project_root) if args.project_root else Path.cwd()
 
-    result = resolve_targets(args.mode, project_root, args.files, args.dirs)
+    result = resolve_targets(
+        args.mode, project_root, args.files, args.dirs, args.base_branch
+    )
     print(json.dumps(result, ensure_ascii=False))
     return 0
 

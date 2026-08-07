@@ -182,8 +182,8 @@ def parse_findings(body: str) -> list[dict]:
     finding 開始として扱わない**: 見出し行はマーカーの前に `#` を持つため開始判定に
     一致せず、配下の所見にはマーカーが無い。ここで見出しから severity を継承させると
     「マーカーのない本文を推測で finding に変換しない」原則を破り、finding の境界も
-    曖昧になる。マーカーを所見 1 行目の行頭に置くことは依頼テンプレートの返信形式契約
-    がレビュアーへ要求する（REQ-013 FNC-1318 の共通書式）。
+    曖昧になる。マーカーを所見 1 行目の行頭に置くことは、依頼テンプレートの返信形式契約
+    がレビュアーへ要求する。
     """
     lines = body.splitlines()
     declarations, _ = _completion_declarations(body)

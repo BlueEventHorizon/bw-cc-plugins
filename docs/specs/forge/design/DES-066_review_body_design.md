@@ -124,13 +124,29 @@ review:
 | `SKILL.md`                   | 引数解釈・パターン確定・バックエンド委譲・所見評価・修正の実施 |
 | `resolve_review_backend.py`  | 明示指定・設定・既定の候補順から解決順を決める（§2.1）         |
 | `analyze_branch_point.py`    | `--branch` の base 候補を分岐点解析で推定する                  |
-| `resolve_targets.py`         | 対象の実在検証と allowlist（target_files）の供給               |
+| `resolve_targets.py`         | 対象の実在検証と allowlist（target_files）の供給（§3.1.1）     |
 | `build_review_request.py`    | テンプレートへの動的データ埋め込みと `review_id` の生成        |
 | `gate_findings.py`           | 介入軸による所見の振り分け（auto_fix / excluded）              |
 | `capture_syntax_baseline.py` | 修正前の構文検証 baseline の取得                               |
 | `verify_fix_safety.py`       | allowlist 逸脱・構文破壊の検出（ロールバックはしない）         |
 | `collect_modified_files.py`  | ラウンド終了時の変更集合の独立取得                             |
 | `finalize_review.py`         | 終端判定と終了通知の要否の決定（単一の出口）                   |
+
+#### 3.1.1 base ブランチの受け渡し [MANDATORY]
+
+`--branch` の base は `analyze_branch_point.py` の候補を利用者に確認して確定する（REQ-013）。確定した base は `resolve_targets.py --base-branch` へ渡し、allowlist もその base を起点に列挙する。
+
+`resolve_targets.py` は `--base-branch` を省略された場合に限り `.git_information.yaml` / `develop` / `main` / `master` から自前解決する。この自前解決は base 確定を持たない呼び出し向けの縮退経路であり、`/forge:review` 本体は使わない。指定された base が存在しないときは自前解決へ落とさず `error` を返す（fail closed）。
+
+依頼本文の差分範囲と allowlist が別々の base を起点にすると、レビュー範囲内のファイルへの修正が Step 7 の安全検証で allowlist 逸脱として上がる。逸脱の一覧だけを見ても、それが本物の逸脱なのか起点の食い違いなのかを判別できない。
+
+#### 3.1.2 ラウンドごとの変更集合の確認 [MANDATORY]
+
+本体はラウンドの委譲直前と結果受領直後に `collect_modified_files.py` で変更集合を取得し、差を取る。ラウンド中に本体は編集を行わないため、新たに現れた変更はレビュアー側で発生したものである。検出した場合は変更されたパスを利用者へ報告する。
+
+判定によらず毎ラウンド行う。`approved` のラウンド・修正を実施しなかったラウンドでも省略しない。**Step 7 手順 3 の独立検証では代替できない**——あれは修正を実施した場合にしか走らず、修正が無いラウンドではレビュアーの変更を検出する経路が存在しなくなる。
+
+**採用理由**: レビュアーが成果物を変更しないことを、レビュアーに与える能力の限定では保証できない（DES-072 §2.2）。役割定義の禁止は指示への追従に依存し、能力の限定は対象の確定に必要な読み取り用途のコマンド実行と分離できない。保証を「変更できないこと」から「変更されたら必ず見えること」へ移すため、検出を本体に置く。検出は既存スクリプトの呼び出しと集合の差分であり、ラウンドあたりの費用は一定である。
 
 ### 3.2 終端処理の単一出口 [MANDATORY]
 
@@ -255,6 +271,8 @@ sequenceDiagram
 | 同上                        | 可用性検査を行わないこと（判定は各バックエンドの責務）                                                                                                  |
 | 同上                        | 既定順が `agent-review`、`msg-review` であること                                                                                                        |
 | `parse_findings.py`         | `path:line` の path が一般的な相対・絶対・Windows パスまたは既知の拡張子なしファイル名らしい場合だけ位置として採用し、`Issue:123` や `12:34` を拒否する |
+| `resolve_targets.py`        | `--base-branch` で渡した base が allowlist の起点になること。不在の base では自前解決へ落ちず `error` になること（§3.1.1）                              |
+| `collect_modified_files.py` | ラウンド前後の差分比較に使えること（既存テストを維持）。**比較そのものは SKILL.md の手順であり本テストの対象外**（§3.1.2）                              |
 | 既存スクリプト              | 対象解決・依頼組み立て・振り分け・安全検証は従来のテストを維持する                                                                                      |
 
 SKILL.md はテスト対象外であるため、終端判定と通知の要否をスクリプトへ切り出して経路網羅を担保する。
