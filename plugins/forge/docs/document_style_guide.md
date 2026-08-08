@@ -215,7 +215,7 @@ OS フレームワーク名（SwiftUI、UIKit、Combine 等）は固有名でも
 
 - 変更の履歴は `CHANGELOG.md`（および git 履歴）を SoT とする
 - 設計判断の変更（なぜ A から B に変えたか）は ADR に記録する
-- **例外**: ADR 自身のステータス遷移（proposed → accepted 等）の記録は、意思決定記録の一部として ADR 内に残してよい（ADR の書式: [adr_format.md](adr_format.md)）
+- **例外**: ADR が保持する棄却の経緯は履歴ではない。**一度採って戻した事実（A → B → A）は、現在の棄却理由が依拠する前提の一部**であり、ADR 内に残す（ADR の書式: [adr_format.md](adr_format.md) / 運用: [design_principles_spec.md](design_principles_spec.md)「ADR の運用」）。日付と状態遷移を並べた表は履歴であり、ADR にも置かない
 
 ---
 

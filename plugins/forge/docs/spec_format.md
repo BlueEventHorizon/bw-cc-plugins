@@ -72,7 +72,7 @@ specs/
 | `DES-xxx` | 設計書（汎用）                | モジュール設計・画面設計・機能設計   |
 | `ADR-xxx` | アーキテクチャ決定記録（ADR） | 設計判断の根拠・選択した代替案の記録 |
 
-ADR（Architecture Decision Record）は設計書と同じディレクトリに配置する。したがって `.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても、設計ディレクトリ配下に置く限り `next-spec-id` の git スキャンで採番できる。ADR の ID 採番は手動で決めず、必ず `next-spec-id` スキル（`python3 scan_spec_ids.py ADR --share-prefixes ADR,DES`）で取得する。ADR と DES は同一ディレクトリで通し番号を共有するため `--share-prefixes ADR,DES` を必ず付与する。書式（テンプレート・Status 値・追記型の運用）は [adr_format.md](adr_format.md) に従う。
+ADR（Architecture Decision Record）は設計書と同じディレクトリに配置する。したがって `.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても、設計ディレクトリ配下に置く限り `next-spec-id` の git スキャンで採番できる。ADR の ID 採番は手動で決めず、必ず `next-spec-id` スキル（`python3 scan_spec_ids.py ADR --share-prefixes ADR,DES`）で取得する。ADR と DES は同一ディレクトリで通し番号を共有するため `--share-prefixes ADR,DES` を必ず付与する。書式（テンプレート・節の構成・失効マーカーの記法）は [adr_format.md](adr_format.md) に、運用は [design_principles_spec.md](design_principles_spec.md)「ADR の運用」に従う。
 
 ---
 
