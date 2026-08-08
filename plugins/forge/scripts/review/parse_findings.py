@@ -64,7 +64,7 @@ _CONVENTIONAL_EXTENSIONLESS_FILES_FOLDED = frozenset(
 # 行頭（任意の箇条書き記号 `-`/`*` または番号付け `1.` を除いた直後）に severity
 # マーカーがある行のみを finding の開始とみなす。文中・引用・コード例に偶然出現する
 # マーカー（例:「概要: 🟡 major の基準を参照しました。」）を誤って finding として
-# 抽出しないため（実 Codex レビューで発見）。
+# 抽出しないため（実レビューで発見）。
 FINDING_START_RE = re.compile(r"^(?:[-*]|\d+\.)?\s*(🔴|🟡|🟢)")
 
 
@@ -72,7 +72,7 @@ def _is_indented_code_line(raw_line: str) -> bool:
     """CommonMark のインデントコードブロック（行頭4スペースまたはタブ）かどうかを判定する。
 
     fenced code block（\\`\\`\\`）だけでなく、Markdown のもう一つの標準的なコード
-    ブロック記法も除外対象にする（実 Codex レビューで発見: `.lstrip()` によって
+    ブロック記法も除外対象にする（実レビューで発見: `.lstrip()` によって
     インデントが失われ、インデントコードブロック内の例示マーカーが finding として
     誤抽出されていた）。
     """
@@ -174,7 +174,7 @@ def parse_findings(body: str) -> list[dict]:
     **fenced code block 内は finding 開始として扱わない**: 自由記述 Markdown では
     返信形式の例や既存所見の引用をコードブロック（\\`\\`\\` または ~~~ で囲まれた範囲）
     で示すことがあり、その中に severity マーカーが含まれていても実在しない finding
-    として抽出してしまう（実 Codex レビューで発見）。フェンス行（\\`\\`\\` 始まりの行）を
+    として抽出してしまう（実レビューで発見）。フェンス行（\\`\\`\\` 始まりの行）を
     追跡し、フェンス内では finding の開始判定を行わない（既存 finding の本文継続、
     または抽出対象外とする）。
 

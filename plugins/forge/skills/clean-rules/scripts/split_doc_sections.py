@@ -3,7 +3,7 @@
 """project rules と forge docs を ## 見出しでセクション分割し JSON 出力する。
 
 重複検出そのものは行わない。両者のセクションを構造化（file / heading / text /
-line）して返し、対応関係の判定は SKILL.md の指示に従い Claude（LLM）が担当する。
+line）して返し、対応関係の判定は SKILL.md の指示に従い呼び出し側の AI が担当する。
 
 Embedding や外部 API は使用しない（標準ライブラリのみ）。
 

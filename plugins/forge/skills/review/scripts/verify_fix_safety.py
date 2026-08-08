@@ -3,7 +3,7 @@
 
 `confirmed_fix` の所見を1件適用した直後に呼ぶ、**検出・報告専用**（ファイルを一切変更しない）
 スクリプト。allowlist（target_files）逸脱の検出と、修正後ファイルの構文検証を行い、結果を
-JSON で返す。ロールバックの実行判断・実施は本スクリプトの責務外であり、Claude 自身が
+JSON で返す。ロールバックの実行判断・実施は本スクリプトの責務外であり、呼び出し側が
 この結果を見て判断する（DES-047 §2 見直し: allowlist/構文エラーは「常に間違い」とは限らず、
 レビュー基準に照らして正当な波及修正がありうるため、スクリプトが自動でファイルを書き戻す
 設計は採らない）。
@@ -72,7 +72,7 @@ def _check_dprint(path: str, baseline_files: dict, project_root: str | None) -> 
 # py_compile モジュールの明示的な compile() 呼び出しには効かない）。本スクリプトは
 # 「ファイルを一切書き換えない」検出専用スクリプトであり（§2.1）、py_compile ではこの契約を
 # 満たせないため、ファイルを一切生成しない ast.parse による構文検査を使う
-# （実 Codex レビューで py_compile 由来の __pycache__ 残留を発見）。
+# （実レビューで py_compile 由来の __pycache__ 残留を発見）。
 _PY_SYNTAX_CHECK_SCRIPT = (
     "import ast, sys\n"
     "with open(sys.argv[1], encoding='utf-8') as f:\n"
@@ -120,7 +120,7 @@ def verify(
             # 削除された正当なファイル（`modified_files` は変更・削除・rename後の現在パスを
             # 区別せず一律で渡ってくる。DES-047 §3.5）。存在しないファイルに構文検証コマンドを
             # 実行すると「ファイルがない」という無関係なエラーになり、正当な削除を伴う修正が
-            # 不当に構文エラー扱いされる（実 Codex レビューで発見）。allowlist 検証は
+            # 不当に構文エラー扱いされる（実レビューで発見）。allowlist 検証は
             # 通常どおり行い（削除であっても allowlist 外なら逸脱として検出する）、
             # 構文検証のみスキップする。
             syntax_skipped_deleted.append(path)

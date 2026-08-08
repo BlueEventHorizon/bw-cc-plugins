@@ -1,6 +1,12 @@
 # Review Guide
 
-Have a resident Codex session review your code and documents, while Claude drives the evaluation, fixing, re-request, and completion decisions. Splitting "who reports" from "who fixes" across two different AIs avoids the failure mode where an AI approves its own work.
+Request a review of your code and documents; whatever runs the skill drives the evaluation, fixing, re-request, and completion decisions.
+
+**What you hand over** is the review target plus the perspectives that apply to it (the plugin-bundled criteria and your project's own rules and specifications). **What comes back** is a verdict (approved / findings / failure) and an array of findings (severity, location, body).
+
+Findings are **observations, not instructions**. The requesting side decides what to take and what to drop; the reviewer holds no authority over that. Review quality therefore depends not on _who_ reviewed, but on **whether the input you handed over was right**.
+
+The subject that actually performs the review is swappable (see "Review backends"). The criteria documents, the request format, the finding format, the gating, and the fix-safety checks are the same whichever subject you pick.
 
 ## review
 
@@ -198,16 +204,16 @@ flowchart TD
 
     REQ["Request mode<br/>resolve targets, collect rules, build request"] --> SEND
 
-    SEND["Send to Codex + push wake"] --> WAIT
+    SEND["Delegate the round to the backend"] --> WAIT
 
-    WAIT["Block waiting for the reply"] --> RESULT
+    WAIT["One round trip with the reviewer,<br/>inside the backend"] --> RESULT
 
-    RESULT{Codex completion verdict}
-    RESULT -->|"Timeout"| FAIL["Report a definitive failure<br/>(no fallback)"]
+    RESULT{Verdict returned by the backend}
+    RESULT -->|"Failure"| FAIL["Report a definitive failure<br/>(no fallback)"]
     RESULT -->|"Approved"| DONE["Done. Summary report"]
     RESULT -->|"Findings"| EVAL
 
-    EVAL["Evaluate each finding<br/>valid / unnecessary / Codex misread"] --> GATE
+    EVAL["Evaluate each finding<br/>valid / unnecessary / misread"] --> GATE
 
     GATE["Gate auto-fix scope by severity"] --> CONFIRM
 
@@ -222,17 +228,21 @@ flowchart TD
     REPLY["Reply with disposition table + re-review request"] --> WAIT
 ```
 
-### Claude Evaluates the Findings
+### The Requesting Side Evaluates the Findings
 
-Codex's findings are never applied blindly. Each one is judged against the **same** `review_criteria_<type>.md` that was sent with the request.
+**Findings are observations, not instructions.** The requesting side decides what to take and what to drop; a finding that does not hold up is dropped with the reason recorded, and if none of them hold up, all of them are dropped. The severity the reviewer assigned only bounds the auto-fix candidate set — it carries no authority over the decision.
+
+Each finding is judged against the **same** `review_criteria_<type>.md` that was sent with the request.
 
 | Verdict             | Action                                                               |
 | ------------------- | -------------------------------------------------------------------- |
 | Valid finding       | Decide the fix after weighing blast radius and alternatives          |
 | Unnecessary finding | Drop it; record "determined not applicable" in the disposition table |
-| Based on a misread  | Drop it, or ask Codex to reconsider in the next round                |
+| Based on a misread  | Drop it, or ask the reviewer to reconsider in the next round         |
 
 Using the same criteria on both sides prevents both arbitrary rejection under a different standard and unconditional acceptance.
+
+The only lever for better review results is **getting the input right** — the criteria, rules, target, emphasis, and target completeness you hand over determine the outcome.
 
 ### Fix Safety Boundaries
 
@@ -242,16 +252,16 @@ Fixes are not batched. Each finding goes through **apply → verify → decide �
 - **Syntax check**: compares against a pre-fix baseline to detect newly introduced syntax errors
 - **End-of-round independent check**: the above rely on self-reported edited paths, so they cannot catch an omission. The round's whole change set is re-checked without relying on self-reporting
 
-The verification scripts **only detect**; they never roll back automatically. Deciding between an accidental deviation and a legitimate ripple edit is Claude's job.
+The verification scripts **only detect**; they never roll back automatically. Deciding between an accidental deviation and a legitimate ripple edit is the job of whatever runs the skill.
 
 ### Convergence
 
-Re-requesting a review while findings remain unaddressed makes Codex report the same findings forever. Therefore, **if no fix is to be applied this round, no re-review is requested and the review completes.**
+Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if no fix is to be applied this round, no re-review is requested and the review completes.**
 
-That completion differs from Codex approving the work, and the summary distinguishes them:
+That completion differs from completing by approval, and the summary distinguishes them:
 
-- **Completed by approval**: Codex reported no findings
-- **Completed with unaddressed findings**: Codex still reports findings, but none were in scope this round
+- **Completed by approval**: the reviewer reported no findings
+- **Completed with unaddressed findings**: the reviewer still reports findings, but none were in scope this round
 
 In the latter case every unfixed finding is listed with its reason (out of severity scope / severity undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
 
@@ -279,7 +289,7 @@ Findings whose severity could not be determined are excluded from auto-fix and l
 
 ### Review Criteria
 
-The request embeds the paths of the type-specific criteria file and the project documents relevant to the target. Codex reads them itself, read-only.
+The request embeds the paths of the type-specific criteria file and the project documents relevant to the target. The reviewer reads them itself.
 
 | Source                 | Content                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------- |
