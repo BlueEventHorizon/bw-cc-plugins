@@ -71,18 +71,18 @@ flowchart LR
 
 ### 2.2 役割分担（Skill 単位）
 
-| Skill                      | 種別                                       | 責務                                                                                          |
-| -------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `anvil:create-issue`       | user-invocable                             | FNC-01。Issue 種別（Bug Report / Feature Request）を確認し、必須セクションを満たす Issue 起票 |
-| `anvil:impl-issue`         | AI-only（`triage-issue` 経由。Issue #188） | FNC-02。Issue 番号を入口に SDD パイプライン → PR 作成までをオーケストレーション               |
-| `anvil:update-issue`       | AI-only                                    | FNC-03。Issue 本文の機械追記セクション（成果物リンク・進捗）を冪等に書き戻し                  |
-| `anvil:prepare-figma`      | AI-only                                    | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（汎用 Agent として呼ばれる）               |
-| `anvil:resolve-figma-node` | AI-only                                    | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
-| `anvil:figma-mcp-guide`    | リファレンス                               | Figma MCP の知識ベース（呼び出されず参照される）                                              |
+| Skill                      | 種別                           | 責務                                                                                          |
+| -------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `anvil:create-issue`       | user-invocable                 | FNC-01。Issue 種別（Bug Report / Feature Request）を確認し、必須セクションを満たす Issue 起票 |
+| `anvil:impl-issue`         | AI-only（`triage-issue` 経由） | FNC-02。Issue 番号を入口に SDD パイプライン → PR 作成までをオーケストレーション               |
+| `anvil:update-issue`       | AI-only                        | FNC-03。Issue 本文の機械追記セクション（成果物リンク・進捗）を冪等に書き戻し                  |
+| `anvil:prepare-figma`      | AI-only                        | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（汎用 Agent として呼ばれる）               |
+| `anvil:resolve-figma-node` | AI-only                        | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
+| `anvil:figma-mcp-guide`    | リファレンス                   | Figma MCP の知識ベース（呼び出されず参照される）                                              |
 
 委譲のみで内部処理を持たない skill（`anvil:commit`, `anvil:create-pr`）は既存のまま流用する。
 
-> **既知の乖離（Issue #188 対応時点）**: `anvil:impl-issue` の起動経路は `anvil:triage-issue` 経由に一本化された（上表のみ実態へ追随済み）。本文書のシーケンス図等に残る `/anvil:impl-issue #N` 直接起動の記述は旧設計であり、フロー全体の現在の SoT は `docs/specs/anvil/triage-flow/requirements/` と各 SKILL.md を参照。
+> **既知の乖離**: `anvil:impl-issue` の起動経路は `anvil:triage-issue` 経由に一本化された（上表のみ実態へ追随済み）。本文書のシーケンス図等に残る `/anvil:impl-issue #N` 直接起動の記述は旧設計であり、フロー全体の現在の SoT は `docs/specs/anvil/triage-flow/requirements/` と各 SKILL.md を参照。
 
 ---
 

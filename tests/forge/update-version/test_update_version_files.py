@@ -83,7 +83,7 @@ class TestVersionPath(unittest.TestCase):
             update_version_in_text(content, "999.88.7", "999.88.8", version_path="version")
 
     def test_three_level_path_with_duplicate_intermediate_key_updates_correct_block(self):
-        """Issue #175 単独修正レビューで検出: 3階層パスで同名の中間キーが複数存在する場合、
+        """3階層パスで同名の中間キーが複数存在する場合、
         parts[-2] だけでなく親キーチェーン全体をたどって正しいブロックを更新する"""
         content = (
             '{\n'
@@ -99,7 +99,7 @@ class TestVersionPath(unittest.TestCase):
         self.assertIn('"b": {"package": {"version": "999.88.8"}}', result)
 
     def test_nested_path_missing_does_not_update_sibling_scope(self):
-        """Issue #180: b.package.version が存在しない場合、b より後方の
+        """b.package.version が存在しない場合、b より後方の
         トップレベル package.version を誤更新せず ValueError を送出する"""
         content = (
             '{\n'
@@ -113,7 +113,7 @@ class TestVersionPath(unittest.TestCase):
             )
 
     def test_nested_path_parent_value_not_object_raises(self):
-        """Issue #180: 親キーの値がオブジェクトでない場合は境界を特定できないため
+        """親キーの値がオブジェクトでない場合は境界を特定できないため
         後方の同名フィールドを更新せず ValueError を送出する"""
         content = (
             '{\n'
@@ -127,7 +127,7 @@ class TestVersionPath(unittest.TestCase):
             )
 
     def test_nested_path_drift_detected_within_scope_only(self):
-        """Issue #180: ドリフト判定もスコープ内に限定される。
+        """ドリフト判定もスコープ内に限定される。
         b.package.version は存在するが値が不一致 → VersionDriftError
         （後方の一致する値に流れない）"""
         content = (
@@ -142,7 +142,7 @@ class TestVersionPath(unittest.TestCase):
             )
 
     def test_nested_path_brace_in_string_does_not_break_scope(self):
-        """Issue #180 境界: 文字列値に含まれる波括弧がスコープ判定を壊さない"""
+        """境界条件: 文字列値に含まれる波括弧がスコープ判定を壊さない"""
         content = (
             '{\n'
             '  "package": {\n'
@@ -157,7 +157,7 @@ class TestVersionPath(unittest.TestCase):
         self.assertIn('"version": "999.88.8"', result)
 
     def test_nested_path_toml_inline_table(self):
-        """Issue #180 回帰確認: TOML inline table 形式（key = { ... }）でも
+        """回帰確認: TOML inline table 形式（key = { ... }）でも
         スコープ内の version を更新できる"""
         content = 'package = { name = "x", version = "999.88.7" }\nversion = "0.1.0"\n'
         result = update_version_in_text(
@@ -181,7 +181,7 @@ class TestVersionPath(unittest.TestCase):
         self.assertNotIn('"0.6.10"', result)
 
     def test_quoted_version_path_normalized(self):
-        """Issue #115 提案2: 引用符込みの version_path でも一致する"""
+        """引用符込みの version_path でも一致する"""
         content = '{\n  "version": "999.88.7"\n}'
         # ダブルクォート込み
         result = update_version_in_text(content, "999.88.7", "999.88.8", version_path='"version"')
@@ -191,7 +191,7 @@ class TestVersionPath(unittest.TestCase):
         self.assertIn('"999.88.8"', result2)
 
     def test_quoted_nested_version_path_normalized(self):
-        """Issue #115 提案2: 引用符込みのネスト version_path でも一致する"""
+        """引用符込みのネスト version_path でも一致する"""
         content = '{\n  "metadata": {\n    "version": "999.88.7"\n  }\n}'
         result = update_version_in_text(
             content, "999.88.7", "999.88.8", version_path='"metadata.version"'
@@ -200,7 +200,7 @@ class TestVersionPath(unittest.TestCase):
 
 
 class TestChangelogHeader(unittest.TestCase):
-    """Issue #115 提案3: version_path: changelog_header のテスト"""
+    """version_path: changelog_header のテスト"""
 
     def test_keep_a_changelog_with_v(self):
         """## [vX.Y.Z] 形式: v と角括弧を保持して version を更新"""
@@ -281,13 +281,13 @@ class TestFilterPattern(unittest.TestCase):
             update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
 
     def test_filter_not_found_raises_filter_not_found_error(self):
-        """Issue #157: filter パターン自体が無い場合は FilterNotFoundError（対象外）"""
+        """filter パターン自体が無い場合は FilterNotFoundError（対象外）"""
         content = '| **anvil** | 888.77.6 | desc |'
         with self.assertRaises(FilterNotFoundError):
             update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
 
     def test_filter_found_but_version_missing_raises_drift_error(self):
-        """Issue #157: filter は見つかるがバージョンが不一致な場合は VersionDriftError（ドリフト）"""
+        """filter は見つかるがバージョンが不一致な場合は VersionDriftError（ドリフト）"""
         content = '| **forge** | 0.2.2 | desc |'
         with self.assertRaises(VersionDriftError):
             update_version_in_text(content, "999.88.7", "999.88.8", filter_pattern="**forge**")
@@ -351,7 +351,7 @@ class TestFilterPattern(unittest.TestCase):
 
 
 class TestVersionPathDrift(unittest.TestCase):
-    """Issue #175: version_path (filter 無し) 経路のドリフト判定テスト"""
+    """version_path (filter 無し) 経路のドリフト判定テスト"""
 
     def test_top_level_field_exists_but_value_mismatch_raises_drift_error(self):
         """フィールドは存在するが値が old_version と不一致 → VersionDriftError"""
@@ -468,7 +468,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
     def test_optional_drift_cli(self):
-        """Issue #157: --optional でも drift（filter はあるがバージョン不一致）は
+        """--optional でも drift（filter はあるがバージョン不一致）は
         status: drift として区別され、exit 0（書き戻しはスキップ）"""
         content = '| **forge** | 0.2.2 | desc |'
         result = self._run(
@@ -488,7 +488,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
     def test_optional_path_drift_cli(self):
-        """Issue #175: --version-path (filter 無し) でも --optional 併用時の drift は
+        """--version-path (filter 無し) でも --optional 併用時の drift は
         status: drift として区別され、exit 0（書き戻しはスキップ）"""
         content = '{"version": "0.2.2"}'
         result = self._run(
@@ -516,7 +516,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
     def test_file_not_found_with_optional_is_skipped_cli(self):
-        """Issue #175: --optional 指定時はファイル不在も status: skipped で exit 0
+        """--optional 指定時はファイル不在も status: skipped で exit 0
         （DES-023 §5.2「sync_file 不在 + optional: true → スキップ（警告なし）」）"""
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / 'update_version_files.py'),

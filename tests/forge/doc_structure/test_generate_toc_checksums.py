@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""generate_toc_checksums.py のユニットテスト（Issue #158）。
+"""generate_toc_checksums.py のユニットテスト。
 
 実行:
   python3 -m unittest tests.forge.doc_structure.test_generate_toc_checksums -v

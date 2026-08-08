@@ -3,8 +3,7 @@
 update-version/scripts/update_optional_filtered.py のテスト
 
 `update_version_files.py {file} {cur} {new} --filter {filter} --optional` を
-呼び出し、成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する
-(Issue #139)。
+呼び出し、成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する。
 
 実行:
   python3 -m unittest tests.forge.update-version.test_update_optional_filtered -v

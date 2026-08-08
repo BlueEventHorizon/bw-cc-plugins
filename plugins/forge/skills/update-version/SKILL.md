@@ -183,7 +183,7 @@ git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 python3 ${CLAUDE_SKILL_DIR}/scripts/update_main_version.py {version_file} {current_version} {new_version} {version_path}
 ```
 
-ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認し、`status: "error"` の場合はエラー内容を報告して終了する。orchestrator AI 側で別途 Write する手順は不要。
+ラッパーは exit 0 で対象ファイルを直接書き換える。stderr の JSON で `status` を確認し、`status: "error"` の場合はエラー内容を報告して終了する。orchestrator AI 側で別途 Write する手順は不要。
 
 #### 6-2. sync_files の更新
 
@@ -209,7 +209,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/update_main_version.py {version_file} {curre
      python3 ${CLAUDE_SKILL_DIR}/scripts/update_optional_filtered.py {path} {current_version} {new_version} "{filter}"
      ```
    optional ラッパーでパターン未マッチ時はスクリプトが `{"status": "skipped"}` または `{"status": "drift"}` を返して exit 0 で終了する。この場合ラッパーは書き戻しをスキップする。
-3. ラッパーは exit 0 で対象ファイルを直接書き換える（Issue #139 修正）。stderr の JSON で `status` を確認:
+3. ラッパーは exit 0 で対象ファイルを直接書き換える。stderr の JSON で `status` を確認:
    - `status: "ok"` → 対象ファイルが更新済み
    - `status: "skipped"` → optional かつ filter パターン自体がファイルに存在しない（対象外。正常系）
    - `status: "drift"` → optional かつ filter パターンは見つかったがブロック内に現在バージョンが見当たらない（**ドリフト**: そのファイルの記載バージョンが既に古い値のまま蓄積している可能性）。`skipped` と異なり見過ごすべきではない。Step 6-3 の完了メッセージで `drift` が 1 件でもあれば必ず目立つ警告として利用者に提示すること（対象ファイル・filter を明記）

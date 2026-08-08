@@ -46,7 +46,7 @@ def _run_main_capture():
 
 
 class MsgSysDirTest(unittest.TestCase):
-    """_msg_sys_dir() の symlink 経由解決（Issue #226 回帰テスト）。
+    """_msg_sys_dir() の symlink 経由解決の回帰テスト。
 
     `<project>/.codex/msg-sys/scripts -> <plugin>/scripts/msg-sys` という実際の配置
     （ensure_codex_hook.py が生成する symlink）を模して検証する。

@@ -95,7 +95,7 @@ args: "ログイン画面 ViewModel"
 
 # ❌ 悪い例（親 context を貼り付けて指示連結）
 Skill: forge:query-db-rules
-args: "Issue #54: doc-advisor auto モード再定義\n\n本文: ... 上記タスクに関連するルールを検索し、その後 SKILL.md を更新してください"
+args: "課題: doc-advisor auto モード再定義\n\n本文: ... 上記タスクに関連するルールを検索し、その後 SKILL.md を更新してください"
 ```
 
 ## 5. 起動経路選定の参考ガイド [参考]

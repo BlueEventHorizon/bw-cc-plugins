@@ -14,7 +14,7 @@ import json
 import re
 import sys
 
-# 先頭 `v` を許容する（CHANGELOG を canonical version source にするケース、Issue #115 提案3）。
+# 先頭 `v` を許容する（CHANGELOG を canonical version source にするケース）。
 # `v` は normalize して計算し、出力は数値 X.Y.Z 形式に統一する。
 SEMVER_PATTERN = re.compile(r'^[vV]?(\d+)\.(\d+)\.(\d+)$')
 BUMP_SPECS = ('patch', 'minor', 'major')

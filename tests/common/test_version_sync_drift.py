@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""sync_files のバージョンドリフト契約テスト（Issue #157 / #175）。
+"""sync_files のバージョンドリフト契約テスト。
 
 `.version-config.yaml` の sync_files に列挙された各ファイルが、
 version_file の現行バージョンと同期しているかを検証する。
@@ -7,12 +7,12 @@ version_file の現行バージョンと同期しているかを検証する。
 - filter パターン自体がファイルに存在しない場合、`optional: true` エントリのみ
   対象外として許容する。`optional` でないエントリの filter 消失（設定の filter が
   ファイル内容の変化で一致しなくなった等）は、それ自体が見逃してはいけない不整合
-  として fail する（Issue #175: 従来は optional の有無を問わず一律 continue しており、
-  必須エントリの filter 消失を見逃していた）
+  として fail する（optional の有無を問わず一律 continue すると、
+  必須エントリの filter 消失を見逃す）
 - filter パターンは存在するのに現行バージョンが見当たらない場合（ドリフト）は fail する
 - filter 無し（version_path 使用）の sync_file でも同様にドリフトを検出する
   （本リポジトリの現行 config には filter 無し sync_file が存在しないため、
-  合成データによる回帰テストで契約を担保する。Issue #175）
+  合成データによる回帰テストで契約を担保する）
 
 これにより README_en.md のようなファイルが optional スキップで
 サイレントに古いバージョン表記のまま放置される事態を CI で検出する。
@@ -47,7 +47,7 @@ def _is_optional_flag(sync):
     `get_version_status.py` の手製 YAML パーサーはスカラー値を文字列のまま返す
     （bool にキャストしない）ため、`optional: false` も文字列 `"false"` になる。
     `bool("false")` は Python では `True` になるため、単純な `bool()` 変換では
-    `optional: false` を明示したエントリまで optional 扱いになってしまう（Issue #175）。
+    `optional: false` を明示したエントリまで optional 扱いになってしまう。
     """
     value = sync.get("optional")
     if value is None:
@@ -102,7 +102,7 @@ class TestSyncFilesNoDrift(unittest.TestCase):
                     if is_optional:
                         # optional かつ filter パターン自体が無い（対象外）は許容
                         continue
-                    # Issue #175: optional でないエントリの filter 消失は、
+                    # optional でないエントリの filter 消失は、
                     # そのエントリが今後一切更新されなくなる不整合であり見逃せない
                     drifted.append(
                         f"{sync['path']} (target={target['name']}): "
@@ -117,7 +117,7 @@ class TestSyncFilesNoDrift(unittest.TestCase):
 
 
 class TestFilterlessOptionalSyncFileDrift(unittest.TestCase):
-    """Issue #175: filter 無し（version_path 使用）sync_file のドリフト検出を保証する回帰テスト。
+    """filter 無し（version_path 使用）sync_file のドリフト検出を保証する回帰テスト。
 
     本リポジトリの `.version-config.yaml` は全 sync_files に filter が設定されているため、
     実データではこの経路は顕在化しない。下流プロジェクトで filter 無し optional sync_file
@@ -138,7 +138,7 @@ class TestFilterlessOptionalSyncFileDrift(unittest.TestCase):
 
 
 class TestIsOptionalFlag(unittest.TestCase):
-    """Issue #175: `optional` フラグの文字列→真偽値解釈の回帰テスト。
+    """`optional` フラグの文字列→真偽値解釈の回帰テスト。
 
     手製 YAML パーサーはスカラー値を文字列のまま返すため、
     `optional: false` を素朴に `bool()` で解釈すると常に `True` になってしまう。

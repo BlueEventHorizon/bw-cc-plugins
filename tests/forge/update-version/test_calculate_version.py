@@ -43,7 +43,7 @@ class TestParseSemver(unittest.TestCase):
             parse_semver("1.2.3.4")
 
     def test_v_prefix_allowed(self):
-        """Issue #115 提案3: 先頭 v を許容し normalize する"""
+        """先頭 v を許容し normalize する"""
         self.assertEqual(parse_semver("v1.2.3"), (1, 2, 3))
         self.assertEqual(parse_semver("V0.6.9"), (0, 6, 9))
         self.assertEqual(parse_semver("  v1.2.3  "), (1, 2, 3))
@@ -120,13 +120,13 @@ class TestBumpVersion(unittest.TestCase):
         self.assertEqual(result["current"], "999.88.7")
 
     def test_v_prefix_current_normalized(self):
-        """Issue #115 提案3: v 付き current は数値に normalize される"""
+        """v 付き current は数値に normalize される"""
         result = bump_version("v0.6.9", "patch")
         self.assertEqual(result["current"], "0.6.9")
         self.assertEqual(result["new"], "0.6.10")
 
     def test_v_prefix_direct_spec_normalized(self):
-        """Issue #115 提案3: v 付き直接指定は数値 X.Y.Z に normalize される"""
+        """v 付き直接指定は数値 X.Y.Z に normalize される"""
         result = bump_version("0.6.9", "v0.7.0")
         self.assertEqual(result["new"], "0.7.0")
 

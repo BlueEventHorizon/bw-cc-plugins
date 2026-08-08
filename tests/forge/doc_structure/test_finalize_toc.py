@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""finalize_toc.py のユニットテスト（Issue #174）。
+"""finalize_toc.py のユニットテスト。
 
 ToC のコピーと checksums 生成を単一操作に統合したことで、片方だけが
 実行される事態（PR #172 の再発）を防げているかを検証する。
@@ -95,8 +95,8 @@ class TestFinalizeToc(_FsTestCase):
         self.assertEqual(payload['status'], 'error')
         self.assertEqual(result.returncode, 1)
 
-        # checksums だけが単独で書き出されていないことを確認（Issue #174 の
-        # 「片方だけ実行される」失敗モードが再現していないこと）
+        # checksums だけが単独で書き出されていないことを確認
+        # （「片方だけ実行される」失敗モードが再現していないこと）
         self.assertFalse((self.tmpdir / 'checksums.yaml').exists())
         self.assertFalse((self.tmpdir / 'toc_dest.yaml').exists())
 

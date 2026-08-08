@@ -296,7 +296,7 @@ AI レビュー完了後、AskUserQuestion を使用して設計書のユーザ�
 
 ### commit/push 確認
 
-commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する（Issue #159）。
+commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する。
 
 ### 完了案内
 
