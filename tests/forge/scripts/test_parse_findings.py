@@ -254,9 +254,8 @@ class LocationExtractionTest(unittest.TestCase):
     def test_conventional_extensionless_names_are_matched_case_insensitively(self):
         """慣用名は表記が揺れる。大文字小文字だけを理由に位置情報を捨てない。
 
-        実測: 本リポジトリのルート直下は小文字の `makefile` であり、`Makefile` だけを
-        許容していたため、実在ファイルを指した所見が「位置なし」と判定された。位置欠落は
-        1 件でもラウンド全体を `failure` にするため、他の所見もすべて失われた。
+        位置未確定の所見は severity によらず自動修正の対象外になるため、表記だけを理由に
+        位置を落とすと、実在ファイルを指した正しい指摘が修正されずに残る。
         """
         cases = {
             "`makefile:37`": {"path": "makefile", "line": 37},

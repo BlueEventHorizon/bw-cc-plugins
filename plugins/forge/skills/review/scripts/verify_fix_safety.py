@@ -21,8 +21,9 @@ import json
 import subprocess
 from pathlib import Path
 
-# dprint（このリポジトリの dprint.jsonc スコープ: JSON/TOML/Markdown/YAML）でカバーされる
-# 拡張子は baseline-aware（修正前から存在した format 違反は新規エラー扱いしない）。
+# dprint が扱いうる拡張子は baseline-aware（修正前から存在した format 違反は新規エラー
+# 扱いしない）。実際にどの拡張子が対象かはプロジェクトの dprint 設定で決まるため、ここでは
+# 対象になりうる範囲を広めに取り、baseline との比較で新規違反だけを拾う。
 # py_compile / bash -n は「ファイル全体の文法エラー」を返すコマンドであり、pre-existing
 # 違反と新規違反の区別が無意味なため baseline を参照しない（fixer.md §3.5.4 と同じ判断）。
 _DPRINT_EXTENSIONS = (".md", ".json", ".yaml", ".yml", ".toml")

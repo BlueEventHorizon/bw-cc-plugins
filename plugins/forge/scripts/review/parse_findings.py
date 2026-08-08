@@ -54,9 +54,8 @@ CONVENTIONAL_EXTENSIONLESS_FILES = {
 #: 大文字小文字を無視して照合するための畳み込み済み集合。
 #:
 #: これらの名前は慣用的に表記が揺れる（`Makefile` / `makefile`、`README` / `readme`）。
-#: 表記だけを理由に位置情報を捨てると、**実在するファイルを指した正しい所見が
-#: 「位置なし」と判定され、1 件の欠落が他の所見もろともラウンド全体を `failure` に
-#: する**（本リポジトリのルート直下は小文字の `makefile` であり、実際にこれが起きた）。
+#: 表記だけを理由に位置情報を捨てると、実在するファイルを指した正しい所見が
+#: 「位置なし」と判定され、自動修正の対象から外れる。
 _CONVENTIONAL_EXTENSIONLESS_FILES_FOLDED = frozenset(
     name.casefold() for name in CONVENTIONAL_EXTENSIONLESS_FILES
 )
