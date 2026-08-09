@@ -30,7 +30,5 @@ ADR-042 は「msg-sys（汎用通信基盤）と msg-review（応用レビュー
 
 ## 4. 影響
 
-- `docs/specs/msg-sys/requirements/REQ-006_codex_review_messaging.md` に FNC-003（返信ヒントの自己完結性）・FNC-004（双方向適用）・BL-001（内容一貫性）を追加した
-- `docs/specs/msg-sys/design/DES-034_codex_review_messaging_design.md` の §1〜9 を `check_inbox.py` ベースの記述に更新し、返信ヒントの実行可能性契約・エラーフロー・テスト設計（54 ユニットテスト + 自律往復の実機検証）を統合した
-- `docs/specs/msg-review/` ディレクトリを削除した
-- コード側（`plugins/forge/scripts/msg-review/hooks/check_inbox.py` → `plugins/forge/scripts/msg-sys/hooks/check_inbox.py`、`tests/forge/msg-review/test_check_inbox.py` → `tests/forge/msg-sys/test_check_inbox.py`）もユーザー確認のうえリネームし、仕様と実装のディレクトリ構成を一致させた。`.claude/settings.json` / `.codex/hooks.json` の登録パスも追従修正した（Codex 側は登録内容のハッシュが変わるため、次回起動時に `/hooks` での再 trust 登録が必要）
+- msg-review の要件・設計は msg-sys の仕様へ統合され、`docs/specs/msg-review/` は消滅する。レビュー対話に関する記述の参照先が msg-sys へ一本化される
+- 実装・テストのディレクトリ構成も仕様に合わせて msg-sys 配下へ移る

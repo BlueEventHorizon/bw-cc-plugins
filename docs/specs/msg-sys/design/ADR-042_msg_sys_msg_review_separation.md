@@ -29,7 +29,4 @@ msg-review の仕様（REQ-011/DES-040）を msg-sysの仕様（REQ-006/DES-034�
 
 ## 4. 影響
 
-- `docs/specs/msg-review/requirements/REQ-011_msg_review_reply_protocol_spec.md` と `docs/specs/msg-review/design/DES-040_msg_review_reply_protocol_design.md` の frontmatter を `type: temporary-feature-*` から恒久文書相当の記述へ改訂する（別途対応）
-- `docs/specs/msg-review/plan/` 配下（`msg-review_plan.yaml`・`msg-review_strategy.md`）は実装完了済みのため通常の plan 破棄フローに従う（本 ADR の対象外）
-- `docs/specs/msg-sys/`（REQ-006/DES-034）は msg-review 由来の内容 merge を受けない。merge 作業は中止済みである（ディレクトリ名は forge-msg から msg-sys へ改称済みだが、これは本 ADR の merge 中止決定とは独立した別途のリネーム作業である）
-- 将来 msg-sys を独立プラグインとして切り出す判断が行われる場合、本 ADR が「msg-sys は汎用基盤である」という前提の根拠として参照される
+将来 msg-sys を独立プラグインとして切り出す判断が行われる場合、本 ADR が「msg-sys は汎用基盤である」という前提の根拠として参照される。

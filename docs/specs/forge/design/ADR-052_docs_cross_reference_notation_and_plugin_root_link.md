@@ -14,11 +14,11 @@
 
 ### 1.2 `docs/` 内部の相互参照が `${CLAUDE_PLUGIN_ROOT}` 形式で書かれていた
 
-`docs/` はフラット構成（サブディレクトリを持たない）で、文書同士の相互参照は本質的に同一ディレクトリの兄弟ファイル参照である。しかし既存の `docs/*.md` は `document_style_guide.md` §5.1（旧版）の「フルパス必須」規約に従い、`docs/` 内部の参照にも `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式を用いていた。この形式は「問題 1」の直接 Read 経路では解決されない生の文字列として残り、AI が実体パスへ変換する手間を都度発生させていた。一方、`docs/` の外側にある `SKILL.md` / `agents/*.md` / `commands/*.md` から `docs/` 内の文書を参照する場合は、相対パスでは `docs/` を起点にできず誤った場所を指すため、`${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式が引き続き必須である。
+`docs/` はフラット構成（サブディレクトリを持たない）で、文書同士の相互参照は本質的に同一ディレクトリの兄弟ファイル参照である。しかし既存の `docs/*.md` は `document_style_guide.md` §5.1（旧版）の「フルパス必須」規約に従い、`docs/` 内部の参照にも `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式を用いていた。この形式は §1.1 の直接 Read 経路では解決されない生の文字列として残り、AI が実体パスへ変換する手間を都度発生させていた。一方、`docs/` の外側にある `SKILL.md` / `agents/*.md` / `commands/*.md` から `docs/` 内の文書を参照する場合は、相対パスでは `docs/` を起点にできず誤った場所を指すため、`${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式が引き続き必須である。
 
 ### 1.3 ダウンストリーム環境での実体パス確認コスト
 
-marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_ROOT}` の実体が `~/.claude/plugins/cache/.../forge/...` のような非決定的なキャッシュパスになる。「問題 1」の直接 Read 経路でこの実体にアクセスする際、AI は `ps -axo args | grep plugin-dir` 等のプロセス起動引数の逆引きで都度実パスを推測する必要があり、`CLAUDE.md`「外部プラグインの実体確認」節が明示的に手順化しているほどのコストがかかる。
+marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_ROOT}` の実体が `~/.claude/plugins/cache/.../forge/...` のような非決定的なキャッシュパスになる。§1.1 の直接 Read 経路でこの実体にアクセスする際、AI は `ps -axo args | grep plugin-dir` 等のプロセス起動引数の逆引きで都度実パスを推測する必要があり、`CLAUDE.md`「外部プラグインの実体確認」節が明示的に手順化しているほどのコストがかかる。
 
 ## 2. 決定
 
@@ -26,11 +26,11 @@ marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_RO
 
 `docs/` 内の文書が `docs/` 内の他文書を参照する場合、`docs/` を起点とした相対パスを Markdown リンク構文で記述する（例: `[design_format.md](design_format.md)`）。地の文でのファイル名のみの言及（リンク構文なし）は用いない。
 
-**採用理由**: 直接 Read 経路（問題 1）では、参照元ファイルと参照先ファイルが同一ディレクトリの兄弟である限り、相対パスは `${CLAUDE_PLUGIN_ROOT}` の解決有無に依存せず常に正しく解決される。Markdown リンク構文は人間が読んだ場合にもクリック可能で、地の文言及より曖昧性が低い。
+**採用理由**: 直接 Read 経路（§1.1）では、参照元ファイルと参照先ファイルが同一ディレクトリの兄弟である限り、相対パスは `${CLAUDE_PLUGIN_ROOT}` の解決有無に依存せず常に正しく解決される。Markdown リンク構文は人間が読んだ場合にもクリック可能で、地の文言及より曖昧性が低い。
 
 ### 2.2 `SKILL.md` / `agents/*.md` / `commands/*.md` からの `docs/` 参照は `${CLAUDE_PLUGIN_ROOT}/docs/` 形式を維持する
 
-これらは `docs/` の外側に位置するため、相対パスでは解決できない。引き続きフルパス表記 `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` を用いる。この経路は実際のスキル起動時（問題 1 で確認済み）には自動解決されるため、記法自体に問題はない。
+これらは `docs/` の外側に位置するため、相対パスでは解決できない。引き続きフルパス表記 `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` を用いる。この経路は実際のスキル起動時（§1.1 で確認済み）には自動解決されるため、記法自体に問題はない。
 
 ### 2.3 `document_style_guide.md` §5.1 を改訂する
 
@@ -58,9 +58,3 @@ marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_RO
 得られるもの: docs 内部参照の解決が `${CLAUDE_PLUGIN_ROOT}` の解決性質に依存しなくなり恒久的に安全になる。ダウンストリーム環境での実体アクセスコストが `SessionStart` hook による自動化で削減される。
 
 失うもの・新たに生じる制約: 今後 `docs/` に新規文書を追加する際、内部参照と外部参照（SKILL.md 等からの参照）で記法を使い分ける必要があり、執筆者が §5.1 の区別を把握している前提が生まれる。symlink 機構自体の保守（`ensure_plugin_root_link.py` のテスト維持）が必要になる。
-
-### 4.1 既知の未解決事項（本 ADR のスコープ外）
-
-`hooks/hooks.json` を調査する過程で、`DES-031_resume_status_presenter_design.md`（会話再開時の未完了作業提示、SessionStart hook + `resume_status.py` を設計）が**未実装のまま**であることを発見した。`plugins/forge/scripts/resume_status.py` / `plugins/forge/skills/resume-status/SKILL.md` / 対応テストのいずれも全ブランチの git 履歴に存在しない。
-
-本 ADR が追加した `ensure_plugin_root_link.py` の `SessionStart` 登録とは無関係（`SessionStart` は配列で複数エントリを共存できるため、両者は構造的に衝突しない）。DES-031 の実装自体は本 ADR のスコープ外とし、現状把握のみをここに記録する。
