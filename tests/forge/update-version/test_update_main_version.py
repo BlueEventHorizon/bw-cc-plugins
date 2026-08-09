@@ -3,8 +3,7 @@
 update-version/scripts/update_main_version.py のテスト
 
 `update_version_files.py {file} {cur} {new} --version-path {version_path}` を
-呼び出し、成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する
-(Issue #139)。
+呼び出し、成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する。
 
 実行:
   python3 -m unittest tests.forge.update-version.test_update_main_version -v
@@ -68,7 +67,7 @@ class TestUpdateMainVersionWrapper(unittest.TestCase):
         self.assertFalse(mock_run.call_args.kwargs.get("check", True))
 
     def test_captures_stdout(self):
-        """書き戻しのため stdout を capture する (Issue #139 fix)"""
+        """書き戻しのため stdout を capture する"""
         with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="", stderr="")

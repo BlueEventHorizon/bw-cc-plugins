@@ -315,7 +315,7 @@ rules/ のディレクトリ構造に変更があった場合、`.doc_structure.
 → はい / いいえ
 ```
 
-「はい」の場合 → commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する（Issue #159）。
+「はい」の場合 → commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する。
 
 #### ロールバック手段の提示
 

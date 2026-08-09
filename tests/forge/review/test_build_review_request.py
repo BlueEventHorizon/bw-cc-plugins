@@ -279,7 +279,7 @@ class FocusTest(unittest.TestCase):
 
 
 class ScopeArgumentTest(unittest.TestCase):
-    """到達目標と意図的な未実装（`--scope`）の埋め込み契約（Issue #4）。
+    """到達目標と意図的な未実装（`--scope`）の埋め込み契約。
 
     `--focus` と違い複数行を許す。改行の一律拒否ではなく、構造行（見出し・コードフェンス・
     契約行）の偽装のみを拒否することでプロトコル注入を防ぐ。
@@ -325,7 +325,7 @@ class ScopeArgumentTest(unittest.TestCase):
     def test_template_defines_the_meaning_of_an_empty_scope(self):
         """空欄が「情報が無い」ではなく「最終形」を意味することを本文が定義すること。
 
-        定義が無いと、レビュアーは前者と解釈して未実装をすべて報告する（Issue #4 提案3）。
+        定義が無いと、レビュアーは前者と解釈して未実装をすべて報告する。
         """
         for pattern in build_review_request.VALID_PATTERNS:
             with self.subTest(pattern=pattern):
@@ -335,7 +335,7 @@ class ScopeArgumentTest(unittest.TestCase):
         """スコープを伝えることと、スコープ外の指摘を封じることが分離されていること。
 
         宣言された未実装が設計・仕様と乖離している場合は所見として報告させる
-        （Issue #4 提案4）。この注記が無いと `--scope` が指摘封じの手段になる。
+        この注記が無いと `--scope` が指摘封じの手段になる。
         """
         for pattern in build_review_request.VALID_PATTERNS:
             with self.subTest(pattern=pattern):

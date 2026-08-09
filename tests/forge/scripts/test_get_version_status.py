@@ -211,7 +211,7 @@ class TestGetVersionFromJsonContent(unittest.TestCase):
 
 
 class TestTextAndChangelogExtraction(unittest.TestCase):
-    """Issue #115 提案3・4: 非 JSON / CHANGELOG からの version 抽出"""
+    """非 JSON / CHANGELOG からの version 抽出"""
 
     def test_text_swift_constant(self):
         """Swift 定数 let version = "1.2.3" から抽出できる"""
@@ -275,7 +275,7 @@ class TestTextAndChangelogExtraction(unittest.TestCase):
         )
 
     def test_extract_quoted_version_path_normalized(self):
-        """Issue #115 提案2: 引用符込み version_path でも抽出できる"""
+        """引用符込み version_path でも抽出できる"""
         self.assertEqual(
             extract_version_from_content('{"version": "1.0.0"}', '"version"'), "1.0.0"
         )
@@ -311,7 +311,7 @@ class TestClassifyBump(unittest.TestCase):
         self.assertEqual(classify_bump("1.0.0", None), "unknown")
 
     def test_v_prefix_allowed(self):
-        """Issue #115 提案3: 先頭 v を許容して比較する"""
+        """先頭 v を許容して比較する"""
         self.assertEqual(classify_bump("v1.0.0", "v1.0.1"), "patch")
         self.assertEqual(classify_bump("0.6.9", "v0.6.10"), "patch")
 
@@ -508,7 +508,7 @@ class TestMainIntegration(unittest.TestCase):
         self.assertIn("note", target)
 
     def test_non_json_base_file_not_misjudged_as_new(self):
-        """Issue #115 提案4: base に存在する非 JSON ファイルを「新規」と誤判定しない。
+        """base に存在する非 JSON ファイルを「新規」と誤判定しない。
 
         Swift 定数ファイルは JSON パースできないが、base に存在し version を抽出
         できれば changed 判定され、note(新規追加) は付かない。
@@ -564,7 +564,7 @@ class TestMainIntegration(unittest.TestCase):
         self.assertNotIn("新規追加", target["note"])
 
     def test_changelog_header_target(self):
-        """Issue #115 提案3: version_path: changelog_header で CHANGELOG から比較できる"""
+        """version_path: changelog_header で CHANGELOG から比較できる"""
         (self.tmpdir / "CHANGELOG.md").write_text(
             "# Changelog\n\n## [0.6.10] - 2026-05-27\n\n- x\n", encoding="utf-8"
         )

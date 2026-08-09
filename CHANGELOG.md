@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 
 - **feat**: レビュー本体とレビューバックエンドを別 SKILL へ分離（ADR-066）。`--backend` 軸・`failure` 判定・終了通知を実装し、バックエンドの可用性検査と解決順（未指定時は候補を順に検査して最初に使えたものを採る）を追加。可用性検査は初期化の後に置き、判定を exit code から切り離したうえで、不足時には全経路で初期化の失敗理由を添える。`.forge.yaml` の review セクションから `backend_order` を削除し、候補順の決定は設計側へ戻した
 - **feat**: doc-db backend を新設。低レベル CLI 群・`forge_settings`・MCP クライアント・runtime / project identity を実装し、query 系・update 系 SKILL を backend 順序リスト選択へ切替（既定は doc-advisor 先位）、grep フォールバックを削除
-- **feat**: review 依頼に `--scope` 軸を追加。到達目標と意図的な未実装をレビュアーへ明示的に渡す (#4)
+- **feat**: review 依頼に `--scope` 軸を追加。到達目標と意図的な未実装をレビュアーへ明示的に渡す
 - **feat**: onboarding が汎用規範をプロジェクトの CLAUDE.md へ承認のうえ転記する機構を追加（スキルを経由しない会話直の作業でも規範が文脈に入るようにする）
 - **fix**: ToC 索引更新を常時化しバージョン下限を全廃。生成物 ToC の commit 確認を anvil:commit 側へ追加
 - **fix**: テンプレートのトークン検査を置換前のテンプレートへ移し、置換値に含まれる波括弧の誤検知を解消
@@ -134,7 +134,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: findings 出力を構造化フォーマットに刷新（ADR-033）。finding ID 衝突防止・`--diff-only` 対応・resume ループの解消など、関連するレビュー指摘も併せて修正 (Issue #167)
+- **feat**: findings 出力を構造化フォーマットに刷新（ADR-033）。finding ID 衝突防止・`--diff-only` 対応・resume ループの解消など、関連するレビュー指摘も併せて修正
 - **refactor**: forge 内蔵の共有ドキュメント・スクリプト・ToC・テンプレートを `.forge/` 配下に整理統合。移行に伴う stale な ssot_refs・テンプレートパス参照とスクリプトスキャン漏れを修正
 - **refactor**: `resolve_doc_structure.py` を共有 `scripts/` に移動し、`plugins/` → 共有層の逆依存を解消
 - **feat**: AI 間メッセージシステムを追加
@@ -152,7 +152,7 @@ All notable changes to this project will be documented in this file.
 ### anvil
 
 - **feat**: issue-triage SKILL を追加
-- **fix**: 既存テスト失敗3件を修正（mailbox import 衝突・triage-issue のクロス参照・README 未記載）(Issue #167)
+- **fix**: 既存テスト失敗3件を修正（mailbox import 衝突・triage-issue のクロス参照・README 未記載）
 - **fix**: triage-issue に残っていた未参照フックスクリプトを削除し、破損した/プラグイン間をまたぐパス参照を修正
 
 ## [marketplace 0.2.11] - 2026-07-06
@@ -165,7 +165,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **fix**: `extract_review_findings.py`（`findings_parser.py`）が reviewer の規定フォーマット外セクション（`### レビュー実施記録` 等の自由セクション）配下の番号付き太字行を severity=major のデフォルト値で幻の finding として plan.yaml に登録していたバグを修正 (Issue #151)。severity 解決不能エントリは warning 付きで不採録とし、severity マーカーを持たない h3 以浅の見出しで severity セクションを閉鎖（`#### P1/P2/P3` サブセクションはセクション内として維持）
+- **fix**: `extract_review_findings.py`（`findings_parser.py`）が reviewer の規定フォーマット外セクション（`### レビュー実施記録` 等の自由セクション）配下の番号付き太字行を severity=major のデフォルト値で幻の finding として plan.yaml に登録していたバグを修正。severity 解決不能エントリは warning 付きで不採録とし、severity マーカーを持たない h3 以浅の見出しで severity セクションを閉鎖（`#### P1/P2/P3` サブセクションはセクション内として維持）
 - **fix**: `LOCATION_PATTERN` が `箇所:` のみ対応で DES-028 の `target:` フィールドを認識せず、finding の location が常に空になり plan.yaml merge の照合キーが弱体化していた問題を修正。あわせて location 反映に `_body_closed` ガードを追加し、自由セクション内の `target:` 行が直前の正規 finding の location を汚染する経路を遮断
 - **fix**: reviewer 出力契約（`agents/reviewer.md` プロンプト規約 + `agents/templates/review_result.md` フォーマット規約）に「規定セクション（🔴/🟡/🟢/サマリー）以外を出力しない」を明記し、engine=codex での自由セクション混入を契約側でも防止
 - **docs**: 要件定義書・設計書・ルール・原則文書から改定履歴セクションを廃止（履歴は CHANGELOG.md + git 履歴、設計判断の変更は ADR に記録する方針へ統一）。ADR デフォルトフォーマット `adr_format.md` を新設（Status 値規範・追記型運用・テンプレート）し、`design_principles_spec.md` に「ADR 運用」重大度カタログ、design レビュー基準に ADR 検出項目を追加
@@ -199,7 +199,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **refactor**: 追加 feature 判定を「要件定義書の新規作成」という文書操作の形式から、変更の実質（新しい要件群 + 分離管理価値: 旧仕様との一時的矛盾 / ID 連番競合 / 並行開発上の衝突 / 実装完了後の統合）ベースの基準へ見直し (Issue #149)。`additive_development_spec.md` §1 に「文書操作の形式は判定条件ではない」を明文化し、requirement/design/plan の各 format・principles 重大度カタログ・review criteria 3 種へ伝播。旧文言の残存を検知する回帰テスト `TestSubstanceBasedCriteria` を追加
+- **refactor**: 追加 feature 判定を「要件定義書の新規作成」という文書操作の形式から、変更の実質（新しい要件群 + 分離管理価値: 旧仕様との一時的矛盾 / ID 連番競合 / 並行開発上の衝突 / 実装完了後の統合）ベースの基準へ見直し。`additive_development_spec.md` §1 に「文書操作の形式は判定条件ではない」を明文化し、requirement/design/plan の各 format・principles 重大度カタログ・review criteria 3 種へ伝播。旧文言の残存を検知する回帰テスト `TestSubstanceBasedCriteria` を追加
 - **refactor**: start-design / start-plan / start-implement の文書検索フォールバックを削除し、query-db-specs / query-db-rules に一元化。doc-structure に `.doc_structure.yaml` 不在時の共通ハンドオフを集約
 - **chore**: 未使用の `resolve_doc_references.py` を削除（`resolve_doc_structure.py` と機能重複）。forge-rules ToC を再生成（`ai_user_inquiry_pattern.md` の索引漏れ修正を含む）
 
@@ -234,14 +234,14 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: ADR-032 path schema unification を実装。refs.yaml / session.yaml の「パスを持つフィールド」11 箇所を統一形式 `[{path: ..., ...metadata}]` dict 配列に集約。`ssot_refs[].doc_path` を `path` に統一 (Issue #99 を覆す)、`output_path` を `output_filename` に改名 (sandbox 内ファイル名と外部参照 path の概念区別)、`target_files` を文字列配列から dict 配列に移行。旧 schema は明示的 ValueError で reject (後方互換層なし)
-- **feat**: review pipeline の構造化 agent prompt を固定化 (ADR-032 #11)。general-purpose agent (related_code 探索) の出力を `- path:` / `reason:` の構造化 markdown 形式に強制し、orchestrator が refs.yaml の `related_code[]` に直接マッピング可能に
+- **feat**: ADR-032 path schema unification を実装。refs.yaml / session.yaml の「パスを持つフィールド」11 箇所を統一形式 `[{path: ..., ...metadata}]` dict 配列に集約。`ssot_refs[].doc_path` を `path` に統一（従前の決定を覆す）、`output_path` を `output_filename` に改名 (sandbox 内ファイル名と外部参照 path の概念区別)、`target_files` を文字列配列から dict 配列に移行。旧 schema は明示的 ValueError で reject (後方互換層なし)
+- **feat**: review pipeline の構造化 agent prompt を固定化 (ADR-032)。general-purpose agent (related_code 探索) の出力を `- path:` / `reason:` の構造化 markdown 形式に強制し、orchestrator が refs.yaml の `related_code[]` に直接マッピング可能に
 - **refactor**: findings_session を DES-024 準拠の単機能 wrapper 群 (`mark_in_progress` / `mark_skipped` / `mark_needs_review` / `mark_issued` / `mark_fixed` / `batch_update` / `list_items_sorted` / `list_fixable_pending` / `summarize_progress`) に分割
 - **refactor**: start-design / start-implement / start-plan / start-requirements / start-uxui-design から session / refs / init_session 機構を撤去。review 専用に絞り SKILL の責務を整理
 - **fix**: `/forge:review` パイプラインの整合性問題を一括修正。write_refs.py の validation エラー露出 (Python traceback で潰れていた問題)、review SKILL.md の refs JSON schema 説明不足、旧 fork 型 SKILL の削除済みパス参照
 - **fix**: resolve_review_context.py の削除ファイル除外ロジック (二重 if 論理的不整合) を一段化で解消。外側 if が True で内側 if が False のエッジで削除済みファイルが target_files に漏れる問題を修正
 - **fix**: session_manager.py の `parse_extra_args` で `val.lstrip("-").isdigit()` が `"--1"` を True と判定し `int(val)` で ValueError を投げる不具合を try/except に修正
-- **fix**: update-version ラッパーで stdout を対象ファイルへ書き戻す改修 (Issue #139)。format pre-commit hook の起動順を修正
+- **fix**: update-version ラッパーで stdout を対象ファイルへ書き戻す改修。format pre-commit hook の起動順を修正
 - **fix**: forge:review で additive feature と legacy specs の衝突を P2 観点から除外
 - **docs**: ADR-032 を accepted 化。操作的仕様 SoT は `plugins/forge/docs/session_format.md` に委譲、本 ADR は設計判断の履歴として保持。session_format.md / DES-011/014/015/028/029 / review SKILL.md / present-findings SKILL.md / 3 agent prompt を新 schema に同期
 
@@ -255,7 +255,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: reviewer / evaluator / fixer を fork 型 SKILL から **カスタム Agent** (`plugins/forge/agents/<name>.md`) に再実装（Issue [#127](https://github.com/BlueEventHorizon/bw-cc-plugins/issues/127)）。Claude Code の `context: fork` 機構の公式バグ 9 件 (#18394 / #34164 / #60720 / #55592 ほか — fork が 95%+ で効かない / `$ARGUMENTS` 不達 / 出力消失 / 無限再帰) を構造的に回避する。`subagent_type: "forge:<name>"` を介した Agent ツール起動に統一
+- **feat**: reviewer / evaluator / fixer を fork 型 SKILL から **カスタム Agent** (`plugins/forge/agents/<name>.md`) に再実装。Claude Code の `context: fork` 機構の公式バグ 9 件 (#18394 / #34164 / #60720 / #55592 ほか — fork が 95%+ で効かない / `$ARGUMENTS` 不達 / 出力消失 / 無限再帰) を構造的に回避する。`subagent_type: "forge:<name>"` を介した Agent ツール起動に統一
 - **feat**: fixer Agent に 4 安全境界 (単一 finding 起動 / allowed_files allowlist / 無関係 refactor 禁止 / 修正後の構文検証) を Role 制約として常時適用（DES-029 §3.5）。`--batch` モードは廃止し、orchestrator 側で id 単位ループに変換
 - **refactor**: 修正経路を「軽量経路 (FNC-413) + Agent 経由 fixer 経路」の 2 種に縮約（旧 fork 型 fixer 経路 / 汎用 Agent fixer 経路をいずれも廃止）
 - **refactor**: REQ-006 / DES-032 (no-fork-skill 一時 feature) を REQ-005 §11 / DES-029 に fold。COMMON-DES-001 §6 を「fork 型 SKILL は採用しない (廃止)」に転換し、旧 SKILL ↔ 置換先 Agent 対応表を §6.2 に記録
@@ -274,7 +274,7 @@ All notable changes to this project will be documented in this file.
 ### forge
 
 - **feat**: フィーチャー概念定義を追加し、start-* スキルへの常時参照化（設計・計画・実装の各スキルがフィーチャー文書を一貫して参照するよう改善）
-- **fix**: レビュー結果ファイルに内容があるにもかかわらず findings が 0 件の場合、stderr に Warning を出力するよう修正（Issue #104）
+- **fix**: レビュー結果ファイルに内容があるにもかかわらず findings が 0 件の場合、stderr に Warning を出力するよう修正
 
 ## [marketplace 0.2.4] - 2026-06-17
 
@@ -286,7 +286,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: evaluator の eval 中間ファイルを廃止し `apply_eval.py` 経由で plan.yaml を直接更新（Issue #103）
+- **feat**: evaluator の eval 中間ファイルを廃止し `apply_eval.py` 経由で plan.yaml を直接更新
 - **feat**: evaluator の JSON 出力を `write_eval.py` 経由に統一し、Write ツール直接書き出しバイパスを閉鎖
 - **fix**: `write_eval.py` に recommendation/status 相関バリデーションを追加
 - **fix**: evaluator SKILL.md の `not_found_ids` 振る舞い定義とセクション名を修正、残存 `eval_*.json` 参照を全廃・`not_found_ids` 警告を追加
@@ -352,7 +352,7 @@ All notable changes to this project will be documented in this file.
 
 - **feat**: 文書検索バックエンドを外部 doc-advisor（[BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）へ全面移行。プラグイン内蔵の doc-advisor / doc-db を削除し、`/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-rules` / `/forge:update-db-specs` を外部 doc-advisor の `query-docs` / `index-docs` へ転送する構成に刷新。ToC 索引機構（`.claude/doc-advisor/toc/`）を追加
 - **refactor(clean-rules)**: Embedding 方式を廃止し、`split_doc_sections.py` + AI 判定方式へ移行
-- **docs**: ADR の ID 採番ガイドを定義層・生成層・テストへ展開 (#123)
+- **docs**: ADR の ID 採番ガイドを定義層・生成層・テストへ展開
 - **fix**: ドキュメント・テストを修正
 
 ## [marketplace 0.1.26] - 2026-05-27
@@ -365,9 +365,9 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat(session)**: forge session ライフサイクルを完成（touch / complete / find --all-skills）し、cleanup を統一 + `cleanup-stale` を追加して残骸を防止。session init 時に completed 残骸を自動回収する (#82 / #83 / #84 / #46 / #93)
+- **feat(session)**: forge session ライフサイクルを完成（touch / complete / find --all-skills）し、cleanup を統一 + `cleanup-stale` を追加して残骸を防止。session init 時に completed 残骸を自動回収する
 - **feat(review)**: review / present-findings の起動を Skill ツール (fork) 方式へ変更し、reviewer / evaluator / fixer に fork 安全機能を全適用。変更行 gate テストを追加し、軽量修正では fixer subagent をスキップ (FNC-413)
-- **fix(review)**: `--auto` モードで `auto_fixable=false` の指摘が fixer に投入されない誤読を修正し、fixer 読み取り契約から旧解釈を除去 (#92)
+- **fix(review)**: `--auto` モードで `auto_fixable=false` の指摘が fixer に投入されない誤読を修正し、fixer 読み取り契約から旧解釈を除去
 - **fix(review)**: SubAgent / 旧 review 構文 / 起動経路の未明示を一括修正し、複数回のレビュー指摘を解消
 - **docs**: 旧 perspective 仕様を撤廃し reviewer 1 起動原則に整合。DES-007 統一 API key 仕様を docs と clean-rules 実装に反映
 - **refactor**: SKILL / query description を改善し、forge ToC を再生成
@@ -401,7 +401,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat(review)**: `/forge:review` パイプラインを 1 reviewer 起動原則 + criteria 固定 3 セクション構造 (SSOT参照 / チェック順 / 判定ルール) に再設計 (Issue #68 / REQ-004 / DES-028)。観点軸並列起動 (`## Perspective:` × N) と対象ファイル軸並列起動を撤廃し、P1/P2/P3 を同一 reviewer 内でチェック順に順次評価する方式に変更
+- **feat(review)**: `/forge:review` パイプラインを 1 reviewer 起動原則 + criteria 固定 3 セクション構造 (SSOT参照 / チェック順 / 判定ルール) に再設計 (REQ-004 / DES-028)。観点軸並列起動 (`## Perspective:` × N) と対象ファイル軸並列起動を撤廃し、P1/P2/P3 を同一 reviewer 内でチェック順に順次評価する方式に変更
 - **feat(review)**: criteria 5 種別 (`code` / `design` / `requirement` / `plan` / `uxui` / `generic`) を 3 セクション固定構造に全面置換。criteria は判断を持たず routing table + review playbook に純化
 - **feat(review)**: `recommendation: create_issue` を正式に値域追加 (FNC-406 3 条件: 該当規定なし / 再発性または客観性 / 明文化可能粒度)。present-findings に Issue 化選択肢 + `/anvil:create-issue` 経路を実装
 - **feat(review)**: priority (P1/P2/P3) × severity (🔴/🟡/🟢) の直交ラベル付与に変更。evaluator は 5 観点 × priority の直交評価、present-findings は priority 二段ソート対応
@@ -421,7 +421,7 @@ All notable changes to this project will be documented in this file.
 
 - **feat**: forge-query 抽象 SKILL（`query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs`）を新設し、doc-advisor / doc-db バックエンドを自動選択する設計を導入（DES-001 / ADR-001）。`select_backend.py` が API キー有無と利用可能バックエンドから採用先を決定し、4 SKILL は `user-invocable: false` の内部 SKILL として動作する
 - **refactor**: forge skills 内の `/doc-advisor:*` 直呼びを `/forge:*-db-*` 抽象 SKILL に切り替え（review / start-design / start-plan / clean-rules / merge-feature-specs / create-feature-from-plan / start-requirements / start-uxui-design）
-- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加（Issue #55 / ADR-002）
+- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加（ADR-002）
 - **refactor**: start-plan SKILL に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを判断し `strategy_draft.md` を生成する
 - **refactor**: FNC-008/DES-028 を doc-advisor へ再配置し、merge-feature-specs に配置整合性検査を追加
 - **docs**: SKILL 基本設計書を新設し fork 型を規定リストで厳密管理。forge 文書スタイル指針と ID 参照記法、文書スタイル指針 (document_style_guide) を追加し DWR を整理
@@ -514,7 +514,7 @@ All notable changes to this project will be documented in this file.
 
 ### doc-advisor
 
-- **docs**: デザイン DES-026 追加、heading-chunk ハイブリッド検索プラグインの要件定義書追加 (#33)
+- **docs**: デザイン DES-026 追加、heading-chunk ハイブリッド検索プラグインの要件定義書追加
 - **chore**: create-code-index / query-code スキルと関連コードの削除
 - **refactor**: index の更新
 
@@ -528,7 +528,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat(start-implement)**: 全タスク完了時に plan の扱いをユーザーへ確認するフローを追加。`{main_specs_root}` 配下の構成から追加開発か基本仕様修正かを文脈判定し、`/forge:merge-feature-specs` 実行 / plan 削除 / plan 残し のいずれかを `AskUserQuestion` で誘導（#31）
+- **feat(start-implement)**: 全タスク完了時に plan の扱いをユーザーへ確認するフローを追加。`{main_specs_root}` 配下の構成から追加開発か基本仕様修正かを文脈判定し、`/forge:merge-feature-specs` 実行 / plan 削除 / plan 残し のいずれかを `AskUserQuestion` で誘導
 - **refactor(session)**: セッション管理を新方式に刷新。session_manager の責務分離、monitor のクリーンアップ、`atomic_write_text` を `yaml_utils` に統合し共通化
 - **fix(help)**: help SKILL の動作不具合を修正
 
@@ -549,7 +549,7 @@ All notable changes to this project will be documented in this file.
 ### forge
 
 - **fix(merge-feature-specs)**: 任意プロジェクト構造で動作するよう汎用化。plugin 階層前提を廃し、`.doc_structure.yaml` と `feature_dir.parent` ベースで main 仕様棚を解決。`scan_feature.py` に `--main-specs-root` / `--id-digits` / `--id-separator` オプションを追加し、`requirement` 単数形と plugin 階層なし構造に対応
-- **fix(merge-feature-specs)**: 前提条件を明確化（PR #26 review 反映）。Phase 0 で `.doc_structure.yaml` と doc-advisor の必須検査を追加し、フォールバック推測を排除。必須（`.doc_structure.yaml` / doc-advisor）と任意（dprint / anvil）の区別を整理
+- **fix(merge-feature-specs)**: 前提条件を明確化（review 反映）。Phase 0 で `.doc_structure.yaml` と doc-advisor の必須検査を追加し、フォールバック推測を排除。必須（`.doc_structure.yaml` / doc-advisor）と任意（dprint / anvil）の区別を整理
 
 ## [anvil 0.0.6] - 2026-04-29
 

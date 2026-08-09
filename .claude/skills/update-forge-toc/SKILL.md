@@ -50,7 +50,7 @@ stdout JSON の `rules` 配列（project-root-relative パス）を取得する�
 
 生成された ToC を forge プラグイン同梱の場所へコピーし（配布されるのはこのファイル）、同一操作内で
 鮮度検証用 checksums（sha256）を再生成する。**この 2 つは `finalize_toc.py` 1 回の実行に統合されており、
-片方だけを実行することはできない**（Issue #174: コピーと checksums 再生成を別々の手動手順にすると、
+片方だけを実行することはできない**（コピーと checksums 再生成を別々の手動手順にすると、
 checksums だけが再生成され ToC 本体が stale なまま commit される事故が起きたため）:
 
 ```bash

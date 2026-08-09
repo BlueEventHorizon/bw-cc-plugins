@@ -5,8 +5,8 @@ forge 同梱 ToC のコピーと checksums 生成を単一操作として実行�
 
 update-forge-toc skill の「同梱 ToC へのコピー」と「鮮度検証用 checksums の
 再生成」を分離した 2 手順で運用すると、片方だけを実行してしまうヒューマン
-エラーが起きる（Issue #174: PR #172 で checksums のみ再生成され、直前の
-ソース文書変更が未反映のまま rules_toc.yaml が stale で commit された）。
+エラーが起きる（checksums のみが再生成され、直前のソース文書変更が
+未反映のまま rules_toc.yaml が stale で commit された事例がある）。
 本スクリプトはこの 2 手順を単一のアトミックな操作に統合し、
 片方だけの実行を構造的に防ぐ。
 

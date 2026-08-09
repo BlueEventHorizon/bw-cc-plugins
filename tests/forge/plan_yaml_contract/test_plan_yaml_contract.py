@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""forge 実装計画書 `{feature}_plan.yaml` の YAML 正本契約 (Issue #111) を静的検査する回帰テスト。
+"""forge 実装計画書 `{feature}_plan.yaml` の YAML 正本契約を静的検査する回帰テスト。
 
 実行:
   python3 -m unittest tests.forge.plan_yaml_contract.test_plan_yaml_contract -v
@@ -167,7 +167,7 @@ class TestNoMarkdownInducers(unittest.TestCase):
                 continue
             # 重大度カタログ・改定履歴の本文行は履歴的説明を含むので、
             # 履歴セクションの典型的接頭辞行はスキップ
-            if "forge-review feature 統合" in line or "Issue #111" in line:
+            if "forge-review feature 統合" in line:
                 continue
             match = pattern.search(line)
             if match:
@@ -176,7 +176,7 @@ class TestNoMarkdownInducers(unittest.TestCase):
 
 
 class TestRenamedSkillExists(unittest.TestCase):
-    """Issue #111 で rename 済みの create-feature-from-markdown-plan が存在し、旧名 wrapper が残っていないこと"""
+    """rename 済みの create-feature-from-markdown-plan が存在し、旧名 wrapper が残っていないこと"""
 
     def test_renamed_skill_present(self):
         renamed = (

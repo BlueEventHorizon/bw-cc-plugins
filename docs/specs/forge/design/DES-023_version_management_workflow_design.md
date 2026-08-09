@@ -215,7 +215,7 @@ git:
 
 **警告**: `new_version ≦ current_version` の場合、`warning` フィールドを付与する。
 
-**`v` prefix の許容（Issue #115 提案3）**: 入力の先頭 `v` / `V`（例: `v0.6.9`）を許容する。CHANGELOG を canonical version source とするケースで `v` 付き表記を扱えるようにするため。`v` は normalize して計算し、`current` / `new` ともに **数値 `X.Y.Z` 形式** で出力する（見出しへの `v` 再付与は update_version_files.py 側が担う）。
+**`v` prefix の許容**: 入力の先頭 `v` / `V`（例: `v0.6.9`）を許容する。CHANGELOG を canonical version source とするケースで `v` 付き表記を扱えるようにするため。`v` は normalize して計算し、`current` / `new` ともに **数値 `X.Y.Z` 形式** で出力する（見出しへの `v` 再付与は update_version_files.py 側が担う）。
 
 ### 3.3 update_version_files.py
 
@@ -245,7 +245,7 @@ git:
 
 **優先順位**: filter > changelog_header > path > simple
 
-**`version_path` の引用符 normalize（Issue #115 提案2）**: `--version-path` の値は内部で前後空白・引用符（`'` / `"`）を strip してから解釈する。`.version-config.yaml` に `version_path: "version"` と書かれていても、YAML パースを経ずに生文字列が low-level script へ渡る経路で一致失敗しないようにするため。設定上は引用符なしで記述することを推奨する。
+**`version_path` の引用符 normalize**: `--version-path` の値は内部で前後空白・引用符（`'` / `"`）を strip してから解釈する。`.version-config.yaml` に `version_path: "version"` と書かれていても、YAML パースを経ずに生文字列が low-level script へ渡る経路で一致失敗しないようにするため。設定上は引用符なしで記述することを推奨する。
 
 #### filter モードの動作
 
@@ -257,7 +257,7 @@ _update_with_filter(content, old_version, new_version, filter_pattern, max_dista
 2. `filter_pattern in line` がマッチした行で `in_block = True` にする
 3. ブロック内（filter 行から最大 `max_distance` 行以内）で `old_version in line` がマッチした行を置換する
 4. 置換は1回のみ（最初のマッチで終了）
-5. 未置換時のエラーは 2 種類に分離される（Issue #157）:
+5. 未置換時のエラーは 2 種類に分離される:
    - `filter_pattern` がファイル内に一度も出現しない → `FilterNotFoundError`（対象外。そのファイルに該当 target の記載自体がない）
    - `filter_pattern` は見つかったが、そのブロック内に `old_version` が見つからない → `VersionDriftError`（ドリフト。記載バージョンが既に現行値と乖離している）
 
@@ -293,16 +293,16 @@ _update_with_path(content, old_version, new_version, version_path)
 ```
 
 1. `version_path` の最終キー名を含む行を正規表現で検索
-2. ネストパスの場合は親キーチェーン（`a.b.version` なら `a` → `b`）を先頭から順にたどり、各親キーの直後に開く `{` とその対応 `}`（ダブルクォート文字列内の波括弧は無視）をスコープ境界として、次階層以降の検索範囲をスコープ内に制限してから最終キー名を探す（Issue #175: 直近の親キー1つだけを見ると同名の別ブロックに誤って一致する事故があったため N 階層のチェーン絞り込みに一般化。Issue #180: 開始位置の前進のみではスコープ境界を見ないため、`b.package.version` が存在しなくても `b` より後方の別スコープ `package.version` を誤更新できた — 波括弧スコープの追跡を追加し、親キーの値がオブジェクトでない・境界を特定できない場合は書き換えず `ValueError` に倒す。置換自体はテキスト操作のまま維持する — 設計原則 §1）。対応形式は JSON のオブジェクトおよび TOML の inline table（`key = { ... }`）。TOML のセクション形式（`[package]`）のネストパスは従来から対象外
+2. ネストパスの場合は親キーチェーン（`a.b.version` なら `a` → `b`）を先頭から順にたどり、各親キーの直後に開く `{` とその対応 `}`（ダブルクォート文字列内の波括弧は無視）をスコープ境界として、次階層以降の検索範囲をスコープ内に制限してから最終キー名を探す（直近の親キー1つだけを見ると同名の別ブロックに誤って一致する事故があったため N 階層のチェーン絞り込みに一般化した。さらに、開始位置の前進のみではスコープ境界を見ないため、`b.package.version` が存在しなくても `b` より後方の別スコープ `package.version` を誤更新できた — 波括弧スコープの追跡を追加し、親キーの値がオブジェクトでない・境界を特定できない場合は書き換えず `ValueError` に倒す。置換自体はテキスト操作のまま維持する — 設計原則 §1）。対応形式は JSON のオブジェクトおよび TOML の inline table（`key = { ... }`）。TOML のセクション形式（`[package]`）のネストパスは従来から対象外
 3. JSON の `"version": "X.Y.Z"` と TOML の `version = "X.Y.Z"` の両方に対応
-4. version 末尾に境界（`(?![\d.])`）を設け、`0.6.1` が `0.6.10` を前方一致で破壊しないようにする（Issue #115 レビュー指摘）。同様にフィールド名・親キー名の直前にも語境界（`\b`）を設け、`other_version` が `version` に誤って一致しないようにする（Issue #175 単独修正レビューで検出）
-5. 未置換時のエラーは filter モードと同様に 2 種類に分離される（Issue #175）:
+4. version 末尾に境界（`(?![\d.])`）を設け、`0.6.1` が `0.6.10` を前方一致で破壊しないようにする。同様にフィールド名・親キー名の直前にも語境界（`\b`）を設け、`other_version` が `version` に誤って一致しないようにする
+5. 未置換時のエラーは filter モードと同様に 2 種類に分離される:
    - `version_path` のフィールド自体が見つからない → `ValueError`（対象外。version_file にそのフィールドの記載自体がない）
    - フィールドは見つかったが値が `old_version` と一致しない → `VersionDriftError`（ドリフト。記載バージョンが既に現行値と乖離している）
 
 > **simple モード（`_replace_first`）は対象外**: フィールド名という手がかりが存在しないため、「対象外」と「ドリフト」を安全に区別する判定基準を構造的に持てない（老朽化した任意の version 文字列をヒューリスティックに探すことは誤検知の温床になる）。したがって simple モードは従来通り `ValueError` のみを返す。実際に `--optional` と組み合わせて呼ばれるのは `update_optional_dependent.py`（filter なし・optional 可）のみだが、これは常に simple モードを経由するため、この対象外判断は本設計の対象外（review_priorities_spec.md §3.4 の比例性確認）。
 
-#### changelog_header モードの動作（Issue #115 提案3）
+#### changelog_header モードの動作
 
 ```
 _update_changelog_header(content, old_version, new_version)
@@ -310,7 +310,7 @@ _update_changelog_header(content, old_version, new_version)
 
 1. 最初の version 見出し（`## [v?]X.Y.Z` / `## v?X.Y.Z`、keep-a-changelog / simple 双方）を正規表現で検索
 2. 見出しの version 部分のみを置換する。先頭 `v` と角括弧 `[]` は保持する
-3. version 末尾に境界（`(?![\d.])`）を設け、`0.6.1` が `## [0.6.10]` を前方一致で破壊しないようにする（Issue #115 レビュー指摘）
+3. version 末尾に境界（`(?![\d.])`）を設け、`0.6.1` が `## [0.6.10]` を前方一致で破壊しないようにする
 4. 該当見出しが見つからない場合は `ValueError`
 
 ### 3.4 get_version_status.py
@@ -319,7 +319,7 @@ _update_changelog_header(content, old_version, new_version)
 
 **配置**: `plugins/forge/scripts/get_version_status.py`（プラグイン共通）
 
-**存在判定と version 抽出の分離（Issue #115 提案4）**:
+**存在判定と version 抽出の分離**:
 
 - **存在判定**: `git cat-file -e <base>:<path>` で base ブランチにファイルが実在するかを判定する。version 抽出の成否とは独立。
 - **version 抽出**: 以下の順で試行する。
@@ -376,7 +376,7 @@ Step 4: calculate_version.py で新バージョンを算出
     ↓
 Step 5: 変更内容の収集（バージョン更新前にコミット履歴から CHANGELOG エントリを生成）
     ↓
-Step 6: ファイル更新（writer ラッパー経由・ラッパーが対象ファイルを直接書き戻す / Issue #139）
+Step 6: ファイル更新（writer ラッパー経由・ラッパーが対象ファイルを直接書き戻す）
     6-1. version_file を update_main_version.py で更新
     6-2. sync_files を順次 update_{required,optional}_{dependent,filtered}.py で更新
     ↓
@@ -417,11 +417,11 @@ version_file と各 sync_file に対して、対応する **I/O アダプタ** �
 - stderr の JSON で `status: "skipped"` → optional ラッパーでパターン未マッチ。ラッパーが書き戻しをスキップ済み（exit 0 を維持）
 - stderr の JSON で `status: "error"` → エラー報告して終了。元ファイルは保護される
 
-AI 側で stdout を手動 Write する手順は **不要**（Issue #139 修正以降）。SKILL.md からも該当手順は削除されている。
+AI 側で stdout を手動 Write する手順は **不要**。SKILL.md にも該当手順は存在しない。
 
 #### Step 7: CHANGELOG 挿入
 
-Step 5 で生成したエントリを CHANGELOG ファイルに挿入する。挿入アンカーは `changelog.format` で分岐する（Issue #115 提案1）:
+Step 5 で生成したエントリを CHANGELOG ファイルに挿入する。挿入アンカーは `changelog.format` で分岐する:
 
 | `format`           | 挿入アンカー（この行の直前に挿入）                                                      |
 | ------------------ | --------------------------------------------------------------------------------------- |
@@ -462,19 +462,19 @@ Step 5 で生成したエントリを CHANGELOG ファイルに挿入する。�
 
 ### 5.2 update-version
 
-| エラー                                                       | 対応                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.version-config.yaml` がない                                | エラー表示。`/forge:setup-version-config` の実行を案内                                                                                                                                                                                                       |
-| 不正な target 名                                             | 有効な target 名の一覧を表示して終了                                                                                                                                                                                                                         |
-| 不正なバージョン形式                                         | 「バージョン形式が不正です（例: 1.2.3）」と表示して終了                                                                                                                                                                                                      |
-| 新バージョン ≦ 現バージョン                                  | AskUserQuestion で続行を確認                                                                                                                                                                                                                                 |
-| sync_file 不在 + optional: true                              | スキップ（警告なし）。`update_version_files.py` 自身も `--optional` 指定時は `FileNotFoundError` を `status: "skipped"` として exit 0 で返す（Issue #175: 以前は SKILL.md 側の事前存在チェックのみに依存しており、低レベル API 単体では非対称だった）        |
-| sync_file 不在 + optional: false                             | 警告を表示して次のファイルへ（処理は継続）                                                                                                                                                                                                                   |
-| filter 自体が見つからない + optional: true                   | `status: "skipped"`（対象外、正常系）                                                                                                                                                                                                                        |
-| filter は見つかるがバージョン未発見 + optional: false        | `VersionDriftError`。エラー報告して終了                                                                                                                                                                                                                      |
-| filter は見つかるがバージョン未発見 + optional: true         | `status: "drift"`。完了メッセージで必ず警告表示（Issue #157）                                                                                                                                                                                                |
-| version_path フィールドは見つかるが値が不一致（path モード） | `VersionDriftError`（Issue #175）。低レベル API の契約として存在するが、`sync_files` は現状 `version_path` を持たない（filter 付き `_update_with_filter` か filter 無し `_replace_first` のいずれか）ため、update-version ワークフロー経由では現状到達しない |
-| テスト失敗                                                   | 失敗内容を表示し AskUserQuestion で続行を確認                                                                                                                                                                                                                |
+| エラー                                                       | 対応                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.version-config.yaml` がない                                | エラー表示。`/forge:setup-version-config` の実行を案内                                                                                                                                                                                         |
+| 不正な target 名                                             | 有効な target 名の一覧を表示して終了                                                                                                                                                                                                           |
+| 不正なバージョン形式                                         | 「バージョン形式が不正です（例: 1.2.3）」と表示して終了                                                                                                                                                                                        |
+| 新バージョン ≦ 現バージョン                                  | AskUserQuestion で続行を確認                                                                                                                                                                                                                   |
+| sync_file 不在 + optional: true                              | スキップ（警告なし）。`update_version_files.py` 自身も `--optional` 指定時は `FileNotFoundError` を `status: "skipped"` として exit 0 で返す（SKILL.md 側の事前存在チェックのみに依存すると、低レベル API 単体では非対称になるため）           |
+| sync_file 不在 + optional: false                             | 警告を表示して次のファイルへ（処理は継続）                                                                                                                                                                                                     |
+| filter 自体が見つからない + optional: true                   | `status: "skipped"`（対象外、正常系）                                                                                                                                                                                                          |
+| filter は見つかるがバージョン未発見 + optional: false        | `VersionDriftError`。エラー報告して終了                                                                                                                                                                                                        |
+| filter は見つかるがバージョン未発見 + optional: true         | `status: "drift"`。完了メッセージで必ず警告表示                                                                                                                                                                                                |
+| version_path フィールドは見つかるが値が不一致（path モード） | `VersionDriftError`。低レベル API の契約として存在するが、`sync_files` は現状 `version_path` を持たない（filter 付き `_update_with_filter` か filter 無し `_replace_first` のいずれか）ため、update-version ワークフロー経由では現状到達しない |
+| テスト失敗                                                   | 失敗内容を表示し AskUserQuestion で続行を確認                                                                                                                                                                                                  |
 
 ---
 

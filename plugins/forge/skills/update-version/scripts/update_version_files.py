@@ -59,12 +59,12 @@ def update_version_in_text(content, old_version, new_version, version_path=None,
         return _update_with_filter(content, old_version, new_version, filter_pattern)
 
     if version_path:
-        # version_path の引用符を normalize（Issue #115 提案2）。
+        # version_path の引用符を normalize する。
         # .version-config.yaml に version_path: "version" と書かれていても、
         # YAML パースを経ずに生文字列が渡る経路があるため防御する。
         version_path = version_path.strip().strip('\'"')
         if version_path == 'changelog_header':
-            # CHANGELOG を canonical version source とするケース（Issue #115 提案3）
+            # CHANGELOG を canonical version source とするケース
             return _update_changelog_header(content, old_version, new_version)
         return _update_with_path(content, old_version, new_version, version_path)
 
@@ -129,7 +129,7 @@ def _update_with_path(content, old_version, new_version, version_path):
     version_path が "version" なら "version" キーの行を、
     "package.version" なら "package" ブロック内の "version" キーの行を特定する。
     """
-    # 直接呼び出し経路でも引用符を normalize する（Issue #115 提案2）
+    # 直接呼び出し経路でも引用符を normalize する
     version_path = version_path.strip().strip('\'"')
     parts = version_path.split('.')
     field_name = parts[-1]  # 最終キー名
@@ -145,7 +145,7 @@ def _update_with_path(content, old_version, new_version, version_path):
     )
     # フィールドの存在自体（値を問わない）を検出するパターン。
     # old_version 側のマッチに失敗した際、「フィールド自体が無い」（対象外）と
-    # 「フィールドはあるが値が old_version と不一致」（ドリフト）を区別するために使う（Issue #175）。
+    # 「フィールドはあるが値が old_version と不一致」（ドリフト）を区別するために使う。
     field_pattern = re.compile(
         r'[\"\']?\b' + re.escape(field_name) + r'[\"\']?\s*[:=]\s*[\"\']?[^\s\"\',}]+'
     )
@@ -166,7 +166,7 @@ def _update_with_path(content, old_version, new_version, version_path):
     # 各親キーの直後に開く `{` の対応 `}` までをスコープとして検索範囲を制限する。
     # 開始位置の前進だけではスコープ境界を見ないため、`b.package.version` が
     # 存在しなくても `b` より後方の別スコープ `package.version` を誤更新できてしまう
-    # （Issue #180）。親キーの値がオブジェクトでない・境界を特定できない場合は
+    # 親キーの値がオブジェクトでない・境界を特定できない場合は
     # 書き換えずエラーに倒す。置換自体はテキスト操作のまま。
     start, end = 0, len(content)
     for parent_key in parts[:-1]:

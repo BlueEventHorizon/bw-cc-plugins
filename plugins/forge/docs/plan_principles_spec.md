@@ -279,7 +279,7 @@ required_reading:
 | 対応タスクなしの要件 ID に除外理由が記載されていない | 🟡 major       |
 | タスクが対応要件と矛盾する内容                       | 🔴 critical    |
 
-### 追加 feature 用 frontmatter (Issue #118)
+### 追加 feature 用 frontmatter
 
 判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。マーカーの定義は [plan_format.md](plan_format.md)「追加 feature 用 frontmatter」節を参照（plan.yaml は先頭コメントブロックで表現する）。
 
