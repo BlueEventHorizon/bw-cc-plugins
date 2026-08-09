@@ -1,19 +1,10 @@
 # ADR-052 docs/ 内部相互参照の記法統一と `${CLAUDE_PLUGIN_ROOT}` 実体アクセスの改善
 
-## メタデータ
-
-| 項目     | 値                                                               |
-| -------- | ---------------------------------------------------------------- |
-| ADR ID   | ADR-052                                                          |
-| Status   | accepted                                                         |
-| 決定日   | 2026-07-23                                                       |
-| 関連設計 | N/A（既存 DES に対応しない、forge プラグイン基盤インフラの改善） |
-
 ## 1. コンテキスト
 
 `plugins/forge/docs/` 配下の全 20 文書を精査し、文書間の相互参照リンクを「参照先を読まないと本文の主張・規定が検証できないか」を基準に棚卸しした過程で、以下 3 点の関連する問題が判明した。
 
-### 問題 1: `${CLAUDE_PLUGIN_ROOT}` は経路によって解決性質が異なる
+### 1.1 `${CLAUDE_PLUGIN_ROOT}` は経路によって解決性質が異なる
 
 `${CLAUDE_PLUGIN_ROOT}` はプラグインのランタイム変数だが、その解決タイミング・解決有無は AI がその文字列に遭遇する経路によって異なることを実測で確認した。
 
@@ -21,11 +12,11 @@
 - **`SKILL.md` 本文が実際にスキルとして起動されコンテキストへ注入される経路**: 同様に実パスへ置換される（`forge:query-forge-rules` を実起動し、注入内容が生ファイルと異なり実パスに解決されていることを実測確認）。
 - **`Read` ツールで `SKILL.md` / `docs/*.md` を生ファイルとして直接読む経路**: 置換は一切行われず、リテラル文字列 `${CLAUDE_PLUGIN_ROOT}` のまま残る。プラグイン開発・レビュー・監査作業（本リポジトリでの通常の作業）はこの経路を常用する。
 
-### 問題 2: `docs/` 内部の相互参照が `${CLAUDE_PLUGIN_ROOT}` 形式で書かれていた
+### 1.2 `docs/` 内部の相互参照が `${CLAUDE_PLUGIN_ROOT}` 形式で書かれていた
 
 `docs/` はフラット構成（サブディレクトリを持たない）で、文書同士の相互参照は本質的に同一ディレクトリの兄弟ファイル参照である。しかし既存の `docs/*.md` は `document_style_guide.md` §5.1（旧版）の「フルパス必須」規約に従い、`docs/` 内部の参照にも `${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式を用いていた。この形式は「問題 1」の直接 Read 経路では解決されない生の文字列として残り、AI が実体パスへ変換する手間を都度発生させていた。一方、`docs/` の外側にある `SKILL.md` / `agents/*.md` / `commands/*.md` から `docs/` 内の文書を参照する場合は、相対パスでは `docs/` を起点にできず誤った場所を指すため、`${CLAUDE_PLUGIN_ROOT}/docs/xxx.md` 形式が引き続き必須である。
 
-### 問題 3: ダウンストリーム環境での実体パス確認コスト
+### 1.3 ダウンストリーム環境での実体パス確認コスト
 
 marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_ROOT}` の実体が `~/.claude/plugins/cache/.../forge/...` のような非決定的なキャッシュパスになる。「問題 1」の直接 Read 経路でこの実体にアクセスする際、AI は `ps -axo args | grep plugin-dir` 等のプロセス起動引数の逆引きで都度実パスを推測する必要があり、`CLAUDE.md`「外部プラグインの実体確認」節が明示的に手順化しているほどのコストがかかる。
 
@@ -45,7 +36,7 @@ marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_RO
 
 旧 §5.1 は参照元の位置（`docs/` 内部か外部か）を区別せず一律フルパスを規定していた。2.1 / 2.2 の使い分けを明文化し、SoT の矛盾を解消した。
 
-### 2.4 `SessionStart` hook による symlink 自己修復を導入する（問題 3 への対処）
+### 2.4 `SessionStart` hook による symlink 自己修復を導入する（§1.3 への対処） ⚠️失効（ADR-069 が廃止）
 
 `plugins/forge/hooks/hooks.json` の `SessionStart` に `ensure_plugin_root_link.py` を登録し、セッション開始のたびに `<project_root>/.claude/forge-docs` を現在の `${CLAUDE_PLUGIN_ROOT}/docs` 実体への symlink として作成・修復する。プラグイン全体ではなく `docs/` サブパスのみに限定する（比例性、`scope_proportionality_spec.md` §2）。symlink はマシン固有の絶対パスを含むため `.gitignore` で非追跡とする。
 
@@ -73,10 +64,3 @@ marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_RO
 `hooks/hooks.json` を調査する過程で、`DES-031_resume_status_presenter_design.md`（会話再開時の未完了作業提示、SessionStart hook + `resume_status.py` を設計）が**未実装のまま**であることを発見した。`plugins/forge/scripts/resume_status.py` / `plugins/forge/skills/resume-status/SKILL.md` / 対応テストのいずれも全ブランチの git 履歴に存在しない。
 
 本 ADR が追加した `ensure_plugin_root_link.py` の `SessionStart` 登録とは無関係（`SessionStart` は配列で複数エントリを共存できるため、両者は構造的に衝突しない）。DES-031 の実装自体は本 ADR のスコープ外とし、現状把握のみをここに記録する。
-
-## 5. ステータス履歴
-
-| 日付       | Status   | 備考                                                                                    |
-| ---------- | -------- | --------------------------------------------------------------------------------------- |
-| 2026-07-23 | accepted | `docs/` 相互参照棚卸し作業から派生した調査・実験・実装をまとめて決定として作成          |
-| 2026-08-04 | accepted | §2.4（symlink 自己修復機構）の決定は ADR-069 により廃止。§2.1〜2.3 の決定は引き続き有効 |
