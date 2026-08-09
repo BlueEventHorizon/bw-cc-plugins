@@ -366,7 +366,7 @@ criteria に判断が残っている状態 = 設計時点で執筆者から判�
 
 criteria から判断を除去するための前提として、principles 側を拡充する。
 
-**重大度カタログ化**: 各 principles 文書の規範ごとに、違反時の重大度（🔴 致命的 / 🟡 品質問題 / 🟢 改善提案）を明示する。対象は `spec_priorities_spec.md` / `spec_design_boundary_spec.md` / `design_principles_spec.md` / `plan_principles_spec.md`。
+**重大度カタログ化**: 各 principles 文書の規範ごとに、違反時の重大度（🔴 致命的 / 🟡 品質問題 / 🟢 改善提案）を明示する。対象は `spec_priorities_spec.md` / `spec_design_boundary_spec.md` / `design_principles_spec.md` / `adr_principles_spec.md` / `plan_principles_spec.md`。
 
 **グレーゾーン許容範囲の明示化**: 判定が割れやすい論点について「どの解釈を許容し、どれを許容しないか」を断定で明示する。レビュー時の false positive 警告を criteria 側に持たせず、principles で執筆者にも見える形にする。
 

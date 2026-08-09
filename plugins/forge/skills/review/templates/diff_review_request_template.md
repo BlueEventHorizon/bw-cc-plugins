@@ -61,6 +61,7 @@
 - `{{PLUGIN_ROOT}}/docs/requirement_format.md`
 - `{{PLUGIN_ROOT}}/docs/design_format.md`
 - `{{PLUGIN_ROOT}}/docs/adr_format.md`
+- `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md`
 - `{{PLUGIN_ROOT}}/docs/plan_format.md`
 - `{{PLUGIN_ROOT}}/docs/spec_format.md`
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md`

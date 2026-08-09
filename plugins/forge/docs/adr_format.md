@@ -2,9 +2,9 @@
 
 プロジェクト固有の「ADR フォーマット」が見つからない場合に使用する汎用フォーマット。
 
-作成トリガー（どのようなときに ADR を作成・更新するか）: [design_principles_spec.md](design_principles_spec.md) 「設計書の保守」
-運用（目的・可変性・失効の扱い・棄却理由の書き方・読み手の義務）: [design_principles_spec.md](design_principles_spec.md) 「ADR の運用」（**本ファイルは記法のみを定める**）
-違反時の severity: [design_principles_spec.md](design_principles_spec.md) 重大度カタログ「ADR 運用」を参照（本ファイルは severity を宣言しない）
+作成トリガー（どのようなときに ADR を作成・更新するか）: [adr_principles_spec.md](adr_principles_spec.md)「書く対象・書かない対象」
+運用（目的・書く対象・可変性・失効の扱い・棄却理由の書き方・読み手の義務）: [adr_principles_spec.md](adr_principles_spec.md)（**本ファイルは記法のみを定める**）
+違反時の severity: [adr_principles_spec.md](adr_principles_spec.md) 重大度カタログを参照（本ファイルは severity を宣言しない）
 
 ---
 
@@ -39,7 +39,7 @@ ADR の `##` 見出しは **`## 1. コンテキスト` / `## 2. 決定` / `## 3.
 - `## 5. ステータス履歴` 節
 - 番号を持たない `###` 小節
 
-本書式へ合わせる手順は [design_principles_spec.md](design_principles_spec.md)「ADR の運用」に従う（本ファイルは記法のみを定める）。
+本書式へ合わせる手順は [adr_principles_spec.md](adr_principles_spec.md)「旧書式からの移行」に従う（本ファイルは記法のみを定める）。
 
 ## 失効マーカー [MANDATORY]
 

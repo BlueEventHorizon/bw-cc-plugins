@@ -44,6 +44,7 @@
 
 - `{{PLUGIN_ROOT}}/docs/design_format.md` — 設計書の構成・必須項目
 - `{{PLUGIN_ROOT}}/docs/adr_format.md` — ADR の構成・必須項目（対象が ADR の場合）
+- `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md` — ADR の運用・重大度（対象が ADR の場合）
 - `{{PLUGIN_ROOT}}/docs/design_principles_spec.md` — 設計原則
 - `{{PLUGIN_ROOT}}/docs/spec_design_boundary_spec.md` — What / How の境界。設計書が要件を再定義していないか
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md` — 文書スタイル。特に §5 文書参照記法と参照先の実在性
