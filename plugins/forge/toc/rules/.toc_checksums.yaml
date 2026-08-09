@@ -5,7 +5,7 @@ file_count: 39
 checksums:
   plugins/forge/docs/additive_development_spec.md: ebb7c7b8f1150a00dae9a1be0e5eef2e346795978902af97ed9b4bacf5a010d3
   plugins/forge/docs/adr_format.md: d3afea5605c5d9a2b8d4fc063495fa5b507c0500eb702a20ed16b48e83013af9
-  plugins/forge/docs/ai_user_inquiry_pattern.md: 3fa9751dba6fa265efc684b5e9785fa62a8bfeae2edbdcbd722fc68488b43272
+  plugins/forge/docs/consult_principles_spec.md: 12d59b268a0064f39ec3f5bb4276c1bae95b07ccb41c7cf61e01328b08307d30
   plugins/forge/docs/criteria/review_criteria_code.md: 3e26b482397526a35b3f84cfd0207f26ed852851c0ba6bbfa96940e21a7f5e6a
   plugins/forge/docs/criteria/review_criteria_design.md: e22b46fe7b11f6acad22cf20c5a48e573cee8fa9c68140309cadb1ba8fc25ff0
   plugins/forge/docs/criteria/review_criteria_generic.md: 3bc679fa3831f0d63ea56029971839d48da0b6cdfd66d39e8c8821a6a7ea48c6
