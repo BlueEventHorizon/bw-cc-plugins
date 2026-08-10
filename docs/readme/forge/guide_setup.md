@@ -81,7 +81,7 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 ### Usage Examples
 
 ```bash
-/forge:update-version patch                # Patch bump first target
+/forge:update-version patch                # Auto-detect changed targets and patch bump them
 /forge:update-version forge 0.1.0          # Set forge to 0.1.0
 /forge:update-version anvil minor          # Minor bump anvil
 ```
@@ -89,16 +89,20 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 ### Execution Flow
 
 1. Load `.version-config.yaml`
-2. Read current version
-3. Compare with main branch (confirm if already bumped)
-4. Calculate new version
-5. Collect commit history (for CHANGELOG)
-6. Update files
+2. Determine the target (auto-detected from changes matching `scope` when omitted)
+3. Read current version
+4. Compare with main branch (confirm if already bumped)
+5. Calculate new version
+6. Collect commit history (for CHANGELOG)
+   - Look up the previous version's tag in both forms, with and without the `v` prefix. Fall back to the previous CHANGELOG entry's date when neither exists
+7. Update files
    - `version_file` (plugin.json, etc.)
    - `sync_files` (README, etc.) version sync
-7. Insert CHANGELOG entry
-8. Run tests (if `tests/` exists)
-9. Git operations (confirm commit / push / tag)
+8. Offer to bump the catalog (marketplace) target
+9. Insert CHANGELOG entry
+10. Judge whether the change affects README (update it when it does)
+11. Run tests (if `tests/` exists)
+12. Git operations (confirm commit / push / tag; the tag name follows the format of existing tags)
 
 ### Error Handling
 

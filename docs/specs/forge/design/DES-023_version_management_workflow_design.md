@@ -106,6 +106,15 @@ git:
   auto_commit: false
 ```
 
+**`tag_format` は宣言であって実在タグの保証ではない**。タグは利用者が手で付けることが多く、宣言と実際に打たれた形式（`v` の有無・prefix の有無）は乖離しうる。この乖離を前提に、`tag_format` の用途を検索と作成で分ける:
+
+| 用途                     | `tag_format` の扱い                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| 履歴取得のためのタグ検索 | 候補生成のテンプレートとして使い、`v` 付き / `v` なしの両形式を検索する（片方だけは見ない） |
+| AI によるタグ作成        | 既存タグの前例が優先。前例がなければ `tag_format`、それも無ければ `v` 付き                  |
+
+検索側を両形式に広げるのは、`tag_format` どおりのタグが無いだけで「タグ不在」と誤判定し、常に CHANGELOG 日付フォールバックへ落ちるのを防ぐためである。作成側で前例を優先するのは、AI が新しい形式のタグを増やすと以降の履歴取得とリリース運用が分断されるためである。
+
 ---
 
 ## 3. スクリプト設計
@@ -370,7 +379,11 @@ Step 1: .version-config.yaml を Read
     ↓
 Step 2: 引数解析（target_name, version_spec）
     ↓
+Step 2.5: target 未指定なら get_version_status.py の needs_bump から自動検出
+    ↓
 Step 3: version_file から現在のバージョンを Read
+    ↓
+Step 3.5: get_version_status.py でベースブランチとのバージョン差を確認
     ↓
 Step 4: calculate_version.py で新バージョンを算出
     ↓
@@ -380,11 +393,15 @@ Step 6: ファイル更新（writer ラッパー経由・ラッパーが対象�
     6-1. version_file を update_main_version.py で更新
     6-2. sync_files を順次 update_{required,optional}_{dependent,filtered}.py で更新
     ↓
+Step 6.5: カタログ target のバンプ提案（対象が当該 target 以外の場合）
+    ↓
 Step 7: CHANGELOG 挿入（Step 5 で生成したエントリを挿入）
     ↓
-Step 8: テスト実行（tests/ が存在する場合）
+Step 8: README 影響判定（CHANGELOG の内容が README に及ぶか判断し、必要なら更新）
     ↓
-Step 9: git 操作（auto_commit/auto_tag が有効な場合）
+Step 9: テスト実行（tests/ が存在する場合）
+    ↓
+Step 10: git 操作（auto_commit/auto_tag が有効な場合。タグ名は §2.4 の規則で決定）
 ```
 
 > **Step 5 → 6 → 7 の順序が重要**: 変更内容の収集（Step 5）はバージョンファイル更新（Step 6）より前に実行する。バージョン番号を書き換える前にコミット履歴を収集することで、バージョン番号変更のノイズが混入しない。
@@ -393,9 +410,10 @@ Step 9: git 操作（auto_commit/auto_tag が有効な場合）
 
 前バージョンからのコミット履歴を取得し、CHANGELOG エントリを生成する:
 
-1. **タグが存在する場合**: `git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges`
-2. **タグが存在しない場合**: CHANGELOG.md の前バージョンエントリ日付から `git log --after="{date}" --pretty=format:"%s" --no-merges`
-3. **いずれもない場合**: `git log --oneline -30 --no-merges` で直近のコミットを取得し、AskUserQuestion で範囲を確認
+1. **タグ候補の検索**: `tag_format` から前バージョンのタグ名を生成し、`v` 付き / `v` なしの両形式を `git tag --list` へ渡す（§2.4）。両形式が実在する場合は `tag_format` どおりの側を採る
+2. **タグが存在する場合**: `git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges`
+3. **タグが存在しない場合**: CHANGELOG.md の前バージョンエントリ日付から `git log --after="{date}" --pretty=format:"%s" --no-merges`
+4. **いずれもない場合**: `git log --oneline -30 --no-merges` で直近のコミットを取得し、AskUserQuestion で範囲を確認
 
 AI がコミットメッセージを Conventional Commits 形式で分類し、意味のある単位でグループ化して CHANGELOG エントリを生成する。空テンプレート（`-` のみ）は禁止。
 
