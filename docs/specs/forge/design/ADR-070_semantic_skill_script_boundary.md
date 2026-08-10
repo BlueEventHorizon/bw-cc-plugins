@@ -2,7 +2,7 @@
 
 ## 1. コンテキスト
 
-REQ-003 と DES-024 は、AI の判断負担を減らす手段として「位置引数のみ」「flag 付き呼び出しを
+[REQ-003](../requirements/REQ-003_skill_script_separation.md) と [DES-024](DES-024_skill_script_layout_design.md) は、AI の判断負担を減らす手段として「位置引数のみ」「flag 付き呼び出しを
 書かない」「意味論が異なる operation は別 script に分ける」を全 SKILL に適用していた。
 
 しかし、SKILL は進行管理・判断分岐・ユーザー対話を担うオーケストレーターでもある。実際に

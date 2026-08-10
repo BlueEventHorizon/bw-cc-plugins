@@ -2,7 +2,7 @@
 
 ## 1. コンテキスト
 
-ADR-052 §2.4 は、marketplace インストール環境で `${CLAUDE_PLUGIN_ROOT}` の実体が非決定的なキャッシュパスになる問題（ADR-052 §1.3）への対処として、SessionStart hook による symlink 自己修復機構を導入した。セッション開始のたびに利用プロジェクトの `.claude/` 配下へプラグイン実体 `docs/` への symlink を作成し、利用プロジェクトの `.gitignore` へ非追跡エントリを自動追記する。
+[ADR-052](ADR-052_docs_cross_reference_notation_and_plugin_root_link.md) §2.4 は、marketplace インストール環境で `${CLAUDE_PLUGIN_ROOT}` の実体が非決定的なキャッシュパスになる問題（ADR-052 §1.3）への対処として、SessionStart hook による symlink 自己修復機構を導入した。セッション開始のたびに利用プロジェクトの `.claude/` 配下へプラグイン実体 `docs/` への symlink を作成し、利用プロジェクトの `.gitignore` へ非追跡エントリを自動追記する。
 
 運用の結果、この機構には利便性を上回る問題があることが判明した。
 

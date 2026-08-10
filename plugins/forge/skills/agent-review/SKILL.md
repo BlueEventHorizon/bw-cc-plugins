@@ -16,7 +16,7 @@ allowed-tools: Agent, Read, Write, Bash
 
 | 要求         | 入力                                            | 出力                                                            |
 | ------------ | ----------------------------------------------- | --------------------------------------------------------------- |
-| 可用性検査   | なし                                            | `available` と不足条件の `missing`                              |
+| 可用性検査   | なし                                            | `available`、不足条件の `missing`、`retains_context: false`     |
 | ラウンド実行 | `review_id`、ラウンド番号、パターン、純粋な本文 | `approved` / `findings` / `failure` と所見、解釈時の `warnings` |
 | 終了通知     | `review_id`                                     | 受理結果                                                        |
 | 履歴復元     | `review_id`                                     | `unsupported` と非永続である旨。履歴は返さない                  |
@@ -35,7 +35,11 @@ Agent を起動せず、`${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` を Read し�
 
 **条件 2 で「外部通信ツールを含まない」と断定しません [MANDATORY]**。`Bash` は外部通信も成果物の変更も可能にするため、断定すると検査条文が事実と食い違います。`Bash` を許可するのはレビュアーが差分・ブランチ対象を自分で確定するために必要だからです（これを外すと `--diff` / `--branch` のレビューが成立しません）。
 
-不足ごとに `axis` / `detail` / `remedy` を持つ要素を `missing` へ追加します。全条件を満たす場合だけ `{"available": true, "missing": []}` を返します。検査中に Agent、ファイル、DB、プロセスを作成しません。
+不足ごとに `axis` / `detail` / `remedy` を持つ要素を `missing` へ追加します。全条件を満たす場合だけ `{"available": true, "missing": [], "retains_context": false}` を返します。
+
+**`retains_context` は常に `false` です [MANDATORY]**。本バックエンドはラウンドごとに新しい Agent を起動し、前ラウンドの transcript を渡しません。本体はこの申告に従って 2 ラウンド目以降に完全な依頼本文を送ります。申告を誤ると、レビュアーは対象も観点も持たないまま応答することになります。
+
+検査中に Agent、ファイル、DB、プロセスを作成しません。
 
 ## ラウンド実行
 

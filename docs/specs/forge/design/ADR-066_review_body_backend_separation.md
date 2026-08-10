@@ -2,7 +2,7 @@
 
 ## 1. コンテキスト
 
-ADR-060 がバックエンド軸を導入し、ADR-065 が入出力契約に failure・終了通知・位置情報を追加した。しかし**配布物側にはバックエンドの概念が 1 つも実装されていない**。`plugins/forge/skills/review/SKILL.md` を検査したところ、`backend` / `バックエンド` / `failure` / `終了通知` のいずれの語も出現しない。
+[ADR-060](ADR-060_review_backend_axis.md) がバックエンド軸を導入し、[ADR-065](ADR-065_review_backend_contract_completion.md) が入出力契約に failure・終了通知・位置情報を追加した。しかし**配布物側にはバックエンドの概念が 1 つも実装されていない**。`plugins/forge/skills/review/SKILL.md` を検査したところ、`backend` / `バックエンド` / `failure` / `終了通知` のいずれの語も出現しない。
 
 それどころか、本体 SKILL は自身の description で「msg-sys 通信基盤（常駐 Codex セッションとの Stop フック経由の非同期往復）の上で」と名乗り、Codex フックの自己修復（Step 1.5）・msg-sys の自己診断（Step 2）・`send_and_await_reply.py` による送信と待機（Step 6）・cmux による起床（Step 6.1）を直接手順として持つ。**現状の本体は msg-review バックエンドがインラインで書かれたものである**。
 
@@ -10,7 +10,7 @@ ADR-060 がバックエンド軸を導入し、ADR-065 が入出力契約に fai
 
 ## 2. 決定
 
-`/forge:review` 本体とレビューバックエンドを **別 SKILL** に分離する（REQ-013 §3 適用対象が「`/forge:review` SKILL.md」と「レビューバックエンド SKILL」を別行として定めていることに従う）。既存の msg-sys 経由の往復は `msg-review` バックエンド SKILL として切り出し、本体はバックエンド名で起動先を切り替えるだけにする。
+`/forge:review` 本体とレビューバックエンドを **別 SKILL** に分離する（[REQ-013](../requirements/REQ-013_review_policy.md) §3 適用対象が「`/forge:review` SKILL.md」と「レビューバックエンド SKILL」を別行として定めていることに従う）。既存の msg-sys 経由の往復は `msg-review` バックエンド SKILL として切り出し、本体はバックエンド名で起動先を切り替えるだけにする。
 
 ### 2.1 責務の境界
 

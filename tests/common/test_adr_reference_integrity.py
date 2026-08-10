@@ -174,7 +174,7 @@ class TestADRFormat(unittest.TestCase):
         found: list[str] = []
         for path in adr_files():
             for lineno, line in enumerate(
-                path.read_text(encoding="utf-8").splitlines(), 1
+                strip_code(path.read_text(encoding="utf-8")).splitlines(), 1
             ):
                 if line.startswith("## メタデータ") or line.startswith(
                     "## 5. ステータス履歴"

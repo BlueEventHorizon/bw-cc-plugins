@@ -9,7 +9,7 @@ forge は文書検索 backend として doc-db を使う。このとき次の 2 
 
 前者を後者と誤れば案内が出ず、後者を前者と誤ればゴミ箱状態の KEY へ同期を試みる。したがって両者を判別する手段が要る。
 
-doc-db 0.3.2 に対する実測では、KEY 不在は JSON-RPC error ではなく `tools/call` result の `isError: true` + `content[].text` の日本語文言として返り、構造化された識別子を持たなかった。この時点の DES-057 は「実測して得た error の識別可能な要素を判別根拠として確定する」としており、実質的に**メッセージ文言への依拠**を前提にしていた。ゴミ箱状態は `trash_index` が既存 KEY を壊すため未実測のまま残っていた。
+doc-db 0.3.2 に対する実測では、KEY 不在は JSON-RPC error ではなく `tools/call` result の `isError: true` + `content[].text` の日本語文言として返り、構造化された識別子を持たなかった。この時点の [DES-057](DES-057_doc_db_backend_selection_design.md) は「実測して得た error の識別可能な要素を判別根拠として確定する」としており、実質的に**メッセージ文言への依拠**を前提にしていた。ゴミ箱状態は `trash_index` が既存 KEY を壊すため未実測のまま残っていた。
 
 doc-db 側へ照会した結果（doc-db-mcp-server Issue #7）、次が判明した。
 

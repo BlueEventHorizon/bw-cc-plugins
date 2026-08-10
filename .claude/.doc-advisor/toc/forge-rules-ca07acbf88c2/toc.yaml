@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-09T11:20:54Z
+  generated_at: 2026-08-09T13:35:50Z
   file_count: 40
 
 docs:
@@ -42,32 +42,36 @@ docs:
       - semantic integration
       - merge procedure
   plugins/forge/docs/adr_format.md:
-    title: ADR (Architecture Decision Record) Default Format
-    purpose: Specifies the default format and notation rules for Architecture Decision Records, including mandatory section structure, numbering, scope blocks, and supersession markers
+    title: ADR Default Format
+    purpose: Defines the standard format, section structure, notation rules, and lifecycle management for Architecture Decision Records (ADRs) in projects
     content_details:
-      - File naming convention ADR-{NNN}_{topic}.md with ID numbering via next-spec-id script
-      - "Four mandatory sections: Context, Decision, Alternatives, Impact"
-      - Subsection numbering scheme using section number and decimal (e.g., 2.1, 4.1)
-      - Scope block format with define/not define/relationship structure
-      - Supersession markers (warning sign失効) for deprecated decisions and partial decision replacement
-      - "Cross-reference format: ADR-NNN §X.Y for external ADR references"
-      - Template structure with decision rationale and tradeoff analysis table
-      - Migration rules from old format (removing metadata tables, status history sections)
-      - File placement in same directory as design documents
-      - Reasons for numbered sections enabling external references and supersession tracking
+      - File naming convention (ADR-{NNN}_{topic}.md) and directory placement rules
+      - Mandatory four-section structure (Context, Decision, Alternatives, Impact)
+      - Subsection numbering rules inherited from parent section
+      - Scope block format and placement (optional, quoted before section 1)
+      - Obsolescence markers for decisions superseded by other ADRs
+      - External reference format (ADR-NNN §X.Y) with numbered section headers
+      - Template with all required sections and their content guidelines
+      - Rejection reasons with explicit premises and future-proof vocabulary
+      - "Exclusions: no metadata table, no status history section, no unnumbered subsections"
+      - Legacy format identification and migration procedure reference
     applicable_tasks:
-      - ADR creation and authoring
-      - ADR format validation
-      - ADR migration from old to new format
-      - Decision supersession and deprecation marking
-      - Cross-document ADR reference resolution
+      - Creation of new ADR documents
+      - Format validation and compliance review
+      - Conversion of legacy ADRs to new format
+      - Marking superseded decisions with obsolescence markers
+      - Documentation of architectural decisions with proper section structure
     keywords:
       - ADR
-      - architecture decision record
+      - Architecture Decision Record
       - section numbering
-      - supersession marker
+      - obsolescence marker
       - scope block
-      - adr_principles_spec
+      - context
+      - decision
+      - alternatives
+      - impact
+      - cross-reference
   plugins/forge/docs/adr_principles_spec.md:
     title: ADR (Architecture Decision Record) Operating Principles
     purpose: Establishes the operating principles and governance rules for Architecture Decision Records, including creation criteria, scope definition, mutability rules, supersession handling, and rejection reason documentation guidelines

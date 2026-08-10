@@ -2,13 +2,13 @@
 
 ## 1. コンテキスト
 
-ADR-042 は「msg-sys（汎用通信基盤）と msg-review（応用レビューシステム）は恒久的に別 feature として維持する」と決定した。根拠は、msg-review の内容（返信ヒント）を msg-sys の設計書へ merge すると、msg-sys 自体が「レビュー対話専用の仕組み」であるかのように読める記述に変質し、将来の独立プラグイン化・汎用応用可能性を損なう、というものだった。
+[ADR-042](ADR-042_msg_sys_msg_review_separation.md) は「msg-sys（汎用通信基盤）と msg-review（応用レビューシステム）は恒久的に別 feature として維持する」と決定した。根拠は、msg-review の内容（返信ヒント）を msg-sys の設計書へ merge すると、msg-sys 自体が「レビュー対話専用の仕組み」であるかのように読める記述に変質し、将来の独立プラグイン化・汎用応用可能性を損なう、というものだった。
 
 この決定を踏まえて実装・運用を続けたところ、以下の事実が確認された。
 
 - `hooks/check_inbox.py`（msg-review として実装したもの）は、Claude/Codex 双方の Stop フック登録（`.claude/settings.json` / `.codex/hooks.json`）から実際に呼ばれる **本番の hook 実装そのもの**であり、旧 bash 実装（`hooks/claude-check-inbox.sh` / `hooks/codex-check-inbox.sh`）を置き換えている。「msg-sys の上に構築された応用機能」ではなく、msg-sys の hook 実装が Python へ移行しただけである
 - 返信ヒント機能（FNC-003/FNC-004/BL-001）は、レビュー対話に限定される性質を一切持たない。Claude/Codex 間で任意の非同期メッセージを往復する際に、受信側が自己完結的に返信できるようにするための汎用機能であり、msg-sys の他のユースケース（レビュー対話に限らない任意のエージェント間タスク連携）にもそのまま適用できる
-- ADR-042 が懸念した「msg-sys がレビュー専用に変質する」という問題は、実際には発生しない。返信ヒントは msg-sys の Stop フック契約（`decision:block` の `reason` に何を含めるか）の話であり、レビューという用途に依存する記述を一切含まない
+- [ADR-042](ADR-042_msg_sys_msg_review_separation.md) が懸念した「msg-sys がレビュー専用に変質する」という問題は、実際には発生しない。返信ヒントは msg-sys の Stop フック契約（`decision:block` の `reason` に何を含めるか）の話であり、レビューという用途に依存する記述を一切含まない
 
 すなわち、ADR-042 の前提（msg-review が msg-sys とは独立した「応用」であり、両者の分離が msg-sys の汎用性を守る）は誤りだった。実態は「msg-review という別名がついていただけで、中身は msg-sys そのものの hook 実装だった」。
 

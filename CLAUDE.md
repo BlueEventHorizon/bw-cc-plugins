@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.4.2) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューと相談は常駐 Codex セッションとの往復で行う（`review` / `talk-to-codex` / `msg-review`）
+- **forge** (v0.4.2) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
 - **anvil** (v0.1.1) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
 > 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
@@ -32,7 +32,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 - **設計文書は `docs/specs/**/{requirements,design}/` に保存**: plan モードで作成した重要設計も ID プレフィックス（`REQ-` / `DES-` / `ADR-`）で命名する
 - **プラグインランタイム文書の境界**: `plugins/*/docs/`（現状 forge のみ）は SKILL.md がランタイム Read する配布物。リポジトリルートの `docs/` 配下はプロジェクト自身のメタ文書（配布物に含めない）
 - **配布物（`plugins/` 配下）に具体パスを書かない**: rules / specs のパスは常に `.doc_structure.yaml` 経由で解決する。本リポジトリ固有の事情（`forge` / `anvil` という具体名、`meta/`、worktree 配置、原本 SoT である立場）も埋め込まない
-- **配布物（`plugins/` 配下）からプロジェクト開発文書（`docs/` 配下）を参照しない**: パス直書きも spec ID 参照（`DES-028 §3.4.1 に従う` 等）も禁止。規範は配布物側に持たせる。置き場は「参照元に本文を書く」か「配布物内に別文書を作って参照する」のどちらでもよい（[implementation_guidelines.md](docs/rules/implementation_guidelines.md)）
+- **配布物（`plugins/` 配下）のうち利用者環境で読まれるもの（SKILL.md / agents / commands / 内蔵 docs）からプロジェクト開発文書（`docs/` 配下）を参照しない**: パス直書きも spec ID 参照（`DES-028 §3.4.1 に従う` 等）も禁止。**script のコメント・docstring は対象外**。規範は配布物側に持たせる。置き場は「参照元に本文を書く」か「配布物内に別文書を作って参照する」のどちらでもよい（[implementation_guidelines.md](docs/rules/implementation_guidelines.md)）
 - **`docs/` 配下では必要でない参照リンクを書かない**: 参照先の発見は検索に委ねる。文書には「何に依存するか（概念・ID）」だけ残す。**書かなければ本文の意味が通じない場合に限り**マークダウンリンク方式（`[表示名](相対パス)`）で書く。地の文でのパス直書き・リンクなしのファイル名言及は使わない。**配布物は対象外**（決定論的に閉じた木として配布されるため開発者責任で内部リンクを書く。記法は forge の `document_style_guide.md` §5.1）
 - **本リポジトリは下流プロジェクトを導く SoT である**。配布された SKILL / agent / script を使っている最中に不具合・不足を発見したら、`~/.claude/plugins/cache/` のキャッシュ実体や下流プロジェクトでの回避策で済ませず、必ず本リポジトリ（`plugins/{anvil,forge}/...`）の原本を直す。キャッシュは次回 install で再生成されるため、原本を直すことが下流すべてへの正しい伝播経路になる。「刹那的に今のセッションで動くようにする」ではなく「プロジェクトを正しいものに完遂し、すべての他のプロジェクトを正しく導く」が目的。memory に回避策を保存するのは原本修正の代替にならない
 - **決定論的な定型処理（列挙・転記・集計・ファイル生成）は script 化する**。AI は判断のみ担い、手転記・手列挙をしない

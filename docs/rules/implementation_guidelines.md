@@ -108,18 +108,23 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 本リポジトリ固有の補足:
 
-- ADR の配置先: `docs/specs/{plugin}/design/ADR-{NNN}_{topic}.md`
+- ADR の配置先: `docs/specs/**/design/ADR-{NNN}_{topic}.md`（設計書と同じディレクトリ。feature が入れ子になる場合も同じ）
 
 ---
 
 ## 配布物はプロジェクト開発文書を参照しない [MANDATORY]
 
-`plugins/` 配下（SKILL.md / agent / scripts / docs / templates）から、**本リポジトリに実在する** `docs/` 配下の文書（`docs/specs/` / `docs/rules/` / `docs/readme/`）を参照しない。パス直書きも spec ID による出典表記も禁止する。
+`plugins/` 配下のうち**利用者環境で読まれるもの**（SKILL.md / `agents/*.md` / `commands/*.md` / 配布物内蔵 `docs/*.md` / templates）から、**本リポジトリに実在する** `docs/` 配下の文書（`docs/specs/` / `docs/rules/` / `docs/readme/`）を参照しない。パス直書きも spec ID による出典表記も禁止する。
 
 ```text
 ❌ 複数文書間の優先順位は DES-028 §3.4.1 に従う
 ❌ 詳細は docs/specs/forge/design/DES-029... を参照
-❌ 本スクリプトは REQ-012 FNC-004 の実装である
+```
+
+**script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい（判断根拠は [ADR-055](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md) §2.3）。
+
+```text
+⭕ 本スクリプトは REQ-012 FNC-004 の実装である    （script のコメント）
 ```
 
 **ID 体系・書式の抽象例は許容する。** プレースホルダ番号（`DES-001` / `REQ-001` / `TASK-001` 等）や、対象プロジェクト側の構造を示すプレースホルダパス（`docs/specs/<feature>/design/*.md`、`docs/specs/**/design/` 等）は、実在文書を指していないため対象外である。format 文書・設定例・出力例がこれらを使えないと成立しないため、禁止してはならない。
