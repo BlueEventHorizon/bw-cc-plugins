@@ -5,18 +5,16 @@ description: |
   msg-sys 通信基盤の上で、常駐 Codex セッションとレビュー 1 ラウンドの往復を行い、
   判定（approved / findings / failure）と所見配列を本体へ返す。
   本体（/forge:review）から Skill ツールで起動される。単独で起動しない。
-  受信モードの起動契機（トリガー句ではなくメッセージ本文の形式で成立）: Stop フックが
-  差し戻したメッセージ本文の先頭が `[msg-review] <種別> review_id=<review_id> round=<n>` である。
 user-invocable: false
 allowed-tools: Read, Write, Bash, Monitor, AskUserQuestion
 ---
 
-このスキルは **レビューバックエンド** である。担うのは前提検査・レビュアーとの往復・応答の判定と所見配列化・往復履歴の復元・終了通知の受理のみで、**対象解決・依頼本文の組み立て・所見の評価・修正の実施・完了判定は行わない**（いずれも本体 `/forge:review` の責務）。親が依頼している他の作業を引き継いではならない。
+このスキルは **レビューバックエンド** である。担うのは前提検査・同一ターン内で完結するレビュアーとの 1 ラウンド往復・応答の判定と所見配列化・終了通知の受理のみで、**対象解決・依頼本文の組み立て・所見の評価・修正の実施・完了判定は行わない**（いずれも本体 `/forge:review` の責務）。任意拡張として、利用者が明示的に求めた場合に限り往復履歴を復元する。親が依頼している他の作業を引き継いではならない。
 
 > ❌ 自己再帰禁止: `Skill` ツールでこのスキル自身を呼ばないこと。
 > ❌ 本体の責務を代行しないこと: 所見を評価して修正を実施してはならない。判定と所見配列を返すところで止まる。
 
-> **ワイヤプロトコルの識別子 `[msg-review]` は改称しない [MANDATORY]**: メッセージ本文先頭のプロトコルヘッダは `[msg-review]` のまま据え置く。このトークンはスキル名ではなく **msg-sys の DB に永続化された通信路上の識別子**であり、`build_review_request.py` の生成・`parse_findings.py` の `HEADER_RE`・`filter_review_history.py` のスレッド連鎖判定・後述の `--header-regex` が同一値を前提に噛み合っている。改称すると、既に DB に存在する未解決スレッドがどの経路からも辿れなくなる（スレッド判定の起点を失う）。
+> **ワイヤプロトコルの識別子 `[msg-review]` は改称しない [MANDATORY]**: このトークンはスキル名ではなく **msg-sys の DB に永続化された通信路上の識別子**である。ヘッダの付加・除去と検証、`filter_review_history.py` のスレッド連鎖判定、後述の `--header-regex` は本バックエンド内で同一値を使う。
 
 ---
 
@@ -24,12 +22,12 @@ allowed-tools: Read, Write, Bash, Monitor, AskUserQuestion
 
 本体から次の 4 つの要求のいずれかで起動される。要求の種類は起動時の引数・文脈から判断する。
 
-| 要求         | 本体から受け取るもの                                        | 本体へ返すもの                                        |
-| ------------ | ----------------------------------------------------------- | ----------------------------------------------------- |
-| 可用性検査   | （なし。プロジェクトルートのみ）                            | 利用可否と、不足している前提の個別列挙                |
-| ラウンド実行 | `review_id`、ラウンド番号、依頼本文（テンプレート展開済み） | 判定（`approved` / `findings` / `failure`）と所見配列 |
-| 終了通知     | `review_id`                                                 | なし（受理して終える）                                |
-| 履歴復元     | `review_id`                                                 | 当該レビューの往復履歴と解決状態                      |
+| 要求         | 本体から受け取るもの                               | 本体へ返すもの                                                |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
+| 可用性検査   | （なし。プロジェクトルートのみ）                   | 利用可否、不足している前提の個別列挙、`retains_context: true` |
+| ラウンド実行 | `review_id`、ラウンド番号、pattern、純粋な依頼本文 | 判定（`approved` / `findings` / `failure`）と所見配列         |
+| 終了通知     | `review_id`                                        | なし（受理して終える）                                        |
+| 履歴復元     | `review_id`                                        | 当該レビューの往復履歴と解決状態                              |
 
 **判定は 3 値である [MANDATORY]**。ラウンドを成立させられなかった場合（前提不成立・応答が得られない・応答を共通書式として解釈できない）は `failure` を、利用者が読める失敗理由とともに返す。`approved`（所見なし）にも所見 0 件の `findings` にも畳み込まない。非ゼロ終了だけで失敗を伝えることもしない。
 
@@ -64,9 +62,12 @@ Codex 側 Stop フックの登録と、その実体への symlink（`.codex/msg-
 {
   "available": false,
   "missing": [{ "axis": "wake", "detail": "...", "remedy": "..." }],
+  "retains_context": true,
   "warnings": ["..."]
 }
 ```
+
+**`retains_context` は常に `true` です [MANDATORY]**。レビュアーは常駐セッションであり、往復の文脈を自身で保持します。本体はこの申告に従い、2 ラウンド目以降は所見ごとの対応表だけを送ります。
 
 `missing` の各要素は不足 1 件に対応する。`axis` は `wake`（起床手段 = cmux）/ `peer`（相手セッションの常駐）/ `setup`（msg-sys 側の設定）のいずれかである。
 
@@ -110,21 +111,22 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/check_setup.py" [--project-root <
 
 ### Step 3: 送信と応答待機（1 コマンド） [MANDATORY]
 
-**返信を期待する送信は、必ず `send_and_await_reply.py` を 1 回呼ぶ形で行う [MANDATORY]**。`send.py` を直接呼ばない。このスクリプトが送信・push型起床・ブロッキング待機の 3 つを内部で順に実行する。
+**返信を期待する送信は、必ず msg-review 固有の `send_review_and_await_reply.py` を 1 回呼ぶ形で行う [MANDATORY]**。`wire_body.py`、msg-sys 共通の `send_and_await_reply.py`、`send.py` を送信側から直接呼ばない。固有 wrapper がワイヤヘッダ付加を行い、共通スクリプトへ送信・push型起床・ブロッキング待機を委譲する。
 
-本体から受け取った依頼本文は Write ツールで一時ファイルへ書き出し、そのパスを `--body-file` に渡す（シェル経由の本文書き出しは行わない）。`run_in_background: true` で**1回だけ**起動し、`Monitor` ツールで監視する（待機予算は最大 10 分であり、前景実行ではハーネスの上限に触れる）。
+本体から受け取った依頼本文はバックエンド固有ヘッダを含まない。Write ツールで一時ファイルへ書き出し、そのパスを wrapper へ渡す（シェル経由で本文を転記しない）。`run_in_background: true` で**1回だけ**起動し、`Monitor` ツールで監視する（待機予算は最大 10 分であり、前景実行ではハーネスの上限に触れる）。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/send_and_await_reply.py" claude codex \
-  --body-file "<一時ファイルパス>" \
+python3 "${CLAUDE_SKILL_DIR}/scripts/send_review_and_await_reply.py" claude codex \
+  --review-type "<pattern>" \
+  --review-id "<review_id>" \
+  --round "<ラウンド番号>" \
+  --body-file "<純粋本文の一時ファイル>" \
   --header-regex '^\[msg-review\]\s+\S+\s+review_id=(\S+)\s+round=\d+\s*$' \
-  --thread-id <review_id> \
   --project-root "$(git rev-parse --show-toplevel)" \
-  [--in-reply-to <直前に受信した Codex メッセージの id>] \
-  --max-seconds 600 --progress-interval 10
+  [--in-reply-to <直前に受信した Codex メッセージの id>]
 ```
 
-送信後、一時ファイルを削除する。`--project-root` を渡すため **`FORGE_MSG_PROJECT_ROOT` のシェル前置は不要**（前置は呼び出し側の記憶に依存し、実運用で繰り返し忘れられた）。
+wrapper は既に `[msg-review]` ヘッダを含む本文を失敗させて二重付加を防ぎ、内部で生成したワイヤ本文を成功・失敗のどちらでも削除する。送信後、呼び出し側は純粋本文の一時ファイルだけを削除する。`--project-root` を渡すため **`FORGE_MSG_PROJECT_ROOT` のシェル前置は不要**（前置は呼び出し側の記憶に依存し、実運用で繰り返し忘れられた）。
 
 **3 手順を 1 コマンドに畳んである理由 [MANDATORY]**: 送信・起床・待機は、返信を期待する送信では常に揃って必要であり、どれ 1 つ欠けても往復が止まる。かつてこの 3 つは別々の Step として並んでおり、**同じ場所で 2 度落ちた**。
 
@@ -153,19 +155,26 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/send_and_await_reply.py" claude c
 
 ### Step 4: 応答の判定と所見配列化
 
-受信本文には Stop フックが付与する返信ヒント（複数行のコマンド案内）が末尾に連結されており、完了宣言行が本文の最終行になるとは限らない。受信本文を 1 行ずつ走査し、前後の空白を除去した上で**行全体が正確に** `REVIEW_RESULT: approved` または `REVIEW_RESULT: findings` に一致する行のみを候補とする。候補が複数見つかった場合は、本文中で**最後に出現した行**を採用する。
-
-- `REVIEW_RESULT: approved` → 判定 `approved`（所見配列は空）を本体へ返す
-- `REVIEW_RESULT: findings` → 下記で所見配列を作り、判定 `findings` とともに本体へ返す
-- 候補が 1 つも無い（形式違反） → **`failure` にはせず**、完了宣言行を含めて再送するよう Codex へ返信する（プロトコル契約の再掲を含める）。返信は Step 3 の `send_and_await_reply.py` で送り、その待機結果に従って本 Step へ戻る。再送しても得られない場合は `failure` を返す
-
-所見配列は共通書式の解釈スクリプトで作る（**全バックエンド共通の解釈規則であり、本バックエンド固有の書式を持ち込まない**。そのためスクリプトは配布物共通の場所に置かれている）:
+受信本文は `in_reply_to` で依頼スレッドへ結び付くため、レビュアーが msg-review ワイヤヘッダを返信へ繰り返す義務を持たない。共通 parser へ渡す前に、先頭に正しいヘッダがあれば、現在の `pattern` / `review_id` / ラウンド番号と全て一致することを検証して除去する。ヘッダが無ければ本文をそのまま渡す。`[msg-review]` で始まる不正なヘッダ、または現在値と一致しないヘッダは `failure` とする。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" --body-file <受信本文の一時ファイルパス>
+python3 "${CLAUDE_SKILL_DIR}/scripts/wire_body.py" \
+  --mode strip \
+  --pattern "<pattern>" \
+  --review-id "<review_id>" \
+  --round "<現在のラウンド番号>" \
+  --body-file "<受信本文の一時ファイル>" \
+  --output-file "<純粋応答の一時ファイル>"
 ```
 
-出力の `findings` 配列をそのまま本体へ返す。`severity` が `unclassified` の所見（重大度マーカーを検出できなかったもの）も落とさずに含める——本体が「重大度を判定できなかった所見」として人間の確認へ回す。
+ヘッダが不正なら `failure` を返す。純粋応答は共通書式の解釈スクリプトで判定する（**全バックエンド共通の解釈規則であり、本バックエンド固有の書式を持ち込まない**）。
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
+  --body-file "<純粋応答の一時ファイル>"
+```
+
+出力の `judgment`（`approved` / `findings` / `failure`）と `findings` をそのまま本体へ返す。`failure` の `error` は理由として返す。完了宣言行は応答の最終有効行に厳密に 1 行だけ必要であり、`findings` の各所見には重大度マーカーが必要である。重大度が欠落した応答は共通 parser が `failure` にする。位置は `path` + `line` または `unknown: true` のどちらかである。**位置表現が欠落した所見は parser が `unknown: true` として受理し、件数を `warnings` で返す**（1 件の欠落で他の所見を捨てない）。`warnings` はそのまま本体へ渡す。
 
 **解釈に失敗したことを `approved` に畳み込まない [MANDATORY]**。完了宣言行や重大度マーカーを取り出せないことは「指摘が無い」ことを意味しない。
 
@@ -174,6 +183,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" --body-file <�
 `status: "timeout"` はフォールバックせず、**確定した失敗**として `failure` を返す。失敗理由には経過時間・`review_id` と、「Codex 側セッションの稼働状況を確認してください」を含める。非同期往復への切り替えを装って処理を先に進めることはしない。
 
 `last_observed_request_read_by_agent_b`（最後に完了したポーリング時点の観測値）が `false` なら「Codex は最後の確認時点では依頼をまだ読んでいませんでした（常駐していない・停止している可能性があります）」、`true` なら「Codex は最後の確認時点では依頼を読んでいましたが応答していませんでした（処理中の可能性があります）」を理由に追記する（`null` なら追記しない）。`wake` が `failed` だった場合はその `reason` も追記する。
+
+タイムアウト後に届いた遅延返信を Stop フックで自動処理したり、自動的に本スキルを再開したりしない。遅延返信は msg-sys の DB に残るため、利用者が明示的に履歴復元を求めた場合に限り「履歴復元」で確認できる。
 
 ---
 
@@ -187,7 +198,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" --body-file <�
 
 ## 履歴復元
 
-本体から `review_id` とともに履歴復元を求められたときに実行する。往復上限到達後の再開や、文脈を失ったターンでの復元に使う。
+本体または利用者から `review_id` とともに履歴復元を明示的に求められたときだけ実行する。タイムアウト後の遅延返信、往復上限到達後の記録、文脈を失ったターンの記録を任意に確認するための拡張であり、ラウンド実行の続きや自動再開ではない。
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/filter_review_history.py" claude codex <review_id> \
@@ -196,22 +207,24 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/filter_review_history.py" claude codex <rev
 
 **`--project-root` を省略しない**: DB パスは `--project-root`（または `--db-path`）から解決され、どちらも無ければ fail closed で `RuntimeError: DB path could not be resolved` になる。
 
-出力 JSON（`review_id` / `messages` / `round` / `resolved`）をそのまま本体へ返す。対象 `review_id` のメッセージのみが送信順に抽出済みである（スレッド判定を `in_reply_to` の連鎖で行う。手書きの SQL で代替しない）。
+対象履歴がある場合は、出力 JSON（`status: "ok"` / `review_id` / `messages` / `round` / `resolved`）をそのまま本体へ返す。対象 `review_id` のメッセージのみが送信順に抽出済みである（スレッド判定を `in_reply_to` の連鎖で行う。手書きの SQL で代替しない）。対象メッセージが 0 件の場合は `status: "not_found"` と `reason` を返し、空の履歴が存在したかのような `messages: []` / `round: 0` / `resolved: false` は返さない。
 
 ---
 
 ## エラーフロー一覧
 
-| 異常系                                    | 挙動                                                                                      |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 可用性検査で不足を検出                    | エラーにせず `available: false` と `missing` を本体へ返す（代替の選択は本体の責務）       |
-| 可用性検査の判定スクリプトが失敗          | その軸の不足として `missing` に載せて返す（検査自体の失敗も検査結果として返す）           |
-| 前提検査 error                            | 依頼を送信せず `failure`（不足項目と対処を理由に含める）                                  |
-| 送信失敗（`send_failed`）                 | 起床・待機へ進まず `failure`（来ない返信を待機予算いっぱい待たない）                      |
-| 待機予算超過（`timeout`）                 | フォールバックせず `failure`（診断情報を理由に含める）                                    |
-| 受信本文に完了宣言行がない                | 修正せず完了宣言行の再送を依頼する。再送しても得られなければ `failure`                    |
-| 応答を共通書式として解釈できない          | `failure`。`approved` に畳み込まない                                                      |
-| 返信後に Codex が読まないまま滞留する     | `send.py` の直接呼び出し（起床・待機を伴わない経路）を疑う。送信は必ず Step 3 の形で行う  |
-| 往復上限到達                              | msg-sys が人間通知へ降格。本バックエンドは往復回数管理を持たない。本体の再開経路へ        |
-| 文脈が失われている                        | プロトコルヘッダをトリガーに本 SKILL.md を再読し、「履歴復元」で当該 review_id を復元する |
-| 終了通知が同一 `review_id` で複数回届いた | 冪等に受理する（エラーにしない）                                                          |
+| 異常系                                         | 挙動                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 可用性検査で不足を検出                         | エラーにせず `available: false` と `missing` を本体へ返す（代替の選択は本体の責務） |
+| 可用性検査の判定スクリプトが失敗               | その軸の不足として `missing` に載せて返す（検査自体の失敗も検査結果として返す）     |
+| 前提検査 error                                 | 依頼を送信せず `failure`（不足項目と対処を理由に含める）                            |
+| 送信失敗（`send_failed`）                      | 起床・待機へ進まず `failure`（来ない返信を待機予算いっぱい待たない）                |
+| 待機予算超過（`timeout`）                      | フォールバックせず `failure`（診断情報を理由に含める）                              |
+| 受信本文に完了宣言行がない                     | 共通 parser の契約違反として `failure`                                              |
+| 完了宣言行が一意でない、または最終有効行でない | 共通 parser の契約違反として `failure`                                              |
+| `findings` の所見に重大度がない                | 共通 parser の契約違反として `failure`                                              |
+| 応答を共通書式として解釈できない               | `failure`。`approved` に畳み込まない                                                |
+| 往復上限到達                                   | msg-sys が人間通知へ降格。本バックエンドは往復回数管理を持たない。本体の再開経路へ  |
+| タイムアウト後に遅延返信が届く                 | 自動処理しない。利用者が明示した場合のみ「履歴復元」で確認する                      |
+| 文脈が失われている                             | 利用者が明示した場合のみ「履歴復元」で当該 review_id を復元する                     |
+| 終了通知が同一 `review_id` で複数回届いた      | 冪等に受理する（エラーにしない）                                                    |

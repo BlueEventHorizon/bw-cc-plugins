@@ -104,7 +104,7 @@ FORGE_MSG_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
 FORGE_MSG_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/msg-sys/wait_for_reply.py" claude codex \
     --header-regex '^\[msg-talk\]\s+topic_id=(\S+)\s*$' --thread-id <topic_id> \
-    --max-seconds 600 --progress-interval 10 [--db-path <path>]
+    [--db-path <path>]
 ```
 
 `Monitor` ツールでこのジョブを監視し、10秒おきの進捗行と最終結果を受け取る。

@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-04T17:36:43Z
+  generated_at: 2026-08-08T16:56:32Z
   file_count: 7
 
 docs:
@@ -170,36 +170,33 @@ docs:
       - ScheduleWakeup
       - subagent_type
   docs/rules/skill_launch_paths_definitions.md:
-    title: SKILL / Agent / Subagent Launch Paths and Nomenclature Definition
-    purpose: "Defines official terminology and classification for five skill and agent invocation paths: inheritance-type SKILL, fork-type SKILL (deprecated), general-purpose Agent, custom Agent, and Bash subprocess"
+    title: SKILL / Agent / subagent Launch Paths and Naming Definitions
+    purpose: Establishes official short-form names for 5 launch path types (inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess) and unifies terminology for subagent reference across documentation
     content_details:
-      - Five launch paths with official short names and execution models
-      - Fork-type SKILL abolished due to 9 structural bugs in anthropic/claude-code
-      - "Context isolation: inheritance-type SKILL inherits parent context; other 4 paths use isolated context"
-      - Custom Agent definition in agents/<name>.md with system prompt as procedure book
-      - "Procedure location difference: general-purpose Agent gets prompt per invocation; custom Agent uses agents/<name>.md"
-      - subagent_type parameter value domain for Agent tool invocation
-      - "Terminology unification: avoid ambiguous 'subagent' singular; use inheritance-type SKILL, fork-type SKILL, general-purpose Agent, or custom Agent"
-      - "Invalid subagent_type values: skill names, slash command notation, file paths"
-      - Skill tool vs Agent tool invocation patterns
-      - Historical equivalence of fork-type SKILL and custom Agent (both isolated context plus predefined role)
+      - 5 launch path types with characteristics and context model
+      - Fork SKILL deprecation with structural bug rationale
+      - Short-form naming rules for SKILL and design documents
+      - Subagent terminology unification (subagent alone is ambiguous)
+      - subagent_type parameter domains for builtins and custom agents
+      - Invalid subagent_type values with examples
+      - Context inheritance model (inherited SKILL inherits parent context)
+      - Naming conventions by launch path type
     applicable_tasks:
-      - Skill and Agent architecture design
-      - Launch path selection and terminology specification
-      - SKILL/Agent naming and invocation decision
-      - subagent_type value validation
-      - Plugin documentation and SKILL.md authoring
+      - Defining custom Agent implementations
+      - Writing SKILL specifications
+      - Authoring design documents with launch path references
+      - Reviewing subagent_type parameter values
+      - Choosing launch path strategy for workflows
     keywords:
+      - SKILL
+      - Agent
       - subagent_type
-      - inheritance-type SKILL
-      - fork-type SKILL
+      - launch path
+      - context inheritance
       - custom Agent
       - general-purpose Agent
-      - launch path
-      - context boundary
-      - Skill tool
-      - Agent tool
-      - context isolation
+      - fork SKILL
+      - subagent terminology
   docs/rules/version_migration_design.md:
     title: Version Migration and Upgrade Design Rules
     purpose: Design principles and implementation patterns for safely migrating data structures across version changes, covering YAML/JSON config, Swift Codable, and database migrations

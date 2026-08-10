@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""早期検証規範（Issue #213 / forge-early-verification）の静的テキスト契約テスト。
+"""早期検証規範（forge-early-verification）の静的テキスト契約テスト。
 
 `strategy_formulation_spec.md` Step 4 と `plan_principles_spec.md`「タスクグループ」節・
 重大度カタログに追記された早期検証規範が、将来の文書改訂でサイレントに消失・改変されて
@@ -31,7 +31,7 @@ START_PLAN_SKILL = REPO_ROOT / "plugins" / "forge" / "skills" / "start-plan" / "
 # plan_principles_spec.md がタスク粒度・グループサイズを定量的上限から定性的基準
 # （「1つの Agent 実行で完結する単位」）へ改めた際、計画を実際に生成する
 # start-plan/SKILL.md 側の記述が追随しておらず、生成側とレビュー側で判断基準が
-# 乖離する回帰が起きた（Issue #213 レビュー時に発覚）。同種の数値ハードコード
+# 乖離する回帰が起きた（レビュー時に発覚）。同種の数値ハードコード
 # 再導入をどちらの文書についても検出するため、フォーマット済み文字列
 # （全角/半角ゆらぎ）を含めて禁止パターンとして固定する。
 FORBIDDEN_QUANTITATIVE_GRANULARITY_PATTERNS = [

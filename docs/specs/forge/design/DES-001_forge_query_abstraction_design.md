@@ -40,8 +40,8 @@ doc-advisor は文書集合を opaque な `key` 単位で管理する。forge �
 4 SKILL とも `user-invocable: true`。ユーザーが直接 `/forge:query-db-rules` 等を起動する運用も許容しつつ、forge の他 SKILL（review / start-* /
 create-feature-from-markdown-plan 等）から `Skill` ツール経由で呼ばれる。
 
-doc-db 経路では、各 SKILL の `scripts/` 配下の SKILL 固有 wrapper（category 固定・完全透過）を経由して
-共有低レベル CLI を呼ぶ（wrapper と CLI の設計は DES-057 §3.2）。
+doc-db 経路では、各 SKILL の `scripts/` 配下の SKILL 固有 wrapper を経由して共有低レベル CLI を呼ぶ。
+wrapper は category を固定し、当該 SKILL が必要とする操作だけを公開する（wrapper と CLI の設計は DES-057 §3.2）。
 
 ---
 

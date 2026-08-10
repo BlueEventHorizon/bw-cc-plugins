@@ -20,7 +20,7 @@ VALID_AGENT_NAMES = ("claude", "codex")
 
 def _msg_sys_dir():
     # symlink 経由で起動された場合、abspath は __file__ のリンク側パスをそのまま
-    # 返すため、".." での相対移動先を誤解決する（Issue #226）。realpath でリンクを
+    # 返すため、".." での相対移動先を誤解決する。realpath でリンクを
     # 解決してから相対移動することで、実体パス直接起動時と同じ結果になる。
     here = os.path.dirname(os.path.realpath(__file__))
     return os.path.normpath(os.path.join(here, "..", "..", "msg-sys"))

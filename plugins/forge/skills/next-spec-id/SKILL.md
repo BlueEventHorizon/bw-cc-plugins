@@ -65,7 +65,7 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
 
 #### 重複検出時
 
-`duplicates` に報告されるのは「**異なるファイルが同じ ID（共有採番モードでは同じ番号）を主張している**」衝突のみ。同一パスのファイルが複数ブランチに存在するだけの同一履歴由来ケースは報告されない（Issue #181）。共有採番モード（`--share-prefixes`）では、`ADR-007` と `DES-007` のような prefix 違い・同番号も衝突として報告される。
+`duplicates` に報告されるのは「**異なるファイルが同じ ID（共有採番モードでは同じ番号）を主張している**」衝突のみ。同一パスのファイルが複数ブランチに存在するだけの同一履歴由来ケースは報告されない。共有採番モード（`--share-prefixes`）では、`ADR-007` と `DES-007` のような prefix 違い・同番号も衝突として報告される。
 
 ```json
 {
@@ -78,7 +78,6 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
   "ids_found": 17,
   "duplicates": [
     {
-      "id": "SCR-013",
       "ids": ["SCR-013"],
       "branches": ["feature/edit_pickup", "origin/feature/print_letter"],
       "paths": [
@@ -90,7 +89,6 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
 }
 ```
 
-- `id`: 代表 ID（衝突に関与する ID の先頭）
 - `ids`: 衝突に関与する全 ID（共有採番モードでは `["ADR-007", "DES-007"]` のように複数になりうる）
 - `paths`: 同じ番号を主張している異なるファイルパス
 - `branches`: 該当ファイルが存在するブランチ

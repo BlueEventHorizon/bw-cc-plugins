@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""forge 同梱 ToC の鮮度契約テスト（Issue #158 / #174）。
+"""forge 同梱 ToC の鮮度契約テスト。
 
 `plugins/forge/toc/rules/rules_toc.yaml` は doc-advisor 管理 ToC のコピー配布物であり、
 `update-forge-toc` skill（`.claude/skills/update-forge-toc/`）の実行を忘れると
@@ -15,7 +15,7 @@
    ToC 本体（検索インデックスの中身）自体が現在のソース文書から再生成不要な
    状態（pending 差分 0 件）であること。checksums 一致（上記 2）だけでは
    「checksums のみ再生成され rules_toc.yaml 本体は stale なまま」という
-   Issue #174 の実害を検出できないため、本テストが権威的な鮮度判定を行う
+   事態の実害を検出できないため、本テストが権威的な鮮度判定を行う
    （doc-advisor 未インストール環境ではスキップ）
 
 実行:

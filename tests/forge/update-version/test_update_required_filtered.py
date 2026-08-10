@@ -3,7 +3,7 @@
 update-version/scripts/update_required_filtered.py のテスト
 
 `update_version_files.py {file} {cur} {new} --filter {filter}` を呼び出し、
-成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する (Issue #139)。
+成功時は stdout を対象ファイルへ書き戻す writer ラッパーを検証する。
 
 実行:
   python3 -m unittest tests.forge.update-version.test_update_required_filtered -v
@@ -57,7 +57,7 @@ class TestUpdateRequiredFilteredWrapper(unittest.TestCase):
         self.assertNotIn("--optional", cmd)
 
     def test_captures_stdout(self):
-        """書き戻しのため stdout を capture する (Issue #139 fix)"""
+        """書き戻しのため stdout を capture する"""
         with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
                 args=[], returncode=0, stdout="", stderr="")
@@ -80,7 +80,7 @@ class TestUpdateRequiredFilteredWrapper(unittest.TestCase):
                 self.assertEqual(rc, code)
 
     def test_writes_back_on_success(self):
-        """rc=0 + stdout 非空なら対象ファイルへ書き戻す (Issue #139 主修正)"""
+        """rc=0 + stdout 非空なら対象ファイルへ書き戻す"""
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "marketplace.json"
             target.write_text('{"name": "meta", "version": "0.1.0"}\n')

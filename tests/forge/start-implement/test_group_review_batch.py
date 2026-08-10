@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """group_review_batch.py のユニットテスト。
 
-Issue #220 三次レビュー指摘への回帰防止:
+レビュー指摘への回帰防止:
 - 通し番号付き group_id ("GROUP-001 (1/7)") の正規化・集約
 - グループの一部メンバーが FAILURE の場合はグループ全体を保留（部分完了状態のレビュー禁止）
 - 合算ファイルの重複除去・計画書順の維持
@@ -166,7 +166,7 @@ class TestInputValidation(unittest.TestCase):
 
 
 class TestScopeAggregation(unittest.TestCase):
-    """レビュー依頼へ渡すスコープ境界の合算（Issue #4 提案5）
+    """レビュー依頼へ渡すスコープ境界の合算
 
     合算規則は「全メンバーの範囲外項目の和集合 − 同じバッチのメンバーが担当する項目」。
     単純連結すると、同グループの他メンバーが今回実装した項目まで未実装と宣言してしまう。

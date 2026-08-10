@@ -58,6 +58,12 @@ class NoSettingTest(unittest.TestCase):
         """候補が 1 つも無ければ、どの実行主体も試せない。"""
         self.assertTrue(resolve_mod.DEFAULT_ORDER)
 
+    def test_default_order_prefers_agent_review(self):
+        self.assertEqual(
+            resolve_mod.DEFAULT_ORDER,
+            ("agent-review", "msg-review"),
+        )
+
     def test_reads_the_review_section(self):
         settings = _FakeSettings()
         resolve_mod.run(_PROJECT_ROOT, settings=settings)

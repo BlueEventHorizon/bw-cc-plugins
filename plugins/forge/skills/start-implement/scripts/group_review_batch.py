@@ -75,7 +75,7 @@ import sys
 _GROUP_KEY_RE = re.compile(r"^(.*?)\s*\(")
 
 # `scope_text` が review 側の注入検証（`build_review_request.py` の構造行拒否）を通ることを
-# 生成側でも保証する。生成元の保証とは独立に検証するのが本リポジトリの規約である。
+# 生成側でも保証する。受け取る側は生成元の保証を検証できないため、両側で独立に検査する。
 _STRUCTURE_LINE_RE = re.compile(r"^ {0,3}(?:#{1,6}(?:\s|$)|```|~~~)")
 _PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:", "[msg-review]")
 

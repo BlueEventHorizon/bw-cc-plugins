@@ -495,7 +495,6 @@ def _extract_feature_from_match(pattern, matched_path):
     matched_parts = matched_path.split('/')
 
     if '**' not in pattern_parts:
-        # 従来ロジック（後方互換）
         if len(pattern_parts) != len(matched_parts):
             return None
         for pp, mp in zip(pattern_parts, matched_parts):

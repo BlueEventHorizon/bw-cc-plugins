@@ -323,6 +323,150 @@ class BranchModeTargetsTest(unittest.TestCase):
         self.assertIn("sub/dir/committed.py", result["files"])
 
 
+class BranchModeExplicitBaseTest(unittest.TestCase):
+    """branch モード: `--base-branch` で渡した base が allowlist の起点になること（DES-066 §3.1.1）。
+
+    base は利用者への確認で確定する（REQ-013）。確定した base を渡せないと、依頼本文の
+    差分範囲と allowlist が別々の起点になり、範囲内のファイルへの修正が Step 7 の
+    安全検証で allowlist 逸脱として上がる。
+    """
+
+    def _repo_with_two_bases(self, project_root: Path):
+        """`main` → `feature/mid` → `feature/tip` の 3 段のブランチを作る。
+
+        `main` 起点では 2 ファイル、`feature/mid` 起点では 1 ファイルが対象になる。
+        """
+        _init_repo(project_root, initial_branch="main")
+        _write(project_root, "base.txt", "base\n")
+        _commit_all(project_root, "initial commit")
+
+        _git(["checkout", "-b", "feature/mid"], project_root)
+        _write(project_root, "on_mid.py", "print(1)\n")
+        _commit_all(project_root, "add on_mid.py")
+
+        _git(["checkout", "-b", "feature/tip"], project_root)
+        _write(project_root, "on_tip.py", "print(2)\n")
+        _commit_all(project_root, "add on_tip.py")
+
+    def test_explicit_base_narrows_the_allowlist(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            self._repo_with_two_bases(project_root)
+
+            result = resolve_targets_mod.resolve_targets(
+                "branch", project_root, None, None, "feature/mid"
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["base_branch"], "feature/mid")
+        self.assertEqual(set(result["files"]), {"on_tip.py"})
+
+    def test_omitted_base_falls_back_to_self_resolution(self):
+        """`--base-branch` 省略時のみ自前解決する（base 確定を持たない呼び出し向けの縮退経路）。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            self._repo_with_two_bases(project_root)
+
+            result = resolve_targets_mod.resolve_targets("branch", project_root, None)
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["base_branch"], "main")
+        self.assertEqual(set(result["files"]), {"on_mid.py", "on_tip.py"})
+
+    def test_missing_explicit_base_is_error_and_does_not_self_resolve(self):
+        """不在の base では自前解決へ落ちず error にする（fail closed）。
+
+        自前解決へ落とすと、利用者が確定した base とは別の起点で allowlist が作られ、
+        その食い違いが出力からは見えない。
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            self._repo_with_two_bases(project_root)
+
+            result = resolve_targets_mod.resolve_targets(
+                "branch", project_root, None, None, "feature/nonexistent"
+            )
+
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["base_branch"], "feature/nonexistent")
+        self.assertEqual(result["files"], [])
+        self.assertIn("指定された base ブランチが見つかりません", result["error"])
+
+    def test_explicit_base_wins_over_configured_default(self):
+        """`.git_information.yaml` の `default_base_branch` より明示指定が勝つこと。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            self._repo_with_two_bases(project_root)
+            _write(
+                project_root,
+                ".git_information.yaml",
+                "default_base_branch: main\n",
+            )
+
+            result = resolve_targets_mod.resolve_targets(
+                "branch", project_root, None, None, "feature/mid"
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["base_branch"], "feature/mid")
+        self.assertNotIn("on_mid.py", result["files"])
+
+    def test_empty_base_branch_is_error_and_does_not_self_resolve(self):
+        """空の `--base-branch` を「省略」と同義にしない。
+
+        省略と同義にすると、確定した base を渡していない事実が出力から見えなくなり、
+        非 branch モードでは error にしているのと非対称になる。
+        """
+        for value in ("", "   "):
+            with self.subTest(value=repr(value)):
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    project_root = Path(tmpdir)
+                    self._repo_with_two_bases(project_root)
+
+                    result = resolve_targets_mod.resolve_targets(
+                        "branch", project_root, None, None, value
+                    )
+
+                self.assertEqual(result["status"], "error")
+                self.assertIn("--base-branch に空の値は指定できません", result["error"])
+
+    def test_base_branch_with_other_modes_is_error(self):
+        """branch 以外のモードへ渡された `--base-branch` は黙って無視しない。"""
+        for mode, files_arg, dirs_arg in (
+            ("diff", None, None),
+            ("files", "a.md", None),
+            ("dirs", None, "docs"),
+        ):
+            with self.subTest(mode=mode):
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    project_root = Path(tmpdir)
+                    result = resolve_targets_mod.resolve_targets(
+                        mode, project_root, files_arg, dirs_arg, "main"
+                    )
+                self.assertEqual(result["status"], "error")
+                self.assertIn("--base-branch は branch モードでのみ", result["error"])
+
+    def test_cli_accepts_base_branch_option(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            self._repo_with_two_bases(project_root)
+
+            stdout, exit_code = _run_main_capture(
+                [
+                    "resolve_targets.py",
+                    "--mode", "branch",
+                    "--base-branch", "feature/mid",
+                    "--project-root", str(project_root),
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["base_branch"], "feature/mid")
+        self.assertEqual(payload["files"], ["on_tip.py"])
+
+
 class FilesModeTest(unittest.TestCase):
     """files モード: 存在ファイルのみ ok。絶対パス・`..`・ルート外パスの拒否を含む。"""
 

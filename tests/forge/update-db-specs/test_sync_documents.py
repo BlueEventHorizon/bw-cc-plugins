@@ -91,16 +91,23 @@ class TestSyncDocumentsWrapper(unittest.TestCase):
         )
         helpers.assert_transparent_subprocess_kwargs(self, mock_run)
 
-    def test_no_user_input_required(self):
-        """update wrapper は利用者入力（追加の位置引数）を要求しない"""
-        rc, mock_run = helpers.invoke_with_mocked_run(
-            self.wrapper, argv=["sync_documents.py"]
-        )
-        self.assertEqual(rc, 0)
-        cmd = helpers.command_from_mock(mock_run)
-        self.assertEqual(
-            cmd, [sys.executable, str(self.wrapper.LOW_LEVEL), EXPECTED_CATEGORY]
-        )
+    def test_rejects_invalid_operations_without_calling_low_level(self):
+        """同期入口は start と job_id 付き status だけを公開する"""
+        for argv in (
+            ["sync_documents.py"],
+            ["sync_documents.py", "--status"],
+            ["sync_documents.py", "--status", ""],
+            ["sync_documents.py", "--status", "   "],
+            ["sync_documents.py", "--status", " job-123 "],
+            ["sync_documents.py", "--start", "extra"],
+            ["sync_documents.py", "--delete"],
+        ):
+            with self.subTest(argv=argv):
+                rc, mock_run = helpers.invoke_with_mocked_run(
+                    self.wrapper, argv=argv
+                )
+                self.assertEqual(rc, 20)
+                mock_run.assert_not_called()
 
     def test_exit_code_transparent(self):
         """低レベル CLI の exit code をそのまま返す"""

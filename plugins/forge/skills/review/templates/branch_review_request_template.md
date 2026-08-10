@@ -1,5 +1,3 @@
-{{PROTOCOL_HEADER}}
-
 ## レビュー依頼（ブランチ全体）
 
 レビューのみを行い、対象ファイルを変更しないでください。修正の実施主体は依頼元です。
@@ -66,6 +64,7 @@ target ブランチ: `{{TARGET_BRANCH}}`
 - `{{PLUGIN_ROOT}}/docs/requirement_format.md`
 - `{{PLUGIN_ROOT}}/docs/design_format.md`
 - `{{PLUGIN_ROOT}}/docs/adr_format.md`
+- `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md`
 - `{{PLUGIN_ROOT}}/docs/plan_format.md`
 - `{{PLUGIN_ROOT}}/docs/spec_format.md`
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md`
@@ -80,7 +79,7 @@ target ブランチ: `{{TARGET_BRANCH}}`
 
 ## 返信形式契約
 
-所見は自由記述 markdown で記述し、各所見に重大度マーカー（🔴 critical / 🟡 major / 🟢 minor）と `ファイルパス:行` の位置情報を付与してください。
+所見は自由記述 markdown で記述してください。**各所見は、その 1 行目の行頭に重大度マーカー（🔴 critical / 🟡 major / 🟢 minor）を置いて書き始めてください**（箇条書き記号 `-` / `*` / `1.` の直後も行頭として扱います）。**重大度を見出し（`## 🔴 critical` 等）にまとめ、その配下に所見を並べる形は受理されません**——所見ごとのマーカーが無いため 1 件も抽出できず、ラウンド全体が失敗します。あわせて各所見に `ファイルパス:行`、または特定できない場合は `位置未確定` と明示してください。
 
 返信の最終行には、次のいずれかの完了宣言行を必ず 1 行だけ置いてください。
 

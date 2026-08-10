@@ -42,8 +42,8 @@ import** を採る。理由は次のとおり。
 ## テスト境界
 
 外部コマンド（dprint runner）の実行は `run_command()` の 1 関数に閉じる。
-resolver モジュールは `resolver_script=` でパス差し替えできる。テストは実 dprint・
-本リポジトリの `.doc_structure.yaml` に依存しない。
+resolver モジュールは `resolver_script=` でパス差し替えできる。これにより、実 dprint と
+実在の `.doc_structure.yaml` に依存せずに検証できる。
 
 ## 依存
 

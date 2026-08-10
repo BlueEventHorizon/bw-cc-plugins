@@ -3,7 +3,6 @@
 
 使い方:
     python3 inbox.py <recipient>
-    python3 inbox.py <recipient> --peek                    # 後方互換のため受理（既定動作と同一・no-op）
     python3 inbox.py <recipient> --ack <id>                # 指定した単一メッセージのみ既読化（標準出力なし）
     python3 inbox.py <recipient> --mark-notified <id>       # 往復上限到達を記録する
     python3 inbox.py <recipient> --next                     # 処理対象1件を選定して返す（既読化しない）
@@ -20,29 +19,54 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import mailbox  # noqa: E402
 
+USAGE = (
+    "usage: inbox.py <recipient> [--ack <id>] "
+    "[--mark-notified <id>] [--next] [--db-path <path>]"
+)
+
 
 def _extract_option_value(args: list[str], flag: str) -> str | None:
     """args から `flag <value>` の value を取り出す。未指定なら None。"""
     if flag not in args:
         return None
     index = args.index(flag)
-    if index + 1 >= len(args):
-        print(f"usage: inbox.py <recipient> {flag} <value>", file=sys.stderr)
-        raise SystemExit(1)
     return args[index + 1]
+
+
+def _valid_options(args: list[str]) -> bool:
+    value_flags = {"--ack", "--mark-notified", "--db-path"}
+    standalone_flags = {"--next"}
+    operation_flags = {"--ack", "--mark-notified", "--next"}
+    seen: set[str] = set()
+    index = 0
+    while index < len(args):
+        flag = args[index]
+        if flag in seen:
+            return False
+        seen.add(flag)
+        if flag in standalone_flags:
+            index += 1
+            continue
+        if flag not in value_flags or index + 1 >= len(args):
+            return False
+        value = args[index + 1]
+        if not value or value.startswith("--"):
+            return False
+        index += 2
+    return len(seen & operation_flags) <= 1
 
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print(
-            "usage: inbox.py <recipient> [--peek] [--ack <id>] "
-            "[--mark-notified <id>] [--next] [--db-path <path>]",
-            file=sys.stderr,
-        )
+        print(USAGE, file=sys.stderr)
         return 1
 
     recipient = sys.argv[1]
     options = sys.argv[2:]
+
+    if not _valid_options(options):
+        print(USAGE, file=sys.stderr)
+        return 1
 
     explicit_db_path = _extract_option_value(options, "--db-path")
     db_path = mailbox.resolve_db_path(explicit_db_path)

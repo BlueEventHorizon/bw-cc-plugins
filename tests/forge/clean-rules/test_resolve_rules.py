@@ -37,6 +37,11 @@ class TestResolveRulesWrapper(unittest.TestCase):
 
     def setUp(self):
         self.wrapper = _load_wrapper()
+        self.argv_patch = mock.patch.object(
+            self.wrapper.sys, "argv", ["resolve_rules.py"]
+        )
+        self.argv_patch.start()
+        self.addCleanup(self.argv_patch.stop)
 
     def test_type_hardcoded(self):
         """TYPE 定数が rules にハードコードされている"""
@@ -88,6 +93,16 @@ class TestResolveRulesWrapper(unittest.TestCase):
         self.assertNotIn("capture_output", kw)
         self.assertNotIn("stdout", kw)
         self.assertNotIn("stderr", kw)
+
+    def test_rejects_extra_args_without_calling_low_level(self):
+        """clean-rules が使わない低レベル引数を公開しない"""
+        with mock.patch.object(
+            self.wrapper.sys, "argv", ["resolve_rules.py", "--type", "specs"]
+        ):
+            with mock.patch.object(self.wrapper.subprocess, "run") as mock_run:
+                rc = self.wrapper.main()
+        self.assertEqual(rc, 20)
+        mock_run.assert_not_called()
 
 
 if __name__ == "__main__":

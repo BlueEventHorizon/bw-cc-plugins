@@ -82,7 +82,7 @@ class TestFindDuplicates(unittest.TestCase):
         self.assertEqual(find_duplicates(entries), [])
 
     def test_same_file_on_multiple_branches_is_not_duplicate(self):
-        """Issue #181: 同一履歴由来（同一パス）の ID が複数ブランチに見えるだけの
+        """同一履歴由来（同一パス）の ID が複数ブランチに見えるだけの
         ケースは duplicate として報告しない"""
         entries = [
             ('SCR-001', 'develop', 'specs/SCR-001_a.md'),
@@ -100,7 +100,7 @@ class TestFindDuplicates(unittest.TestCase):
         ]
         result = find_duplicates(entries)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['id'], 'SCR-001')
+        self.assertEqual(result[0]['ids'], ['SCR-001'])
         self.assertIn('main', result[0]['branches'])
         self.assertIn('feature/foo', result[0]['branches'])
         self.assertEqual(
@@ -117,12 +117,12 @@ class TestFindDuplicates(unittest.TestCase):
         ]
         result = find_duplicates(entries)
         self.assertEqual(len(result), 2)
-        ids = [d['id'] for d in result]
+        ids = [id_value for duplicate in result for id_value in duplicate['ids']]
         self.assertIn('SCR-013', ids)
         self.assertIn('SCR-014', ids)
 
     def test_shared_numbering_detects_cross_prefix_collision(self):
-        """Issue #181: 共有採番モードでは ADR-032 と DES-032 を共有番号 032 の
+        """共有採番モードでは ADR-032 と DES-032 を共有番号 032 の
         衝突として検出する"""
         entries = [
             ('ADR-032', 'develop', 'specs/design/ADR-032_foo.md'),
@@ -212,12 +212,12 @@ class TestDetectBaseBranch(unittest.TestCase):
 
 
 class TestGetScanBranches(unittest.TestCase):
-    """get_scan_branches のテスト（Issue #196）"""
+    """get_scan_branches のテスト"""
 
     @patch('scan_spec_ids._run_git')
     def test_includes_branch_not_following_base(self, mock_git):
         """base に追従していない（is-ancestor が false になる）ブランチも
-        スキャン対象に含まれることを確認する（Issue #196 の再発防止）"""
+        スキャン対象に含まれることを確認する（再発防止）"""
         mock_git.return_value = (
             'develop\n'
             'feature/14-pyyaml-migration\n'
@@ -306,7 +306,7 @@ class TestScanIdsInBranch(unittest.TestCase):
 
     @patch('scan_spec_ids._run_git')
     def test_namespaced_prefix_not_extracted(self, mock_git):
-        """Issue #181: COMMON-DES-001 のような別名前空間の ID を
+        """COMMON-DES-001 のような別名前空間の ID を
         DES として誤抽出しない（部分文字列マッチの防止）"""
         mock_git.return_value = (
             'docs/specs/common/design/COMMON-DES-001_skill_base.md\n'
@@ -382,7 +382,7 @@ class TestScanSpecIds(unittest.TestCase):
     @patch('scan_spec_ids._run_git')
     @patch('scan_spec_ids.get_specs_root_dirs')
     def test_fetch_uses_prune(self, mock_dirs, mock_git, mock_base, mock_branches):
-        """Issue #196 レビュー指摘: 全ブランチ無条件スキャン方式では、削除済み
+        """レビュー指摘: 全ブランチ無条件スキャン方式では、削除済み
         remote branch の stale ref が残ると存在しないブランチの高番 ID が
         永久に next_id を押し上げてしまうため、fetch は --prune 必須"""
         mock_dirs.return_value = ['specs/']
@@ -427,7 +427,7 @@ class TestScanSpecIds(unittest.TestCase):
 
         self.assertEqual(result['next_id'], 'SCR-004')
         self.assertEqual(len(result['duplicates']), 1)
-        self.assertEqual(result['duplicates'][0]['id'], 'SCR-003')
+        self.assertEqual(result['duplicates'][0]['ids'], ['SCR-003'])
         self.assertIn('feature/a', result['duplicates'][0]['branches'])
         self.assertIn('feature/b', result['duplicates'][0]['branches'])
 
@@ -499,7 +499,7 @@ class TestScanSpecIds(unittest.TestCase):
 
 
 class TestSharePrefixes(unittest.TestCase):
-    """share_prefixes（通し番号共有）のテスト（Issue #160）。"""
+    """share_prefixes（通し番号共有）のテスト。"""
 
     @patch('scan_spec_ids.get_scan_branches')
     @patch('scan_spec_ids.detect_base_branch')
@@ -566,7 +566,7 @@ class TestSharePrefixes(unittest.TestCase):
     def test_share_prefixes_detects_shared_number_collision(
         self, mock_dirs, mock_git, mock_base, mock_branches
     ):
-        """Issue #181 受け入れ基準: ADR-032_foo.md と DES-032_bar.md がある場合、
+        """受け入れ基準: ADR-032_foo.md と DES-032_bar.md がある場合、
         --share-prefixes ADR,DES で共有番号衝突が検出される"""
         mock_dirs.return_value = ['specs/design/']
         mock_base.return_value = 'develop'
@@ -596,7 +596,7 @@ class TestSharePrefixes(unittest.TestCase):
     def test_share_prefixes_same_history_ids_not_reported(
         self, mock_dirs, mock_git, mock_base, mock_branches
     ):
-        """Issue #181 受け入れ基準: develop と current branch に同一ファイル由来で
+        """受け入れ基準: develop と current branch に同一ファイル由来で
         存在する既存 ID は duplicate 警告にならない"""
         mock_dirs.return_value = ['specs/design/']
         mock_base.return_value = 'develop'
@@ -672,7 +672,7 @@ class TestSharePrefixes(unittest.TestCase):
 
 
 class TestCLISharePrefixes(unittest.TestCase):
-    """CLI 経由の --share-prefixes オプションのテスト（Issue #160）。"""
+    """CLI 経由の --share-prefixes オプションのテスト。"""
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())

@@ -331,7 +331,7 @@ Skill が失敗した場合は Phase 4.4 のチェック項目を手動で確認
 
 ### commit/push 確認
 
-commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する（Issue #159）。
+commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する。
 
 ### 完了案内
 

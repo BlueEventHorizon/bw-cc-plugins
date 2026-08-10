@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""回帰防止テスト: ADR の ID 採番ガイドのカバレッジ (Issue #123)。
+"""回帰防止テスト: ADR の ID 採番ガイドのカバレッジ。
 
-Issue #123 の背景: forge で ADR（Architecture Decision Record）を新規作成する際の
+背景: forge で ADR（Architecture Decision Record）を新規作成する際の
 ID 採番手順がスキル・文書に明記されておらず、並行ブランチで同一 `ADR-003` が別内容で
 衝突した。採番スクリプト `scan_spec_ids.py` は任意プレフィックスを汎用的に扱えるため
 (ADR も同様に動作する)、修正はドキュメント/ワークフロー側で完結する。
 
-本テストは Issue #123 の修正が後退しないことを検証する:
+本テストはこの修正が後退しないことを検証する:
 
 - スクリプト挙動: scan_spec_ids が `ADR` プレフィックスを正しく採番する。
   ADR を設計ディレクトリ配下に置く限り、ADR 専用ディレクトリが scan 対象になくても
-  既存 ADR を検出できること (Issue #123 の「ADR-001〜004 使用済み → ADR-005」を再現)。
+  既存 ADR を検出できること (「ADR-001〜004 使用済み → ADR-005」を再現)。
 - 文書カバレッジ: ID 体系の正本 (spec_format.md)・採番スキル (next-spec-id)・
-  生成スキル (start-design)・設計原則 (design_principles_spec) の各層に
+  生成スキル (start-design)・ADR 運用原則 (adr_principles_spec) の各層に
   「ADR は next-spec-id で採番する」ガイドが存在すること。
 
 実行:
@@ -51,7 +51,7 @@ class TestADRScanBehavior(unittest.TestCase):
     def test_adr_numbering_reproduces_issue_123(
         self, mock_dirs, mock_git, mock_base, mock_branches
     ):
-        """ADR-001〜004 使用済みのとき次は ADR-005 を返す (Issue #123 の再現)。
+        """ADR-001〜004 使用済みのとき次は ADR-005 を返す。
 
         ADR は設計ディレクトリ (specs/design/) 配下に置かれ、専用 adr ディレクトリは
         scan 対象に含まれない。それでも git スキャンが ADR を検出することを確認する。
@@ -91,7 +91,7 @@ class TestADRScanBehavior(unittest.TestCase):
     ):
         """並行ブランチで同一 ADR 番号が別内容で存在する場合に duplicates として検出する。
 
-        これは Issue #123 で実際に起きた衝突 (ブランチ A と B が双方 ADR-003 を作成) を
+        これは実際に起きた衝突 (ブランチ A と B が双方 ADR-003 を作成) を
         採番時に警告できることを保証する。
         """
         mock_dirs.return_value = ["specs/design/"]
@@ -111,12 +111,16 @@ class TestADRScanBehavior(unittest.TestCase):
 
         result = scan_spec_ids("ADR", "/tmp/project", cwd="/tmp/project")
 
-        duplicate_ids = {d["id"] for d in result["duplicates"]}
+        duplicate_ids = {
+            id_value
+            for duplicate in result["duplicates"]
+            for id_value in duplicate["ids"]
+        }
         self.assertIn("ADR-003", duplicate_ids)
 
 
 class TestADRDocCoverage(unittest.TestCase):
-    """ADR 採番ガイドが各層の文書に存在し続けること (Issue #123 の構造的欠落の回帰防止)。"""
+    """ADR 採番ガイドが各層の文書に存在し続けること (構造的欠落の回帰防止)。"""
 
     def test_spec_format_design_catalog_includes_adr(self):
         """ID 体系の正本 spec_format.md の設計ID カタログに ADR が登録されていること。"""
@@ -160,20 +164,20 @@ class TestADRDocCoverage(unittest.TestCase):
             "start-design/SKILL.md に ADR を next-spec-id で採番する手順がない",
         )
 
-    def test_design_principles_instructs_adr_numbering(self):
-        """design_principles_spec.md が ADR 採番ルールと git スキャン注記を持つこと。"""
-        content = _read(FORGE_DOCS / "design_principles_spec.md")
+    def test_adr_principles_instructs_adr_numbering(self):
+        """adr_principles_spec.md が ADR 採番ルールと git スキャン注記を持つこと。"""
+        content = _read(FORGE_DOCS / "adr_principles_spec.md")
         self.assertIn("ADR", content)
         self.assertIn(
             "next-spec-id",
             content,
-            "design_principles_spec.md が ADR 採番に next-spec-id を指していない",
+            "adr_principles_spec.md が ADR 採番に next-spec-id を指していない",
         )
         # ADR 専用ディレクトリが .doc_structure.yaml になくても検出できる注記
         self.assertIn(
             ".doc_structure.yaml",
             content,
-            "design_principles_spec.md に ADR の git スキャン検出に関する注記がない",
+            "adr_principles_spec.md に ADR の git スキャン検出に関する注記がない",
         )
 
 

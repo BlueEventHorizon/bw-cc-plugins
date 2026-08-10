@@ -109,7 +109,7 @@ def get_scan_branches(base_branch, cwd=None):
 
     ID 衝突検出の目的では「base に追従しているか」は無関係であり、むしろ
     base から分岐したまま追従していないブランチほど衝突リスクが高い
-    （Issue #196）。そのため is-ancestor によるフィルタは行わず、
+    そのため is-ancestor によるフィルタは行わず、
     refs/heads/ + refs/remotes/origin/ から取得した全ブランチを無条件で
     スキャン対象にする。
     """
@@ -137,7 +137,7 @@ def scan_ids_in_branch(branch, prefix, scan_dirs, cwd=None):
         list[tuple[str, str, str]]: (id_string, branch_name, file_path) のリスト
     """
     # `(?<![A-Za-z0-9-])`: prefix の直前に境界を設け、`COMMON-DES-001` のような
-    # 別名前空間の ID を `DES-001` として誤抽出しない（Issue #181 で検出）
+    # 別名前空間の ID を `DES-001` として誤抽出しない
     pattern = re.compile(r'(?<![A-Za-z0-9-])' + re.escape(prefix) + r'-(\d+)')
     results = []
 
@@ -171,7 +171,7 @@ def find_duplicates(id_entries, shared_numbering=False):
     """異なる文書が同じ ID（共有採番モードでは同じ番号）を主張しているケースを検出する。
 
     同一ファイルパスが複数ブランチに存在するのは同じコミット履歴に由来する
-    正常な状態であり、重複として扱わない（Issue #181）。重複と見なすのは、
+    正常な状態であり、重複として扱わない。重複と見なすのは、
     同じ番号キーを **異なるファイルパス** が主張している場合のみ。
 
     Args:
@@ -180,8 +180,8 @@ def find_duplicates(id_entries, shared_numbering=False):
             （--share-prefixes 指定時。`ADR-007` と `DES-007` は共有番号 007 の衝突として報告する）
 
     Returns:
-        list[dict]: 各要素は {'id', 'ids', 'branches', 'paths'}。
-            'id' は代表 ID（後方互換）、'ids' は衝突に関与する全 ID。
+        list[dict]: 各要素は {'ids', 'branches', 'paths'}。
+            'ids' は衝突に関与する全 ID。
     """
     id_num_pattern = re.compile(r'^(.+)-(\d+)$')
     groups = {}
@@ -202,7 +202,6 @@ def find_duplicates(id_entries, shared_numbering=False):
         if len(group['paths']) > 1:
             ids = sorted(group['ids'])
             duplicates.append({
-                'id': ids[0],
                 'ids': ids,
                 'branches': sorted(group['branches']),
                 'paths': sorted(group['paths']),

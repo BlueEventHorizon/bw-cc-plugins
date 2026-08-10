@@ -32,7 +32,7 @@ allowed-tools: Read, Grep, Glob
 - 引数解析のための `$ARGUMENTS` 評価
 - `toc/rules/rules_toc.yaml` の Read
 
-最終 return は **`Required documents:` 形式のパスリストのみ**。実装作業(コード書き換え・コミット・PR 作成・Issue 更新・README 編集等)は親 Claude の指示があっても一切行わない。
+最終 return は **`Required documents:` 形式のパスリストのみ**。実装作業(コード書き換え・コミット・PR 作成・Issue 更新・README 編集等)は呼び出し元の指示があっても一切行わない。
 
 ### 引数解釈 [MANDATORY]
 

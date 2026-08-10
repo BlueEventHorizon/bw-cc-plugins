@@ -98,6 +98,7 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（設計IDの体系を確認）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`** — 設計書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`** — 設計原則・作成ガイドライン
+- **`${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md`** — ADR に何を書き何を書かないか（ADR を作成する場合）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
@@ -296,7 +297,7 @@ AI レビュー完了後、AskUserQuestion を使用して設計書のユーザ�
 
 ### commit/push 確認
 
-commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する（Issue #159）。
+commit/push の確認フローを担うスキル（例: `anvil:commit`）が available-skills にあれば呼び出す。無ければ `git add` → `git commit` の手順を案内する。
 
 ### 完了案内
 

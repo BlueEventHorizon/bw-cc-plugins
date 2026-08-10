@@ -4,7 +4,7 @@
 
 これは **定義文書** である。仕様 (specs) でもルール (rules) でもフォーマット (format) でもなく、それらすべてが依拠する **基盤・分類・用語** を提供する。
 
-**主目的は名称の統一**。「subagent」「general-purpose subagent」等の曖昧語による誤読 (例: Issue #32 で `subagent_type: "forge:fixer"` と誤指定された事例) を防ぐため、起動経路 5 種に **公式の短縮名称** を定める。SKILL.md / 設計書 / ガイド文書はこの名称に従って記述する。
+**主目的は名称の統一**。「subagent」「general-purpose subagent」等の曖昧語による誤読 (例: `subagent_type: "forge:fixer"` と誤指定された事例) を防ぐため、起動経路 5 種に **公式の短縮名称** を定める。SKILL.md / 設計書 / ガイド文書はこの名称に従って記述する。
 
 > 機械可読 subset: `docs/rules/skill_launch_terms.toml`
 > subset には短縮名称に加えて、起動ツール説明で使う `Skill ツール` / `Agent ツール` も含む。
@@ -71,11 +71,11 @@ Claude Code 上で「処理を他へ委譲する」経路は以下の 5 種に�
 Agent ツール (汎用 Agent / カスタム Agent) の `subagent_type` パラメータの値域:
 
 - **汎用 Agent**: `general-purpose` / `Explore` / `Plan` / `statusline-setup` 等
-- **カスタム Agent**: `plugins/<plugin>/agents/<name>.md` で定義した名前 (例: `claude-code-guide` / `doc-advisor:query-worker` / `doc-advisor:toc-updater`)
+- **カスタム Agent**: `plugins/<plugin>/agents/<name>.md` で定義した名前 (例: `claude-code-guide` / `forge:reviewer` / `doc-advisor:query-worker` / `doc-advisor:toc-updater`)
 
-> forge プラグインは現在カスタム Agent を持たない (`plugins/forge/agents/` は存在しない)。`forge:*` はすべて SKILL 名であり、`subagent_type` の値としては無効である。
+`subagent_type` に指定できるのは、組み込み Agent 名と、`agents/<name>.md` で定義済みのカスタム Agent 名だけである。`forge:reviewer` は定義済みのため有効だが、`forge:review` などの SKILL 名は無効である。名前空間が `forge:` であることだけでは有効性を判定できない。
 
-### 無効な値の例 (Issue #32 系)
+### 無効な値の例
 
 以下は **すべて無効** — `subagent_type` の値域外:
 

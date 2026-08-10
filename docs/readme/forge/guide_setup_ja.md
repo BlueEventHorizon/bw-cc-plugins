@@ -81,7 +81,7 @@ git:
 ### 使用例
 
 ```bash
-/forge:update-version patch                # 先頭ターゲットをパッチバンプ
+/forge:update-version patch                # 変更が検出されたターゲットを自動選択してパッチバンプ
 /forge:update-version forge 0.1.0          # forge を 0.1.0 に更新
 /forge:update-version anvil minor          # anvil をマイナーバンプ
 ```
@@ -89,16 +89,20 @@ git:
 ### 実行フロー
 
 1. `.version-config.yaml` の読み込み
-2. 現在のバージョン取得
-3. main ブランチと比較（既にバンプ済みなら確認）
-4. 新バージョンを計算
-5. コミット履歴を収集（CHANGELOG 用）
-6. ファイル更新
+2. 対象ターゲットの決定（未指定なら `scope` に一致する変更から自動検出）
+3. 現在のバージョン取得
+4. main ブランチと比較（既にバンプ済みなら確認）
+5. 新バージョンを計算
+6. コミット履歴を収集（CHANGELOG 用）
+   - 前バージョンのタグを `v` 付き / `v` なしの両形式で検索する。見つからない場合は CHANGELOG の前エントリ日付で代替する
+7. ファイル更新
    - `version_file`（plugin.json 等）を更新
    - `sync_files`（README 等）のバージョンを同期
-7. CHANGELOG にエントリを挿入
-8. テスト実行（`tests/` がある場合）
-9. git 操作（commit / push / tag を確認）
+8. カタログ（marketplace）のバンプ提案
+9. CHANGELOG にエントリを挿入
+10. README への影響を判定（必要なら更新）
+11. テスト実行（`tests/` がある場合）
+12. git 操作（commit / push / tag を確認。タグ名は既存タグの形式に合わせる）
 
 ### エラー時の対応
 
