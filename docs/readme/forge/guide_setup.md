@@ -94,7 +94,7 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 4. Compare with main branch (confirm if already bumped)
 5. Calculate new version
 6. Collect commit history (for CHANGELOG)
-   - Look up the previous version's tag in both forms, with and without the `v` prefix. Fall back to the previous CHANGELOG entry's date when neither exists
+   - Look up the previous version's tag across all four combinations of prefix (present / absent) and `v` (present / absent), starting from the simplest form and taking the first one that exists: `1.2.3` → `v1.2.3` → `foo-1.2.3` → `foo-v1.2.3`. Fall back to the previous CHANGELOG entry's date when none exists
 7. Update files
    - `version_file` (plugin.json, etc.)
    - `sync_files` (README, etc.) version sync
