@@ -13,8 +13,8 @@ Codex CLI 自身が固定のプロジェクトルート直下でのみ探すプ�
 
 1. `<project_root>/.gitignore` に `.codex/msg-sys/scripts` が含まれるか確認し、無ければ
    追記する（このスクリプトが生成する symlink はマシン固有の絶対パスを含むため、
-   誤ってコミットされるとチェックアウトごとに壊れる。実際にこのリポジトリで誤って
-   ステージされかけた事故があった。自分が生成する副作用の後始末は自分で完結させる）。
+   誤ってコミットされるとチェックアウトごとに壊れる。自分が生成する副作用の後始末は
+   自分で完結させる）。
 2. `<project_root>/.codex/msg-sys/scripts` を、現在ロードされている forge プラグイン
    自身の `scripts/msg-sys/`（`--plugin-msg-sys-dir` で渡される、Claude Code が
    `${CLAUDE_PLUGIN_ROOT}` を解決した実パス）への symlink にする。**コピーではなく
@@ -63,8 +63,7 @@ def _ensure_gitignore_entry(project_root: Path, entry: str, comment: str) -> dic
     """`.gitignore` に `entry` が無ければ追記する（冪等・追記のみ、既存内容は書き換えない）。
 
     symlink はマシン固有の絶対パスを含むため、誤ってコミットされるとチェックアウトごとに
-    壊れる（実際にこのリポジトリで誤ってステージされかけた事故があった。ユーザー指摘対応）。
-    このスクリプトが生成する symlink 自体の後始末は、このスクリプト自身が完結させる。
+    壊れる。このスクリプトが生成する symlink 自体の後始末は、このスクリプト自身が完結させる。
     """
     if not project_root.is_dir():
         # project_root 自体が実在しない（テスト・誤った呼び出し等）場合は何もしない。

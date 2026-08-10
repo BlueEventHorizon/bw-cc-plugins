@@ -44,6 +44,7 @@
 
 - `{{PLUGIN_ROOT}}/docs/design_format.md` — 設計書の構成・必須項目
 - `{{PLUGIN_ROOT}}/docs/adr_format.md` — ADR の構成・必須項目（対象が ADR の場合）
+- `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md` — ADR の運用・重大度（対象が ADR の場合）
 - `{{PLUGIN_ROOT}}/docs/design_principles_spec.md` — 設計原則
 - `{{PLUGIN_ROOT}}/docs/spec_design_boundary_spec.md` — What / How の境界。設計書が要件を再定義していないか
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md` — 文書スタイル。特に §5 文書参照記法と参照先の実在性
@@ -58,7 +59,7 @@
 
 ## 返信形式契約
 
-所見は自由記述 markdown で記述し、各所見に重大度マーカー（🔴 critical / 🟡 major / 🟢 minor）と `ファイルパス:行`、または特定できない場合は `位置未確定` と明示してください。
+所見は自由記述 markdown で記述してください。**各所見は、その 1 行目の行頭に重大度マーカー（🔴 critical / 🟡 major / 🟢 minor）を置いて書き始めてください**（箇条書き記号 `-` / `*` / `1.` の直後も行頭として扱います）。**重大度を見出し（`## 🔴 critical` 等）にまとめ、その配下に所見を並べる形は受理されません**——所見ごとのマーカーが無いため 1 件も抽出できず、ラウンド全体が失敗します。あわせて各所見に `ファイルパス:行`、または特定できない場合は `位置未確定` と明示してください。
 
 返信の最終行には、次のいずれかの完了宣言行を必ず 1 行だけ置いてください。
 

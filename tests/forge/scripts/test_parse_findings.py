@@ -181,6 +181,25 @@ class ParseFindingsTest(unittest.TestCase):
         self.assertEqual(findings[0]["severity"], "critical")
         self.assertNotIn("概要", findings[0]["text"])
 
+    def test_severity_heading_does_not_group_findings(self):
+        """`## 🔴 critical` 見出しの配下に並べた所見は抽出しない。
+
+        実測（agent-review 初回実行）: レビュアーが重大度を見出しでグループ化し、
+        個々の所見にマーカーを付けなかったため 1 件も抽出されず、`findings` 宣言との
+        矛盾でラウンド全体が `failure` になった。見出しから severity を継承させると
+        「マーカーのない本文を推測で finding に変換しない」原則を破るため、この形は
+        受理しない。マーカーの置き場は依頼テンプレートと Agent 定義が要求する。
+        """
+        body = (
+            "## 🔴 critical\n\n"
+            "**read-only が成立していない**\n"
+            "`plugins/forge/agents/reviewer.md:4`\n\n"
+            "REVIEW_RESULT: findings\n"
+        )
+        self.assertEqual(parse_mod.parse_findings(body), [])
+        result = parse_mod.interpret_response(body)
+        self.assertEqual(result["judgment"], "failure")
+
     def test_returns_empty_list_for_empty_body(self):
         self.assertEqual(parse_mod.parse_findings(""), [])
 
@@ -227,6 +246,22 @@ class LocationExtractionTest(unittest.TestCase):
             "a.py:3": {"path": "a.py", "line": 3},
             "README:4": {"path": "README", "line": 4},
             "`Makefile:5`": {"path": "Makefile", "line": 5},
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(parse_mod._extract_location(text), expected)
+
+    def test_conventional_extensionless_names_are_matched_case_insensitively(self):
+        """慣用名は表記が揺れる。大文字小文字だけを理由に位置情報を捨てない。
+
+        位置未確定の所見は severity によらず自動修正の対象外になるため、表記だけを理由に
+        位置を落とすと、実在ファイルを指した正しい指摘が修正されずに残る。
+        """
+        cases = {
+            "`makefile:37`": {"path": "makefile", "line": 37},
+            "`MAKEFILE:1`": {"path": "MAKEFILE", "line": 1},
+            "`readme:2`": {"path": "readme", "line": 2},
+            "`dockerfile:9`": {"path": "dockerfile", "line": 9},
         }
         for text, expected in cases.items():
             with self.subTest(text=text):
@@ -290,19 +325,53 @@ class InterpretResponseTest(unittest.TestCase):
         self.assertEqual(result["judgment"], "findings")
         self.assertEqual(result["findings"][0]["location"], {"unknown": True})
 
-    def test_missing_location_is_failure(self):
+    def test_missing_location_is_accepted_as_unknown(self):
+        """位置表記が無い所見は位置未確定として受理し、`warnings` で件数を返す。"""
         result = parse_mod.interpret_response(
             "1. 🔴 critical 位置のない指摘\nREVIEW_RESULT: findings\n"
         )
-        self.assertEqual(result["judgment"], "failure")
-        self.assertEqual(result["findings"], [])
+        self.assertEqual(result["judgment"], "findings")
+        self.assertEqual(result["findings"][0]["location"], {"unknown": True})
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("1", result["warnings"][0])
+
+    def test_one_missing_location_does_not_discard_other_findings(self):
+        """1 件の位置欠落で他の所見を捨てない。
+
+        実測: 16 件の所見のうち 15 件が完全な位置情報を持っていたのに、1 件の表記が
+        許容形と合わなかっただけでラウンド全体が `failure` になり全件失われた。
+        """
+        result = parse_mod.interpret_response(
+            "1. 🔴 critical `src/a.py:1` — 位置のある指摘\n"
+            "2. 🟡 major 位置のない指摘\n"
+            "3. 🟢 minor `src/b.py:2` — 位置のある指摘\n"
+            "REVIEW_RESULT: findings\n"
+        )
+        self.assertEqual(result["judgment"], "findings")
+        self.assertEqual(len(result["findings"]), 3)
+        self.assertEqual(result["findings"][0]["location"], {"path": "src/a.py", "line": 1})
+        self.assertEqual(result["findings"][1]["location"], {"unknown": True})
+        self.assertEqual(result["findings"][2]["location"], {"path": "src/b.py", "line": 2})
+        self.assertIn("2", result["warnings"][0])
+
+    def test_no_warnings_key_when_every_finding_has_a_location(self):
+        result = parse_mod.interpret_response(
+            "1. 🟡 major `src/a.py:12` — 指摘\nREVIEW_RESULT: findings\n"
+        )
+        self.assertNotIn("warnings", result)
 
     def test_non_path_label_is_not_accepted_as_location(self):
+        """`Issue:123` を位置として採用しない（位置未確定として受理する）。
+
+        位置として採用しないことと、ラウンドを失敗させることは別である。所見自体は
+        残し、位置が確定していないものとして人間の確認へ回す。
+        """
         result = parse_mod.interpret_response(
             "1. 🔴 critical Issue:123 — 位置ではない参照\nREVIEW_RESULT: findings\n"
         )
-        self.assertEqual(result["judgment"], "failure")
-        self.assertIn("位置情報がない", result["error"])
+        self.assertEqual(result["judgment"], "findings")
+        self.assertEqual(result["findings"][0]["location"], {"unknown": True})
+        self.assertEqual(len(result["warnings"]), 1)
 
     def test_missing_completion_is_failure(self):
         result = parse_mod.interpret_response("1. 🔴 critical `a.py:1` — 指摘\n")
@@ -375,7 +444,13 @@ class InterpretResponseTest(unittest.TestCase):
         result = parse_mod.interpret_response("    REVIEW_RESULT: approved\n")
         self.assertEqual(result["judgment"], "failure")
 
-    def test_invalid_locations_are_failure(self):
+    def test_invalid_locations_are_accepted_as_unknown(self):
+        """位置として採用できない表記は、所見を捨てず位置未確定として受理する。
+
+        これらは「位置を書いたつもりだが parser が採用しない形」である。採用しない判断は
+        維持しつつ（推測で位置を確定させない）、所見そのものは残して人間の確認へ回す。
+        `warnings` に件数が出るため、契約違反であることは可視化される。
+        """
         cases = (
             "Issue:123",
             "12:34",
@@ -389,8 +464,9 @@ class InterpretResponseTest(unittest.TestCase):
                     f"1. 🟡 major {location} — 不正位置\n"
                     "REVIEW_RESULT: findings\n"
                 )
-                self.assertEqual(result["judgment"], "failure")
-                self.assertIn("位置情報がない", result["error"])
+                self.assertEqual(result["judgment"], "findings")
+                self.assertEqual(result["findings"][0]["location"], {"unknown": True})
+                self.assertEqual(len(result["warnings"]), 1)
 
 
 class MainTest(unittest.TestCase):

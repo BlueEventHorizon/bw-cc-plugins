@@ -53,6 +53,12 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/gate_findings.py" \
 `excluded` は現在の mode の自動修正範囲外である。応答に不正な severity が混入した場合は防御的に
 `excluded` へ入れるが、通常は共通 parser が重大度欠落を `failure` とするため到達しない。
 
+**位置が確定していない所見（`location.unknown`）は severity によらず `excluded` とする [MANDATORY]**。
+自動修正は修正対象が確定していて初めて成立する。位置の無い所見を `auto_fix` に含めると、
+どこを直すかを推測で決めることになり、修正後の allowlist 検証も「意図した変更か」を判定できない。
+レビュアーが `位置未確定` と明示した所見と、応答から位置を取り出せなかった所見の両方が対象である
+（後者は共通 parser が位置未確定として受理する。REQ-013 の共通書式契約）。
+
 ### 3.3 本体フロー
 
 1. バックエンドから `findings` と所見配列を受け取る

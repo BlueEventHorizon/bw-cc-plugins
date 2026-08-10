@@ -12,7 +12,7 @@ ID 採番手順がスキル・文書に明記されておらず、並行ブラ�
   ADR を設計ディレクトリ配下に置く限り、ADR 専用ディレクトリが scan 対象になくても
   既存 ADR を検出できること (「ADR-001〜004 使用済み → ADR-005」を再現)。
 - 文書カバレッジ: ID 体系の正本 (spec_format.md)・採番スキル (next-spec-id)・
-  生成スキル (start-design)・設計原則 (design_principles_spec) の各層に
+  生成スキル (start-design)・ADR 運用原則 (adr_principles_spec) の各層に
   「ADR は next-spec-id で採番する」ガイドが存在すること。
 
 実行:
@@ -164,20 +164,20 @@ class TestADRDocCoverage(unittest.TestCase):
             "start-design/SKILL.md に ADR を next-spec-id で採番する手順がない",
         )
 
-    def test_design_principles_instructs_adr_numbering(self):
-        """design_principles_spec.md が ADR 採番ルールと git スキャン注記を持つこと。"""
-        content = _read(FORGE_DOCS / "design_principles_spec.md")
+    def test_adr_principles_instructs_adr_numbering(self):
+        """adr_principles_spec.md が ADR 採番ルールと git スキャン注記を持つこと。"""
+        content = _read(FORGE_DOCS / "adr_principles_spec.md")
         self.assertIn("ADR", content)
         self.assertIn(
             "next-spec-id",
             content,
-            "design_principles_spec.md が ADR 採番に next-spec-id を指していない",
+            "adr_principles_spec.md が ADR 採番に next-spec-id を指していない",
         )
         # ADR 専用ディレクトリが .doc_structure.yaml になくても検出できる注記
         self.assertIn(
             ".doc_structure.yaml",
             content,
-            "design_principles_spec.md に ADR の git スキャン検出に関する注記がない",
+            "adr_principles_spec.md に ADR の git スキャン検出に関する注記がない",
         )
 
 

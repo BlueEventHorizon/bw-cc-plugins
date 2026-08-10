@@ -51,10 +51,19 @@ CONVENTIONAL_EXTENSIONLESS_FILES = {
     "Vagrantfile",
 }
 
+#: 大文字小文字を無視して照合するための畳み込み済み集合。
+#:
+#: これらの名前は慣用的に表記が揺れる（`Makefile` / `makefile`、`README` / `readme`）。
+#: 表記だけを理由に位置情報を捨てると、実在するファイルを指した正しい所見が
+#: 「位置なし」と判定され、自動修正の対象から外れる。
+_CONVENTIONAL_EXTENSIONLESS_FILES_FOLDED = frozenset(
+    name.casefold() for name in CONVENTIONAL_EXTENSIONLESS_FILES
+)
+
 # 行頭（任意の箇条書き記号 `-`/`*` または番号付け `1.` を除いた直後）に severity
 # マーカーがある行のみを finding の開始とみなす。文中・引用・コード例に偶然出現する
 # マーカー（例:「概要: 🟡 major の基準を参照しました。」）を誤って finding として
-# 抽出しないため（実 Codex レビューで発見）。
+# 抽出しないため（実レビューで発見）。
 FINDING_START_RE = re.compile(r"^(?:[-*]|\d+\.)?\s*(🔴|🟡|🟢)")
 
 
@@ -62,7 +71,7 @@ def _is_indented_code_line(raw_line: str) -> bool:
     """CommonMark のインデントコードブロック（行頭4スペースまたはタブ）かどうかを判定する。
 
     fenced code block（\\`\\`\\`）だけでなく、Markdown のもう一つの標準的なコード
-    ブロック記法も除外対象にする（実 Codex レビューで発見: `.lstrip()` によって
+    ブロック記法も除外対象にする（実レビューで発見: `.lstrip()` によって
     インデントが失われ、インデントコードブロック内の例示マーカーが finding として
     誤抽出されていた）。
     """
@@ -92,7 +101,7 @@ def _looks_like_file_path(path: str) -> bool:
         return True
 
     basename = path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
-    if basename in CONVENTIONAL_EXTENSIONLESS_FILES:
+    if basename.casefold() in _CONVENTIONAL_EXTENSIONLESS_FILES_FOLDED:
         return True
     if basename.startswith(".") and len(basename) > 1:
         return True
@@ -164,9 +173,16 @@ def parse_findings(body: str) -> list[dict]:
     **fenced code block 内は finding 開始として扱わない**: 自由記述 Markdown では
     返信形式の例や既存所見の引用をコードブロック（\\`\\`\\` または ~~~ で囲まれた範囲）
     で示すことがあり、その中に severity マーカーが含まれていても実在しない finding
-    として抽出してしまう（実 Codex レビューで発見）。フェンス行（\\`\\`\\` 始まりの行）を
+    として抽出してしまう（実レビューで発見）。フェンス行（\\`\\`\\` 始まりの行）を
     追跡し、フェンス内では finding の開始判定を行わない（既存 finding の本文継続、
     または抽出対象外とする）。
+
+    **見出しによる severity のグループ化（`## 🔴 critical` 配下に所見を並べる形）も
+    finding 開始として扱わない**: 見出し行はマーカーの前に `#` を持つため開始判定に
+    一致せず、配下の所見にはマーカーが無い。ここで見出しから severity を継承させると
+    「マーカーのない本文を推測で finding に変換しない」原則を破り、finding の境界も
+    曖昧になる。マーカーを所見 1 行目の行頭に置くことは、依頼テンプレートの返信形式契約
+    がレビュアーへ要求する。
     """
     lines = body.splitlines()
     declarations, _ = _completion_declarations(body)
@@ -218,7 +234,18 @@ def parse_findings(body: str) -> list[dict]:
 
 
 def interpret_response(body: str) -> dict:
-    """レビュー応答を共通の 3 値判定へ変換する。契約違反は fail closed とする。"""
+    """レビュー応答を共通の 3 値判定へ変換する。契約違反は fail closed とする。
+
+    **位置表記の欠落だけは fail closed の対象にしない [MANDATORY]**。位置を取り出せない
+    所見は `location: {"unknown": True}` として受理し、件数を `warnings` で返す。
+    レビュアーが `位置未確定` と明示した所見と同じ表現になり、下流の扱いも同じになる
+    （自動修正の対象外。人間の確認へ回す）。
+
+    以前は 1 件でも位置を欠くとラウンド全体を `failure` にしていた。実測では、16 件の
+    所見のうち 15 件が完全な位置情報を持っていたのに、1 件の表記が許容形と合わなかった
+    だけで全件が失われた。位置の欠落は「レビューが成立しなかった」ことを意味せず、
+    その 1 件を人間の確認へ回せば足りる。契約違反であること自体は `warnings` で可視化する。
+    """
     declarations, last_meaningful_index = _completion_declarations(body)
     if not declarations:
         return {
@@ -260,16 +287,16 @@ def interpret_response(body: str) -> dict:
     missing_location = [
         index + 1 for index, finding in enumerate(findings) if finding["location"] is None
     ]
+    for finding in findings:
+        if finding["location"] is None:
+            finding["location"] = {"unknown": True}
+    result = {"judgment": "findings", "findings": findings}
     if missing_location:
-        return {
-            "judgment": "failure",
-            "findings": [],
-            "error": (
-                "位置情報がない所見があります: "
-                + ", ".join(str(index) for index in missing_location)
-            ),
-        }
-    return {"judgment": "findings", "findings": findings}
+        result["warnings"] = [
+            "位置表記が無い所見を位置未確定として受理しました（自動修正の対象外・人間の確認へ回します）: "
+            + ", ".join(str(index) for index in missing_location)
+        ]
+    return result
 
 
 def main() -> int:

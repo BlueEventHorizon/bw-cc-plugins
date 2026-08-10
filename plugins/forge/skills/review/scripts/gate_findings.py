@@ -24,19 +24,30 @@ AUTO_FIX_SEVERITIES = {
 }
 
 
+def _has_unknown_location(finding: dict) -> bool:
+    """位置を特定できていない所見か（明示の `位置未確定` と位置表記の欠落の両方）。"""
+    location = finding.get("location")
+    return not isinstance(location, dict) or bool(location.get("unknown"))
+
+
 def gate_findings(findings: list[dict], mode: str) -> dict:
     """findings を mode の決定表に従って auto_fix / excluded に振り分ける。
 
     severity が既知の値（critical/major/minor）以外の finding が混入した場合は、
     防御的に excluded とする。通常、重大度欠落はバックエンドの共通 parser が
     failure とするため本スクリプトへ到達しない。
+
+    **位置を特定できていない所見は severity によらず excluded とする [MANDATORY]**。
+    自動修正は「どこを直すか」が確定していて初めて安全に行える。位置の無い所見を
+    auto_fix に含めると、修正対象を推測で決めることになり、allowlist 検証も
+    「意図した変更か」を判定できない。人間の確認へ回す。
     """
     auto_fix_set = AUTO_FIX_SEVERITIES.get(mode, set())
     auto_fix: list[dict] = []
     excluded: list[dict] = []
 
     for finding in findings:
-        if finding.get("severity") in auto_fix_set:
+        if finding.get("severity") in auto_fix_set and not _has_unknown_location(finding):
             auto_fix.append(finding)
         else:
             excluded.append(finding)

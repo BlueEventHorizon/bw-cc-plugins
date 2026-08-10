@@ -22,12 +22,12 @@ allowed-tools: Read, Write, Bash, Monitor, AskUserQuestion
 
 本体から次の 4 つの要求のいずれかで起動される。要求の種類は起動時の引数・文脈から判断する。
 
-| 要求         | 本体から受け取るもの                               | 本体へ返すもの                                        |
-| ------------ | -------------------------------------------------- | ----------------------------------------------------- |
-| 可用性検査   | （なし。プロジェクトルートのみ）                   | 利用可否と、不足している前提の個別列挙                |
-| ラウンド実行 | `review_id`、ラウンド番号、pattern、純粋な依頼本文 | 判定（`approved` / `findings` / `failure`）と所見配列 |
-| 終了通知     | `review_id`                                        | なし（受理して終える）                                |
-| 履歴復元     | `review_id`                                        | 当該レビューの往復履歴と解決状態                      |
+| 要求         | 本体から受け取るもの                               | 本体へ返すもの                                                |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
+| 可用性検査   | （なし。プロジェクトルートのみ）                   | 利用可否、不足している前提の個別列挙、`retains_context: true` |
+| ラウンド実行 | `review_id`、ラウンド番号、pattern、純粋な依頼本文 | 判定（`approved` / `findings` / `failure`）と所見配列         |
+| 終了通知     | `review_id`                                        | なし（受理して終える）                                        |
+| 履歴復元     | `review_id`                                        | 当該レビューの往復履歴と解決状態                              |
 
 **判定は 3 値である [MANDATORY]**。ラウンドを成立させられなかった場合（前提不成立・応答が得られない・応答を共通書式として解釈できない）は `failure` を、利用者が読める失敗理由とともに返す。`approved`（所見なし）にも所見 0 件の `findings` にも畳み込まない。非ゼロ終了だけで失敗を伝えることもしない。
 
@@ -62,9 +62,12 @@ Codex 側 Stop フックの登録と、その実体への symlink（`.codex/msg-
 {
   "available": false,
   "missing": [{ "axis": "wake", "detail": "...", "remedy": "..." }],
+  "retains_context": true,
   "warnings": ["..."]
 }
 ```
+
+**`retains_context` は常に `true` です [MANDATORY]**。レビュアーは常駐セッションであり、往復の文脈を自身で保持します。本体はこの申告に従い、2 ラウンド目以降は所見ごとの対応表だけを送ります。
 
 `missing` の各要素は不足 1 件に対応する。`axis` は `wake`（起床手段 = cmux）/ `peer`（相手セッションの常駐）/ `setup`（msg-sys 側の設定）のいずれかである。
 
@@ -171,7 +174,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
   --body-file "<純粋応答の一時ファイル>"
 ```
 
-出力の `judgment`（`approved` / `findings` / `failure`）と `findings` をそのまま本体へ返す。`failure` の `error` は理由として返す。完了宣言行は応答の最終有効行に厳密に 1 行だけ必要であり、`findings` の各所見には重大度マーカーが必要である。重大度が欠落した応答は共通 parser が `failure` にする。位置は `path` + `line` または `unknown: true` のどちらかであり、位置表現が欠落した応答も parser が `failure` にする。
+出力の `judgment`（`approved` / `findings` / `failure`）と `findings` をそのまま本体へ返す。`failure` の `error` は理由として返す。完了宣言行は応答の最終有効行に厳密に 1 行だけ必要であり、`findings` の各所見には重大度マーカーが必要である。重大度が欠落した応答は共通 parser が `failure` にする。位置は `path` + `line` または `unknown: true` のどちらかである。**位置表現が欠落した所見は parser が `unknown: true` として受理し、件数を `warnings` で返す**（1 件の欠落で他の所見を捨てない）。`warnings` はそのまま本体へ渡す。
 
 **解釈に失敗したことを `approved` に畳み込まない [MANDATORY]**。完了宣言行や重大度マーカーを取り出せないことは「指摘が無い」ことを意味しない。
 

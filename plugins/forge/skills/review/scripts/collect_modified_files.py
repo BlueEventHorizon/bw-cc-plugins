@@ -4,7 +4,7 @@
 `git status --porcelain=v1 -z --untracked-files=all` の NUL 区切り出力を解析し、実際に
 変更・新規追加されているファイルパスの一覧を返す。`git status --porcelain`（-z 無し）は
 空白・改行・非 ASCII を含むパスを C-style quote し、rename/copy は ` -> ` を含む1行で
-表現するため、行単位・矢印区切りでの手動パースでは実パスを取り違える（実 Codex レビューで
+表現するため、行単位・矢印区切りでの手動パースでは実パスを取り違える（実レビューで
 発見）。`-z` は quoting を行わず NUL 終端のみで区切られるため、これを正として解析する。
 
 rename/copy レコードの扱い（実 git 挙動で実測確認、git-status(1) の -z 出力仕様）:

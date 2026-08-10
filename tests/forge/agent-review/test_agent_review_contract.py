@@ -86,6 +86,15 @@ class AgentReviewContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.agent)
 
+    def test_reviewer_states_where_the_severity_marker_goes(self):
+        """マーカーの置き場を Agent 定義側でも述べていること。
+
+        置き場を書かないと重大度を見出しでグループ化した応答が返り、共通 parser が
+        finding を 1 件も抽出できずラウンド全体が `failure` になる（実測）。
+        """
+        self.assertIn("1 行目の行頭に重大度マーカー", self.agent)
+        self.assertIn("重大度を見出し", self.agent)
+
 
 class SharedParserIntegrationTest(unittest.TestCase):
     """reviewer の正常・異常応答が SKILL 指定の共通 CLI 契約へ接続すること。"""

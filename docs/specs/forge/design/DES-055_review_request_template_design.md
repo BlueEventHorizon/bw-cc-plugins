@@ -64,16 +64,16 @@
 
 ### 3.1 テンプレートが名指しする forge 内蔵観点
 
-| テンプレート  | 名指しする観点文書                                                                                                                                                                                                                             |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `diff`        | criteria 6 種すべて、`review_priorities_spec.md`、`forge_anti_patterns.md`、`spec_design_boundary_spec.md`、`spec_priorities_spec.md`、`scope_proportionality_spec.md`、`design_principles_spec.md`、`plan_principles_spec.md`、各 format 文書 |
-| `branch`      | 同上                                                                                                                                                                                                                                           |
-| `code`        | `review_criteria_code.md`、`review_priorities_spec.md`、`forge_anti_patterns.md`                                                                                                                                                               |
-| `requirement` | `review_criteria_requirement.md`、`review_priorities_spec.md`、`requirement_format.md`、`spec_design_boundary_spec.md`、`spec_priorities_spec.md`、`document_style_guide.md`                                                                   |
-| `design`      | `review_criteria_design.md`、`review_priorities_spec.md`、`design_format.md`、`adr_format.md`、`design_principles_spec.md`、`spec_design_boundary_spec.md`、`document_style_guide.md`                                                          |
-| `plan`        | `review_criteria_plan.md`、`review_priorities_spec.md`、`plan_format.md`、`plan_principles_spec.md`、`scope_proportionality_spec.md`、`document_style_guide.md` §5.3                                                                           |
-| `uxui`        | `review_criteria_uxui.md`、`review_priorities_spec.md`、`start-uxui-design/docs/` 配下の設計原則                                                                                                                                               |
-| `secrets`     | `review_criteria_secrets.md`、`review_priorities_spec.md`、`sensitive_information_spec.md`                                                                                                                                                     |
+| テンプレート  | 名指しする観点文書                                                                                                                                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `diff`        | criteria 6 種すべて、`review_priorities_spec.md`、`forge_anti_patterns.md`、`spec_design_boundary_spec.md`、`spec_priorities_spec.md`、`scope_proportionality_spec.md`、`design_principles_spec.md`、`adr_principles_spec.md`、`plan_principles_spec.md`、各 format 文書 |
+| `branch`      | 同上                                                                                                                                                                                                                                                                     |
+| `code`        | `review_criteria_code.md`、`review_priorities_spec.md`、`forge_anti_patterns.md`                                                                                                                                                                                         |
+| `requirement` | `review_criteria_requirement.md`、`review_priorities_spec.md`、`requirement_format.md`、`spec_design_boundary_spec.md`、`spec_priorities_spec.md`、`document_style_guide.md`                                                                                             |
+| `design`      | `review_criteria_design.md`、`review_priorities_spec.md`、`design_format.md`、`adr_format.md`、`adr_principles_spec.md`、`design_principles_spec.md`、`spec_design_boundary_spec.md`、`document_style_guide.md`                                                          |
+| `plan`        | `review_criteria_plan.md`、`review_priorities_spec.md`、`plan_format.md`、`plan_principles_spec.md`、`scope_proportionality_spec.md`、`document_style_guide.md` §5.3                                                                                                     |
+| `uxui`        | `review_criteria_uxui.md`、`review_priorities_spec.md`、`start-uxui-design/docs/` 配下の設計原則                                                                                                                                                                         |
+| `secrets`     | `review_criteria_secrets.md`、`review_priorities_spec.md`、`sensitive_information_spec.md`                                                                                                                                                                               |
 
 `diff` / `branch` に全観点を渡す理由: 対象の内容が混在しており、どの観点が必要かを事前に決められない。レビュアー側が対象を見て取捨選択する。
 
@@ -188,6 +188,7 @@
 | テンプレートの網羅性（契約テスト） | §3 が定めるパターン全件のテンプレートが実在し、各テンプレートが使うトークンがスクリプトの供給トークン集合に含まれる                                                                         |
 | 観点文書の実在（契約テスト）       | テンプレートが名指しする `{{PLUGIN_ROOT}}` 配下の観点文書が実在する                                                                                                                         |
 | 重点観点（FNC-1313）               | 全テンプレートが `{{FOCUS}}` を持ち、値が埋め込まれ、未指定・空白時は `（指定なし）` になる。改行を含む値はエラー終了する。重点観点を渡しても内蔵観点の名指しが消えない                     |
+| 重大度マーカーの置き場（FNC-1318） | 全テンプレートの返信形式契約が、マーカーを所見 1 行目の行頭に置くことと、重大度を見出しにまとめる形が受理されないことを述べている                                                           |
 | 文書参照の恒久観点（FNC-1314）     | 文書系 criteria が文書スタイル規約を名指しし、規約側に重大度カタログが存在する                                                                                                              |
 | 機密情報の検出（FNC-1315）         | 既知形式を取りこぼさない。プレースホルダ・コード式・チェックサム表を誤検出しない                                                                                                            |
 | 検出値の非再掲（FNC-1316）         | 出力・依頼本文のどこにも実値が現れない。実値を持つキーを含むスキャン結果はエラー終了する                                                                                                    |
