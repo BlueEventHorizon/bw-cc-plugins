@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.3] - 2026-08-10
+
+### marketplace
+
+- **chore**: forge 0.4.3 / anvil 0.1.2 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.4.3] - 2026-08-10
+
+### forge
+
+- **feat**: 外部依存を持たないレビューバックエンド `agent-review` を新設し、read-only カスタム Agent reviewer を既定バックエンドとした
+- **feat**: ADR を可変文書として運用する規範へ改訂（追記型運用と文書単位 Status を廃止）。ADR 運用規範を `adr_principles_spec.md` へ分離し、既存 ADR 18 件を新書式へ移行してスコープ欄の記法と運用条件を定めた
+- **feat**: AI 提示規範を `consult_principles_spec.md` へ刷新し、REQ-017 consult 要件定義書を追加
+- **fix**: レビュー往復を止めていた書式契約と位置判定の欠陥を解消し、未実行だったテストを CI に載せた
+- **fix**: レビューの base 受け渡し・所見通知・read-only 担保の置き場を是正し、既定バックエンドの変更へ文書を追随させた。ラウンド本文の契約を非永続バックエンドへ対応させた
+- **fix**: update-version のタグ検索を `v` 付き / `v` なしの両形式へ広げ、`tag_format` の宣言と実在タグの形式が食い違う場合に履歴取得が常にフォールバックへ落ちる問題を解消。AI がタグを作成する際は既存タグの前例を優先する規則を定めた
+- **refactor**: skill ラッパーを意味単位の操作契約へ揃え、返信待ちの既定値を集約。実行主体への依存を文書と配布物から取り除き、廃止済みの互換ヘルパを削除
+- **docs**: レビューの位置づけを要件へ明文化（所見は気づき・採否は本体・品質は入力で決まる）。ADR から仕様の写し・ルールの複製・作業記録を除き、存在しない自リポジトリ Issue への参照を全削除して記述を自己完結化
+- **test**: ADR の参照実在と書式維持を検査するテストを新設
+
+## [anvil 0.1.2] - 2026-08-10
+
+### anvil
+
+- **docs**: commit スクリプトのコメントから、存在しない自リポジトリ Issue 番号への参照を除去
+
 ## [marketplace 0.3.2] - 2026-08-05
 
 ### marketplace

@@ -144,12 +144,23 @@ JSON 出力から `new` を取得する。`status: "error"` の場合はエラ�
 
 #### 5-1. コミット履歴の取得
 
-前バージョンのタグから HEAD までのコミットを取得する:
+前バージョンのタグから HEAD までのコミットを取得する。
+
+タグ名は `tag_format` から生成するが、**`v` の有無は運用によって揺れるため両形式を検索する**。タグは利用者が手で付けていることが多く、`tag_format` の宣言と実在タグの形式が一致しない。片方だけを見ると「タグが存在しない」と誤判定し、常にフォールバックへ落ちる:
 
 ```bash
-# tag_format からタグ名を生成（例: "forge-v0.0.23"）
+# tag_format: "{target}-v{version}"、target=foo、前バージョン 0.0.23 の場合
+#   候補は "foo-v0.0.23"（tag_format どおり）と "foo-0.0.23"（v なし）の 2 つ
+git tag --list "foo-v0.0.23" "foo-0.0.23"
+```
+
+見つかったものを `prev_tag` として使い、コミットを取得する:
+
+```bash
 git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 ```
+
+両形式が見つかった場合は `tag_format` どおりの側を採る。
 
 タグが存在しない場合のフォールバック:
 
@@ -346,16 +357,34 @@ python3 -m unittest discover -s tests -p 'test_*.py' 2>&1 | tail -3
 
 `.version-config.yaml` の `git` セクションに基づいて処理する。
 
+#### 10-1. タグ名の決定
+
+タグは利用者が手で付けていることが多い。**AI が付ける場合は既存タグの前例に合わせる**（形式を勝手に増やすと、以降の履歴取得もリリース運用も分断される）:
+
+```bash
+git tag --list | tail -20   # 既存タグの形式（前例）を確認する
+```
+
+| 状況                           | 採用するタグ名                                            |
+| ------------------------------ | --------------------------------------------------------- |
+| 既存タグがある                 | その形式を踏襲する（`v` の有無・prefix の有無を合わせる） |
+| 既存タグがない                 | `tag_format` に従う                                       |
+| 既存タグも `tag_format` もない | `v` 付き（`v{version}`）を採用する                        |
+
+既存タグの形式が `tag_format` の宣言と食い違う場合は、**前例を採る**。ただし食い違いを黙って解消せず、採用したタグ名と `tag_format` の宣言の両方を利用者に提示し、設定を直すか運用を変えるかの判断材料を渡す。
+
+#### 10-2. git 操作の実行
+
 `auto_commit: true` の場合: AskUserQuestion を使用して以下の git 操作を確認する:
 
 ```
-git commit -m "{commit_message}"  # 例: "chore: bump forge to 0.0.19"
+git commit -m "{commit_message}"  # 例: "chore: bump foo to 0.0.19"
 ```
 
-`auto_tag: true` かつコミット成功の場合: タグを作成する:
+`auto_tag: true` かつコミット成功の場合: 10-1 で決定したタグを作成する:
 
 ```bash
-git tag {tag}  # 例: "forge-v0.0.19"
+git tag {tag}  # 例: "foo-v0.0.19"
 ```
 
 `auto_commit: false`（デフォルト）の場合: git 操作は行わず、以下のコマンドを案内する:
