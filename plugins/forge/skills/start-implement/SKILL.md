@@ -277,7 +277,19 @@ prompt:
 
 ## 実行ガイド
 
-${CLAUDE_PLUGIN_ROOT}/docs/task_execution_spec.md を Read して手順に従うこと。
+${CLAUDE_SKILL_DIR}/docs/task_execution_spec.md を Read して手順に従うこと。
+
+## result template
+
+${CLAUDE_SKILL_DIR}/templates/executor_result.json
+
+## producer validator
+
+${CLAUDE_SKILL_DIR}/scripts/validate_executor_result.py
+
+## producer input path
+
+.claude/.temp/executor-result-${CLAUDE_SESSION_ID}-{タスクID}.producer.json
 
 ## タスク情報
 
@@ -319,6 +331,10 @@ ${CLAUDE_PLUGIN_ROOT}/docs/task_execution_spec.md を Read して手順に従う
 - ビルド確認: {必須 | スキップ}
 - テスト実行: {必須 | 任意 | スキップ}
 - スキップ理由: {理由 | -}
+
+## 出力契約
+
+単一実行・並列実行を問わず、実行ガイド Step 5 の JSON だけを Agent の return value として返すこと。
 ```
 
 ### 4.4 executor 起動
@@ -331,39 +347,34 @@ Agent(subagent_type: general-purpose, prompt: {構築したパラメータ})
 
 ### 4.5 executor の結果受領 [MANDATORY]
 
-#### 単一タスク実行時
+単一実行・並列実行を問わず、各 executor は `${CLAUDE_SKILL_DIR}/docs/task_execution_spec.md` Step 5 が定める JSON を return value として返す。Markdown 報告を受理しない。オーケストレーターは全 executor 完了後に return value を収集して処理する。
 
-executor は以下のステータスで報告する:
+受領した各 return value は、内容を AI が解釈する前に consumer wrapper へ渡す。return value を heredoc・引用文字列・環境変数としてシェルコマンドへ埋め込まない。
+
+1. Write ツールで return value **だけ**を `.claude/.temp/executor-result-${CLAUDE_SESSION_ID}-{起動したタスクID}.consumer.json` へ書く
+2. 次のコマンドを 1 回実行する。consumer wrapper が検証・FAILURE 変換・入力ファイル削除を一括して行う
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/receive_executor_result.py" \
+  --input-file ".claude/.temp/executor-result-${CLAUDE_SESSION_ID}-{起動したタスクID}.consumer.json" \
+  --expected-task-id "{起動したタスクID}" \
+  --expected-build "{4.1 の判定: required | skipped}" \
+  --expected-tests "{4.1 の判定: required | optional | skipped}"
+```
+
+- exit 0 → stdout の正規化済み JSON で元の return value を置き換え、後続処理にはその JSON だけを使う
+- 非ゼロ → validator 自体の実行失敗として Phase 6.5 へ進む
+
+期待値は Phase 4.1 で executor へ渡した検証要件と同じ値を使う（必須=`required`、任意=`optional`、スキップ=`skipped`）。契約違反の return value は consumer wrapper が `status: FAILURE` の正規化済み JSON へ変換する。フィールドの補完・型変換・エラーからの FAILURE 生成を手作業で行わない。
 
 | ステータス | 意味     | 次のアクション            |
 | ---------- | -------- | ------------------------- |
 | SUCCESS    | 実装完了 | Phase 5（AI レビュー）へ  |
 | FAILURE    | 実装失敗 | Phase 6.5（エラー対応）へ |
 
-#### 複数タスク並列実行時
-
 **executor は計画書や共有リソースに直接書き込まない。** 各 executor は結果を **return value として JSON で返す**。orchestrator が全 executor 完了後に return value を収集して一括処理する。
 
-各 executor の return value JSON:
-
-```json
-{
-  "task_id": "TASK-001",
-  "status": "SUCCESS",
-  "files_modified": ["src/foo.py", "src/bar.py"],
-  "summary": "実装の要約"
-}
-```
-
-| フィールド       | 説明                           |
-| ---------------- | ------------------------------ |
-| `task_id`        | タスクID                       |
-| `status`         | `SUCCESS` / `FAILURE`          |
-| `files_modified` | 変更したファイルパス一覧       |
-| `summary`        | 実装の要約（1-2行）            |
-| `error`          | FAILURE 時のエラー内容（任意） |
-
-全 executor 完了後、orchestrator が return value を集めて Phase 5-6 を逐次処理する。
+後続処理は `task_id` / `status` / `files_modified` / `summary` / `error` を使う。`verification` / `pre_mortem` / `notes` はタスク結果の報告とエラー対応に保持し、`pre_mortem` を含む追加フィールドを削除して最小スキーマへ変換しない。
 
 ---
 
@@ -377,8 +388,11 @@ executor は以下のステータスで報告する:
 
 `group_id` は通し番号付き（`"GROUP-001 (1/7)"` 等）で記録されるため、単純な文字列一致では同一グループの各タスクが別グループとして扱われてしまう。この正規化・グループ完全性判定・部分失敗時の保留・ファイル順序の決定・**スコープ境界の合算**は決定論的な処理であり、SKILL.md にインライン記述せず専用スクリプトに委譲する（`docs/rules/implementation_guidelines.md`「SKILL.md にインラインスクリプトを書かない」）:
 
+`<input_json>` は Write ツールで `.claude/.temp/start-implement-review-batches-${CLAUDE_SESSION_ID}.json` へ書き、シェル構文へ埋め込まない。wrapper が処理後に入力ファイルを削除する。
+
 ```bash
-echo '<input_json>' | python3 ${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py
+python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
+  --input-file ".claude/.temp/start-implement-review-batches-${CLAUDE_SESSION_ID}.json"
 ```
 
 `<input_json>` は以下の 2 フィールドを持つ。`tasks` は計画書 `tasks[]` 全件から `task_id`/`group_id` を抽出し、**実行対象タスクには 4.2 で導出した `scope_in` / `scope_out` を添えたもの**（Phase 1 で計画書を読み込み済みのため抽出は容易）、`results` は今回の実行で得た **全 executor 結果（SUCCESS/FAILURE 問わず）**:

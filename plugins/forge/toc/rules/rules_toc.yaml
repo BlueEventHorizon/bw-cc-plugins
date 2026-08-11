@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-09T13:35:50Z
+  generated_at: 2026-08-11T13:47:33Z
   file_count: 40
 
 docs:
@@ -809,34 +809,6 @@ docs:
       - feature-slice
       - module dependency
       - verification point
-  plugins/forge/docs/task_execution_spec.md:
-    title: Task Execution Guide (Executor Agent Edition)
-    purpose: Self-contained work instruction that orchestrators provide to task-executor agents, defining the mandatory workflow and constraints for implementing a single task
-    content_details:
-      - Mandatory principles including single-task constraint and prohibited actions
-      - 5-step workflow from task information reception through completion
-      - Preparation phase covering required document reading and existing code review
-      - Implementation guidelines with sequential item execution and test-driven development
-      - Verification requirements for build confirmation and test execution
-      - Completion reporting format with SUCCESS/FAILURE status and implementation summary
-      - Troubleshooting guidance for dependencies, build errors, and unclear requirements
-    applicable_tasks:
-      - Task executor agents implementing features
-      - Orchestrators dispatching and managing task-executor workflows
-      - Task planning and decomposition into atomic units
-      - Quality assurance and verification of agent implementations
-      - Developers designing multi-agent task execution systems
-    keywords:
-      - task execution
-      - executor agent
-      - workflow
-      - verification
-      - orchestrator
-      - scope boundary
-      - implementation
-      - mandatory principles
-      - completion reporting
-      - single-task constraint
   plugins/forge/docs/version_migration_spec.md:
     title: Version Migration Implementation Specification
     purpose: Specifies requirements and implementation patterns for progressive version migration of data formats
@@ -895,6 +867,36 @@ docs:
       - Project-defined
       - Responsibility separation
       - clean-rules
+  plugins/forge/skills/start-implement/docs/task_execution_spec.md:
+    title: Task Execution Guide for Executor Agents
+    purpose: Defines the single-task execution contract, preparation, implementation, verification, and validated JSON reporting required of start-implement executor agents.
+    content_details:
+      - One executor run handles exactly one assigned task and must not start other tasks or launch agents or skills
+      - Scope boundaries prohibit implementing out-of-scope items and require reporting necessary excluded work to the orchestrator
+      - Required preparation includes full reading of design, requirements, strategy, rules, and relevant source code
+      - Task-specific Pre-Mortem identifies up to five evidence-based failure causes and integrates mitigations without expanding scope or verification
+      - Implementation follows provided items sequentially and uses TDD only when required by rules or instructions
+      - Build and test execution must follow orchestrator-supplied requirements, with at most one retry after failure
+      - Completion uses the supplied executor result template as the sole JSON return contract
+      - Candidate results are passed through producer validator using an input file, with one correction attempt on exit code 20
+      - Plan updates remain the orchestrator responsibility and the executor terminates after reporting
+    applicable_tasks:
+      - Implementing a single start-implement plan task with an executor agent
+      - Preparing task-specific Pre-Mortem analysis before implementation
+      - Verifying executor build and test outcomes under orchestrator requirements
+      - Producing and validating executor result JSON
+      - Reviewing executor scope and reporting contract compliance
+    keywords:
+      - task-executor
+      - start-implement
+      - Pre-Mortem
+      - scope boundary
+      - result template
+      - producer validator
+      - producer input path
+      - verification requirements
+      - executor return value
+      - retry limit
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     title: APP Overview Requirements Definition Document Writing Standard
     purpose: Defines the required items, purposes, and guidelines for writing APP-001 (application overview requirements definition document) applicable across all project types
