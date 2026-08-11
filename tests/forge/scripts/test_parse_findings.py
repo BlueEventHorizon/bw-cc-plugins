@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-parse_findings.py のテスト（DES-046 §3.1 / §5 テスト設計）
+parse_findings.py のテスト（REQ-013 共通書式契約 / forge:DES-066 §6 テスト設計）
 
 実測フォーマット（数字付きリスト・複数行にわたる本文・マーカー無し逸脱）からの
 抽出を検証する（`tests/forge/review/test_filter_review_history.py` の
@@ -28,7 +28,7 @@ _spec.loader.exec_module(parse_mod)
 
 
 class ParseFindingsTest(unittest.TestCase):
-    """parse_findings(): 実測フォーマットからの重大度別抽出（DES-046 §3.1）。"""
+    """parse_findings(): 実測フォーマットからの重大度別抽出（REQ-013 共通書式契約）。"""
 
     def test_extracts_single_finding_with_severity(self):
         body = (
@@ -73,7 +73,7 @@ class ParseFindingsTest(unittest.TestCase):
         self.assertNotIn("REVIEW_RESULT", findings[0]["text"])
 
     def test_returns_empty_list_when_approved_with_no_marker(self):
-        """approved 宣言時はマーカー無し説明文があっても空リスト（DES-046 §3.1）。
+        """approved 宣言時はマーカー無し説明文があっても空リスト（REQ-013 共通書式契約）。
 
         approved（指摘なし）と「finding が1件ある」は矛盾するため、承認時は
         fallback を適用しない。
@@ -470,7 +470,7 @@ class InterpretResponseTest(unittest.TestCase):
 
 
 class MainTest(unittest.TestCase):
-    """main(): --body-file 読み込み・単一 JSON 出力（DES-046 §3.1）。"""
+    """main(): --body-file 読み込み・単一 JSON 出力（REQ-013 共通書式契約）。"""
 
     def test_cli_reads_body_file_and_outputs_single_json(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -21,7 +21,7 @@ UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、U
 
 ## Goal
 
-Issue の調査・ブランチ確認・実装計画の Issue 記載・UI の場合はデザイン仕様書・実装・レビューまで、全 Phase を完走すること。`AskUserQuestion` が必要な判断点以外はユーザー介入なしに継続する。
+Issue の調査・ブランチ確認・実装計画の Issue 記載・UI の場合はデザイン仕様書・実装・レビューまで、全 Phase を完走すること。`AskUserQuestion` が必要な判断点と、Phase 12 のレビューで確信の持てない所見の採否以外は、ユーザー介入なしに継続する。
 
 ## フロー継続 [MANDATORY]
 
@@ -429,12 +429,12 @@ Phase 8 で作成する成果物は次の 2 つ。**用途・出力先・参照�
 
 ### 非 UI Issue の場合
 
-`Skill` ツールで `/forge:review code` を委譲実行する（デフォルトは `--diff`。エンジン軸フラグは `/forge:review` が持たないため付けない）。
+`Skill` ツールで `/forge:review code --auto` を委譲実行する（対象は既定の `--diff`。エンジン軸フラグは `/forge:review` が持たないため付けない）。
 
 ```
-Skill ツールで /forge:review code を呼び出す
+Skill ツールで /forge:review code --auto を呼び出す
 - 対象: 現ブランチの未 commit 差分
-- 指摘発生時: 提示された所見に従って修正、または --auto-critical 等を別途呼び直す
+- 指摘発生時: 確信のある所見は自動で修正される。確信の無い所見は 1 件ずつ提示されるので採否を判断する
 - 指摘なし: そのまま Phase 13 へ進む
 ```
 

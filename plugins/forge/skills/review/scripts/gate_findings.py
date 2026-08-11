@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
-"""review: 介入軸（--auto-critical/--auto）による所見の振り分け CLI。
+"""review: 所見を「修正できるもの / できないもの」へ分ける CLI。
 
-バックエンドが共通 parser 契約に従って返した所見（severity 別）を、指定された介入軸の
-モードに応じて「自動修正する（auto_fix）」「対象外として報告する（excluded）」
-に振り分ける。決定表は DES-046 §3.2 参照。
+バックエンドが共通 parser 契約に従って返した所見を 2 群へ分ける。契約は
+forge:DES-066 §3.10 参照。
 
-`--interactive`（既定）・介入軸未指定時は、現在の本体契約に従い `auto` として
-本スクリプトを呼ぶ。
+| 出力キー   | 意味                                             |
+| ---------- | ------------------------------------------------ |
+| `auto_fix` | 自動修正できる所見（位置が確定している）         |
+| `excluded` | 自動修正できない所見（位置が確定していない）     |
+
+## 介入軸も重大度も見ない
+
+**分けているのは所見の性質だけである。** 直せるかどうかを決めるのは位置が確定して
+いるかだけで、介入軸（`--interactive` / `--auto`）にも重大度にも依存しない。
+
+- **重大度は提示順の材料であり、修正の可否を決めない**（REQ-013 FNC-1304）。
+  🔴 でも直し方に確信が無ければ直すべきでなく、🟢 でも確信があれば直してよい
+- **確認なしに直してよいかを決めるのは本体の確信度**であり、所見の中身を読んで初めて
+  決まる。決定論的な処理ではないため本スクリプトは扱わない
+- したがって本スクリプトは介入軸を受け取らない。同じ入力には常に同じ出力を返す
 
 使い方:
-    python3 gate_findings.py --findings-json '<parse_findings.py の出力の findings 配列>' \
-        --mode <auto-critical|auto>
+    python3 gate_findings.py --findings-json '<parse_findings.py の出力の findings 配列>'
 """
 
 import argparse
 import json
-
-# 決定表。auto-critical は critical のみ自動修正、
-# auto は critical + major を自動修正する。minor はどちらのモードでも対象外。
-AUTO_FIX_SEVERITIES = {
-    "auto-critical": {"critical"},
-    "auto": {"critical", "major"},
-}
 
 
 def _has_unknown_location(finding: dict) -> bool:
@@ -30,42 +34,43 @@ def _has_unknown_location(finding: dict) -> bool:
     return not isinstance(location, dict) or bool(location.get("unknown"))
 
 
-def gate_findings(findings: list[dict], mode: str) -> dict:
-    """findings を mode の決定表に従って auto_fix / excluded に振り分ける。
+def gate_findings(findings: list[dict]) -> dict:
+    """findings を auto_fix（修正できる） / excluded（修正できない）へ分ける。
 
-    severity が既知の値（critical/major/minor）以外の finding が混入した場合は、
-    防御的に excluded とする。通常、重大度欠落はバックエンドの共通 parser が
-    failure とするため本スクリプトへ到達しない。
+    **位置を特定できていない所見は修正の対象にできない [MANDATORY]**。修正は
+    「どこを直すか」が確定していて初めて成立する。位置の無い所見を修正対象に含めると、
+    どこを直すかを推測で決めることになり、修正後の allowlist 検証も「意図した変更か」
+    を判定できない。
 
-    **位置を特定できていない所見は severity によらず excluded とする [MANDATORY]**。
-    自動修正は「どこを直すか」が確定していて初めて安全に行える。位置の無い所見を
-    auto_fix に含めると、修正対象を推測で決めることになり、allowlist 検証も
-    「意図した変更か」を判定できない。人間の確認へ回す。
+    人間が「修正する」と判断しても、修正対象を確定できない点は変わらない。位置の特定
+    自体を人間に依頼することはできるが、それは採否の判断ではなく調査の依頼であり、
+    本スクリプトの振り分けの外にある。
     """
-    auto_fix_set = AUTO_FIX_SEVERITIES.get(mode, set())
     auto_fix: list[dict] = []
     excluded: list[dict] = []
 
     for finding in findings:
-        if finding.get("severity") in auto_fix_set and not _has_unknown_location(finding):
-            auto_fix.append(finding)
-        else:
+        if _has_unknown_location(finding):
             excluded.append(finding)
+        else:
+            auto_fix.append(finding)
 
     return {"auto_fix": auto_fix, "excluded": excluded}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="介入軸（--auto-critical/--auto）による所見の振り分け CLI",
+        description="所見を修正できるもの / できないものへ分ける CLI",
     )
-    parser.add_argument("--findings-json", required=True, help="parse_findings.py の findings 配列（JSON文字列）")
-    parser.add_argument("--mode", required=True, choices=["auto-critical", "auto"])
+    parser.add_argument(
+        "--findings-json",
+        required=True,
+        help="parse_findings.py の findings 配列（JSON 文字列）",
+    )
     args = parser.parse_args()
 
     findings = json.loads(args.findings_json)
-    result = gate_findings(findings, args.mode)
-    print(json.dumps(result, ensure_ascii=False))
+    print(json.dumps(gate_findings(findings), ensure_ascii=False))
     return 0
 
 

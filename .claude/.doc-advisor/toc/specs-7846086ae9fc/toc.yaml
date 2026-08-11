@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-11T04:03:15Z
+  generated_at: 2026-08-11T14:02:56Z
   file_count: 58
 
 docs:
@@ -482,34 +482,36 @@ docs:
       - exception propagation
       - error reporting
   docs/specs/consult/requirements/REQ-017_consult_skill.md:
-    title: REQ-017 Consult Dialogue Progression Skill Requirements Specification
-    purpose: Defines requirements for a dialogue progression skill enabling structured discussions, consultations, and research reviews with user decision recording and confidence tracking
+    title: REQ-017 Consult Skill Requirements
+    purpose: Defines requirements for the consult skill that manages user discussions and consultations, provides structured dialogue progression, and records dialogue outcomes and decisions
     content_details:
-      - "Issue extraction and confidence level verification (three-stage: confirmed/inferred/unverified)"
-      - Agenda table with importance, state, and result columns
-      - Item presentation sequence (background, essence, recommendation, and optional alternatives)
-      - Confidence level marking with unverified as default
-      - Context re-presentation without relying on references
-      - Console vs. discussion file volume constraints
-      - Q&A support without forcing judgment
-      - Decision recording with human vs. AI attribution
+      - Issue extraction and validation with confidence levels (FNC-001)
+      - Agenda-based progression with status tracking (FNC-002)
+      - Item presentation with background and rationale (FNC-003)
+      - "Confidence level indication: confirmed/inferred/unverified (FNC-004)"
+      - Context re-statement for references (FNC-005)
+      - "Volume limits per medium: console vs discussion file (FNC-006)"
+      - Q&A handling focused on understanding (FNC-007)
+      - "Recording user decisions: adopt/reject/hold with reasons (FNC-008)"
+      - Handling interruption, holding, and out-of-scope items (FNC-009)
+      - Discussion mode without prompting for judgment (FNC-010)
     applicable_tasks:
-      - Designing dialogue-driven consultation workflows
-      - Implementing issue extraction and tracking features
-      - Planning structured discussion interaction design
-      - Reviewing consult skill implementation
-      - Integrating decision recording mechanisms
+      - Implementing the consult SKILL
+      - Designing dialogue flow for user consultations
+      - Creating agenda-based discussion workflows
+      - Understanding consult feature requirements
+      - Integrating consult with forge review workflow
     keywords:
       - consult
       - dialogue
-      - discussion
-      - issue extraction
       - agenda
       - confidence level
-      - decision recording
+      - issue extraction
       - discussion file
-      - REQ-017
-      - structured interaction
+      - decision recording
+      - FNC
+      - NFR
+      - discussion mode
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md:
     title: Error Discrimination Contract for doc-db (v0.3.3+)
     purpose: "Establishes error discrimination contract for doc-db: distinguishes KEY_NOT_FOUND from KEY_TRASHED using error.data.code identifiers, requires doc-db v0.3.3+"
@@ -1311,39 +1313,33 @@ docs:
       - DES-057
       - forge_settings.py
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: /forge:review Body (Backend-Independent) Design Specification
-    purpose: "Defines the architecture and module design of the /forge:review skill's core logic independent of backend implementation, covering argument interpretation, target resolution, request building, findings evaluation, and review finalization."
+    title: /forge:review Backend-Independent Body Design
+    purpose: Defines the architecture and module responsibilities for the backend-independent portion of /forge:review SKILL, covering backend resolution, request assembly, finding evaluation, and safety verification
     content_details:
-      - Backend resolution strategy with three-tier approach and fail-closed behavior
-      - Module design with ten core modules including resolve_review_backend, build_review_request, gate_findings, verify_fix_safety, finalize_review
-      - "Four termination paths unified through finalize_review.py: approved, findings, failure, interrupted"
-      - Focus and scope information axes as distinct concerns for review requests
-      - Safety verification through per-finding validation and round-end independent verification
-      - Backend context preservation handling with conditional request format rebuilding
-      - Target specification preservation to backends instead of file expansion
-      - Candidate ordering definition in single location with agent-review before msg-review
-      - Base-branch handling and allowlist generation with fail-closed mismatch detection
-      - Two-round backend communication protocol with conditional information requirements
+      - "Backend resolution procedure: explicit --backend argument or .forge.yaml backend key, otherwise default candidate order (agent-review, msg-review)"
+      - "Core modules: resolve_review_backend.py, analyze_branch_point.py, resolve_targets.py, build_review_request.py, gate_findings.py, capture_syntax_baseline.py, verify_fix_safety.py, collect_modified_files.py, finalize_review.py"
+      - "Single-exit termination: all review end states (approved, findings with empty fix list, failure, interrupted) funnel through finalize_review.py"
+      - "Fail-closed design: unknown backends fail without fallback, missing branches fail without fallback, backend candidates fully evaluated before any request sent"
+      - "Judgment value semantics: approved terminates, findings conditionally continues if confirmed_fix is non-empty, failure terminates without backend fallback"
+      - "Finding evaluation and verification: per-finding modification followed by allowlist and syntax verification, with independent round-end verification"
+      - "Context preservation as optional extension: history restoration only via backend capability declaration, otherwise complete request reconstruction per round"
+      - "Request information axes: focus point ({{FOCUS}}) for observation emphasis and completion target ({{SCOPE}}) for baseline definition, distinct from target path specification"
+      - ".forge.yaml review section: backend selection key only, candidate order defined in code (DEFAULT_ORDER in resolve_review_backend.py) not configurable"
     applicable_tasks:
-      - Implementing /forge:review skill core logic and module coordination
-      - Designing new backend integration with /forge:review
-      - Reviewing and testing backend resolution behavior
-      - Implementing findings parsing and evaluation logic
-      - Testing review termination paths and notification requirements
-      - Implementing target resolution and allowlist generation
-      - Designing fix safety verification mechanisms
-      - Understanding skip/allowlist mechanisms
+      - Implementation of /forge:review backend-independent body layer
+      - Design and integration of new /forge:review backends
+      - Review of /forge:review architecture for backend abstraction compliance
+      - Modification of finding evaluation and safety verification logic
+      - Troubleshooting /forge:review termination and notification paths
     keywords:
+      - /forge:review
       - resolve_review_backend.py
-      - build_review_request.py
       - finalize_review.py
-      - parse_findings.py
-      - confirmed_fix
-      - fail-closed
-      - backend-independent
-      - allowlist
-      - termination paths
-      - context preservation
+      - backend resolution
+      - findings evaluation
+      - fail closed
+      - agent-review
+      - review_id
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Specifies the orchestration, delegation, data-transfer, document-format, and completion-flow requirements for all user-invocable forge skills.
@@ -1405,37 +1401,38 @@ docs:
       - DES-024
   docs/specs/forge/requirements/REQ-013_review_policy.md:
     title: REQ-013 Review Policy Requirements
-    purpose: Specifies review policy requirements for forge AI review, including priority system (P1-P3), detection scope, backend contracts, and interaction patterns
+    purpose: Defines review policy requirements establishing priority levels, criteria structure, execution axes, backend contracts, and comprehensive guidelines for review SKILL development and operation within forge.
     content_details:
-      - Review priority system with three levels (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
-      - Removal of criteria-specific perspectives and judgment; centralization of severity decisions to principles
-      - Target specification axes (--diff, --branch, --files, --dirs) with mutual exclusivity constraints
-      - Interaction axes (--interactive, --auto-critical, --auto) controlling auto-fix scope and manual intervention
-      - Focus axis for per-request attention points (--focus) and scope axis for evaluation baseline (--scope)
-      - Project rules and specs pass-through (--project-rules, --project-specs) to avoid duplicate search
-      - Review backend selection contract (--backend) with mandatory fallback resolution order (agent-review, msg-review)
-      - Secrets detection as independent review with dual-stage approach (mechanical detection plus AI analysis)
-      - Issue creation trigger for missing rules with three mandatory conditions (rule coverage gap, recurrence, explicit-ability)
-      - Output schema for findings (severity markers, position information, location-undefined handling, format contracts)
+      - "Priority system with three levels (P1: rule matching via SSOT, P2: contradiction detection, P3: unnecessary complexity detection)"
+      - Criteria document three-section structure (SSOT reference, check order, decision rules)
+      - Target axes (--diff, --branch, --files, --dirs) with mutual exclusivity and granularity preservation
+      - Interaction axes (--interactive, --auto-critical, --auto) for handling review findings
+      - Focus axis (--focus) for task-specific attention guidance without severity override
+      - Scope axis (--scope) for evaluation criteria and completion definition
+      - Backend axis (--backend) with availability checking, failure distinction, and termination notification
+      - Secret information review (FNC-1315) as independent operation with deterministic scan and AI reading
+      - Severity catalog requirements (FNC-1311) mapping violations to critical/major/minor
+      - Finding output contract requiring severity markers and position information
     applicable_tasks:
-      - Review flow implementation planning
-      - Review backend integration and configuration
-      - Review criteria definition and principles maintenance
-      - Secrets detection policy implementation
-      - Review interaction mode selection
-      - Target specification handling in review requests
-      - Rule documentation integration
+      - Development and validation of /forge:review SKILL
+      - Backend implementation for review execution
+      - Review criteria document authoring and review
+      - Severity catalog expansion in forge principles documents
+      - Configuration of review execution parameters
+      - Secret information handling and masking specification
+      - Finding discovery and position information validation
+      - Review caller responsibility definition and integration
     keywords:
-      - review criteria
-      - priority system
-      - backend contract
-      - target axes
-      - secrets detection
-      - auto-fix scope
-      - interaction modes
-      - P1-P3 severity
-      - principles SSOT
-      - fallback resolution
+      - review-policy
+      - priority-axis
+      - backend-axis
+      - interaction-axis
+      - criteria-structure
+      - severity-catalog
+      - FNC-1301
+      - FNC-1318
+      - SSOT
+      - findings-contract
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: "ADR-061: Adding app-server Path to Codex Wake-up Mechanism"
     purpose: Describes decision to add app-server wake-up path alongside cmux path for Codex sessions, enabling push-based notification in environments lacking cmux terminal multiplexer
@@ -1477,7 +1474,7 @@ docs:
       - Shell prompt and Claude Code UI detection rules are unreachable when Codex process is active
       - "Three-axis judgment separation: A) Wake-up means availability (cmux) - deterministic; B) Session residency (Codex process) - deterministic; C) Response capability - speculative"
       - Axes A and B included in availability probe; axis C excluded from prerequisite judgment (retained only for push wake-up safety gate)
-      - "Individual prerequisite return: specify whether A or B is missing, not collapsed \\\"unavailable\\"
+      - "Individual prerequisite return: specify whether A or B is missing, not collapsed \\\\\\\"unavailable\\\\"
       - Local review fallback path removed (same Claude self-review lacks independent perspective, fails to meet user expectation)
       - "Waiting shortening effect not achieved (residency confirmed deterministically; long waits from peer's own execution)"
       - "Alternative approaches rejected: combined single script (confuses certainty levels), including axis C in probe (false positives), reconstructing axis C rules (redundant with push wake-up detection)"
@@ -1531,37 +1528,34 @@ docs:
       - send_review_and_await_reply
       - probe_availability
   docs/specs/msg-review/design/DES-046_msg_review_intervention_mode_design.md:
-    title: Review Body Intervention Axis Design Specification
-    purpose: Specifies how the review body evaluates and gates findings from backends based on intervention modes. Defines severity-based routing of findings into auto-fix candidates and excluded items.
+    title: DES-046 review body intervention mode design
+    purpose: Specifies how the review mechanism classifies findings and routes them to automatic fixing, human decision, or exclusion based on intervention mode
     content_details:
-      - "Three intervention modes with different severity routing: auto (critical/major to auto_fix, minor excluded), auto-critical (critical only to auto_fix), and interactive (same as auto)"
-      - Mandatory location confirmation rule for auto-fix candidates to prevent speculative modifications
-      - Findings with unknown location excluded from auto_fix regardless of severity
-      - Responsibility split between backend (response interpretation, severity parsing) and review body (intervention axis interpretation, finding evaluation)
-      - gate_findings.py CLI accepting findings JSON and mode parameter with auto_fix/excluded output
-      - Defensive handling of invalid severity values by routing to excluded
-      - "Review body flow: receive findings, gate via gate_findings.py, evaluate each auto_fix candidate, determine confirmed_fix, decide reround or termination"
-      - Test design covering severity-based routing, location validation, and invalid severity handling
+      - Three intervention modes (interactive, auto-critical, auto) with different auto-fix and decision routing rules
+      - Finding severity classification (critical, major, minor) determining auto-fix eligibility
+      - location.unknown findings excluded from auto-fix regardless of severity or mode
+      - gate_findings.py script routing findings into auto_fix, needs_decision, or excluded categories
+      - prepare_triage.py generating staged presentation with non-reusable finding IDs (01, 02, ...)
+      - Interactive mode requiring turn-crossing user responses with state preserved in triage files
+      - Backend responsibility for severity interpretation, position extraction, and completion declaration
+      - Deterministic finding segregation without AI intervention to prevent silent count and position errors
     applicable_tasks:
-      - Implementation of gate_findings.py script for severity-based routing
-      - Design review of intervention axis semantics
-      - Testing of auto mode versus auto-critical mode routing
-      - Testing of unknown location exclusion rule
-      - Implementation of review body gating logic
-      - Understanding severity-based finding evaluation
-      - Testing defensive handling of invalid severity values
-      - Integration of gate_findings output with confirmation workflow
+      - Implementing finding classification based on intervention mode
+      - Modifying finding severity routing behavior
+      - Implementing user-facing staged presentation for interactive mode
+      - Testing finding categorization logic against severity and location constraints
+      - Integrating new backend response formats into finding validation
     keywords:
-      - intervention mode
       - gate_findings
-      - severity
-      - critical
-      - major
-      - minor
-      - auto_fix
-      - excluded
+      - prepare_triage
+      - intervention mode
+      - finding severity
       - location.unknown
-      - confirmed_fix
+      - auto-fix
+      - needs_decision
+      - interactive triage
+      - common parser contract
+      - DES-046
   docs/specs/msg-review/design/DES-047_msg_review_fix_safety_guardrails_design.md:
     title: DES-047 Review Core Fix Safety Guardrails Design
     purpose: Defines safety boundaries for applying confirmed review fixes through sequential edits, file allowlists, and deterministic syntax checks.

@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-11T05:26:30Z
+  generated_at: 2026-08-11T17:52:17Z
   file_count: 40
 
 docs:
@@ -105,31 +105,32 @@ docs:
       - decision superseding
   plugins/forge/docs/consult_principles_spec.md:
     title: Consult Presentation Principles
-    purpose: Defines principles for presenting consultations and human judgment requests to ensure clarity and context flow in console interactions
+    purpose: Defines principles for AI consultation with humans regarding judgments or discussions, including console presentation patterns, multi-item agendas, confidence levels, and preventing decision-pushing
     content_details:
-      - Present background and essence before offering choices
-      - Use agenda tables with progress tracking for multiple consultations
-      - State recommendations and reasoning upfront before presenting alternatives
-      - Indicate confidence level with symbols for verified, inferred, or unverified claims
-      - Reiterate key points when referencing previous discussion
-      - Keep console output brief while preserving necessary understanding content
-      - Do not demand judgment in discussion and brainstorming contexts
-      - Present choices only when necessary with clear impact and recommendations
+      - Background and essence stated before presenting options
+      - Agenda tables with progress tracking and mandatory result column
+      - "Confidence levels marked: confirmed (☑️), inferred (🤔), unverified (unmarked)"
+      - Previous discussion content re-stated in 1-2 lines, not just referenced
+      - Console presentation target ~10 lines with critical content preserved
+      - Discussion mode explanation provided without imposing deciding flow
+      - "Choice presentation: each option described, change impact shown, single recommendation included"
+      - "Non-applicable scenarios: explanation mode or judgment already decided"
     applicable_tasks:
-      - Writing consultation questions to users
-      - Presenting multiple decision points in SKILL or Agent
-      - Formatting agenda and progress tables for complex discussions
-      - Determining when to present choices versus explanations
-      - Restructuring decision flows to avoid re-asking users
+      - Designing console-based consultation interactions
+      - Setting up multi-item decision guidance flows
+      - Implementing agenda tracking in SKILL outputs
+      - Facilitating discussion without pushing AI judgment
+      - Establishing confidence indication patterns
+      - Preventing context loss in ongoing console interactions
     keywords:
-      - consultation
-      - judgment
+      - consult principles
       - agenda table
+      - confidence levels
       - background and essence
-      - confidence level
-      - choice presentation
-      - decision flow
-      - console output
+      - console presentation
+      - decision-pushing
+      - progress tracking
+      - reference re-stating
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
     purpose: Specifies code review priority-based criteria, checking order (P1-P3), decision rules for recommendations, and conditions for creating review issues
@@ -588,40 +589,32 @@ docs:
       - severity level
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
-    purpose: Defines review priority framework (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity), relationship between priority and severity as independent axes, exception rules, and review criteria structure
+    purpose: Defines the priority framework (P1 rules compliance, P2 contradictions, P3 unnecessary complexity) for review observations, the independent relationship between priority and severity, delegation of judgment to principles documents, and the fixed structure for review criteria files
     content_details:
-      - Priority framework (P1 rule compliance via reading rules, P2 contradiction detection, P3 unnecessary complexity as yes/no judgment)
-      - "Independent axes of priority (observation source: P1/P2/P3) and severity (urgency: critical/major/minor)"
-      - "Severity single source of truth delegation to delegated principles' severity catalogs"
-      - Exception rules (P2 excludes incompleteness/coverage, P3 excludes subjective evaluation like simplicity)
-      - Prohibition on custom perspectives (logic, resilience, maintainability, architecture, completeness)
-      - Fix recommendation proportionality check against scope_proportionality_spec.md
-      - Severity declaration prohibition in review_criteria_*.md and removal of 🔴/🟡/🟢 severity categorization
-      - Gray zone tolerance determination delegation to principles with no judging in criteria
-      - Three conditions for create_issue recommendation (no applicable rule, recurrence or objectivity, explicit documentation granularity)
-      - Fixed 3-section structure for all review_criteria_*.md (SSOT reference, check order, judgment rules)
+      - "Priority definitions: P1 (rule compliance), P2 (contradictions/discrepancies), P3 (unnecessary complexity Yes/No)"
+      - Priority (observation source) and severity (fix urgency) are independent axes with distinct roles
+      - Severity SoT delegated to principles documents; criteria do not declare severity levels
+      - P2 excludes coverage gaps; comprehensiveness checked via P1 rule compliance instead
+      - P3 excludes subjective evaluations like simplicity and readability; only objective alternative existence judgments
+      - "Prohibition on fixed perspectives in criteria: logic, resilience, maintainability, architecture forbidden"
+      - "Proportionality check: evaluators confirm scope_proportionality_spec.md compatibility for certain findings"
+      - "Fixed 3-section structure for review_criteria_*.md: SSOT references, check order, judgment rules"
     applicable_tasks:
-      - Creating review criteria specifications and structure
-      - Classifying review observation priorities (P1/P2/P3)
-      - Validating severity mappings to delegated principles
-      - Evaluating review findings and recommendations
-      - Determining gray zone tolerance for findings based on principles
-      - Assessing review recommendation categories (fix/create_issue/skip/needs_review)
-      - Creating rule addition issues from reviews using three-condition framework
-      - Reviewing review_criteria_*.md document structure compliance
-      - Tracing ADR rejection rationale and prerequisite validation
-      - Evaluating proportionality of fix recommendations
+      - Designing review observation priority systems
+      - Creating review criteria documents with fixed structure
+      - Mapping rule violations to severity levels from principles documents
+      - Setting up review recommendation flows (fix/create_issue/skip/needs_review)
+      - Implementing issue creation trigger logic based on 3 conditions
+      - Evaluating grayzone tolerance and false positive detection
     keywords:
-      - review_priorities_spec
-      - priority_framework
-      - P1_rule_compliance
-      - P2_contradiction
-      - P3_unnecessary_complexity
-      - severity_mapping
-      - SSOT
-      - review_criteria
-      - create_issue
-      - gray_zone
+      - review priorities
+      - P1 P2 P3 priority levels
+      - severity mapping
+      - principles delegation
+      - review criteria
+      - SSOT (Single Source of Truth)
+      - recommendation rules
+      - grayzone tolerance
   plugins/forge/docs/scope_proportionality_spec.md:
     title: Scope Proportionality Specification
     purpose: "Establishes principles for determining whether defensive measures, optimizations, and quality improvements should be adopted, preventing over-design by narrowly gating defensive implementations. Applies only to three categories: catastrophic external defense, speculative defense, and unmotivated quality improvements."
