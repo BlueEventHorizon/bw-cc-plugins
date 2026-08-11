@@ -7,14 +7,20 @@
 - 合算ファイルの重複除去・計画書順の維持
 """
 
+import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPTS_DIR = str(
-    Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[3]
+SCRIPTS_PATH = (
+    REPO_ROOT
     / "plugins" / "forge" / "skills" / "start-implement" / "scripts"
 )
+SCRIPTS_DIR = str(SCRIPTS_PATH)
+SCRIPT = SCRIPTS_PATH / "group_review_batch.py"
 if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
@@ -372,6 +378,58 @@ class TestScopeAggregation(unittest.TestCase):
                 "tasks": [{"task_id": "T1", "group_id": None, "scope_out": "文字列"}],
                 "results": [{"task_id": "T1", "status": "SUCCESS", "files_modified": []}],
             })
+
+
+class TestCliInputFile(unittest.TestCase):
+    def test_reads_json_from_input_file(self):
+        payload = {
+            "tasks": [{"task_id": "T1", "group_id": None, "scope_in": "A"}],
+            "results": [
+                {"task_id": "T1", "status": "SUCCESS", "files_modified": ["a.py"]}
+            ],
+        }
+        temp_dir = REPO_ROOT / ".claude" / ".temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix=".json",
+            dir=temp_dir,
+            delete=False,
+        ) as handle:
+            json.dump(payload, handle)
+            input_file = Path(handle.name)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--input-file",
+                str(input_file.relative_to(REPO_ROOT)),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+            cwd=REPO_ROOT,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout)["status"], "ok")
+        self.assertFalse(input_file.exists(), "wrapper は入力ファイルを削除すること")
+
+    def test_rejects_missing_input_file(self):
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--input-file",
+                ".claude/.temp/nonexistent-input.json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+            cwd=REPO_ROOT,
+        )
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(json.loads(completed.stdout)["status"], "error")
 
 
 if __name__ == "__main__":

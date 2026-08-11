@@ -16,16 +16,13 @@
 - `group_id: null`（独立タスク）→ 常に個別レビュー対象
 
 Usage:
-    echo '<input_json>' | python3 group_review_batch.py
+    python3 group_review_batch.py --input-file <input.json>
 
 レビュー依頼へ渡す「到達目標と意図的な未実装」(`/forge:review --scope`) の合算も本スクリプトが
 行う。グループ合算レビューは N タスクを 1 回に束ねるため、各メンバーのスコープ境界を単純に
 連結すると **同じグループの他メンバーが今回実装した項目まで「意図的な未実装」として宣言して
 しまう**（TASK-A の範囲外項目が TASK-B の範囲内であることがグループ化の理由そのもの）。
 合算規則は「全メンバーの範囲外項目の和集合 − 同じバッチのメンバーが担当する項目」である。
-
-Usage:
-    echo '<input_json>' | python3 group_review_batch.py
 
 Input JSON:
     {
@@ -68,9 +65,11 @@ Output JSON:
 最終形に到達するという正当な状態）。
 """
 
+import argparse
 import json
 import re
 import sys
+from pathlib import Path
 
 _GROUP_KEY_RE = re.compile(r"^(.*?)\s*\(")
 
@@ -355,13 +354,34 @@ def build_review_batches(payload):
     }
 
 
-def main():
-    raw = sys.stdin.read()
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input-file", required=True)
+    args = parser.parse_args(argv)
+
+    input_path = Path(args.input_file)
+    if (
+        input_path.is_absolute()
+        or ".." in input_path.parts
+        or input_path.parts[:2] != (".claude", ".temp")
+    ):
+        print(json.dumps({
+            "status": "error",
+            "message": "input-file は .claude/.temp/ 配下の相対パスである必要があります",
+        }, ensure_ascii=False))
+        sys.exit(1)
+
     try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as e:
+        with input_path.open(encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as e:
         print(json.dumps({"status": "error", "message": f"invalid JSON input: {e}"}))
         sys.exit(1)
+    finally:
+        try:
+            input_path.unlink()
+        except FileNotFoundError:
+            pass
 
     if "tasks" not in payload or "results" not in payload:
         print(json.dumps({"status": "error", "message": "tasks / results は必須フィールドです"}))

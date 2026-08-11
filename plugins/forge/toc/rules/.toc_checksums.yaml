@@ -29,9 +29,9 @@ checksums:
   plugins/forge/docs/spec_format.md: ac500706af51b36f30e12ac0a03a3f0b7a2ab7ad4946658f6f9c821f9cfd9208
   plugins/forge/docs/spec_priorities_spec.md: ad7b3f38738755872126f318ff055037bd739f7c66b26427d27514421310f032
   plugins/forge/docs/strategy_formulation_spec.md: dfa05da1eef38990ca78dc991ab5a5ed7444fc2c96552ae9ee5c05342bf5b042
-  plugins/forge/docs/task_execution_spec.md: 803d518e6cc67196be6f2e51fc5dbafa2a84ad9c9232ca049f9353b75a1a26a5
   plugins/forge/docs/version_migration_spec.md: 7789d9fe362fa960d9dd95841404daa734b0e35133fdb529c9d4921186665e60
   plugins/forge/skills/clean-rules/docs/taxonomy.md: cbe025933f39f74be1d11707b0a4c376c9aab7faa99973f6bfa1a6c09ee9b39a
+  plugins/forge/skills/start-implement/docs/task_execution_spec.md: f4397a0a971e0a10c9574645dcccf7b3cf8629a772ca3b23d1ae197a44196368
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md: 6120b83f8bac7942c5cde5d52df2341fa978ee3f031fcb5c79651fa38ccfd746
   plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md: c1603366b3c66cf000dd0946adc2a4857b39e83f1839b44b827d115ceb211db5
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md: 318673b217570f7e5ebd1839545f2249863edc892dea963032ca6b54d5e5da71
