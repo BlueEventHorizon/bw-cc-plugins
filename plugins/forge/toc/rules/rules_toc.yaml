@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-11T04:46:00Z
+  generated_at: 2026-08-11T05:26:30Z
   file_count: 40
 
 docs:
@@ -73,34 +73,36 @@ docs:
       - impact
       - cross-reference
   plugins/forge/docs/adr_principles_spec.md:
-    title: ADR (Architecture Decision Record) Operating Principles
-    purpose: Establishes the operating principles and governance rules for Architecture Decision Records, including creation criteria, scope definition, mutability rules, supersession handling, and rejection reason documentation guidelines
+    title: ADR Operating Principles
+    purpose: Establishes operating principles for creating, maintaining, and using Architecture Decision Records, including what to document, decision binding rules, and obsolescence handling
     content_details:
-      - ADR beneficiary is the proposing AI evaluating if an alternative was already considered
-      - "Content focus: rejection reasons are primary; context is secondary"
-      - "Specification rule: no duplication of specs in ADR; use markdown links with section references"
-      - "Rules placement rule: ADR documents decision to adopt a rule, not the rule text itself"
-      - "Creation criteria: two conditions must both hold (future proposal likelihood AND decision not obvious from code/rules/specs)"
-      - "Scope block format: explicitly state define/not define/relationship boundaries for adjacent decisions"
-      - "Non-binding principle: readers must verify assumption validity before dismissing proposals; must cite ADR ID when dismissing"
-      - "Mutability rules: append updates, preserve section numbers, retain decision reversals (A → B → A)"
-      - "Supersession markers: warning失効 used only for ADR-to-ADR replacements with source ADR reference"
-      - "Rejection reason formula: use vocabulary from future proposals and explicitly state prerequisites"
+      - Rejection rationales documented with future proposal vocabulary and premise clarity
+      - Non-binding nature with reader obligations to verify premise currency
+      - Scope clause optional, used only for boundary clarification in overlapping documents
+      - Documents are variable/mutable but section numbering is immutable for external references
+      - Obsolescence marked only when decisions replaced by other ADRs, with marker in section headers
+      - ID enumeration via next-spec-id SKILL with shared DES prefix sequence
+      - Writing targets exclude specifications, rules, and implementation details
+      - "Decisions must meet both criteria: future proposals likely and decision not obvious from specs/rules"
+      - Severity catalog mapping ADR violations from critical to minor
+      - Rejection reason must state underlying premises to enable premise validity assessment
     applicable_tasks:
-      - ADR creation and writing
-      - Design change proposal evaluation against existing ADRs
-      - ADR maintenance and content updates
-      - Supersession and deprecation marking of decisions
-      - Scope definition for overlapping architectural decisions
-      - Legacy ADR format migration
+      - Evaluating or creating Architecture Decision Record proposals
+      - Assessing rejection rationales for design decisions
+      - Reviewing architectural decision changes and supersessions
+      - ADR maintenance and obsolescence handling
+      - Architecture decision precedent checking
     keywords:
       - ADR
-      - operating principles
-      - rejection reason
-      - scope block
-      - supersession marker
-      - assumption
-      - decision governance
+      - Architecture Decision Records
+      - rejection rationale
+      - decision context
+      - obsolescence handling
+      - premise validation
+      - decision binding
+      - adr_format
+      - adr_principles
+      - decision superseding
   plugins/forge/docs/consult_principles_spec.md:
     title: Consult Presentation Principles
     purpose: Defines principles for presenting consultations and human judgment requests to ensure clarity and context flow in console interactions

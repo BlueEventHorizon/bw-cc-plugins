@@ -1,46 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""変更パスを「生成された検索インデックス（ToC）」とそれ以外へ分類する read-only CLI。
+"""commit 前のステージ状態を検査する read-only CLI。
 
-`/anvil:commit` の Phase 3 が、ToC の差分を一括ステージ（`git add -u`）に巻き込まないために使う。
-ToC は git 管理下の生成物であり、保護ブランチ以外で commit すると並行作業の再生成結果と衝突して
-merge 時に破棄される。含めるかどうかは利用者が commit 確認の場で決める。
+`/anvil:commit` の Phase 3 が、何をステージするかを利用者へ確認するために使う。
 
 ## なぜ script にするか
 
-パスの分類は決定論的な処理である。SKILL.md 側で AI にパターン照合させると、`git status --porcelain`
-の quote 表記（空白・非 ASCII を含むパス）や rename の `->` 表記で取り違える。
+`git status --porcelain` の読み取りは決定論的な処理である。SKILL.md 側で AI に読ませると、
+quote 表記（空白・非 ASCII を含むパス）や rename の `->` 表記で取り違える。
 `git status --porcelain -z` を使い、NUL 区切りで確実に分解する。
 
-## 分類の基準
-
-生成インデックスの所在は `.claude/.doc-advisor/toc/` である。この 1 定数だけを判定に使う。
-
-**この定数が anvil にあることについて**: ToC を生成するのは doc-advisor（外部プラグイン）であり、
-その配置を anvil が知るのは本来の責務分担ではない。しかし「commit 対象に含めるか」を決められるのは
-commit の場だけであり、他に置き場がない。所在が変わったときは本定数の更新が必要になる。
+とくに **index と作業ツリーの食い違い**（`MM` / `AM`）は 2 文字表記にしか現れず、
+散文の手順で「ステージ済みがあるか」だけを見ると見落とす。見落とすと古い内容が commit され、
+差分は commit した後にしか現れない。機械判定でなければ守れない。
 
 ## 出力
 
-終了コードは常に 0（分類は判定であり異常ではない）。標準出力に単一 JSON。
+終了コードは常に 0（検査は判定であり異常ではない）。標準出力に単一 JSON。
 
 ```json
 {
-  "branch": "feature/x",
-  "toc_paths": [".claude/.doc-advisor/toc/rules-abc/toc.yaml"],
-  "other_paths": ["docs/rules/foo.md"],
+  "tracked_paths": ["docs/rules/foo.md"],
   "untracked_paths": ["docs/new.md"],
   "stale_staged_paths": ["README.md"]
 }
 ```
 
-`toc_paths` / `other_paths` は**追跡済みの変更**（ステージ済み・未ステージの両方）を対象とする。
-未追跡は `untracked_paths` へ分け、`git add -u` の対象外であることを呼び出し側が区別できるようにする。
+ブランチ名は返さない。保護ブランチの判定は Phase 3.5 が独立に行うため、ここで返すと使われない値に
+なる。
+
+`tracked_paths` は**追跡済みの変更**（ステージ済み・未ステージの両方）である。未追跡は
+`untracked_paths` へ分け、`git add -u` の対象外であることを呼び出し側が区別できるようにする。
 
 `stale_staged_paths` は **index に載っている内容が作業ツリーと食い違うパス**（porcelain の 2 列が
 ともに非空白。例 `MM`）である。この状態で「ステージ済みがあるからそのまま commit する」と、
-**作業ツリーの最新ではなく古い内容が commit される**。差分は commit した後にしか現れないため、
-気付くのは常に手遅れになる。呼び出し側はステージし直すかどうかを利用者に確認する。
+**作業ツリーの最新ではなく古い内容が commit される**。`git add` し直せば解消する。
 
 ## 依存
 
@@ -54,23 +48,12 @@ import json
 import subprocess
 import sys
 
-#: 生成された検索インデックスの所在（project root 相対）
-TOC_PATH_PREFIX = ".claude/.doc-advisor/toc/"
-
 
 def _run(args: list[str]) -> str:
     proc = subprocess.run(args, capture_output=True, text=True)
     if proc.returncode != 0:
         raise RuntimeError(f"{' '.join(args)} が失敗しました: {proc.stderr.strip()}")
     return proc.stdout
-
-
-def current_branch() -> str:
-    """現在のブランチ名を返す。detached HEAD では空文字列。"""
-    try:
-        return _run(["git", "branch", "--show-current"]).strip()
-    except RuntimeError:
-        return ""
 
 
 def _iter_porcelain_entries(stdout: str):
@@ -112,21 +95,18 @@ def _is_stale_staged(status: str) -> bool:
     return index_col != " " and worktree_col != " "
 
 
-def classify(stdout: str) -> dict:
-    """porcelain 出力を ToC / その他 / 未追跡へ分類し、古いステージも検出する。"""
-    toc_paths, other_paths, untracked_paths, stale_staged_paths = [], [], [], []
+def inspect(stdout: str) -> dict:
+    """porcelain 出力から、追跡済み・未追跡・古いステージを取り出す。"""
+    tracked_paths, untracked_paths, stale_staged_paths = [], [], []
     for status, path in _iter_porcelain_entries(stdout):
         if status == "??":
             untracked_paths.append(path)
-        elif path.startswith(TOC_PATH_PREFIX):
-            toc_paths.append(path)
         else:
-            other_paths.append(path)
+            tracked_paths.append(path)
         if _is_stale_staged(status):
             stale_staged_paths.append(path)
     return {
-        "toc_paths": sorted(toc_paths),
-        "other_paths": sorted(other_paths),
+        "tracked_paths": sorted(tracked_paths),
         "untracked_paths": sorted(untracked_paths),
         "stale_staged_paths": sorted(stale_staged_paths),
     }
@@ -134,9 +114,7 @@ def classify(stdout: str) -> dict:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description=(
-            "変更パスを生成インデックス（ToC）とそれ以外へ分類し JSON で出力する（read-only）"
-        )
+        description="commit 前のステージ状態を検査し JSON で出力する（read-only）"
     )
     parser.parse_args(argv)
 
@@ -144,8 +122,7 @@ def parse_args(argv=None):
 def main(argv=None) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     parse_args(argv)
-    result = classify(_run(["git", "status", "--porcelain", "-z"]))
-    result["branch"] = current_branch()
+    result = inspect(_run(["git", "status", "--porcelain", "-z"]))
     print(json.dumps(result, ensure_ascii=False))
     return 0
 
