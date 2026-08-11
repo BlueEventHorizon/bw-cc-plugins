@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-11T03:59:45Z
+  generated_at: 2026-08-11T14:00:30Z
   file_count: 7
 
 docs:
@@ -107,64 +107,66 @@ docs:
       - documentation governance
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for implementing plugin scripts (Python and Bash) and SKILL.md, covering language selection, testing requirements, script placement, documentation boundaries, and deployment constraints
+    purpose: Defines implementation rules for plugin scripts (Python/Bash) and SKILL.md, including language selection, testing strategies, distribution boundaries, and code maintenance
     content_details:
-      - Script language selection matrix (Python for data/YAML/JSON, Bash for external commands)
-      - Mandatory testing for plugins/ Python scripts with test structure and naming conventions
-      - Prohibition of inline scripts in SKILL.md; all logic must be in external script files
-      - Script and documentation placement rules (skill-specific vs plugin-shared directories)
-      - "Distribution boundary: plugins/ cannot reference docs/ in user-facing materials"
-      - ADR placement in docs/specs/**/design/ alongside design documents
-      - Unused code deletion requirement; no deprecated markers or commented code
-      - Version file editing prohibition (plugin.json, marketplace.json, CHANGELOG, git tags)
-      - Fallback pattern anti-patterns; require concrete recovery explanation
+      - Script language selection rules for Python vs Bash
+      - Standard library only requirement for Python with PyYAML exception
+      - Test placement strategy in tests/ directory with plugin and skill classification
+      - Prohibition of inline scripts in SKILL.md and reference to external script files
+      - Distribution boundary restriction for plugin assets referencing project development documents
+      - Script comment and docstring allowance for design rationale references
+      - Design document maintenance with ADR placement in docs/specs/**/design/
+      - Dead code removal requirement without deprecation markers
     applicable_tasks:
-      - Implementing plugin scripts in Python and Bash
-      - Implementing SKILL.md specifications
-      - Creating test cases for plugin scripts
-      - Organizing script and documentation files
-      - Writing architecture decision records (ADRs)
-      - Reviewing code for distribution boundary compliance
+      - Plugin script implementation planning
+      - Test strategy design and placement
+      - SKILL.md development and implementation
+      - Code review of plugin scripts
+      - Distribution boundary and reference policy verification
     keywords:
-      - Plugin
-      - SKILL.md
+      - implementation_guidelines
       - Python
       - Bash
-      - Testing
+      - SKILL.md
+      - script language selection
       - ADR
-      - Script
-      - Documentation
+      - distribution boundary
+      - plugin development
+      - test placement
+      - code maintenance
   docs/rules/skill_authoring_notes.md:
-    title: SKILL.md Authoring Notes
-    purpose: Guidance for creating and editing Claude Code plugin SKILL.md files, covering frontmatter fields, execution models, custom agent design, and multi-layer defense strategy
+    title: Authoring Notes for SKILL.md
+    purpose: Guides for creating and editing SKILL.md files for Claude Code plugins, covering frontmatter fields, execution model, context inheritance, agent boundaries, and role constraints
     content_details:
-      - SKILL frontmatter field requirements and settings
-      - Inheritance-type SKILL execution model (fork-type abolished due to 9 structural bugs)
-      - Custom Agent role constraints and parent context boundary enforcement
-      - "Multi-layer defense strategy: Agent boundary, Role constraint, allowlist, physical deny"
-      - Self-recursion prohibition for query-db-rules, query-db-specs, and query-forge-rules
-      - ScheduleWakeup discipline and task-notification handling for background agents
-      - AskUserQuestion requirement for all user prompts and confirmations
-      - "SKILL.md splitting criteria: workflow vs templates vs detailed guidelines"
-      - "description field guidelines: explicit what/when/trigger specification"
-      - Agent tool invocation argument passing (no parent prompt embedding)
+      - Frontmatter field definitions with defaults (name, description, user-invocable, disable-model-invocation, allowed-tools)
+      - Execution model comparison of inheritance-type and deprecated fork-type SKILLS
+      - Adoption decision to use inheritance-type SKILLS exclusively with custom Agents for isolation
+      - Multi-layered defense strategy combining Agent boundary, role constraints, allowlist, and physical deny
+      - Custom Agent requirements for isolation, role constraints, and security boundaries
+      - Prohibition of fork-type SKILLS due to structural bugs in upstream Claude Code
+      - Description writing guidelines for auto-invocation trigger specificity
+      - Argument reference syntax (, /bin/zsh, , , )
+      - Self-recursion prohibition for query-db-rules, query-db-specs, query-forge-rules
+      - Background Agent invocation with task-notification and ScheduleWakeup cancellation discipline
     applicable_tasks:
-      - SKILL.md authoring and editing
+      - SKILL.md creation and editing
+      - Claude Code plugin skill development
       - Custom Agent design and implementation
-      - Plugin architecture review and SKILL design decisions
-      - Role constraint definition for security enforcement
-      - Frontmatter field configuration
+      - Role constraint and security boundary definition
+      - Frontmatter configuration and argument handling
+      - Cross-skill communication and dependency verification
+      - User interaction design with AskUserQuestion
     keywords:
       - SKILL.md
-      - frontmatter
+      - Claude Code
       - inheritance-type
-      - Custom Agent
-      - Role constraint
-      - allowed-tools
+      - custom Agent
+      - frontmatter
+      - role constraints
+      - context inheritance
       - AskUserQuestion
-      - fork-type
+      - allowed-tools
       - ScheduleWakeup
-      - subagent_type
   docs/rules/skill_launch_paths_definitions.md:
     title: SKILL / Agent / subagent Launch Paths and Naming Definitions
     purpose: Establishes official short-form names for 5 launch path types (inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess) and unifies terminology for subagent reference across documentation

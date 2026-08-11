@@ -231,7 +231,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
 位置は例外である。各所見は `path` + `line` または `unknown: true` の位置を持つが、**応答から
 位置を取り出せない所見は `unknown: true` として受理し、件数を `warnings` で返す**。位置の欠落を
 理由にラウンドを `failure` にしない（1 件の欠落で他の所見を捨てないため。REQ-013 の共通書式契約）。
-位置が確定していない所見は本体側で自動修正の対象外となる（DES-046 §3.2）。
+位置が確定していない所見は本体側で自動修正の対象外となる（forge:DES-066 §3.10）。
 
 ### 5.6 タイムアウト
 
