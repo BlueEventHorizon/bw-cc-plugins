@@ -1076,6 +1076,15 @@ class ReplyContractTest(unittest.TestCase):
                 self.assertIn("🟡", body)
                 self.assertIn("🟢", body)
 
+    def test_every_template_requires_finding_self_verification(self):
+        for pattern in build_review_request.VALID_PATTERNS:
+            with self.subTest(pattern=pattern):
+                body = _build(pattern)
+                self.assertIn("すべての所見は", body)
+                self.assertIn("検証質問へ分解", body)
+                self.assertIn("修正または撤回", body)
+                self.assertIn("検証後も成立する所見だけ", body)
+
     def test_every_template_prohibits_file_modification_twice(self):
         """冒頭と末尾の 2 箇所で変更禁止を明示すること。"""
         for pattern in build_review_request.VALID_PATTERNS:
