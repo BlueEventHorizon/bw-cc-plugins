@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-09T13:35:50Z
+  generated_at: 2026-08-11T05:26:30Z
   file_count: 40
 
 docs:
@@ -73,69 +73,63 @@ docs:
       - impact
       - cross-reference
   plugins/forge/docs/adr_principles_spec.md:
-    title: ADR (Architecture Decision Record) Operating Principles
-    purpose: Establishes the operating principles and governance rules for Architecture Decision Records, including creation criteria, scope definition, mutability rules, supersession handling, and rejection reason documentation guidelines
+    title: ADR Operating Principles
+    purpose: Establishes operating principles for creating, maintaining, and using Architecture Decision Records, including what to document, decision binding rules, and obsolescence handling
     content_details:
-      - ADR beneficiary is the proposing AI evaluating if an alternative was already considered
-      - "Content focus: rejection reasons are primary; context is secondary"
-      - "Specification rule: no duplication of specs in ADR; use markdown links with section references"
-      - "Rules placement rule: ADR documents decision to adopt a rule, not the rule text itself"
-      - "Creation criteria: two conditions must both hold (future proposal likelihood AND decision not obvious from code/rules/specs)"
-      - "Scope block format: explicitly state define/not define/relationship boundaries for adjacent decisions"
-      - "Non-binding principle: readers must verify assumption validity before dismissing proposals; must cite ADR ID when dismissing"
-      - "Mutability rules: append updates, preserve section numbers, retain decision reversals (A → B → A)"
-      - "Supersession markers: warning失効 used only for ADR-to-ADR replacements with source ADR reference"
-      - "Rejection reason formula: use vocabulary from future proposals and explicitly state prerequisites"
+      - Rejection rationales documented with future proposal vocabulary and premise clarity
+      - Non-binding nature with reader obligations to verify premise currency
+      - Scope clause optional, used only for boundary clarification in overlapping documents
+      - Documents are variable/mutable but section numbering is immutable for external references
+      - Obsolescence marked only when decisions replaced by other ADRs, with marker in section headers
+      - ID enumeration via next-spec-id SKILL with shared DES prefix sequence
+      - Writing targets exclude specifications, rules, and implementation details
+      - "Decisions must meet both criteria: future proposals likely and decision not obvious from specs/rules"
+      - Severity catalog mapping ADR violations from critical to minor
+      - Rejection reason must state underlying premises to enable premise validity assessment
     applicable_tasks:
-      - ADR creation and writing
-      - Design change proposal evaluation against existing ADRs
-      - ADR maintenance and content updates
-      - Supersession and deprecation marking of decisions
-      - Scope definition for overlapping architectural decisions
-      - Legacy ADR format migration
+      - Evaluating or creating Architecture Decision Record proposals
+      - Assessing rejection rationales for design decisions
+      - Reviewing architectural decision changes and supersessions
+      - ADR maintenance and obsolescence handling
+      - Architecture decision precedent checking
     keywords:
       - ADR
-      - operating principles
-      - rejection reason
-      - scope block
-      - supersession marker
-      - assumption
-      - decision governance
+      - Architecture Decision Records
+      - rejection rationale
+      - decision context
+      - obsolescence handling
+      - premise validation
+      - decision binding
+      - adr_format
+      - adr_principles
+      - decision superseding
   plugins/forge/docs/consult_principles_spec.md:
-    title: Consultation Presentation Principles
-    purpose: Defines principles for presenting consultation requests and multi-item agendas to users, emphasizing context, clarity, confidence levels, and conciseness
+    title: Consult Presentation Principles
+    purpose: Defines principles for presenting consultations and human judgment requests to ensure clarity and context flow in console interactions
     content_details:
-      - "Principle 1: Present background and essence before options to establish context for judgment"
-      - "Principle 2: Use agenda table with severity, status, and result columns for multiple consultations"
-      - Update and re-present agenda table as items progress to maintain user orientation
-      - "Principle 3: Present recommendation with rationale first when judgment is already settled"
-      - "Principle 4: Indicate confidence with symbols (circle=confirmed, triangle=inferred, none=unverified)"
-      - "Principle 5: Recapitulate key points when referencing prior discussions instead of assuming recall"
-      - "Principle 6: Write concisely with background, essence, and recommendation in approximately 10 lines total"
-      - "Principle 7: In discussion and feedback contexts, present explanation but do not pose follow-up questions"
-      - "Principle 8: When presenting options, limit to 2-3 choices and explain what changes with each"
-      - Comprehensive table of anti-patterns with rationales for what not to do
+      - Present background and essence before offering choices
+      - Use agenda tables with progress tracking for multiple consultations
+      - State recommendations and reasoning upfront before presenting alternatives
+      - Indicate confidence level with symbols for verified, inferred, or unverified claims
+      - Reiterate key points when referencing previous discussion
+      - Keep console output brief while preserving necessary understanding content
+      - Do not demand judgment in discussion and brainstorming contexts
+      - Present choices only when necessary with clear impact and recommendations
     applicable_tasks:
-      - Presenting judgment requests to users
-      - Formatting multi-item agendas with table format
-      - Structuring consultation prompts
-      - Reviewing consultation presentation quality
-      - Handling multi-step decision flows
-      - Writing statements with confidence levels
-      - Referencing previous discussion context
-      - Limiting and presenting choice options
-      - Determining when to ask for consultation versus just confirming
+      - Writing consultation questions to users
+      - Presenting multiple decision points in SKILL or Agent
+      - Formatting agenda and progress tables for complex discussions
+      - Determining when to present choices versus explanations
+      - Restructuring decision flows to avoid re-asking users
     keywords:
       - consultation
-      - agenda
+      - judgment
+      - agenda table
+      - background and essence
       - confidence level
-      - background
-      - essence
-      - presentation
-      - principles
-      - decision
-      - options
-      - clarity
+      - choice presentation
+      - decision flow
+      - console output
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
     purpose: Specifies code review priority-based criteria, checking order (P1-P3), decision rules for recommendations, and conditions for creating review issues

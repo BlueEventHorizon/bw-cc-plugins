@@ -22,6 +22,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 利用可能な forge スキル:
 
   review              : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+  consult             : 議論を進行。論点を立て、討議ファイルに記録しながら 1 件ずつ
   start-requirements  : 要件定義書の作成。3モード対応
   start-design        : 設計書の作成。レビュー+自動修正→commit
   start-plan          : 計画書の作成。レビュー+自動修正→commit
@@ -213,6 +214,12 @@ AskUserQuestion:
 
 引数: Markdown plan のファイルパス（省略時は対話で決定）。
 入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.yaml`（YAML、`/forge:start-plan` が作成）とは別物。
+
+---
+
+### consult
+
+引数: 議論したい対象や問い（省略時は会話の流れから論点を立てる）
 
 ---
 
