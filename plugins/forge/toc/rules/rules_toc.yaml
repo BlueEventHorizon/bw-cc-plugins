@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-09T13:35:50Z
+  generated_at: 2026-08-11T04:46:00Z
   file_count: 40
 
 docs:
@@ -102,40 +102,32 @@ docs:
       - assumption
       - decision governance
   plugins/forge/docs/consult_principles_spec.md:
-    title: Consultation Presentation Principles
-    purpose: Defines principles for presenting consultation requests and multi-item agendas to users, emphasizing context, clarity, confidence levels, and conciseness
+    title: Consult Presentation Principles
+    purpose: Defines principles for presenting consultations and human judgment requests to ensure clarity and context flow in console interactions
     content_details:
-      - "Principle 1: Present background and essence before options to establish context for judgment"
-      - "Principle 2: Use agenda table with severity, status, and result columns for multiple consultations"
-      - Update and re-present agenda table as items progress to maintain user orientation
-      - "Principle 3: Present recommendation with rationale first when judgment is already settled"
-      - "Principle 4: Indicate confidence with symbols (circle=confirmed, triangle=inferred, none=unverified)"
-      - "Principle 5: Recapitulate key points when referencing prior discussions instead of assuming recall"
-      - "Principle 6: Write concisely with background, essence, and recommendation in approximately 10 lines total"
-      - "Principle 7: In discussion and feedback contexts, present explanation but do not pose follow-up questions"
-      - "Principle 8: When presenting options, limit to 2-3 choices and explain what changes with each"
-      - Comprehensive table of anti-patterns with rationales for what not to do
+      - Present background and essence before offering choices
+      - Use agenda tables with progress tracking for multiple consultations
+      - State recommendations and reasoning upfront before presenting alternatives
+      - Indicate confidence level with symbols for verified, inferred, or unverified claims
+      - Reiterate key points when referencing previous discussion
+      - Keep console output brief while preserving necessary understanding content
+      - Do not demand judgment in discussion and brainstorming contexts
+      - Present choices only when necessary with clear impact and recommendations
     applicable_tasks:
-      - Presenting judgment requests to users
-      - Formatting multi-item agendas with table format
-      - Structuring consultation prompts
-      - Reviewing consultation presentation quality
-      - Handling multi-step decision flows
-      - Writing statements with confidence levels
-      - Referencing previous discussion context
-      - Limiting and presenting choice options
-      - Determining when to ask for consultation versus just confirming
+      - Writing consultation questions to users
+      - Presenting multiple decision points in SKILL or Agent
+      - Formatting agenda and progress tables for complex discussions
+      - Determining when to present choices versus explanations
+      - Restructuring decision flows to avoid re-asking users
     keywords:
       - consultation
-      - agenda
+      - judgment
+      - agenda table
+      - background and essence
       - confidence level
-      - background
-      - essence
-      - presentation
-      - principles
-      - decision
-      - options
-      - clarity
+      - choice presentation
+      - decision flow
+      - console output
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
     purpose: Specifies code review priority-based criteria, checking order (P1-P3), decision rules for recommendations, and conditions for creating review issues

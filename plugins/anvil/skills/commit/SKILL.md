@@ -82,9 +82,17 @@ git status
 
 **原則: ステージ済みファイルのみをコミット対象とする。自動で `git add` しない。**
 
-ステージ済みファイルがある場合 → そのまま Phase 4 へ進む。
+**ただし「ステージ済みがあるから」を理由に、確認せず Phase 4 へ進んではならない [MANDATORY]。**
+先に 3.1 の分類を実行し、`stale_staged_paths`（index の内容が作業ツリーと食い違うパス）を確認する。
 
-ステージ済みファイルがなく、未ステージの変更がある場合 → **まず変更を分類してから** AskUserQuestion で確認する。
+- `stale_staged_paths` が**空** かつ 未ステージ・未追跡の変更が無い → そのまま Phase 4 へ進む
+- `stale_staged_paths` が**空でない** → 3.2 の確認へ進む。**そのまま commit すると、作業ツリーの
+  最新ではなく古い内容が入る**（ステージ後にさらに編集したファイルで起きる）。差分は commit した
+  後にしか現れないため、気付くのは常に手遅れになる
+- ステージ済みと未ステージが混在する → 3.2 の確認へ進む（同じ変更の一部が落ちる可能性がある）
+
+**ステージ対象は、いずれの場合も利用者に確認してから確定する。** AI が「必要と思われるファイル」を
+自分の判断だけでステージしない。
 
 #### 3.1 変更を分類する [MANDATORY]
 
@@ -94,7 +102,9 @@ git status
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/classify_generated_index.py"
 ```
 
-出力 JSON の `branch` / `toc_paths` / `other_paths` / `untracked_paths` を使う。保護ブランチの解決は Phase 3.5 と同じ優先順位で、**この時点で**行う（`.git_information.yaml` の `default_base_branch`、無ければ `develop` → `main` → `master`）。
+出力 JSON の `branch` / `toc_paths` / `other_paths` / `untracked_paths` / `stale_staged_paths` を使う。保護ブランチの解決は Phase 3.5 と同じ優先順位で、**この時点で**行う（`.git_information.yaml` の `default_base_branch`、無ければ `develop` → `main` → `master`）。
+
+**`stale_staged_paths` が空でない場合、そのパスを利用者へ明示する [MANDATORY]**。「ステージ済みだが、その後さらに編集されている」ことは `git status` の 2 文字表記（`MM` / `AM`）にしか現れず、見落とすと古い内容が commit される。ステージし直せば解消するため、3.2 の選択肢は現在の内容で `git add` し直す形にする。
 
 #### 3.2 ステージ対象を確認する [MANDATORY]
 

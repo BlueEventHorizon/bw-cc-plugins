@@ -99,11 +99,65 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(result["toc_paths"], [])
         self.assertEqual(result["other_paths"], [])
         self.assertEqual(result["untracked_paths"], [])
+        self.assertEqual(result["stale_staged_paths"], [])
 
     def test_paths_are_sorted(self):
         out = _porcelain(" M docs/z.md", " M docs/a.md")
         result = classify_mod.classify(out)
         self.assertEqual(result["other_paths"], ["docs/a.md", "docs/z.md"])
+
+
+class StaleStagedTest(unittest.TestCase):
+    """index の内容が作業ツリーと食い違う状態の検出。
+
+    この検出が無いと「ステージ済みがあるからそのまま commit」で古い内容が入る。
+    commit 後にしか差分が現れないため、気付くのは常に手遅れになる。
+    """
+
+    def test_modified_after_staging_is_stale(self):
+        out = _porcelain("MM README.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], ["README.md"])
+
+    def test_added_then_modified_is_stale(self):
+        out = _porcelain("AM plugins/forge/skills/consult/SKILL.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(
+            result["stale_staged_paths"], ["plugins/forge/skills/consult/SKILL.md"]
+        )
+
+    def test_staged_only_is_not_stale(self):
+        out = _porcelain("M  docs/rules/foo.md", "A  docs/new.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], [])
+
+    def test_unstaged_only_is_not_stale(self):
+        out = _porcelain(" M docs/rules/foo.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], [])
+
+    def test_untracked_is_not_stale(self):
+        out = _porcelain("?? docs/new.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], [])
+
+    def test_conflict_is_not_reported_as_stale(self):
+        """衝突（`UU` 等）は別の状態であり、ステージし直しでは解決しない。"""
+        out = _porcelain("UU docs/rules/foo.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], [])
+
+    def test_stale_toc_is_also_reported(self):
+        """ToC でも古いステージは検出する（分類とは独立した軸である）。"""
+        out = _porcelain(f"MM {TOC}rules-abc/toc.yaml")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["toc_paths"], [f"{TOC}rules-abc/toc.yaml"])
+        self.assertEqual(result["stale_staged_paths"], [f"{TOC}rules-abc/toc.yaml"])
+
+    def test_renamed_then_modified_uses_new_path(self):
+        out = _porcelain("RM docs/new.md", "docs/old.md")
+        result = classify_mod.classify(out)
+        self.assertEqual(result["stale_staged_paths"], ["docs/new.md"])
 
 
 class PrefixTest(unittest.TestCase):
@@ -130,7 +184,13 @@ class CliTest(unittest.TestCase):
         payload = json.loads(proc.stdout)
         self.assertEqual(
             set(payload.keys()),
-            {"branch", "toc_paths", "other_paths", "untracked_paths"},
+            {
+                "branch",
+                "toc_paths",
+                "other_paths",
+                "untracked_paths",
+                "stale_staged_paths",
+            },
         )
 
 

@@ -6,7 +6,7 @@ checksums:
   plugins/forge/docs/additive_development_spec.md: ebb7c7b8f1150a00dae9a1be0e5eef2e346795978902af97ed9b4bacf5a010d3
   plugins/forge/docs/adr_format.md: 4429007dd79d3a5e4bb00971a25ce198e4c646ce8dbc00343edc39c45955db7f
   plugins/forge/docs/adr_principles_spec.md: 45df90c216b3d0e174ca56ac7dee1ef15afdb0b99cf3f6ce805b2062859ba50f
-  plugins/forge/docs/consult_principles_spec.md: 12d59b268a0064f39ec3f5bb4276c1bae95b07ccb41c7cf61e01328b08307d30
+  plugins/forge/docs/consult_principles_spec.md: 26d6186c9c51701714c9ca0312184bd3fc1b7a8ec2c9bd146d0c141babfa62d7
   plugins/forge/docs/criteria/review_criteria_code.md: 3e26b482397526a35b3f84cfd0207f26ed852851c0ba6bbfa96940e21a7f5e6a
   plugins/forge/docs/criteria/review_criteria_design.md: abbd0474bb403627d621dfabff4dfef61b35e66d689f1654a9d18da13312d03e
   plugins/forge/docs/criteria/review_criteria_generic.md: 3bc679fa3831f0d63ea56029971839d48da0b6cdfd66d39e8c8821a6a7ea48c6

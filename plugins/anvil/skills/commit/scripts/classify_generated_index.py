@@ -29,12 +29,18 @@ commit の場だけであり、他に置き場がない。所在が変わった�
   "branch": "feature/x",
   "toc_paths": [".claude/.doc-advisor/toc/rules-abc/toc.yaml"],
   "other_paths": ["docs/rules/foo.md"],
-  "untracked_paths": ["docs/new.md"]
+  "untracked_paths": ["docs/new.md"],
+  "stale_staged_paths": ["README.md"]
 }
 ```
 
 `toc_paths` / `other_paths` は**追跡済みの変更**（ステージ済み・未ステージの両方）を対象とする。
 未追跡は `untracked_paths` へ分け、`git add -u` の対象外であることを呼び出し側が区別できるようにする。
+
+`stale_staged_paths` は **index に載っている内容が作業ツリーと食い違うパス**（porcelain の 2 列が
+ともに非空白。例 `MM`）である。この状態で「ステージ済みがあるからそのまま commit する」と、
+**作業ツリーの最新ではなく古い内容が commit される**。差分は commit した後にしか現れないため、
+気付くのは常に手遅れになる。呼び出し側はステージし直すかどうかを利用者に確認する。
 
 ## 依存
 
@@ -93,9 +99,22 @@ def _iter_porcelain_entries(stdout: str):
         yield status, path
 
 
+def _is_stale_staged(status: str) -> bool:
+    """index の内容が作業ツリーと食い違うか（例 `MM` / `AM` / `RM`）。
+
+    porcelain の 2 列は `XY`（X = index、Y = 作業ツリー）である。両方が非空白なら、
+    ステージした後にさらに作業ツリーが変わっている。未追跡（`??`）と衝突（`U` を含む）は
+    別の状態なので除く。
+    """
+    if status == "??" or "U" in status:
+        return False
+    index_col, worktree_col = status[0], status[1]
+    return index_col != " " and worktree_col != " "
+
+
 def classify(stdout: str) -> dict:
-    """porcelain 出力を ToC / その他 / 未追跡へ分類する。"""
-    toc_paths, other_paths, untracked_paths = [], [], []
+    """porcelain 出力を ToC / その他 / 未追跡へ分類し、古いステージも検出する。"""
+    toc_paths, other_paths, untracked_paths, stale_staged_paths = [], [], [], []
     for status, path in _iter_porcelain_entries(stdout):
         if status == "??":
             untracked_paths.append(path)
@@ -103,10 +122,13 @@ def classify(stdout: str) -> dict:
             toc_paths.append(path)
         else:
             other_paths.append(path)
+        if _is_stale_staged(status):
+            stale_staged_paths.append(path)
     return {
         "toc_paths": sorted(toc_paths),
         "other_paths": sorted(other_paths),
         "untracked_paths": sorted(untracked_paths),
+        "stale_staged_paths": sorted(stale_staged_paths),
     }
 
 
