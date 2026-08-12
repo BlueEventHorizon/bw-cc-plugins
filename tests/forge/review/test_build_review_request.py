@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -752,6 +753,17 @@ class RequestEnvelopeTest(unittest.TestCase):
         self.assertEqual(payload["review_id"], "abc123")
         self.assertNotIn("[msg-review]", payload["body"])
         self.assertTrue(payload["body"].startswith("## レビュー依頼"))
+
+    def test_review_id_is_a_readable_creation_timestamp(self):
+        """識別子は人が読めること（以前は uuid4 の 32 桁で、誰も読まなかった）。
+
+        ミリ秒まで持つのは、秒までに落とすと続けて起動した 2 回が同じ値になり、
+        仕分けファイルの混入ガードが素通りするためである。
+        """
+        _, stdout, _ = _run_cli(["--pattern", "diff", "--project-root", str(_REPO_ROOT)])
+        review_id = json.loads(stdout)["review_id"]
+        self.assertRegex(review_id, r"^\d{4}-\d{4}-\d{2}:\d{2}:\d{2}\.\d{3}$")
+        datetime.strptime(review_id, "%Y-%m%d-%H:%M:%S.%f")
 
     def test_review_id_is_unique_across_cli_invocations(self):
         argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT)]
