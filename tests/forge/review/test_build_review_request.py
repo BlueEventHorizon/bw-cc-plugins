@@ -773,6 +773,25 @@ class RequestEnvelopeTest(unittest.TestCase):
             json.loads(stdout1)["review_id"], json.loads(stdout2)["review_id"]
         )
 
+    def test_cli_keeps_a_given_review_id(self):
+        """**識別するのはレビューであってラウンドではない [MANDATORY]**。
+
+        2 ラウンド目以降は同じ依頼本文を組み立て直すため、口が無いと毎回新しい
+        識別子になり、記録側の照合と必ず衝突する（実際にラウンド 2 で発生した）。
+        """
+        argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT)]
+        code, stdout, stderr = _run_cli(argv + ["--review-id", "2026-0813-17:25:18.933"])
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(json.loads(stdout)["review_id"], "2026-0813-17:25:18.933")
+
+    def test_cli_review_id_is_stable_across_rounds(self):
+        argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT), "--review-id", "FIXED"]
+        _, stdout1, _ = _run_cli(argv)
+        _, stdout2, _ = _run_cli(argv)
+        self.assertEqual(
+            json.loads(stdout1)["review_id"], json.loads(stdout2)["review_id"]
+        )
+
 
 class AbsolutePathResolutionTest(unittest.TestCase):
     """パスは絶対で渡す（DES-055 §4.3）。"""

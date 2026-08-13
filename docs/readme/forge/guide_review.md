@@ -216,13 +216,15 @@ flowchart TD
 
     MODE{Intervention axis}
     MODE -->|"--interactive (default)"| TRIAGE
-    MODE -->|"--auto family"| GATE
+    MODE -->|"--auto"| SPLIT
+
+    SPLIT{"Is the finding ✅?<br/>(point correct AND fix certain)"}
+    SPLIT -->|"Yes"| CONFIRM
+    SPLIT -->|"No"| TRIAGE
 
     TRIAGE["Write the triage file"] --> STEP
 
     STEP["Present one at a time → you decide<br/>(spans turns)"] --> CONFIRM
-
-    GATE["Gate auto-fix scope by severity"] --> CONFIRM
 
     CONFIRM{Any fix to apply now?}
     CONFIRM -->|No| DONE2["Complete with unaddressed findings<br/>(reported distinctly from approval)"]
@@ -270,7 +272,7 @@ That completion differs from completing by approval, and the summary distinguish
 - **Completed by approval**: the reviewer reported no findings
 - **Completed with unaddressed findings**: the reviewer still reports findings, but none were in scope this round
 
-In the latter case every unfixed finding is listed with its reason (you decided not to accept it / out of severity scope / location undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
+In the latter case every unfixed finding is listed with its reason (you decided not to accept it / location undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
 
 ### Review Types
 
@@ -307,13 +309,15 @@ The request embeds the paths of the type-specific criteria file and the project 
 
 ### The Default `--interactive`: Step-by-Step Presentation
 
-**What may be fixed without asking is decided by confidence, not severity.**
+**What may be fixed without asking is decided by confidence, not severity.** Confidence splits into two separate judgements, because they are about different things: whether the reviewer's point is correct, and whether the fix can be carried out responsibly.
 
-| Confidence | Meaning                                | Under `--auto`       |
-| ---------- | -------------------------------------- | -------------------- |
-| ☑️          | Verified. Read the actual file, ran it | Fixed without asking |
-| 🤔         | Inferred. Grounded but unverified      | Presented to you     |
-| (none)     | Unverified. Memory or guesswork only   | Presented to you     |
+| Mark   | Meaning                                                             | Under `--auto`       |
+| ------ | ------------------------------------------------------------------- | -------------------- |
+| ✅     | The point is correct **and** the fix can be carried out responsibly | Fixed without asking |
+| ☑️      | The point is correct, but the fix itself is uncertain               | Presented to you     |
+| (none) | The point's own validity is uncertain                               | Presented to you     |
+
+`✅` implies `☑️`: a point that is not established as correct can never be fixed without asking.
 
 Severity says how bad the problem is, not how sure the fix is. A 🔴 critical is not fixed if the fix itself is uncertain; a 🟢 minor is fixed when it is certain. Using weight as a proxy for certainty lets **an unsure fix through just because the finding was severe**.
 

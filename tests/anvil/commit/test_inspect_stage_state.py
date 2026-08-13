@@ -125,15 +125,95 @@ class StaleStagedTest(unittest.TestCase):
         self.assertEqual(result["stale_staged_paths"], [])
 
     def test_conflict_is_not_reported_as_stale(self):
-        """衝突（`UU` 等）は別の状態であり、ステージし直しでは解決しない。"""
-        out = _porcelain("UU docs/rules/foo.md")
-        result = inspect_mod.inspect(out)
-        self.assertEqual(result["stale_staged_paths"], [])
+        """衝突は別の状態であり、ステージし直しでは解決しない。
+
+        **`U` を含む状態だけを衝突とみなさない**。`AA`（both added）と `DD`（both deleted）は
+        `U` を持たないが衝突であり、`"U" in status` の判定では通常の変更として通ってしまう。
+        """
+        for status in ("UU", "AU", "UD", "UA", "DU", "AA", "DD"):
+            with self.subTest(status=status):
+                out = _porcelain(f"{status} docs/rules/foo.md")
+                result = inspect_mod.inspect(out)
+                self.assertEqual(result["stale_staged_paths"], [])
 
     def test_renamed_then_modified_uses_new_path(self):
         out = _porcelain("RM docs/new.md", "docs/old.md")
         result = inspect_mod.inspect(out)
         self.assertEqual(result["stale_staged_paths"], ["docs/new.md"])
+
+
+class StagedUnstagedSplitTest(unittest.TestCase):
+    """ステージ済みと未ステージの分離。
+
+    Phase 3 は「混在している」ことを分岐条件に持つ。合算した `tracked_paths` だけでは
+    判定できず、この分岐だけが `git status` の手読みへ戻っていた。判定できる形を固定する。
+    """
+
+    def test_staged_only(self):
+        out = _porcelain("M  docs/a.md", "A  docs/new.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], ["docs/a.md", "docs/new.md"])
+        self.assertEqual(result["unstaged_paths"], [])
+
+    def test_unstaged_only(self):
+        out = _porcelain(" M docs/a.md", " D docs/gone.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], [])
+        self.assertEqual(result["unstaged_paths"], ["docs/a.md", "docs/gone.md"])
+
+    def test_mixed_puts_each_path_on_its_own_side(self):
+        out = _porcelain("M  docs/staged.md", " M docs/unstaged.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], ["docs/staged.md"])
+        self.assertEqual(result["unstaged_paths"], ["docs/unstaged.md"])
+
+    def test_stale_path_appears_on_both_sides(self):
+        """`MM` は index にも作業ツリーにも変更がある。片側へ寄せると混在判定が狂う。"""
+        out = _porcelain("MM README.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], ["README.md"])
+        self.assertEqual(result["unstaged_paths"], ["README.md"])
+        self.assertEqual(result["stale_staged_paths"], ["README.md"])
+
+    def test_untracked_is_on_neither_side(self):
+        out = _porcelain("?? docs/new.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], [])
+        self.assertEqual(result["unstaged_paths"], [])
+
+    def test_conflict_is_on_neither_side(self):
+        """衝突は「ステージした / していない」の軸に無い。混在判定の材料にしない。"""
+        for status in ("UU", "AU", "UD", "DU", "AA", "DD"):
+            with self.subTest(status=status):
+                out = _porcelain(f"{status} docs/conflict.md")
+                result = inspect_mod.inspect(out)
+                self.assertEqual(result["staged_paths"], [])
+                self.assertEqual(result["unstaged_paths"], [])
+                self.assertEqual(result["tracked_paths"], ["docs/conflict.md"])
+
+    def test_rename_uses_new_path_on_both_sides(self):
+        out = _porcelain("RM docs/new.md", "docs/old.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], ["docs/new.md"])
+        self.assertEqual(result["unstaged_paths"], ["docs/new.md"])
+
+    def test_split_is_consistent_with_tracked_paths(self):
+        out = _porcelain("M  docs/staged.md", " M docs/unstaged.md", "?? docs/new.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(
+            sorted(set(result["staged_paths"]) | set(result["unstaged_paths"])),
+            result["tracked_paths"],
+        )
+
+    def test_empty_output(self):
+        result = inspect_mod.inspect("")
+        self.assertEqual(result["staged_paths"], [])
+        self.assertEqual(result["unstaged_paths"], [])
+
+    def test_paths_are_sorted(self):
+        out = _porcelain("M  docs/z.md", "M  docs/a.md")
+        result = inspect_mod.inspect(out)
+        self.assertEqual(result["staged_paths"], ["docs/a.md", "docs/z.md"])
 
 
 class CliTest(unittest.TestCase):
@@ -148,7 +228,13 @@ class CliTest(unittest.TestCase):
         payload = json.loads(proc.stdout)
         self.assertEqual(
             set(payload.keys()),
-            {"tracked_paths", "untracked_paths", "stale_staged_paths"},
+            {
+                "tracked_paths",
+                "staged_paths",
+                "unstaged_paths",
+                "untracked_paths",
+                "stale_staged_paths",
+            },
         )
 
 
