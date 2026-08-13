@@ -224,7 +224,7 @@ claude plugin update forge@bw-cc-plugins --scope local    # local スコープ�
 ## 動作要件
 
 - [Claude Code](https://claude.ai/code) CLI
-- Python 3（setup スキャン用）
+- Python 3.11 以上（Python スクリプト実行用。Python 3.10 以下はサポート対象外）
 - [Codex CLI](https://github.com/openai/codex)（任意。常駐 Codex セッションを使うレビューバックエンド `msg-review` と `/forge:talk-to-codex` に必要。未導入なら `msg-review` は候補として利用不可になる）
 - 文書検索を使う場合はいずれかの backend: 外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor)（Python 標準ライブラリのみ・追加 API キー不要）、または doc-db（ローカル文書検索サーバ）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）
