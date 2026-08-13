@@ -101,9 +101,9 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 
 `allowed-tools: Read, Bash, Skill`。
 
-> `resolve_doc_structure.py --type` はファイルパス単位の解決が必要な他 consumer（`review` の
-> `resolve_review_context.py` 等）で引き続き使われるが、update 系の doc-advisor 経路はディレクトリ単位の
-> `dirs`/`exclude` 転送に移行済み（doc-advisor 側でのディレクトリ展開に統一するため）。
+> `resolve_doc_structure.py --type` はファイルパス単位の解決が必要な consumer で引き続き使われるが、update 系の
+> doc-advisor 経路はディレクトリ単位の `dirs`/`exclude` 転送に移行済み（doc-advisor 側でのディレクトリ展開に
+> 統一するため）。
 
 ### desired-state
 
