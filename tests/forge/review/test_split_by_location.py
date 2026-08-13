@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-gate_findings.py のテスト（forge:DES-066 §3.10 / §6 テスト設計）
+split_by_location.py のテスト（forge:DES-066 §3.10 / §6 テスト設計）
 
 分けているのは所見の性質（位置が確定しているか）だけであり、介入軸にも重大度にも
 依存しない。この不依存が壊れると、確信の無い修正が重大度を理由に通ってしまう。
 
 実行:
-  python3 -m unittest tests.forge.review.test_gate_findings -v
+  python3 -m unittest tests.forge.review.test_split_by_location -v
 """
 
 import importlib.util
@@ -17,12 +17,12 @@ from pathlib import Path
 
 _SCRIPT_PATH = (
     Path(__file__).resolve().parents[3]
-    / "plugins" / "forge" / "skills" / "review" / "scripts" / "gate_findings.py"
+    / "plugins" / "forge" / "skills" / "review" / "scripts" / "split_by_location.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_gate_findings", _SCRIPT_PATH)
-gate_mod = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(gate_mod)
+_spec = importlib.util.spec_from_file_location("forge_split_by_location", _SCRIPT_PATH)
+split_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(split_mod)
 
 
 def _finding(severity, text="dummy", location=None):
@@ -44,31 +44,31 @@ class LocationDecidesTest(unittest.TestCase):
 
     def test_located_findings_are_fixable(self):
         findings = [_finding("critical"), _finding("major"), _finding("minor")]
-        result = gate_mod.gate_findings(findings)
-        self.assertEqual(result["auto_fix"], findings)
-        self.assertEqual(result["excluded"], [])
+        result = split_mod.split_by_location(findings)
+        self.assertEqual(result["located"], findings)
+        self.assertEqual(result["unlocated"], [])
 
     def test_unknown_location_is_excluded(self):
         """位置が確定していない所見は修正対象を特定できない。"""
         finding = _finding("critical", location={"unknown": True})
-        result = gate_mod.gate_findings([finding])
-        self.assertEqual(result["auto_fix"], [])
-        self.assertEqual(result["excluded"], [finding])
+        result = split_mod.split_by_location([finding])
+        self.assertEqual(result["located"], [])
+        self.assertEqual(result["unlocated"], [finding])
 
     def test_missing_location_key_is_excluded(self):
         """`location` を欠く不正な入力も安全側に倒して excluded とする。"""
         finding = {"severity": "critical", "text": "dummy"}
-        result = gate_mod.gate_findings([finding])
-        self.assertEqual(result["auto_fix"], [])
-        self.assertEqual(result["excluded"], [finding])
+        result = split_mod.split_by_location([finding])
+        self.assertEqual(result["located"], [])
+        self.assertEqual(result["unlocated"], [finding])
 
     def test_empty_findings_list(self):
-        self.assertEqual(gate_mod.gate_findings([]), {"auto_fix": [], "excluded": []})
+        self.assertEqual(split_mod.split_by_location([]), {"located": [], "unlocated": []})
 
     def test_order_is_preserved(self):
         """並べ替えは提示側の仕事であり、ここでは入力順を保つ。"""
         findings = [_finding("minor", "m"), _finding("critical", "c")]
-        self.assertEqual(gate_mod.gate_findings(findings)["auto_fix"], findings)
+        self.assertEqual(split_mod.split_by_location(findings)["located"], findings)
 
 
 class SeverityIsIrrelevantTest(unittest.TestCase):
@@ -81,16 +81,16 @@ class SeverityIsIrrelevantTest(unittest.TestCase):
 
     def test_minor_is_fixable(self):
         finding = _finding("minor")
-        self.assertEqual(gate_mod.gate_findings([finding])["auto_fix"], [finding])
+        self.assertEqual(split_mod.split_by_location([finding])["located"], [finding])
 
     def test_unknown_severity_is_fixable(self):
         """severity は提示順の材料でしかない。判定できなくても位置があれば直せる。"""
         finding = _finding("bogus")
-        self.assertEqual(gate_mod.gate_findings([finding])["auto_fix"], [finding])
+        self.assertEqual(split_mod.split_by_location([finding])["located"], [finding])
 
     def test_severity_absent_is_fixable(self):
         finding = {"text": "dummy", "location": {"path": "a.py", "line": 1}}
-        self.assertEqual(gate_mod.gate_findings([finding])["auto_fix"], [finding])
+        self.assertEqual(split_mod.split_by_location([finding])["located"], [finding])
 
 
 class ContractTest(unittest.TestCase):
@@ -99,10 +99,10 @@ class ContractTest(unittest.TestCase):
     def test_function_takes_no_mode(self):
         """mode を渡せてしまうと、介入軸で結果が変わる余地が戻る。"""
         with self.assertRaises(TypeError):
-            gate_mod.gate_findings([], "auto")
+            split_mod.split_by_location([], "auto")
 
     def test_output_has_exactly_two_keys(self):
-        self.assertEqual(set(gate_mod.gate_findings([])), {"auto_fix", "excluded"})
+        self.assertEqual(set(split_mod.split_by_location([])), {"located", "unlocated"})
 
 
 class MainTest(unittest.TestCase):
@@ -118,9 +118,9 @@ class MainTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(payload["auto_fix"], [_finding("critical")])
+        self.assertEqual(payload["located"], [_finding("critical")])
         self.assertEqual(
-            payload["excluded"], [_finding("minor", location={"unknown": True})]
+            payload["unlocated"], [_finding("minor", location={"unknown": True})]
         )
 
     def test_cli_rejects_mode_argument(self):

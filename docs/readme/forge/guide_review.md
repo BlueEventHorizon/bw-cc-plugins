@@ -292,7 +292,9 @@ In the latter case every unfixed finding is listed with its reason (you decided 
 | 🟡 Major    | Should fix. Conventions, error handling, performance | Presented next   |
 | 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Presented last   |
 
-Findings whose severity could not be determined are excluded from auto-fix and left to human review.
+Severity never decides whether a finding is fixed without asking — it only orders the presentation. That decision comes from two separate judgements forge makes per finding: whether the reviewer's point is correct (`☑️`), and whether the fix can be carried out responsibly (`✅`). Only `✅` findings are fixed without asking, and `✅` implies `☑️`. Both marks appear in the agenda under `--interactive` too, so you can say "just fix the `✅` ones".
+
+Findings whose location cannot be determined are never fixed automatically — there is no place to apply the fix — and are left to human review regardless of severity or confidence.
 
 ### Review Criteria
 
