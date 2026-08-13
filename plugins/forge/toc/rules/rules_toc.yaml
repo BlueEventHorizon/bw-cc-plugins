@@ -5,1220 +5,1255 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-12T08:40:20Z
+  generated_at: 2026-08-13T02:38:07Z
   file_count: 40
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines judgment criteria and procedures for additive development workflow when adding features to existing projects
+    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, including feature separation and merge conditions.
     content_details:
-      - Feature namespace concept for distinguishing requirement groups
-      - Feature necessity conditions and when to use feature naming
-      - Priority rules - additive development requirements take precedence over old specifications
-      - Documentation separation strategy - old files unchanged during development
-      - Merge semantics definition - semantic integration not physical file combination
-      - Merge scope judgment based on content consistency
+      - Feature concept definitions and naming conventions
+      - Application conditions for feature-based development
+      - Exclusion conditions and document operation rules
+      - Priority of new specifications over existing ones
+      - New file separation criteria during additive development
+      - Merge definition and scope-based content integration
+      - Merge procedure steps and requirements
       - Frontmatter definitions for temporary feature documents
-      - Conflict resolution with existing specifications
-      - Feature naming conventions for base and foundational requirements
-      - Complete merge procedure with verification and cleanup phases
     applicable_tasks:
-      - Additive feature development planning
-      - Feature namespace judgment and structuring
-      - Temporary documentation management
-      - Specification merge and reconciliation
-      - Conflict resolution between new and old requirements
-      - Documentation scope determination
+      - Feature planning and architecture in additive development
+      - Determining whether to use feature separation for changes
+      - Planning scope-based separation when modifying specifications
+      - Reviewing merge decisions in additive development
+      - Writing frontmatter for temporary feature documents
     keywords:
-      - additive development
-      - feature namespace
-      - temporary feature marker
-      - specification merge
-      - scope consistency
-      - requirement prioritization
-      - documentation separation
-      - feature naming
-      - semantic integration
-      - merge procedure
+      - additive-development
+      - feature-namespace
+      - feature-separation
+      - specification-merge
+      - temporary-feature-requirement
+      - temporary-feature-design
+      - temporary-feature-plan
+      - merge-timing
   plugins/forge/docs/adr_format.md:
     title: ADR Default Format
-    purpose: Defines the standard format, section structure, notation rules, and lifecycle management for Architecture Decision Records (ADRs) in projects
+    purpose: Defines the default format for Architecture Decision Records when project-specific format is not found, including file naming, mandatory section structure, scope declaration, and obsolescence markers.
     content_details:
-      - File naming convention (ADR-{NNN}_{topic}.md) and directory placement rules
-      - Mandatory four-section structure (Context, Decision, Alternatives, Impact)
-      - Subsection numbering rules inherited from parent section
-      - Scope block format and placement (optional, quoted before section 1)
-      - Obsolescence markers for decisions superseded by other ADRs
-      - External reference format (ADR-NNN §X.Y) with numbered section headers
-      - Template with all required sections and their content guidelines
-      - Rejection reasons with explicit premises and future-proof vocabulary
-      - "Exclusions: no metadata table, no status history section, no unnumbered subsections"
-      - Legacy format identification and migration procedure reference
+      - File naming convention (ADR-{NNN}_{topic}.md) with shared ID numbering
+      - Mandatory 4-section structure (Context, Decision, Alternatives, Impact) with fixed headings
+      - Subsection numbering requirements inheriting parent numbers
+      - Optional scope section defining what is and is not decided
+      - Obsolescence marker syntax for decisions superseded by other ADRs
+      - Prohibition on metadata tables and status history sections
+      - ADR template with guidelines for writing each section
+      - Distinction between format specification and operational principles
     applicable_tasks:
-      - Creation of new ADR documents
-      - Format validation and compliance review
-      - Conversion of legacy ADRs to new format
-      - Marking superseded decisions with obsolescence markers
-      - Documentation of architectural decisions with proper section structure
+      - Creating new ADR documents with correct structure
+      - Adding scope declarations to clarify decision boundaries
+      - Marking obsolete decisions with superseding ADR references
+      - Migrating old ADR format to new format
+      - Reviewing ADR structure compliance
     keywords:
       - ADR
-      - Architecture Decision Record
-      - section numbering
-      - obsolescence marker
-      - scope block
-      - context
-      - decision
-      - alternatives
-      - impact
-      - cross-reference
+      - adr-format
+      - section-structure
+      - scope-section
+      - obsolescence-marker
+      - adr-template
+      - decision-context
+      - adr-naming
   plugins/forge/docs/adr_principles_spec.md:
-    title: ADR Operating Principles
-    purpose: Establishes operating principles for creating, maintaining, and using Architecture Decision Records, including what to document, decision binding rules, and obsolescence handling
+    title: ADR Operational Principles
+    purpose: Defines operational principles for creating, modifying, and using Architecture Decision Records, including scope criteria, non-binding nature, variable document handling, obsolescence marking, and severity violations.
     content_details:
-      - Rejection rationales documented with future proposal vocabulary and premise clarity
-      - Non-binding nature with reader obligations to verify premise currency
-      - Scope clause optional, used only for boundary clarification in overlapping documents
-      - Documents are variable/mutable but section numbering is immutable for external references
-      - Obsolescence marked only when decisions replaced by other ADRs, with marker in section headers
-      - ID enumeration via next-spec-id SKILL with shared DES prefix sequence
-      - Writing targets exclude specifications, rules, and implementation details
-      - "Decisions must meet both criteria: future proposals likely and decision not obvious from specs/rules"
-      - Severity catalog mapping ADR violations from critical to minor
-      - Rejection reason must state underlying premises to enable premise validity assessment
+      - Purpose and beneficiaries - ADRs serve future proposers with examined alternatives and rejection reasons
+      - Scope criteria for writing ADRs - creating ADRs only when future proposals are likely and not answered by code/rules
+      - Conditions for writing scope sections to clarify decision boundaries
+      - Non-binding nature of ADRs allowing re-proposal if premises change
+      - Variable document principles allowing section updates while maintaining fixed section numbers
+      - Migration procedures from old format to current format
+      - Obsolescence handling with markers for decisions superseded by other ADRs
+      - Rejection reason writing guidelines using future proposal vocabulary and explicit premises
+      - Placement and ID numbering conventions shared with design documents
+      - Severity catalog table for ADR violation patterns
     applicable_tasks:
-      - Evaluating or creating Architecture Decision Record proposals
-      - Assessing rejection rationales for design decisions
-      - Reviewing architectural decision changes and supersessions
-      - ADR maintenance and obsolescence handling
-      - Architecture decision precedent checking
+      - Evaluating whether a design decision warrants an ADR
+      - Creating ADRs with appropriate scope and content boundaries
+      - Writing rejection reasons with future vocabulary and explicit premises
+      - Detecting and marking obsolete ADRs when specifications change
+      - Migrating existing ADRs to current format
+      - Reviewing ADR compliance with mandatory structure and severity rules
+      - Assessing if specification changes invalidate existing ADR premises
     keywords:
       - ADR
-      - Architecture Decision Records
-      - rejection rationale
-      - decision context
-      - obsolescence handling
-      - premise validation
-      - decision binding
-      - adr_format
-      - adr_principles
-      - decision superseding
+      - adr-principles
+      - rejection-reason
+      - obsolescence-marker
+      - scope-section
+      - decision-premise
+      - adr-non-binding
+      - severity-catalog
   plugins/forge/docs/consult_principles_spec.md:
     title: Consult Presentation Principles
-    purpose: Defines principles for AI consultation with humans regarding judgments or discussions, including console presentation patterns, multi-item agendas, confidence levels, and preventing decision-pushing
+    purpose: Establishes principles for presenting consultations, decisions, and recommendations to users, emphasizing clarity, context, and structured communication.
     content_details:
-      - Background and essence stated before presenting options
-      - Agenda tables with progress tracking and mandatory result column
-      - "Confidence levels marked: confirmed (☑️), inferred (🤔), unverified (unmarked)"
-      - Previous discussion content re-stated in 1-2 lines, not just referenced
-      - Console presentation target ~10 lines with critical content preserved
-      - Discussion mode explanation provided without imposing deciding flow
-      - "Choice presentation: each option described, change impact shown, single recommendation included"
-      - "Non-applicable scenarios: explanation mode or judgment already decided"
+      - Background and essence precede choice presentation
+      - Agenda tables with status updates for multiple items
+      - Recommendations with rationale stated upfront
+      - Confidence indicators for claims (confirmed/inferred/unverified)
+      - Re-statement of previous context in references
+      - Concise console output formatting guidelines
+      - Suspension of judgment in discussion and feedback mode
+      - Proper structure for presenting alternatives when needed
     applicable_tasks:
-      - Designing console-based consultation interactions
-      - Setting up multi-item decision guidance flows
-      - Implementing agenda tracking in SKILL outputs
-      - Facilitating discussion without pushing AI judgment
-      - Establishing confidence indication patterns
-      - Preventing context loss in ongoing console interactions
+      - User consultation presentation design
+      - Review finding presentation
+      - Multi-item decision documentation
+      - Issue triage discussion planning
+      - Change decision communication
     keywords:
-      - consult principles
-      - agenda table
-      - confidence levels
-      - background and essence
-      - console presentation
-      - decision-pushing
-      - progress tracking
-      - reference re-stating
+      - consult
+      - presentation
+      - agenda
+      - background
+      - essence
+      - recommendation
+      - confidence
+      - review
+      - decision
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
-    purpose: Specifies code review priority-based criteria, checking order (P1-P3), decision rules for recommendations, and conditions for creating review issues
+    purpose: Defines structured code review criteria and decision rules for code review recommendations, reference prioritization, and judgment logic
     content_details:
-      - P1 SSOT reference to project-specific rules and design specs for conformance checking
-      - "Check order procedure: P1 rule conformance, P2 contradiction detection, P3 unnecessary complexity"
-      - "Recommendation types: fix, create_issue, skip with adoption conditions"
-      - "create_issue requires 3 conditions: no applicable rule exists, recurrence/objectivity verified, explicit rule granularity"
-      - Fallback mechanism to built-in forge rules when project rules are incomplete
-      - P2 contradiction matching between design documents and target code
-      - P3 complexity judgment using forge_anti_patterns.md reference
+      - SSOT references with priority levels (P1, P2, P3)
+      - Check order sequence (P1 rule matching, P2 contradiction detection, P3 complexity)
+      - Judgment rules for recommendations (fix, create_issue, skip)
+      - Three conditions for create_issue recommendation
+      - Reference to forge_anti_patterns for complexity detection
+      - Severity delegation to principles documents
     applicable_tasks:
-      - Code review recommendation decision
-      - Review criteria application
-      - Design-code contradiction detection
-      - Issue creation judgment for review findings
-      - Rule conformance verification
+      - Code review criteria application
+      - Review recommendation decision making
+      - Specification-implementation mismatch detection
+      - Unnecessary complexity evaluation
     keywords:
       - code review
       - review criteria
-      - recommendation
       - SSOT
-      - contradiction detection
-      - P1 P2 P3
-      - decision rule
+      - recommendation
       - create_issue
-      - conformance
+      - fix
+      - severity
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Defines systematic approach for design document reviews, specifying which principles to reference, the check order by priority level, and decision rules for recommendations
+    purpose: Defines structured design review criteria with SSOT references, check order prioritization, ADR validation, document reference verification, and judgment rules for design specifications
     content_details:
-      - Seven P1 principles and format documents (spec_design_boundary, design_principles, design_format, additive_development, adr_format, adr_principles, document_style_guide)
-      - "Check order: P1 rules compliance, P2 internal contradictions, P3 unnecessary complexity"
-      - "Additive feature frontmatter requirement (type: temporary-feature-design marker)"
-      - ADR structure validation (context, decision, alternatives, 4-section numbering, obsolescence markers)
-      - Reference validation against document_style_guide §5 and §8 for notation and existence checks
-      - Internal contradiction detection across component definitions, data flow, interfaces
-      - Additive feature exception rule treating differences from old specs as intentional declarations
-      - Three recommendation types with conditions (fix, create_issue, skip)
-      - Three conditions for create_issue (no applicable rule, recurrence/objectivity, articulate granularity)
-      - Severity judgment delegation to referenced principles documents by priority level
+      - SSOT references with priority levels (P1 principles, P2 specs, P3 complexity) including spec_design_boundary, design_principles, design_format, adr_format, adr_principles, document_style_guide
+      - Check order sequence (What/How boundary matching, design principles validation, feature frontmatter verification, architecture rules)
+      - Document reference syntax and existence verification per document_style_guide §5 and §8
+      - ADR operation validation (required sections, structure, expiration markers, coverage gaps)
+      - Temporary feature design document frontmatter requirement and identification criteria
+      - Additive feature exception rules for P2 contradiction detection
+      - Judgment rules for recommendations (fix, create_issue, skip)
+      - Three conditions for create_issue
     applicable_tasks:
-      - Design review execution
-      - ADR validation and obsolescence checking
-      - Reference correctness verification
-      - Contradiction detection in design documents
-      - Additive feature handling in design reviews
-      - Simplification opportunity assessment
-      - Design format compliance checking
+      - Design review criteria application
+      - Design-specification consistency verification
+      - ADR operation and coverage validation
+      - Document reference correctness checking
+      - Temporary feature design evaluation
+      - Unnecessary design complexity detection
     keywords:
-      - design-review-criteria
-      - ADR-format-validation
-      - temporary-feature-design
-      - spec-design-boundary
-      - additive-development
-      - contradiction-detection
-      - document-style-guide
-      - reference-validation
-      - severity-judgment
-      - frontmatter-validation
+      - design review
+      - ADR
+      - design criteria
+      - specification design boundary
+      - design principles
+      - design format
+      - frontmatter
+      - temporary feature design
+      - document reference
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
-    purpose: Specifies generic document review priority-based criteria, checking order (P1-P3) for document style conformance, writing rules, contradiction detection, and unnecessary complexity judgment
+    purpose: Defines generic document review criteria covering document style consistency, project-specific writing rules, cross-document consistency checks, and judgment rules for document-level reviews
     content_details:
-      - "P1 SSOT reference: document style guide and project-specific document writing rules"
-      - "Check order: P1 document style conformance, P1 project-specific rules conformance, P2 contradiction detection, P3 unnecessary complexity"
-      - "Document style conformance checking: tag usage, heading hierarchy, notation consistency verification"
-      - Project-specific document writing rules from query-db-rules application
-      - "P2 contradiction detection: internal contradictions within target file and related documents"
-      - P2 focus on term inconsistencies and duplicate descriptions (not omissions/gaps)
-      - "P3 unnecessary complexity: numerical directization prohibition and inversion patterns"
-      - "Recommendation types: fix, create_issue, skip with adoption conditions"
+      - SSOT references with priority levels (P1 document_style_guide and project-specific rules, P2 specs, P3 complexity)
+      - Check order sequence (P1 style matching, P1 project-specific rules, P2 contradiction detection, P3 complexity)
+      - Document style verification including tag usage, heading hierarchy, and notation consistency
+      - Project-specific document writing rules validation
+      - Cross-document and internal consistency checking for terminology and duplication
+      - Judgment rules for recommendations (fix, create_issue, skip)
+      - Three conditions for create_issue recommendation
+      - Fallback handling for unimplemented project-specific rules
     applicable_tasks:
-      - Document review and recommendation decision
-      - Document style conformance checking
-      - Document writing rules verification
-      - Term consistency and notation validation
-      - Internal document contradiction detection
-      - Document structure and complexity assessment
-      - Project-specific writing rules compliance
+      - Document review criteria application
+      - Document style consistency verification
+      - Document writing rule compliance checking
+      - Cross-document consistency validation
+      - Unnecessary documentation complexity detection
     keywords:
       - document review
-      - style guide
+      - review criteria
       - document style
-      - tag usage
-      - heading hierarchy
-      - notation consistency
-      - contradiction detection
-      - term inconsistency
+      - document style guide
       - writing rules
+      - consistency
+      - SSOT
+      - terminology
   plugins/forge/docs/criteria/review_criteria_plan.md:
-    title: Plan Review Criteria
-    purpose: Defines the process and delegates for reviewing plan documents (YAML format), including rules to check, verification order, and judgment criteria for recommendations
+    title: plan Review Criteria
+    purpose: Defines review criteria, reference sources (SSOT), check order, and judgment rules for plan document validation
     content_details:
-      - SSOT reference list with priority levels (P1/P2/P3) for plan review delegated documents
-      - "Check order: P1 format and principles conformance, P2 contradictions, P3 unnecessary complexity"
-      - Temporary feature plan detection criteria based on separation value and collision risk
-      - Plan YAML structure validation and required fields verification
-      - Task granularity, acceptance criteria, and traceability rules enforcement
-      - Reference path existence validation for design and requirement documents
-      - Contradiction detection between tasks and requirements/design, task dependency ordering
-      - Temporary feature plan exemption from old specification contradictions
-      - Recommendation types (fix, create_issue, skip) with adoption conditions
+      - SSOT reference documents with P1/P2/P3 priority levels
+      - "Three-level check order: P1 rule compliance, P2 contradiction detection, P3 complexity assessment"
+      - plan_format.md validation (YAML structure, required fields)
+      - plan_principles_spec.md validation (task granularity, acceptance criteria)
+      - temporary-feature-plan marker requirement for additional features
+      - Reference path existence validation (required_reading, design_id)
+      - P2 contradiction detection between plan and related specs/designs
+      - P2 exclusion rule for additional feature plan differences
+      - P3 unnecessary complexity and anti-pattern detection
+      - "Recommendation judgment: fix, create_issue, skip"
     applicable_tasks:
-      - Plan document review and validation
-      - YAML structure and format compliance checking
-      - Task granularity and acceptance criteria validation
-      - Reference document dependency verification
-      - Cross-document contradiction and consistency detection
+      - Review plan documents
+      - Validate plan YAML structure
+      - Validate task content against principles
+      - Validate reference path existence
+      - Detect contradictions between plan and specs
+      - Validate additional feature plans
+      - Assess plan structure complexity
     keywords:
-      - plan review
-      - plan format
-      - YAML structure
-      - task granularity
-      - acceptance criteria
-      - temporary feature plan
-      - reference path
-      - dependency ordering
+      - plan_format
+      - plan_principles
+      - temporary-feature-plan
+      - SSOT
+      - review criteria
+      - P1 P2 P3 priority
       - contradiction detection
+      - reference validation
+      - additive development
+      - specification reconciliation
   plugins/forge/docs/criteria/review_criteria_requirement.md:
-    title: Requirement Review Criteria
-    purpose: Defines the process and delegates for reviewing requirement documents, including rules to check, verification order, and judgment criteria for recommendations
+    title: requirement Review Criteria
+    purpose: Defines review criteria, reference sources (SSOT), check order, and judgment rules for requirement document validation
     content_details:
-      - SSOT reference list with priority levels (P1/P2/P3) for requirement review delegated documents
-      - "Check order: P1 format and principles conformance, P2 contradictions, P3 unnecessary complexity"
-      - Temporary feature requirement detection criteria based on separation value and collision risk
-      - Requirement format validation including metadata, unconfirmed items table, required fields
-      - Non-functional requirement category completeness and main purpose prohibition rules
-      - Document reference validation (style guide conformance, link existence)
-      - Contradiction detection between requirements and related design documents
-      - Temporary feature requirement exemption from old specification contradictions
-      - Recommendation types (fix, create_issue, skip) with adoption conditions
+      - SSOT reference documents with P1/P2/P3 priority levels
+      - "Three-level check order: P1 rule compliance, P2 contradiction detection, P3 complexity assessment"
+      - requirement_format.md validation (structure, required fields, undecided items table)
+      - spec_priorities_spec.md validation (non-functional requirement categories, main purpose prohibition, anti-patterns)
+      - temporary-feature-requirement frontmatter marker requirement for additional features
+      - Document reference validation (document_style_guide.md §5 §8, link and anchor existence)
+      - P2 contradiction detection between requirements (FNC, definitions, priorities)
+      - P2 contradiction detection between requirements and design documents
+      - P2 exclusion rule for additional feature requirement differences from old specs
+      - P3 unnecessary complexity detection (direct quantification, story-first patterns)
     applicable_tasks:
-      - Requirement document review and validation
-      - Format and mandatory fields compliance checking
-      - Non-functional requirement category completeness validation
-      - Document reference integrity verification
-      - Internal requirement contradiction and cross-document consistency detection
+      - Review requirement documents
+      - Validate requirement document format
+      - Validate non-functional requirement categories
+      - Validate document references
+      - Detect contradictions between requirements
+      - Detect contradictions between requirements and designs
+      - Validate additional feature requirement documents
+      - Assess requirement structure complexity
     keywords:
-      - requirement review
-      - requirement format
-      - non-functional requirements
-      - specification priority
-      - temporary feature requirement
-      - document reference
+      - requirement_format
+      - spec_priorities_spec
+      - temporary-feature-requirement
+      - SSOT
+      - review criteria
       - FNC
-      - metadata validation
+      - non-functional requirements
       - contradiction detection
-      - design consistency
+      - additive development
+      - design reconciliation
   plugins/forge/docs/criteria/review_criteria_secrets.md:
-    title: Secrets Review Criteria
-    purpose: Defines standards and decision process for evaluating sensitive information findings, including classification of recommendations and handling procedures
+    title: secrets Review Criteria
+    purpose: Defines review criteria and check procedures for detecting sensitive information, confidential data, and credentials in documents
     content_details:
-      - SSOT reference list with P1/P2/P3 documents and their roles in credential detection review
-      - Five-step check sequence for evaluating detection results
-      - False positive determination using principles and permitted representations
-      - Recommendation classification rules (fix, create_issue, skip)
-      - Three conditions for create_issue recommendation (rule absence, recurrence/objectivity, codification granularity)
-      - Ambiguity handling rule for mixed-in credentials
-      - P3 non-applicability due to lack of alternative design concept
-      - Manual detection discovery requirement for out-of-band findings
-      - Contradiction checks between detection results and actual content
-      - Permitted context and example usage patterns
+      - "SSOT reference documents: sensitive_information_spec.md (principles), project-specific rules"
+      - P1 rule understanding through sensitive_information_spec.md §2 §3 §4 sections
+      - Machine detection result verification against actual document content
+      - False positive identification using sensitive_information_spec.md §3 guidelines
+      - "Suppression marker verification (markers don't guarantee non-mixing per §5.2)"
+      - Manual search for undetectable patterns (format-less passwords, embedded credentials, modified examples)
+      - P2 detection result location verification against actual content (line shifts, already fixed items)
+      - "Gray zone handling rule: ambiguous detections treated as mixing (no skip allowance per §3)"
+      - Recommendation types with 3-condition criteria for create_issue
+      - P3 not applicable (no alternative options exist for information mixing)
     applicable_tasks:
-      - Sensitive credential detection review
-      - False positive evaluation for security findings
-      - Finding recommendation classification
-      - Issue creation decision for credential mixed-in cases
-      - Secrets scanning result validation
+      - Review documents for sensitive information
+      - Verify machine detection results
+      - Identify false positives in detection results
+      - Search for undetectable sensitive information patterns
+      - Validate suppression markers
+      - Detect credentials in prose
+      - Verify detection result locations
+      - Assess gray zone information handling
+    keywords:
+      - sensitive_information_spec
+      - secrets detection
+      - false positive
+      - suppression markers
+      - credentials detection
+      - sensitive information
+      - detection verification
+      - passwords
+      - project-specific rules
+      - information mixing
+  plugins/forge/docs/criteria/review_criteria_uxui.md:
+    title: UI/UX Review Criteria
+    purpose: Defines the criteria, reference documents, and decision rules for reviewing UI/UX documentation and design specifications
+    content_details:
+      - SSOT reference list with priority levels (Apple HIG, project-specific design rules, document_style_guide.md, spec_priorities_spec.md)
+      - P1 rule compliance check sequence (Apple HIG → project design system rules → document_style_guide.md)
+      - P2 contradiction detection between target file and related requirements/design specifications
+      - P3 unnecessary complexity assessment using spec_priorities_spec.md
+      - Recommendation decision rules (fix, create_issue, skip) with conditions and application criteria
+      - "Three conditions for create_issue: no applicable rule in SSOT, recurrence or objectivity, explicit documentable granularity"
+      - Fallback mechanism to forge built-in rules when delegated documents are unprepared
+      - Severity judgment delegation to review_priorities_spec.md
+      - Contradiction detection across design tokens, component specifications, screen requirements, and interaction rules
+      - Simplification alternatives assessment using fewer elements to achieve same goals
+    applicable_tasks:
+      - UI/UX documentation review against Human Interface Guidelines
+      - Design specification consistency validation
+      - Contradiction detection across design artifacts
+      - UI design complexity assessment and simplification evaluation
+      - Design system rule compliance review
+      - Issue creation for unmapped design concerns
+      - Design token and component specification review
+      - Interaction rule compliance verification
+    keywords:
+      - UI/UX review criteria
+      - Human Interface Guidelines
+      - design system compliance
+      - design tokens
+      - component specifications
+      - consistency detection
+      - recommendation decision
+      - severity judgment
+  plugins/forge/docs/design_format.md:
+    title: Design Document Default Format
+    purpose: Specifies the standard structure, frontmatter, naming conventions, and template for design documents when project-specific formats are not defined.
+    content_details:
+      - Additive feature frontmatter specification with type and notes
+      - File naming convention using design ID and target name
+      - Metadata section with design ID, related requirements, and creation date
+      - Overview section describing problem and adopted approach
+      - Architecture overview with components, layers, and responsibility distribution
+      - Module design section with module list and class diagrams
+      - Use case design section with scenarios and sequence diagrams
+      - Existing components usage documentation
+      - Test design section defining unit and integration test targets
+      - Integration with additive_development_spec for merge procedures
+    applicable_tasks:
+      - Design document creation and structuring
+      - Architecture design documentation
+      - Feature design documentation
+      - Module and class diagram specification
+      - Use case and test design
+      - Design document review and validation
+    keywords:
+      - design format
+      - design document
+      - template
+      - architecture
+      - module design
+      - use case
+      - frontmatter
+      - DES-ID
+      - additive feature
+  plugins/forge/docs/design_principles_spec.md:
+    title: Design Document Creation Principles
+    purpose: Establishes universal principles for creating design documents, covering essential components, required content, decision criteria, and architecture/responsibility/availability rules for implementation.
+    content_details:
+      - "Fundamental principle: documents describe implementation (How) not requirements (What)"
+      - "Mandatory elements: module list, component/class diagram, use case list, sequence diagram"
+      - "Required content: implementation methods, technical details with rationale, process flows, test cases"
+      - "Excluded content: full source code, unsupported assumptions, out-of-scope features, quantitative guarantees"
+      - Quantitative goals describe strategy not outcome guarantees
+      - "Decision criterion: implementer can build from this"
+      - Hierarchical structure at 500 lines per file
+      - "File naming: {design_id}_{target_name}_design.md"
+      - "Architecture dependency rules: no reverse/circular dependencies"
+      - "Responsibility principle: single responsibility per component"
+      - Availability/SPOF guidelines with redundancy and retry strategy
+      - "Design maintenance: update when implementation diverges"
+    applicable_tasks:
+      - Design document creation and review
+      - Architecture dependency validation
+      - Module design specification
+      - Responsibility separation enforcement
+      - Design maintenance and updates
+      - Design principle violation detection
+    keywords:
+      - design principle
+      - design document
+      - architecture
+      - module design
+      - class diagram
+      - sequence diagram
+      - responsibility
+      - dependency
+      - Mermaid
+  plugins/forge/docs/doc_structure_format.md:
+    title: .doc_structure.yaml Format Specification
+    purpose: Defines the configuration format and schema for declaring document placement, categorization, and structure that forge and doc-advisor use for document resolution and indexing
+    content_details:
+      - .doc_structure.yaml file placement at project root
+      - Schema structure with rules and specs categories
+      - root_dirs field with glob pattern support
+      - doc_types_map path-to-category mapping (rule, design, plan, requirement, api, reference, etc.)
+      - patterns.exclude for directory exclusion
+      - patterns.target_glob for file search patterns
+      - Version management using version comment format
+      - Flat Structure sample configuration
+      - Feature-Based Structure with automatic detection
+      - Nested Feature-Based and Exclude examples
+    applicable_tasks:
+      - Setting up initial document structure configuration
+      - Configuring rules and specs directory paths
+      - Mapping document paths to doc_type categories
+      - Adding feature-based document organization
+      - Resolving document paths from forge skills
+      - Integrating with doc-advisor for document indexing
+    keywords:
+      - .doc_structure.yaml
+      - doc_types_map
+      - root_dirs
+      - doc_type
+      - glob patterns
+      - Feature-based structure
+      - resolve_doc_structure
+      - categorization
+      - configuration
+      - document paths
+  plugins/forge/docs/document_style_guide.md:
+    title: Document Style Guide
+    purpose: Defines standard writing style conventions for forge-generated documents including tags, heading levels, emphasis, structure, reference notation, and formatting rules to ensure consistent, maintainable documentation
+    content_details:
+      - Tag usage ([MANDATORY], [CRITICAL], [IMPORTANT]) with signal value maintenance criteria
+      - "Heading levels (# through ####) and their usage (title, main sections, subsections, details)"
+      - Emphasis and notation rules (bold, italic, code formatting, long vowel conventions)
+      - Code block rules with required language specification
+      - List and table formatting conventions
+      - Document reference notation with different rules for docs/ internal vs. external references
+      - ${CLAUDE_PLUGIN_ROOT} placeholder usage for SKILL.md and agents from docs/ outside references
+      - Abstract example naming conventions (Foo/Bar/Hoge vs. domain-specific names)
+      - No historical change logs or revision tables in documents
+      - No related documents sections to prevent link rot and stale references
+    applicable_tasks:
+      - Writing new requirement or design documents
+      - Creating planning documents and implementation guides
+      - Reviewing document style compliance and reference validity
+      - Establishing documentation standards for projects
+      - Setting up heading hierarchy and structure for documents
+      - Creating Architecture Decision Records (ADR)
+      - Correcting document references and broken links
+    keywords:
+      - document style
+      - tags [MANDATORY]
+      - heading levels
+      - Markdown reference
+      - ${CLAUDE_PLUGIN_ROOT}
+      - relative paths
+      - code blocks
+      - abstract naming
+      - link validity
+      - documentation standards
+  plugins/forge/docs/forge_anti_patterns.md:
+    title: forge Anti-Patterns Collection
+    purpose: Provides the base anti-pattern collection that /forge:review SKILL uses as fallback for P1 rule compliance checks when project-specific rules are unavailable, covering industry-standard patterns across multiple domains
+    content_details:
+      - Anti-pattern collection scope as template/framework for base patterns at distribution
+      - AI auto-append prohibition policy [MANDATORY] to protect release management
+      - Manual workflow for discovering new anti-patterns during review execution
+      - Issue creation requirement when anti-patterns meet the 3 conditions
+      - Integration with /anvil:create-issue SKILL for automated issue tracking
+      - Review execution side responsibility for Issue-severity determination
+      - PR workflow with human review, commit, ToC update, and testing for new patterns
+      - Code anti-patterns category (God Object, circular dependency, hard-code coupling, SQL injection)
+      - Design anti-patterns category
+      - Planning and documentation anti-patterns categories
+    applicable_tasks:
+      - Running code reviews with /forge:review SKILL
+      - Detecting and preventing common anti-patterns
+      - Fallback reference when project-specific rules are unavailable
+      - Creating issues for novel anti-patterns discovered during review
+      - Establishing baseline anti-pattern library for new projects
+      - Training development teams on industry-standard patterns
+      - Evaluating design decisions against known pitfalls
+    keywords:
+      - anti-patterns
+      - /forge:review
+      - P1 compliance
+      - fallback reference
+      - God Object
+      - circular dependency
+      - hard-coded coupling
+      - SQL injection
+      - code review
+      - design patterns
+  plugins/forge/docs/plan_format.md:
+    title: Default Plan Format
+    purpose: Defines the default YAML schema and field structure for plan files used in project planning and task management
+    content_details:
+      - YAML schema with requirements_traceability, design_traceability, tasks, revision_history sections
+      - Field definitions for requirements_traceability including requirement_id, design_id, and status tracking
+      - Field definitions for design_traceability linking designs to requirements and tasks
+      - Task field definitions including priority, status, dependencies, group_id, build_check, and required_reading
+      - Status transitions (pending → in_progress → completed) for requirements and tasks
+      - "Priority ranges: high (70-99), medium (40-69), low (1-39) for task prioritization"
+      - Additive feature frontmatter markers for temporary feature plans
+      - Rationale for YAML format (FNC-005) for machine-parseable structured data
+      - Revision history field for tracking plan modifications
+    applicable_tasks:
+      - Creating project-specific plan files in YAML format
+      - Implementing task status tracking and updates
+      - Managing requirement-design-task traceability
+      - Validating plan file structure and field compliance
+      - Setting up additive feature plans with separate tracking
+    keywords:
+      - YAML
+      - plan
+      - traceability
+      - requirements_traceability
+      - design_traceability
+      - task
+      - priority
+      - status
+      - schema
+      - frontmatter
+  plugins/forge/docs/plan_principles_spec.md:
+    title: Plan Creation Principles
+    purpose: Defines mandatory creation principles and rules for plan documents, covering structure, task granularity, traceability, dependency management, acceptance criteria, test requirements, and violation severity levels
+    content_details:
+      - "Mandatory four-section YAML structure: requirements_traceability, design_traceability, tasks, revision_history only"
+      - "Task granularity criteria: single Agent execution unit, 5-10 description items per task, build/test success at completion"
+      - "Content writing principles: avoid duplicating implementation details from design documents, link to design section instead"
+      - required_reading field specification with mandatory strategy document inclusion when applicable
+      - Task grouping rules with group_id and build_check values (per_task for independent, skip for group middle, on_group_complete for group end)
+      - Early validation conditions and minimum verifiable unit definition for task groups
+      - "Dependency management: prevent circular dependencies, identify implicit dependencies (frontend → API schema, integration test → all features)"
+      - "Acceptance criteria rules: must be Yes/No determinable without subjective expressions like 'works properly"
+      - "Test task requirements: main features must have unit or integration test tasks in the plan"
+      - "Severity level catalog for violations: critical, major, minor with specific violation patterns"
+      - "Traceability rules: all requirement IDs must appear with task associations or explicit exclusion reasons"
+    applicable_tasks:
+      - Creating plan documents with mandatory structure and principles
+      - Designing task granularity and scope for feature implementation
+      - Setting up requirement-design-task traceability matrices
+      - Implementing dependency management and implicit dependency detection
+      - Defining acceptance criteria with determinable Yes/No criteria
+      - Planning and integrating test tasks with implementation tasks
+    keywords:
+      - plan principles
+      - YAML
+      - requirements_traceability
+      - task granularity
+      - dependency management
+      - acceptance criteria
+      - test tasks
+      - implicit dependencies
+      - severity
+      - traceability
+  plugins/forge/docs/requirement_format.md:
+    title: Default Requirement Format
+    purpose: Defines the default Markdown format and structure for requirement definition documents, including frontmatter for additive features and sections for overview, preconditions, requirements, error cases, and undetermined items
+    content_details:
+      - Default format for requirement definition documents when project-specific format not available
+      - "YAML frontmatter for additive features with type marker 'type: temporary-feature-requirement' and priority notes"
+      - "Main body header structure: {REQUIREMENT_ID} {Feature_Name} Requirement Definition"
+      - "Overview section: 1-3 sentence description of requirement purpose and target users"
+      - "Preconditions section: conditions required for feature availability"
+      - Requirements list with Display requirements, Operation requirements (input/output constraints), and Error cases subsections
+      - Error cases table with condition and error message/behavior columns
+      - Undetermined items (TBD) section for tracking open questions with ID, content, and deadline columns
+      - "Additive feature frontmatter specification: when to use, merge process, scope differentiation between old and new specifications"
+      - "Severity level catalog: violation patterns and severity (major) for missing frontmatter on additive feature requirements"
+    applicable_tasks:
+      - Creating requirement definition documents in Markdown format
+      - Defining feature scope with display, operation, and error requirement sections
+      - Setting up requirement documents for additive features with temporary markers
+      - Documenting undetermined items and blockers in requirements
+      - Validating requirement document structure and frontmatter compliance
+      - Managing traceability between requirements and design/plan documents
+      - Planning requirement merge when additive features are complete
+    keywords:
+      - requirement format
+      - requirement definition
+      - frontmatter
+      - additive feature
+      - display requirements
+      - operation requirements
+      - error cases
+      - undetermined items
+      - TBD
+      - temporary-feature-requirement
+  plugins/forge/docs/review_priorities_spec.md:
+    title: Review Priorities Specification
+    purpose: Defines the priority system for review observations (P1/P2/P3), the independence of priority and severity axes, delegation of judgment to principles documents, and rules for create_issue recommendations
+    content_details:
+      - P1 (Rule Compliance), P2 (Contradictions/Discrepancies), P3 (Unnecessary Complexity) definitions
+      - Severity as independent axis from priority, with values critical/major/minor
+      - Severity SoT delegated to principles, not declared in criteria
+      - "P2 exclusion: Missing documentation is not a P2 target"
+      - "P3 exclusion: Subjective evaluations (simplicity, readability) are not P3 targets"
+      - Prohibition of custom perspectives (logic, resilience, maintainability forbidden)
+      - "Three conditions for create_issue: No matching regulation, recurrence or objectivity, markdown expressibility"
+      - "Fixed 3-section structure for criteria: SSOT Reference, Check Order, Decision Rules"
+      - Criteria must not declare severity or have greyzone judgment
+      - "Failed rejection reasons: Ensure ADR rejection premises still hold before use"
+    applicable_tasks:
+      - Review operations and criteria standardization
+      - Severity determination in findings
+      - create_issue decision evaluation
+      - Review criteria file creation and modification
+      - Decision rule implementation in evaluators
+    keywords:
+      - priority
+      - severity
+      - P1
+      - P2
+      - P3
+      - review_criteria_*.md
+      - create_issue
+      - SSOT
+      - principles
+      - criteria
+  plugins/forge/docs/scope_proportionality_spec.md:
+    title: Proportionality Principle (Over-Design Prevention)
+    purpose: Defines a general principle for deciding whether to adopt interventions (fixes, new features, defensive implementations) by limiting unnecessary mitigation of theoretical abnormalities to prevent system bloat
+    content_details:
+      - Prevents unlimited accumulation of mitigations for theoretical abnormalities
+      - "Three finding types where proportionality check applies: Catastrophic external factors, speculative defensive implementations, subjective quality improvements without design/requirement/rule basis"
+      - "Findings NOT subject to proportionality check: Explicit requirement/design/rule violations, concrete runtime risks, data loss/security/destructive operations"
+      - "Out-of-scope catastrophic factors: OS-level abnormalities, filesystem corruption, disk exhaustion, hardware failures when system itself is broken"
+      - "Three-point check requirement 1: Trigger condition doesn't break other independent premises"
+      - "Three-point check requirement 2: Existing independent safety nets (type checking, CI, other-layer validation) prevent harm"
+      - "Three-point check requirement 3: Cost/benefit ratio justified with concrete failure path"
+      - Review discovery itself is NOT an independent safety net and cannot justify adoption
+      - "Ambiguity resolution: Assume NOT applicable to avoid false positive of skipping valid findings"
+      - "Unclear categorization treated as normal fix path per criteria's own rules"
+    applicable_tasks:
+      - Review finding evaluation and gatekeeping
+      - fix adoption decision logic
+      - Over-design prevention in feedback
+      - Defensive implementation justification
+      - Speculative proposal filtering in reviews
+    keywords:
+      - proportionality
+      - over-design
+      - catastrophic
+      - external factors
+      - defensive implementation
+      - safety net
+      - fix adoption
+      - three-point check
+      - scope limitation
+      - risk assessment
+  plugins/forge/docs/sensitive_information_spec.md:
+    title: Sensitive Information Leakage Prevention
+    purpose: Defines information that must not be included in repositories and judgment criteria for detecting leakage. Establishes that mixed-in secrets are treated as leaked regardless of deletion, requiring invalidation/reissue
+    content_details:
+      - Mixed-in secrets treated as leaked regardless of deletion/rewrite due to git history, forks, CI logs, mirrors, local clones
+      - Regulation is not find-and-delete but invalidate-and-reissue of secrets
+      - "Authentication secrets: API tokens, private keys, passwords, connection strings, session/signed values"
+      - "Non-secrets but dangerous if public: Internal hostnames, PII, customer identifiers, production resource names"
+      - "Permitted forms: Environment variable references, explicit placeholders, public-assumption values, invalidated values, format-only descriptions"
+      - Example values must use officially reserved examples or 0-padding, never copy real values with partial changes
+      - "Two-stage detection: Deterministic scan for known patterns AND AI reading for context-dependent cases"
+      - "Suppression marker secrets-scan: ignore can suppress detection but count/position must be reported to reviewers"
+      - Never include actual secret values in review requests/findings/logs; use type, location, length, first characters only
+      - "Severity catalog: critical for valid auth info/private keys/connection strings, major for internal network names/PII, minor for placeholder confusion"
+    applicable_tasks:
+      - Secret information detection in code and documentation
+      - Review content validation for leakage
+      - Test fixture verification with pattern matching
+      - Repository security audit
+      - Secret invalidation planning and tracking
     keywords:
       - secrets
       - sensitive information
+      - API tokens
+      - private keys
       - credentials
-      - false positive
-      - SSOT
-      - recommendation
-      - detection validation
-      - principles
-      - mixed-in
-      - credential detection
-  plugins/forge/docs/criteria/review_criteria_uxui.md:
-    title: UX/UI Review Criteria
-    purpose: Defines the criteria, check procedures, and judgment rules for reviewing UX/UI documents against platform requirements (Apple HIG), project-specific design systems, and document style guidelines
-    content_details:
-      - SSOT reference list for UX/UI review (Apple HIG, project-specific design system rules, document_style_guide.md as fallback)
-      - Delegation principle (project-specific rules take priority over built-in rules)
-      - Temporary fallback strategy until dedicated UX/UI principles are established
-      - Platform requirements reference (Apple HIG as normative source for platform-specific compliance)
-      - Three-level check order (P1 HIG and design system compliance, P2 contradictions, P3 unnecessary complexity)
-      - P1 check sequence (Apple HIG → project-specific design rules [skip if unspecified] → document_style_guide.md fallback)
-      - P2 contradiction detection scope (design tokens, component specifications, screen requirements, interaction definitions)
-      - P3 complexity judgment criteria (design system element reduction, alternative approaches to achieve same purpose)
-      - Three recommendation types with adoption conditions (fix for limited-impact violations, create_issue for unspecified recurring patterns, skip for false positives)
-      - Three mandatory conditions for create_issue (no applicable rule exists, recurring or objective observation, explicitly definable)
-    applicable_tasks:
-      - UX/UI document review
-      - Platform requirement (Apple HIG) compliance verification
-      - Design system consistency validation
-      - UX/UI document contradiction detection
-      - Component and design token specification review
-      - Screen interaction requirement verification
-      - Review recommendation determination
-    keywords:
-      - UX/UI review
-      - SSOT
-      - Apple HIG
-      - design system
-      - P1/P2/P3 priority
-      - contradiction detection
-      - create_issue
-      - design tokens
-      - component specification
-      - interaction design
-  plugins/forge/docs/design_format.md:
-    title: Design Document Default Format
-    purpose: Specifies the generic design document format used when project-specific design format is not available
-    content_details:
-      - Generic design document template and structure
-      - Temporary feature design frontmatter specification and conditions
-      - File naming conventions using DES-XXX pattern
-      - Metadata section with design ID and related requirements
-      - Overview section describing problem statement and approach
-      - Architecture overview with component diagrams and layer structure
-      - Module design including module lists and class diagrams
-      - Use case design with sequence diagrams and interaction flows
-      - Existing component usage and integration point documentation
-      - Test design strategy for unit and integration testing
-    applicable_tasks:
-      - Creating new design documents
-      - Documenting additive feature design
-      - Defining module and component architecture
-      - Designing use cases and interactions
-      - Creating class diagrams and relationships
-      - Planning test coverage for designs
-    keywords:
-      - design document
-      - temporary feature design
-      - module design
-      - class diagram
-      - use case
-      - sequence diagram
-      - architecture
-      - component
-      - metadata
-      - test design
-  plugins/forge/docs/design_principles_spec.md:
-    title: Design Document Creation Principles
-    purpose: Establishes principles, mandatory structure, content guidelines, and judgment criteria for creating and maintaining design documents that specify implementation methods rather than requirements
-    content_details:
-      - "Basic policy: Design documents specify How (implementation), not What (requirements)"
-      - "Mandatory structure: Module list table, Component/Class diagram, Use case list, Sequence diagram"
-      - "Required content: Implementation methods (class/method names), technical details with rationale, processing flows, data flows, test case design, existing component usage paths"
-      - "Prohibited content: Excessive source code, framework specification without rationale, out-of-scope features, guaranteed performance numbers, AI-guessed quantitative targets"
-      - "Quantitative target handling: Design documents present structure and approach but do not guarantee achievement; validation deferred to load testing and profiling"
-      - "Implementer judgment criterion: Can the implementer implement from this? Yes → include, No → more detail needed"
-      - "Hierarchical structure guidelines: Split large designs exceeding 500 lines; child designs reference parent ID; parent lists children"
-      - "File naming convention: {DesignID}_{target_name}_design.md using snake case"
-      - "Optional sections: Data flow design, state management, error handling, performance, security considerations"
-      - "No historical records: Use CHANGELOG and ADR for change history, not design document"
-    applicable_tasks:
-      - Design document creation and authoring
-      - Design document review and validation
-      - Design update when implementation diverges
-      - Architecture pattern and dependency direction review
-      - Component responsibility definition and cohesion review
-      - Availability and SPOF resilience design
-      - Quantitative requirement handling in design
-    keywords:
-      - design document
-      - architecture pattern
-      - component
-      - responsibility
-      - sequence diagram
-      - dependency direction
-      - adr_principles_spec
-  plugins/forge/docs/doc_structure_format.md:
-    title: .doc_structure.yaml Format Specification
-    purpose: Defines the configuration file format for declaring project-level document locations and types, used by forge for documentation path resolution, feature detection, and documentation indexing
-    content_details:
-      - "Configuration file purpose: declares document locations and types; processed by forge for path resolution"
-      - "File placement: positioned at project root as .doc_structure.yaml"
-      - "Schema structure: two categories (rules and specs) with root_dirs, doc_types_map, patterns fields"
-      - "root_dirs: array of directories with glob pattern support (single level *, nested **)"
-      - "doc_types_map: path-to-doctype mapping with glob patterns"
-      - "Recommended doc_type names for specs: requirement, design, plan, api, reference"
-      - "Recommended doc_type names for rules: rule, workflow, guide"
-      - "patterns.exclude: directory name exclusions matching at any depth in paths"
-      - "Version management: tracked via comment with major.minor versioning"
-      - Flat structure configuration sample with single directory setup
-      - Feature-based structure using glob patterns for automatic feature detection
-      - Nested feature structure with arbitrary depth using ** patterns
-      - "Consumer guide: usage from forge skills, Python modules, and doc-advisor handoff"
-    applicable_tasks:
-      - Project documentation structure initialization
-      - Document configuration management
-      - Feature discovery and automatic detection
-      - Document indexing and path resolution
-      - Documentation tool integration
-    keywords:
-      - doc-structure
-      - configuration
-      - path-resolution
-      - glob-pattern
-      - feature-detection
-      - yaml
-      - schema
-      - documentation-management
-      - indexing
-  plugins/forge/docs/document_style_guide.md:
-    title: Document Style Guide
-    purpose: Specifies writing style and formatting rules for documents (requirements, design, plans) generated by the forge plugin
-    content_details:
-      - Tag usage (MANDATORY / CRITICAL / IMPORTANT) with placement and signal value criteria
-      - "Heading levels (# to ####) for file titles, main sections, subsections, and details"
-      - Emphasis notation rules (bold for keywords, italics for references, code for identifiers)
-      - Document reference notation using relative paths within docs/ and ${CLAUDE_PLUGIN_ROOT} placeholders outside
-      - Code block language specification requirement
-      - List and table structure guidelines (no nesting beyond 2 levels, max 6 columns)
-      - Abstract example naming (generic Foo/Bar instead of domain-specific names)
-      - Historical record exclusion (changelog, change logs replaced by CHANGELOG.md and ADR)
-    applicable_tasks:
-      - Writing forge plugin documentation
-      - Reviewing document style and formatting compliance
-      - Validating document references and links
-      - Creating requirement definition documents
-      - Creating design specification documents
-      - Enforcing style consistency across documentation
-    keywords:
-      - document_style_guide
-      - MANDATORY
-      - CRITICAL
-      - reference notation
-      - Markdown links
-      - heading levels
-      - placeholder notation
-      - relative paths
-      - emphasis rules
-  plugins/forge/docs/forge_anti_patterns.md:
-    title: Forge Anti-patterns Collection
-    purpose: Base anti-patterns collection referenced by /forge:review as fallback for P1 rule compliance checks when project-specific rules are unavailable
-    content_details:
-      - Anti-pattern fallback mechanism for review compliance checking
-      - AI auto-append prohibition policy for distributed files
-      - Issue-based workflow requirement for adding new patterns
-      - Release management constraints during review execution
-      - Category structure for code, design, planning, and documentation anti-patterns
-      - Reference to industry-standard patterns (God Object, circular dependencies, hardcoding, SQL injection)
-    applicable_tasks:
-      - Code review automation
-      - Review compliance checking
-      - Anti-pattern detection
-      - Review process configuration
-    keywords:
-      - anti-patterns
-      - forge
-      - review
-      - fallback
-      - compliance
-      - God Object
-      - circular dependencies
-      - injection
-      - hardcoding
-  plugins/forge/docs/plan_format.md:
-    title: Plan Document Default Format
-    purpose: Specifies the generic plan document format in YAML used when project-specific plan format is not available
-    content_details:
-      - YAML format selection rationale for structured task data and machine parsing
-      - Temporary feature plan marker specification and applicability conditions
-      - Requirements traceability section with requirement ID and design mapping
-      - Design traceability with requirement and task associations
-      - Task structure definition including ID, title, priority, and status
-      - Task dependencies and grouping strategy
-      - Build check configuration (per_task/skip/on_group_complete)
-      - Acceptance criteria documentation and required reading references
-      - Priority level guidelines with ranges (high 70-99, medium 40-69, low 1-39)
-      - Status transitions and revision history tracking
-    applicable_tasks:
-      - Creating plan documents for feature implementation
-      - Documenting additive feature planning
-      - Establishing requirement to task traceability
-      - Defining task dependencies and grouping
-      - Priority planning and scheduling
-      - Tracking task status and completion
-      - Building acceptance criteria
-    keywords:
-      - plan document
-      - YAML format
-      - task management
-      - traceability
-      - requirements mapping
-      - design mapping
-      - dependency
-      - priority
-      - status
-      - acceptance criteria
-  plugins/forge/docs/plan_principles_spec.md:
-    title: Plan Creation Principles
-    purpose: Specifies structural rules, task granularity principles, and traceability guidelines for plan documents in YAML format
-    content_details:
-      - Plan document structure (requirements_traceability, design_traceability, tasks, revision_history sections only)
-      - Task granularity criteria (1 Agent execution unit, 5-10 items, build success, limited file scope)
-      - Required reading field specification (relative paths, implementation strategy requirement, glob prohibition)
-      - Task grouping rules (group_id and build_check fields, early validation conditions)
-      - Dependency relationship management (topological ordering, circular dependency detection, typical hidden dependency patterns)
-      - Acceptance criteria specification (yes/no decidable, subjective expression prohibition with examples)
-      - Test task mandatory rule (unit and integration test for major features, exception criteria)
-      - Implicit dependency detection patterns (frontend-API, integration tests, schema, migration, deployment)
-      - Traceability requirements (all requirement IDs in matrix, task correspondence, non-contradiction rules)
-      - Additive feature plan markers (temporary-feature-plan distinction)
-    applicable_tasks:
-      - Creating plan documents for feature implementation
-      - Reviewing plan document structure compliance
-      - Validating task granularity and decomposition
-      - Planning task dependencies and grouping
-      - Designing acceptance criteria for features
-      - Writing test tasks for implementation
-      - Conducting traceability review and requirement mapping
-      - Detecting hidden dependencies and patterns
-      - Validating YAML plan format
-      - Determining additive development status
-    keywords:
-      - plan_principles_spec
-      - task_granularity
-      - requirements_traceability
-      - acceptance_criteria
-      - build_check
-      - group_id
-      - depends_on
-      - hidden_dependencies
-      - traceability_matrix
-  plugins/forge/docs/requirement_format.md:
-    title: Default Format for Requirement Definitions
-    purpose: Specifies the default template and structure for requirement definition documents, including guidance on additional feature frontmatter and format compliance severity levels.
-    content_details:
-      - Default requirement definition template with Overview, Prerequisites, Requirements list, and Undefined items sections
-      - Temporary-feature-requirement frontmatter for separating additional features from base specifications
-      - Rules for when additional feature frontmatter is required vs. exempt cases
-      - Merge strategy and priority rules when feature implementation completes
-      - Template sections including Display, Operation, and Error case requirements
-      - Severity level catalog for format violation review (major for missing required frontmatter)
-      - "References to related specifications: spec_priorities_spec.md, spec_design_boundary_spec.md, additive_development_spec.md"
-    applicable_tasks:
-      - Creating requirement definition documents
-      - Reviewing requirement definition documents for format compliance
-      - Determining if a change qualifies as an additional feature requiring separate temporary spec
-      - Planning specification document structure
-      - Understanding specification precedence and merge procedures
-    keywords:
-      - requirement definition
-      - frontmatter
-      - temporary-feature-requirement
-      - additive development
-      - feature scope
-      - format template
-      - merge strategy
-      - severity level
-  plugins/forge/docs/review_priorities_spec.md:
-    title: Review Priorities Specification
-    purpose: Defines the priority framework (P1 rules compliance, P2 contradictions, P3 unnecessary complexity) for review observations, the independent relationship between priority and severity, delegation of judgment to principles documents, and the fixed structure for review criteria files
-    content_details:
-      - "Priority definitions: P1 (rule compliance), P2 (contradictions/discrepancies), P3 (unnecessary complexity Yes/No)"
-      - Priority (observation source) and severity (fix urgency) are independent axes with distinct roles
-      - Severity SoT delegated to principles documents; criteria do not declare severity levels
-      - P2 excludes coverage gaps; comprehensiveness checked via P1 rule compliance instead
-      - P3 excludes subjective evaluations like simplicity and readability; only objective alternative existence judgments
-      - "Prohibition on fixed perspectives in criteria: logic, resilience, maintainability, architecture forbidden"
-      - "Proportionality check: evaluators confirm scope_proportionality_spec.md compatibility for certain findings"
-      - "Fixed 3-section structure for review_criteria_*.md: SSOT references, check order, judgment rules"
-    applicable_tasks:
-      - Designing review observation priority systems
-      - Creating review criteria documents with fixed structure
-      - Mapping rule violations to severity levels from principles documents
-      - Setting up review recommendation flows (fix/create_issue/skip/needs_review)
-      - Implementing issue creation trigger logic based on 3 conditions
-      - Evaluating grayzone tolerance and false positive detection
-    keywords:
-      - review priorities
-      - P1 P2 P3 priority levels
-      - severity mapping
-      - principles delegation
-      - review criteria
-      - SSOT (Single Source of Truth)
-      - recommendation rules
-      - grayzone tolerance
-  plugins/forge/docs/scope_proportionality_spec.md:
-    title: Scope Proportionality Specification
-    purpose: "Establishes principles for determining whether defensive measures, optimizations, and quality improvements should be adopted, preventing over-design by narrowly gating defensive implementations. Applies only to three categories: catastrophic external defense, speculative defense, and unmotivated quality improvements."
-    content_details:
-      - "Three categories requiring proportionality check: catastrophic external factors defense, speculative defense without concrete occurrence path, quality improvements without design/requirement basis"
-      - "Out-of-scope exemptions: explicit requirement/design/rule violations, concrete runtime risks with reproduction steps, data loss/security/destructive operations/test-required problems"
-      - "Discovery in review is not an applicable category: normal reviews find bugs through this path; 'found in review' doesn't justify skip on proportionality grounds"
-      - "Catastrophic external factors definition: OS-level crashes, filesystem corruption, disk failure, hardware failure (defense only if explicitly requested)"
-      - "Verification impossibility principle: catastrophic scenarios cannot be verified in normal operations; pointless to accumulate defensive code without real verification capability"
-      - "First check point: trigger condition doesn't break other prerequisites (e.g., atomicity alone cannot protect against process crash)"
-      - "Second check point: failure is already caught by independent safety net (type checking, CI, other layer validation) before harm occurs"
-      - "Third check point: cost of countermeasure must match actual preventable damage (theoretical possibility is insufficient)"
-      - "Safety net definition: must be type checking, CI, validation layers - not 'found in review' itself"
-      - "Ambiguity fallback: when applicability is unclear, treat as not applicable (avoid false positive skip of valid findings)"
-    applicable_tasks:
-      - Code review finding severity assessment for defensive implementations
-      - Proportionality check for suggested fixes and quality improvements
-      - Catastrophic failure scenario risk assessment
-      - Safety net validation (type checking, CI, validation layer coverage)
-      - Over-design prevention in implementation reviews
-      - Speculative defense evaluation and cost-benefit analysis
-      - Create_issue determination for proportionality-related concerns
-    keywords:
-      - scope_proportionality_spec
-      - proportionality_principle
-      - catastrophic_external_factors
-      - speculative_defense
-      - safety_net
-      - three_point_check
-      - over_design_prevention
-      - cost_benefit_analysis
-      - defensive_implementation
-      - independent_safety_net
-  plugins/forge/docs/sensitive_information_spec.md:
-    title: Sensitive Information Contamination Prevention
-    purpose: Defines information prohibited from repositories and judgment criteria for detecting contamination. Serves as normative reference for review security scanning and severity categorization.
-    content_details:
-      - Authentication and authorization secrets (API tokens, private keys, passwords, connection strings, sessions)
-      - Non-secret but dangerous information (internal networks, PII, customer identifiers, infrastructure details)
-      - Allowed writing methods (environment variable references, explicit placeholders, public values, revoked values with marking)
-      - Prohibition of modified-real-value examples; use officially reserved examples or zero-padding
-      - Dual-approach detection using deterministic scanning plus AI reading for context-dependent cases
-      - Suppression marker mechanism with mandatory reporting of suppressions
-      - Prohibition of republishing detected secrets in review requests, findings, or logs
-      - 10-category severity catalog from critical to minor
-    applicable_tasks:
-      - Sensitive information detection during code and documentation review
-      - Secret contamination validation and policy enforcement
-      - Review request preparation with security scanning
-      - Risk assessment for code and documentation changes
-      - Configuration of automated secrets scanning
-      - Secret revocation and reissuance planning
-    keywords:
-      - sensitive-information
-      - API-token
-      - secret-key
-      - credentials
-      - authentication
+      - connection strings
       - PII
-      - internal-network
-      - security
-      - review-secrets
-      - suppression-marker
+      - deterministic scan
+      - suppression marker
+      - severity catalog
   plugins/forge/docs/spec_design_boundary_spec.md:
-    title: Spec/Design Boundary Guide
-    purpose: Defines the boundary between requirements (What) and design (How) documents, providing decision criteria and guidelines for document categorization
+    title: Specification Design Boundary Guide
+    purpose: Clarifies the boundary between requirements (What) and design (How), providing decision criteria and examples to determine appropriate document placement
     content_details:
-      - Fundamental What/How principles
-      - Decision flowchart for boundary classification
-      - Category-by-category guidelines (data, state, processing, business rules, testing, quantitative goals)
-      - Good and bad examples for each category
-      - Gray zone tolerance rules (data model types and diagrams)
-      - Severity catalog for What/How boundary violations
-      - Traceability rules for requirements and design
+      - Basic principles distinguishing requirements from design documents with reader viewpoints and technical dependency
+      - Primary decision criterion about user manual content and supplementary judgment questions
+      - Decision flowchart for binary classification of content placement
+      - Category-specific guidelines for data, state, process, business rules, tests, and quantitative goals
+      - Good and bad examples showing incorrect placement of data flow, state management, business rules
+      - Gray zone handling for data model types and diagram classification with permitted scope
+      - Summary guidelines and decision-making procedures when uncertain
+      - Severity catalog mapping What/How violations to critical and major classifications
+      - Gray zone tolerance tables defining precise allowance ranges for types and diagrams
+      - Lightweight traceability norms for design review verification
     applicable_tasks:
-      - Requirements document review
-      - Design document review
-      - What/How boundary violation detection
-      - Document structure validation
-      - Specification writing
+      - Design document review for What/How boundary violations
+      - Requirements document creation and validation
+      - Design document creation with technical detail placement
+      - Architecture review for implementation detail leakage
+      - Design quality assessment and boundary compliance verification
+      - Content migration guidance between requirement and design documents
+      - AI-assisted planning and document structure
     keywords:
-      - Requirements definition
-      - Design document
-      - What/How boundary
-      - User manual test
-      - Business rules
-      - Data flow
-      - State management
-      - Validation
-      - Traceability
-  plugins/forge/docs/spec_format.md:
-    title: Specification Format and ID Classification Catalog
-    purpose: Defines specification ID taxonomy, naming conventions, file naming patterns, and document reference standards for organizing requirements, designs, tasks, and related project artifacts
-    content_details:
-      - Feature classification with three development patterns (additive, agile, small-scale) and directory structure
-      - Requirement ID prefix catalog (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG)
-      - Design ID types (DES for generic design, ADR for architecture decisions)
-      - Task ID taxonomy (generic TASK prefix, layer-based naming for layered architectures)
-      - Priority range classifications (70-99 high, 40-69 medium, 1-39 low)
-      - File naming conventions (REQ-ID_name_spec.md, DES-ID_name_design.md, feature_plan.yaml)
-      - Document reference principles (avoid unnecessary references, use markdown links for required ones)
-      - ID number space management (namespace per spec directory, SKILL-enforced adoption via next-spec-id)
-      - Cross-reference patterns (same spec directory baseline, SKILL boundary first)
-    applicable_tasks:
-      - Specification framework design
-      - Requirement ID scheme definition
-      - Design document organization
-      - Spec directory setup
-      - Document naming convention establishment
-      - Cross-reference pattern definition
-      - Namespace design for multiple spec trees
-    keywords:
-      - ID prefix
       - specification
+      - design
+      - requirements
+      - What
+      - How
+      - boundary
+      - ViewModel
+      - DataService
+      - traceability
+      - criteria
+  plugins/forge/docs/spec_format.md:
+    title: Specification Format and ID Classification Guide
+    purpose: Provides catalog and guidelines for ID classification, Feature organization, document structure, naming conventions, and cross-reference practices in specification management
+    content_details:
+      - Feature classification with usage patterns for incremental development, agile iterations, and small projects
+      - Feature directory structure organizing requirements, design, and plan documents under specs/{feature}/
+      - Requirement ID catalog with 14 prefixes (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG) and their usage
+      - Design ID catalog for general design documents (DES) and architecture decision records (ADR)
+      - Task ID catalog and layer-specific prefix definitions for layered architecture projects
+      - Priority range catalog classifying tasks into three tiers (high 70-99, medium 40-69, low 1-39)
+      - File naming conventions for requirements (_spec.md), design (_design.md), and plan documents (plan.yaml)
+      - "Document reference notation with four principles: avoiding unnecessary references, markdown link format, metadata ID listing, and ID mention in explanatory text"
+      - ID numbering namespace rules with SKILL-based allocation across all spec directories and branches
+      - Cross-reference principles using SKILL boundaries and full filename format with spec-dir modifier syntax for cross-directory references
+    applicable_tasks:
+      - Document creation and specification ID prefix determination
+      - Feature planning and documentation structure organization
+      - Specification management with ID allocation and namespace maintenance
+      - Cross-directory reference validation and metadata formatting verification
+      - Design document review for ID usage and reference correctness
+      - Requirement classification with appropriate ID prefixes
+      - Architecture decision documentation with ADR format and placement
+    keywords:
+      - ID
+      - Feature
       - requirement
       - design
-      - ADR
       - namespace
-      - naming convention
+      - ADR
       - cross-reference
+      - metadata
       - spec directory
+      - SKILL
   plugins/forge/docs/spec_priorities_spec.md:
-    title: Specification and Design Priorities
-    purpose: Defines priority principles and constraints for requirements specifications and design documents, including structural principles, prohibited practices, and severity guidelines
+    title: Specification and Design Document Priority Principles
+    purpose: Defines universal principles prioritizing structural design factors in requirements and design documents, and prohibits distractions like quantifying structural quality or fabricating undefined numerical targets
     content_details:
-      - Single responsibility and boundary setting as structural design principles
-      - "Dependency direction: unidirectional flow with circular dependency prohibition"
-      - "Quality characteristics as byproducts: changeability, operational ease, testability (not direct quantification targets)"
-      - "Goodhart's law principle: structural quality must use Yes/No judgment, not metric improvement targets"
-      - "Prohibited practices: baseline → remeasurement → achievement rate pipeline"
-      - Severity catalog with critical severity for responsibility, boundary, dependency violations
-      - "Non-functional requirement categories: performance, availability, security, operability"
-      - "Allowable quantification: response time, throughput, SLA/SLO, security thresholds, confirmed business KPIs"
-      - Decision criteria for design review judgment
+      - Structural design principles - responsibility division, boundary setting, dependency direction as top priorities with Yes/No judgment capability
+      - Quality characteristics as results of structure - changeability, operability, testability achieved through structural principles, not direct targets
+      - "Prohibition on structural quality quantification - no baseline reassessment pipelines, no numerical translation of structural improvements (Goodhart's law)"
+      - Prohibition on direct numerical targets for quality characteristics - never use measured metrics like change sites or execution time as primary goals
+      - Prohibition on progress KPI and evaluation table appearance manipulation - avoid metrics-driven documentation
+      - Prohibition on fabricating undefined quantitative values - AI must not infer undefined metrics from examples; use TBD instead
+      - Typical inverted patterns - enumeration of seven past distortions with recognition decision principles
+      - Self-questioning criteria - four questions during design judgment to prevent distortions
+      - Severity catalog - maps 16 types of violations to critical/major classifications with reasoning
+      - Gray zone tolerance ranges - precise allowance for functional goals (performance, availability, business KPI) versus disallowance for structural quality quantification
+      - Non-functional requirement category completeness with severity scoping - performance, availability, security, operability coverage based on system nature
+      - Perspective-specific usage guide for P1/P2/P3 review observation routing and finding assignment
     applicable_tasks:
-      - Requirements specification document creation and review
-      - Design document creation and review
-      - Specification quality criteria validation
-      - Design review for principle violations
-      - Architecture review for circular dependency detection
-      - Non-functional requirements completeness verification
-      - Design anti-pattern detection
+      - Specification and design document review for priority principle compliance
+      - Structural quality assessment including responsibility division and boundary setting validation
+      - Requirements document validation to prevent AI fabrication of undefined metrics
+      - Design document review for violation pattern detection and gray zone compliance
+      - Non-functional requirement coverage assessment based on system characteristics
+      - Numerical target placement validation between requirements and design documents
+      - "Goodhart's law violation detection in design judgments"
+      - Review perspective guidance (P1/P2/P3) for finding assignment and severity determination
     keywords:
+      - priority
       - responsibility
       - boundary
       - dependency
-      - "Goodhart's law"
-      - structural quality
       - quantification
-      - KPI
-      - non-functional requirements
+      - Goodhart
+      - structural quality
+      - non-functional
       - severity
+      - TBD
   plugins/forge/docs/strategy_formulation_spec.md:
     title: Implementation Strategy Formulation Specification
-    purpose: Defines the self-contained work instruction for forge orchestrator (start-plan) specifying input parameters, design analysis, risk identification, approach selection, phase division, and output format for implementation strategy agents
+    purpose: Defines the workflow and methodology for analyzing design documents and formulating implementation strategies with risk analysis and phase planning
     content_details:
-      - Input parameters (feature, design_docs array, rules_docs array) with YAML configuration
-      - Design document analysis covering module structure, dependencies, complexity, test design
+      - Input parameters (feature name, design_docs, rules_docs)
+      - Design document structure analysis (module count, dependencies, technical complexity)
       - Risk analysis categories (technical uncertainty, dependency complexity, integration, data consistency, performance)
-      - Four implementation approaches (bottom-up, skeleton-first, risk-driven, feature-slice) with selection criteria
-      - Phase division into 2-4 phases with goals, scope, and verification points
-      - Phase division principles for independent verification and one-directional dependencies
-      - Output template format with approach rationale and risk mitigation table
-      - Project-specific rule integration for architecture, testing, and coding conventions
-      - Error handling for read failures, incomplete specs, and single-phase cases
+      - Implementation approach selection (Bottom-up, skeleton-first, risk-driven, feature-slice)
+      - Phase division methodology (2-4 phases with goals, scope, verification points)
+      - Approach selection decision matrix based on design characteristics
+      - Project-specific rule application (architecture, test, coding guidelines)
+      - Risk-to-strategy mapping table
+      - Error handling for incomplete designs and failed reads
     applicable_tasks:
-      - Implementation phase planning from design documents
-      - Risk-driven development strategy formulation
-      - Module dependency analysis and phasing strategy
-      - Agent instruction specification for orchestrator
-      - Cross-module integration planning
+      - Implementation strategy formulation
+      - Design document analysis and validation
+      - Risk assessment in implementation planning
+      - Phase planning and scheduling
+      - Architecture rule integration
     keywords:
-      - implementation strategy
-      - phase planning
+      - strategy
+      - design analysis
       - risk analysis
-      - bottom-up
-      - skeleton-first
+      - phase planning
+      - implementation approach
+      - module dependencies
+      - verification
+      - phased development
       - risk-driven
-      - feature-slice
-      - module dependency
-      - verification point
   plugins/forge/docs/version_migration_spec.md:
     title: Version Migration Implementation Specification
-    purpose: Specifies requirements and implementation patterns for progressive version migration of data formats
+    purpose: Defines the methodology and patterns for implementing stepwise data format version migrations using pipeline-style transformation functions with error handling and rollback
     content_details:
-      - "Pipeline principle: each migration function takes previous version output as input"
-      - "Migration function conventions: single input/output, idempotency, no side effects, non-destructive"
-      - Error handling strategies for rollback, unknown versions, and detection failure
-      - Core logic for applying migrations in sequence
-      - Migration function examples including field rename and field removal
-      - Text-based migration for preserving comments in YAML/JSON
-      - Version detection methods using embedded markers and fallback
-      - New version addition procedure following Open-Closed principle
-      - Mandatory test requirements for adjacent version, multi-step, idempotency, rollback, and future version skip
+      - "Pipeline principle (each function receives previous step's output)"
+      - Migration function contracts (single-input/output, idempotency, no side effects, non-destructive)
+      - Error handling strategies (rollback on error, skip future versions, default to v1)
+      - Migration registry pattern (CURRENT_VERSION constant, MIGRATIONS dict with target version keys)
+      - Core apply_migrations logic (recursive pipeline with error rollback)
+      - Migration function examples (field renaming, field removal/addition, text-based transformations)
+      - Version detection patterns (self-describing data with version fields or comments)
+      - New version addition procedure (Open-Closed Principle, no modification of existing functions)
+      - Test requirements (forward migration, multi-step, idempotency, rollback, future version skip, detection failure)
     applicable_tasks:
-      - Data format versioning implementation
-      - Migration function implementation
-      - Version detection implementation
-      - Data migration design
-      - Backward compatibility implementation
-      - Schema evolution planning
+      - Version migration implementation
+      - Data format upgrade design
+      - Backwards compatibility assurance
+      - Migration function testing
+      - Data validation during version transitions
     keywords:
-      - migration
-      - versioning
-      - version detection
-      - data transformation
-      - idempotency
+      - version migration
+      - data format upgrade
       - pipeline
+      - idempotency
       - rollback
-      - backward compatibility
-      - schema evolution
+      - backwards compatibility
+      - versioning
+      - data transformation
   plugins/forge/skills/clean-rules/docs/taxonomy.md:
     title: Development Document Taxonomy
-    purpose: "Defines the classification system and judgment criteria for the clean-rules skill to analyze rule documents using three dimensions: content type, authority source, and scope"
+    purpose: Defines a classification system for rule documents with three dimensions (content type, authority source, scope), priority rules for classification, and responsibility separation between forge and projects
     content_details:
-      - "Content Type dimension: Constraint, Convention, Format, Process, Decision, Reference"
-      - "Authority Source dimension: Tool-provided, Project-defined, External standard"
-      - "Scope dimension: Universal vs Project-specific"
-      - Classification priority rules with MANDATORY tag precedence
-      - Responsibility separation between forge and projects for each content type
-      - Forge prioritization principle for rule removal
-      - Rebuild principle with division criteria based on content type mixing and file size
+      - Content Type categories (Constraint, Convention, Format, Process, Decision, Reference)
+      - Authority source classification (Tool-provided, Project-defined, External standard)
+      - Scope levels (Universal and Project-specific)
+      - Priority rules for multi-type section classification
+      - Responsibility separation matrix between forge and projects
+      - Deletion handling guidelines for each authority source
+      - Forge priority principle (prevent duplicate management of Tool-provided content)
+      - Document restructuring principles (splitting criteria, consolidation, protection rules)
     applicable_tasks:
-      - Rule document classification and analysis
-      - Content type judgment and categorization
-      - Responsibility boundary definition between forge and projects
-      - Rule consolidation and rebuilding decisions
-      - Deprecated rule removal and cleanup
-      - Rule file structure validation
+      - Classifying and analyzing rule document content
+      - Determining content type of rule sections
+      - Planning rule document restructuring with split/rebuild operations
+      - Assessing whether rules are Tool-provided vs Project-defined
     keywords:
-      - Taxonomy
+      - taxonomy
       - Content Type
       - Authority Source
       - Constraint
       - Convention
-      - Classification
-      - Project-defined
-      - Responsibility separation
-      - clean-rules
+      - Format
+      - Process
+      - Decision
+      - Reference
+      - Tool-provided
   plugins/forge/skills/start-implement/docs/task_execution_spec.md:
-    title: Task Execution Guide (for Executor Agent)
-    purpose: Defines workflow and responsibilities for task-executor agents implementing individual features, including pre-execution preparation, verification procedures, and completion reporting
+    title: Task Execution Guide (For Executor Agent)
+    purpose: Provides step-by-step instructions for the task-executor agent to execute a single implementation task, covering pre-work, implementation, verification, and result reporting procedures
     content_details:
-      - Single-task execution constraint per run
-      - Mandatory principles and forbidden actions
-      - "Five-step workflow: receipt, preparation, implementation, verification, completion"
-      - Pre-reading document requirements (design spec, requirements, strategy, rules, reference code)
-      - Pre-Mortem failure analysis methodology
-      - Implementation approach and test-driven development guidance
-      - Build verification and test execution procedures
-      - Verification retry limits (max 2 attempts)
-      - Result template JSON format specification
-      - Return value validation using producer validator script
+      - Multi-step workflow with 5 sequential steps (task reception → pre-work → implementation → verification → result reporting)
+      - Scope boundary enforcement with designated in-scope and out-of-scope items
+      - Pre-Mortem failure analysis (identifying up to 5 concrete failure causes with root analysis and mitigation strategies)
+      - Verification requirements specification (build confirmation, test execution, skip conditions, retry limit of 1 failure)
+      - Required documents reading list (design, requirements, strategy, rules, reference code with priority order)
+      - Test-driven development approach (Red-Green-Refactor cycle) when specified in implementation instructions
+      - Verification failure recovery procedure (error analysis, correction, re-verification with maximum 2 attempts)
+      - Result JSON template structure (task_id, status, files_modified, summary, verification results, pre-mortem analysis, notes, error)
     applicable_tasks:
-      - Feature task implementation via start-implement orchestrator
-      - Understanding executor agent responsibilities and constraints
-      - Executing task verification steps
-      - Preparing pre-mortem analysis before implementation
-      - Validating executor agent results
+      - Executing single feature implementation tasks as executor agent
+      - Preparing pre-work before code implementation (document reading, existing code review, failure analysis)
+      - Implementing code changes following orchestrator instructions and design specifications
+      - Executing verification steps (build and test) with specified requirements
+      - Reporting implementation results in standardized JSON format
     keywords:
-      - executor agent
-      - start-implement orchestrator
-      - pre-mortem analysis
+      - task-executor
+      - task execution
+      - Pre-Mortem
+      - scope boundary
+      - verification
+      - orchestrator
+      - implementation instruction
       - test-driven development
-      - verification requirement
-      - producer validator
-      - result template
+      - result reporting
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     title: APP Overview Requirements Definition Document Writing Standard
-    purpose: Defines the required items, purposes, and guidelines for writing APP-001 (application overview requirements definition document) applicable across all project types
+    purpose: Defines sections and writing guidelines for APP-001, the project charter document that establishes why, what, who, how, and validation criteria
     content_details:
-      - 17-item checklist for APP-001 structure including overview, background, problems, objectives, success criteria, scope, users, platforms, prerequisites, environment, scenarios, features, dependencies, constraints, risks, terminology, related docs
-      - Scope section with explicit in-scope and out-of-scope subsections to prevent scope creep
-      - "Success criteria requirement: verifiable conditions with pass/fail judgment not vague phrases"
-      - Target users specification including prerequisite knowledge requirements
-      - Environment architecture shown as tables or diagrams at conceptual level
-      - Usage scenarios documented as numbered steps covering multiple patterns
-      - External dependencies documentation with impact assessment if unavailable
-      - Constraints section describing technical and business constraints with justification
+      - Document positioning as project compass answering why/what/who/how/validation questions
+      - Overview, background, motivation, and problem statement sections
+      - Project objectives with FNC-ID traceability and success criteria
+      - Scope definition including explicit out-of-scope items
+      - User targeting, prerequisites, platform support, and environmental configuration
+      - Usage scenarios and feature list indexing to FNC documents
+      - External dependencies, constraints, and known risks documentation
+      - Terminology definitions and related document references
+      - Content guidelines distinguishing requirement specification from implementation
     applicable_tasks:
-      - Application overview requirements definition
-      - Project scope and goal definition
-      - Feature planning and requirement traceability
-      - New project initialization
-      - Stakeholder communication and alignment
-      - Success criteria definition
-      - Requirements document writing and review
+      - Application overview requirements writing and validation
+      - Scope definition and documentation
+      - Project goal and success criteria establishment
+      - Feature requirement documentation planning
+      - Risk and constraint documentation
     keywords:
       - APP-001
-      - requirements definition
-      - scope management
-      - success criteria
-      - usage scenarios
-      - target users
-      - environment architecture
+      - requirement specification
+      - project charter
+      - scope definition
       - feature list
-      - constraints
-      - prerequisites
+      - success criteria
+      - risk documentation
+      - platform requirements
+      - usage scenarios
+      - terminology
   plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md:
-    title: Figma Requirements Definition Document Creation Workflow
-    purpose: Defines the 5-phase workflow for extracting requirements from Figma design files and creating design tokens and requirements definition documents
+    title: Figma Requirement Definition Document Creation Workflow
+    purpose: Describes the complete workflow for extracting requirements from Figma design files, creating design tokens and requirement documents across 5 phases from preparation through quality validation
     content_details:
-      - "5-phase workflow: Phase 1 preparation with Figma MCP availability check, Phase 2 design system construction with 2-layer structure containing atomic tokens and semantic themes"
-      - Design system Layer 1 contains Colors HEX values, Typography font specifications, Spacing scales, Border radius, Shadows
-      - Design system Layer 2 contains Status colors, Button colors, Text colors, Surface colors, Typography definitions, Layout definitions
-      - Reusable component identification including Button variants, Card types, Input components, Navigation elements, Dialog types, Loading indicators
-      - Design token extraction methodology for color palette, typography specifications, spacing consistency
-      - Screen requirements SCR-xxx extraction with specific naming conventions avoiding generic names
-      - UI Components CMP-xxx, Functional requirements FNC-xxx, and complementary non-visual requirements coverage
-      - Mandatory glossary creation for term definitions
-      - Quality assurance Phase 5 with design token validation, requirements verification, AI review, and specs ToC update
+      - Figma MCP availability check and user confirmation requirements
+      - Rule documents and existing specs retrieval via forge SKILLs
+      - Design system architecture with 2-layer structure (tokens and themes)
+      - Reusable component identification and design token extraction procedures
+      - Requirement ID assignment using scan_spec_ids.py script
+      - Screen requirement extraction (SCR-xxx) with layout diagrams and specific naming
+      - UI component extraction (CMP-xxx) with state definitions
+      - Feature requirement extraction (FNC-xxx) with user confirmation
+      - Design gap completion for error handling, loading, empty states, accessibility, performance
+      - Image asset management and naming conventions
+      - Quality validation of design tokens and requirement documents
+      - AI review execution, ToC update, and commit confirmation
     applicable_tasks:
-      - Requirements definition from Figma designs
-      - Design system and design token creation
-      - Screen requirements specification
-      - UI component requirements definition
-      - Design to requirements document conversion
-      - Feature planning from visual prototypes
-      - Requirements document validation
-      - Design consistency verification
+      - Requirement extraction from design files
+      - Design token definition and system architecture
+      - Screen and component requirement documentation
+      - Feature requirement identification and specification
+      - Quality validation and review of requirements
     keywords:
       - Figma
-      - requirements definition
       - design tokens
+      - requirement definition
+      - SCR-xxx
+      - CMP-xxx
+      - FNC-xxx
       - design system
-      - screen requirements
-      - UI components
-      - design-driven
-      - layout specifications
-      - glossary
-      - ID assignment
+      - component identification
+      - requirement extraction
+      - quality validation
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
     title: Interactive Requirements Definition Workflow
-    purpose: Guides creation of requirements through interactive user dialogue when no UI design exists, with phases for scope definition, vision clarification, experience flow, detailed specifications, and quality verification.
+    purpose: Describes a dialogue-based workflow for creating requirement specifications when no Figma or design documents exist, covering new applications and feature additions through 5 phases from preparation to quality validation
     content_details:
-      - "Phase 0: preliminary confirmation for new app versus feature addition decision"
-      - "Phase 0.5: development rules and existing specifications retrieval via query skills"
-      - "Phase 1: vision and value clarification producing APP-001 overview draft"
-      - "Phase 2: user experience flow and screen interface composition definition"
-      - "Phase 3: detailed specification including glossary, architecture, state model, data model, and requirements types SCR/FNC/BL/DM"
-      - "Phase 4: integration, quality verification, automated review, and final deliverables checklist"
-      - "Dialogue basic principles: selection-first approach, visual confirmation, incremental confirmations, scope management"
-      - Anti-patterns reference table with 10+ common mistakes and mitigation strategies
-      - Question templates organized by phase for user interaction guidance
-      - Deliverables checklist mapping phase outputs to document artifacts
+      - Workflow phases 0-4 from initial confirmation through quality validation and completion
+      - Scope definition with new vs. feature addition differentiation and existing asset integration
+      - Rule documents and existing spec retrieval via forge SKILLs
+      - Vision and value clarification for APP-001 with goal and success criteria establishment
+      - User experience flow, interface lists, navigation structure, and main scenario confirmation
+      - Glossary, architecture, state/data models for system features, and sequence diagrams
+      - Requirement creation (SCR/FNC/BL/DM) with specific question templates and ID assignment via script
+      - Quality validation including format checks, content checks, consistency verification, TBD management
+      - Dialogue principles (choice-first, visual confirmation, What vs. How separation, scope management)
+      - Anti-patterns catalog and critical review format with consistency check requirements
     applicable_tasks:
-      - Creating feature requirements from scratch
-      - Adding requirements to existing applications
-      - Interactive requirements gathering and clarification
-      - Scope definition and management
-      - User experience and workflow documentation
-      - Requirements document creation and quality verification
+      - Interactive requirements definition creation
+      - Scope definition and feature prioritization
+      - Vision and success criteria establishment
+      - User experience flow and interface design
+      - Detailed specification documentation and validation
     keywords:
       - interactive requirements
       - dialogue workflow
       - scope definition
-      - APP-001
-      - requirements gathering
-      - anti-patterns
-      - quality verification
       - glossary
-      - user interaction
-      - specification phases
+      - SCR-xxx
+      - FNC-xxx
+      - BL-xxx
+      - DM-xxx
+      - specification creation
+      - quality validation
   plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
     title: Requirements Reverse Engineering Workflow
-    purpose: Defines the complete workflow for creating requirements definition documents through reverse engineering existing applications, covering preparation, source code analysis, requirement extraction, document creation, and quality assurance
+    purpose: Defines a 5-phase workflow for extracting and documenting application requirements from existing source code during legacy application modernization and redesign
     content_details:
-      - "Five-phase workflow: Preparation, Source Code Analysis, Requirement Extraction, Document Creation, Quality Assurance"
-      - "Mandatory user confirmations: design approach and source code path selection"
-      - Parallel agent launches for rule collection and existing code discovery
-      - "Feature extraction techniques: user action identification, conditional branching, data persistence, error handling patterns"
-      - "Requirement extraction priority: APP-001 overview, SCR-xxx screens, FNC-xxx functions, BL-xxx business logic, DM-xxx data models"
-      - ID assignment using scan_spec_ids.py for automated requirement numbering
-      - "Mandatory reference documents: spec_format.md, requirement_format.md, spec_design_boundary_spec.md, spec_priorities_spec.md, document_style_guide.md"
-      - "Design element handling: design refresh mode (function only) vs. design retention mode (THEME-xxx requirements)"
-      - "Quality assurance checklist: mandatory files, content completeness, quality criteria validation"
-      - Integration with /forge:review for AI review and /anvil:commit for version control
+      - "Phase 1: User confirmation (design policy, source code paths) and context collection through parallel agent execution"
+      - "Phase 2: Source code analysis including project structure, view/component identification, and screen transition mapping"
+      - "Phase 3: Requirement extraction with priority order (APP-001, SCR-xxx, FNC-xxx, BL-xxx, DM-xxx ID prefixes)"
+      - User action detection from code (button taps, gestures, input operations) and feature extraction
+      - Requirement extraction checklist covering user actions, UI elements, data processing, screen transitions, business rules, external integration
+      - "Phase 4: Requirement document creation with mandatory ID numbering via scan_spec_ids.py script"
+      - "Phase 5: Quality assurance including mandatory AI review via /forge:review SKILL and specs database update"
+      - Design policy handling to determine whether to refresh or retain existing design elements
     applicable_tasks:
-      - Creating requirements definition documents from legacy applications
-      - Reverse engineering existing source code to requirements
-      - Requirement extraction and specification
-      - Screen requirement and navigation mapping
-      - Feature and functionality requirement identification
-      - Application redesign and modernization planning
+      - Creating requirement documents from existing applications
+      - Legacy application modernization and re-architecture
+      - Reverse engineering requirements from source code implementation
+      - Screen and navigation structure documentation
+      - Business logic and data processing requirement extraction
+      - Feature preservation during application redesign
     keywords:
       - requirements reverse engineering
       - source code analysis
-      - feature extraction
       - APP-001
       - SCR-xxx
       - FNC-xxx
-      - requirement extraction workflow
-      - legacy application
-      - specification format
-      - quality assurance
+      - user action detection
+      - screen transition mapping
+      - requirement extraction
+      - business logic extraction
+      - design policy
   plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
-    title: Apple Design Principles and UX/UI Philosophy Knowledge Base
-    purpose: "Knowledge base defining Apple's core design philosophy, HIG principles, and usability heuristics for UI/UX analysis"
+    title: Apple Design Principles & UX/UI Philosophy Knowledge Base
+    purpose: "Knowledge base for design analysis, defining Apple's design philosophy, HIG principles, typography system, color semantics, usability heuristics, visual perception principles, and accessibility standards"
     content_details:
-      - Apple HIG 4 Principles (Clarity, Deference, Depth, Consistency)
-      - Liquid Glass design language (semi-transparent, dynamic, 2025-2026)
-      - SF Typography System (SF Pro Display, Text, Mono, hierarchy)
-      - Semantic Color System (Label, Fill, Background, System with light/dark)
-      - "Nielsen's 10 Usability Heuristics (feedback, alignment, control, error prevention)"
-      - Gestalt Principles (Proximity, Similarity, Figure/Ground, Continuity, Closure)
-      - Accessibility requirements (contrast 4.5:1, color-independent info, VoiceOver)
-      - 8pt Grid System (spacing scale 4/8/12/16/20/24/32/40)
-      - Design Evaluation Checklist (HIG, heuristics, Gestalt, accessibility)
+      - HIG 4 principles (Clarity, Deference, Depth, Consistency)
+      - Liquid Glass design language with semi-transparency and blur effects
+      - SF font system with typography hierarchy (SF Pro Display, SF Pro Text, SF Mono, New York)
+      - Semantic color system with Label, Fill, Background, Separator, System roles
+      - "Nielsen's 10 usability heuristics for UI evaluation"
+      - Gestalt visual perception principles (Proximity, Similarity, Figure/Ground, Continuity, Closure)
+      - Common Region and Symmetry principles for layout
+      - Accessibility standards (WCAG 2.1 AA, Dynamic Type, VoiceOver support)
+      - 8pt grid system for spacing and layout consistency
+      - Design evaluation checklist for HIG, heuristics, Gestalt, accessibility
     applicable_tasks:
-      - UI/UX design analysis and evaluation
-      - Design system compliance verification
-      - Apple platform interface design review
-      - Accessibility assessment and WCAG compliance
-      - Component design creation
-      - Design critique and feedback
+      - Design analysis and UX/UI review
+      - Visual hierarchy and layout assessment
+      - Accessibility compliance verification
+      - Design consistency and standardization
+      - Component design evaluation
+      - Typography and color system review
+      - User interface feedback and interaction design
     keywords:
-      - Apple Design Principles
       - HIG
-      - Clarity
-      - Deference
-      - Depth
-      - Consistency
       - Liquid Glass
-      - SF Typography
-      - Nielsen Heuristics
-      - Gestalt Principles
+      - SF Symbols
+      - Nielsen heuristics
+      - Gestalt principles
+      - semantic color
+      - Dynamic Type
+      - VoiceOver
+      - accessibility
+      - 8pt grid
   plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md:
     title: UI Component Catalog Template
-    purpose: Template definition for generating standardized UI component inventory documents with UX evaluation notes, including metadata, design principles, component definitions, and relationships
+    purpose: Template for generating UI component catalog documentation with UX evaluation notes, including metadata, design principles, component definitions, navigation structure, and accessibility assessment
     content_details:
-      - Metadata table format (ID, Feature, Platform, tokens, design intent)
-      - Design Principles section (brand tension, cultural references, anti-goals)
-      - Component Summary tables (standard HIG and custom components)
-      - Navigation Structure with screen diagrams and patterns
-      - Detailed Component Definitions (name, role, HIG mapping, category)
-      - iOS and macOS State Variations (Default, Pressed, Disabled, Selected, Loading)
-      - Design Token usage tables (colors, typography, spacing, radius)
-      - Component Layout ASCII diagrams and internal structures
-      - UX Notes evaluation (HIG compliance, heuristics, Gestalt, accessibility)
-      - Component Dependency diagrams and common patterns with assessment
+      - Metadata section with Feature ID, platform, design tokens reference, and input source
+      - Design principles transcription from Design Intent (brand tension, cultural references, anti-goals)
+      - Component summary list with HIG correspondence and usage descriptions
+      - Navigation structure with screen flow diagrams and pattern documentation
+      - Detailed component definitions with basic info, constituent elements, and state variations
+      - iOS and macOS platform-specific state variations (Default, Pressed, Disabled, Selected, Loading/Hover/Focused)
+      - Design token references (colors, typography, border radius, spacing)
+      - Component layout ASCII diagrams and UX evaluation notes
+      - Component interdependencies and common design patterns with Mermaid diagrams
+      - Overall UX evaluation with HIG compliance, consistency, reusability, and distinctiveness assessment
     applicable_tasks:
-      - UI component documentation creation
-      - Design system specification
-      - Component design review and analysis
-      - UX/UI deliverable documentation
-      - Component catalog generation
-      - Design token mapping and state management
+      - UI component design and specification documentation
+      - Component catalog generation and output
+      - Design consistency verification across components
+      - HIG compliance assessment and validation
+      - Accessibility evaluation and improvement planning
+      - UX rationale documentation and design note preparation
+      - Component state definition and interaction design
+      - Navigation pattern documentation
     keywords:
-      - UI Component
-      - Component Catalog
-      - HIG Standard
-      - Design System
-      - Template
-      - State Variations
-      - UX Evaluation
-      - Design Tokens
-      - Component Dependencies
-      - iOS macOS
+      - component catalog
+      - HIG correspondence
+      - design tokens
+      - UX notes
+      - component states
+      - accessibility evaluation
+      - Nielsen heuristics
+      - design rationale
+      - navigation patterns
+      - Gestalt principles
   plugins/forge/skills/start-uxui-design/docs/design_philosophy.md:
-    title: Design Philosophy - Integrated Principles for Beautiful Design
-    purpose: Framework integrating contradictory design theories into coherent 3-layer model explaining cognitive constraints, structural tools, and directional choices for design
+    title: Design Philosophy — Integrated Principles of Beautiful Design
+    purpose: Framework for integrating various design theories (Rams, Norman, Tufte, Japanese aesthetics) into a coherent 3-layer model explaining how to create design that feels natural to humans
     content_details:
-      - Three-layer design framework (cognitive constraints, structural tools, directional choices)
-      - Cognitive Laws (Fitts for target size, Hick for menu limits, Miller for grouping, contrast ratio)
-      - Modular Scale and typography (musical ratios 1.125 to Golden Ratio 1.618)
-      - Color Systems (harmony models, 60-30-10 ratio rule)
-      - 8pt Grid and spacing scales (4-8-12-16-24-32-48-64)
-      - Composition Principles (balance, rhythm, unity and variation, visual weight)
-      - Curve Psychology and border-radius (warmth perception, 12-20pt friendly, 4-8pt professional)
-      - Design Philosophies (Rams, Norman layers, Tufte data-driven, Wabi-sabi)
-      - Philosophy Selection Guide (app type matching, productivity, SNS, commerce, finance)
-      - Quality Checklist (Layer 1 cognitive, Layer 2 structural, Layer 3 directional consistency)
+      - "3-layer integrated model: cognitive constraints (layer 1, mandatory), structural tools (layer 2, combinable), aesthetic directions (layer 3, selective)"
+      - "Fitts's law for touch target sizing (44pt iOS minimum based on motor precision and error rates)"
+      - "Hick's law for choice complexity (decision time increases logarithmically with number of options)"
+      - "Miller's law for short-term memory limits (7±2 information chunks)"
+      - WCAG contrast ratio thresholds (4.5:1 for text, 3:1 for large text 18pt+)
+      - Modular scale systems with musical ratios (1.125 to 1.618 Golden Ratio)
+      - Color harmony models (complementary, analogous, triadic, split-complementary)
+      - 60-30-10 color ratio rule for visual weight distribution
+      - 8pt grid system based on Weber-Fechner law and screen resolution divisibility
+      - Design direction selection guide (Rams, Norman, Tufte, Japanese wabi-sabi) based on app purpose
     applicable_tasks:
-      - Design system architecture and planning
-      - Design philosophy definition for new projects
-      - Design review and quality assessment
-      - UI/UX coherence verification
-      - Design principle documentation
-      - Cross-platform design consistency validation
+      - Design philosophy and framework selection for projects
+      - Design quality assurance and compliance checking
+      - Color palette creation and harmony validation
+      - Typography and modular scale system definition
+      - Information architecture and complexity management
+      - Accessibility compliance verification with cognitive constraints
+      - Design direction selection and consistency maintenance
+      - Visual hierarchy, layout assessment, and design rationale documentation
     keywords:
-      - Design Philosophy
-      - Three-Layer Framework
-      - Cognitive Constraints
-      - Fitts Law
-      - Modular Scale
-      - Color Harmony
-      - 8pt Grid
+      - "Fitts's law"
+      - "Hick's law"
+      - "Miller's law"
+      - modular scale
+      - color harmony
+      - 60-30-10 rule
+      - 8pt grid
       - Dieter Rams
-      - Design Consistency
-      - Visual Hierarchy
+      - Don Norman
+      - cognitive constraints
   plugins/forge/skills/start-uxui-design/docs/design_token_template.md:
     title: Design Token Template
-    purpose: Provides the standard structure and guidelines for generating design token documents, including metadata, color palette, typography, spacing, borders, and shadows with UX evaluation criteria
+    purpose: Template structure and guidelines for generating design token documentation including color palettes, typography, spacing, and UX evaluation frameworks
     content_details:
-      - Design token metadata section with ID, feature, platform, and Design Intent reference
-      - Color palette including base colors, status colors, and semantic colors
-      - Typography system with font families and text styles
-      - Spacing scale with 8pt grid alignment and layout tokens
-      - Border radius tokens for various UI elements
-      - Shadow definitions for depth and elevation effects
-      - Contrast ratio validation requirements
-      - UX evaluation criteria including HIG compliance, accessibility, and brand distinctiveness
+      - Color palette with base, status, and semantic colors
+      - Typography token definitions with font families and text styles
+      - Spacing scale with 8pt grid compliance
+      - Border radius token definitions
+      - Shadow token definitions with offset and blur
+      - Contrast ratio verification tables for WCAG
+      - UX evaluation framework with HIG compliance metrics
+      - Design Intent transcription guidelines
+      - Theme metadata structure including ID and platform
+      - Light and Dark mode color specifications
     applicable_tasks:
-      - Design system creation and maintenance
-      - Design token specification
-      - UX/UI implementation guidance
-      - Accessibility validation and testing
-      - Brand consistency verification
+      - Design token implementation
+      - Design system documentation creation
+      - Theme creation and management
+      - UI design token specification
+      - Accessibility verification
     keywords:
       - design tokens
       - color palette
       - typography
-      - spacing system
-      - HIG compliance
-      - accessibility
-      - design system
-      - UI design
-      - branding
+      - spacing scale
+      - border radius
+      - semantic colors
+      - contrast ratio
+      - WCAG
+      - UX evaluation
+      - theme metadata
   plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md:
     title: iOS Platform Guide
-    purpose: Provides iOS-specific UX/UI design guidelines and best practices aligned with Apple Human Interface Guidelines, including touch interactions, navigation patterns, layout principles, and standard iOS components
+    purpose: "iOS-specific UX/UI design guidelines covering touch interaction, navigation patterns, layout, standard components, and accessibility based on Apple's Human Interface Guidelines"
     content_details:
-      - Touch input model with minimum 44x44pt target sizes, gesture types, and one-handed reachability considerations
-      - Navigation patterns including Tab Bar (max 5 tabs), Navigation Bar, Modal sheets, and screen transitions
-      - Layout guidelines with Safe Area, Dynamic Island support, and device size adaptation for iPhone SE to Pro Max
-      - iOS standard components catalog including controls, content display, and navigation components
-      - iOS-specific UX patterns such as pull-to-refresh, swipe actions, context menus, and haptic feedback
-      - Evaluation checklist covering touch operations, navigation, layout compliance, and accessibility assessment
+      - Touch interaction with minimum 44x44pt target size and gesture types (tap, long press, swipe, pinch, 3D Touch)
+      - Reachability principles for one-handed thumb zone operation
+      - Navigation patterns including Tab Bar, Navigation Bar, Modal, and screen transitions
+      - Safe Area handling for notch and Dynamic Island
+      - Standard spacing values by context (margins, section gaps, element spacing)
+      - iOS standard UI components (buttons, toggles, sliders, pickers, lists, grids, alerts)
+      - iOS-specific patterns (pull-to-refresh, swipe actions, context menu, haptic feedback)
+      - Device screen size adaptation (iPhone SE, standard, Pro Max, iPad)
+      - SF Symbols usage for consistent iconography
+      - Accessibility requirements (Dynamic Type, VoiceOver, Reduce Motion)
     applicable_tasks:
-      - iOS app design and specification
-      - HIG compliance validation
-      - Navigation architecture design
-      - Component library specification
-      - Accessibility assessment and improvement
+      - iOS interface design
+      - iOS component selection and usage
+      - iOS navigation architecture
+      - iOS accessibility compliance
+      - iOS screen layout design
+      - iOS gesture interaction implementation
     keywords:
-      - iOS design
-      - HIG compliance
+      - iOS
+      - HIG
       - Tab Bar
+      - Navigation Bar
       - Safe Area
-      - touch gestures
-      - reachability
-      - haptic feedback
-      - Dynamic Type
+      - Reachability
+      - gesture interaction
       - SF Symbols
-      - navigation patterns
+      - haptic feedback
+      - accessibility
   plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md:
     title: macOS Platform Guide
-    purpose: Provides macOS-specific UX/UI design guidelines and best practices aligned with Apple Human Interface Guidelines, including pointer and keyboard interactions, menu bar navigation, window management, and standard macOS components
+    purpose: "macOS-specific UX/UI design guidelines emphasizing pointer precision, keyboard shortcuts as first-class input, menu bar navigation, and multi-window workflows based on Apple's Human Interface Guidelines"
     content_details:
-      - Pointer and keyboard input model with precision pointing, context menus, and drag-and-drop as first-class interaction
-      - Standard keyboard shortcuts (Cmd+C/V/X/Z/A/S/N/W/Q/comma) and custom shortcut conventions
-      - Menu bar as mandatory primary navigation element with standard structure (App, File, Edit, View, Window, Help)
-      - Window management with multi-window support, resizing, window styles (standard, panel, sheet, alert), and layout patterns
-      - Layout principles emphasizing higher information density with 20pt margins and smaller text sizes (13pt body)
-      - macOS standard components including controls (Push Button, Checkbox, Radio Button, Combo Box) and content display (Table View, Outline View, Collection View)
-      - System integration patterns (Spotlight, Dock menu, Shortcuts, Share Extension) and drag-and-drop workflows
-      - Evaluation checklist for pointer operations, keyboard support, menu bar compliance, and accessibility
+      - Pointer operation with 20x20pt click targets and cursor shape semantics
+      - Keyboard shortcuts as essential input (standard Cmd+ shortcuts and custom patterns)
+      - Menu bar as primary navigation with File/Edit/View/Window/Help structure
+      - Toolbar with user customization support (icon size, item add/remove/reorder)
+      - Sidebar with collapsible navigation sections and resizable width
+      - Inspector panel for property editing and detail display
+      - Window styles (standard, panel/HUD, sheet, popover, alert)
+      - Full screen modes (Split View, Stage Manager)
+      - Multi-window management with window restoration
+      - Higher information density than iOS (smaller fonts, compact spacing)
+      - Standard macOS components (push buttons, pop-up menus, checkboxes, table views, outline views)
+      - System integration (Spotlight, Dock menu, Shortcuts app, notifications, Share Extension)
+      - Drag and drop as first-class interaction across windows and apps
+      - Multi-selection using Cmd+click and Shift+click patterns
+      - Undo/Redo as powerful multi-level feature
     applicable_tasks:
-      - macOS app design and specification
-      - HIG compliance validation
-      - Menu bar and keyboard architecture
-      - Window management design
-      - Accessibility assessment and compliance
+      - macOS application interface design
+      - macOS navigation architecture design
+      - macOS menu bar and keyboard shortcut design
+      - macOS window management design
+      - macOS accessibility compliance
+      - macOS component selection and implementation
     keywords:
-      - macOS design
-      - HIG compliance
+      - macOS
+      - HIG
       - menu bar
       - keyboard shortcuts
-      - Cmd shortcuts
       - window management
       - drag and drop
-      - pointer interaction
-      - multi-selection
-      - Undo/Redo
+      - Spotlight
+      - toolbar
+      - sidebar
+      - multi-window
   plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md:
     title: UX/UI Design Creation Workflow
-    purpose: Defines a complete 6-phase workflow for creating UX/UI designs from requirements through design tokens, component specifications, and quality evaluation based on design philosophy and platform guidelines
+    purpose: Defines the complete UX/UI design creation workflow across 6 phases, from requirements analysis through design token creation and component specification, with emphasis on design intent-driven branching and knowledge base integration
     content_details:
-      - Six-phase execution flow with conditional branching based on Design Intent distinctiveness importance
-      - Context management with per-phase knowledge base retrieval via /forge:query-forge-rules
-      - Design Intent structure including user experience, tension axis, distinctiveness, references, anti-goals, and signature requirements
-      - Design token creation covering base colors, semantic colors, typography, spacing, radius, shadows, and signature rules
-      - Component visual specification with ASCII art to HIG-compliant UI transformation and state definitions
-      - UX self-evaluation framework using Don Norman 3-layer model and Dieter Rams principles
-      - Distinctiveness and memorability evaluation using Design Intent parameters and reference image comparison
-      - Mandatory user confirmation checkpoints at each phase for design direction, tokens, components, and evaluations
-      - Anti-patterns and dialogue principles for avoiding generic design decisions
+      - "Phase 1: Requirements loading and analysis from specification documents"
+      - "Phase 2.0: Design Intent acquisition structure (user experience, tension axis, distinctiveness, references)"
+      - "Phase 2: Design direction determination including character analysis, tension axis, cultural references, and provocation generation"
+      - "Phase 3: Design token creation (color palette, typography, spacing, radius, shadow design)"
+      - "Phase 4: Component visual design with ASCII art conversion to visual specs and HIG compliance"
+      - "Phase 5: UX self-evaluation using Norman 3-layer check, Dieter Rams principles, and distinctiveness metrics"
+      - "Phase 6: Document generation and quality verification workflow"
+      - Context management rules and /forge:query-forge-rules integration for phase-specific knowledge retrieval
     applicable_tasks:
-      - UX/UI design creation from requirements
-      - Design Intent extraction and validation
-      - Design token creation and specification
-      - UI component visual design specification
-      - UX design quality evaluation and review
-      - Design philosophy and principle application
-      - Cross-phase design direction confirmation
-      - Design system documentation generation
+      - UX/UI design creation from requirements specifications
+      - Design token and design system creation
+      - Component visual specification and documentation
+      - Design direction and intent definition
+      - Design philosophy application and evaluation
+      - HIG and platform-specific UI design planning
+      - Brand and signature element development
+      - Design review and UX self-assessment
     keywords:
-      - UX/UI design workflow
-      - design intent
-      - design tokens
-      - component specification
-      - design philosophy
-      - HIG principles
-      - distinctiveness
-      - design evaluation
-      - tension axis
-      - Dieter Rams
+      - UX/UI-design
+      - design-tokens
+      - component-specification
+      - design-intent
+      - design-philosophy
+      - design-evaluation
+      - HIG-compliance
+      - ASCII-art-conversion
+      - design-system
+      - phase-workflow
