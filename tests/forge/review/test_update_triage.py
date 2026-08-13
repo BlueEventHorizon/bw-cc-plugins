@@ -164,9 +164,33 @@ class MarkTest(unittest.TestCase):
         self.assertEqual(entries[0]["fields"]["修正を任せられるか"], "✅ 責任を持って実行できる")
 
     def test_lack_of_confidence_is_stated_explicitly(self):
-        entries, _, _ = mod.add([], [_finding(confidence="inferred")])
+        entries, _, _ = mod.add([], [_finding(confidence="unverified")])
         self.assertEqual(entries[0]["fields"]["指摘は正しいか"], "確信なし")
         self.assertEqual(entries[0]["fields"]["修正を任せられるか"], "直し方に確信が無い")
+
+    def test_confidence_is_written_with_three_distinct_values(self):
+        """**3 値を潰さない [MANDATORY]**。
+
+        `inferred`（根拠はあるが未確認）と `unverified`（記憶・推測のみ）を同じ表記にすると、
+        ファイルを読んだ人が両者を区別できない。記号は `修正の可否` の軸とは別の軸である。
+        """
+        written = {}
+        for value in ("confirmed", "inferred", "unverified"):
+            entries, _, _ = mod.add([], [_finding(confidence=value)])
+            written[value] = entries[0]["fields"]["指摘は正しいか"]
+        self.assertEqual(len(set(written.values())), 3, written)
+        self.assertTrue(written["confirmed"].startswith(mod.CONFIRMED_MARK))
+        self.assertTrue(written["inferred"].startswith(mod.INFERRED_MARK))
+        self.assertFalse(written["unverified"].startswith(mod.INFERRED_MARK))
+
+    def test_inferred_does_not_raise_the_agenda_mark(self):
+        """`🤔` は確信度の軸であり、`☑️` / `✅` の軸を動かさない。"""
+        entries, _, _ = mod.add([], [_finding(confidence="inferred", fix_confident=True)])
+        self.assertEqual(mod._mark(entries[0]), "")
+
+    def test_unknown_confidence_is_written_as_the_lowest_value(self):
+        entries, _, _ = mod.add([], [_finding(confidence="very-sure")])
+        self.assertEqual(entries[0]["fields"]["指摘は正しいか"], "確信なし")
 
 
 class SummaryTest(unittest.TestCase):
@@ -206,12 +230,25 @@ class SummaryTest(unittest.TestCase):
         self.assertIn("1 行目\n2 行目", out)
 
 
+def _settled(**overrides) -> dict:
+    """決着に必要な欄を埋めた fields。個別に欠かす検証は overrides で行う。"""
+    fields = {
+        "背景": "背景を書いた",
+        "本質": "本質を書いた",
+        "対応": "対応を書いた",
+        "推奨": "採用する。理由",
+        "決着": "利用者が採用",
+    }
+    fields.update(overrides)
+    return {k: v for k, v in fields.items() if v is not None}
+
+
 class UpdateTest(unittest.TestCase):
     def setUp(self):
         self.entries, _, _ = mod.add([], [_finding(text="a"), _finding(text="b")])
 
     def test_state_and_result_are_updated(self):
-        mod.update(self.entries, "01", state="決着", result="採用した")
+        mod.update(self.entries, "01", state="決着", result="採用した", fields=_settled())
         self.assertEqual(self.entries[0]["state"], "決着")
         self.assertEqual(self.entries[0]["result"], "採用した")
 
@@ -221,7 +258,7 @@ class UpdateTest(unittest.TestCase):
 
     def test_other_entries_are_untouched(self):
         before = dict(self.entries[1])
-        mod.update(self.entries, "01", state="決着")
+        mod.update(self.entries, "01", state="決着", fields=_settled())
         self.assertEqual(self.entries[1], before)
 
     def test_unknown_id_is_an_error(self):
@@ -236,6 +273,42 @@ class UpdateTest(unittest.TestCase):
     def test_unknown_field_is_an_error(self):
         with self.assertRaises(ValueError):
             mod.update(self.entries, "01", fields={"感想": "よかった"})
+
+    def test_settling_requires_the_fields_that_the_presentation_produced(self):
+        """`決着` だけ書いて済ませられない [MANDATORY]。
+
+        背景・本質・対応・推奨が空のまま決着すると、提示で述べた内容が会話にしか残らない。
+        しかもファイルは決着済みに見えるため、失われたことに気付く手がかりも消える。
+        規約だけに頼らず構造で止める（`review_id` の照合と同じ理由）。
+        """
+        for missing in ("背景", "本質", "対応", "推奨", "決着"):
+            with self.subTest(missing=missing):
+                entries, _, _ = mod.add([], [_finding(text="a")])
+                with self.assertRaises(ValueError) as ctx:
+                    mod.update(
+                        entries, "01", state="決着",
+                        fields=_settled(**{missing: None}),
+                    )
+                self.assertIn(missing, str(ctx.exception))
+                # 止まったなら状態も欄も変わっていないこと
+                self.assertEqual(entries[0]["state"], "未着手")
+                self.assertEqual(entries[0]["fields"]["決着"], mod.FIELD_PLACEHOLDER["決着"])
+
+    def test_placeholder_text_does_not_count_as_written(self):
+        """初期値のまま渡すのは書いていないのと同じである。"""
+        with self.assertRaises(ValueError):
+            mod.update(
+                self.entries, "01", state="決着",
+                fields=_settled(背景=mod.FIELD_PLACEHOLDER["背景"]),
+            )
+
+    def test_settling_check_does_not_apply_to_other_states(self):
+        """`取り下げ` / `対象外` は生成時点の決着であり、提示を経ていない。"""
+        for state in ("未着手", "進行中", "保留", "取り下げ", "対象外"):
+            with self.subTest(state=state):
+                entries, _, _ = mod.add([], [_finding(text=f"x{state}")])
+                mod.update(entries, "01", state=state)
+                self.assertEqual(entries[0]["state"], state)
 
     def test_withdrawn_entry_can_be_restored_for_presentation(self):
         """取り下げの差し戻し。節は既にあるため全文も決着欄も失われていない。"""
@@ -254,6 +327,7 @@ class RoundTripTest(unittest.TestCase):
             _finding("minor", "本文 B", summary="B", location={"unknown": True}),
             _finding("major", "本文 C", summary="C", drop_reason="該当しない"),
             _finding("major", "本文 D", summary="D", confidence="confirmed", fix_confident=True),
+            _finding("major", "本文 E", summary="E", confidence="inferred"),
         ])
         meta, reloaded = mod.parse(mod.render(_meta("abc"), entries))
         self.assertEqual(meta, _meta("abc"))
@@ -262,10 +336,15 @@ class RoundTripTest(unittest.TestCase):
             for key in ("id", "severity", "location", "text", "state", "result", "fields"):
                 self.assertEqual(restored[key], original[key], key)
             self.assertEqual(mod._mark(restored), mod._mark(original))
+            # **2 つの判断が往復で保たれること**。`inferred` を `unverified` へ畳まない。
+            self.assertEqual(restored["confidence"], original["confidence"], original["id"])
+            self.assertEqual(
+                restored["fix_confident"], original["fix_confident"], original["id"]
+            )
 
     def test_updates_survive_a_round_trip(self):
         entries, _, _ = mod.add([], [_finding(text="a")])
-        mod.update(entries, "01", state="決着", result="採用", fields={"決着": "利用者が採用"})
+        mod.update(entries, "01", state="決着", result="採用", fields=_settled())
         _, reloaded = mod.parse(mod.render(_meta(), entries))
         self.assertEqual(reloaded[0]["state"], "決着")
         self.assertEqual(reloaded[0]["fields"]["決着"], "利用者が採用")
@@ -302,6 +381,9 @@ class CliTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
+
+    def _settled_args(self):
+        return [a for name, value in _settled().items() for a in ("--field", f"{name}={value}")]
 
     def _add(self, findings, extra=()):
         return self._run([
@@ -357,7 +439,7 @@ class CliTest(unittest.TestCase):
         ], ["--review-id", "abc"])
         proc = self._run([
             "--project-root", str(self.root), "--id", "01", "--state", "決着",
-            "--result", "採用", "--field", "決着=利用者が採用",
+            "--result", "採用", *self._settled_args(),
         ])
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
@@ -365,6 +447,24 @@ class CliTest(unittest.TestCase):
         self.assertEqual(payload["auto_fixable_count"], 1)
         written = (self.root / payload["triage_path"]).read_text(encoding="utf-8")
         self.assertIn("利用者が採用", written)
+
+    def test_settling_without_the_presentation_fields_leaves_the_file_alone(self):
+        """止まったときファイルが書き換わらないこと。
+
+        半端に決着だけ立って残ると、次に読んだ人には決着済みに見える。
+        """
+        self._add([_finding(text="a")], ["--review-id", "abc"])
+        path = self.root / ".claude/.temp/review/triage.md"
+        before = path.read_text(encoding="utf-8")
+        proc = self._run([
+            "--project-root", str(self.root), "--id", "01", "--state", "決着",
+            "--field", "決着=利用者が採用",
+        ])
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertNotIn("Traceback", proc.stderr)
+        for name in ("背景", "本質", "対応", "推奨"):
+            self.assertIn(name, proc.stderr)
+        self.assertEqual(path.read_text(encoding="utf-8"), before)
 
     def test_errors_are_reported_as_a_line_not_a_traceback(self):
         self._add([_finding()], ["--review-id", "abc"])
@@ -401,7 +501,10 @@ class CliTest(unittest.TestCase):
     def test_updates_without_a_review_id_are_not_blocked(self):
         """決着の書き込みは識別子を伴わない（照合する材料が無い）。"""
         self._add([_finding()], ["--review-id", "SAME"])
-        proc = self._run(["--project-root", str(self.root), "--id", "01", "--state", "決着"])
+        proc = self._run([
+            "--project-root", str(self.root), "--id", "01", "--state", "決着",
+            *self._settled_args(),
+        ])
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
     def test_output_carries_the_agenda_ready_to_display(self):
@@ -412,7 +515,7 @@ class CliTest(unittest.TestCase):
         self._add([_finding(text="a", summary="A の所在")], ["--review-id", "abc"])
         proc = self._run([
             "--project-root", str(self.root), "--id", "01",
-            "--state", "決着", "--result", "採用した",
+            "--state", "決着", "--result", "採用した", *self._settled_args(),
         ])
         agenda = json.loads(proc.stdout)["agenda"]
         self.assertIn("| ID | 判定 | 重大度 | 状態 | 結果・課題 |", agenda)

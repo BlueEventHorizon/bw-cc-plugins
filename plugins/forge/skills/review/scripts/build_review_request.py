@@ -480,6 +480,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="プロジェクトルート（絶対パスの起点。レビュアーへは絶対パスで渡す）",
     )
     parser.add_argument(
+        "--review-id",
+        default=None,
+        help=(
+            "既存の review_id。2 ラウンド目以降で渡す。"
+            "**識別するのはレビューであってラウンドではない** ため、"
+            "往復の間は同じ値を使い続ける。未指定なら新規に生成する"
+        ),
+    )
+    parser.add_argument(
         "--files-json",
         default=None,
         help=(
@@ -566,6 +575,7 @@ def main() -> int:
         envelope = build_request(
             pattern=args.pattern,
             project_root=Path(args.project_root),
+            review_id=args.review_id,
             files=files,
             dirs=dirs,
             base_branch=args.base_branch,

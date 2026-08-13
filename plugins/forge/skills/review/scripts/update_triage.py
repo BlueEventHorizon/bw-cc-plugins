@@ -96,6 +96,24 @@ SEVERITY_MARK = {
 #: 「指摘は正しいと確信している」ことを示す記号。
 CONFIRMED_MARK = "☑️"
 
+#: 「根拠はあるが未確認」を示す記号（consult 提示原則の確信度語彙）。
+#:
+#: **確信度は 3 値である [MANDATORY]**。`confirmed` / `inferred` / `unverified` を受け取る
+#: のに書式が 2 値しか表せないと、`inferred` は読み戻しで `unverified` になる。アジェンダの
+#: 記号は `confirmed` かどうかでしか変わらないため表示は狂わないが、**ファイルを読んだ人が
+#: 「根拠のある推論」と「ただの推測」を区別できなくなる**。
+#:
+#: この `🤔` は**指摘の確信度**の軸の記号であり、`AUTO_FIX_MARK` / `CONFIRMED_MARK` が作る
+#: **修正の可否**の軸とは別である。2 つの軸を 1 列に混ぜてはならない。
+INFERRED_MARK = "🤔"
+
+#: 確信度の表記。ファイルへ書く値と読み戻す値の対応はここ 1 か所で決める。
+CONFIDENCE_LABEL = {
+    "confirmed": f"{CONFIRMED_MARK} 確信あり",
+    "inferred": f"{INFERRED_MARK} 推論（根拠はあるが未確認）",
+    "unverified": "確信なし",
+}
+
 #: 「指摘が正しく、かつ修正も責任を持って実行できる」ことを示す記号。
 #:
 #: **`CONFIRMED_MARK` を含む [MANDATORY]**。指摘が正しいと確信できていないものを直す
@@ -130,6 +148,18 @@ FIELD_PLACEHOLDER = {
     "推奨": "<採用する / 採用しない。理由を 1 行>",
     "決着": "<利用者の判断と理由。AI が決めた場合はその旨>",
 }
+
+#: `決着` にするとき、プレースホルダのままでは通さない欄 [MANDATORY]。
+#:
+#: このファイルは「所見・AI の評価・利用者の判断をコンテキストだけで保持すると、圧縮で
+#: 失われたときに再レビューからやり直しになり、失われたこと自体も検知できない」ために
+#: ある。提示の場で述べた背景・本質・対応・推奨を書き戻さなければ、**守りたかったものが
+#: 会話にしか無い状態のままファイルだけが決着済みになる**。
+#:
+#: **手順の明記だけでは足りない [MANDATORY]**。実際に、SKILL.md が `決着` 欄しか示して
+#: いなかったため他の欄がプレースホルダのまま残り、提示内容が会話にしか存在しない状態で
+#: レビューが進んだ。`review_id` の照合と同じく、規約だけに頼らず構造でも止める。
+SETTLED_REQUIRED_FIELDS = ("背景", "本質", "対応", "推奨", "決着")
 
 #: 見出しの接頭辞。**`review_id` の置き場はここ 1 か所である**（別レビューの所見が
 #: 混ざらないよう、追加時にこの値と照合する）。
@@ -189,6 +219,30 @@ def _mark(entry: dict) -> str:
     return CONFIRMED_MARK if confirmed else ""
 
 
+def _normalize_confidence(value) -> str:
+    """入力の確信度を 3 値へ正規化する。未知・欠落は低い側へ倒す。
+
+    **生成時に正規化する [MANDATORY]**。生のまま持つと、`None` で入った所見が読み戻しで
+    `unverified` になり、往復で値が変わる（同じ内容なのに一致しない）。
+    """
+    return value if value in CONFIDENCE_LABEL else "unverified"
+
+
+def _read_confidence(label: str) -> str:
+    """「指摘は正しいか」欄の表記から確信度を読み戻す。
+
+    **3 値を保つ [MANDATORY]**。`confirmed` かどうかだけを見て 2 値へ畳むと `inferred` が
+    `unverified` になり、往復のたびに「根拠のある推論」が「ただの推測」へ落ちる。
+    読めない表記は低い側（`unverified`）へ倒す。
+    """
+    text = str(label or "").strip()
+    if text.startswith(CONFIRMED_MARK):
+        return "confirmed"
+    if text.startswith(INFERRED_MARK):
+        return "inferred"
+    return "unverified"
+
+
 def _identity(entry: dict) -> tuple[str, str]:
     """所見の同一性。**位置 + 本文**で見る。
 
@@ -229,10 +283,11 @@ def make_entry(finding: dict, entry_id: str) -> dict:
         raise ValueError(
             f"summary が要ります（課題の所在を 1 行で）: {_location_label(finding)}"
         )
+    # 未知の値・欠落は低い側（`unverified`）へ倒す。高い側へ倒すと、確信の無い所見が
+    # 確信ありに見える。
+    confidence = _normalize_confidence(finding.get("confidence"))
     fields = dict(FIELD_PLACEHOLDER)
-    fields["指摘は正しいか"] = (
-        f"{CONFIRMED_MARK} 確信あり" if finding.get("confidence") == "confirmed" else "確信なし"
-    )
+    fields["指摘は正しいか"] = CONFIDENCE_LABEL[confidence]
     fields["修正を任せられるか"] = (
         f"{AUTO_FIX_MARK} 責任を持って実行できる"
         if _mark(finding) == AUTO_FIX_MARK
@@ -247,7 +302,7 @@ def make_entry(finding: dict, entry_id: str) -> dict:
         "text": str(finding.get("text", "")).strip(),
         "state": state,
         "result": _cell(finding.get("summary") or settled or finding.get("text", "")),
-        "confidence": finding.get("confidence"),
+        "confidence": confidence,
         "fix_confident": bool(finding.get("fix_confident")),
         "fields": fields,
     }
@@ -390,9 +445,7 @@ def parse(text: str) -> tuple[dict, list[dict]]:
             "text": m.group(1).strip() if m else "",
             "state": row["state"],
             "result": row["result"],
-            "confidence": (
-                "confirmed" if fields["指摘は正しいか"].startswith(CONFIRMED_MARK) else "unverified"
-            ),
+            "confidence": _read_confidence(fields["指摘は正しいか"]),
             "fix_confident": fields["修正を任せられるか"].startswith(AUTO_FIX_MARK),
             "fields": fields,
         })
@@ -440,17 +493,52 @@ def update(entries: list[dict], entry_id: str, state=None, result=None, fields=N
             break
     else:
         raise KeyError(f"存在しない ID です: {entry_id}")
+    # **検証してから確定する [MANDATORY]**。先に書き換えて後から例外を投げると、
+    # 止めたはずの更新が呼び出し側のメモリに残る（呼び出し側がそのまま render すれば
+    # ファイルにも出る）。「止まったときは書き換わらない」を関数の性質として持たせる。
+    new_state = entry["state"]
     if state is not None:
         if state not in STATES:
             raise ValueError(f"未知の状態です: {state}（{'/'.join(STATES)}）")
-        entry["state"] = state
-    if result is not None:
-        entry["result"] = result
+        new_state = state
+    new_fields = dict(entry["fields"])
     for name, value in (fields or {}).items():
         if name not in FIELD_ORDER:
             raise ValueError(f"未知の欄です: {name}（{'/'.join(FIELD_ORDER)}）")
-        entry["fields"][name] = value
+        new_fields[name] = value
+    _require_settled_fields(new_state, new_fields)
+
+    entry["state"] = new_state
+    entry["fields"] = new_fields
+    if result is not None:
+        entry["result"] = result
     return entry
+
+
+def _is_placeholder(name: str, value: str) -> bool:
+    """その欄がまだ書かれていないか（空欄、または初期値のまま）。"""
+    text = str(value or "").strip()
+    return not text or text == FIELD_PLACEHOLDER.get(name)
+
+
+def _require_settled_fields(state: str, fields: dict) -> None:
+    """`決着` にするなら、提示の場で固まった欄が書かれていること [MANDATORY]。
+
+    書かれていなければ状態も欄も変えずに例外で止める（`SETTLED_REQUIRED_FIELDS` 参照）。
+    半端に決着だけ立てて止めると、次に読んだ人には決着済みに見える。
+    """
+    if state != "決着":
+        return
+    missing = [
+        name for name in SETTLED_REQUIRED_FIELDS
+        if _is_placeholder(name, fields.get(name, ""))
+    ]
+    if missing:
+        raise ValueError(
+            f"決着にするには次の欄が要ります: {'/'.join(missing)}\n"
+            f"  提示の場で述べた内容を --field 名前=値 で書いてください\n"
+            f"  （このファイルは、その内容がコンテキストから失われても残るためにある）"
+        )
 
 
 def parse_args(argv=None):

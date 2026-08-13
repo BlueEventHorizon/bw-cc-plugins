@@ -21,6 +21,8 @@ quote 表記（空白・非 ASCII を含むパス）や rename の `->` 表記�
 ```json
 {
   "tracked_paths": ["docs/rules/foo.md"],
+  "staged_paths": ["docs/rules/foo.md"],
+  "unstaged_paths": ["README.md"],
   "untracked_paths": ["docs/new.md"],
   "stale_staged_paths": ["README.md"]
 }
@@ -31,6 +33,16 @@ quote 表記（空白・非 ASCII を含むパス）や rename の `->` 表記�
 
 `tracked_paths` は**追跡済みの変更**（ステージ済み・未ステージの両方）である。未追跡は
 `untracked_paths` へ分け、`git add -u` の対象外であることを呼び出し側が区別できるようにする。
+
+`staged_paths` / `unstaged_paths` は `tracked_paths` を **X 列（index）と Y 列（作業ツリー）で
+分けたもの**である。両方が非空なら「ステージ済みと未ステージが混在する」——Phase 3 がこの状態を
+分岐条件に持つため、判定できる形で返す。合算した `tracked_paths` だけを返していた頃、この分岐だけが
+`git status` の手読みに依存しており、script 化した理由（quote 表記・rename の取り違えを避ける）が
+達成されていなかった。同じパスが両方に載ることはある（`MM` 等。それが `stale_staged_paths` である）。
+
+**衝突（`U` を含む状態）はどちらにも載せない**。衝突は「ステージした / していない」の軸に無く、
+解決するまで commit できない状態であるため、混在の判定材料にすると誤った分岐を招く。衝突したパスは
+`tracked_paths` にのみ現れる。
 
 `stale_staged_paths` は **index に載っている内容が作業ツリーと食い違うパス**（porcelain の 2 列が
 ともに非空白。例 `MM`）である。この状態で「ステージ済みがあるからそのまま commit する」と、
@@ -82,31 +94,67 @@ def _iter_porcelain_entries(stdout: str):
         yield status, path
 
 
+# git の unmerged（衝突）状態。**`U` を含むものだけではない [MANDATORY]**——
+# `AA`（both added）と `DD`（both deleted）は `U` を持たないが衝突である。
+# `"U" in status` で判定すると、この 2 つが通常の変更として扱われる。
+_UNMERGED = frozenset({"DD", "AU", "UD", "UA", "DU", "AA", "UU"})
+
+
+def _is_conflict(status: str) -> bool:
+    """衝突（unmerged）か。
+
+    衝突は「ステージした / していない」の軸にも「index が古い」の軸にも乗らない。
+    解決するまで commit できない別の状態であり、どちらの判定からも除く。
+    """
+    return status in _UNMERGED
+
+
 def _is_stale_staged(status: str) -> bool:
     """index の内容が作業ツリーと食い違うか（例 `MM` / `AM` / `RM`）。
 
     porcelain の 2 列は `XY`（X = index、Y = 作業ツリー）である。両方が非空白なら、
-    ステージした後にさらに作業ツリーが変わっている。未追跡（`??`）と衝突（`U` を含む）は
-    別の状態なので除く。
+    ステージした後にさらに作業ツリーが変わっている。未追跡（`??`）と衝突は別の状態なので除く
+    （衝突はステージし直しても解消しない）。
     """
-    if status == "??" or "U" in status:
+    if status == "??" or _is_conflict(status):
         return False
     index_col, worktree_col = status[0], status[1]
     return index_col != " " and worktree_col != " "
 
 
+def _is_staged(status: str) -> bool:
+    """X 列（index）に変更があるか。衝突と未追跡は除く（docstring 参照）。"""
+    if status == "??" or _is_conflict(status):
+        return False
+    return status[0] != " "
+
+
+def _is_unstaged(status: str) -> bool:
+    """Y 列（作業ツリー）に変更があるか。衝突と未追跡は除く（docstring 参照）。"""
+    if status == "??" or _is_conflict(status):
+        return False
+    return status[1] != " "
+
+
 def inspect(stdout: str) -> dict:
-    """porcelain 出力から、追跡済み・未追跡・古いステージを取り出す。"""
+    """porcelain 出力から、追跡済み・ステージ済み・未ステージ・未追跡・古いステージを取り出す。"""
     tracked_paths, untracked_paths, stale_staged_paths = [], [], []
+    staged_paths, unstaged_paths = [], []
     for status, path in _iter_porcelain_entries(stdout):
         if status == "??":
             untracked_paths.append(path)
         else:
             tracked_paths.append(path)
+        if _is_staged(status):
+            staged_paths.append(path)
+        if _is_unstaged(status):
+            unstaged_paths.append(path)
         if _is_stale_staged(status):
             stale_staged_paths.append(path)
     return {
         "tracked_paths": sorted(tracked_paths),
+        "staged_paths": sorted(staged_paths),
+        "unstaged_paths": sorted(unstaged_paths),
         "untracked_paths": sorted(untracked_paths),
         "stale_staged_paths": sorted(stale_staged_paths),
     }
