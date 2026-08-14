@@ -155,7 +155,7 @@ SKILL.md が呼ぶローカル操作入口の path / 引数仕様 / stdout / std
 
 ## 4. 命名規則
 
-- operation 名 (動詞主体) を使う: `resolve_rules.py` / `scan_spec_ids.py` / `calculate_version.py` / `collect_modified_files.py`
+- operation 名 (動詞主体) を使う: `scan_spec_ids.py` / `calculate_version.py` / `collect_modified_files.py` / `resolve_doc_structure.py`
 - 低レベル script 名はラッパー名に含めない (`{low_level}_wrapper.py` のような名前を避ける)
 - 同一 operation を複数 SKILL が持つ場合、ファイル名は揃える
 

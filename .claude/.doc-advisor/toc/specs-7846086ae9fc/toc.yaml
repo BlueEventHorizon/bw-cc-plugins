@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-13T03:41:35Z
-  file_count: 57
+  generated_at: 2026-08-14T17:30:52Z
+  file_count: 56
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -393,40 +393,37 @@ docs:
       - SoT
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
     title: "COMMON-DES-001: SKILL Base Design"
-    purpose: Defines fundamental design decisions and architectural principles for all SKILLs in bw-cc-plugins, establishing execution models (inheritance-type only, no fork-type), context isolation requirements, and multi-layered defense strategies.
+    purpose: Defines SKILL execution models, decision principles for type selection (inherited vs fork vs custom Agent), argument passing constraints, and multi-layer defense architecture for plugin SKILLs
     content_details:
-      - "Execution models: inheritance-type SKILL (default, inherits parent context) vs. fork-type SKILL (deprecated and no longer adopted)"
-      - Deprecation of fork-type SKILL due to 9 reported structural bugs in Claude Code fork mechanism
-      - Use of custom Agent or general-purpose Agent for cases requiring isolated context instead of fork-type SKILL
-      - "SKILL argument principles: never pass parent task prompt, Issue text, diffs, or parent context information in args"
-      - "Decision tree for execution path selection: deterministic Bash subprocess, ad-hoc general-purpose Agent, reusable custom Agent, stable SKILL"
-      - "Multi-layer defense architecture: Agent boundary (A) / Role constraint (B) / allowlist (C) / physical deny (D)"
-      - "Responsibility boundaries for inheritance-type SKILLs: explicit declaration in Role section, no inheritance of parent task instructions"
-      - "Static verification tests: validate absence of fork-type SKILLs, custom Agent frontmatter validation"
-      - "Historical records: migration from fork-type to custom Agent, reclassification of SKILLs to inheritance-type"
-      - "Context efficiency principles: reuse parent context without duplicate information; lazy loading of parent context benefits"
+      - Inheritance type SKILL execution model as default (parent context inheritance)
+      - "Fork SKILL deprecation with 9 documented Claude Code issues (Issue #18394, #34164, #60720, #55592, #34328, #19751, #17283, #17351, #68233)"
+      - Custom Agent adoption for isolated context scenarios
+      - SKILL argument passing constraints (allowed vs forbidden items in section 4 table)
+      - Five-step decision flowchart for execution path selection (Bash subprocess, one-shot Agent, custom Agent, SKILL, inheritance type)
+      - Custom Agent system prompt design pattern (Role constraint, argument interpretation guard, self-recursion prohibition, tools allowlist)
+      - Responsibility boundary declaration requirement in SKILL.md frontmatter (section 7.2 mandatory 1-liner)
+      - Multi-layer defense architecture with 4 layers (Agent boundary, Role constraint, allowlist, physical deny)
+      - Static verification tests (test_no_fork_skill.py, test_agent_frontmatter.py)
     applicable_tasks:
-      - SKILL architecture design decisions
-      - SKILL vs. Agent vs. Bash subprocess selection
-      - Context isolation requirements assessment
-      - Fork-type SKILL deprecation enforcement
-      - Multi-layer defense architecture implementation
-      - SKILL argument design and validation
-      - Custom Agent creation and governance
-      - SKILL frontmatter validation
-      - Responsibility boundary definition for new SKILLs
-      - Inheritance-type SKILL internal usage scope definition
+      - SKILL architecture and compliance review
+      - SKILL type selection decision making
+      - Custom Agent design and implementation
+      - SKILL argument validation and constraint verification
+      - Responsibility boundary definition for SKILL.md
+      - Multi-layer security and isolation implementation
+      - Fork SKILL deprecation and migration planning
+      - SKILL and Agent governance testing
     keywords:
       - SKILL
-      - fork-type
-      - inheritance-type
-      - custom Agent
-      - context isolation
-      - multi-layer defense
-      - Claude Code
-      - system prompt
-      - frontmatter
-      - subagent
+      - inherited-SKILL
+      - fork-SKILL
+      - custom-Agent
+      - context-inheritance
+      - responsibility-boundary
+      - multi-layer-defense
+      - subagent-isolation
+      - argument-passing
+      - Claude-Code
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -540,68 +537,72 @@ docs:
       - error contract
       - external dependency
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md:
-    title: DES-057 doc-db backend selection design
-    purpose: Specifies multi-backend search architecture with responsibility separation, availability detection, and seamless switching between doc-db and doc-advisor backends
+    title: DES-057 doc-db Backend Selection Design
+    purpose: Defines backend selection mechanism between doc-db and doc-advisor, including HTTP connection handling, on-demand startup, and index synchronization orchestration.
     content_details:
-      - Backend selection via ordered preference list in .forge.yaml
-      - doc-db HTTP connectivity with JSON-RPC and on-demand startup
-      - doc-advisor query and index operations with stale/fresh detection
-      - "Responsibility separation: SKILL orchestration, backend availability checks, low-level scripts"
-      - Series (branch) specification and worktree-common key resolution
-      - Automatic index creation on missing KEY or unregistered series
-      - doc-db MCP tool contract (query, sync_documents, get_sync_status, list_indexes)
-      - "Error classification: unavailable (10), operation error (20), index missing (30)"
-      - Path existence validation and exclusion after query results
-      - No fallback to grep; both backends unavailable triggers explicit failure
+      - Backend preference configuration from .claude/.forge.yaml (doc-db or doc-advisor with defaults)
+      - HTTP direct MCP JSON-RPC client for doc-db at localhost:{port}/mcp with JSON and SSE response handling
+      - On-demand doc-db startup using shutil.which() and subprocess.Popen when unavailable
+      - doc-advisor availability check via installed SKILLs (index-docs, query-docs)
+      - "Operation exit codes (0: success, 10: unavailable, 20: operation_error, 30: index_missing)"
+      - "Connection timeout constants (operation: 600s, probe: 1s, poll interval: 2s, default port: 58080)"
+      - KEY resolution from project/git and series from current branch
+      - Series-limited query with path existence validation before output
+      - Async sync with --start (returns job_id) and --status (polls progress)
+      - Query → update backend delegation to ensure consistent index
     applicable_tasks:
-      - Multi-backend document search implementation
-      - Backend availability detection and switching
-      - Responsibility separation in search architecture
-      - Error classification and handling
-      - Series and worktree key management
-      - Index creation and update strategies
-      - Integration and test design for multi-backend systems
+      - Backend selection orchestration for multi-source document search
+      - HTTP MCP client implementation for database operations
+      - Index initialization and desired-state synchronization
+      - Availability detection and on-demand service startup
+      - Error classification and operation failure handling
     keywords:
-      - backend selection
       - doc-db
       - doc-advisor
-      - responsibility separation
-      - MCP tool contract
-      - desired-state sync
-      - series management
-      - worktree
+      - MCP JSON-RPC
+      - index_missing
+      - series
+      - desired-state
       - availability detection
-      - index creation
+      - KEY resolution
+      - backend selection
+      - Mcp-Session-Id
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md:
     title: REQ-014 doc-db Backend Selection Requirements Specification
-    purpose: Defines backend selection and fallback logic for forge document search wrappers, specifying when to use doc-db versus doc-advisor, availability checks, error handling, and user notifications.
+    purpose: Defines requirements for automatic backend selection between doc-advisor and doc-db for search and index update operations, enabling transparent fallback when backends are unavailable
     content_details:
-      - Automatic backend selection from ordered priority list with availability checks
-      - "Backend availability determination: doc-db via connection/startup, doc-advisor via installation and functionality"
-      - "Default selection order: doc-advisor first, doc-db as fallback"
-      - Query execution with automatic index updates before search
-      - Index initialization for missing doc-db KEY or series
-      - Update execution to reflect document state in chosen backend
-      - Machine-readable error distinction between uninitialized index and failures
-      - User notifications for backend switchover, index creation, and startup attempts
-      - Path validation to exclude non-existent documents from search results
+      - Backend selection order with doc-advisor as default, doc-db as fallback
+      - Availability judgment per backend (connection check, startup attempt, feature availability)
+      - Query execution with index maintenance responsibilities and session-aware updates
+      - Update execution with optional backend specification for specific backend enforcement
+      - User notifications for backend switching, index setup, and unmet preferences
+      - Index freshness tracking using session document changes, not elapsed time
+      - Index setup workflow with explicit user approval before long-running maintenance
+      - Series-limited search scope per current git branch to avoid stale document revival
+      - Distinction between backend selection (with fallback) and backend specification (without fallback)
+      - Index population ownership rules preventing forge from assuming backend coverage
     applicable_tasks:
-      - Backend selection logic implementation in forge query/update wrappers
-      - doc-db availability check and startup handling
-      - Error handling for backend fallback and failures
-      - Index initialization for doc-db KEY/series
-      - User notification messaging for backend operations
+      - Query wrapper implementation for search operations
+      - Update wrapper implementation for index maintenance
+      - Backend availability determination and fallback logic
+      - Configuration parsing for backend preference specification
+      - Index freshness validation and session-aware updates
+      - User approval workflows for long-running index setup
+      - Backend switching and failure notification design
+      - Search result validation against working tree
+      - Series management and branch-scoped index isolation
+      - Error case handling and diagnosis communication
     keywords:
+      - backend selection
       - doc-db
       - doc-advisor
-      - query-db-specs
-      - query-db-rules
-      - update-db-rules
-      - update-db-specs
-      - backend selection
-      - wrapper
-      - KEY
+      - availability judgment
+      - index maintenance
       - series
+      - fallback mechanism
+      - user approval
+      - query wrapper
+      - update wrapper
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
     title: "ADR-052: Documentation Internal Cross-Reference Notation Standardization and Plugin Root Link Access Improvement"
     purpose: Specifies how to standardize internal cross-reference notation within the docs/ directory and improve plugin root variable resolution in documentation references
@@ -855,32 +856,37 @@ docs:
       - deviation detection
       - command execution
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: Document Search Wrapper Design Specification
-    purpose: Design specification for forge document search wrapper that delegates search and indexing to external backends (doc-advisor or doc-db) with backend selection mechanism
+    title: Document Search Wrapper Design
+    purpose: "Specifies the design of forge's document search wrapper layer, backend selection strategy, and integration with doc-advisor and doc-db backends"
     content_details:
-      - Four wrapper SKILLs for rules and specs queries and updates
-      - Backend selection based on preference list (doc-advisor or doc-db)
-      - Query SKILL contract for inheritance type read-only SKILLs
-      - Update SKILL desired-state sync for index management
-      - Key mapping from forge categories (rules/specs) to opaque backend keys
-      - doc-advisor path with --key --dirs-json --exclude-json arguments
-      - Required documents output contract (path list format)
-      - Availability judgment with fallback to alternative backend
+      - Backend abstraction layer with 4 wrapper SKILLs for query and update operations
+      - Backend selection strategy based on priority list from .claude/.forge.yaml configuration
+      - Query SKILL contract - read-only inheritance type with doc-advisor and doc-db paths
+      - Update SKILL contract - input preparation and desired-state synchronization
+      - Doc-advisor tool integration for query-docs and index-docs operations
+      - Backend availability judgment and fallback strategy when both backends unavailable
+      - Role boundary between DES-001 and DES-057 for backend selection logic
+      - Dependency on .doc_structure.yaml for directory resolution
     applicable_tasks:
-      - Document search wrapper implementation
-      - Backend integration testing
-      - SKILL wrapper design review
-      - Index update mechanism validation
-      - Query result contract verification
+      - Integration of new document search backend
+      - Backend selection strategy modification
+      - Document search SKILL contract update
+      - Query and update SKILL functionality review
+      - Backend capability evaluation
+      - Document indexing pipeline maintenance
+      - Backend availability fallback testing
+      - Integration point testing for document search
     keywords:
-      - forge
-      - document search
-      - backend selection
-      - query-docs
-      - index-docs
+      - backend
       - doc-advisor
-      - wrapper design
-      - inheritance type SKILL
+      - doc-db
+      - query-db-rules
+      - query-db-specs
+      - update-db-rules
+      - update-db-specs
+      - resolve_backend_order
+      - index-docs
+      - query-docs
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: Create Skills Orchestrator Design Specification
     purpose: Design specification for unified orchestrator pattern across create-* skills (start-design, start-plan, start-requirements) with common context collection framework and parallel agent coordination
@@ -1057,34 +1063,6 @@ docs:
       - phase division
       - workflow design
       - agent delegation
-  docs/specs/forge/design/DES-020_clean_rules_design.md:
-    title: Clean Rules Skill Design
-    purpose: "Designs the clean-rules skill that analyzes a project's rules directory, detects and removes duplicates with forge's built-in documentation, and systematically rebuilds remaining documents based on taxonomy classification"
-    content_details:
-      - Taxonomy-based classification with Content Type (Constraint, Convention, Format, Process, Decision, Reference) and Authority Source dimensions
-      - "Three-mode execution: analysis only, --delete for removing duplicates, --rebuild for restructuring"
-      - forge/project responsibility separation model with content type coverage mapping
-      - "split_doc_sections.py script for ## heading-level sectioning without external APIs"
-      - "Phase-based workflow: collection, AI analysis, safety confirmation, execution, completion"
-      - "Safe operation mechanisms: git stash, categorical approval, rollback capability"
-      - Duplicate detection through content understanding rather than numerical scoring
-    applicable_tasks:
-      - Cleaning project rules to remove forge duplicates
-      - Analyzing rules taxonomy alignment
-      - Rebuilding rule document structure
-      - Managing documentation deduplication
-      - Enforcing project-defined rule protection
-      - Updating doc-structure after cleanup
-    keywords:
-      - clean-rules
-      - taxonomy
-      - rules deduplication
-      - content type classification
-      - authority source
-      - forge docs
-      - split_doc_sections.py
-      - tool-provided vs project-defined
-      - safe deletion
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: Parallel Agent Output Contract Design
     purpose: Defines output contract pattern for parallel agent execution that prevents race conditions by requiring agents to return results via return values rather than writing to shared files, eliminating concurrent write conflict conditions
@@ -1294,35 +1272,31 @@ docs:
       - configuration validation
       - forward compatibility
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: Design for /forge:review Core (Backend-Independent)
-    purpose: Specifies the design of the core /forge:review layer that orchestrates review requests to backends, handling argument interpretation, pattern confirmation, target resolution, request body construction, backend resolution and delegation, finding evaluation and fixes, and finalization.
+    title: Review Body Design (Backend-Independent)
+    purpose: Specifies the architecture and module design of /forge:review body, defining backend resolution, request building, findings evaluation, modification safety verification, and lifecycle management independent of backend implementation
     content_details:
-      - "Backend resolution procedure: explicit flag, project config, default order (agent-review, msg-review), fail-closed on missing backend"
-      - "Module architecture: SKILL.md, resolve_review_backend.py, analyze_branch_point.py, resolve_targets.py, build_review_request.py, split_by_location.py, update_triage.py, capture_syntax_baseline.py, verify_fix_safety.py, collect_modified_files.py, finalize_review.py"
-      - "Single exit point for finalization handling four paths: approved, findings continued, findings terminated, failure, interrupted"
-      - "Two confidence axes: confidence (☑️ reviewer correct?) and fix_confident (✅ can we fix responsibly?), separate and never merge"
-      - "Staged presentation: update_triage.py maintains single triage.md file, no recreate path, idempotent append with position+text identity"
-      - "Target granularity preservation: range specification not expanded to file lists for backends"
-      - "Context preservation: stateless body reconstruction for context-losing backends, correspondence table only for context-preserving ones"
+      - Backend resolution algorithm with candidate order (agent-review, msg-review)
+      - Review request building with {{FOCUS}} and {{SCOPE}} token substitution
+      - Finding location-based splitting (located/unlocated) and confirmation required
+      - Two-axis confidence system (review correctness via indicator vs. fix capability via checkmark)
+      - Triage file lifecycle (single immutable file, append-only updates, review_id tracking)
+      - Single finalization exit handling 4 endpoint paths (approved, findings, failure, interrupted)
+      - Target allowlist safety verification and syntax baseline capture
+      - Backend context preservation declaration (full request rebuild vs. differential response)
     applicable_tasks:
-      - Design of /forge:review core orchestration system
-      - Backend resolution and delegation architecture
-      - Single finalization exit point implementation
-      - Staged presentation for finding evaluation and triage
-      - Two-confidence separation implementation in triage file
-      - Backend independence testing and integration
-      - Triage file idempotency and state management
+      - Designing review workflow implementation
+      - Adding new review backends
+      - Implementing finding evaluation and modification workflows
+      - Backend integration and contract adherence
     keywords:
-      - /forge:review
+      - review_id
+      - findings
       - backend resolution
-      - finalization
-      - staged presentation
-      - triage.md
-      - finding evaluation
-      - confidence ☑️
-      - fix_confident ✅
-      - fail-closed
-      - target granularity
+      - triage
+      - finalize_review.py
+      - parse_findings.py
+      - confidence
+      - allowlist
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines orchestrator design pattern requirements for forge plugins, specifying how skills delegate work to agents and manage multi-phase processes
@@ -1383,44 +1357,32 @@ docs:
       - contract design
   docs/specs/forge/requirements/REQ-013_review_policy.md:
     title: REQ-013 Review Policy Requirements
-    purpose: "Defines review policy, priority system, and operational flow for forge's AI review to ensure detection of real issues while maintaining clarity about reviewer role, confidence basis for auto-fix decisions, and documentation-driven quality assurance"
+    purpose: Defines review policy for forge, establishing priority system (P1-P3), interaction modes (interactive/auto), confidence types, backend management, and scope specification for review operations.
     content_details:
-      - Three-tier priority system (FNC-1301) - P1 rule compliance, P2 contradiction/inconsistency, P3 unnecessary complexity, no independent criteria perspectives
-      - "Elimination of criteria's independent judgment (FNC-1302) - moves all severity judgment and gray-zone decisions to principles documents"
-      - Target specification axes (FNC-1303) - four mutually exclusive flags (--diff, --branch, --files, --dirs) determine review scope, with default being --diff
-      - Interaction axes (FNC-1304) - --interactive (default) vs --auto based on confidence levels (✅ can fix, ☑️ finding is correct, unmarked=unconfident)
-      - Focus and scope axes (FNC-1313, FNC-1319) - optional natural language inputs for context-specific notes and evaluation criteria
-      - Backend-agnostic review execution (FNC-1318) - pluggable review backends with shared input/output contracts, failure handling, and history restoration as optional extension
-      - Principles document expansion (FNC-1311) - adds severity catalog and explicit gray-zone tolerance ranges to principles (not criteria)
-      - Secret information independent review (FNC-1315) - separate pattern combining machine detection and AI analysis without auto-fix
-      - "Criteria fixed structure (FNC-1309) - three mandatory sections: SSOT reference, check order, judgment rules; perspective and severity moved to principles"
+      - "Review priority system: P1 (rule compliance), P2 (contradictions/conflicts), P3 (unnecessary complexity)"
+      - "Confidence types: ✅ (action confidence) and ☑️ (finding confidence) distinct from severity"
+      - "Target specification axes: --diff, --branch, --files, --dirs with mutual exclusivity enforcement"
+      - "Intervention modes: --interactive (all findings with confirmation) vs --auto (confident findings auto-fixed)"
+      - Review backend selection and availability contract
+      - Focus points and scope specification for per-request customization
+      - Document reference as permanent review perspective
+      - Secrets/sensitive information independent review with two-stage detection
+      - Built-in forge rule fallback and project-specific rule carrying
+      - Rule gap Issue creation with 3-condition validation (FNC-1306)
     applicable_tasks:
-      - Implementing review policy requirements in forge architecture
-      - Designing review CLI with target, interaction, focus, scope, and backend axes
-      - Creating and updating criteria documents with 3-section fixed structure
-      - Establishing backend-agnostic review input/output contracts
-      - Implementing confidence-based determination for auto-fix eligibility
-      - Expanding principles documents with severity catalog and tolerance ranges
-      - Building secret information detection and masking systems
-      - Setting up Issue escalation for rules-not-found cases
+      - Review SKILL implementation and specification
+      - Review backend integration and contract verification
+      - Criteria document structure and content design
+      - Principles document expansion for severity mapping
+      - Review request template creation
     keywords:
       - review policy
-      - FNC-1301
-      - FNC-1302
-      - FNC-1303
-      - FNC-1304
-      - FNC-1313
-      - FNC-1318
-      - FNC-1319
-      - priority system
-      - confidence
-      - interaction axes
-      - target axes
-      - criteria structure
-      - principles
-      - review backend
-      - secrets detection
-      - severity catalog
+      - FNC functional requirements
+      - priority system (P1 P2 P3)
+      - confidence (✅ ☑️)
+      - backend selection
+      - intervention modes
+      - scope specification
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: "ADR-061: Codex Wake Path Multiplexing (Adding app-server Path)"
     purpose: Determines push-type wake mechanisms for Codex sessions by adding app-server path alongside cmux path

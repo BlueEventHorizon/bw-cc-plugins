@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-13T02:38:07Z
+  generated_at: 2026-08-14T10:11:36Z
   file_count: 40
 
 docs:
@@ -398,6 +398,34 @@ docs:
       - responsibility
       - dependency
       - Mermaid
+  plugins/forge/docs/design_taxonomy.md:
+    title: Document Taxonomy
+    purpose: Defines a classification system for development documents organized by content type, authority source, and scope to guide document analysis and responsibility division between forge and projects
+    content_details:
+      - "Six content types: Constraint (MUST/MUST NOT rules), Convention (SHOULD agreements), Format (output templates), Process (step-by-step procedures), Decision (choice rationale/ADR-equivalent), Reference (reference information)"
+      - "Three authority sources: Tool-provided (forge plugin), Project-defined (team agreement), External standard (language specs/standards)"
+      - "Two dimension scopes: Universal (applies to all forge projects) and Project-specific (applies to project only)"
+      - "Priority rules for ambiguous content: MANDATORY tag overrides, then template structure, then procedures, then decision rationale, then catalog/list, then convention"
+      - "Responsibility division between forge and projects: forge provides review perspectives and document templates; projects define constraints, conventions, processes, decisions, and reference information"
+    applicable_tasks:
+      - Classification of rule documents by content type
+      - Determination of rule authority source and scope
+      - Analysis of rule precedence when content is ambiguous
+      - Design of project-specific documentation structure
+      - Review of document classification compliance
+      - Distinction between constraint and convention when analyzing rules
+      - Planning responsibility boundaries in documentation governance
+    keywords:
+      - taxonomy
+      - classification
+      - Constraint
+      - Convention
+      - Format
+      - Process
+      - Decision
+      - Reference
+      - authority source
+      - scope
   plugins/forge/docs/doc_structure_format.md:
     title: .doc_structure.yaml Format Specification
     purpose: Defines the configuration format and schema for declaring document placement, categorization, and structure that forge and doc-advisor use for document resolution and indexing
@@ -844,34 +872,6 @@ docs:
       - backwards compatibility
       - versioning
       - data transformation
-  plugins/forge/skills/clean-rules/docs/taxonomy.md:
-    title: Development Document Taxonomy
-    purpose: Defines a classification system for rule documents with three dimensions (content type, authority source, scope), priority rules for classification, and responsibility separation between forge and projects
-    content_details:
-      - Content Type categories (Constraint, Convention, Format, Process, Decision, Reference)
-      - Authority source classification (Tool-provided, Project-defined, External standard)
-      - Scope levels (Universal and Project-specific)
-      - Priority rules for multi-type section classification
-      - Responsibility separation matrix between forge and projects
-      - Deletion handling guidelines for each authority source
-      - Forge priority principle (prevent duplicate management of Tool-provided content)
-      - Document restructuring principles (splitting criteria, consolidation, protection rules)
-    applicable_tasks:
-      - Classifying and analyzing rule document content
-      - Determining content type of rule sections
-      - Planning rule document restructuring with split/rebuild operations
-      - Assessing whether rules are Tool-provided vs Project-defined
-    keywords:
-      - taxonomy
-      - Content Type
-      - Authority Source
-      - Constraint
-      - Convention
-      - Format
-      - Process
-      - Decision
-      - Reference
-      - Tool-provided
   plugins/forge/skills/start-implement/docs/task_execution_spec.md:
     title: Task Execution Guide (For Executor Agent)
     purpose: Provides step-by-step instructions for the task-executor agent to execute a single implementation task, covering pre-work, implementation, verification, and result reporting procedures
