@@ -29,7 +29,6 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   start-implement     : 計画書から実装・レビュー・計画更新
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
   create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
-  clean-rules         : ルール文書を分析し重複を検出・削除
   merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
   setup-doc-structure : .doc_structure.yaml を対話的に生成
   setup-version-config: .version-config.yaml を対話的に生成
@@ -219,12 +218,6 @@ AskUserQuestion:
 ### consult
 
 引数: 議論したい対象や問い（省略時は会話の流れから論点を立てる）
-
----
-
-### clean-rules
-
-引数: ルールディレクトリパス（省略時はデフォルト）
 
 ---
 

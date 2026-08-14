@@ -112,44 +112,6 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 | Target not found               | Show available targets                          |
 | Test failure                   | Version update complete. Fix tests, then commit |
 
----
-
-## clean-rules
-
-Analyze the project's `rules/` directory, detect duplicates with forge built-in docs, and restructure files.
-
-```
-/forge:clean-rules
-```
-
-No arguments. Default is analysis report only (no changes).
-
-### When to Use
-
-- After adopting forge, to deduplicate with existing rules
-- When rule documents have become scattered or overgrown
-
-### Execution Flow
-
-1. **Analysis**: Classify `rules/` files and sections
-   - Content Type: Constraint / Convention / Format / Process / Decision / Reference
-   - Authority: Tool-provided (forge built-in) / Project-defined / External standard
-2. **Duplicate detection**: Score similarity against forge built-in docs
-3. **Report**: List deletion and restructuring candidates
-4. After user confirmation:
-   - **Delete**: Remove sections covered by forge
-   - **Restructure**: Split large files with mixed Content Types; merge small files
-5. Update `.doc_structure.yaml` and the search index
-6. Confirm commit
-
-### Safety
-
-- Default is analysis only (no changes)
-- `git stash` before execution; `git stash pop` to recover if needed
-- Project-defined rules are never deleted
-
----
-
 ## help
 
 Display forge skill list, build arguments via a guided wizard, and execute.

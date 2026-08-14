@@ -1,30 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""doc-advisor 契約テスト（DES-057 §9.3 統合テスト・SKILL.md の静的検証）。
+"""doc-advisor 契約テスト（DES-057 §9.4 doc-advisor 契約テスト・SKILL.md の静的検証）。
 
 doc-advisor は外部 SKILL であり、`Skill` ツール起動を伴う経路はユニットテストで
 実行できないため、SKILL.md の記述を静的に検証して doc-advisor I/F への依拠を機械検証する。
 
 検証項目:
 
-- query 経路が prepare → `index-docs` → `query-docs` の順であること
-- index が成功した場合だけ検索へ進むこと
-- 検索前の索引更新を**常に**行い、更新の要否を forge が判定しないこと
-- doc-advisor 経路の query で検索母集団の相違を通知し、doc-db 経路では通知しないこと
+- query が `query-docs` だけを呼び、索引を書き換えないこと（REQ-014 FNC-002）
+- 未整備時は承認 → `update-db-*` への委譲 → 再検索の順であること（DES-057 §5.3）
+- doc-advisor 経路の query で検索母集団の相違を通知すること
 - 可用性判定に必要な SKILL が `index-docs` / `query-docs` の 2 つであること
 
-**復活を防ぐ検証** — 次はいずれも「索引の正しさを別の指標で代用する」誤りであり、
-再導入されていないことを機械検査する（REQ-014 BL-002 / DES-057 §2.4・§5.1）:
+**復活を防ぐ検証** — 次はいずれも「索引の正しさを別の指標で代用する」または
+「読み取り操作の内側で索引を書き換える」誤りであり、再導入されていないことを機械検査する
+（REQ-014 BL-002 / DES-057 §2.4・§5.1）:
 
 - 経過時間による鮮度判定（閾値・`--max-age` 相当の引数）を持たないこと
-- 更新要否の判定を外部 SKILL へ委譲する経路を持たないこと
-- バージョン番号、および特定の成果物の有無からバージョンを推測する判定を持たないこと
+- 検索のたびに索引を更新する経路（「検索前に必ず」「更新の要否を判定しない」）を持たないこと
+- バージョン番号による判定を持たないこと
 
 実行:
   python3 -m unittest tests.forge.doc_backend.test_advisor_contract -v
 """
 
-import re
 import unittest
 from pathlib import Path
 
@@ -71,79 +70,140 @@ class _ContractBase(unittest.TestCase):
                 yield name, path, _read_body(path)
 
 
-class TestUpdateThenQueryOrdering(_ContractBase):
-    """query 経路は prepare → index-docs → query-docs の順であること。"""
+class TestQueryDoesNotWriteTheIndex(_ContractBase):
+    """query は索引を書き換えない（REQ-014 FNC-002）。
 
-    def _positions(self, body, path):
-        markers = {
-            "prepare": "prepare_advisor_index.py",
-            "index_docs": "/doc-advisor:index-docs",
-            "query_docs": "/doc-advisor:query-docs",
-        }
-        pos = {}
-        for name, marker in markers.items():
-            idx = body.find(marker)
-            self.assertNotEqual(idx, -1, f"{path.parent.name}: {marker} の記述がない")
-            self.assertEqual(
-                body.find(marker, idx + 1), -1,
-                f"{path.parent.name}: {marker} の起動記述が複数ある（1 回だけ呼ぶ契約）",
-            )
-            pos[name] = idx
-        return pos
-
-    def test_order_is_prepare_index_query(self):
-        for _category, path, body in self.each_query_skill():
-            pos = self._positions(body, path)
-            self.assertLess(pos["prepare"], pos["index_docs"],
-                            f"{path.parent.name}: prepare が index-docs より先であること")
-            self.assertLess(pos["index_docs"], pos["query_docs"],
-                            f"{path.parent.name}: index-docs が query-docs より先であること")
-
-    def test_query_runs_only_after_index_success(self):
-        """index が成功した場合だけ検索へ進み、失敗時は検索を続行しないこと。"""
-        for _category, path, body in self.each_query_skill():
-            self.assertRegex(
-                body, r"index 成功 → Step 4\.3",
-                f"{path.parent.name}: index 成功時のみ検索へ進む記述がない",
-            )
-            self.assertIn(
-                "index 失敗 → 検索を続行せず、明示エラーとして終了する", body,
-                f"{path.parent.name}: index 失敗時に検索を続行しない記述がない",
-            )
-
-
-class TestUpdateIsUnconditional(_ContractBase):
-    """検索前の索引更新は常に行い、要否を forge が判定しないこと。
-
-    要否を判定する仕掛けを戻すと、判定の指標（経過時間・外部への委譲）を再び持つことになる。
+    検索が読み取り操作の内側で索引を書き換えると、古かった事実が消え、利用者は索引の
+    更新漏れに気づけない。整備の入口も `update-db-*` と二重化する。
     """
 
-    def test_update_step_declares_unconditional(self):
+    def test_query_docs_is_the_only_advisor_invocation(self):
         for _category, path, body in self.each_query_skill():
-            self.assertIn(
-                "更新の要否を判定しない", body,
-                f"{path.parent.name}: 更新の要否を判定しない旨の明示がない",
+            idx = body.find("/doc-advisor:query-docs")
+            self.assertNotEqual(idx, -1, f"{path.parent.name}: query-docs の起動記述がない")
+            self.assertNotIn(
+                "/doc-advisor:index-docs", body,
+                f"{path.parent.name}: index-docs を直接起動している（DES-057 §5.1）",
             )
 
-    def test_no_conditional_wording_on_update_step(self):
-        """更新 Step の見出しが条件付き（「〜のみ」等）でないこと。"""
+    def test_no_maintenance_wrapper_invocation(self):
         for _category, path, body in self.each_query_skill():
-            heading = re.search(r"(?m)^#### Step 4\.2:.*$", body)
-            self.assertIsNotNone(heading, f"{path.parent.name}: Step 4.2 見出しがない")
-            for forbidden in ("のみ", "stale", "鮮度"):
+            for wrapper in ("prepare_advisor_index.py", "sync_documents.py"):
                 self.assertNotIn(
-                    forbidden, heading.group(0),
-                    f"{path.parent.name}: 索引更新 Step の見出しが条件付きになっている",
+                    wrapper, body,
+                    f"{path.parent.name}: 索引整備 wrapper を呼んでいる: {wrapper}",
                 )
 
 
+class TestUnpreparedIndexDelegation(_ContractBase):
+    """未整備時は承認 → `update-db-*` への委譲 → 再検索の順であること（DES-057 §5.3）。"""
+
+    def test_order_is_approval_then_delegation(self):
+        """整備の承認が委譲より先にあること。
+
+        探索は整備を扱う Step の見出し以降に限る。SKILL.md 冒頭側にはセッション内変更を確認する
+        `AskUserQuestion` が先に現れるため、本文全体を対象にすると整備の承認が消えても
+        そちらにマッチして通ってしまう。
+        """
+        for category, path, body in self.each_query_skill():
+            section = body.find("### Step 5")
+            self.assertNotEqual(
+                section, -1,
+                f"{path.parent.name}: 整備を扱う Step の見出しが見つからない",
+            )
+            scope = body[section:]
+            approval = scope.find("AskUserQuestion")
+            delegation = scope.find(f"/forge:update-db-{category} --backend")
+            self.assertNotEqual(
+                approval, -1,
+                f"{path.parent.name}: 整備の Step に承認取得の記述がない",
+            )
+            self.assertNotEqual(
+                delegation, -1,
+                f"{path.parent.name}: backend を指定した委譲の記述がない",
+            )
+            self.assertLess(
+                approval, delegation,
+                f"{path.parent.name}: 承認が委譲より先であること",
+            )
+
+    def test_declines_do_not_fail_the_operation(self):
+        for _category, path, body in self.each_query_skill():
+            self.assertIn(
+                "失敗として扱わない", body,
+                f"{path.parent.name}: 見送りを失敗としない旨の記述がない（REQ-014 BL-004）",
+            )
+
+    def test_query_does_not_continue_after_failed_maintenance(self):
+        """整備が失敗したら検索を続行せず明示エラーで終了すること（REQ-014 BL-003）。
+
+        整備に失敗した backend で検索を続けると、失敗前と同じ状態の索引（または不完全な索引）に
+        対する結果が「検索の成功」として返り、整備の失敗が利用者から見えなくなる。
+        改行と字下げをまたぐ文のため、空白を正規化してから照合する。
+        """
+        for _category, path, body in self.each_query_skill():
+            section = body.find("### Step 5")
+            self.assertNotEqual(
+                section, -1,
+                f"{path.parent.name}: 整備を扱う Step の見出しが見つからない",
+            )
+            normalized = " ".join(body[section:].split())
+            self.assertIn(
+                "整備が失敗した場合は 検索せず明示エラーとして終了する".replace(" ", ""),
+                normalized.replace(" ", ""),
+                f"{path.parent.name}: 整備失敗時に検索を続行しない旨の記述がない（REQ-014 BL-003）",
+            )
+
+
+class TestNoUnconditionalUpdate(_ContractBase):
+    """検索のたびに索引を更新する経路が復活していないこと（REQ-014 FNC-002 / BL-002）。"""
+
+    #: 旧設計（毎回更新）に固有の文言
+    FORBIDDEN = ("検索前に必ず索引更新", "更新の要否を判定しない", "検索前に必ず")
+
+    def test_no_unconditional_update_wording(self):
+        for _category, path, body in self.each_query_skill():
+            for token in self.FORBIDDEN:
+                self.assertNotIn(
+                    token, body,
+                    f"{path.parent.name}: 毎回更新の記述が復活している（{token}）",
+                )
+
+    def test_declares_index_maintenance_is_out_of_scope(self):
+        for _category, path, body in self.each_query_skill():
+            self.assertIn(
+                "索引の作成・更新は行わない", body,
+                f"{path.parent.name}: 責務境界の宣言がない（REQ-014 FNC-002）",
+            )
+
+
 class TestAvailabilityRequiresTwoSkills(_ContractBase):
-    """可用性判定に必要な doc-advisor SKILL は index-docs / query-docs の 2 つ。"""
+    """可用性判定に必要な doc-advisor SKILL は index-docs / query-docs の 2 つ。
+
+    query 自身が呼ぶのは `query-docs` だけだが、未整備時に委譲する `update-db-*` が
+    `index-docs` を要するため、query 経路の可用性は両者が揃うことを条件とする。
+    """
 
     def test_query_path_requires_index_and_query(self):
         for _category, path, body in self.each_query_skill():
-            self.assertIn("`doc-advisor:index-docs` と `doc-advisor:query-docs` の 2 つ", body,
-                          f"{path.parent.name}: 必要 SKILL が 2 つである旨の記述がない")
+            self.assertIn("`doc-advisor:index-docs`", body,
+                          f"{path.parent.name}: index-docs の可用性条件の記述がない")
+            self.assertIn("`doc-advisor:query-docs`", body,
+                          f"{path.parent.name}: query-docs の可用性条件の記述がない")
+
+
+class TestPinnedBackendContract(unittest.TestCase):
+    """`update-db-*` は backend の指定を受理し、指定時は切り替えないこと（REQ-014 BL-006）。"""
+
+    def test_update_skills_accept_pin(self):
+        for name, path in UPDATE_SKILLS.items():
+            body = _read_body(path)
+            with self.subTest(skill=name):
+                self.assertIn("--backend", body, f"update-{name}: 指定の受理がない")
+                self.assertIn(
+                    "他方へ切り替えず明示エラー", body,
+                    f"update-{name}: 指定時に切り替えない旨の記述がない",
+                )
 
 
 class TestNoElapsedTimeFreshnessJudgement(unittest.TestCase):
@@ -189,15 +249,25 @@ class TestNoVersionInference(unittest.TestCase):
                     f"{name}: 最小対応バージョンによる判定が復活している",
                 )
 
-    def test_version_inference_is_explicitly_forbidden(self):
-        """推測しない旨が明文で書かれていること（黙って消えていないこと）。"""
-        for name, path in ALL_SKILLS.items():
-            body = _read_body(path)
-            with self.subTest(skill=name):
-                self.assertIn(
-                    "バージョンを推測", body,
-                    f"{name}: バージョンを推測しない旨の明示がない",
-                )
+    def test_version_inference_is_forbidden_in_the_design(self):
+        """推測しない旨が規範として残っていること（黙って消えていないこと）。
+
+        明文の置き場は設計書である。バージョン判定という個別事項の禁止を SKILL.md へ警告として
+        書くことは REQ-003 FNC-004 が禁じており（警告文は AI に禁止対象の存在を認識させ逆効果に
+        なりうる）、SKILL.md 側にこの文言を要求すると 2 つの規約が衝突する。
+
+        SKILL.md の禁止警告が一律に禁じられているわけではない（COMMON-DES-001 §7.1 / §7.2 は
+        責務境界と自己再帰禁止の明記を [MANDATORY] としている）。ここで設計書側へ寄せているのは
+        バージョン判定に限る。
+        """
+        design = (
+            REPO_ROOT / "docs" / "specs" / "doc-db" / "design"
+            / "DES-057_doc_db_backend_selection_design.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "バージョンを推測しない", design,
+            "DES-057 からバージョン推測禁止の規範が消えている",
+        )
 
 
 class TestPopulationDifferenceNotice(_ContractBase):

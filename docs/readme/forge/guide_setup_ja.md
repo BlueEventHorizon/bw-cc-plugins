@@ -112,44 +112,6 @@ git:
 | 指定ターゲットが存在しない    | 利用可能なターゲット一覧を表示                  |
 | テスト失敗                    | バージョン更新は完了済み。テスト修正後に commit |
 
----
-
-## clean-rules
-
-プロジェクトの `rules/` ディレクトリを分析し、forge 内蔵ドキュメントとの重複削除・ファイル再構築を行う。
-
-```
-/forge:clean-rules
-```
-
-引数なし。デフォルトは分析レポートのみ出力（変更なし）。
-
-### いつ使うか
-
-- forge 導入後に既存ルールとの重複を整理したいとき
-- ルール文書が肥大化・散在して管理が困難になったとき
-
-### 実行フロー
-
-1. **分析**: `rules/` のファイル・セクションを分類
-   - Content Type: Constraint / Convention / Format / Process / Decision / Reference
-   - Authority: Tool-provided（forge 内蔵）/ Project-defined / External standard
-2. **重複検出**: forge 内蔵 docs との類似度をスコアリング
-3. **レポート出力**: 削除候補・再構築候補を一覧表示
-4. ユーザー確認後に実行:
-   - **削除**: forge でカバーされるセクションを除去
-   - **再構築**: Content Type が混在する大ファイルを分割・統合
-5. `.doc_structure.yaml` と検索インデックスを更新
-6. commit 確認
-
-### 安全性
-
-- デフォルトは分析のみ（変更なし）
-- 実行前に `git stash` で退避。問題時は `git stash pop` で復元可能
-- Project-defined のルールは絶対に削除しない
-
----
-
 ## help
 
 forge スキル一覧を表示し、選択したスキルの引数をガイド付きで構成して実行する。

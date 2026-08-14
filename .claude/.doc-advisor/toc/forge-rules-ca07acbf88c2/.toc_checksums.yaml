@@ -1,6 +1,6 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-08-13T02:38:07Z
+generated_at: 2026-08-14T10:11:36Z
 file_count: 40
 checksums:
   plugins/forge/docs/additive_development_spec.md: ebb7c7b8f1150a00dae9a1be0e5eef2e346795978902af97ed9b4bacf5a010d3
@@ -16,6 +16,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_uxui.md: 23037ee8cced86399fdb7f7fa31276d6616d2b8e47f40cd36c8fe595226eb201
   plugins/forge/docs/design_format.md: 899a10283a6c8e1203be2a9810f08d35c43ab2f7f264d0cc35ae30bcb8bbd810
   plugins/forge/docs/design_principles_spec.md: bca92c6cc52ec2d04dcefe48c3a50f4b8375273d8216304efe8b65d2a7440d25
+  plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e
   plugins/forge/docs/document_style_guide.md: 5b6395a3883b2813e20f38c42903c4e17c72428b5804baa8ee28912eaf55fce8
   plugins/forge/docs/forge_anti_patterns.md: c12e23d4fb124122226d893c60d1e702c9ce2d08fe43828c5d1dddf3c765b892
@@ -30,7 +31,6 @@ checksums:
   plugins/forge/docs/spec_priorities_spec.md: ad7b3f38738755872126f318ff055037bd739f7c66b26427d27514421310f032
   plugins/forge/docs/strategy_formulation_spec.md: dfa05da1eef38990ca78dc991ab5a5ed7444fc2c96552ae9ee5c05342bf5b042
   plugins/forge/docs/version_migration_spec.md: 7789d9fe362fa960d9dd95841404daa734b0e35133fdb529c9d4921186665e60
-  plugins/forge/skills/clean-rules/docs/taxonomy.md: cbe025933f39f74be1d11707b0a4c376c9aab7faa99973f6bfa1a6c09ee9b39a
   plugins/forge/skills/start-implement/docs/task_execution_spec.md: f4397a0a971e0a10c9574645dcccf7b3cf8629a772ca3b23d1ae197a44196368
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md: 6120b83f8bac7942c5cde5d52df2341fa978ee3f031fcb5c79651fa38ccfd746
   plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md: c1603366b3c66cf000dd0946adc2a4857b39e83f1839b44b827d115ceb211db5
