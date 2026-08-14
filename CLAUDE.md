@@ -48,7 +48,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ## Development
 
-ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` はビルドではなくインストール・外部接続用（`make install-forge` / `install-anvil` / `install-all`、Codex 向けは `install-*-codex`）。
+ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` はビルドではなくインストール・外部接続用（`make {forge,anvil}-install-claude-project-copy`、Codex 向けは `make {forge,anvil}-install-codex-project-copy`。いずれも `DIR=` 必須で、実ファイルを copy する。自動 uninstall は無い）。
 
 - **Python 3.11 以上をサポート対象とする**。Python 3.10 以下は対象外
 - **CI（`.github/workflows/ci.yml`）のゲートは 2 つ**: `python3 -m unittest discover -s tests -p 'test_*.py'` と `dprint check`。JSON / TOML / Markdown / YAML を編集したら [dprint](https://dprint.dev/) で `dprint fmt` を通す（設定は `dprint.jsonc`）。通さないと CI が落ちる
