@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-14T17:30:52Z
+  generated_at: 2026-08-15T13:03:17Z
   file_count: 56
 
 docs:
@@ -182,33 +182,36 @@ docs:
       - decision gate
       - phase dependency
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md:
-    title: "DES-038: Development Flow Triage Design - Phase Structure, SoT Analysis, Anvil Improvements"
-    purpose: Analyzes triage-issue Phase structure, SoT locations and dependencies; designs Phase reordering improvements within anvil→forge one-way dependency constraints
+    title: "Design of Development Flow Triage: Phase Structure, SoT Analysis, and anvil Improvements"
+    purpose: Analyzes Phase structure of anvil:triage-issue and proposes improvements to Phase composition within constraint of one-way anvil-to-forge dependency.
     content_details:
-      - "SoT classification: fixed rules (forge ownership), context-dependent judgments (anvil), heuristics (anvil)"
-      - Phase 0-9 analysis with purpose, nature and dependencies for each Phase
-      - "Direct-passable judgments: Phase 6.1 requirement confirmation, Phase 7 conditions 1&2, Phase 8 additive_development_spec check"
-      - "Blocked judgments: Phase 6.2 design residuals requires Phase 4-5 investigation results"
-      - "Phase 5.3 analysis: code investigation needs Phase 2-3 backing for safe Phase 6.2/7.3 decisions"
-      - "New Phase 5.5: code domain re-search with query-db-specs/query-db-rules and uncertainty resolution"
-      - "Phase flow redesign: Phase 1-5.5 investigations before Phase 6+ judgments with mermaid diagram"
-      - "Component dependency graph: anvil→forge one-way calls with no reverse dependency"
-      - "Modules changed: triage-issue/SKILL.md adds Phase 5.5; Phase 2-5 references unchanged"
-      - "Phase 7 condition 3: measures files requiring individual judgment per file, not total edit count"
+      - Phase 0-9 structure analysis and execution order in triage-issue
+      - "Decision logic SoT classification: fixed rules, context-dependent judgment, heuristics"
+      - Phase dependency mapping between investigations (Phase 2-5) and decision points (Phase 6-7)
+      - "New Phase 5.5: code area-based re-search via query-db-specs and query-db-rules"
+      - Uncertainty resolution tracking table before Phase 6 judgment
+      - "Risk gate conditions: consequence irreversibility, silent corruption risk, AI judgment quantity per-file"
+      - Feature necessity judgment logic from additive_development_spec.md section 1
+      - Phase flow diagram with early termination on investigation blockers
+      - Component dependency diagram enforcing anvil-to-forge one-way dependency
+      - Manual integration test design for Phase ordering and decision prerequisites
     applicable_tasks:
-      - Triage flow phase design and optimization
-      - Dependency analysis in triage decision making
-      - SoT classification for judgment logic
-      - Phase-level uncertainty resolution planning
-      - Anvil-forge dependency constraint enforcement
+      - Refactoring triage-issue Phase structure from 0-9 to new order with Phase 5.5
+      - Implementing Phase 5.5 re-search logic for code-based specification and rule queries
+      - Code review of Phase 6-7 decision logic against Phase 2-5 investigation results
+      - Testing Phase 2-5 execution before Phase 6-7 decision branching
+      - Uncertainty resolution tracking during Phase 5.5
+      - Integration testing of anvil-to-forge dependency constraints
     keywords:
       - triage-issue
-      - phase structure
+      - query-db-specs
+      - query-db-rules
+      - Phase dependency
       - SoT
-      - phase dependency
-      - risk gate
-      - anvil
-      - uncertainty resolution
+      - anvil plugin
+      - Risk gate
+      - additive_development_spec
+      - NFR-01
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
     title: REQ-007 Development Flow Branching (Triage) Requirements Definition
     purpose: Defines requirements for a triage system that branches development flow into lightweight implementation or full SDD (Spec-Design-Plan) route based on Issue analysis

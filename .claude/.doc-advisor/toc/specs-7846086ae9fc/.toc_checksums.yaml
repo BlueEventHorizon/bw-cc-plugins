@@ -1,6 +1,6 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-14T17:30:52Z
+generated_at: 2026-08-15T13:03:17Z
 file_count: 56
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 6a98ef5a5c8e0b60075f19d2294d55e6f5d47bf487504f944016e087f84a863b
@@ -9,7 +9,7 @@ checksums:
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: 0d457e1a32f2fe4d4244d194202ffa8c94bc9af9c48d73be33dab3a25ad3bebf
   docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md: 4c72cb65cbc00618ec627abd49f09e514758559727c9a79754894e4d6d2bd71c
   docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md: 7cfe732a3ca10649a9cdec9419c9f123fa33a5a7c8685250921092712c33d2fc
-  docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 2479d7f11de1cbc2e3574e92023d53c83b55f75783ed81830096018805e0b51a
+  docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 399fc0ced8d055b3016d271cf8ae054ff744730379af431cc037f74f9ec7fcbf
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: 854ba4a8e4da06adddb215c66ff292db9d876bea75aaef78f21312b8bc2488c5
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md: 87a3eac6c5f093c71dedf46ae8e2435331d305f0e8db38f4fbd554e5f35c1493
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: 955300ea4e2023cc5944ab8fec38b6f3a7fa839faa769c821b9552e45b489fb6
