@@ -91,8 +91,7 @@ consumer は `filtered_dirs` を使わず `dirs`/`exclude` を使う。自前で
 
 短縮名（例: `main`）・相対パス・絶対パスのいずれかを実ディレクトリへ解決したい他スキル
 （merge-specs 等）は、`.doc_structure.yaml` の `root_dirs` を自スキルの SKILL.md に書かず、
-本節を Read して以下の手順に従う。**外部ライブラリ（PyYAML 等）は使わない**（プロジェクト規約:
-Python は標準ライブラリのみで動作する）。
+本節を Read して以下の手順に従う。
 
 ### 入力
 

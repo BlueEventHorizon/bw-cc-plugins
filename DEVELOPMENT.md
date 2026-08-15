@@ -68,7 +68,7 @@ SKILL.md から呼び出されるスクリプトは、Claude セッションを�
 
 ```bash
 # レビュー対象の自動検出
-python3 plugins/forge/skills/review/scripts/resolve_review_context.py [対象パス]
+python3 plugins/forge/skills/review/scripts/resolve_targets.py --mode diff
 
 # ディレクトリスキャン（メタデータ JSON 出力）
 python3 plugins/forge/scripts/doc_structure/classify_dirs.py [プロジェクトルート]

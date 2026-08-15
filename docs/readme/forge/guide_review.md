@@ -265,7 +265,7 @@ The verification scripts **only detect**; they never roll back automatically. De
 
 ### Convergence
 
-Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if no fix is to be applied this round, no re-review is requested and the review completes.**
+Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if nothing is to be fixed this round and nothing is queued for presentation, no re-review is requested and the review completes.** Interrupting the step-by-step presentation also completes the review — after applying the fixes already accepted — regardless of how many they were.
 
 That completion differs from completing by approval, and the summary distinguishes them:
 
