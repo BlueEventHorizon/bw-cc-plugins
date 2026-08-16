@@ -24,7 +24,7 @@ forge プラグインの**開発ルール**。forge 内部 (SKILL / agent / scri
 - **プロジェクト spec/rules を配布物から参照する**: パス直書きも spec ID 参照（`DES-028 §3.4.1 に従う` 等）も禁止（`docs/rules/implementation_guidelines.md`「配布物はプロジェクト開発文書を参照しない」）
 - **forge 内部ロジックを「内蔵 doc」として書く**: doc は宣言的に読み取るもの。手続きは SKILL.md / scripts に閉じる
 - **agent への引数として `session_dir` を渡し、ファイル経由で結果を受ける**: Agent return value で代替可能で、第三の経路を作るだけ
-- **他 skill の `docs/*` を直接参照する**: 参照元 skill の視点では無断参照であり、参照先 skill のディレクトリ構成が変わると静かに壊れる（実例: criteria 文書が review skill 固有の場所にあった時、msg-review skill から直接参照されており、プラグイン共有の場所へ移動した際に参照が壊れた）。複数 skill が必要とする文書はプラグイン共有 `plugins/forge/docs/*` へ昇格する
+- **他 skill の `docs/*` を直接参照する**: 参照元 skill の視点では無断参照であり、参照先 skill のディレクトリ構成が変わると静かに壊れる。実害事例・詳細は [implementation_guidelines.md](implementation_guidelines.md)「スクリプト・文書の配置」を参照。複数 skill が必要とする文書はプラグイン共有 `plugins/forge/docs/*` へ昇格する
 
 ## 外部利用 (参考)
 

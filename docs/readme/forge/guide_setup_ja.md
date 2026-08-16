@@ -40,27 +40,7 @@
 
 ### 設定の構造
 
-```yaml
-targets:
-  - name: forge # ターゲット名
-    version_file: plugins/forge/.claude-plugin/plugin.json # バージョンファイル
-    version_path: version # JSON パス
-    sync_files: # 同期対象
-      - path: README.md
-        pattern: "| **forge** | {version} |"
-        filter: "| **forge**"
-
-changelog:
-  file: CHANGELOG.md
-  format: keep-a-changelog
-  git_log_auto: false
-
-git:
-  tag_format: "{target}-v{version}"
-  commit_message: "chore: bump {target} to {version}"
-  auto_tag: false
-  auto_commit: false
-```
+`targets` / `changelog` / `git` の3セクションで構成される。スキーマの詳細は `DES-023` §2 または `setup-version-config` の Schema Reference を参照。
 
 ---
 
@@ -72,11 +52,11 @@ git:
 /forge:update-version [target] <patch | minor | major | X.Y.Z>
 ```
 
-| 引数                        | 説明                                   |
-| --------------------------- | -------------------------------------- |
-| `target`                    | ターゲット名（省略時は先頭ターゲット） |
-| `patch` / `minor` / `major` | バンプ種別                             |
-| `X.Y.Z`                     | バージョン番号を直接指定               |
+| 引数                        | 説明                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| `target`                    | ターゲット名（省略時は `scope` に一致する変更から自動検出。複数候補時は選択） |
+| `patch` / `minor` / `major` | バンプ種別                                                                    |
+| `X.Y.Z`                     | バージョン番号を直接指定                                                      |
 
 ### 使用例
 
@@ -129,11 +109,17 @@ forge スキル一覧を表示し、選択したスキルの引数をガイド�
 3. **コマンド確認**: 構築されたコマンドを表示して実行確認
 
 ```
-1. review              : コード・文書のレビュー
-2. start-uxui-design   : デザイントークン・UI コンポーネント生成
-3. start-requirements  : 要件定義書の作成
-4. start-design        : 設計書の作成
-5. start-plan          : 計画書の作成
-6. start-implement     : タスク実行・実装
-7. setup               : 初期設定
+1.  review                            : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+2.  consult                           : 議論を進行。論点を立て、討議ファイルに記録しながら 1 件ずつ
+3.  start-requirements                : 要件定義書の作成。3モード対応
+4.  start-design                      : 設計書の作成。レビュー+自動修正→commit
+5.  start-plan                        : 計画書の作成。レビュー+自動修正→commit
+6.  start-implement                   : 計画書から実装・レビュー・計画更新
+7.  start-uxui-design                 : デザイントークン・UI 視覚仕様を創造
+8.  create-feature-from-markdown-plan : Markdown plan から要件定義→設計書へ展開
+9.  merge-specs                       : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
+10. setup-doc-structure               : .doc_structure.yaml を対話的に生成
+11. setup-version-config              : .version-config.yaml を対話的に生成
+12. update-version                    : バージョンを一括更新。CHANGELOG 自動反映
+13. query-forge-rules                 : forge 内蔵知識ベースを ToC 検索
 ```
