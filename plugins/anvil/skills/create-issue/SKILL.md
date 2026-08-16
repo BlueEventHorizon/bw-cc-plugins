@@ -288,7 +288,7 @@ Issue を作成しました:
   /anvil:triage-issue #<N>
 ```
 
-> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（軽量実装と判定されれば triage が impl-issue を起動する）。
+> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（ワンショット実装と判定されれば triage が impl-issue を起動する）。
 
 ---
 
@@ -310,6 +310,6 @@ Issue を作成しました:
 
 ## 関連スキル
 
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（軽量実装なら内部で `impl-issue` を起動、SDD なら forge start-* を提案）
+- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge start-* を提案）
 - [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
 - [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push
