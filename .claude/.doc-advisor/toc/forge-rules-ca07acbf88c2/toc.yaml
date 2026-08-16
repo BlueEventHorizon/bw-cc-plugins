@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-14T10:11:36Z
+  generated_at: 2026-08-16T03:51:18Z
   file_count: 40
 
 docs:
@@ -336,35 +336,29 @@ docs:
       - severity judgment
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
-    purpose: Specifies the standard structure, frontmatter, naming conventions, and template for design documents when project-specific formats are not defined.
+    purpose: Defines default template, naming conventions, and frontmatter requirements for forge design documents
     content_details:
-      - Additive feature frontmatter specification with type and notes
-      - File naming convention using design ID and target name
-      - Metadata section with design ID, related requirements, and creation date
-      - Overview section describing problem and adopted approach
-      - Architecture overview with components, layers, and responsibility distribution
-      - Module design section with module list and class diagrams
-      - Use case design section with scenarios and sequence diagrams
-      - Existing components usage documentation
-      - Test design section defining unit and integration test targets
-      - Integration with additive_development_spec for merge procedures
+      - "Additive feature frontmatter specification with type: temporary-feature-design"
+      - "File naming convention: {design_id}_{target_name}_design.md"
+      - Template structure with metadata section
+      - Architecture overview with component diagram and layer composition
+      - Module design with module list and class diagram
+      - Use case design with sequence diagrams
+      - Existing component reference table
+      - Test design section with unit and integration test targets
     applicable_tasks:
-      - Design document creation and structuring
-      - Architecture design documentation
-      - Feature design documentation
-      - Module and class diagram specification
-      - Use case and test design
-      - Design document review and validation
+      - Creating design documents for new features
+      - Creating design documents for additive feature implementations
+      - Reviewing design document structure compliance
     keywords:
-      - design format
       - design document
-      - template
-      - architecture
-      - module design
-      - use case
       - frontmatter
-      - DES-ID
+      - temporary-feature-design
       - additive feature
+      - module design
+      - sequence diagram
+      - component diagram
+      - architecture overview
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Establishes universal principles for creating design documents, covering essential components, required content, decision criteria, and architecture/responsibility/availability rules for implementation.
@@ -525,35 +519,32 @@ docs:
       - code review
       - design patterns
   plugins/forge/docs/plan_format.md:
-    title: Default Plan Format
-    purpose: Defines the default YAML schema and field structure for plan files used in project planning and task management
+    title: Plan Document Default Format
+    purpose: Specifies YAML schema and format for forge plan documents with task definitions, traceability, and revision history
     content_details:
-      - YAML schema with requirements_traceability, design_traceability, tasks, revision_history sections
-      - Field definitions for requirements_traceability including requirement_id, design_id, and status tracking
-      - Field definitions for design_traceability linking designs to requirements and tasks
-      - Task field definitions including priority, status, dependencies, group_id, build_check, and required_reading
-      - Status transitions (pending → in_progress → completed) for requirements and tasks
-      - "Priority ranges: high (70-99), medium (40-69), low (1-39) for task prioritization"
-      - Additive feature frontmatter markers for temporary feature plans
-      - Rationale for YAML format (FNC-005) for machine-parseable structured data
-      - Revision history field for tracking plan modifications
+      - YAML schema selection rationale (FNC-005) for structured task data and machine parsing
+      - "Additive feature frontmatter with type: temporary-feature-plan marker comment block"
+      - Requirements traceability section with requirement_id, design_id, status fields
+      - Design traceability section mapping designs to requirements and tasks
+      - Task list with task_id, priority (1-99), status, dependencies, and group_id
+      - "Build check strategy options: per_task, skip, on_group_complete"
+      - Acceptance criteria and required reading documents per task
+      - "Task status transitions: pending to in_progress to completed"
+      - Revision history with date and content entries
     applicable_tasks:
-      - Creating project-specific plan files in YAML format
-      - Implementing task status tracking and updates
-      - Managing requirement-design-task traceability
-      - Validating plan file structure and field compliance
-      - Setting up additive feature plans with separate tracking
+      - Creating implementation plan documents for features
+      - Defining task dependencies and build check strategies
+      - Tracing requirements to design and implementation tasks
+      - Updating task status during implementation
     keywords:
-      - YAML
-      - plan
+      - plan document
+      - YAML schema
+      - temporary-feature-plan
+      - task_id
       - traceability
-      - requirements_traceability
-      - design_traceability
-      - task
       - priority
-      - status
-      - schema
-      - frontmatter
+      - acceptance criteria
+      - task dependencies
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Creation Principles
     purpose: Defines mandatory creation principles and rules for plan documents, covering structure, task granularity, traceability, dependency management, acceptance criteria, test requirements, and violation severity levels
@@ -588,38 +579,32 @@ docs:
       - severity
       - traceability
   plugins/forge/docs/requirement_format.md:
-    title: Default Requirement Format
-    purpose: Defines the default Markdown format and structure for requirement definition documents, including frontmatter for additive features and sections for overview, preconditions, requirements, error cases, and undetermined items
+    title: Requirement Definition Document Default Format
+    purpose: Specifies default format, frontmatter requirements, and severity catalog for forge requirement definition documents
     content_details:
-      - Default format for requirement definition documents when project-specific format not available
-      - "YAML frontmatter for additive features with type marker 'type: temporary-feature-requirement' and priority notes"
-      - "Main body header structure: {REQUIREMENT_ID} {Feature_Name} Requirement Definition"
-      - "Overview section: 1-3 sentence description of requirement purpose and target users"
-      - "Preconditions section: conditions required for feature availability"
-      - Requirements list with Display requirements, Operation requirements (input/output constraints), and Error cases subsections
-      - Error cases table with condition and error message/behavior columns
-      - Undetermined items (TBD) section for tracking open questions with ID, content, and deadline columns
-      - "Additive feature frontmatter specification: when to use, merge process, scope differentiation between old and new specifications"
-      - "Severity level catalog: violation patterns and severity (major) for missing frontmatter on additive feature requirements"
+      - "Additive feature frontmatter with type: temporary-feature-requirement marker"
+      - Document structure with overview, prerequisites, and requirement list sections
+      - Display requirements for screen elements and user interface components
+      - Operation requirements with input constraints, output specifications, and navigation
+      - Error case table with conditions and error messages or behaviors
+      - Undecided items section (TBD entries) with ID and deadline tracking
+      - Severity catalog mapping format violations to severity levels
+      - Judgment criteria for additive features based on separation management value and collision risk
+      - Merge procedures and scope management for additive feature requirements
     applicable_tasks:
-      - Creating requirement definition documents in Markdown format
-      - Defining feature scope with display, operation, and error requirement sections
-      - Setting up requirement documents for additive features with temporary markers
-      - Documenting undetermined items and blockers in requirements
-      - Validating requirement document structure and frontmatter compliance
-      - Managing traceability between requirements and design/plan documents
-      - Planning requirement merge when additive features are complete
+      - Creating requirement definition documents for new features
+      - Creating requirement definition documents for additive feature implementations
+      - Reviewing requirement document structure and frontmatter compliance
+      - Defining display and operation requirements
     keywords:
-      - requirement format
-      - requirement definition
+      - requirement definition document
       - frontmatter
+      - temporary-feature-requirement
       - additive feature
-      - display requirements
+      - severity catalog
       - operation requirements
       - error cases
-      - undetermined items
-      - TBD
-      - temporary-feature-requirement
+      - REQ-ID
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
     purpose: Defines the priority system for review observations (P1/P2/P3), the independence of priority and severity axes, delegation of judgment to principles documents, and rules for create_issue recommendations
