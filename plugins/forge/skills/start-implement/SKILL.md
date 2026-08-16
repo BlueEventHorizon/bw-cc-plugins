@@ -268,7 +268,34 @@ prompt:
 }
 ```
 
-### 4.3 パラメータの構築 [MANDATORY]
+### 4.3 タスクコンテキストの生成 [MANDATORY]
+
+4.1（検証要件）・4.2（スコープ境界）・Phase 3.2（必読文書の統合結果）と、タスク固有の実装指示から、`{feature}_plan.yaml` と同じディレクトリに `tasks/{タスクID}.yaml` を生成する。executor へは、この生成済みファイルのパスと `task_id` だけを渡す（`plan.yaml` の値をインライン Markdown へ手で転記しない）。
+
+1. **候補 JSON を組み立てる**（スキーマは `${CLAUDE_SKILL_DIR}/templates/task_context_input.json` を参照）:
+   - `scope_in` / `scope_out`: 4.2 の導出結果をそのまま使う
+   - `required_reading`: Phase 3.2 で統合した文書パスを `design_docs` / `requirement_docs` / `strategy_doc` / `rule_docs` / `reference_code` / `additional` へ分類する
+   - `implementation_instructions`: タスク固有の実装方針（必読文書を踏まえて AI がその場で書く。従来の「実装指示」と同じ内容）
+   - `verification`: 4.1 の判定結果（`build` は `required`/`skipped`、`tests` は `required`/`optional`/`skipped`。スキップ時のみ `_reason` を添える）
+2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json` へ書く（シェルコマンドへ直接埋め込まない。自由記述をシェル文字列に乗せると注入リスクを生むため）
+3. **生成 script を 1 回実行する**。`plan.yaml` の該当タスクエントリと候補 JSON をマージして `tasks/{タスクID}.yaml` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/build_task_context.py" \
+     --plan-path "{計画書パス}" \
+     --task-id "{タスクID}" \
+     --input-file ".claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json" \
+     --output-path "{計画書と同じディレクトリ}/tasks/{タスクID}.yaml"
+   ```
+
+   exit code で分岐する:
+
+   | exit code | 動作                                                                                                                                       |
+   | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+   | 0         | stdout の `output_path` を確認し、4.4 へ進む                                                                                               |
+   | 20        | stdout の `errors` に従って候補 JSON を訂正し、Write から同じ手順をもう 1 回だけ実行する。2 回目も失敗した場合はエラーとして報告し中断する |
+
+### 4.4 executor 起動
 
 以下のテンプレートで executor への指示を構築する:
 
@@ -278,6 +305,10 @@ prompt:
 ## 実行ガイド
 
 ${CLAUDE_SKILL_DIR}/docs/task_execution_spec.md を Read して手順に従うこと。
+
+## タスクコンテキスト
+
+{4.3 で生成した tasks/{タスクID}.yaml のパス}
 
 ## result template
 
@@ -291,53 +322,10 @@ ${CLAUDE_SKILL_DIR}/scripts/validate_executor_result.py
 
 .claude/.temp/executor-result-${CLAUDE_SESSION_ID}-{タスクID}.producer.json
 
-## タスク情報
-
-- タスクID: {タスクID}
-- タスク名: {タイトル}
-- 優先度: {数値}
-- 実装内容:
-  {やるべき内容の箇条書き}
-
-## スコープ境界 [MANDATORY]
-
-{今回到達すべき範囲の1行要約}
-
-以下は今回の範囲外である。手を付けないこと。
-
-- {範囲外の項目} — {担当タスクID}（{分離されている理由}）
-
-## 必読文書（全文読み込み必須）
-
-- 設計書:
-  - {設計書ファイルパス}
-- 要件定義書:
-  - {関連する全ての要件定義書}
-- 戦略書:
-  - {feature_strategy.md のパス}
-- ルール文書:
-  - {関連する全てのルール文書}
-- 参照コード:
-  - {関連する全ての既存実装}
-- 追加必読文書:
-  - {required_reading に含まれる戦略書以外の文書}
-
-## 実装指示
-
-{タスク固有の実装指示}
-
-## 検証要件
-
-- ビルド確認: {必須 | スキップ}
-- テスト実行: {必須 | 任意 | スキップ}
-- スキップ理由: {理由 | -}
-
 ## 出力契約
 
 単一実行・並列実行を問わず、実行ガイド Step 5 の JSON だけを Agent の return value として返すこと。
 ```
-
-### 4.4 executor 起動
 
 ```
 Agent(subagent_type: general-purpose, prompt: {構築したパラメータ})
@@ -475,7 +463,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
 ```
 # Skill ツールで起動する（kind 問わず同一構文）
 /forge:review code --files {ファイル一覧(カンマ区切り)} --auto \
-  --scope "{当該バッチの scope_text}" \
+  --scope "{当該バッチの scope_text}（該当タスクの acceptance_criteria が null でなければ、その内容を追記する）" \
   --project-rules {Phase 3 で収集したルール文書(カンマ区切り)} \
   --project-specs {設計書・要件定義書(カンマ区切り)}
 ```
@@ -485,7 +473,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
 | 4.3 で executor へ渡した情報              | レビュー依頼へ | 理由                                                                                                                         |
 | ----------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | スコープ境界（4.2 / 5.1 の `scope_text`） | 渡す           | 本 Phase の目的。`--scope` へ渡す                                                                                            |
-| `acceptance_criteria`（4.1）              | 渡す           | 到達目標の一部。`scope_in` に含めて渡す                                                                                      |
+| `acceptance_criteria`（4.1）              | 渡す           | 到達目標の一部。`scope_in`（`description` の要約であり `acceptance_criteria` を含まない）とは別に、`--scope` へ追記して渡す  |
 | ルール文書のパス（3.1.3）                 | 渡す           | `--project-rules` へ渡す。レビュー側が同じ検索をやり直す二重実行を避ける                                                     |
 | 設計書・要件定義書のパス（Phase 1 / 3.2） | 渡す           | `--project-specs` へ渡す。同上。**戦略書・`required_reading` は渡さない**（実装手順の指示であり規範ではない）                |
 | 実装指示（4.3）                           | **渡さない**   | オーケストレーターの設計解釈である。渡すとレビューが「指示どおりか」の適合チェックに退化し、解釈自体の誤りを検出できなくなる |
@@ -548,8 +536,10 @@ commit/push の確認フローを担うスキル（例: `anvil:commit`）が ava
 
 AskUserQuestion:「全タスクが完了しました。計画書（plan）を削除しますか？」
 
-- **削除する** → `rm {plan_path}` → 完了案内（plan 削除パターン）
-- **残す** → 計画書はそのまま残す → 完了案内（plan 残しパターン）
+`tasks/` ディレクトリ（4.3 で生成した `tasks/{タスクID}.yaml` の置き場）は計画書と同じライフサイクルとする。計画書を削除するときは必ず一緒に削除し、残すときは一緒に残す（個別に確認しない）。
+
+- **削除する** → `rm {plan_path}` → `rm -rf {計画書と同じディレクトリ}/tasks/` → 完了案内（plan 削除パターン）
+- **残す** → 計画書・`tasks/` ともそのまま残す → 完了案内（plan 残しパターン）
 
 ### 6.5 エラー対応（FAILURE パス）
 

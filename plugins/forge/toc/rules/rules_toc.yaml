@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-16T03:51:18Z
+  generated_at: 2026-08-16T12:59:01Z
   file_count: 40
 
 docs:
@@ -858,33 +858,36 @@ docs:
       - versioning
       - data transformation
   plugins/forge/skills/start-implement/docs/task_execution_spec.md:
-    title: Task Execution Guide (For Executor Agent)
-    purpose: Provides step-by-step instructions for the task-executor agent to execute a single implementation task, covering pre-work, implementation, verification, and result reporting procedures
+    title: Task Execution Guide for Executor Agent
+    purpose: Defines the 5-step workflow for task-executor agents to implement single tasks, from task reception and preparation through implementation, verification, and completion reporting
     content_details:
-      - Multi-step workflow with 5 sequential steps (task reception → pre-work → implementation → verification → result reporting)
-      - Scope boundary enforcement with designated in-scope and out-of-scope items
-      - Pre-Mortem failure analysis (identifying up to 5 concrete failure causes with root analysis and mitigation strategies)
-      - Verification requirements specification (build confirmation, test execution, skip conditions, retry limit of 1 failure)
-      - Required documents reading list (design, requirements, strategy, rules, reference code with priority order)
-      - Test-driven development approach (Red-Green-Refactor cycle) when specified in implementation instructions
-      - Verification failure recovery procedure (error analysis, correction, re-verification with maximum 2 attempts)
-      - Result JSON template structure (task_id, status, files_modified, summary, verification results, pre-mortem analysis, notes, error)
+      - Step 1 task reception from task context file with task_id, title, priority, scope_in, scope_out, required_reading fields
+      - Step 2 pre-implementation preparation including required document reading by priority, existing code review, Pre-Mortem failure analysis
+      - Pre-Mortem process to identify up to 5 failure causes with evidence and avoidance strategies for task-specific risks
+      - Step 3 implementation procedures for file creation or editing, implementation of listed items, error handling, and TDD support when specified
+      - Step 4 verification including build execution if required, test execution as required/optional/skipped, acceptance criteria checking
+      - Verification failure handling with error analysis, fix attempt, and re-verification with maximum 2 total attempts
+      - Step 5 result reporting with complete result template JSON including task_id, status, files_modified, summary, verification results, pre_mortem details, notes, and error field
+      - Result JSON validation via producer validator with exit code 0 for success and exit code 20 for correction handling
     applicable_tasks:
-      - Executing single feature implementation tasks as executor agent
-      - Preparing pre-work before code implementation (document reading, existing code review, failure analysis)
-      - Implementing code changes following orchestrator instructions and design specifications
-      - Executing verification steps (build and test) with specified requirements
-      - Reporting implementation results in standardized JSON format
+      - Single task implementation execution
+      - Task execution planning and orchestration
+      - Implementation verification and build confirmation
+      - Pre-implementation risk analysis via Pre-Mortem
+      - Acceptance criteria validation
+      - Result JSON generation and validation
+      - Executor agent instruction and guidance
     keywords:
-      - task-executor
-      - task execution
+      - task-executor agent
+      - task context file
+      - scope_in
+      - scope_out
       - Pre-Mortem
-      - scope boundary
+      - acceptance criteria
       - verification
-      - orchestrator
-      - implementation instruction
-      - test-driven development
-      - result reporting
+      - TDD
+      - result template
+      - producer validator
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     title: APP Overview Requirements Definition Document Writing Standard
     purpose: Defines sections and writing guidelines for APP-001, the project charter document that establishes why, what, who, how, and validation criteria
