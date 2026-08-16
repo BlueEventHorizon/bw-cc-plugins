@@ -2,7 +2,7 @@
 name: impl-issue
 description: |
   GitHub Issue の実装を準備から完了まで一貫して行う。triage の判定調査結果（仕様書・ルール・類似PR・既存コードの特定）を引き継ぎ、実装計画の策定・Issue への解決内容記載・実装・レビューまで進める。UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、UI 実装、実装レビューまでカバーする。
-  `/anvil:triage-issue` が軽量実装と判定した Issue に対して Skill ツール経由でのみ起動される（ユーザーからの直接起動は不可）。
+  `/anvil:triage-issue` がワンショット実装と判定した Issue に対して Skill ツール経由でのみ起動される（ユーザーからの直接起動は不可）。
 user-invocable: false
 argument-hint: "<issue番号 または URL>"
 allowed-tools: Bash(git *), Bash(gh issue view *), Bash(gh issue edit *), Bash(gh pr list *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr edit *), Bash(gh repo view *), Bash(gh api *), Bash(tee *), Bash(python3 *), Bash(curl -s -H *api.figma.com*), AskUserQuestion, Agent, Skill, Read, Write, Edit, Grep, Glob
@@ -14,7 +14,7 @@ GitHub Issue の実装を準備から完了まで一貫して行うオーケス�
 UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、UI 実装、実装レビューまでカバーする。
 
 > [!IMPORTANT]
-> 本スキルは `user-invocable: false` であり、`/anvil:impl-issue` として直接起動できない。**`/anvil:triage-issue` が軽量実装と判定した後、Skill ツール経由で起動される**ことが唯一の開始経路。判定調査の結果（仕様書・ルール・類似 PR・既存コードの特定）は triage から引き継ぎ、Phase 2〜5 では**再調査しない**（引き継いだ参照先の精読は行う）。
+> 本スキルは `user-invocable: false` であり、`/anvil:impl-issue` として直接起動できない。**`/anvil:triage-issue` がワンショット実装と判定した後、Skill ツール経由で起動される**ことが唯一の開始経路。判定調査の結果（仕様書・ルール・類似 PR・既存コードの特定）は triage から引き継ぎ、Phase 2〜5 では**再調査しない**（引き継いだ参照先の精読は行う）。
 
 **このスキルが Issue に書き込む内容**: 解決の内容（対策・実装計画・TODO）のみ。
 課題の内容（背景/現象・原因）は `/anvil:create-issue` が作成済みのため、上書きしない。
@@ -98,7 +98,7 @@ Issue 番号のみ（URL ではない）で渡された場合はこのチェッ�
 2. **triage の調査結果を確定する**: Phase 2〜5 の入力となる調査結果（関連仕様書・ルール文書・類似 PR・既存コードの特定結果）を以下の優先順で確定する:
    - 同一セッションで triage を実行した直後 → コンテキスト上の調査結果をそのまま使う
    - コンテキストに無い（セッションを跨いだ再開等）→ 取得したコメントから `<!-- anvil:triage-result:v1:start -->` 〜 `<!-- anvil:triage-result:v1:end -->` のマーカーブロックを探す。複数存在する場合は**最も新しい（コメント一覧の末尾に近い）ブロックのみ**を採用する（手書きコメントや旧スキーマのマーカーなしコメントは無視する）
-   - どちらにも無い（マーカーブロックが 1 件も見つからない）→ **自前調査にフォールバックせず停止**し、「`/anvil:triage-issue <N>` を先に実行してください」と案内する（入口一本化の経路違反を検知するため。triage-issue はマーカーを軽量実装判定の場合のみ付与するため、SDD 判定の Issue はこの分岐で自動的に検知される）
+   - どちらにも無い（マーカーブロックが 1 件も見つからない）→ **自前調査にフォールバックせず停止**し、「`/anvil:triage-issue <N>` を先に実行してください」と案内する（入口一本化の経路違反を検知するため。triage-issue はマーカーをワンショット実装判定の場合のみ付与するため、SDD 判定の Issue はこの分岐で自動的に検知される）
 
 3. **実装再開の判定（PR 作成失敗からの再開検知）**: **現在のブランチ名に Issue 番号が含まれる場合のみ**判定する。別ブランチの探索・リモートブランチの checkout は行わない（狭い happy path のみ扱う。それ以外は人間に対象ブランチへの checkout を促す）。
 

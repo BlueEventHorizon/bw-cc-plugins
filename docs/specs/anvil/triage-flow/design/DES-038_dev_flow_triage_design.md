@@ -43,7 +43,7 @@ triage-issue が行う判定を、判定基準（ルール）の性質で分類�
 | 6     | 不確定性判定（要件確定性・設計判断の残余）                | 判定（文脈依存）                                                            | なし（Phase 2〜5.5 の調査・解消結果を二次利用）                                          |
 | 7     | リスクゲート判定                                          | 判定（ヒューリスティック、forge 側に SoT なし）                             | なし                                                                                     |
 | 8     | feature 要否判定                                          | 判定（固定ルール）                                                          | `additive_development_spec.md` §1（`query-forge-rules` 経由で Phase 8 時点で初めて読む） |
-| 9     | 報告・Issue への申し送り・（軽量実装のみ）impl-issue 起動 | 出力                                                                        | なし                                                                                     |
+| 9     | 報告・Issue への申し送り・（ワンショット実装のみ）impl-issue 起動 | 出力                                                                        | なし                                                                                     |
 
 ### 3.2 判定の直行可能性（Phase 1 からの依存の有無）
 
@@ -89,7 +89,7 @@ flowchart TD
     P6b -->|必要| RouteDesign["SDD（start-design）"]
     P6b -->|不要| P7{"Phase 7: リスクゲート"}
     P7 -->|該当| RoutePlan["SDD（start-plan）"]
-    P7 -->|非該当| RouteLight["軽量実装"]
+    P7 -->|非該当| RouteLight["ワンショット実装"]
     RouteReq --> P8[Phase 8: feature要否判定]
     RouteDesign --> P8
     RoutePlan --> P8
@@ -99,14 +99,14 @@ flowchart TD
 
 ### 4.1.1 ルート別ユースケース一覧
 
-本設計は、ユーザーによる Issue 起点の起動、GitHub からの Issue 本文取得、調査中の利用者確認、`impl-issue`（軽量実装）への確認・委譲、SDD エントリポイント（`start-requirements` / `start-design` / `start-plan`）の提案という外部相互作用を伴う。全経路が Phase 1〜5.5 を通り、調査可能な不確定性を解消してから分岐する。
+本設計は、ユーザーによる Issue 起点の起動、GitHub からの Issue 本文取得、調査中の利用者確認、`impl-issue`（ワンショット実装）への確認・委譲、SDD エントリポイント（`start-requirements` / `start-design` / `start-plan`）の提案という外部相互作用を伴う。全経路が Phase 1〜5.5 を通り、調査可能な不確定性を解消してから分岐する。
 
 | 経路     | 起動条件                                                                           | 主な成果                                                                                 |
 | -------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | 要件定義 | 調査・利用者確認後も、複数の What の合意形成を要件定義書の作成過程で行う必要がある | `start-requirements` を提案し、解消済み事項・残る合意対象・調査結果を添付する            |
 | 設計     | 要件は確定したが、比較・決定すべき実現方式が設計書の作成過程に残る                 | `start-design` を提案し、既存パターンとの照合結果・解消済み事項・残る設計対象を添付する  |
 | 計画     | 要件・設計は確定しており、Phase 7 のリスクゲートに該当する                         | `start-plan` を提案し、該当条件と実測結果を添付する                                      |
-| 軽量実装 | 要件・設計は確定しており、Phase 7 のリスクゲートに該当しない                       | `impl-issue` の起動確認を行い、Phase 2〜5.5 の調査結果と解消した不確定性の結論を引き継ぐ |
+| ワンショット実装 | 要件・設計は確定しており、Phase 7 のリスクゲートに該当しない                       | `impl-issue` の起動確認を行い、Phase 2〜5.5 の調査結果と解消した不確定性の結論を引き継ぐ |
 | 調査中断 | 認証・権限不足、参照先消失等で Phase 5.5 の調査を完了できない                      | SDD へ分岐せず、確認できなかった事項・原因・再開条件を報告して終了する                   |
 
 ### 4.2 新設 Phase の内容
@@ -132,7 +132,7 @@ Phase 5 の直後に実行する。
 
 Phase 6 の要件・設計判断と Phase 7 のリスクゲートは、Phase 2〜5.5 の調査・確認結果を直接根拠とする。したがって Phase 2〜5.5 は必ず判定より前に実行する。検索結果のパス一覧だけでなく、本文の精読、実体確認、既存パターンとの照合、利用者判断までを完了させる。
 
-調査結果は軽量実装・SDD のどちらにも引き継ぐ。下流工程は、解消済みの不確定性を再び未決事項として扱わない。
+調査結果はワンショット実装・SDD のどちらにも引き継ぐ。下流工程は、解消済みの不確定性を再び未決事項として扱わない。
 
 ### 4.3.1 Phase 7 条件3（AI の個別判断量）の測定単位
 
@@ -156,7 +156,7 @@ flowchart LR
         P03["phase-03-rule-investigation.md<br/>(Phase 3)"]
         P04["phase-04-pr-investigation.md<br/>(Phase 4)"]
         P05["phase-05-code-investigation.md<br/>(Phase 5)"]
-        IMPL["impl-issue<br/>(軽量実装ルートのみ起動)"]
+        IMPL["impl-issue<br/>(ワンショット実装ルートのみ起動)"]
     end
     subgraph forge["forge プラグイン（SoT、内部実装は変更しない）"]
         QFR["/forge:query-forge-rules"]
@@ -174,7 +174,7 @@ flowchart LR
     SKILL -->|Phase 5.5 新設| QDS
     SKILL -->|Phase 5.5 新設| QDR
     SKILL -->|Phase 1| GH
-    SKILL -->|Phase 9 軽量実装確定時のみ| IMPL
+    SKILL -->|Phase 9 ワンショット実装確定時のみ| IMPL
     P02 -->|Phase 2| QDS
     P03 -->|Phase 3| QDR
     P04 -->|Phase 4| GH
@@ -184,7 +184,7 @@ flowchart LR
     class QFR,QDS,QDR,ADS forgeNode
 ```
 
-図中の矢印はすべて **anvil 側モジュールから forge 側モジュールへの一方向**であり、forge 側モジュール（`forge` サブグラフ内）から anvil 側への逆方向の依存・呼び出しは存在しない（REQ-005 §5.6 NFR-01 ／ REQ-007 §5.5 NFR-01: anvil → forge 一方向依存、forge 改修禁止）。`forge` サブグラフ内の各コンポーネントは本設計で内部実装・呼び出しインターフェースを変更しない（§5.1・§5.2 参照）。`impl-issue` は anvil 内部のスキルであり、`triage-issue/SKILL.md` から軽量実装ルート確定時のみ一方向に起動される（forge への依存はない）。
+図中の矢印はすべて **anvil 側モジュールから forge 側モジュールへの一方向**であり、forge 側モジュール（`forge` サブグラフ内）から anvil 側への逆方向の依存・呼び出しは存在しない（REQ-005 §5.6 NFR-01 ／ REQ-007 §5.5 NFR-01: anvil → forge 一方向依存、forge 改修禁止）。`forge` サブグラフ内の各コンポーネントは本設計で内部実装・呼び出しインターフェースを変更しない（§5.1・§5.2 参照）。`impl-issue` は anvil 内部のスキルであり、`triage-issue/SKILL.md` からワンショット実装ルート確定時のみ一方向に起動される（forge への依存はない）。
 
 ## 5. 使用する既存コンポーネント
 

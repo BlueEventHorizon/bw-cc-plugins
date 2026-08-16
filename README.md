@@ -130,7 +130,7 @@ flowchart LR
 | [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push                                  | `"コミットして"`                    |
 | [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成                         | `"PR を作成"`                       |
 | **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）              | `"issue を作成"`                    |
-| **triage-issue**（試作）                                 | 開発フローの分岐点。軽量実装なら impl-issue を起動、SDD なら forge エントリポイントを提案 | `"このIssueをトリアージして"`       |
+| **triage-issue**（試作）                                 | 開発フローの分岐点。ワンショット実装なら impl-issue を起動、SDD なら forge エントリポイントを提案 | `"このIssueをトリアージして"`       |
 | _impl-issue_                                             | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応）    | ※ triage-issue が呼び出し           |
 | **capture-emulator-screen**                              | Android Emulator / iOS Simulator 上で実装済みアプリ画面を起動・操作・キャプチャ           | ※ sync-screen-design 等から呼び出し |
 | **sync-screen-design**                                   | 画面設計書・Figma・実装キャプチャの三点突合で実装画面を仕様とデザインに同期               | `"Figma 通りに直して"`              |
