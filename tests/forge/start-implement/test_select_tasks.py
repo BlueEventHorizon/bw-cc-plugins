@@ -79,31 +79,6 @@ class SelectTasksFunctionTest(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(set(result["selected_task_ids"]), {"TASK-001", "TASK-002"})
 
-    def test_explicit_task_ids_are_selected_verbatim(self):
-        plan = {"tasks": [_task("TASK-001"), _task("TASK-002")]}
-        result, errors = select_tasks_module.select_tasks(plan, task_ids=["TASK-002"])
-        self.assertEqual(errors, [])
-        self.assertEqual(result["selected_task_ids"], ["TASK-002"])
-
-    def test_unknown_task_id_is_rejected(self):
-        plan = {"tasks": [_task("TASK-001")]}
-        result, errors = select_tasks_module.select_tasks(plan, task_ids=["TASK-999"])
-        self.assertIsNone(result)
-        self.assertTrue(any("TASK-999" in e for e in errors))
-
-    def test_mutual_dependency_in_explicit_selection_is_rejected(self):
-        plan = {
-            "tasks": [
-                _task("TASK-001", depends_on=["TASK-002"]),
-                _task("TASK-002"),
-            ]
-        }
-        result, errors = select_tasks_module.select_tasks(
-            plan, task_ids=["TASK-001", "TASK-002"]
-        )
-        self.assertIsNone(result)
-        self.assertTrue(any("TASK-001" in e for e in errors))
-
     def test_incomplete_dependency_outside_selection_is_rejected(self):
         plan = {
             "tasks": [
@@ -157,13 +132,6 @@ class RunCliTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertEqual(payload["status"], "ok")
             self.assertEqual(payload["selected_task_ids"], ["TASK-001"])
-
-    def test_task_and_count_together_is_rejected(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            plan_path = Path(tmp) / "foo_plan.json"
-            plan_path.write_text(json.dumps({"tasks": []}), encoding="utf-8")
-            result = self._run(plan_path, ["--task", "TASK-001", "--count", "1"])
-            self.assertEqual(result.returncode, 20)
 
     def test_missing_plan_file_is_error(self):
         result = self._run(Path("/nonexistent/plan.json"))

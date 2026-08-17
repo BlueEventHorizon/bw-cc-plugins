@@ -5,7 +5,7 @@
 重大度カタログに追記された早期検証規範が、将来の文書改訂でサイレントに消失・改変されて
 いないことを検査する回帰テスト。
 
-`test_plan_yaml_contract.py` / `test_forge_toc_freshness.py` と同型の静的検査
+`test_plan_json_contract.py` / `test_forge_toc_freshness.py` と同型の静的検査
 （実ファイル Read + アサーション）であり、規範の意味的妥当性ではなく
 キー文言の存在のみを検査する。
 

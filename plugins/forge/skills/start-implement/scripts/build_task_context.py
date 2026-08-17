@@ -13,7 +13,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "plan"))
-from plan_contract import load_plan, PlanContractError  # noqa: E402
+from plan_contract import (  # noqa: E402
+    load_plan,
+    PlanContractError,
+    read_and_consume_candidate_input as _read_and_consume_input,
+)
 
 
 TEMPLATE_PATH = (
@@ -184,25 +188,6 @@ def validate_candidate(raw, expected_task_id):
         "verification": _normalize_verification(raw.get("verification"), errors),
     }
     return (None if errors else normalized), errors
-
-
-def _read_and_consume_input(input_file):
-    """候補 JSON を読み込み、成否に関わらず入力ファイルを削除する。"""
-    path = Path(input_file)
-    if path.is_absolute() or ".." in path.parts or path.parts[:2] != (".claude", ".temp"):
-        return None, [
-            "input-file は .claude/.temp/ 配下のプロジェクトルート相対パスである必要があります"
-        ]
-    try:
-        with path.open(encoding="utf-8") as handle:
-            return json.load(handle), []
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
-        return None, [f"入力を JSON object として解析できません: {exc}"]
-    finally:
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
 
 
 def _find_task(plan_path, task_id, errors):

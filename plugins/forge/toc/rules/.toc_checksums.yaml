@@ -10,7 +10,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_code.md: 3e26b482397526a35b3f84cfd0207f26ed852851c0ba6bbfa96940e21a7f5e6a
   plugins/forge/docs/criteria/review_criteria_design.md: abbd0474bb403627d621dfabff4dfef61b35e66d689f1654a9d18da13312d03e
   plugins/forge/docs/criteria/review_criteria_generic.md: 3bc679fa3831f0d63ea56029971839d48da0b6cdfd66d39e8c8821a6a7ea48c6
-  plugins/forge/docs/criteria/review_criteria_plan.md: b8d049ffe8c4b8e27d542fdebafddbf39d8a3e6ff0add839e9cbbdf9ee23f57a
+  plugins/forge/docs/criteria/review_criteria_plan.md: ef78687bde2b5b518b72180d121b04e3e5d5590a27968ec11e8c5386f0292634
   plugins/forge/docs/criteria/review_criteria_requirement.md: f3f35103c6f0a157c5a80f391e63f5d857bed4af3162d891eb624ee4b7bc3946
   plugins/forge/docs/criteria/review_criteria_secrets.md: 2c42bc06508370300cdf6d93e3d998f7f4b327e40e199ace18a729a9bab7269d
   plugins/forge/docs/criteria/review_criteria_uxui.md: 23037ee8cced86399fdb7f7fa31276d6616d2b8e47f40cd36c8fe595226eb201

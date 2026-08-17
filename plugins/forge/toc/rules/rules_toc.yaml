@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-17T12:47:04Z
+  generated_at: 2026-08-17T15:53:16Z
   file_count: 39
 
 docs:
@@ -203,34 +203,37 @@ docs:
       - terminology
   plugins/forge/docs/criteria/review_criteria_plan.md:
     title: Plan Review Criteria
-    purpose: Defines the multi-level criteria and process for reviewing plan.yaml documents, including SSOT references, check order, and judgment rules for recommendations
+    purpose: Defines review criteria and standards for plan documents covering SSOT delegation, check sequence, and decision rules for plan review recommendations
     content_details:
-      - SSOT reference documents for plan review
-      - P1 rule compliance checks against plan principles and design specifications
-      - "Temporary feature marker validation (type: temporary-feature-plan) for additive development"
-      - Reference path existence validation against document_style_guide
-      - P2 contradiction detection between specifications and plan.yaml content
-      - P2 additive feature exclusion rule for temporary-feature-plan documents
-      - P3 unnecessary complexity judgment using spec_priorities_spec criteria
-      - "Judgment recommendations with conditions: fix, create_issue, skip"
-      - Three conditions for create_issue recommendation
+      - SSOT reference documents for plan review (P1-P3 delegation hierarchy)
+      - Review check sequence and priority order
+      - P1 rule conformance checks against plan principles specification
+      - Additive feature metadata requirement validation (temporary-feature-plan frontmatter)
+      - Reference path existence verification for required_reading and design_id
+      - P2 contradiction detection between plan.json and specification documents
+      - Additive feature exemption rules for intentional differences
+      - P3 unnecessary complexity judgment using specification priorities
+      - Recommendation decision rules (fix, create_issue, skip)
+      - Three conditions for create_issue recommendation (no applicable rule, recurrence, explicit grain size)
     applicable_tasks:
-      - Plan.yaml review and validation
-      - SSOT reference document cross-checking
-      - Design and requirement specification consistency verification
-      - Temporary feature marker validation
-      - Contradiction detection between specifications and plan content
-      - Reference path existence validation
-      - Complexity judgment for plan structure
+      - Plan document review for principle conformance
+      - Additive feature plan validation with required metadata
+      - Reference path existence verification in plan documents
+      - Contradiction detection between plan and design specifications
+      - Plan complexity review and simplification
+      - Creating issues for insufficient rules
+      - Plan review recommendation decision making
     keywords:
-      - plan review
       - plan_principles_spec
       - temporary-feature-plan
-      - reference validation
-      - contradiction detection
       - SSOT
+      - review criteria
       - additive_development_spec
-      - judgment rules
+      - contradiction detection
+      - create_issue
+      - design specifications
+      - reference validation
+      - complexity judgment
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: requirement Review Criteria
     purpose: Defines review criteria, reference sources (SSOT), check order, and judgment rules for requirement document validation

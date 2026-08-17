@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""計画書からタスクを選択し、依存関係・グループ原子性を判定する。
+"""計画書から優先度順にタスクを選択し、依存関係・グループ原子性を判定する。
 
 `/forge:start-implement` Phase 2 のローカル操作入口。優先度順ソート・`status: pending`
 抽出・依存関係チェック・グループ原子的選択・実行可能/待機グループ分割は AI ではなく本 script
@@ -63,38 +63,13 @@ def _split_executable_waiting(selected_ids, tasks):
     return executable, waiting
 
 
-def select_tasks(plan_data, task_ids=None, count=None):
+def select_tasks(plan_data, count=None):
     """(result | None, errors) を返す。"""
     errors = []
     tasks = plan_data.get("tasks")
     if not isinstance(tasks, list):
         return None, ["計画書に tasks 配列がありません"]
     by_id = {t["task_id"]: t for t in tasks if isinstance(t, dict) and "task_id" in t}
-
-    if task_ids is not None:
-        unknown = [t for t in task_ids if t not in by_id]
-        if unknown:
-            errors.append(f"計画書に存在しない task_id が指定されました: {unknown}")
-            return None, errors
-        selected = list(task_ids)
-        if len(selected) > 1:
-            for task_id in selected:
-                depends_on = by_id[task_id].get("depends_on", [])
-                conflicting = [d for d in depends_on if d in selected]
-                if conflicting:
-                    errors.append(
-                        f"{task_id} は {conflicting} に依存しているため並列実行できません。"
-                        "逐次実行してください。"
-                    )
-        if errors:
-            return None, errors
-        executable, waiting = _split_executable_waiting(selected, tasks)
-        return {
-            "selected_task_ids": selected,
-            "executable_task_ids": executable,
-            "waiting_task_ids": waiting,
-            "selected_tasks": [by_id[t] for t in selected],
-        }, []
 
     pending_sorted = _pending_tasks_by_priority(tasks)
     if not pending_sorted:
@@ -142,13 +117,8 @@ def _emit(payload):
 def run_cli(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan-path", required=True)
-    parser.add_argument("--task", help="カンマ区切りの task_id 一覧")
     parser.add_argument("--count", type=int, help="優先度順で選択するタスク数")
     args = parser.parse_args(argv)
-
-    if args.task and args.count:
-        _emit({"status": "error", "errors": ["--task と --count は同時に指定できません"]})
-        return 20
 
     try:
         plan_data = load_plan(args.plan_path)
@@ -156,8 +126,7 @@ def run_cli(argv=None):
         _emit({"status": "error", "errors": [str(exc)]})
         return 20
 
-    task_ids = args.task.split(",") if args.task else None
-    result, errors = select_tasks(plan_data, task_ids=task_ids, count=args.count)
+    result, errors = select_tasks(plan_data, count=args.count)
     if errors:
         _emit({"status": "error", "errors": errors})
         return 20

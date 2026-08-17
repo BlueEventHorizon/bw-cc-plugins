@@ -138,6 +138,30 @@ def _validate_task(index, task):
     return errors
 
 
+def read_and_consume_candidate_input(input_file):
+    """候補 JSON を `.claude/.temp/` 配下から読み込み、成否に関わらず入力ファイルを削除する。
+
+    `write_plan.py`（start-plan）と `build_task_context.py`（start-implement）の双方が
+    「AI が組み立てた候補 JSON を一時ファイル経由で受け取り、消費後に削除する」という
+    同一の入出力契約を必要とするため、本モジュールへ集約する。
+    """
+    path = Path(input_file)
+    if path.is_absolute() or ".." in path.parts or path.parts[:2] != (".claude", ".temp"):
+        return None, [
+            "input-file は .claude/.temp/ 配下のプロジェクトルート相対パスである必要があります"
+        ]
+    try:
+        with path.open(encoding="utf-8") as handle:
+            return json.load(handle), []
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return None, [f"入力を JSON object として解析できません: {exc}"]
+    finally:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def normalize_group_key(group_id):
     """通し番号付き group_id ("GROUP-001 (1/7)") からグループキー ("GROUP-001") を抽出する。
 
