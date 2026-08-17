@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Python dependencies
+        run: pip install PyYAML
+
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
 
