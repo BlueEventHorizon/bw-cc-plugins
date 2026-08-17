@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-17T15:53:16Z
+  generated_at: 2026-08-17T17:18:01Z
   file_count: 39
 
 docs:
@@ -519,35 +519,38 @@ docs:
       - code review
       - design patterns
   plugins/forge/docs/plan_principles_spec.md:
-    title: Plan Creation Principles
-    purpose: Defines general principles for plan document structure, task granularity, acceptance criteria, and traceability rules when project-specific conventions are not established
+    title: Plan Document Creation Principles
+    purpose: Defines mandatory structure and composition rules for plan documents (JSON format), task design principles including granularity standards, acceptance criteria, test task requirements, and dependency management
     content_details:
-      - Plan JSON structure with 4 mandatory sections (requirements/design traceability, tasks, revision_history)
-      - Task granularity standards (single agent execution unit, 5-10 content items, build/test success requirement)
-      - Required reading field format specification (project-root relative paths, mandatory strategy doc inclusion)
-      - Task grouping with build_check patterns (group_id, per_task, skip, on_group_complete)
-      - Early validation conditions for task groups (minimum executable unit completeness)
-      - Acceptance criteria standards (objective yes/no judging, subjective expression prohibition)
-      - Test task mandatory rules (unit/integration specification, feature mapping)
-      - Implicit dependency detection patterns (frontend-API, integration test, migration, deployment)
-      - Traceability matrix rules (requirements/design mapping, exclusion reasoning)
+      - Four-section JSON structure (requirements_traceability, design_traceability, tasks, revision_history)
+      - "Task granularity standards: single Agent execution unit with 5-10 content items per task"
+      - Task grouping using group_id and build_check fields (per_task, skip, on_group_complete)
+      - required_reading field specification with project-root-relative file paths
+      - Acceptance criteria rules with Yes/No judgment requirements (non-subjective expression)
+      - Implicit dependency detection patterns and typical dependency scenarios
+      - Traceability matrix rules (requirements_traceability and design_traceability mapping)
+      - Test task requirement for major feature implementations
+      - Severity catalog for rule violations (critical/major/minor levels)
     applicable_tasks:
-      - Plan document creation for new features
-      - Plan review and violation detection
-      - Task granularity assessment and refinement
-      - Acceptance criteria definition for feature tasks
-      - Implicit dependency identification and specification
-      - Traceability matrix establishment
+      - Plan document creation and composition (forge:start-plan skill)
+      - Task decomposition and granularity review
+      - Acceptance criteria and test task planning
+      - Dependency relationship definition and validation
+      - Traceability matrix mapping (requirements and design)
+      - Plan document conformance review
+      - Task grouping and build verification strategy design
+      - Implicit dependency pattern detection
     keywords:
-      - plan
-      - task granularity
-      - required_reading
-      - group_id
+      - requirements_traceability
+      - design_traceability
       - build_check
+      - group_id
+      - depends_on
+      - required_reading
       - acceptance criteria
-      - traceability matrix
+      - task granularity
       - implicit dependency
-      - test task
+      - severity catalog
   plugins/forge/docs/requirement_format.md:
     title: Requirement Definition Document Default Format
     purpose: Specifies default format, frontmatter requirements, and severity catalog for forge requirement definition documents
