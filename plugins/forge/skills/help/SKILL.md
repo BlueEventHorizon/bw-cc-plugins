@@ -211,7 +211,7 @@ AskUserQuestion:
 ### create-feature-from-markdown-plan
 
 引数: Markdown plan のファイルパス（省略時は対話で決定）。
-入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.yaml`（YAML、`/forge:start-plan` が作成）とは別物。
+入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.json`（JSON、`/forge:start-plan` が作成）とは別物。
 
 ---
 

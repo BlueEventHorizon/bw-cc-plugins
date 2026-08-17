@@ -3,7 +3,7 @@ name: create-feature-from-markdown-plan
 description: |
   Claude Code plan mode で書いた **Markdown plan** から、要件定義書と設計書を一気通貫で作成する。
   本 skill が入力にするのは **Claude Code plan mode の Markdown plan** であり、
-  forge の実装計画書 `{feature}_plan.yaml`（YAML、`/forge:start-plan` が作成）とは別物。
+  forge の実装計画書 `{feature}_plan.json`（JSON、`/forge:start-plan` が作成）とは別物。
   Markdown plan を起点にゼロから feature の仕様化を始めたいときに使う。
   トリガー: "markdown plan から feature 作成", "plan mode から要件作成", "create feature from markdown plan"
 user-invocable: true
@@ -17,17 +17,17 @@ Claude Code の plan mode で生成された **Markdown plan** を入口に、�
 
 - 入力: **Markdown plan**（`~/.claude/plans/*.md` 形式を想定。任意のパスも可）
 - 出力: 要件定義書 + 設計書（`forge:start-requirements` / `forge:start-design` の出力）
-- 対象外: forge の実装計画書 `{feature}_plan.yaml`（YAML 構造の計画書） — こちらは `/forge:start-plan` が作成・更新する
+- 対象外: forge の実装計画書 `{feature}_plan.json`（JSON 構造の計画書） — こちらは `/forge:start-plan` が作成・更新する
 
 > ⚠️ **「plan」の語の使い分け** [MANDATORY]
 >
 > | 用語                                       | 形式     | 作成元                                         | 本 skill との関係     |
 > | ------------------------------------------ | -------- | ---------------------------------------------- | --------------------- |
 > | **Markdown plan**                          | Markdown | Claude Code plan mode (`~/.claude/plans/*.md`) | **本 skill の入力**   |
-> | **forge 実装計画書 `{feature}_plan.yaml`** | YAML     | `/forge:start-plan`                            | **本 skill の対象外** |
+> | **forge 実装計画書 `{feature}_plan.json`** | JSON     | `/forge:start-plan`                            | **本 skill の対象外** |
 >
 > 本文書で単に「plan」と呼ぶときは **Markdown plan** を指す。
-> forge 実装計画書のことを指すときは必ず `{feature}_plan.yaml` と明示する。
+> forge 実装計画書のことを指すときは必ず `{feature}_plan.json` と明示する。
 
 ## フロー継続 [MANDATORY]
 
@@ -262,13 +262,13 @@ Markdown plan から feature を作成しました:
   DES:           {設計書パス}
 
 次のステップ:
-  /forge:start-plan {feature}    # forge 実装計画書 {feature}_plan.yaml の作成へ進む
+  /forge:start-plan {feature}    # forge 実装計画書 {feature}_plan.json の作成へ進む
 ```
 
 ---
 
 ## 制約事項
 
-- **forge 実装計画書 `{feature}_plan.yaml` は対象外**: forge の YAML 計画書は `/forge:start-plan` が作成・更新する。本 skill は Markdown plan のみを入力とする
+- **forge 実装計画書 `{feature}_plan.json` は対象外**: forge の JSON 計画書は `/forge:start-plan` が作成・更新する。本 skill は Markdown plan のみを入力とする
 - **既存テンプレートを尊重**: 要件定義書は `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`、設計書は `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` をそのまま使用する。本 skill は独自テンプレートを持たない
 - **forge:start-requirements / forge:start-design を改変しない**: 本 skill は薄いオーケストレーション層であり、各 skill の品質保証フロー（AI レビュー・ToC 更新・commit）はそのまま流用する

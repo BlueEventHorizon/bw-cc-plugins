@@ -10,7 +10,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestio
 
 # /forge:start-implement
 
-計画書（`{feature}_plan.yaml`）からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を実行する。
+計画書（`{feature}_plan.json`）からタスクを選択し、コンテキスト収集→実装→レビュー→計画書更新を実行する。
 
 ## Goal
 
@@ -47,7 +47,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ## Phase 1: 事前確認 [MANDATORY]
 
-### 1.1 Feature の確定と計画書の読み込み
+### 1.1 Feature の確定と計画書パスの解決
 
 対象 Feature を確定し、計画書を特定する。Feature が決まらないと、どの計画書のタスクを実行するかが決まらない。
 
@@ -57,14 +57,14 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 計画書のパスを解決する:
 
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
-doc_type `plan`、feature `{feature}` でディレクトリを求め、その配下の `{feature}_plan.yaml` を
+doc_type `plan`、feature `{feature}` でディレクトリを求め、その配下の `{feature}_plan.json` を
 計画書パスとする。
 
 1. ファイルが存在する → そのパスを使用
-2. `plan` に対応するエントリが無い、またはファイルが存在しない → `specs/{feature}/plan/{feature}_plan.yaml` をデフォルトとする
+2. `plan` に対応するエントリが無い、またはファイルが存在しない → `specs/{feature}/plan/{feature}_plan.json` をデフォルトとする
 3. それでも見つからない → AskUserQuestion で手動指定
 
-計画書（YAML）を Read し、全タスクの状態を把握する。
+**計画書全体を Read しない [MANDATORY]**: タスク選択・依存関係判定は Phase 2 の script が行うため、AI が計画書ファイルを直接読み込む必要はない（REQ-020 FNC-003・FNC-007）。他タスクの内容は、選択されたタスクについて Phase 4.3 で生成される `tasks/{タスクID}.json` を通してのみ扱う。
 
 ### 1.2 要件定義書・設計書の更新確認
 
@@ -76,61 +76,40 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ---
 
-## Phase 2: タスク選択
+## Phase 2: タスク選択 [MANDATORY]
 
-### 2.1 タスクの選択
+タスクの優先度ソート・`status: pending` 抽出・依存関係チェック・グループ原子的選択・実行可能/待機グループへの分割は AI ではなく script が行う（REQ-020 FNC-003）。
 
-**`--task` 指定あり（単一）**:
+### 2.1 選択 script の実行
 
-- 指定されたタスクを実行対象とする
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/select_tasks.py" --plan-path "{計画書パス}" \
+  [--task "TASK-001,TASK-003" | --count {N}]
+```
 
-**`--task` 指定あり（複数: カンマ区切り）**:
+- `--task` 指定あり（単一・複数カンマ区切り）→ 指定タスクをそのまま渡す
+- `-n N` 指定あり → `--count N` を渡す
+- `-n` 未指定かつ `--task` 未指定 → `--count` を省略する（script が既定で最高優先度 1 件を選ぶ）
 
-- 指定された全タスクを実行対象とする
-- 例: `--task TASK-001,TASK-003`
+exit code で分岐する:
 
-**`-n N` 指定あり**:
+| exit code | 動作                                                                                                                                     |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | stdout の `selected_task_ids` / `executable_task_ids` / `waiting_task_ids` / `selected_tasks`（選択タスクのフィールド全体）を得て 2.2 へ |
+| 20        | stdout の `errors` を人間に提示する（相互依存・未完了の依存タスク等）。AskUserQuestion で対応（再指定 / 中断）を確認する                 |
 
-1. `tasks` 配列を `priority` 降順でソート
-2. `status: pending` のタスクから上位 N 件を選択する
-3. **グループの原子的選択 [MANDATORY]**: 選択した N 件の中に `group_id` が非 null のタスクが含まれる場合、同じ正規化グループキー（通し番号 `"(1/7)"` 等を除去したもの。Phase 5.1 で使う `group_review_batch.py` の `normalize_group_key` と同一の正規化）を持つ `status: pending` の他タスクを、優先度に関わらず選択に追加する。**グループは常に全メンバーが揃った状態で選択する**（一部だけを選択しない）。これにより Phase 5.1 のグループ単位バッチレビューが確実に機能する（`-n` が優先度上位 N 件を選ぶだけだとグループの一部だけを選びがちで、バッチ化が機能しないため）
-   - 追加分を含めた実際の選択件数は N を超えうる。追加後の件数を含めて 2.3 の並列実行タスク一覧に提示する
-4. 選択した全件を依存関係に基づいてグループ化する（ここでの「グループ」は依存関係ベースの実行波であり、`group_id` によるレビュー用グループとは別概念）:
-   - **実行可能グループ**: 選択済みタスク内に未完了の `depends_on` がないもの → 並列実行候補
-   - **待機グループ**: 選択済みタスク内に未完了の `depends_on` があるもの → 前グループ完了後に実行
+### 2.2 選択結果の提示
 
-**`-n` 未指定かつ `--task` 未指定**:
+`selected_task_ids` をユーザーに提示する。
 
-1. `tasks` 配列を `priority` 降順でソート
-2. `status: pending` のタスクから最高優先度のものを1つ選択
+- `--task` 複数指定時: AskUserQuestion:「以下のタスクを並列実行します。よろしいですか？」
+- `-n N` 指定時: 「以下のタスクを並列実行します」としてリストを提示する。**承認は求めず、提示したうえでそのまま次へ進む**（`-n` は優先度順の自動選択であり、選択結果を人間が把握できれば足りる）
 
-### 2.2 実行可能性の確認
+**設計書の存在確認**: 選択された各タスクの `design_id` が `null` でない場合、対応する設計書が存在するか Phase 3 のコンテキスト収集で確認する（本 Phase では確認しない）。
 
-選択した全タスクについて以下を確認:
+### 2.3 ウェーブ実行（`-n N` 指定時）
 
-- **依存関係チェック**: `depends_on` 配列の全タスクが `status: completed` か確認。未完了の依存がある場合は AskUserQuestion で確認
-- **設計書の存在**: `design_id` が `null` でない場合は対応する設計書が存在するか確認
-- **タスクグループの確認**: グループ内タスクはグループ先頭から順次実行。グループ途中からの実行は不可
-
-### 2.3 複数タスク指定時の依存関係チェック [MANDATORY]
-
-#### `--task` 複数指定時
-
-タスク間の相互依存を検証する:
-
-1. 指定されたタスク同士で依存関係がないか確認
-2. **依存関係あり** → エラー終了:「TASK-002 は TASK-001 に依存しているため並列実行できません。逐次実行してください。」
-3. **依存関係なし** → AskUserQuestion:「以下のタスクを並列実行します。よろしいですか？」とタスクリストを提示
-
-#### `-n N` 指定時
-
-依存関係に基づきウェーブ単位で実行する:
-
-1. **実行可能グループ**（選択済みタスク内に未完了の `depends_on` がないもの）を特定する
-2. 実行可能グループ内で相互依存がないことを確認する → 「以下のタスクを並列実行します」としてリストを提示する。**承認は求めず、提示したうえでそのまま次へ進む**（`-n` は優先度順の自動選択であり、選択結果を人間が把握できれば足りる。相互依存があった場合の扱いは `--task` 複数指定時と同じ）
-3. 実行可能グループを並列実行する（Phase 4 へ）
-4. 完了後、待機グループのうち `depends_on` が全て完了したタスクを次の実行可能グループとして Phase 2.3 に戻る
-5. 全グループの実行が完了したら完了処理へ進む
+`executable_task_ids` を Phase 4 へ渡して並列実行する。完了後、`waiting_task_ids` のうち依存が解決されたタスクを対象に Phase 2.1 を再実行し、次の実行可能グループを得る。全タスクの実行が完了したら完了処理へ進む。
 
 ---
 
@@ -184,7 +163,7 @@ prompt:
 
 #### 3.1.5 計画書 `required_reading` フィールドの処理
 
-タスクの `required_reading` 配列が空配列 `[]` でない場合、記載された各ファイルパスを追加の必読文書として executor に渡す。`required_reading` は YAML のタスクフィールドであり、Markdown table の「列」ではない点に注意する。
+Phase 2.1 の `selected_tasks` から該当タスクの `required_reading` 配列を取得する。空配列 `[]` でない場合、記載された各ファイルパスを追加の必読文書として executor に渡す。
 
 `{feature}_strategy.md` が `required_reading` に含まれている場合は、**戦略書**として分類して executor に渡す。含まれていない場合でも、計画書と同じディレクトリに `{feature}_strategy.md` が存在するなら追加の必読文書として executor に渡す。executor は全体戦略・フェーズ意図・リスク対策を理解したうえで、指定された単一タスクだけを実装する。
 
@@ -222,15 +201,15 @@ prompt:
 
 ### 4.1 検証要件の判定 [MANDATORY]
 
-オーケストレーターが計画書（`{feature}_plan.yaml`）を読み、タスクの YAML フィールド値から検証要件を判定する:
+オーケストレーターが Phase 2.1 の `selected_tasks` から該当タスクのフィールド値を取得し、検証要件を判定する:
 
 **`build_check` フィールドの値による検証要件**（`build_check` の値が最優先）:
 
-| 値 (`plan_format.md` の値域) | 検証要件                           |
-| ---------------------------- | ---------------------------------- |
-| `per_task`（デフォルト）     | タスク完了時にビルド確認必須       |
-| `skip`                       | ビルド確認スキップ（代替検証推奨） |
-| `on_group_complete`          | グループ最終タスクでビルド確認必須 |
+| 値                       | 検証要件                           |
+| ------------------------ | ---------------------------------- |
+| `per_task`（デフォルト） | タスク完了時にビルド確認必須       |
+| `skip`                   | ビルド確認スキップ（代替検証推奨） |
+| `on_group_complete`      | グループ最終タスクでビルド確認必須 |
 
 **`acceptance_criteria` フィールドが `null` でない場合**:
 
@@ -238,7 +217,7 @@ prompt:
 
 ### 4.2 スコープ境界の導出 [MANDATORY]
 
-実行対象の各タスクについて、スコープ境界を Phase 1 で読み込んだ計画書から導出する。**この導出は 1 回だけ行い、executor（4.3）と レビュー依頼（5.1 / 5.2）の両方に使う**。同じ情報を 2 回作ると片方だけが古くなる。
+実行対象の各タスクについて、スコープ境界を Phase 2.1 の `selected_tasks` から導出する。**この導出は 1 回だけ行い、executor（4.3）と レビュー依頼（5.1 / 5.2）の両方に使う**。同じ情報を 2 回作ると片方だけが古くなる。
 
 **範囲内（`scope_in`）**: タスクの `description` が到達すべき範囲そのものである。**単一行**に要約する。
 
@@ -270,7 +249,7 @@ prompt:
 
 ### 4.3 タスクコンテキストの生成 [MANDATORY]
 
-4.1（検証要件）・4.2（スコープ境界）・Phase 3.2（必読文書の統合結果）と、タスク固有の実装指示から、`{feature}_plan.yaml` と同じディレクトリに `tasks/{タスクID}.yaml` を生成する。executor へは、この生成済みファイルのパスと `task_id` だけを渡す（`plan.yaml` の値をインライン Markdown へ手で転記しない）。
+4.1（検証要件）・4.2（スコープ境界）・Phase 3.2（必読文書の統合結果）と、タスク固有の実装指示から、`{feature}_plan.json` と同じディレクトリに `tasks/{タスクID}.json` を生成する。executor へは、この生成済みファイルのパスと `task_id` だけを渡す（`plan.json` の値をインライン Markdown へ手で転記しない）。
 
 1. **候補 JSON を組み立てる**（スキーマは `${CLAUDE_SKILL_DIR}/templates/task_context_input.json` を参照）:
    - `scope_in` / `scope_out`: 4.2 の導出結果をそのまま使う
@@ -278,14 +257,14 @@ prompt:
    - `implementation_instructions`: タスク固有の実装方針（必読文書を踏まえて AI がその場で書く。従来の「実装指示」と同じ内容）
    - `verification`: 4.1 の判定結果（`build` は `required`/`skipped`、`tests` は `required`/`optional`/`skipped`。スキップ時のみ `_reason` を添える）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json` へ書く（シェルコマンドへ直接埋め込まない。自由記述をシェル文字列に乗せると注入リスクを生むため）
-3. **生成 script を 1 回実行する**。`plan.yaml` の該当タスクエントリと候補 JSON をマージして `tasks/{タスクID}.yaml` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
+3. **生成 script を 1 回実行する**。`plan.json` の該当タスクエントリと候補 JSON をマージして `tasks/{タスクID}.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
    ```bash
    python3 "${CLAUDE_SKILL_DIR}/scripts/build_task_context.py" \
      --plan-path "{計画書パス}" \
      --task-id "{タスクID}" \
      --input-file ".claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json" \
-     --output-path "{計画書と同じディレクトリ}/tasks/{タスクID}.yaml"
+     --output-path "{計画書と同じディレクトリ}/tasks/{タスクID}.json"
    ```
 
    exit code で分岐する:
@@ -308,7 +287,7 @@ ${CLAUDE_SKILL_DIR}/docs/task_execution_spec.md を Read して手順に従う�
 
 ## タスクコンテキスト
 
-{4.3 で生成した tasks/{タスクID}.yaml のパス}
+{4.3 で生成した tasks/{タスクID}.json のパス}
 
 ## result template
 
@@ -372,7 +351,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/receive_executor_result.py" \
 
 ### 5.1 レビュー対象のグルーピング [MANDATORY]
 
-**タスク数 = レビュー起動回数ではない**。計画書 (`{feature}_plan.yaml`) の `group_id` が同一のタスク群は 1 回のレビューにまとめる（グループ単位バッチレビュー）。1 タスク = 1 レビュー起動だと、機械的に同型の編集をファイル数分繰り返すだけのグループ（例: 同一パターンの置換を N ファイルに適用する GROUP）でもレビュー往復が N 回発生し、タスク数に比例して所要時間が伸びるため。
+**タスク数 = レビュー起動回数ではない**。計画書 (`{feature}_plan.json`) の `group_id` が同一のタスク群は 1 回のレビューにまとめる（グループ単位バッチレビュー）。1 タスク = 1 レビュー起動だと、機械的に同型の編集をファイル数分繰り返すだけのグループ（例: 同一パターンの置換を N ファイルに適用する GROUP）でもレビュー往復が N 回発生し、タスク数に比例して所要時間が伸びるため。
 
 `group_id` は通し番号付き（`"GROUP-001 (1/7)"` 等）で記録されるため、単純な文字列一致では同一グループの各タスクが別グループとして扱われてしまう。この正規化・グループ完全性判定・部分失敗時の保留・ファイル順序の決定・**スコープ境界の合算**は決定論的な処理であり、SKILL.md にインライン記述せず専用スクリプトに委譲する（`docs/rules/implementation_guidelines.md`「SKILL.md にインラインスクリプトを書かない」）:
 
@@ -509,12 +488,17 @@ executor のステータスに基づいて分岐:
 
 ### 6.2 計画書の更新 [MANDATORY]
 
-レビュー完了後、計画書（YAML）を更新する:
+レビュー完了後、計画書を更新する。タスクのステータス変更・要件トレーサビリティの判定は AI ではなく script が行う（REQ-020 FNC-004）。
 
-1. **タスクのステータス**: `status: pending` → `status: completed`（**`held_groups[]` の task_id は対象外**。レビュー未実施のため `completed` にしない）
-2. **要件トレーサビリティ**: 関連する要件の全タスクが `completed` なら `status: completed` に更新
+**`held_groups[]` の task_id は対象外**（レビュー未実施のため `completed` にしない）。`held_groups[]` を除いた全 SUCCESS タスクの task_id を**1 回の script 実行で一括指定**する。個別に実行しない。
 
-> **複数タスク並列実行時**: `held_groups[]` を除いた全 SUCCESS タスクのステータスを**1回の計画書更新で一括変更**する。個別に更新しない。`held_groups[]` に含まれるタスクは実装（コード変更）自体は完了しているが、レビュー未実施のため今回の更新対象に含めない。
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/update_plan_status.py" \
+  --plan-path "{計画書パス}" \
+  --task "TASK-001,TASK-002"
+```
+
+script は指定タスクを `status: completed` に更新し、`design_traceability` 経由で紐づく要件の全タスクが `completed` になった要件を `requirements_traceability[].status: completed` へ更新して計画書へ書き戻す。exit code 0 で `updated_count` を確認する。
 
 ### 6.3 commit/push 確認
 
@@ -536,7 +520,7 @@ commit/push の確認フローを担うスキル（例: `anvil:commit`）が ava
 
 AskUserQuestion:「全タスクが完了しました。計画書（plan）を削除しますか？」
 
-`tasks/` ディレクトリ（4.3 で生成した `tasks/{タスクID}.yaml` の置き場）は計画書と同じライフサイクルとする。計画書を削除するときは必ず一緒に削除し、残すときは一緒に残す（個別に確認しない）。
+`tasks/` ディレクトリ（4.3 で生成した `tasks/{タスクID}.json` の置き場）は計画書と同じライフサイクルとする。計画書を削除するときは必ず一緒に削除し、残すときは一緒に残す（個別に確認しない）。
 
 - **削除する** → `rm {plan_path}` → `rm -rf {計画書と同じディレクトリ}/tasks/` → 完了案内（plan 削除パターン）
 - **残す** → 計画書・`tasks/` ともそのまま残す → 完了案内（plan 残しパターン）

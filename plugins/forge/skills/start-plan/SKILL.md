@@ -1,7 +1,7 @@
 ---
 name: start-plan
 description: |
-  設計書から実装戦略を策定し、タスクを抽出して YAML 計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
+  設計書から実装戦略を策定し、タスクを抽出して計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature> [--new|--add]"
@@ -14,7 +14,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 ## Goal
 
-設計書からタスク抽出・YAML計画書作成・レビュー+自動修正・commit まで完走すること。
+設計書からタスク抽出・計画書作成・レビュー+自動修正・commit まで完走すること。
 
 ## フロー継続 [MANDATORY]
 
@@ -64,8 +64,7 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
 
 **`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md` の「追加 feature 用 frontmatter」節 — `type: temporary-feature-plan` マーカー定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧。§6-3 が計画書（JSON）の `_feature_meta` 予約キー定義を持つ）
 
 ### 出力先の解決
 
@@ -95,8 +94,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 以下のプラグイン文書を**常に**読み込む:
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
-- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`** — 計画書テンプレート
-- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン
+- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン（計画書ファイルの形式そのものは script が保証するため、AI が読む必要はない）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ---
@@ -228,29 +226,9 @@ Write 完了後:
 
 **タスクの粒度・グループ化**: タスク・グループとも「1つの Agent 実行で完結する」単位であることを基準とする。詳細な判定基準は `plan_principles_spec.md`「タスクの粒度」「タスクグループ」節に従う（事前準備で読み込み済み）。
 
-### 4.3 計画書の作成・更新
+### 4.3 計画書の作成・更新 [MANDATORY]
 
-**出力フォーマット [MANDATORY]**: `plan_format.md` の YAML スキーマに従って生成する。ファイル名: `{feature}_plan.yaml`（拡張子は `.yaml`、`.md` ではない）
-
-**Markdown 出力の禁止 [MANDATORY]**:
-
-- **NEVER** 計画書本体を Markdown 形式で出力してはならない。拡張子 `.md` のファイル名で計画書を出力するのは禁止
-- **NEVER** Markdown 見出し（`#`）・Markdown table・Markdown 箇条書きで計画書本体（タスク・トレーサビリティ・改定履歴）を表現してはならない。これらはすべて YAML の構造化データとして表現する
-- **NEVER** Markdown table の「列」概念で計画書のフィールドを説明・出力してはならない。フィールドは `tasks[]` の YAML フィールド (`task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`) として記述する
-- **NEVER** `design_id` が無いタスクに `-` を入れてはならない。`design_id: null` を使用する
-- **NEVER** `required_reading` が無いタスクに `-` を入れてはならない。`required_reading: []` を使用する
-- `description` 内の各項目を YAML 配列要素として記述するのは可（`description` フィールドの値が文字列配列であるため）
-
-> Claude Code の plan mode が生成する **Markdown plan** とは別物。Markdown plan は `/forge:create-feature-from-markdown-plan` の入力素材であり、`/forge:start-plan` の出力ではない。
-
-フォーマットの優先順位:
-
-1. **プロジェクト固有ルール**: Phase 1 の計画書ルール return value に含まれるフォーマット定義
-2. **プラグイン文書**: `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`
-
-**作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
-
-**追加開発（`--add`）の場合 [MANDATORY]**: `plan_format.md`「追加 feature 用 frontmatter」が定義する `type: temporary-feature-plan` マーカーを、ファイル先頭の**コメントブロック**（`# ---` で囲む YAML コメント）として付与する。plan.yaml はトップレベルキー追加が禁止（🟡 major 違反）のため、マーカーはキーではなくコメントで表現する（既存スキーマと衝突しない）。notes の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存計画書の更新時は付与しない。
+**出力方式**: AI はタスクの意味内容（`title` / `description` / `acceptance_criteria` 等）を決定するが、計画書ファイルへの書き込みと構造検証は script が行う（AI は計画書ファイルの形式・キー配置を意識する必要はない）。ファイル名は script が `{feature}_plan.json` として決定する（拡張子は `.json`）。
 
 **タスクID採番** [MANDATORY]: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
 
@@ -267,31 +245,37 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **「やるべき内容」の記載原則・依存関係管理** [MANDATORY]: `plan_principles_spec.md`「『やるべき内容』の記載原則」「依存関係管理」節に従う（事前準備で読み込み済み）。依存関係は各タスクの `depends_on` 配列に落とし込み、計画書本体には依存関係マップを含めない。
 
+**候補 JSON の組み立てと書き込み [MANDATORY]**:
+
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合は `_feature_meta` キー（`type: "temporary-feature-plan"` と `notes` 配列。正式な文言は `additive_development_spec.md` §6-3 を参照）を追加する。新規アプリ（`--new`）・既存計画書の更新時は `_feature_meta` を付与しない
+2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
+3. **生成 script を 1 回実行する**。script が構造検証（4 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/write_plan.py" \
+     --input-file ".claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json" \
+     --output-path "{出力先ディレクトリ}/{feature}_plan.json"
+   ```
+
+   exit code で分岐する:
+
+   | exit code | 動作                                                                                                                                       |
+   | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+   | 0         | stdout の `output_path` を確認し、4.4 へ進む                                                                                               |
+   | 20        | stdout の `errors` に従って候補 JSON を訂正し、Write から同じ手順をもう 1 回だけ実行する。2 回目も失敗した場合はエラーとして報告し中断する |
+
+**作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
+
 ### 4.4 完全性チェック [MANDATORY]
 
-計画書作成後、以下を確認する。**ファイルを書き出す前に MUST 自己検査すること**。
+計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値・`_feature_meta` のみ許容される追加キー）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
 
-**`plan_format.md` 必須スキーマ検査** [MANDATORY]:
-
-- [ ] ファイル名が `{feature}_plan.yaml` 形式（拡張子 `.yaml`）
-- [ ] top-level に `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーがすべて存在する
-- [ ] 上記 4 キー以外の top-level キーは追加していない（追加開発の `type: temporary-feature-plan` マーカーは先頭コメントブロックであり top-level キーではないため許容）
-- [ ] `tasks[]` の各要素が必須フィールドをすべて持つ: `task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`
-- [ ] `tasks[].design_id` は文字列か `null`（`-` や `"-"` ではない）
-- [ ] `tasks[].depends_on` / `required_reading` は配列（なければ `[]`、`null` でも `-` でもない）
 - [ ] すべての `tasks[].required_reading` に `{output_dir}/{feature}_strategy.md` が含まれている
-- [ ] `tasks[].build_check` の値は `per_task` / `skip` / `on_group_complete` のいずれか
-- [ ] `tasks[].status` の値は `pending` / `in_progress` / `completed` のいずれか
-- [ ] `requirements_traceability[].status` の値は `pending` / `completed` のいずれか
-
-**計画品質検査** [MANDATORY]:
-
 - [ ] 実装戦略のフェーズ分割がタスクの優先度に反映されているか
 - [ ] 要件トレーサビリティマトリクスが全要件を網羅しているか
 - [ ] 設計トレーサビリティマトリクスが全設計書をカバーしているか
 - [ ] 全設計書がタスクに反映されているか
 - [ ] 依存関係に循環がないか
-- [ ] 計画書が `plan_format.md` の YAML フォーマットに従っているか（Markdown table・Markdown 見出しで計画書本体を表現していないか）
 
 ---
 

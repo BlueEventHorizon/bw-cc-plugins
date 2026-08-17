@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""plan.yaml の該当タスクと候補 JSON をマージし、tasks/{task_id}.yaml を生成する内部モジュール。"""
+"""plan.json の該当タスクと候補 JSON をマージし、tasks/{task_id}.json を生成する内部モジュール。"""
 
 import argparse
 import json
@@ -7,7 +7,8 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "plan"))
+from plan_contract import load_plan, PlanContractError  # noqa: E402
 
 
 TEMPLATE_PATH = (
@@ -200,21 +201,19 @@ def _read_and_consume_input(input_file):
 
 
 def _find_task(plan_path, task_id, errors):
-    path = Path(plan_path)
     try:
-        with path.open(encoding="utf-8") as handle:
-            plan = yaml.safe_load(handle)
-    except (OSError, yaml.YAMLError) as exc:
-        errors.append(f"plan.yaml を読み込めません: {exc}")
+        plan = load_plan(plan_path)
+    except PlanContractError as exc:
+        errors.append(str(exc))
         return None
     tasks = (plan or {}).get("tasks")
     if not isinstance(tasks, list):
-        errors.append("plan.yaml に tasks 配列がありません")
+        errors.append("plan.json に tasks 配列がありません")
         return None
     for task in tasks:
         if isinstance(task, dict) and task.get("task_id") == task_id:
             return dict(task)
-    errors.append(f"plan.yaml に task_id={task_id!r} が見つかりません")
+    errors.append(f"plan.json に task_id={task_id!r} が見つかりません")
     return None
 
 
@@ -257,7 +256,8 @@ def run_cli(argv=None):
     output_path = Path(args.output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(merged, handle, allow_unicode=True, sort_keys=False)
+        json.dump(merged, handle, ensure_ascii=False, indent=2, sort_keys=False)
+        handle.write("\n")
 
     _emit({"status": "ok", "output_path": str(output_path)})
     return 0

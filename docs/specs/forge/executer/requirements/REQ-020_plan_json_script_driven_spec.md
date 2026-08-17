@@ -25,7 +25,7 @@ notes:
 
 計画書（`plan.yaml`）の生成・読取・状態更新は、現状すべて AI が計画書ファイルを直接 Read/Write/Edit することで行われている。この方式には以下の課題がある。
 
-- AI が計画書ファイルのフォーマット（`plan_format.md` のスキーマ）を毎回意識しながら手作業で YAML テキストを組み立てる必要があり、書き崩れ・二重管理のリスクがある
+- AI が計画書ファイルのフォーマット（[DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のスキーマ）を毎回意識しながら手作業で YAML テキストを組み立てる必要があり、書き崩れ・二重管理のリスクがある
 - 計画書の一部（実行対象タスク）を抽出して executor へ渡す既存の仕組み（`task_context_contract.py`）が PyYAML に依存しており、CI 環境へのインストール漏れが検知されずに残っていた
 
 計画書を JSON 化し、生成・読取・タスク選択・依存関係判定・状態更新をすべて script が担う構成へ移行することで、AI がファイル形式そのものを意識する必要をなくし、外部依存（PyYAML）を排除する。
@@ -40,7 +40,7 @@ notes:
 
 ### FNC-001: 計画書の JSON 形式化
 
-計画書は JSON 形式で記録される。実装完了後にユーザーの選択により削除されうる一時的（ephemeral）な作業ファイルであり、恒久保存を目的としない（削除するか残すかは `start-implement` の完了処理でユーザーに確認する。自動削除はしない）。フィールド構造（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history`）は現行 [plan_format.md](../../../../../plugins/forge/docs/plan_format.md) のスキーマを踏襲する。ファイル名は現行の `{feature}_plan.yaml` 命名パターンを踏襲し、拡張子のみ `.json` に変更する（`{feature}_plan.json`）。
+計画書は JSON 形式で記録される。実装完了後にユーザーの選択により削除されうる一時的（ephemeral）な作業ファイルであり、恒久保存を目的としない（削除するか残すかは `start-implement` の完了処理でユーザーに確認する。自動削除はしない）。フィールド構造（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history`）は現行 [DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のスキーマを踏襲する。ファイル名は現行の `{feature}_plan.yaml` 命名パターンを踏襲し、拡張子のみ `.json` に変更する（`{feature}_plan.json`）。
 
 ### FNC-002: 計画書生成の script 経由化
 
@@ -60,7 +60,7 @@ executor へ渡すタスクコンテキストファイルは JSON 形式（`task
 
 ### FNC-006: 追加 feature frontmatter の JSON 表現
 
-差分 feature 用のメタ情報は JSON の予約キー（例: `_feature_meta`）で表現される。現行 `plan_format.md` のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）は、YAML がフロントマターを持てないこととは独立したスキーマ安定性のための設計判断である。本 feature 用の予約キーは FNC-001 が定めるスキーマ踏襲の対象外として、JSON 化に伴いこの制限を本 feature に限り緩和する追加キーである。
+差分 feature 用のメタ情報は JSON の予約キー（例: `_feature_meta`）で表現される。現行 [DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）は、YAML がフロントマターを持てないこととは独立したスキーマ安定性のための設計判断である。本 feature 用の予約キーは FNC-001 が定めるスキーマ踏襲の対象外として、JSON 化に伴いこの制限を本 feature に限り緩和する追加キーである。
 
 ### FNC-007: AI のスキーマ非依存性（範囲限定）
 
@@ -68,6 +68,4 @@ AI は計画書操作 script との入出力契約（script へ渡す候補デ�
 
 ## 4. 未確定事項
 
-| ID      | 内容                                                                                                                                         | 解決方法                     | 期限       |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------- |
-| TBD-001 | [plan_format.md](../../../../../plugins/forge/docs/plan_format.md)（現在プラグイン内蔵文書）をプロジェクト文書へ配置転換するか、その置き場所 | `/forge:start-design` で検討 | 設計開始前 |
+該当なし。

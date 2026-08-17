@@ -23,16 +23,16 @@ Select tasks from a plan, then execute context gathering → implementation → 
 
 ### When to Use
 
-- After a plan (`{feature}_plan.yaml`) is complete
+- After a plan (`{feature}_plan.json`) is complete
 - To implement `pending` tasks one at a time or in parallel
 
 ### Execution Flow
 
 ```mermaid
 flowchart TD
-    P1["Phase 1: Pre-check<br/>Confirm Feature, load plan"] --> P2
+    P1["Phase 1: Pre-check<br/>Confirm Feature, resolve plan path"] --> P2
 
-    P2["Phase 2: Task selection<br/>Dependency check"] --> P3
+    P2["Phase 2: Task selection<br/>Dependency check via script"] --> P3
 
     P3["Phase 3: Context gathering<br/>Design docs, rules, code (parallel)"] --> P4
 
@@ -46,9 +46,11 @@ flowchart TD
 ### Phase 1: Pre-check
 
 - Confirm Feature (interactive if omitted)
-- Load `specs/{feature}/plan/{feature}_plan.yaml` and display all task statuses
+- Resolve the path to `specs/{feature}/plan/{feature}_plan.json` (the AI does not read the whole plan)
 
 ### Phase 2: Task Selection
+
+Priority sorting, dependency checks, and atomic group selection are performed by `select_tasks.py`.
 
 | Method                     | Behavior                                                                 |
 | -------------------------- | ------------------------------------------------------------------------ |
@@ -59,8 +61,7 @@ flowchart TD
 #### Dependency Check
 
 - Tasks with unfinished `depends_on` entries cannot be executed
-- Inter-dependency among specified tasks → error, suggest sequential execution
-- Tasks within a group must execute sequentially from the first
+- Inter-dependency among specified tasks → the script returns an error, suggest sequential execution
 
 ### Phase 3: Context Gathering
 

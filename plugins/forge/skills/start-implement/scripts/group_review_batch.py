@@ -67,11 +67,13 @@ Output JSON:
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
-_GROUP_KEY_RE = re.compile(r"^(.*?)\s*\(")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "plan"))
+from plan_contract import normalize_group_key  # noqa: E402
 
 # `scope_text` が review 側の注入検証（`build_review_request.py` の構造行拒否）を通ることを
 # 生成側でも保証する。受け取る側は生成元の保証を検証できないため、両側で独立に検査する。
@@ -80,20 +82,6 @@ _PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:", "[msg-review]")
 
 _OUT_OF_SCOPE_HEADING = "以下は今回の範囲外である。担当タスクで実装される。"
 _NO_OUT_OF_SCOPE = "範囲外の項目はない（今回の対象はこの範囲で最終形に到達する）。"
-
-
-def normalize_group_key(group_id):
-    """通し番号付き group_id ("GROUP-001 (1/7)") からグループキー ("GROUP-001") を抽出する。
-
-    括弧を含まない場合はそのまま返す（フォーマットの揺れに対する保守的なフォールバック）。
-    """
-    if group_id is None:
-        return None
-    match = _GROUP_KEY_RE.match(group_id)
-    if match:
-        key = match.group(1).strip()
-        return key if key else group_id
-    return group_id
 
 
 class InvalidInputError(Exception):

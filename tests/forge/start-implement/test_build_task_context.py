@@ -8,8 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import yaml
-
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS_DIR = (
@@ -63,7 +61,7 @@ def valid_candidate(**overrides):
 
 def write_plan(path, tasks):
     path.write_text(
-        yaml.safe_dump({"tasks": tasks}, allow_unicode=True, sort_keys=False),
+        json.dumps({"tasks": tasks}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -154,7 +152,7 @@ class ValidateCandidateTest(unittest.TestCase):
 class BuildTaskContextTest(unittest.TestCase):
     def test_merges_plan_task_with_candidate(self):
         with tempfile.TemporaryDirectory() as tmp:
-            plan_path = Path(tmp) / "foo_plan.yaml"
+            plan_path = Path(tmp) / "foo_plan.json"
             write_plan(
                 plan_path,
                 [
@@ -189,7 +187,7 @@ class BuildTaskContextTest(unittest.TestCase):
 
     def test_missing_task_id_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
-            plan_path = Path(tmp) / "foo_plan.yaml"
+            plan_path = Path(tmp) / "foo_plan.json"
             write_plan(plan_path, [{"task_id": "TASK-002"}])
             merged, errors = build_task_context(
                 str(plan_path), "TASK-001", valid_candidate()
@@ -221,7 +219,7 @@ class RunCliTest(unittest.TestCase):
     def test_success_writes_output_and_deletes_input(self):
         with tempfile.TemporaryDirectory() as tmp:
             plan_dir = Path(tmp)
-            plan_path = plan_dir / "foo_plan.yaml"
+            plan_path = plan_dir / "foo_plan.json"
             write_plan(
                 plan_path,
                 [
@@ -246,7 +244,7 @@ class RunCliTest(unittest.TestCase):
             input_path.write_text(
                 json.dumps(valid_candidate(), ensure_ascii=False), encoding="utf-8"
             )
-            output_path = plan_dir / "tasks" / "TASK-001.yaml"
+            output_path = plan_dir / "tasks" / "TASK-001.json"
             try:
                 result = self._run(
                     plan_path,
@@ -259,7 +257,7 @@ class RunCliTest(unittest.TestCase):
                 self.assertEqual(payload["status"], "ok")
                 self.assertFalse(input_path.exists())
                 self.assertTrue(output_path.exists())
-                written = yaml.safe_load(output_path.read_text(encoding="utf-8"))
+                written = json.loads(output_path.read_text(encoding="utf-8"))
                 self.assertEqual(written["title"], "fm_to_pending の実装")
             finally:
                 input_path.unlink(missing_ok=True)
@@ -267,7 +265,7 @@ class RunCliTest(unittest.TestCase):
     def test_invalid_candidate_still_deletes_input(self):
         with tempfile.TemporaryDirectory() as tmp:
             plan_dir = Path(tmp)
-            plan_path = plan_dir / "foo_plan.yaml"
+            plan_path = plan_dir / "foo_plan.json"
             write_plan(plan_path, [{"task_id": "TASK-001"}])
             temp_dir = REPO_ROOT / ".claude" / ".temp"
             temp_dir.mkdir(parents=True, exist_ok=True)
@@ -277,7 +275,7 @@ class RunCliTest(unittest.TestCase):
             input_path.write_text(
                 json.dumps(broken, ensure_ascii=False), encoding="utf-8"
             )
-            output_path = plan_dir / "tasks" / "TASK-001.yaml"
+            output_path = plan_dir / "tasks" / "TASK-001.json"
             try:
                 result = self._run(
                     plan_path,
@@ -296,13 +294,13 @@ class RunCliTest(unittest.TestCase):
     def test_rejects_input_file_outside_temp_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
             plan_dir = Path(tmp)
-            plan_path = plan_dir / "foo_plan.yaml"
+            plan_path = plan_dir / "foo_plan.json"
             write_plan(plan_path, [{"task_id": "TASK-001"}])
             outside_path = Path(tmp) / "outside.json"
             outside_path.write_text(
                 json.dumps(valid_candidate(), ensure_ascii=False), encoding="utf-8"
             )
-            output_path = plan_dir / "tasks" / "TASK-001.yaml"
+            output_path = plan_dir / "tasks" / "TASK-001.json"
             result = self._run(
                 plan_path, "TASK-001", str(outside_path), output_path
             )
