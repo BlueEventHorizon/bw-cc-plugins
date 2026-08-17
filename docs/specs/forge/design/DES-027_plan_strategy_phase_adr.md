@@ -116,5 +116,5 @@ plan.yaml は構造化データ（YAML）であり、`start-implement` が機械
 
 ### 変更不要
 
-- `plan_format.md` — plan.yaml のスキーマは変更なし
+- 計画書のスキーマ — 本 ADR の決定範囲外（当時のスキーマ自体に変更なし）
 - `start-implement` — タスク実行ロジックは影響なし。ただし executor が全体戦略・フェーズ意図・リスク対策を理解できるよう、strategy.md は全タスクの `required_reading` に含め、executor への必読文書として渡す
