@@ -1,0 +1,26 @@
+{
+  "task_id": "<task_id>",
+  "scope_in": "<今回到達すべき範囲の1行要約>",
+  "scope_out": [
+    {
+      "item": "<範囲外の項目>",
+      "owner_task_id": "<担当タスクID>",
+      "reason": "<分離されている理由>"
+    }
+  ],
+  "required_reading": {
+    "design_docs": [],
+    "requirement_docs": [],
+    "strategy_doc": null,
+    "rule_docs": [],
+    "reference_code": [],
+    "additional": []
+  },
+  "implementation_instructions": "<タスク固有の実装指示>",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "required",
+    "tests_reason": null
+  }
+}

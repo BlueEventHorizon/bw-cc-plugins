@@ -89,7 +89,6 @@ flowchart TD
 **読み込む defaults:**
 
 - `spec_format.md` — ID 分類カタログ
-- `plan_format.md` — 計画書テンプレート
 - `plan_principles_spec.md` — 計画書作成原則ガイド
 
 ### Phase 1: コンテキスト収集 [MANDATORY]
@@ -121,12 +120,12 @@ flowchart TD
 
 ### Phase 4: 計画書の作成・更新
 
-| Step | 内容                                                                   |
-| ---- | ---------------------------------------------------------------------- |
-| 4.1  | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握） |
-| 4.2  | 実装戦略のフェーズ分割に基づきタスク抽出・分割                         |
-| 4.3  | フォーマット適用（`plan_format.md` に準拠）                            |
-| 4.4  | 完全性チェック [MANDATORY]                                             |
+| Step | 内容                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 4.1  | 更新モード時: 既存計画書の確認（要件・設計反映状況、未着手タスク把握）                     |
+| 4.2  | 実装戦略のフェーズ分割に基づきタスク抽出・分割                                             |
+| 4.3  | 候補 JSON を組み立て、`write_plan.py` へ渡して計画書へ書き出す（構造検証は script が行う） |
+| 4.4  | 完全性チェック [MANDATORY]                                                                 |
 
 各タスクの `required_reading` には `{feature}_strategy.md` を必ず含める。executor が単一タスクだけを実装する場合でも、全体戦略・フェーズ意図・リスク対策を理解したうえで実装判断できるようにする。
 
@@ -192,11 +191,11 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                     | 説明                      |
-| ------------------------------------------------------------ | ------------------------- |
-| `plugins/forge/skills/start-plan/SKILL.md`                   | スキル仕様                |
-| `plugins/forge/docs/strategy_formulation_spec.md`            | 実装戦略 Agent 作業指示書 |
-| `plugins/forge/docs/plan_format.md`                          | 計画書テンプレート        |
-| `plugins/forge/docs/plan_principles_spec.md`                 | 計画書作成原則ガイド      |
-| `plugins/forge/docs/spec_format.md`                          | ID分類カタログ            |
-| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md` | ADR: 実装戦略フェーズ導入 |
+| ファイル                                                         | 説明                                         |
+| ---------------------------------------------------------------- | -------------------------------------------- |
+| `plugins/forge/skills/start-plan/SKILL.md`                       | スキル仕様                                   |
+| `plugins/forge/docs/strategy_formulation_spec.md`                | 実装戦略 Agent 作業指示書                    |
+| `docs/specs/forge/executer/design/DES-074_plan_format_design.md` | 計画書 script 実装契約（`write_plan.py` 等） |
+| `plugins/forge/docs/plan_principles_spec.md`                     | 計画書作成原則ガイド                         |
+| `plugins/forge/docs/spec_format.md`                              | ID分類カタログ                               |
+| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md`     | ADR: 実装戦略フェーズ導入                    |

@@ -139,7 +139,7 @@ Generates design documents (Markdown) in `specs/{feature}/design/`. ID scheme: `
 
 ## start-plan
 
-Extract tasks from design documents and create a YAML plan.
+Extract tasks from design documents and create a JSON plan.
 
 ```
 /forge:start-plan [feature]
@@ -173,67 +173,71 @@ Extract tasks from design documents and create a YAML plan.
 | Completeness | Build and test must pass at task completion              |
 | File scope   | 1 file or 2–3 closely related files                      |
 
-### Plan Structure (Minimal Complete YAML)
+### Plan Structure (Minimal Complete JSON)
 
-The plan is a YAML file named `{feature}_plan.yaml`. **It is not Markdown.**
-The top level has exactly four keys: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` (per the canonical schema in `plan_format.md`).
+The plan is a JSON file named `{feature}_plan.json`. **It is not Markdown.**
+The top level has exactly four keys: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` (plus `_feature_meta`, allowed only for additive-development plans). A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
 
-```yaml
-# {feature} implementation plan
-
-# === Traceability ===
-requirements_traceability:
-  - requirement_id: REQ-001
-    title: Requirement title
-    design_id: DES-001
-    status: pending # pending / completed
-
-design_traceability:
-  - design_id: DES-001
-    title: Design title
-    requirement_ids:
-      - REQ-001
-    task_ids:
-      - TASK-001
-
-# === Tasks ===
-tasks:
-  - task_id: TASK-001
-    title: Task name
-    priority: 90 # High:70-99, Mid:40-69, Low:1-39
-    status: pending # pending / in_progress / completed
-    design_id: DES-001 # null when no design (not "-")
-    depends_on: [] # Array of dependency task IDs. Use [] when none.
-    group_id: null # null for independent tasks, e.g. "GROUP-001 (1/3)"
-    build_check: per_task # per_task / skip / on_group_complete
-    description:
-      - Action item 1
-      - Action item 2
-    acceptance_criteria: Yes/No-judgable acceptance criteria # null when none
-    required_reading: # Array of required reading paths. Use [] when none.
-      - specs/{feature}/design/DES-001_xxx.md
-
-# === Revision history ===
-revision_history:
-  - date: "2026-03-15"
-    content: Initial revision
+```json
+{
+  "requirements_traceability": [
+    {
+      "requirement_id": "REQ-001",
+      "title": "Requirement title",
+      "design_id": "DES-001",
+      "status": "pending"
+    }
+  ],
+  "design_traceability": [
+    {
+      "design_id": "DES-001",
+      "title": "Design title",
+      "requirement_ids": ["REQ-001"],
+      "task_ids": ["TASK-001"]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "title": "Task name",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-001",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": ["Action item 1", "Action item 2"],
+      "acceptance_criteria": "Yes/No-judgable acceptance criteria",
+      "required_reading": ["specs/{feature}/design/DES-001_xxx.md"]
+    }
+  ],
+  "revision_history": [{ "date": "2026-03-15", "content": "Initial revision" }]
+}
 ```
+
+**Field value ranges**:
+
+- `status` (requirement): `pending` / `completed`
+- `priority`: High 70-99 / Mid 40-69 / Low 1-39
+- `status` (task): `pending` / `in_progress` / `completed`
+- `design_id`: `null` when absent (never `-`)
+- `depends_on`: array of dependency task IDs. Use `[]` when none
+- `group_id`: `null` for independent tasks, e.g. `"GROUP-001 (1/3)"`
+- `build_check`: `per_task` / `skip` / `on_group_complete`
+- `acceptance_criteria`: `null` when none
+- `required_reading`: array of required reading paths. Use `[]` when none
 
 ### Key Principles
 
 - `description` should reference the design doc section, not contain implementation details
-- `design_id` is `null` when absent (never `-` or `"-"`)
-- `depends_on` / `required_reading` use `[]` when empty (never `null` or `-`)
-- `build_check` must be one of `per_task` / `skip` / `on_group_complete`
 - Dependencies must not form cycles
 - The traceability matrix must verify all requirements and designs are covered
 
 ### Output
 
-Generates the plan (YAML) at `specs/{feature}/plan/{feature}_plan.yaml`. **A Markdown plan is never emitted.**
+Generates the plan (JSON) at `specs/{feature}/plan/{feature}_plan.json`. **A Markdown plan is never emitted.**
 A Claude Code plan-mode Markdown plan is a different artifact; if you want to derive requirements and design from one, use `/forge:create-feature-from-markdown-plan`.
 
 ### Reference Documents
 
-- `plugins/forge/docs/plan_format.md` — Plan YAML schema
 - `plugins/forge/docs/plan_principles_spec.md` — Task granularity and grouping guide

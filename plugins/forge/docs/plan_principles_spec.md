@@ -9,16 +9,16 @@
 
 ## 計画書の構成ルール [MANDATORY]
 
-計画書は YAML 形式で、以下の4セクションのみで構成する:
+計画書は JSON 形式で、以下の4セクションのみで構成する:
 
 1. `requirements_traceability` — 要件トレーサビリティマトリクス
 2. `design_traceability` — 設計トレーサビリティマトリクス
 3. `tasks` — タスク一覧
 4. `revision_history` — 改定履歴
 
-**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。
+**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。**例外**: 追加 feature の frontmatter 相当情報を持つ予約キー `_feature_meta`（[additive_development_spec.md](additive_development_spec.md) §6-3）のみ許容する。
 
-ファイル名: `{feature}_plan.yaml`（拡張子は `.yaml`）
+ファイル名: `{feature}_plan.json`（拡張子は `.json`）
 
 ---
 
@@ -51,15 +51,18 @@
 
 タスク実行前に必ず読むべき文書のファイルパスを `tasks[].required_reading` 配列に列挙する。
 
-**記載形式**: プロジェクトルートからの相対パス文字列の YAML 配列
+**記載形式**: プロジェクトルートからの相対パス文字列の JSON 配列
 
 **正しい例**:
 
-```yaml
-required_reading:
-  - specs/feature/design/DES-001_foo_design.md
-  - specs/feature/plan/feature_strategy.md
-  - rules/architecture/domain_core.md
+```json
+{
+  "required_reading": [
+    "specs/feature/design/DES-001_foo_design.md",
+    "specs/feature/plan/feature_strategy.md",
+    "rules/architecture/domain_core.md"
+  ]
+}
 ```
 
 **実装戦略書 [MANDATORY]**: `/forge:start-plan` が `{feature}_strategy.md` を作成した場合、すべてのタスクの `required_reading` にその戦略書パスを含める。戦略書は executor が全体戦略・フェーズ意図・リスク対策を理解するための必読文書である。
@@ -69,7 +72,7 @@ required_reading:
 - `foo_design` ❌（曖昧名）
 - `specs/*/design/*.md` ❌（glob 禁止）
 - `DES-001` ❌（ID のみ）
-- `-` ❌（旧 Markdown table 表現。YAML では `null` でも `-` でもなく **空配列 `[]`** を使う）
+- `-` ❌（旧 Markdown table 表現。JSON では `null` でも `-` でもなく **空配列 `[]`** を使う）
 
 **必読なし**: `required_reading: []`（空配列）
 
@@ -214,11 +217,11 @@ required_reading:
 
 ### 構成ルール (本文書既存)
 
-| 違反パターン                                                                                      | 違反時の重大度 | 理由                                            |
-| ------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
-| `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
-| YAML 形式以外で記述                                                                               | 🔴 critical    | ツールチェーンが解釈不能                        |
-| ファイル名が `{feature}_plan.yaml` 規約から逸脱                                                   | 🟡 major       | 自動解決経路が機能しない                        |
+| 違反パターン                                                                                                        | 違反時の重大度 | 理由                                            |
+| ------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
+| `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` / `_feature_meta` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
+| JSON 形式以外で記述                                                                                                 | 🔴 critical    | ツールチェーンが解釈不能                        |
+| ファイル名が `{feature}_plan.json` 規約から逸脱                                                                     | 🟡 major       | 自動解決経路が機能しない                        |
 
 ### タスクの粒度 (本文書既存)
 
@@ -243,7 +246,7 @@ required_reading:
 | 必読パスが glob (例: `specs/*/design/*.md`) | 🔴 critical    | 自動解決不能                                 |
 | 必読パスが曖昧名 (例: `foo_design`)         | 🔴 critical    | 自動解決不能                                 |
 | `required_reading` フィールドが未指定       | 🟡 major       | 「必読なし」は明示的に `[]` で表現する       |
-| `required_reading` に `-` 等の文字列を記載  | 🟡 major       | 旧 Markdown table 表現。YAML では空配列 `[]` |
+| `required_reading` に `-` 等の文字列を記載  | 🟡 major       | 旧 Markdown table 表現。JSON では空配列 `[]` |
 
 ### タスクグループ (本文書既存)
 
@@ -281,7 +284,7 @@ required_reading:
 
 ### 追加 feature 用 frontmatter
 
-判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。マーカーの定義は [plan_format.md](plan_format.md)「追加 feature 用 frontmatter」節を参照（plan.yaml は先頭コメントブロックで表現する）。
+判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。マーカーの定義は [additive_development_spec.md](additive_development_spec.md) §6-3「計画書（JSON）」節を参照（`_feature_meta` 予約キーで表現する）。
 
 | 違反パターン                                                              | 違反時の重大度 | 理由                                                       |
 | ------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------- |

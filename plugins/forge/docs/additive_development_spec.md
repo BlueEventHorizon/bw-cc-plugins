@@ -183,7 +183,7 @@ specs/
 
 ## 6. frontmatter 定義一覧（集約 SoT）
 
-追加 feature 文書の frontmatter は本節を **単一の真実源（集約 SoT）** とする。各フォーマット文書（`requirement_format.md` / `design_format.md` / `plan_format.md`）は本節を参照し、自種別の frontmatter を掲載する。
+追加 feature 文書の frontmatter は本節を **単一の真実源（集約 SoT）** とする。各フォーマット文書（`requirement_format.md` / `design_format.md`）は本節を参照し、自種別の frontmatter を掲載する。計画書（JSON）の frontmatter 定義は本節 §6-3 自体が正本を持つ（計画書のスキーマ定義自体が配布物ではなくプロジェクト固有の script 契約であるため）。
 
 **判定**: いずれの種別も「追加 feature か」の判定は本書 §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正には付与しない（false positive 防止）。
 
@@ -213,21 +213,19 @@ notes:
 ---
 ```
 
-### 6-3. 計画書（YAML）
+### 6-3. 計画書（JSON）
 
-計画書は `{feature}_plan.yaml`（YAML ファイル）であり、Markdown の `---` frontmatter を使えない。さらに `plan_format.md` のスキーマは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止している（追加すると 🟡 major 違反）。
+計画書は `{feature}_plan.json`（JSON ファイル）である。スキーマは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 トップレベルキーに加え、追加 feature の frontmatter 専用の予約キー `_feature_meta` を許容する。
 
-したがって追加 feature の計画書では、frontmatter を**ファイル先頭のマーカーコメントブロック**で表現する（トップレベルキーを増やさない）:
-
-```yaml
-# ---
-# type: temporary-feature-plan
-# notes:
-#   - 正本は対応する追加 feature 要件定義書（REQ-xxx）。旧仕様と矛盾する場合は要件定義書を優先する。
-#   - 本 feature 実装完了後、この計画書は破棄される予定（§4.3「追加開発の計画 → 破棄」）。計画書は実装済みのため、要件定義書・設計書と異なり分離維持の対象にならない。
-# ---
-
-# {feature} 実装計画書
-requirements_traceability:
-  ...
+```json
+{
+  "_feature_meta": {
+    "type": "temporary-feature-plan",
+    "notes": [
+      "正本は対応する追加 feature 要件定義書（REQ-xxx）。旧仕様と矛盾する場合は要件定義書を優先する。",
+      "本 feature 実装完了後、この計画書は破棄される予定（§4.3「追加開発の計画 → 破棄」）。計画書は実装済みのため、要件定義書・設計書と異なり分離維持の対象にならない。"
+    ]
+  },
+  "requirements_traceability": []
+}
 ```

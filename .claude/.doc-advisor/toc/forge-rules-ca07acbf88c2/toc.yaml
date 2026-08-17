@@ -5,37 +5,37 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-16T03:51:18Z
-  file_count: 40
+  generated_at: 2026-08-17T15:53:16Z
+  file_count: 39
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, including feature separation and merge conditions.
+    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, including feature namespace concepts, document management, merge timing, and frontmatter requirements.
     content_details:
-      - Feature concept definitions and naming conventions
-      - Application conditions for feature-based development
-      - Exclusion conditions and document operation rules
-      - Priority of new specifications over existing ones
-      - New file separation criteria during additive development
-      - Merge definition and scope-based content integration
-      - Merge procedure steps and requirements
-      - Frontmatter definitions for temporary feature documents
+      - Feature namespace concept and necessity
+      - Applicability conditions for additive development
+      - Priority rules for new requirements over existing specifications
+      - Document separation and non-modification during development
+      - Merge definition as meaning reconciliation
+      - Scope-based content distribution rules for merge
+      - Step-by-step merge procedure with validation and cleanup
+      - Frontmatter definitions for requirements, design, and plan documents
     applicable_tasks:
-      - Feature planning and architecture in additive development
-      - Determining whether to use feature separation for changes
-      - Planning scope-based separation when modifying specifications
-      - Reviewing merge decisions in additive development
-      - Writing frontmatter for temporary feature documents
+      - Planning additive feature development
+      - Determining when to use feature namespace
+      - Merging new requirements into existing specifications
+      - Writing additive requirement documents
+      - Writing additive design documents
+      - Resolving conflicts between new and existing specifications
     keywords:
-      - additive-development
-      - feature-namespace
-      - feature-separation
-      - specification-merge
+      - additive development
+      - feature namespace
       - temporary-feature-requirement
       - temporary-feature-design
-      - temporary-feature-plan
-      - merge-timing
+      - merge reconciliation
+      - scope-based distribution
+      - frontmatter
   plugins/forge/docs/adr_format.md:
     title: ADR Default Format
     purpose: Defines the default format for Architecture Decision Records when project-specific format is not found, including file naming, mandatory section structure, scope declaration, and obsolescence markers.
@@ -202,38 +202,38 @@ docs:
       - SSOT
       - terminology
   plugins/forge/docs/criteria/review_criteria_plan.md:
-    title: plan Review Criteria
-    purpose: Defines review criteria, reference sources (SSOT), check order, and judgment rules for plan document validation
+    title: Plan Review Criteria
+    purpose: Defines review criteria and standards for plan documents covering SSOT delegation, check sequence, and decision rules for plan review recommendations
     content_details:
-      - SSOT reference documents with P1/P2/P3 priority levels
-      - "Three-level check order: P1 rule compliance, P2 contradiction detection, P3 complexity assessment"
-      - plan_format.md validation (YAML structure, required fields)
-      - plan_principles_spec.md validation (task granularity, acceptance criteria)
-      - temporary-feature-plan marker requirement for additional features
-      - Reference path existence validation (required_reading, design_id)
-      - P2 contradiction detection between plan and related specs/designs
-      - P2 exclusion rule for additional feature plan differences
-      - P3 unnecessary complexity and anti-pattern detection
-      - "Recommendation judgment: fix, create_issue, skip"
+      - SSOT reference documents for plan review (P1-P3 delegation hierarchy)
+      - Review check sequence and priority order
+      - P1 rule conformance checks against plan principles specification
+      - Additive feature metadata requirement validation (temporary-feature-plan frontmatter)
+      - Reference path existence verification for required_reading and design_id
+      - P2 contradiction detection between plan.json and specification documents
+      - Additive feature exemption rules for intentional differences
+      - P3 unnecessary complexity judgment using specification priorities
+      - Recommendation decision rules (fix, create_issue, skip)
+      - Three conditions for create_issue recommendation (no applicable rule, recurrence, explicit grain size)
     applicable_tasks:
-      - Review plan documents
-      - Validate plan YAML structure
-      - Validate task content against principles
-      - Validate reference path existence
-      - Detect contradictions between plan and specs
-      - Validate additional feature plans
-      - Assess plan structure complexity
+      - Plan document review for principle conformance
+      - Additive feature plan validation with required metadata
+      - Reference path existence verification in plan documents
+      - Contradiction detection between plan and design specifications
+      - Plan complexity review and simplification
+      - Creating issues for insufficient rules
+      - Plan review recommendation decision making
     keywords:
-      - plan_format
-      - plan_principles
+      - plan_principles_spec
       - temporary-feature-plan
       - SSOT
       - review criteria
-      - P1 P2 P3 priority
+      - additive_development_spec
       - contradiction detection
+      - create_issue
+      - design specifications
       - reference validation
-      - additive development
-      - specification reconciliation
+      - complexity judgment
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: requirement Review Criteria
     purpose: Defines review criteria, reference sources (SSOT), check order, and judgment rules for requirement document validation
@@ -518,66 +518,36 @@ docs:
       - SQL injection
       - code review
       - design patterns
-  plugins/forge/docs/plan_format.md:
-    title: Plan Document Default Format
-    purpose: Specifies YAML schema and format for forge plan documents with task definitions, traceability, and revision history
-    content_details:
-      - YAML schema selection rationale (FNC-005) for structured task data and machine parsing
-      - "Additive feature frontmatter with type: temporary-feature-plan marker comment block"
-      - Requirements traceability section with requirement_id, design_id, status fields
-      - Design traceability section mapping designs to requirements and tasks
-      - Task list with task_id, priority (1-99), status, dependencies, and group_id
-      - "Build check strategy options: per_task, skip, on_group_complete"
-      - Acceptance criteria and required reading documents per task
-      - "Task status transitions: pending to in_progress to completed"
-      - Revision history with date and content entries
-    applicable_tasks:
-      - Creating implementation plan documents for features
-      - Defining task dependencies and build check strategies
-      - Tracing requirements to design and implementation tasks
-      - Updating task status during implementation
-    keywords:
-      - plan document
-      - YAML schema
-      - temporary-feature-plan
-      - task_id
-      - traceability
-      - priority
-      - acceptance criteria
-      - task dependencies
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Creation Principles
-    purpose: Defines mandatory creation principles and rules for plan documents, covering structure, task granularity, traceability, dependency management, acceptance criteria, test requirements, and violation severity levels
+    purpose: Defines general principles for plan document structure, task granularity, acceptance criteria, and traceability rules when project-specific conventions are not established
     content_details:
-      - "Mandatory four-section YAML structure: requirements_traceability, design_traceability, tasks, revision_history only"
-      - "Task granularity criteria: single Agent execution unit, 5-10 description items per task, build/test success at completion"
-      - "Content writing principles: avoid duplicating implementation details from design documents, link to design section instead"
-      - required_reading field specification with mandatory strategy document inclusion when applicable
-      - Task grouping rules with group_id and build_check values (per_task for independent, skip for group middle, on_group_complete for group end)
-      - Early validation conditions and minimum verifiable unit definition for task groups
-      - "Dependency management: prevent circular dependencies, identify implicit dependencies (frontend → API schema, integration test → all features)"
-      - "Acceptance criteria rules: must be Yes/No determinable without subjective expressions like 'works properly"
-      - "Test task requirements: main features must have unit or integration test tasks in the plan"
-      - "Severity level catalog for violations: critical, major, minor with specific violation patterns"
-      - "Traceability rules: all requirement IDs must appear with task associations or explicit exclusion reasons"
+      - Plan JSON structure with 4 mandatory sections (requirements/design traceability, tasks, revision_history)
+      - Task granularity standards (single agent execution unit, 5-10 content items, build/test success requirement)
+      - Required reading field format specification (project-root relative paths, mandatory strategy doc inclusion)
+      - Task grouping with build_check patterns (group_id, per_task, skip, on_group_complete)
+      - Early validation conditions for task groups (minimum executable unit completeness)
+      - Acceptance criteria standards (objective yes/no judging, subjective expression prohibition)
+      - Test task mandatory rules (unit/integration specification, feature mapping)
+      - Implicit dependency detection patterns (frontend-API, integration test, migration, deployment)
+      - Traceability matrix rules (requirements/design mapping, exclusion reasoning)
     applicable_tasks:
-      - Creating plan documents with mandatory structure and principles
-      - Designing task granularity and scope for feature implementation
-      - Setting up requirement-design-task traceability matrices
-      - Implementing dependency management and implicit dependency detection
-      - Defining acceptance criteria with determinable Yes/No criteria
-      - Planning and integrating test tasks with implementation tasks
+      - Plan document creation for new features
+      - Plan review and violation detection
+      - Task granularity assessment and refinement
+      - Acceptance criteria definition for feature tasks
+      - Implicit dependency identification and specification
+      - Traceability matrix establishment
     keywords:
-      - plan principles
-      - YAML
-      - requirements_traceability
+      - plan
       - task granularity
-      - dependency management
+      - required_reading
+      - group_id
+      - build_check
       - acceptance criteria
-      - test tasks
-      - implicit dependencies
-      - severity
-      - traceability
+      - traceability matrix
+      - implicit dependency
+      - test task
   plugins/forge/docs/requirement_format.md:
     title: Requirement Definition Document Default Format
     purpose: Specifies default format, frontmatter requirements, and severity catalog for forge requirement definition documents
@@ -732,38 +702,37 @@ docs:
       - traceability
       - criteria
   plugins/forge/docs/spec_format.md:
-    title: Specification Format and ID Classification Guide
-    purpose: Provides catalog and guidelines for ID classification, Feature organization, document structure, naming conventions, and cross-reference practices in specification management
+    title: ID Classification Catalog
+    purpose: Generic reference catalog for ID classification, file naming conventions, document reference notation, and cross-reference principles, used when project-specific spec_format.md does not exist.
     content_details:
-      - Feature classification with usage patterns for incremental development, agile iterations, and small projects
-      - Feature directory structure organizing requirements, design, and plan documents under specs/{feature}/
-      - Requirement ID catalog with 14 prefixes (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG) and their usage
-      - Design ID catalog for general design documents (DES) and architecture decision records (ADR)
-      - Task ID catalog and layer-specific prefix definitions for layered architecture projects
-      - Priority range catalog classifying tasks into three tiers (high 70-99, medium 40-69, low 1-39)
-      - File naming conventions for requirements (_spec.md), design (_design.md), and plan documents (plan.yaml)
-      - "Document reference notation with four principles: avoiding unnecessary references, markdown link format, metadata ID listing, and ID mention in explanatory text"
-      - ID numbering namespace rules with SKILL-based allocation across all spec directories and branches
-      - Cross-reference principles using SKILL boundaries and full filename format with spec-dir modifier syntax for cross-directory references
+      - Feature definition and usage patterns (additive development, agile, small projects)
+      - Directory structure for features with requirements, design, and plan organization
+      - Requirements ID catalog (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG)
+      - Design ID catalog (DES for designs, ADR for architecture decisions)
+      - Task ID catalog (TASK for generic tasks, layer-based prefixes)
+      - Priority range catalog (70-99 high, 40-69 medium, 1-39 low)
+      - File naming rules for requirements, design, and plan documents
+      - Document reference notation principles (necessary references only, markdown links)
+      - ID number space management and SKILL-based adoption
+      - Cross-reference principles and modifier notation for cross-directory references
     applicable_tasks:
-      - Document creation and specification ID prefix determination
-      - Feature planning and documentation structure organization
-      - Specification management with ID allocation and namespace maintenance
-      - Cross-directory reference validation and metadata formatting verification
-      - Design document review for ID usage and reference correctness
-      - Requirement classification with appropriate ID prefixes
-      - Architecture decision documentation with ADR format and placement
+      - Creating requirement documents with appropriate ID prefixes
+      - Creating design documents and architecture decision records
+      - Planning task organization with correct ID prefixes
+      - Organizing feature structures and directory layouts
+      - Establishing document reference notation standards
+      - Managing ID number spaces across spec directories
+      - Setting up cross-directory reference conventions
     keywords:
-      - ID
-      - Feature
-      - requirement
-      - design
-      - namespace
+      - ID classification
+      - REQ ID catalog
+      - DES ID
       - ADR
-      - cross-reference
-      - metadata
+      - feature namespace
       - spec directory
-      - SKILL
+      - document reference notation
+      - cross-reference
+      - markdown link
   plugins/forge/docs/spec_priorities_spec.md:
     title: Specification and Design Document Priority Principles
     purpose: Defines universal principles prioritizing structural design factors in requirements and design documents, and prohibits distractions like quantifying structural quality or fabricating undefined numerical targets
@@ -858,33 +827,35 @@ docs:
       - versioning
       - data transformation
   plugins/forge/skills/start-implement/docs/task_execution_spec.md:
-    title: Task Execution Guide (For Executor Agent)
-    purpose: Provides step-by-step instructions for the task-executor agent to execute a single implementation task, covering pre-work, implementation, verification, and result reporting procedures
+    title: Task Execution Specification for Executor Agent
+    purpose: Defines the complete workflow and mandatory procedures for the task-executor agent to execute a single task, including intake, preparation, implementation, verification, and completion reporting.
     content_details:
-      - Multi-step workflow with 5 sequential steps (task reception → pre-work → implementation → verification → result reporting)
-      - Scope boundary enforcement with designated in-scope and out-of-scope items
-      - Pre-Mortem failure analysis (identifying up to 5 concrete failure causes with root analysis and mitigation strategies)
-      - Verification requirements specification (build confirmation, test execution, skip conditions, retry limit of 1 failure)
-      - Required documents reading list (design, requirements, strategy, rules, reference code with priority order)
-      - Test-driven development approach (Red-Green-Refactor cycle) when specified in implementation instructions
-      - Verification failure recovery procedure (error analysis, correction, re-verification with maximum 2 attempts)
-      - Result JSON template structure (task_id, status, files_modified, summary, verification results, pre-mortem analysis, notes, error)
+      - "Step 1: Task information intake (task context file, result template, producer validator, input path)"
+      - "Step 2: Pre-execution preparation (required reading, code review, pre-mortem analysis)"
+      - "Step 3: Implementation workflow (file creation, structure, items, error handling, comments)"
+      - "Step 4: Verification requirements (build, tests, acceptance criteria, failure recovery)"
+      - "Step 5: Completion processing and result JSON reporting"
+      - Scope boundary enforcement (scope_in and scope_out constraints)
+      - Pre-Mortem risk analysis (risk identification, avoidance strategies, reflection)
+      - Result template validation (producer validator logic and exit codes)
+      - Troubleshooting guidance (dependencies, build/test errors, unclear requirements)
     applicable_tasks:
-      - Executing single feature implementation tasks as executor agent
-      - Preparing pre-work before code implementation (document reading, existing code review, failure analysis)
-      - Implementing code changes following orchestrator instructions and design specifications
-      - Executing verification steps (build and test) with specified requirements
-      - Reporting implementation results in standardized JSON format
+      - Task executor agent initialization and preparation
+      - Single-task implementation planning and execution
+      - Multi-step task completion with verification
+      - Risk analysis and avoidance strategy development
+      - Verification requirement evaluation
+      - Task result validation and reporting
     keywords:
-      - task-executor
+      - executor agent
       - task execution
-      - Pre-Mortem
-      - scope boundary
       - verification
-      - orchestrator
-      - implementation instruction
-      - test-driven development
-      - result reporting
+      - scope boundary
+      - pre-mortem
+      - result template
+      - acceptance criteria
+      - required reading
+      - producer validator
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     title: APP Overview Requirements Definition Document Writing Standard
     purpose: Defines sections and writing guidelines for APP-001, the project charter document that establishes why, what, who, how, and validation criteria

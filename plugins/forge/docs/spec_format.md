@@ -102,7 +102,7 @@ ADR の配置・ID 採番・運用は [adr_principles_spec.md](adr_principles_sp
 | ---------- | --------------------------- | --------------------------- |
 | 要件定義書 | `{REQ-ID}_{name}_spec.md`   | `SCR-001_<name>_spec.md`    |
 | 設計書     | `{DES-ID}_{name}_design.md` | `DES-001_<name>_design.md`  |
-| 計画書     | `{feature}_plan.yaml`       | `user_management_plan.yaml` |
+| 計画書     | `{feature}_plan.json`       | `user_management_plan.json` |
 
 ---
 
