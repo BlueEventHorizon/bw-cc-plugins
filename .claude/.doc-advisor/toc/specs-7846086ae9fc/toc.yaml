@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-15T05:02:57Z
-  file_count: 57
+  generated_at: 2026-08-17T09:34:54Z
+  file_count: 58
 
 docs:
   docs/specs/agenda/requirements/REQ-019_agenda_record.md:
@@ -187,86 +187,86 @@ docs:
       - prerequisite validation
       - Bug Report
   docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md:
-    title: "ADR-039: Triage Phase Reordering - Early Judgment Integration"
-    purpose: Proposes separating triage judgments into text-only-passable and investigation-dependent types, reordering phases to move text-passable judgments before heavy investigations for efficiency
+    title: "ADR-039 Triage Phase Reordering: From Batch Investigation to Early Decision with Parallel Checks"
+    purpose: Proposes reorganizing triage workflow phases to enable early termination decisions based on issue description alone, avoiding redundant investigations for obvious cases
     content_details:
-      - Existing phase order (Phase 2-5 investigations before Phase 6-8 judgments)
-      - "Inefficiency: clear cases still wait for all investigations before judgment confirmation"
-      - "Direct-passable judgments: §1 applicability check, requirement confirmation, risk gates 1&2"
-      - "Proposed phase reordering: text-only judgments moved before investigation phases"
-      - §1 applicability check designed as one-way early-exit gate
-      - Phase 6 judgment 2 and Phase 7 condition 3 retain dependency on Phase 4-5 results
-      - "Impact: reduced judgment cost for obvious cases without over-confident determinations"
+      - Phase reordering strategy
+      - Early termination gate for additive development applicability
+      - Phase dependency analysis (Phase 4-5 required by Phase 6 and Phase 7)
+      - Three alternative options with rejection rationales
+      - Cost reduction for unambiguous case determination
     applicable_tasks:
-      - Triage issue phase optimization
-      - Early judgment gate design
-      - Triage workflow efficiency improvement
-      - Risk assessment for phase reordering
+      - Triage workflow phase design
+      - Early decision gate implementation
+      - Phase dependency management
+      - Triage phase optimization
+      - Feature separation requirement determination
     keywords:
       - triage
-      - phase ordering
-      - early judgment
-      - anvil
+      - phase reordering
+      - additive development
+      - early termination
       - decision gate
+      - batch investigation
       - phase dependency
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md:
-    title: "DES-038: Development Flow Triage Design - Phase Structure, SoT Analysis, Anvil Improvements"
-    purpose: Analyzes triage-issue Phase structure, SoT locations and dependencies; designs Phase reordering improvements within anvil→forge one-way dependency constraints
+    title: "DES-038 Development Flow Branching (Triage) Design: Phase Structure and SoT Analysis with anvil Improvements"
+    purpose: Analyzes triage phase structure and SoT locations, determines phase dependencies, and designs improvements within one-way dependency constraints between anvil and forge
     content_details:
-      - "SoT classification: fixed rules (forge ownership), context-dependent judgments (anvil), heuristics (anvil)"
-      - Phase 0-9 analysis with purpose, nature and dependencies for each Phase
-      - "Direct-passable judgments: Phase 6.1 requirement confirmation, Phase 7 conditions 1&2, Phase 8 additive_development_spec check"
-      - "Blocked judgments: Phase 6.2 design residuals requires Phase 4-5 investigation results"
-      - "Phase 5.3 analysis: code investigation needs Phase 2-3 backing for safe Phase 6.2/7.3 decisions"
-      - "New Phase 5.5: code domain re-search with query-db-specs/query-db-rules and uncertainty resolution"
-      - "Phase flow redesign: Phase 1-5.5 investigations before Phase 6+ judgments with mermaid diagram"
-      - "Component dependency graph: anvil→forge one-way calls with no reverse dependency"
-      - "Modules changed: triage-issue/SKILL.md adds Phase 5.5; Phase 2-5 references unchanged"
-      - "Phase 7 condition 3: measures files requiring individual judgment per file, not total edit count"
+      - Phase 0-9 structure with roles and SoT classification
+      - "SoT analysis: fixed rules vs. context judgment vs. independent heuristics"
+      - Phase dependency patterns (Phase 6-7 depending on Phase 4-5)
+      - Phase 5.5 new stage design for code-based re-search and uncertainty resolution
+      - One-way dependency constraint (anvil→forge, forge modification prohibited)
+      - Test strategy with integration verification items
+      - Out-of-scope items requiring separate forge-side features
     applicable_tasks:
-      - Triage flow phase design and optimization
-      - Dependency analysis in triage decision making
-      - SoT classification for judgment logic
-      - Phase-level uncertainty resolution planning
-      - Anvil-forge dependency constraint enforcement
-    keywords:
-      - triage-issue
-      - phase structure
-      - SoT
-      - phase dependency
-      - risk gate
-      - anvil
-      - uncertainty resolution
-  docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
-    title: REQ-007 Development Flow Branching (Triage) Requirements Definition
-    purpose: Defines requirements for a triage system that branches development flow into lightweight implementation or full SDD (Spec-Design-Plan) route based on Issue analysis
-    content_details:
-      - Triage as single branching point to replace multiple independent entry paths
-      - "Lightweight implementation route: direct to implementation phase without requirements/design documents"
-      - "SDD route with 3 entry points: requirements definition, design, or plan depending on certainty level"
-      - "Investigation result handoff: triage investigation findings passed to implementation phase to avoid duplication"
-      - Risk gate conditions for escalating lightweight issues to SDD route
-      - Cross-cutting invariant conditions (I-01 through I-05) defining flow control constraints
-      - Flow asset repositioning between triage-issue and impl-issue skills with responsibility boundaries
-      - "Investigation categories: specification search, rules search, similar PR lookup, existing code exploration"
-    applicable_tasks:
-      - Triage skill implementation planning
-      - Flow branching logic design
-      - Investigation procedure specification (spec/rule/PR/code searches)
-      - Issue routing automation development
-      - Dependency architecture design (anvil to forge)
-      - Skill documentation updates (triage-issue, impl-issue, create-issue alignment)
+      - Triage workflow phase sequencing
+      - SoT dependency mapping
+      - Early termination gate design
+      - Uncertainty resolution procedure
+      - Risk gate criteria definition
+      - Phase implementation design
     keywords:
       - triage
-      - FNC-01
-      - FNC-03
-      - FNC-04
-      - risk gate
+      - phase design
+      - SoT
+      - dependency
+      - uncertainty resolution
+      - phase 5.5
+      - anvil
+      - forge
+      - feature requirement
+  docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
+    title: REQ-007 Development Flow Triage Feature Requirements
+    purpose: Defines requirements for a triage mechanism that classifies GitHub Issues into development routes (one-shot implementation vs SDD workflow), determines SDD entry points, and enables investigation result reuse to eliminate duplicate analysis
+    content_details:
+      - Triage decision process based on issue investigation and SDD necessity assessment
+      - "Two development routes: one-shot implementation route and SDD phase sequence (requirements → design → plan → implementation)"
+      - "Three SDD entry point options: requirements definition, design phase, or planning phase with selection criteria"
+      - "Investigation categories and procedures: specifications search, rules search, PR similarity search, existing code analysis"
+      - Investigation result reuse mechanism to prevent duplicate analysis in downstream implementation phase
+      - "Traceability requirement: decision results and reasoning documented in GitHub Issue comments"
+      - Single consolidated entry point for one-shot implementation (eliminates direct impl-issue invocation)
+      - "Flow asset repositioning: consolidation of investigation procedure ownership between triage and implementation skills"
+    applicable_tasks:
+      - Triage decision determination for new GitHub issues
+      - Development route selection between one-shot and SDD workflows
+      - SDD entry point selection and recommendation
+      - Issue investigation result documentation and handoff strategy
+      - Implementation workflow consolidation and entry point unification
+      - Risk assessment and decision basis recording
+    keywords:
+      - triage-flow
+      - SDD
       - entry point
-      - SDD route
-      - NFR-01
       - investigation result
-      - invariant conditions
+      - one-shot implementation
+      - workflow routing
+      - GitHub Issue
+      - risk gate
+      - uncertainty assessment
+      - decision traceability
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md:
     title: "ADR-063: Codex app-server as Independent Review Backend"
     purpose: Establishes Codex app-server as an independent review backend with thread ownership, eliminating dependencies on human TUI sessions, cmux, and related infrastructure
@@ -720,32 +720,33 @@ docs:
       - findings format
       - codex-appserver
   docs/specs/forge/design/ADR-066_review_body_backend_separation.md:
-    title: ADR-066 Review Body and Backend Separation
-    purpose: Specifies separation of the review skill into main body and backend components, establishing responsibility boundaries and enabling multiple backend implementations
+    title: "ADR-066: Separate /forge:review Body and Review Backend into Separate SKILL"
+    purpose: Architectural decision to separate the /forge:review SKILL body from review backend implementations, defining responsibility boundaries and enabling multiple backend support with centralized termination handling
     content_details:
-      - Separation of /forge:review body from review backend SKILLs
-      - Backend as inheritance-type SKILL invoked via Skill tool
-      - "Responsibility boundary: body handles argument parsing and feedback evaluation; backend handles precondition checks and reviewer interaction"
-      - Common interpretation rules moved to plugins/forge/scripts/
-      - Single exit point for termination and notification handling
-      - Termination determination moved from script to SKILL.md step
-      - Impacts on existing backend implementations and new codex-appserver backend connection
+      - "Context: Backend axis introduced in ADR-060, contract completion in ADR-065, inline msg-review implementation in current body"
+      - "Decision: Separate /forge:review body and review backends into different SKILLs"
+      - "Responsibility boundaries: body handles parsing/pattern matching/target resolution/verdict evaluation, backend handles precondition checks/reviewer interaction/wire protocol"
+      - Backend as inherited SKILL for user confirmation and Stop hook handling
+      - Common format interpretation moved to plugins/forge/scripts/
+      - Termination handling through single exit point
+      - "Alternatives considered: keep as single SKILL, custom Agent backend, per-backend interpretation duplication, individual termination handling"
     applicable_tasks:
-      - Review backend implementation
-      - Review system architecture design
-      - API contract definition between main body and backend
-      - msg-review backend extraction
-      - codex-appserver backend integration
+      - Review SKILL architecture design
+      - Review backend implementation planning
+      - Backend integration and connection
+      - SKILL separation design
+      - Review termination handling
+      - Architecture boundary validation
     keywords:
-      - review
-      - backend
+      - review body
+      - review backend
       - SKILL separation
-      - ADR-066
-      - inheritance SKILL
-      - termination handling
+      - responsibility boundaries
+      - wire protocol
       - msg-review
       - codex-appserver
-      - responsibility boundary
+      - termination handling
+      - inherited SKILL
   docs/specs/forge/design/ADR-067_backend_availability_probe.md:
     title: "ADR-067: Adding Backend Availability Probe to Contract Requirements and Resolving Default Backend by Availability Order"
     purpose: Documents the architectural decision to add availability checking to backend contracts and implement default backend resolution based on availability rather than fixed defaults
@@ -940,33 +941,35 @@ docs:
       - start-plan
       - start-requirements
   docs/specs/forge/design/DES-013_context_gathering_design.md:
-    title: Context Gathering Task Specification
-    purpose: Task specification for parallel context collection agents in create-* and start-implement skills using inline prompts with return value markdown output contract
+    title: "DES-013: Context Gathering Task Specification"
+    purpose: Defines context gathering task specification for forge create-* and start-implement SKILLs, including task types, output format requirements, skill-specific application matrices, and agent instruction patterns
     content_details:
-      - "Three context collection task types: specification search (via query-db-specs), implementation rule search (via query-db-rules), existing code search (via Grep/Glob)"
-      - Return value markdown format with section headers and bullet list lines (  — reason )
-      - Skill-by-task application matrix for start-requirements/design/plan/implement
-      - "Agent composition per skill: start-requirements (mode-dependent), start-design (3 parallel), start-plan (2 parallel), start-implement (2 parallel)"
-      - Inline prompt templates with search purpose, search means, and output contract specification
-      - Parallel execution via Agent tool returning markdown directly to orchestrator context
-      - "Fail-open approach: independent agent execution prevents cascade failures"
-      - No session directories; results maintained in main AI context
+      - "Three task types: specification research via query-db-specs, implementation rules research via query-db-rules, existing code research via Grep/Glob"
+      - "Output format: each bullet list line with   — reason in 1 line"
+      - "Task application matrix for start-implement: specification research not required, rules and code research always required"
+      - "Agent composition for start-implement: rules agent and code agent in parallel (2 parallel)"
+      - Specification sources directly identified from plan traceability matrix and task required_reading
+      - "Agent instructions use 3-element prompt template: search purpose, search means, output contract"
+      - No session directory or external specification paths passed to agents
+      - Related to DES-010 orchestrator design and DES-022 parallel agent output contract
     applicable_tasks:
-      - Context collection task implementation for forge skills
-      - Parallel agent composition design and testing
-      - Inline prompt template specification for agents
-      - Return value markdown contract validation
-      - Skill-specific context gathering workflow design
+      - Context gathering implementation
+      - Start-implement SKILL development
+      - Agent-based task design
+      - Specification research and discovery
+      - Implementation rules extraction
+      - Code search and discovery
+      - Parallel agent execution orchestration
     keywords:
       - context gathering
-      - specification search
-      - implementation rules
-      - existing code
-      - parallel agents
-      - return value
+      - start-implement SKILL
       - query-db-specs
       - query-db-rules
-      - Grep exploration
+      - agent parallel execution
+      - output contract
+      - bullet list format
+      - traceability matrix
+      - required_reading
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md:
     title: .doc_structure.yaml Version Management Design
     purpose: Defines version management and migration scheme for .doc_structure.yaml file following COMMON-REQ-001, enabling machine-driven migration through Python scripts with staged application pattern
@@ -1297,36 +1300,65 @@ docs:
       - configuration validation
       - forward compatibility
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 Forge Review Body Design
-    purpose: Specifies backend-independent design of the review body SKILL that orchestrates review requests, delegates to backends, and processes findings without depending on specific review executors
+    title: "DES-066: /forge:review Body (Backend-Independent) Design"
+    purpose: Specifies the design of /forge:review SKILL body independent of specific review backends, defining responsibility boundaries, argument parsing, target resolution, finding evaluation, safety verification, and termination handling across single-exit endpoint paths
     content_details:
-      - Backend resolution with explicit flag, config setting, or default candidate order (agent-review, msg-review)
-      - "Four termination paths: approved, halted_with_open_findings, failure, interrupted"
-      - Single exit point for termination processing with notification issuing
-      - Finding location-based splitting (located vs unlocated) for repair capability assessment
-      - "Two confidence dimensions: pointing accuracy (confidence) and fix capability (fix_confident)"
-      - Gradual presentation with triage file management fixed at .claude/.temp/review/triage.md
-      - Module design for branch analysis, target resolution, request building, safety verification
-      - Requirement coverage for FNC-1303 through FNC-1320
-      - Artifact granularity preservation and focus/scope distinction in review requests
+      - Backend resolution via name-to-SKILL mapping, explicit/config/candidate order precedence with fail-closed on unknown backends
+      - "Default candidate order: agent-review, msg-review with no setting-overridable ordering"
+      - "Ten modules with specific responsibilities: backend resolution, branch analysis, target resolution, request building, location-based splitting, triage updates, baseline capture, safety verification"
+      - "Four terminal endpoints: approved, halted_with_open_findings, failure, interrupted"
+      - "Two confidence dimensions: indicated correctness (☑️) and fix capability (✅) both required for auto-apply"
+      - Staged presentation with fixed triage file location, append-only updates, no remake path, single finding list preserved
+      - "Granularity preservation: range specifications passed to backend, not expanded to files"
+      - Base branch handling via user confirmation with allowlist generation from confirmed base
+      - Located vs unlocated findings split based on position presence without judgment or severity input
     applicable_tasks:
-      - Review body SKILL implementation
-      - Backend selection and resolution logic
-      - Finding evaluation and triage management
-      - Termination handling and notification issuing
-      - Safety verification for review fixes
-      - Test design for review components
+      - Review SKILL body implementation
+      - Backend integration and delegation design
+      - Finding evaluation and correction workflow
+      - Termination path and endpoint handling
+      - Triage file creation and update management
+      - Safety verification for fix application
+      - Base branch confirmation and target resolution
+      - Graduated presentation and user confirmation
+      - Multi-round review session coordination
     keywords:
       - review body
-      - backend separation
+      - backend resolution
+      - backend-independent
       - finding evaluation
-      - termination handling
-      - triage management
-      - confidence assessment
-      - location-based splitting
-      - agent-review
-      - msg-review
-      - safety verification
+      - termination paths
+      - triage file
+      - confidence levels
+      - location splitting
+      - graduated presentation
+      - fail-closed
+  docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md:
+    title: REQ-020 Plan JSON conversion and script-driven architecture requirements specification
+    purpose: Specifies requirements for converting plan format from YAML to JSON and implementing script-driven architecture for plan generation, parsing, task selection, and status management
+    content_details:
+      - Plan JSON schema structure preserving fields from current YAML format
+      - Script-based plan file generation and writing without direct AI YAML manipulation
+      - Task selection and dependency resolution via script execution
+      - Task status update and traceability tracking by script operations
+      - Task context JSON format for executor without PyYAML dependency
+      - Feature metadata representation in JSON using reserved keys
+      - Removal of PyYAML from CI environment
+      - AI schema independence for plan operations
+    applicable_tasks:
+      - Plan JSON schema design and specification
+      - Script implementation for plan generation and task operations
+      - Executor integration and task context format design
+      - Format conversion implementation and testing
+      - CI configuration update for dependency removal
+    keywords:
+      - plan.json
+      - script-driven
+      - PyYAML
+      - task context
+      - JSON schema
+      - executor
+      - format conversion
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines orchestrator design pattern requirements for forge plugins, specifying how skills delegate work to agents and manage multi-phase processes
