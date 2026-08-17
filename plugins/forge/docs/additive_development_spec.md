@@ -79,7 +79,7 @@ specs/
 - 実装のみを修正し、文書側は一切変更しない場合（バグ修正で仕様自体は正しかったケースを含む）
 - **恒久的なトップレベル feature namespace の新設**: 既存仕様への merge を予定せず、恒久的に独立した機能群として維持すると明示決定した新規 feature namespace（例: `docs/specs/forge/`・`docs/specs/common/` のようなトップレベル namespace）。この場合、当該 feature 配下の要件定義書・設計書・計画書は §6 の一時 frontmatter を付与しない（frontmatter の意味論「旧仕様が正本より古い状態にあり、実装完了後に齟齬を解消する必要がある」が成立しないため）。対して、既存 feature namespace 配下に切り出すサブ機能（例: `docs/specs/anvil/triage-flow/` のような、後日 anvil 本体と齟齬を解消する差分開発）は本除外の対象外であり、通常どおり frontmatter を付与する。なお frontmatter の付与は「いずれこの文書が消える」ことを意味しない。齟齬の解消後にその文書を残すか否かは §4.2 のスコープ判断で決まる
 
-差分開発に該当する場合は、**作成するすべての文書種別（要件定義書・設計書・計画書）の先頭に差分 feature 用 frontmatter を付与する**。各種別の frontmatter 定義は本書 [§6 frontmatter 定義一覧（集約 SoT）](#6-frontmatter-定義一覧集約-sot) に集約する。
+差分開発に該当する場合は、**作成する要件定義書・設計書の先頭に差分 feature 用 frontmatter を付与する**。各種別の frontmatter 定義は本書 [§6 frontmatter 定義一覧（集約 SoT）](#6-frontmatter-定義一覧集約-sot) に集約する。計画書には付与しない（§6-3 参照。`requirements_traceability` 経由で辿れるため不要）。
 
 ---
 
@@ -199,7 +199,7 @@ specs/
 
 ```yaml
 ---
-feature_type: temporary-feature-requirement
+feature_type: temporary-feature
 feature_note:
   - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
@@ -214,7 +214,7 @@ feature_note:
 
 ```yaml
 ---
-feature_type: temporary-feature-design
+feature_type: temporary-feature
 feature_note:
   - 正本は対応する追加 feature 要件定義書（REQ-xxx）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
@@ -223,21 +223,8 @@ feature_note:
 ---
 ```
 
-### 6-3. 計画書（YAML）
+### 6-3. 計画書（frontmatter を付与しない）
 
-計画書は `{feature}_plan.yaml`（YAML ファイル）であり、Markdown の `---` frontmatter を使えない。さらに `plan_format.md` のスキーマは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止している（追加すると 🟡 major 違反）。
+計画書には frontmatter を付与しない。計画書は `requirements_traceability` で対応する要件定義書（REQ-xxx）を既に参照しており、その要件定義書が §6-1 の `feature_type: temporary-feature` を持つかどうかで、当該計画書が追加 feature のものかを辿って判定できる。計画書自体に重複してマーカーを持たせる必要はない。
 
-したがって追加 feature の計画書では、frontmatter を**ファイル先頭のマーカーコメントブロック**で表現する（トップレベルキーを増やさない）:
-
-```yaml
-# ---
-# feature_type: temporary-feature-plan
-# feature_note:
-#   - 正本は対応する追加 feature 要件定義書（REQ-xxx）。旧仕様と矛盾する場合は要件定義書を優先する。
-#   - 本 feature 実装完了後、この計画書は破棄される予定（§4.3「追加開発の計画 → 破棄」）。計画書は実装済みのため、要件定義書・設計書と異なり分離維持の対象にならない。
-# ---
-
-# {feature} 実装計画書
-requirements_traceability:
-  ...
-```
+計画書は実装完了後に破棄される（§4.3 手順 4）ため、要件定義書・設計書と異なり merge 時に分離維持を判断する対象にもならない。

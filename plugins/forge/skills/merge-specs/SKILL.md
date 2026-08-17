@@ -142,7 +142,7 @@ git rev-parse --abbrev-ref HEAD
 
 ### 0.3 追加開発モードの判定（任意検証）
 
-本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書は frontmatter に `feature_type: temporary-feature-*` を持つ（`temporary-feature-requirement` / `temporary-feature-design`）。
+本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書（要件定義書・設計書）は frontmatter に `feature_type: temporary-feature` を持つ。計画書には frontmatter を付与しない（§6-3）。
 
 追加 DIR (B) の各 `*.md` 先頭 frontmatter を確認し、判定する:
 
@@ -473,7 +473,7 @@ Phase 4 / 5 で追加側ファイルは一切書き換えていないため、�
 
 ### 8.1 残す文書の frontmatter を外す [MANDATORY]
 
-分離を維持すると判定した文書からは、一時 feature 用 frontmatter（`feature_type: temporary-feature-*`）を外す。この frontmatter は「基本側が古いまま据え置かれている」状態を示すマーカーであり、齟齬を解消した後は成立しないためである。外した後は恒久的な仕様として扱う。
+分離を維持すると判定した文書からは、一時 feature 用 frontmatter（`feature_type: temporary-feature`）を外す。この frontmatter は「基本側が古いまま据え置かれている」状態を示すマーカーであり、齟齬を解消した後は成立しないためである。外した後は恒久的な仕様として扱う。
 
 ### 8.2 後始末の内容確認
 
@@ -549,6 +549,6 @@ git status --short
 
 ## 関連文書
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `feature_type: temporary-feature-*` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `feature_type: temporary-feature` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
 
 > What/How 境界・要件/設計/計画のフォーマット・文書品質の規範（`spec_design_boundary_spec` / `*_format` / `*_principles_spec` など）は、**特定の文書名をハードコードせず Phase 0.5 で検索して取得**する。本 skill は汎用ツールであり、ターゲットプロジェクトごとに規約の所在・内容が異なるため、固定リンクは持たない。

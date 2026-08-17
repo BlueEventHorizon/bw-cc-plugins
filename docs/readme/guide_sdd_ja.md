@@ -127,7 +127,7 @@ SDD 業界では**テストと受け入れ基準 (Acceptance Criteria)** が中�
 
 **特記事項**:
 
-- 要件定義書に `feature_type: temporary-feature-requirement` の frontmatter は**付けない**（この文書は恒久仕様）
+- 要件定義書に `feature_type: temporary-feature` の frontmatter は**付けない**（この文書は恒久仕様）
 - 既存仕様との整合を気にする必要がない
 - 対応コマンド: `/forge:start-requirements --new`
 
@@ -163,9 +163,9 @@ feature を使うかどうかは **変更の実質** で判定する — 実装�
 
 逆に、先に既存要件定義書へ追記してしまった場合でも、実質が独立した要件群であれば追加 feature として一時要件定義書に切り出す。追記済みであるという文書操作の形式は、追加 feature 扱いを回避する理由にならない。
 
-### 6-2. `feature_type: temporary-feature-requirement` frontmatter
+### 6-2. `feature_type: temporary-feature` frontmatter
 
-追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature-requirement` の frontmatter を付ける。feature_note には①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) §6-1 を参照。
+追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) §6-1 を参照。
 
 このうち①〜③はそれぞれ次の意味を持つ。
 
@@ -188,7 +188,7 @@ feature を使うかどうかは **変更の実質** で判定する — 実装�
 追加開発の要件定義書は以下のライフサイクルをたどる:
 
 ```
-[作成]           → temporary-feature-requirement frontmatter 付きで新規作成
+[作成]           → temporary-feature frontmatter 付きで新規作成
    ↓
 [実装期間中]     → この文書を正として、新規ファイルで実装
    ↓

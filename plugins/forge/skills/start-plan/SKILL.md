@@ -60,12 +60,11 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature-*` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
 
-**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（§6-3）。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md` の「追加 feature 用 frontmatter」節 — `feature_type: temporary-feature-plan` マーカー定義
 
 ### 出力先の解決
 
@@ -250,7 +249,7 @@ Write 完了後:
 
 **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 
-**追加開発（`--add`）の場合 [MANDATORY]**: `plan_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature-plan` マーカーを、ファイル先頭の**コメントブロック**（`# ---` で囲む YAML コメント）として付与する。plan.yaml はトップレベルキー追加が禁止（🟡 major 違反）のため、マーカーはキーではなくコメントで表現する（既存スキーマと衝突しない）。feature_note の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存計画書の更新時は付与しない。
+**追加開発（`--add`）の場合**: 計画書には frontmatter を付与しない（`plan_format.md`「追加 feature の計画書」節）。追加 feature かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で辿って判定できる。
 
 **タスクID採番** [MANDATORY]: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
 
@@ -275,7 +274,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 - [ ] ファイル名が `{feature}_plan.yaml` 形式（拡張子 `.yaml`）
 - [ ] top-level に `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーがすべて存在する
-- [ ] 上記 4 キー以外の top-level キーは追加していない（追加開発の `feature_type: temporary-feature-plan` マーカーは先頭コメントブロックであり top-level キーではないため許容）
+- [ ] 上記 4 キー以外の top-level キーは追加していない
 - [ ] `tasks[]` の各要素が必須フィールドをすべて持つ: `task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`
 - [ ] `tasks[].design_id` は文字列か `null`（`-` や `"-"` ではない）
 - [ ] `tasks[].depends_on` / `required_reading` は配列（なければ `[]`、`null` でも `-` でもない）

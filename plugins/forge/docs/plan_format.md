@@ -16,15 +16,9 @@
 
 ---
 
-## 追加 feature 用 frontmatter
+## 追加 feature の計画書（frontmatter を付与しない）
 
-**追加 feature に属する計画書（判定は [additive_development_spec.md](additive_development_spec.md) §1）を作成するときに限り**、ファイル先頭に追加 feature マーカーを付与すること。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、文書操作の形式（新規作成か追記か）では判定しない。分離して管理する価値のない軽微な追記・修正、および main の初期立ち上げ時は含めない。
-
-計画書は YAML ファイルであり Markdown の `---` frontmatter を使えない。さらに本フォーマットは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止する（追加すると 🟡 major 違反）。そのため frontmatter は**ファイル先頭のマーカーコメントブロック**（`# ---` で囲む YAML コメント）で表現する（トップレベルキーを増やさない）。
-
-マーカーには `feature_type: temporary-feature-plan` と、①正本は対応する追加 feature 要件定義書（REQ-xxx）であること②実装済みのため実装完了後に破棄される予定であること、の2点を feature_note として記載する。正式な文言は [additive_development_spec.md](additive_development_spec.md) §6-3 を参照。
-
-正式定義（全文書種別の集約 SoT）・判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6 frontmatter 定義一覧 / §1 適用条件）
+計画書には frontmatter を付与しない。追加 feature に属する計画書かどうかは、`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で辿って判定する。計画書自体に重複してマーカーを持たせる必要はない。判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6-3 / §1 適用条件）
 
 ---
 
