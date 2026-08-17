@@ -22,7 +22,7 @@
 
 計画書は YAML ファイルであり Markdown の `---` frontmatter を使えない。さらに本フォーマットは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のトップレベルキー追加を禁止する（追加すると 🟡 major 違反）。そのため frontmatter は**ファイル先頭のマーカーコメントブロック**（`# ---` で囲む YAML コメント）で表現する（トップレベルキーを増やさない）。
 
-マーカーには `type: temporary-feature-plan` と、①正本は対応する追加 feature 要件定義書（REQ-xxx）であること②実装済みのため実装完了後に破棄される予定であること、の2点を notes として記載する。正式な文言は [additive_development_spec.md](additive_development_spec.md) §6-3 を参照。
+マーカーには `feature_type: temporary-feature-plan` と、①正本は対応する追加 feature 要件定義書（REQ-xxx）であること②実装済みのため実装完了後に破棄される予定であること、の2点を feature_note として記載する。正式な文言は [additive_development_spec.md](additive_development_spec.md) §6-3 を参照。
 
 正式定義（全文書種別の集約 SoT）・判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6 frontmatter 定義一覧 / §1 適用条件）
 

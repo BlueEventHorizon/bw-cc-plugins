@@ -61,7 +61,7 @@ anvil 由来の規範を forge の COPY 範囲に載せることは利用者決�
 
 重複統制:
 
-- 差分 feature の frontmatter 規範は additive_development_spec §6 が正本。COPY 範囲では「`type: temporary-feature-*` を付ける」の一言に畳む（format 3 文書の該当節は §6 の再掲であり、供給源として数えない）
+- 差分 feature の frontmatter 規範は additive_development_spec §6 が正本。COPY 範囲では「`feature_type: temporary-feature-*` を付ける」の一言に畳む（format 3 文書の該当節は §6 の再掲であり、供給源として数えない）
 - 「判断に迷う検出は混入として扱う」は sensitive_information_spec §3 と criteria/review_criteria_secrets.md に同旨があるが、COPY 範囲には 1 回だけ書く
 
 ## Workflow

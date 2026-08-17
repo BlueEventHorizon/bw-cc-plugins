@@ -60,12 +60,12 @@ doc_type `design`（feature 未指定）で既存ファイルの有無を確認�
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 対応する追加 feature 要件定義書（`type: temporary-feature-requirement` frontmatter を持つ要件定義書）が入力に含まれるかで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 対応する追加 feature 要件定義書（`feature_type: temporary-feature-requirement` frontmatter を持つ要件定義書）が入力に含まれるかで推定し、判断がつかなければ AskUserQuestion で確認する
 
 **`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` の「追加 feature 用 frontmatter」節 — `type: temporary-feature-design` 定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` の「追加 feature 用 frontmatter」節 — `feature_type: temporary-feature-design` 定義
 
 ### 出力先の解決
 
@@ -241,7 +241,7 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
-- **追加開発（`--add`）の場合 [MANDATORY]**: `design_format.md`「追加 feature 用 frontmatter」が定義する `type: temporary-feature-design` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。notes の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
+- **追加開発（`--add`）の場合 [MANDATORY]**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature-design` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
 - **ユーザーレビューは AI レビュー（Phase 4）の後に実施する** — AI レビューで品質問題を修正してからユーザー確認を行う方が効率的
 
 **禁止事項・よくある失敗パターン**: `design_principles_spec.md`「記載してはいけない内容」「よくある失敗パターン」節に従う（事前準備で読み込み済み）。
