@@ -8,15 +8,15 @@
 
 P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重大度カタログ (拡充済み)」を保持する SoT である。複数文書間の優先順位は「プロジェクト固有 > 内蔵」とする (review_priorities_spec.md)。
 
-| priority | path                                                                               | doc_type   | 役割                                                                                                                           |
-| -------- | ---------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| P1       | [requirement_format.md](../requirement_format.md)                                  | format     | 要件定義書フォーマット (メタデータ・未確定事項表・必須項目等の規範本体 + 重大度カタログ)                                       |
-| P1       | [spec_priorities_spec.md](../spec_priorities_spec.md)                              | principles | 仕様優先度・非機能要件カテゴリ網羅性・主目的禁止・倒錯パターン (規範本体 + 重大度カタログ)                                     |
+| priority | path                                                                               | doc_type   | 役割                                                                                                                                   |
+| -------- | ---------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| P1       | [requirement_format.md](../requirement_format.md)                                  | format     | 要件定義書フォーマット (メタデータ・未確定事項表・必須項目等の規範本体 + 重大度カタログ)                                               |
+| P1       | [spec_priorities_spec.md](../spec_priorities_spec.md)                              | principles | 仕様優先度・非機能要件カテゴリ網羅性・主目的禁止・倒錯パターン (規範本体 + 重大度カタログ)                                             |
 | P1       | [additive_development_spec.md](../additive_development_spec.md)                    | principles | 追加開発ワークフロー (`feature_type: temporary-feature-requirement` 文書の判定基準 §1 / 旧仕様優先度 §2 / P2 矛盾除外規定の前提を提供) |
-| P1       | [document_style_guide.md](../document_style_guide.md)                              | format     | 文書スタイル規約 (§5 文書参照記法・参照の実在性 / §8 関連文書セクション。規範本体 + §5.4 重大度カタログ)                       |
-| P1       | `(query-db-rules: "要件レビューに関するプロジェクト固有の文書記述・仕様記述規約")` | rules      | プロジェクト固有の文書記述・仕様記述規約 (規範本体 + 重大度カタログ、query-db-rules で動的解決)                                |
-| P2       | target ファイル内部 + 関連設計書との整合性チェック対象                             | specs      | 矛盾検出 (要件間の相反記述 / 関連設計書と target_files 間の相反記述を突合。追加 feature 除外規定は §2 P2 節を参照)             |
-| P3       | [spec_priorities_spec.md](../spec_priorities_spec.md)                              | principles | 不要な複雑化判定 (§3.4 直接数値化禁止の許容範囲 / §4 倒錯パターン、Yes/No 判定原則 + 重大度カタログ)                           |
+| P1       | [document_style_guide.md](../document_style_guide.md)                              | format     | 文書スタイル規約 (§5 文書参照記法・参照の実在性 / §8 関連文書セクション。規範本体 + §5.4 重大度カタログ)                               |
+| P1       | `(query-db-rules: "要件レビューに関するプロジェクト固有の文書記述・仕様記述規約")` | rules      | プロジェクト固有の文書記述・仕様記述規約 (規範本体 + 重大度カタログ、query-db-rules で動的解決)                                        |
+| P2       | target ファイル内部 + 関連設計書との整合性チェック対象                             | specs      | 矛盾検出 (要件間の相反記述 / 関連設計書と target_files 間の相反記述を突合。追加 feature 除外規定は §2 P2 節を参照)                     |
+| P3       | [spec_priorities_spec.md](../spec_priorities_spec.md)                              | principles | 不要な複雑化判定 (§3.4 直接数値化禁止の許容範囲 / §4 倒錯パターン、Yes/No 判定原則 + 重大度カタログ)                                   |
 
 委譲先ルールが未整備の場合は forge 内蔵ルールへフォールバックする。`(query-db-rules: "要件レビューに関するプロジェクト固有の文書記述・仕様記述規約")` が 0 件のプロジェクトでは forge 内蔵 (`requirement_format.md` / `spec_priorities_spec.md`) のみで P1 照合を成立させる。
 
