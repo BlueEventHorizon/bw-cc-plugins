@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""task_context_contract.py / build_task_context.py の契約テスト。"""
+"""build_task_context.py の契約テスト。"""
 
 import json
 import subprocess
@@ -18,10 +18,10 @@ SCRIPTS_DIR = (
     / "start-implement"
     / "scripts"
 )
-WRAPPER_SCRIPT = SCRIPTS_DIR / "build_task_context.py"
+SCRIPT = SCRIPTS_DIR / "build_task_context.py"
 
 sys.path.insert(0, str(SCRIPTS_DIR))
-from task_context_contract import (  # noqa: E402
+from build_task_context import (  # noqa: E402
     CANDIDATE_TEMPLATE,
     build_task_context,
     validate_candidate,
@@ -201,7 +201,7 @@ class RunCliTest(unittest.TestCase):
         return subprocess.run(
             [
                 sys.executable,
-                str(WRAPPER_SCRIPT),
+                str(SCRIPT),
                 "--plan-path",
                 str(plan_path),
                 "--task-id",
@@ -240,7 +240,7 @@ class RunCliTest(unittest.TestCase):
             )
             temp_dir = REPO_ROOT / ".claude" / ".temp"
             temp_dir.mkdir(parents=True, exist_ok=True)
-            input_path = temp_dir / "test_task_context_contract_input.json"
+            input_path = temp_dir / "test_build_task_context_input.json"
             input_path.write_text(
                 json.dumps(valid_candidate(), ensure_ascii=False), encoding="utf-8"
             )
@@ -269,7 +269,7 @@ class RunCliTest(unittest.TestCase):
             write_plan(plan_path, [{"task_id": "TASK-001"}])
             temp_dir = REPO_ROOT / ".claude" / ".temp"
             temp_dir.mkdir(parents=True, exist_ok=True)
-            input_path = temp_dir / "test_task_context_contract_invalid.json"
+            input_path = temp_dir / "test_build_task_context_invalid.json"
             broken = valid_candidate()
             broken["scope_out"] = [{"item": "## bad", "owner_task_id": "x", "reason": "y"}]
             input_path.write_text(

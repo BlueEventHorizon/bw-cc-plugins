@@ -4,7 +4,7 @@
 
 作成原則: [plan_principles_spec.md](plan_principles_spec.md)
 
-本文書は script（`write_plan.py` / `select_tasks.py` / `update_plan_status.py` / `task_context_contract.py`）の実装契約を定義する開発文書である（配布物ではない）。AI はランタイムでこの文書を読まない（REQ-020 FNC-007）。
+本文書は script（`write_plan.py` / `select_tasks.py` / `update_plan_status.py` / `build_task_context.py`）の実装契約を定義する開発文書である（配布物ではない）。AI はランタイムでこの文書を読まない（REQ-020 FNC-007）。
 
 ## フォーマット選定理由（FNC-005 改訂）
 
