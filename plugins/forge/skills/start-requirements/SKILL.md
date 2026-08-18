@@ -78,8 +78,8 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
    - 未指定 → AskUserQuestion を使用して確認する
 
    **`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
-   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外、§6 frontmatter 定義一覧
-   - `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` の「追加 feature 用 frontmatter」節 — `feature_type: temporary-feature` 定義
+   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外
+   - `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.1 — `feature_type: temporary-feature` 定義
 
 2. **Feature 名の確定**:
 

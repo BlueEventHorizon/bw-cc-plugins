@@ -142,7 +142,7 @@ git rev-parse --abbrev-ref HEAD
 
 ### 0.3 追加開発モードの判定（任意検証）
 
-本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書（要件定義書・設計書）は frontmatter に `feature_type: temporary-feature` を持つ。計画書には frontmatter を付与しない（§6-3）。
+本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書（要件定義書・設計書）は frontmatter に `feature_type: temporary-feature` を持つ。計画書には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
 
 追加 DIR (B) の各 `*.md` 先頭 frontmatter を確認し、判定する:
 

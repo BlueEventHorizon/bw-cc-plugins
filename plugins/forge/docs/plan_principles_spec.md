@@ -16,7 +16,7 @@
 3. `tasks` — タスク一覧
 4. `revision_history` — 改定履歴
 
-**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。計画書には追加 feature 用の frontmatter も付与しない（[additive_development_spec.md](additive_development_spec.md) §6-3）。
+**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。計画書には追加 feature 用の frontmatter も付与しない（[frontmatter_format.md](frontmatter_format.md) §1.3）。
 
 ファイル名: `{feature}_plan.json`（拡張子は `.json`）
 
@@ -284,4 +284,4 @@
 
 ### 追加 feature の計画書
 
-計画書には frontmatter を付与しない。追加 feature の計画書かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する（[additive_development_spec.md](additive_development_spec.md) §6-3）。
+計画書には frontmatter を付与しない。追加 feature の計画書かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する（[frontmatter_format.md](frontmatter_format.md) §1.3）。

@@ -165,7 +165,7 @@ feature を使うかどうかは **変更の実質** で判定する — 実装�
 
 ### 6-2. `feature_type: temporary-feature` frontmatter
 
-追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) §6-1 を参照。
+追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [frontmatter_format.md](../../plugins/forge/docs/frontmatter_format.md) §1.1 を参照。
 
 このうち①〜③はそれぞれ次の意味を持つ。
 
@@ -233,7 +233,7 @@ merge では以下を行う:
 4. **移し終えて独立して存在する意味を失った文書のみ削除する**。別スコープの内容を含み分離を維持する文書は、frontmatter を外して恒久仕様に切り替え、残す
 5. `/forge:update-db-specs` で specs の検索インデックスを更新
 
-**「一時文書だから削除する」ではない**。削除は「役目を終えた文書」だけに限られ、スコープが異なる内容を含む文書は残る（§6-3 参照）。
+**「一時文書だから削除する」ではない**。削除は「役目を終えた文書」だけに限られ、スコープが異なる内容を含む文書は残る（[additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) §4.2 参照）。
 
 **AI が追加開発のタスクを実行するときの詳細な判定基準**は [additive_development_spec.md](../../plugins/forge/docs/additive_development_spec.md) §4.3 にまとめてある。
 

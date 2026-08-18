@@ -50,7 +50,7 @@ COPY 範囲の各節と蒸留元の対応。供給源側で規範の追加・削
 
 | COPY 範囲の節          | 供給源（蒸留元）                                                                                                                                                                                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| forge 文書規範         | `plugins/forge/docs/` の document_style_guide / spec_format / spec_design_boundary_spec / spec_priorities_spec / design_principles_spec / adr_principles_spec / additive_development_spec §6（frontmatter）                                                |
+| forge 文書規範         | `plugins/forge/docs/` の document_style_guide / spec_format / spec_design_boundary_spec / spec_priorities_spec / design_principles_spec / adr_principles_spec / frontmatter_format（frontmatter）                                                          |
 | forge 実装規範         | `plugins/forge/docs/` の additive_development_spec §1–§3 / scope_proportionality_spec、`plugins/forge/skills/start-implement/docs/task_execution_spec.md`、`plugins/anvil/skills/impl-issue/references/`（既存資産優先・推測禁止・共用部品・検証の裏取り） |
 | forge 機密情報         | `plugins/forge/docs/sensitive_information_spec.md`                                                                                                                                                                                                         |
 | forge 提示・議論の作法 | `plugins/forge/docs/consult_principles_spec.md`、`plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md` 対話の基本原則 8（議論モードと決定モードの区別）                                                                      |
@@ -61,7 +61,7 @@ anvil 由来の規範を forge の COPY 範囲に載せることは利用者決�
 
 重複統制:
 
-- 差分 feature の frontmatter 規範は additive_development_spec §6 が正本。COPY 範囲では「`feature_type: temporary-feature` を付ける」の一言に畳む（format 3 文書の該当節は §6 の再掲であり、供給源として数えない）
+- 差分 feature の frontmatter 規範は frontmatter_format が正本。COPY 範囲では「`feature_type: temporary-feature` を付ける」の一言に畳む（format 3 文書の該当節は frontmatter_format の再掲であり、供給源として数えない）
 - 「判断に迷う検出は混入として扱う」は sensitive_information_spec §3 と criteria/review_criteria_secrets.md に同旨があるが、COPY 範囲には 1 回だけ書く
 
 ## Workflow
