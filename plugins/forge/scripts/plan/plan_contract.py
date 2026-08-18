@@ -18,7 +18,6 @@ TOP_LEVEL_KEYS = {
     "tasks",
     "revision_history",
 }
-OPTIONAL_TOP_LEVEL_KEYS = {"_feature_meta"}
 
 TASK_REQUIRED_FIELDS = {
     "task_id",
@@ -71,9 +70,8 @@ def validate_plan_schema(data):
         return ["計画書は object である必要があります"]
 
     actual_keys = set(data)
-    allowed_keys = TOP_LEVEL_KEYS | OPTIONAL_TOP_LEVEL_KEYS
     missing = sorted(TOP_LEVEL_KEYS - actual_keys)
-    unknown = sorted(actual_keys - allowed_keys)
+    unknown = sorted(actual_keys - TOP_LEVEL_KEYS)
     if missing:
         errors.append(f"必須の top-level キーがありません: {missing}")
     if unknown:

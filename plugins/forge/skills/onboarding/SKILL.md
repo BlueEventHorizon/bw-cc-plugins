@@ -23,7 +23,7 @@ user-invocable: true
 - 実装・設計・命名を変えて文書と乖離が生じたら、同じ変更の中で文書も直す
 - ADR に仕様・ルールの本文を写さない（真実源が 2 つになる）。ADR を根拠に提案を見送るときは、棄却理由の前提が今も成立するかを確かめ、根拠にした ADR ID を添える。ADR の節番号は変えない
 - 新規の文書 ID（REQ- / DES- / ADR- 等）を手動で採番しない（採番スキルを使う。並行ブランチでの ID 衝突を防ぐ）
-- 差分 feature の要件定義書・設計書には一時 frontmatter（`type: temporary-feature-*`）を付ける
+- 差分 feature の要件定義書・設計書には一時 frontmatter（`feature_type: temporary-feature`）を付ける
 
 ## forge 実装規範 [MANDATORY]
 

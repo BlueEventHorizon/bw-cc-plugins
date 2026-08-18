@@ -16,7 +16,7 @@
 3. `tasks` — タスク一覧
 4. `revision_history` — 改定履歴
 
-**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。**例外**: 追加 feature の frontmatter 相当情報を持つ予約キー `_feature_meta`（[additive_development_spec.md](additive_development_spec.md) §6-3）のみ許容する。
+**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。計画書には追加 feature 用の frontmatter も付与しない（[additive_development_spec.md](additive_development_spec.md) §6-3）。
 
 ファイル名: `{feature}_plan.json`（拡張子は `.json`）
 
@@ -217,11 +217,11 @@
 
 ### 構成ルール (本文書既存)
 
-| 違反パターン                                                                                                        | 違反時の重大度 | 理由                                            |
-| ------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
-| `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` / `_feature_meta` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
-| JSON 形式以外で記述                                                                                                 | 🔴 critical    | ツールチェーンが解釈不能                        |
-| ファイル名が `{feature}_plan.json` 規約から逸脱                                                                     | 🟡 major       | 自動解決経路が機能しない                        |
+| 違反パターン                                                                                      | 違反時の重大度 | 理由                                            |
+| ------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
+| `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
+| JSON 形式以外で記述                                                                               | 🔴 critical    | ツールチェーンが解釈不能                        |
+| ファイル名が `{feature}_plan.json` 規約から逸脱                                                   | 🟡 major       | 自動解決経路が機能しない                        |
 
 ### タスクの粒度 (本文書既存)
 
@@ -282,10 +282,6 @@
 | 対応タスクなしの要件 ID に除外理由が記載されていない | 🟡 major       |
 | タスクが対応要件と矛盾する内容                       | 🔴 critical    |
 
-### 追加 feature 用 frontmatter
+### 追加 feature の計画書
 
-判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。マーカーの定義は [additive_development_spec.md](additive_development_spec.md) §6-3「計画書（JSON）」節を参照（`_feature_meta` 予約キーで表現する）。
-
-| 違反パターン                                                              | 違反時の重大度 | 理由                                                       |
-| ------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------- |
-| 追加 feature 計画書に `type: temporary-feature-plan` マーカーコメント欠如 | 🟡 major       | 一時計画書であることが宣言されず、merge/破棄判断を誤らせる |
+計画書には frontmatter を付与しない。追加 feature の計画書かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する（[additive_development_spec.md](additive_development_spec.md) §6-3）。

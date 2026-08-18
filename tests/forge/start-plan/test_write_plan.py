@@ -107,20 +107,21 @@ class RunCliTest(unittest.TestCase):
             finally:
                 input_path.unlink(missing_ok=True)
 
-    def test_feature_meta_key_is_accepted(self):
+    def test_feature_meta_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             output_path = Path(tmp) / "foo_plan.json"
             candidate = valid_plan_candidate(
-                _feature_meta={"type": "temporary-feature-plan", "notes": ["x"]}
+                _feature_meta={"feature_type": "temporary-feature", "feature_note": ["x"]}
             )
             input_path = self._write_input(
                 "test_write_plan_feature_meta.json", candidate
             )
             try:
                 result = self._run(str(input_path.relative_to(REPO_ROOT)), output_path)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                written = json.loads(output_path.read_text(encoding="utf-8"))
-                self.assertIn("_feature_meta", written)
+                self.assertEqual(result.returncode, 20)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["status"], "error")
+                self.assertFalse(output_path.exists())
             finally:
                 input_path.unlink(missing_ok=True)
 

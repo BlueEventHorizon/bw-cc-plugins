@@ -1,6 +1,6 @@
 ---
-type: temporary-feature-requirement
-notes:
+feature_type: temporary-feature
+feature_note:
   - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
   - 本 feature 実装完了後、旧仕様との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
@@ -58,9 +58,9 @@ AI はタスクの意味内容（title・description・acceptance_criteria 等�
 
 executor へ渡すタスクコンテキストファイルは JSON 形式（`tasks/{task_id}.json`）で生成され、PyYAML に依存しない。
 
-### FNC-006: 追加 feature frontmatter の JSON 表現
+### FNC-006: 計画書は追加 feature の frontmatter を持たない
 
-差分 feature 用のメタ情報は JSON の予約キー（例: `_feature_meta`）で表現される。現行 [DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）は、YAML がフロントマターを持てないこととは独立したスキーマ安定性のための設計判断である。本 feature 用の予約キーは FNC-001 が定めるスキーマ踏襲の対象外として、JSON 化に伴いこの制限を本 feature に限り緩和する追加キーである。
+計画書には追加 feature 用の frontmatter・予約キーを一切付与しない。追加 feature に属する計画書かどうかは、`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter を辿って判定する（[additive_development_spec.md](../../../../../plugins/forge/docs/additive_development_spec.md) §6-3）。計画書自体に重複してマーカーを持たせないため、[DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）に例外を設けない。
 
 ### FNC-007: AI のスキーマ非依存性（範囲限定）
 

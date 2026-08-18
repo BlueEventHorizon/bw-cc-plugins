@@ -13,7 +13,7 @@
 
 この設計書は、旧設計書が古いまま据え置かれている期間の正本である。文書全体がこの性質を持つため、本文ブロックではなく frontmatter にメタ情報として宣言する。
 
-`type: temporary-feature-design` を付与し、notes に①正本は対応する追加 feature 要件定義書（REQ-xxx）であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧設計書との齟齬を解消する（merge）こと④同一スコープの内容は旧設計書側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。frontmatter の正式な文言は [additive_development_spec.md](additive_development_spec.md) §6-2 を参照。
+`feature_type: temporary-feature` を付与し、feature_note に①正本は対応する追加 feature 要件定義書（REQ-xxx）であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧設計書との齟齬を解消する（merge）こと④同一スコープの内容は旧設計書側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。frontmatter の正式な文言は [additive_development_spec.md](additive_development_spec.md) §6-2 を参照。
 
 正式定義（全文書種別の集約 SoT）・判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md)（§6 frontmatter 定義一覧 / §1 適用条件）
 
