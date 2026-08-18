@@ -64,8 +64,8 @@ doc_type `design`（feature 未指定）で既存ファイルの有無を確認�
 
 **`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` の「追加 feature 用 frontmatter」節 — `feature_type: temporary-feature` 定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
+- `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` の §1.2 — `feature_type: temporary-feature` 定義
 
 ### 出力先の解決
 

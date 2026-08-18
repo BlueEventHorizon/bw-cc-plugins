@@ -60,7 +60,7 @@ executor へ渡すタスクコンテキストファイルは JSON 形式（`task
 
 ### FNC-006: 計画書は追加 feature の frontmatter を持たない
 
-計画書には追加 feature 用の frontmatter・予約キーを一切付与しない。追加 feature に属する計画書かどうかは、`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter を辿って判定する（[additive_development_spec.md](../../../../../plugins/forge/docs/additive_development_spec.md) §6-3）。計画書自体に重複してマーカーを持たせないため、[DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）に例外を設けない。
+計画書には追加 feature 用の frontmatter・予約キーを一切付与しない。追加 feature に属する計画書かどうかは、`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter を辿って判定する（[frontmatter_format.md](../../../../../plugins/forge/docs/frontmatter_format.md) §1.3）。計画書自体に重複してマーカーを持たせないため、[DES-074_plan_format_design.md](../design/DES-074_plan_format_design.md) のトップレベルキー制限（`requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 つのみ）に例外を設けない。
 
 ### FNC-007: AI のスキーマ非依存性（範囲限定）
 
