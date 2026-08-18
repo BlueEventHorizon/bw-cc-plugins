@@ -56,15 +56,15 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
 
 ### 新規/追加の確認 [MANDATORY]
 
-計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。追加開発の計画書には frontmatter マーカーの付与が必須となるため、計画書作成前に判定する。
+計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。判定結果によって §6-3 の扱い（frontmatter を付与しない）は変わらないが、後続の要件・設計文書の参照解決に影響するため、計画書作成前に判定する。
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`type: temporary-feature-*` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
 
-**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（§6-3）。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧。§6-3 が計画書（JSON）の `_feature_meta` 予約キー定義を持つ）
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
 
 ### 出力先の解決
 
@@ -247,7 +247,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **候補 JSON の組み立てと書き込み [MANDATORY]**:
 
-1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合は `_feature_meta` キー（`type: "temporary-feature-plan"` と `notes` 配列。正式な文言は `additive_development_spec.md` §6-3 を参照）を追加する。新規アプリ（`--new`）・既存計画書の更新時は `_feature_meta` を付与しない
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`additive_development_spec.md` §6-3 参照）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
 3. **生成 script を 1 回実行する**。script が構造検証（4 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
@@ -268,7 +268,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 ### 4.4 完全性チェック [MANDATORY]
 
-計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値・`_feature_meta` のみ許容される追加キー）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
+計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
 
 - [ ] すべての `tasks[].required_reading` に `{output_dir}/{feature}_strategy.md` が含まれている
 - [ ] 実装戦略のフェーズ分割がタスクの優先度に反映されているか

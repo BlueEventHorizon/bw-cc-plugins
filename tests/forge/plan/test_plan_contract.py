@@ -101,9 +101,10 @@ class ValidatePlanSchemaTest(unittest.TestCase):
         errors = plan_contract.validate_plan_schema(plan)
         self.assertTrue(any("extra_key" in e for e in errors))
 
-    def test_feature_meta_key_is_allowed(self):
-        plan = _valid_plan(_feature_meta={"type": "temporary-feature-plan", "notes": []})
-        self.assertEqual(plan_contract.validate_plan_schema(plan), [])
+    def test_feature_meta_key_is_rejected(self):
+        plan = _valid_plan(_feature_meta={"feature_type": "temporary-feature", "feature_note": []})
+        errors = plan_contract.validate_plan_schema(plan)
+        self.assertTrue(any("_feature_meta" in e for e in errors))
 
     def test_tasks_must_be_a_list(self):
         plan = _valid_plan(tasks="not a list")

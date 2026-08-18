@@ -176,7 +176,7 @@ start-requirements → start-design → start-plan → start-implement
 ### 計画書の構造（最小完全 JSON）
 
 計画書は JSON 形式の `{feature}_plan.json`。**Markdown ではない**。
-top-level は `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーのみ（追加開発時のみ `_feature_meta` を許容）。計画書ファイルへの書き込みと構造検証は script（`write_plan.py` 等）が行うため、AI はファイル形式そのものを意識する必要はない。
+top-level は `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーのみ。計画書には追加開発時も frontmatter を付与しない（追加 feature の計画書かは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する）。計画書ファイルへの書き込みと構造検証は script（`write_plan.py` 等）が行うため、AI はファイル形式そのものを意識する必要はない。
 
 ```json
 {

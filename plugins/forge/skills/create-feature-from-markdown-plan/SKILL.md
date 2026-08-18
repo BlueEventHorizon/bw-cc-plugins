@@ -131,7 +131,7 @@ feature 名を確定してください
 `forge:start-requirements` の `--new` / `--add` は **アプリ単位の判定** であり、ファイル衝突チェックではない:
 
 - `--new`: 新規アプリ全体をゼロから立ち上げる（APP-001 から作成）
-- `--add`: 既存アプリへの機能追加（`type: temporary-feature-requirement` frontmatter を付与する分岐に入る）
+- `--add`: 既存アプリへの機能追加（`feature_type: temporary-feature` frontmatter を付与する分岐に入る）
 
 > **重要**: `--add` を指定しないと `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` の追加 feature frontmatter が付与されない。plan 由来 feature の大半は既存 plugin への追加であり、デフォルトは `--add` とする。
 

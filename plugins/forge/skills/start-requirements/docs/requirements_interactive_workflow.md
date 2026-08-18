@@ -125,7 +125,7 @@ graph TD
 **追加開発（`--add`）の場合は以下も [MANDATORY] Read**:
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 適用条件・優先度・新規ファイル分離・merge 手順
-- `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` — `type: temporary-feature-requirement` frontmatter 定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` — `feature_type: temporary-feature` frontmatter 定義
 
 これらに従い、**追加開発の要件定義書先頭に frontmatter を付与**し、既存仕様は書き換えず新規ファイルとして切り出す前提で作業する。
 

@@ -1,6 +1,6 @@
 ---
-type: temporary-feature-requirement
-notes:
+feature_type: temporary-feature
+feature_note:
   - この文書が正。旧仕様（ソースコード・設計書・計画書）と矛盾する場合はこの文書を優先して判断・実装すること。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
   - 本 feature 実装完了後、旧仕様との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
