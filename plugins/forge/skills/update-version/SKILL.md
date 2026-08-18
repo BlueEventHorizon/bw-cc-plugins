@@ -74,7 +74,7 @@ target が引数で明示指定されていない場合のみ実行する。
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/get_version_status.py
 ```
 
-`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。
+`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。`scope:` / `exclude:` はリスト形式（`scope:\n  - "..."`）・単一行スカラー形式（`scope: "..."`）のどちらでも解釈される。
 
 | `needs_bump` の状態 | 挙動                                                                                                        |
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |

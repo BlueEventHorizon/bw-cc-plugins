@@ -172,7 +172,16 @@ def _parse_version_config_yaml(content):
                     # スカラーキー: サブリストモードを抜けて key:value 取得
                     sublist_mode = None
                     key, _, val = content.partition(":")
-                    current_target[key.strip()] = _strip_quotes(val)
+                    key = key.strip()
+                    val = _strip_quotes(val)
+                    if key in ("scope", "exclude"):
+                        # `scope: "glob/**"` のような同一行スカラー形式も、
+                        # リスト形式（`scope:\n  - ...`）と同じ単一要素リストとして扱う。
+                        # そうしないと match_any_pattern が文字列を1文字ずつ
+                        # パターンとしてイテレートし、常に不一致になる。
+                        current_target[key] = [val] if val else []
+                    else:
+                        current_target[key] = val
             elif indent == 6 and current_target is not None:
                 if sublist_mode == "sync_files" and content.startswith("- path:"):
                     current_sync = {"path": _strip_quotes(content.split(":", 1)[1])}

@@ -362,6 +362,20 @@ targets:
         self.assertEqual(target.get("scope"), [])
         self.assertEqual(target.get("exclude"), [])
 
+    def test_parse_scalar_scope_and_exclude(self):
+        """scope / exclude が同一行スカラー形式（リストでなく単一文字列）でも単一要素リストになる"""
+        yaml = """
+targets:
+  - name: doc-advisor
+    version_file: plugins/doc-advisor/.claude-plugin/plugin.json
+    version_path: version
+    scope: "plugins/doc-advisor/**"
+    exclude: "plugins/doc-advisor/**/*.md"
+"""
+        target = _parse_version_config_yaml(yaml)["targets"][0]
+        self.assertEqual(target["scope"], ["plugins/doc-advisor/**"])
+        self.assertEqual(target["exclude"], ["plugins/doc-advisor/**/*.md"])
+
 
 class TestGlobMatch(unittest.TestCase):
     """_pattern_to_regex / match_any_pattern のテスト"""
@@ -687,6 +701,28 @@ class TestNeedsBumpDetection(unittest.TestCase):
         self.assertEqual(forge["changed_file_count"], 1)
         self.assertFalse(anvil["files_changed"])
         self.assertEqual(output["summary"]["needs_bump"], ["forge"])
+
+    def test_needs_bump_detects_scalar_scope(self):
+        """scope がスカラー形式（`scope: "glob"`）でも needs_bump に検出される（Issue #26）"""
+        p = self.tmpdir / "plugins/doc-advisor/.claude-plugin/plugin.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"version": "0.1.0"}), encoding="utf-8")
+        (self.tmpdir / ".version-config.yaml").write_text(
+            "targets:\n"
+            "  - name: doc-advisor\n"
+            "    version_file: plugins/doc-advisor/.claude-plugin/plugin.json\n"
+            "    version_path: version\n"
+            "    scope: \"plugins/doc-advisor/**\"\n",
+            encoding="utf-8",
+        )
+        output = _run_main_with_mocks(
+            self.tmpdir,
+            lambda b, p: json.dumps({"version": "0.1.0"}),
+            mock_changed_files=["plugins/doc-advisor/scripts/foo.py"],
+        )
+        doc_advisor = next(t for t in output["targets"] if t["name"] == "doc-advisor")
+        self.assertTrue(doc_advisor["files_changed"])
+        self.assertEqual(output["summary"]["needs_bump"], ["doc-advisor"])
 
     def test_needs_bump_excludes_already_bumped(self):
         """既に bump 済み (changed=True) の target は needs_bump から除外する"""
