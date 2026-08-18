@@ -5,36 +5,40 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-17T18:01:28Z
+  generated_at: 2026-08-18T05:54:01Z
   file_count: 39
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines judgment criteria and procedures for feature-based development workflow when adding functionality to existing projects
+    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, including feature concept, application conditions, merge timing, and frontmatter rules
     content_details:
-      - Feature namespace concept and naming conventions (base/core for initial requirements)
-      - Conditions for applying feature-based development when implementation changes require document updates
-      - Exclusion criteria for when feature namespace is not needed (small scale, no red flags)
-      - Document separation rules (never modify old spec files during feature development)
-      - Merge as semantic integration rather than physical file combining
-      - Scope-based merge decision criteria determining content relocation vs separate maintenance
-      - Temporary frontmatter markers for requirements and design documents
-      - Feature priority over old specs when conflicts occur
+      - Feature concept definition and namespace distinction
+      - Application conditions for differential development (when feature namespace is needed)
+      - Old specification priority and conflict handling rules
+      - New file separation decisions during implementation phase
+      - Merge definition as meaning consolidation (not physical combination)
+      - Merge timing and procedures with scope-based judgement
+      - Frontmatter definition for temporary feature requirements and design documents
+      - Conditions where frontmatter is not required (permanent top-level feature namespaces)
     applicable_tasks:
-      - Planning additive feature development workflows
-      - Reviewing feature separation decisions
-      - Implementing merge procedures for completed features
-      - Managing requirement document versioning during feature development
-      - Determining when to use feature namespace vs direct editing
+      - Differential feature planning and decision
+      - Feature namespace determination
+      - Additive development workflow execution
+      - Old specification reconciliation and merge planning
+      - Frontmatter assignment for feature documents
+      - Implementation planning when handling existing specifications
     keywords:
       - additive development
+      - feature
       - feature namespace
-      - merge strategy
-      - scope-based decision
-      - temporary frontmatter
-      - feature_type
-      - requirements_traceability
+      - temporary feature
+      - merge
+      - scope judgement
+      - frontmatter
+      - REQ
+      - DES
+      - specifications
   plugins/forge/docs/adr_format.md:
     title: ADR Default Format
     purpose: Defines the default format for Architecture Decision Records when project-specific format is not found, including file naming, mandatory section structure, scope declaration, and obsolescence markers.

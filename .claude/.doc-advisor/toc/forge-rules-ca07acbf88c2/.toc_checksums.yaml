@@ -1,9 +1,9 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-08-17T18:01:28Z
+generated_at: 2026-08-18T05:54:01Z
 file_count: 39
 checksums:
-  plugins/forge/docs/additive_development_spec.md: e145ae513c7cd28a8864f484bfa9b3044ef0609d95171d1c0eb856aea3f7da3b
+  plugins/forge/docs/additive_development_spec.md: 89c9153dcebadfd1689a978e7f0f4ed28ba3f4ac138a19de43731fa9f7bed0be
   plugins/forge/docs/adr_format.md: 4429007dd79d3a5e4bb00971a25ce198e4c646ce8dbc00343edc39c45955db7f
   plugins/forge/docs/adr_principles_spec.md: 2928f2e4343e50102003b4ef49e5f32371dc47c173e31180d906a6b9df3823c4
   plugins/forge/docs/consult_principles_spec.md: 05389a0078a83ea63fc7909369966381904c6f1ed8ae9d21ef99c47b57c2136a
