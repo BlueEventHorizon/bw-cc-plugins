@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
-# デザイン仕様書 (.md) から preview YAML を抽出し、HTML を経由して PNG を生成する.
+# デザイン仕様書 (.md) から preview JSON を抽出し、HTML を経由して PNG を生成する.
 #
 # Usage:
 #   ./render_preview.sh <spec.md> <out_dir> [<base_name>]
 #
-#   spec.md       : デザイン仕様書（preview YAML ブロックを含む）
+#   spec.md       : デザイン仕様書（preview JSON ブロックを含む）
 #   out_dir       : 出力先ディレクトリ
 #   base_name     : 出力ファイル基本名（既定: spec ファイル名 stem + "_preview"）
 #
 # 出力:
-#   <out_dir>/<base_name>.yaml   抽出した YAML
+#   <out_dir>/<base_name>.json   抽出した JSON
 #   <out_dir>/<base_name>.html   変換後の HTML
 #   <out_dir>/<base_name>.png    Chromium で撮影した PNG
 #
 # 依存:
-#   - python3 + PyYAML
+#   - python3（標準ライブラリのみ。JSON→HTML 変換に使用）
+#   - Pillow 入りの Python ランタイム（uv 推奨。PNG トリミングに使用）
 #   - Google Chrome / Chromium（macOS では /Applications/Google Chrome.app があれば自動検出）
 
 set -euo pipefail
@@ -41,7 +42,7 @@ if [[ -z "${BASE_NAME}" ]]; then
 fi
 
 mkdir -p "${OUT_DIR}"
-YAML_PATH="${OUT_DIR}/${BASE_NAME}.yaml"
+JSON_PATH="${OUT_DIR}/${BASE_NAME}.json"
 HTML_PATH="${OUT_DIR}/${BASE_NAME}.html"
 PNG_PATH="${OUT_DIR}/${BASE_NAME}.png"
 
@@ -76,38 +77,44 @@ EOM
   exit 2
 fi
 
-PYTHON_RUNNER=""
+# json_to_html.py / extract_preview_json.py は標準ライブラリのみで動作するため
+# uv/依存チェックは不要。本 SKILL は他の箇所（Step 5 の python3 -c 呼び出し等）でも
+# 素の python3 を前提にしており、python3 の存在チェックはスコープ外とする。
+PY_RUNNER="python3"
+
+# trim_screenshot.py は Pillow に依存するため、Pillow が使えるランタイムを解決する。
+PILLOW_RUNNER=""
 if command -v uv >/dev/null 2>&1; then
-  PYTHON_RUNNER="uv run --quiet --script"
-elif python3 -c "import yaml" >/dev/null 2>&1; then
-  PYTHON_RUNNER="python3"
+  PILLOW_RUNNER="uv run --quiet --script"
+elif python3 -c "import PIL" >/dev/null 2>&1; then
+  PILLOW_RUNNER="python3"
 else
   cat >&2 <<'EOM'
-[render_preview.sh] PyYAML 入りの Python ランタイムが見つかりません。以下のいずれかで対応してください:
+[render_preview.sh] Pillow 入りの Python ランタイムが見つかりません。以下のいずれかで対応してください:
   - uv をインストール（推奨）: brew install uv
-  - もしくはシステム Python に PyYAML を導入
+  - もしくはシステム Python に Pillow を導入: pip install pillow
 EOM
   exit 2
 fi
 
 SPEC_LOWER="$(echo "${SPEC_MD}" | tr '[:upper:]' '[:lower:]')"
 case "${SPEC_LOWER}" in
-  *.yaml|*.yml)
-    echo "[render_preview.sh] Input is YAML; skipping extraction..."
-    cp "${SPEC_MD}" "${YAML_PATH}"
+  *.json)
+    echo "[render_preview.sh] Input is JSON; skipping extraction..."
+    cp "${SPEC_MD}" "${JSON_PATH}"
     ;;
   *)
-    echo "[render_preview.sh] Extracting preview YAML from ${SPEC_MD}..."
-    python3 "${SCRIPT_DIR}/extract_preview_yaml.py" "${SPEC_MD}" "${YAML_PATH}"
+    echo "[render_preview.sh] Extracting preview JSON from ${SPEC_MD}..."
+    ${PY_RUNNER} "${SCRIPT_DIR}/extract_preview_json.py" "${SPEC_MD}" "${JSON_PATH}"
     ;;
 esac
 
-echo "[render_preview.sh] Converting YAML to HTML..."
-${PYTHON_RUNNER} "${SCRIPT_DIR}/yaml_to_html.py" "${YAML_PATH}" "${HTML_PATH}"
+echo "[render_preview.sh] Converting JSON to HTML..."
+${PY_RUNNER} "${SCRIPT_DIR}/json_to_html.py" "${JSON_PATH}" "${HTML_PATH}"
 
 # Chromium の screenshot は --window-size の幅と高さを使う。
 # 高さは内容により可変なので、十分に大きく取って後でトリミングは省略する。
-# ビューポート幅は YAML 内で 390px が既定なので、左右の余白を考慮して 430 を指定。
+# ビューポート幅は JSON 内で 390px が既定なので、左右の余白を考慮して 430 を指定。
 WINDOW_WIDTH="${PREVIEW_WINDOW_WIDTH:-430}"
 WINDOW_HEIGHT="${PREVIEW_WINDOW_HEIGHT:-3000}"
 
@@ -179,11 +186,11 @@ if [[ ! -s "${PNG_ABS}" ]]; then
 fi
 
 echo "[render_preview.sh] Trimming bottom padding..."
-${PYTHON_RUNNER} "${SCRIPT_DIR}/trim_screenshot.py" "${PNG_ABS}" "${PNG_ABS}" --margin 32 || {
+${PILLOW_RUNNER} "${SCRIPT_DIR}/trim_screenshot.py" "${PNG_ABS}" "${PNG_ABS}" --margin 32 || {
   echo "[render_preview.sh] Trim failed (continuing without trim)" >&2
 }
 
 echo "[render_preview.sh] Done."
-echo "  YAML: ${YAML_PATH}"
+echo "  JSON: ${JSON_PATH}"
 echo "  HTML: ${HTML_PATH}"
 echo "  PNG : ${PNG_PATH}"

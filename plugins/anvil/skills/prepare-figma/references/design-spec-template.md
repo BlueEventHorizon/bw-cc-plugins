@@ -15,7 +15,7 @@ specs/design/
     │   └── {用途}.png       # 補足画像（任意）
     └── previews/            # AI 理解プレビュー
         ├── preview.png
-        ├── preview.yaml     # gitignore 推奨
+        ├── preview.json     # gitignore 推奨
         └── preview.html     # gitignore 推奨
 ```
 
@@ -32,16 +32,16 @@ specs/design/
 | 種類                       | 形式              | 役割                                                                     |
 | -------------------------- | ----------------- | ------------------------------------------------------------------------ |
 | ① Figma スクリーンショット | PNG               | あるべき姿（グラウンドトゥルース）                                       |
-| ② AI 生成プレビュー        | PNG               | AI が YAML から解釈した姿（誤り検出用、`render_preview.sh` で自動生成）  |
-| ③ レイアウト定義           | YAML（MD 内埋込） | AI が読み取った構造化レイアウト（プレビュー生成元）                      |
+| ② AI 生成プレビュー        | PNG               | AI が JSON から解釈した姿（誤り検出用、`render_preview.sh` で自動生成）  |
+| ③ レイアウト定義           | JSON（MD 内埋込） | AI が読み取った構造化レイアウト（プレビュー生成元）                      |
 | ④ 仕様テーブル群           | Markdown テーブル | パーツ一覧、カラー、フォント、アクション、状態バリエーション、アセット等 |
 
 **重要原則**:
 
-- **アスキーアートは廃止**。配置構造は ③ YAML が単一の真実
-- ② プレビューは ③ YAML から自動生成。手で書かない
+- **アスキーアートは廃止**。配置構造は ③ JSON が単一の真実
+- ② プレビューは ③ JSON から自動生成。手で書かない
 - ① と ② を**並べて目視比較**することで、AI の理解違いを発見する
-- **Figma node の存在だけで YAML に書かない**: コンポーネント流用で `visible=false` の未使用パーツが残る。`get_screenshot` に写っているものだけを YAML・仕様に含める
+- **Figma node の存在だけで JSON に書かない**: コンポーネント流用で `visible=false` の未使用パーツが残る。`get_screenshot` に写っているものだけを JSON・仕様に含める
 
 ## テンプレート
 
@@ -63,7 +63,7 @@ specs/design/
 
 ## 視覚比較（必ず並べてレビュー）
 
-レビュー時は **左右を必ず見比べて差異を洗い出す**。差異があれば YAML を修正して再生成する。
+レビュー時は **左右を必ず見比べて差異を洗い出す**。差異があれば JSON を修正して再生成する。
 
 | Figma（正）                                           | AI 理解（プレビュー）                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------ |
@@ -95,41 +95,44 @@ specs/design/
 
 ## レイアウト仕様
 
-### レイアウト定義（YAML）
+### レイアウト定義（JSON）
 
-下記 YAML がプレビュー画像の生成元。AI はこれを唯一の構造定義として書き、テキストとして個別のパーツ説明は不要。
+下記 JSON がプレビュー画像の生成元。AI はこれを唯一の構造定義として書き、テキストとして個別のパーツ説明は不要。
 
-スキーマ詳細は `/anvil:prepare-figma` SKILL の `references/preview-yaml-schema.md` を参照。
+スキーマ詳細は `/anvil:prepare-figma` SKILL の `references/preview-json-schema.md` を参照。
 
-```yaml
-preview:
-  meta:
-    title: "{画面名}"
-    viewport:
-      width: 390
-    background: "#f7f7f7"
-
-  root:
-    layout: vertical
-    children:
-      - id: { パーツ名1 }
-        # ... プロパティ
-        children:
-          - id: { 子パーツ }
-            # ... プロパティ
+```json
+{
+  "preview": {
+    "meta": {
+      "title": "{画面名}",
+      "viewport": { "width": 390 },
+      "background": "#f7f7f7"
+    },
+    "root": {
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "{パーツ名1}",
+          "children": [{ "id": "{子パーツ}" }]
+        }
+      ]
+    }
+  }
+}
 ```
 ````
 
 ### パーツ一覧
 
-YAML 内の各パーツに対応する Figma nodeId 参照テーブル。
+JSON 内の各パーツに対応する Figma nodeId 参照テーブル。
 
 | パーツ名     | 役割   | サイズ    | Figma nodeId            |
 | ------------ | ------ | --------- | ----------------------- |
 | {PartsName1} | {役割} | {W}×{H}px | [{nodeId}]({Figma URL}) |
 | {PartsName2} | {役割} | {W}×{H}px | [{nodeId}]({Figma URL}) |
 
-**注**: パーツのプロパティ詳細（padding/gap/font 等）は YAML が正。本テーブルは Figma 参照と役割の説明のみ。
+**注**: パーツのプロパティ詳細（padding/gap/font 等）は JSON が正。本テーブルは Figma 参照と役割の説明のみ。
 
 ## カラーパレット
 
@@ -176,7 +179,7 @@ Figma のテキストスタイルは JP（日本語）と EN（英語）で分�
 
 ## 特殊な描画（Figma から取得）
 
-（グラデーション等、YAML では表現できないスタイルがある場合のみ記載）
+（グラデーション等、JSON では表現できないスタイルがある場合のみ記載）
 
 ## 備考
 
@@ -190,53 +193,72 @@ Figma のテキストスタイルは JP（日本語）と EN（英語）で分�
 3. **フォントファミリーは書かない** — ウェイト・サイズ・line-height のみ
 4. **JP/EN テキストスタイルを区別** — 同じサイズでもウェイトが異なる場合がある
 5. **コンポーネント名・コードは書かない** — デザイン仕様書は「何を作るか」の文書
-6. **hug / fill / fixed を区別** — Figma のオートレイアウト制約を YAML に正確に反映
-7. **アスキーアートは書かない** — 配置構造は YAML が単一の真実
-8. **YAML とパーツ別仕様の重複を避ける** — padding/gap 等は YAML だけに書く。テーブルは Figma nodeId 参照と役割の説明のみ
+6. **hug / fill / fixed を区別** — Figma のオートレイアウト制約を JSON に正確に反映
+7. **アスキーアートは書かない** — 配置構造は JSON が単一の真実
+8. **JSON とパーツ別仕様の重複を避ける** — padding/gap 等は JSON だけに書く。テーブルは Figma nodeId 参照と役割の説明のみ
 9. **画像は必ず `<img width="320">` で幅指定する** — `![alt](src)` だとオリジナルサイズで表示され、テーブル内で押し縮められたり巨大になったりして読めない。モバイル UI のスクリーンショットは 320px 幅が読みやすい（必要なら 400px まで許容）
 
-## YAML スキーマの最小例
+## JSON スキーマの最小例
 
-```yaml
-preview:
-  meta:
-    title: "サンプル画面"
-    viewport: { width: 390 }
-    background: "#f7f7f7"
-  root:
-    layout: vertical
-    children:
-      - id: header
-        height: 56
-        padding: 16
-        background: "#ffffff"
-        layout: horizontal
-        align: center
-        children:
-          - id: title
-            type: text
-            content: "タイトル"
-            font: { size: 16, weight: 600, color: "#222222", line_height: 24 }
-      - id: body
-        padding: 16
-        layout: vertical
-        gap: 12
-        children:
-          - id: card
-            padding: 16
-            background: "#ffffff"
-            border_radius: 8
-            border: { width: 1, color: "#e5e5e5" }
-            children:
-              - id: card_text
-                type: text
-                content: "カードの内容"
-                font: {
-                  size: 14,
-                  weight: 400,
-                  color: "#222222",
-                  line_height: 20,
+```json
+{
+  "preview": {
+    "meta": {
+      "title": "サンプル画面",
+      "viewport": { "width": 390 },
+      "background": "#f7f7f7"
+    },
+    "root": {
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "header",
+          "height": 56,
+          "padding": 16,
+          "background": "#ffffff",
+          "layout": "horizontal",
+          "align": "center",
+          "children": [
+            {
+              "id": "title",
+              "type": "text",
+              "content": "タイトル",
+              "font": { "size": 16, "weight": 600, "color": "#222222", "line_height": 24 }
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "padding": 16,
+          "layout": "vertical",
+          "gap": 12,
+          "children": [
+            {
+              "id": "card",
+              "padding": 16,
+              "background": "#ffffff",
+              "border_radius": 8,
+              "border": { "width": 1, "color": "#e5e5e5" },
+              "children": [
+                {
+                  "id": "card_text",
+                  "type": "text",
+                  "content": "カードの内容",
+                  "font": {
+                    "size": 14,
+                    "weight": 400,
+                    "color": "#222222",
+                    "line_height": 20
+                  }
                 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
 ````
 
-詳細は [preview-yaml-schema.md](preview-yaml-schema.md) 参照。
+詳細は [preview-json-schema.md](preview-json-schema.md) 参照。
