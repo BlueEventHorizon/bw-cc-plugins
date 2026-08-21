@@ -97,10 +97,14 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-<!-- FORGE_ONBOARDING_START hash=ac005e2eca12 -->
+<!-- FORGE_ONBOARDING_START hash=5fa5b096fe98 -->
 
 > このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
 > `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
+
+## forge SSOT の定義
+
+- SSOT とは「真理が単一」であることではなく、ある関心事について「変更と不整合を収束させる先が一意」であること。正本は絶対的な真理ではなく、反証されれば更新される循環の現在値である。
 
 ## forge 文書規範 [MANDATORY]
 

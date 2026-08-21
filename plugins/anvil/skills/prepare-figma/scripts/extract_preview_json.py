@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""デザイン仕様書 Markdown から preview YAML ブロックを抽出する.
+"""デザイン仕様書 Markdown から preview JSON ブロックを抽出する.
 
-仕様書中の ``` ```yaml``` フェンス内に、トップレベルキー ``preview:`` を持つ
-YAML ブロックが 1 つ存在することを前提とする.
+仕様書中の ``` ```json``` フェンス内に、トップレベルキー ``preview`` を持つ
+JSON ブロックが 1 つ存在することを前提とする.
 
 Usage:
-    python3 extract_preview_yaml.py <spec.md> <output.yaml>
+    python3 extract_preview_json.py <spec.md> <output.json>
 
 Security note:
     This is a developer-only CLI tool. ``sys.argv`` で渡されるファイルパスは
@@ -15,36 +15,35 @@ Security note:
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
 
 
-YAML_FENCE_RE = re.compile(
-    r"```ya?ml\s*\n(?P<body>.*?)\n```",
+JSON_FENCE_RE = re.compile(
+    r"```json\s*\n(?P<body>.*?)\n```",
     re.DOTALL | re.IGNORECASE,
 )
 
 
 def extract_preview_block(md_text: str) -> str | None:
-    """``preview:`` をトップレベルキーに持つ YAML ブロックを返す."""
-    for match in YAML_FENCE_RE.finditer(md_text):
+    """``preview`` をトップレベルキーに持つ JSON ブロックを返す."""
+    for match in JSON_FENCE_RE.finditer(md_text):
         body = match.group("body")
-        # 行頭インデントなしで preview: が現れる最初のブロックを採用
-        for line in body.splitlines():
-            stripped = line.rstrip()
-            if not stripped:
-                continue
-            if stripped.startswith("preview:"):
-                return body
-            break
+        try:
+            parsed = json.loads(body)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict) and "preview" in parsed:
+            return body
     return None
 
 
 def main() -> int:
     if len(sys.argv) < 3:
         print(
-            "Usage: extract_preview_yaml.py <spec.md> <output.yaml>",
+            "Usage: extract_preview_json.py <spec.md> <output.json>",
             file=sys.stderr,
         )
         return 1
@@ -56,8 +55,8 @@ def main() -> int:
     body = extract_preview_block(md_text)
     if body is None:
         print(
-            f"No preview YAML block found in {in_path}. "
-            "Expected a ```yaml fenced block whose top-level key is `preview:`.",
+            f"No preview JSON block found in {in_path}. "
+            "Expected a ```json fenced block whose top-level key is `preview`.",
             file=sys.stderr,
         )
         return 1

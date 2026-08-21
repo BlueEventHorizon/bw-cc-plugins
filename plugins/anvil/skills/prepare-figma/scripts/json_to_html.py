@@ -1,25 +1,21 @@
-#!/usr/bin/env -S uv run --quiet --script
-# /// script
-# requires-python = ">=3.10"
-# dependencies = ["pyyaml>=6.0"]
-# ///
-"""YAML 形式のレイアウト定義を HTML/CSS に変換するスクリプト.
+#!/usr/bin/env python3
+"""JSON 形式のレイアウト定義を HTML/CSS に変換するスクリプト.
 
-入力: YAML ファイル（トップレベルが ``preview`` キーを持つ）
+入力: JSON ファイル（トップレベルが ``preview`` キーを持つ）
 出力: HTML ファイル（chromium で screenshot するためのもの）
 
-スキーマは ``../references/preview-yaml-schema.md`` を参照。
+スキーマは ``../references/preview-json-schema.md`` を参照。
 
 Usage:
-    uv run yaml_to_html.py <input.yaml> <output.html>
+    python3 json_to_html.py <input.json> <output.html>
     # または直接実行（shebang 経由）:
-    ./yaml_to_html.py <input.yaml> <output.html>
+    ./json_to_html.py <input.json> <output.html>
 
 Security notes:
     * **Path**: 本ツールは developer-only CLI。``sys.argv`` のファイルパスは
       開発者本人が指定するもので外部 untrusted input ではない。SAST が指摘する
       Path Traversal は信頼境界上成立しない。
-    * **HTML 出力**: 生成 HTML は ``style`` 属性に YAML 由来の値を埋め込む。
+    * **HTML 出力**: 生成 HTML は ``style`` 属性に JSON 由来の値を埋め込む。
       テキスト/ラベルは ``html.escape()`` で HTML エスケープしつつ、
       数値フィールドは ``_as_number()`` / ``_size_token()`` で int/float に
       限定して CSS injection の経路を塞いでいる。
@@ -29,11 +25,10 @@ Security notes:
 from __future__ import annotations
 
 import html
+import json
 import sys
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 
 SYSTEM_FONT = (
@@ -144,7 +139,7 @@ def build_container_styles(
         # stack（オーバーレイ配置）はスキーマ未対応。renderer 側でも未実装のため、
         # 中途半端な position: relative を付けず、警告を出して通常フローへフォールバックする。
         print(
-            f"[yaml_to_html] warning: 'layout: stack' is not supported yet "
+            f"[json_to_html] warning: 'layout: stack' is not supported yet "
             f"(part id={part.get('id', '<unknown>')}); falling back to default flow.",
             file=sys.stderr,
         )
@@ -357,20 +352,20 @@ def build_document(preview: dict[str, Any]) -> str:
 
 def main() -> int:
     if len(sys.argv) < 3:
-        print("Usage: yaml_to_html.py <input.yaml> <output.html>", file=sys.stderr)
+        print("Usage: json_to_html.py <input.json> <output.html>", file=sys.stderr)
         return 1
 
     in_path = Path(sys.argv[1])
     out_path = Path(sys.argv[2])
 
     try:
-        data = yaml.safe_load(in_path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
-        print(f"YAML parse error: {exc}", file=sys.stderr)
+        data = json.loads(in_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"JSON parse error: {exc}", file=sys.stderr)
         return 1
 
     if not isinstance(data, dict):
-        print("YAML root must be a mapping", file=sys.stderr)
+        print("JSON root must be an object", file=sys.stderr)
         return 1
 
     preview = data.get("preview", data)

@@ -1,6 +1,6 @@
 ---
 name: prepare-figma
-description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。YAML レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-issue の Phase 6 から呼び出される。
+description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-issue の Phase 6 から呼び出される。
 user-invocable: false
 allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(uv *), Bash(bash *), Bash(mkdir *), Bash(command *), Bash(which *), Bash(brew *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill(resolve-figma-node), Skill(figma-mcp-guide), mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---
@@ -28,7 +28,7 @@ Figma デザインからデザイン仕様書（What: 何を作るか）を作�
 ```
 specs/design/
 └── {id}/                      # 画面 ID
-    ├── デザイン仕様書.md       # 永続成果物（YAML レイアウト定義を含む）
+    ├── デザイン仕様書.md       # 永続成果物（JSON レイアウト定義を含む）
     ├── images/                # Figma スクリーンショット類
     │   ├── 全体.png           # メイン SS（正）
     │   ├── 仕様注釈.png       # 補足画像（任意、用途名で識別）
@@ -36,7 +36,7 @@ specs/design/
     │   └── ...
     └── previews/              # AI 理解プレビュー類（誤り検出用）
         ├── preview.png        # 撮影 PNG
-        ├── preview.yaml       # 抽出された YAML（中間生成物、gitignore 推奨）
+        ├── preview.json       # 抽出された JSON（中間生成物、gitignore 推奨）
         └── preview.html       # レンダリング用 HTML（中間生成物、gitignore 推奨）
 ```
 
@@ -135,10 +135,10 @@ prepare-figma が呼ばれた = Figma からの取り込みが必要、なので
 
 #### チェック対象
 
-| ツール                                 | 必須度 | 用途                            | チェックコマンド                                                                                          |
-| -------------------------------------- | ------ | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Google Chrome / Chromium               | 必須   | プレビュー PNG 撮影             | `command -v google-chrome \|\| command -v chromium \|\| ls "/Applications/Google Chrome.app" 2>/dev/null` |
-| `uv`（推奨）または PyYAML 入り Python3 | 必須   | YAML→HTML 変換 / PNG トリミング | `command -v uv \|\| python3 -c "import yaml, PIL" 2>/dev/null`                                            |
+| ツール                                 | 必須度 | 用途                                                                         | チェックコマンド                                                                                          |
+| -------------------------------------- | ------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Google Chrome / Chromium               | 必須   | プレビュー PNG 撮影                                                          | `command -v google-chrome \|\| command -v chromium \|\| ls "/Applications/Google Chrome.app" 2>/dev/null` |
+| `uv`（推奨）または Pillow 入り Python3 | 必須   | PNG トリミング（`json_to_html.py` は標準ライブラリのみで動作するため対象外） | `command -v uv \|\| python3 -c "import PIL" 2>/dev/null`                                                  |
 
 #### `uv` が無い場合
 
@@ -154,7 +154,7 @@ prepare-figma が呼ばれた = Figma からの取り込みが必要、なので
         brew install uv
 - B. ユーザーが手動でインストールします（インストール後に「再開」と言ってください）
      → AI は待機。再開シグナルが来たら Step 0 から再チェック
-- C. プレビュー生成をスキップして YAML だけ書きます
+- C. プレビュー生成をスキップして JSON だけ書きます
      → 視覚比較ループは行わない。仕様書末尾に「プレビュー未生成」と明記する
 - D. 中断（このタスクを止める）
 ```
@@ -262,16 +262,16 @@ curl -s -H "X-Figma-Token: $FIGMA_PAT" \
 - 画面全体の **Figma URL**（ユーザーがブラウザで直接確認可能）
 - 主要パーツごとの **nodeId と Figma URL**（個別確認用）
 - Figma スクリーンショット（`specs/design/{id}/images/全体.png` に保存して相対パスで参照）
-- **レイアウト定義 YAML ブロック**（preview レンダリングの単一の真実）
-  - スキーマは [references/preview-yaml-schema.md](references/preview-yaml-schema.md) を参照
+- **レイアウト定義 JSON ブロック**（preview レンダリングの単一の真実）
+  - スキーマは [references/preview-json-schema.md](references/preview-json-schema.md) を参照
   - **アスキーアート配置図は書かない**（廃止）
-  - padding/gap/font 等のプロパティ詳細は YAML に集約し、テーブルとの重複を作らない
+  - padding/gap/font 等のプロパティ詳細は JSON に集約し、テーブルとの重複を作らない
 
 **出力先**: `specs/design/{id}/デザイン仕様書.md`
 
 ### Step 7: プレビュー生成（必須）
 
-仕様書中の YAML から AI 理解プレビュー PNG を自動生成する。
+仕様書中の JSON から AI 理解プレビュー PNG を自動生成する。
 **この PNG を Figma SS と並べて目視比較することで、AI の構造理解の誤りを早期発見する** のが目的。
 
 ```bash
@@ -284,7 +284,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 
 成功すると以下の 3 ファイルが生成される:
 
-- `specs/design/{id}/previews/preview.yaml` — 抽出された YAML
+- `specs/design/{id}/previews/preview.json` — 抽出された JSON
 - `specs/design/{id}/previews/preview.html` — レンダリング用 HTML
 - `specs/design/{id}/previews/preview.png` — 撮影された PNG
 
@@ -304,7 +304,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 
 ### Step 8: AI 自己検証ループ（必須）
 
-**目的**: AI 自身が Figma SS と AI プレビュー PNG を見比べて構造的な誤りを発見し、YAML を直して再レンダリングすることを **構造差異がゼロになるまで繰り返す**。
+**目的**: AI 自身が Figma SS と AI プレビュー PNG を見比べて構造的な誤りを発見し、JSON を直して再レンダリングすることを **構造差異がゼロになるまで繰り返す**。
 
 このループの趣旨は単なるドキュメント比較ではなく、「AI が自分の理解を画像で外部化し、自分で答え合わせをする」自己検証。
 ユーザーに渡す前に AI が必ず実行する。
@@ -321,16 +321,16 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 
    | 分類                    | 判定基準                                                                                                                     | 扱い          |
    | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
-   | **🔴 構造誤り**         | パーツ自体の有無、配置、サイズ感、形状の違い                                                                                 | YAML 修正対象 |
+   | **🔴 構造誤り**         | パーツ自体の有無、配置、サイズ感、形状の違い                                                                                 | JSON 修正対象 |
    | **🟡 データなし許容**   | アバター画像、ステータスバー、タブコンテンツ、ボトムナビ等の「データを持たないので Preview が placeholder になっている」箇所 | 無視          |
    | **🟢 ダミーデータ許容** | 「山田太郎」vs「名前名前」、行数や文字数の違い、自己紹介の長さ違い等                                                         | 無視          |
 
    **構造誤りの典型例**（実際に発見されたパターン）:
 
-   - **パーツ抜け**: 仕様書テーブルにはあるのに YAML に書き忘れた要素（例: おすすめスタッフカードの身長行）
+   - **パーツ抜け**: 仕様書テーブルにはあるのに JSON に書き忘れた要素（例: おすすめスタッフカードの身長行）
    - **形状解釈ミス**: アイコンを 20×90 の placeholder ボックス全体としてしまい、実際は 20×20 が右上配置だった等
    - **入れ子の取り違え**: vertical で並べるべきところを horizontal にしている等
-   - **要素の数違い**: タブが Figma で 3 つだが YAML に 2 つしかない等
+   - **要素の数違い**: タブが Figma で 3 つだが JSON に 2 つしかない等
 
    **構造誤りでない例**:
    - Figma のアバター実写真 vs Preview の灰色丸（→ データなし）
@@ -338,31 +338,42 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
    - Figma の自己紹介 4 行 vs Preview の 3 行（→ ダミーの文字数違い）
    - 色がわずかに違う（仕様書のカラー定義通りなら無視）
 
-3. **🔴 構造誤りがあれば YAML を修正する**
+3. **🔴 構造誤りがあれば JSON を修正する**
 
-   仕様書 MD 内の `preview:` YAML ブロックを直接 Edit する。
-   修正例（実例）:
+   仕様書 MD 内の `preview` JSON ブロックを直接 Edit する。
+   修正例（実例）: 20×90 全体がアイコン placeholder になっていた誤りを、20×90 の container に 20×20 アイコンを上端配置する形に直す。
 
-   ```yaml
-   # Before（誤り: 20×90 全体がアイコン placeholder になる）
-   - id: favorite_button
-     width: 20
-     height: 90
-     type: icon
-     label: "♥"
+   Before（誤り: 20×90 全体がアイコン placeholder になる）:
 
-   # After（正: 20×90 の container に 20×20 アイコンを上端配置）
-   - id: favorite_button_area
-     width: 20
-     height: 90
-     layout: vertical
-     align: start
-     children:
-       - id: heart_icon
-         width: 20
-         height: 20
-         type: icon
-         label: "♥"
+   ```json
+   {
+     "id": "favorite_button",
+     "width": 20,
+     "height": 90,
+     "type": "icon",
+     "label": "♥"
+   }
+   ```
+
+   After（正: 20×90 の container に 20×20 アイコンを上端配置）:
+
+   ```json
+   {
+     "id": "favorite_button_area",
+     "width": 20,
+     "height": 90,
+     "layout": "vertical",
+     "align": "start",
+     "children": [
+       {
+         "id": "heart_icon",
+         "width": 20,
+         "height": 20,
+         "type": "icon",
+         "label": "♥"
+       }
+     ]
+   }
    ```
 
 4. **プレビューを再生成する**
@@ -387,7 +398,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 
 - Figma SS / プレビュー PNG のどちらかが取得できない → 中断して報告
 - 同じ修正を繰り返しても構造誤りが解消しない（無限ループ徴候）→ 3 イテレーション以上回って改善が止まったら中断して報告
-- YAML スキーマで表現できない要素（例: 特殊なグラデーション、複雑なマスク）→ 仕様書本文に補記し、構造誤り扱いから除外
+- JSON スキーマで表現できない要素（例: 特殊なグラデーション、複雑なマスク）→ 仕様書本文に補記し、構造誤り扱いから除外
 
 #### 三点突合（並行して）
 
@@ -411,17 +422,17 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 
 デザイン仕様書は「何を作るか」の文書。Flutter のクラス名やコードは書かない。
 
-### レイアウト定義は YAML で書く（アスキーアート廃止）
+### レイアウト定義は JSON で書く（アスキーアート廃止）
 
-レイアウトは `preview:` YAML ブロックで構造化して記述する。
-これがプレビュー画像生成の唯一の入力なので、YAML が正確であれば prevew も正確に出る。
+レイアウトは `preview` JSON ブロックで構造化して記述する。
+これがプレビュー画像生成の唯一の入力なので、JSON が正確であれば prevew も正確に出る。
 
 - 親子関係を `children:` で表現
 - `width: fill / hug / Npx` で Figma Auto Layout 制約を再現
-- `layout: vertical | horizontal` で並び方向を指定（**Figma の `stack`（オーバーレイ配置）は現時点で未対応** — 子要素を重ねるレイアウトはプレビュー再現できない。詳細は [`references/preview-yaml-schema.md`](references/preview-yaml-schema.md) を参照）
-- パーツ単位のプロパティ（padding/gap/font 等）は YAML 内に集約し、テーブルと重複させない
+- `layout: vertical | horizontal` で並び方向を指定（**Figma の `stack`（オーバーレイ配置）は現時点で未対応** — 子要素を重ねるレイアウトはプレビュー再現できない。詳細は [`references/preview-json-schema.md`](references/preview-json-schema.md) を参照）
+- パーツ単位のプロパティ（padding/gap/font 等）は JSON 内に集約し、テーブルと重複させない
 
-スキーマの詳細は [references/preview-yaml-schema.md](references/preview-yaml-schema.md) を参照。
+スキーマの詳細は [references/preview-json-schema.md](references/preview-json-schema.md) を参照。
 
 ### Figma のオートレイアウトを理解する
 
@@ -473,14 +484,14 @@ PAT / MCP で数値が取れていても、スクリーンショットで見た�
 5. **デザイン仕様書にコンポーネント名を書いてしまう** — デザイン仕様書は「何を作るか」。Flutter のクラス名は実装設計書に記載する
 6. **MCP ツールの実行順序を間違える** — 公式推奨: `get_design_context` → `get_metadata`（必要時）→ `get_screenshot`
 7. **`get_design_context` の生成コードを鵜呑みにする** — マスク/クリッピング情報を正確に反映しない場合がある。形状が重要な要素は個別に `get_metadata` で確認必須
-8. **アスキーアート配置図を書いてしまう（廃止済み）** — レイアウトは YAML が単一の真実。アスキーアートは禁止
+8. **アスキーアート配置図を書いてしまう（廃止済み）** — レイアウトは JSON が単一の真実。アスキーアートは禁止
 9. **プレビュー生成をスキップする** — `render_preview.sh` の実行は必須。生成された PNG を Figma SS と並べて見比べないと AI の理解違いが残る
-10. **YAML とテーブルに同じプロパティを二重に書く** — padding/gap/font は YAML だけに書く。テーブルは Figma 参照と役割の説明のみ
+10. **JSON とテーブルに同じプロパティを二重に書く** — padding/gap/font は JSON だけに書く。テーブルは Figma 参照と役割の説明のみ
 
 ## 参照
 
 - [デザイン仕様書テンプレート](references/design-spec-template.md)
-- [Preview YAML スキーマ](references/preview-yaml-schema.md)
+- [Preview JSON スキーマ](references/preview-json-schema.md)
 - [プレビュー生成スクリプト](scripts/README.md)
 - [figma-mcp-guide スキル](../figma-mcp-guide/SKILL.md) — Figma MCP ツール仕様
 - [resolve-figma-node スキル](../resolve-figma-node/SKILL.md) — nodeId 発見・検証
