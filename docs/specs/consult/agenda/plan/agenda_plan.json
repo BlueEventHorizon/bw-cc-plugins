@@ -1,0 +1,403 @@
+{
+  "requirements_traceability": [
+    {
+      "requirement_id": "REQ-019 FNC-004",
+      "title": "AI が生成するのは判断の内容だけ",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-005",
+      "title": "入力は1回の構造化された受け渡し",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-006",
+      "title": "次の行動を数えずに得られる",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-008",
+      "title": "状態遷移の必要条件は機械可読な定義として持つ",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-009",
+      "title": "呼び出し側からの受け取り方",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-010",
+      "title": "既存記録の破棄",
+      "design_id": null,
+      "task_ids": ["TASK-007"],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-011",
+      "title": "検証の記録を遷移の必要条件とする",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-012",
+      "title": "個別処理の前に構造の妥当性を判定する",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 FNC-013",
+      "title": "変更情報の保持",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 NFR-001",
+      "title": "保存形式は値の境界を形式自身が持つ",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 NFR-003",
+      "title": "置き場・個数・寿命は導出根拠を持つ",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 NFR-004",
+      "title": "検証可能性",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 NFR-005",
+      "title": "機密情報の非記録",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-019 NFR-006",
+      "title": "失敗の可視性",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 FNC-001",
+      "title": "俯瞰可能性",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 FNC-002",
+      "title": "変更箇所の可視化",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 FNC-003",
+      "title": "提示と記録の一致",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 FNC-004",
+      "title": "AI は人間向けの提示物を読まない",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 FNC-005",
+      "title": "識別子からの直接到達",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-021 NFR-001",
+      "title": "提示は生成物であると読み取れる",
+      "design_id": "DES-077",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-017 NFR-001",
+      "title": "状態は記録・表示機構に一元化する",
+      "design_id": "DES-075",
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-017 FNC-011",
+      "title": "記録との連携",
+      "design_id": "DES-075",
+      "status": "pending"
+    }
+  ],
+  "design_traceability": [
+    {
+      "design_id": "DES-075",
+      "title": "agenda 機構 設計書（データ保存層）",
+      "requirement_ids": [
+        "REQ-019 FNC-004",
+        "REQ-019 FNC-005",
+        "REQ-019 FNC-006",
+        "REQ-019 FNC-008",
+        "REQ-019 FNC-009",
+        "REQ-019 FNC-011",
+        "REQ-019 FNC-012",
+        "REQ-019 FNC-013",
+        "REQ-019 NFR-001",
+        "REQ-019 NFR-003",
+        "REQ-019 NFR-004",
+        "REQ-019 NFR-005",
+        "REQ-019 NFR-006",
+        "REQ-017 NFR-001",
+        "REQ-017 FNC-011"
+      ],
+      "task_ids": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-004",
+        "TASK-006"
+      ]
+    },
+    {
+      "design_id": "DES-077",
+      "title": "agenda 表示層設計書",
+      "requirement_ids": [
+        "REQ-021 FNC-001",
+        "REQ-021 FNC-002",
+        "REQ-021 FNC-003",
+        "REQ-021 FNC-004",
+        "REQ-021 FNC-005",
+        "REQ-021 NFR-001"
+      ],
+      "task_ids": [
+        "TASK-002",
+        "TASK-005"
+      ]
+    },
+    {
+      "design_id": "ADR-076",
+      "title": "agenda 機構の保存形式決定",
+      "requirement_ids": [
+        "REQ-019 NFR-001"
+      ],
+      "task_ids": [
+        "TASK-003"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "title": "agenda_schema.py（状態遷移契約）を実装する",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-075",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "DES-075 §5.1 の TransitionRule を実装し、遷移先ごとの必須フィールド判定を機械可読に定義する",
+        "verification.action の固定語彙（adopt / それ以外）を実装する（呼び出し側の status_vocabulary とは独立した agenda 機構固有のスキーマ。§4）",
+        "TransitionRule.validate() が TransitionResult(ok, missing_fields) を返すことを実装する",
+        "config.terminal_statuses / active_statuses への役割マッピング参照のみを行い、状態語彙自体の意味を解釈しないこと（FNC-009 の中立性を保つ）",
+        "plugins/forge/scripts/agenda/__init__.py（パッケージマーカー）を作成する",
+        "plan_contract.py と同型のモジュール構成（関数＋契約）を採用し、UML クラスをそのまま class 化しない"
+      ],
+      "acceptance_criteria": [
+        "tests/forge/agenda/test_agenda_schema.py が新規作成され、pass する",
+        "DES-075 §9 が agenda_schema.py について列挙する単体テスト対象（スキーマ検証。不正な JSON 構造の拒否を含む）がすべて検証される",
+        "REQ-019 FNC-008 の4条件（終端状態遷移に background/essence 必須、外部指摘由来項目は referenced 必須、action != adopt は reason 必須、structural_judgment 未記録時は個別遷移拒否）をすべてテストで検証する",
+        "verification.action の語彙が agenda_schema.py 内に固定定義され、呼び出し側から受け取らないことをテストで確認する"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+        "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md",
+        "plugins/forge/scripts/plan/plan_contract.py"
+      ]
+    },
+    {
+      "task_id": "TASK-002",
+      "title": "agenda_render.py（表示生成）を実装する",
+      "priority": 85,
+      "status": "pending",
+      "design_id": "DES-077",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "DES-077 §3 のテンプレート構造（アジェンダ表・項目節・generated-notice）を html.escape() を通して生成する",
+        "DES-077 §3.1 のガタードット方式（.state-dot.changed / .state-dot.current）を実装する",
+        "DES-077 §3.1a の severity バッジを config.severity_field 経由で表示し、未指定時は要素自体を出力しないこと（FNC-009 の中立性）",
+        "DES-077 §4.2 の agenda.html / agenda_state.js の2ファイル生成ロジックを実装する（content_version 変化時のみ agenda.html を再生成）",
+        "DES-077 §4.3 のスクロール位置保持スクリプト（pagehide/sessionStorage）を埋め込む",
+        "json_to_html.py の html.escape() 使用パターンを参考にする",
+        "agenda.json 相当の fixture を手作りして単体で動作確認する（agenda_store.py の完成を待たない）"
+      ],
+      "acceptance_criteria": [
+        "tests/forge/agenda/test_agenda_render.py が新規作成され、pass する",
+        "DES-077 §5 が列挙する各検証項目（data-changed/data-current 付与、HTML エスケープ、生成物注記、agenda_state.js の contentVersion/currentItemId/changedItemIds が入力と一致、severity_field 有無でのバッジ出力/非出力）がすべてテストされる",
+        "DES-077 §5 の手動検証観点のうち、<script src> 差し替えによる部分更新・スクロール位置保持について、実際のブラウザで動作することを手動で確認する"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
+        "docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md",
+        "plugins/anvil/skills/prepare-figma/scripts/json_to_html.py"
+      ]
+    },
+    {
+      "task_id": "TASK-003",
+      "title": "agenda_store.py（データ保存層 CLI）を実装する",
+      "priority": 80,
+      "status": "pending",
+      "design_id": "DES-075",
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "DES-075 §6 の CLI（init/update/next/pending/record-structural-judgment/set-current）を argparse で実装する",
+        "§6.1 の差分パッチ方式（update は変更フィールドのみで足りる）を実装する",
+        "§3.2 の content_version インクリメント規則（init/update/record-structural-judgment で+1、set_current_item では増やさない）を実装する",
+        "§8.1 の書き込み成功後に agenda_render.py を自動呼び出しする契約を実装し、render 失敗時も記録側の状態遷移は成立させる",
+        "ADR-076 が決定した JSON（標準ライブラリ json のみ）で永続化する",
+        "§9 が列挙する単体テスト対象（遷移拒否、structural_judgment 未記録時拒否、JSON 読み書き失敗時の明示エラー、next/pending/remaining_count の正しさ等）を実装する",
+        "parse_findings.py の CLI 設計パターンを参考にする"
+      ],
+      "acceptance_criteria": [
+        "tests/forge/agenda/test_agenda_store.py が新規作成され、pass する",
+        "DES-075 §9 が列挙する単体テスト対象がすべて検証される",
+        "agenda_store.py init → update → next/pending が実際の CLI 呼び出しで意図通り動作する"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+        "docs/specs/consult/agenda/design/ADR-076_agenda_storage_format.md",
+        "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md",
+        "plugins/forge/scripts/review/parse_findings.py"
+      ]
+    },
+    {
+      "task_id": "TASK-004",
+      "title": "agenda 機構の統合テストを実装する",
+      "priority": 75,
+      "status": "pending",
+      "design_id": "DES-075",
+      "depends_on": [
+        "TASK-003"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "DES-075 §9 の統合テスト対象（init → record-structural-judgment → update×N → next/pending）を実装する",
+        "各書き込み操作直後に表示（agenda.html/agenda_state.js）が再生成され、最新の agenda.json と内容が一致することを検証する",
+        "record-structural-judgment を個別項目の遷移より先に実行する順序制約（§6.2）が守られていることを検証する"
+      ],
+      "acceptance_criteria": [
+        "tests/forge/agenda/test_agenda_integration.py が新規作成され、pass する",
+        "DES-075 §6.2 のシーケンス（init→record-structural-judgment→update×N→next/pending）が一連で成功する"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+        "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md"
+      ]
+    },
+    {
+      "task_id": "TASK-005",
+      "title": "discussion_file_template.md を表示専用リファレンスへリライトする",
+      "priority": 70,
+      "status": "pending",
+      "design_id": "DES-077",
+      "depends_on": [
+        "TASK-002",
+        "TASK-003"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "TASK-002/TASK-003 完成後に実際に生成された agenda.html を見ながら、保存フォーマットとしての記述を破棄する",
+        "「書くときの約束」節（ID 不変・状態行を消さない等）を、agenda_store.py の TransitionRule が機械的に強制する旨に縮小・整理する",
+        "DES-077 §3 の表示構造（アジェンダ表・項目節・severity バッジ・状態ドット）を材料に構造リファレンスとして書き直す"
+      ],
+      "acceptance_criteria": [
+        "discussion_file_template.md に「保存形式」としての記述（Markdown 手動編集を前提とする指示）が残っていない",
+        "リライト後の内容が、実際に生成された agenda.html の構造と一致する"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
+        "plugins/forge/skills/consult/assets/discussion_file_template.md"
+      ]
+    },
+    {
+      "task_id": "TASK-006",
+      "title": "consult SKILL.md を agenda 機構呼び出しへ書き換える",
+      "priority": 60,
+      "status": "pending",
+      "design_id": "DES-075",
+      "depends_on": [
+        "TASK-003",
+        "TASK-005"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "agenda_strategy.md「フェーズ2: consult SKILL.md の置き換え対応表」に従い、Phase 2（討議ファイルの用意）を agenda_store.py init の呼び出しに置換する",
+        "Phase 4（進行における討議ファイル更新）を agenda_store.py update の呼び出しに置換する",
+        "Phase 5（終了時のファイル参照）を agenda_store.py pending/next の呼び出しに置換する",
+        "consult:REQ-017 NFR-001（状態は記録・表示機構に一元化する）に従い、consult 固有の状態ファイル・作業ディレクトリへの直接 Write/Edit を除去する",
+        "初回のみ Bash で open {path}/agenda.html を実行する（DES-077 §2.2）",
+        "Phase 0・1・3（アジェンダ提示）・議論の途中で論点が動いたとき、等の対話進行・作法に関する記述は変更しない（agenda 機構が置き換えるのは記録の保存・表示のみ）",
+        "DES-075 §10 の測定手順（比較対象・測定単位・計測方法）に従い、移行前後のAI生成量（1項目を決着させるまでにAIが生成した文字数）を実際に比較する"
+      ],
+      "acceptance_criteria": [
+        "SKILL.md 本文に .claude/.temp/consult/ への Write/Edit の記述が残っていない",
+        "Phase 2/4/5 が agenda_store.py の CLI 呼び出しとして記述されている",
+        "consult 実行時に agenda_store.py init 実行直後、Bash で open コマンドが実際に呼ばれ、ブラウザで agenda.html が開くことを手動で確認する（DES-077 §2.2 の手動検証観点）",
+        "DES-075 §10 の測定手順を実施した結果、移行後の値が移行前を下回ることを確認する（REQ-019 FNC-004）"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
+        "docs/specs/consult/requirements/REQ-017_consult_skill.md",
+        "plugins/forge/skills/consult/SKILL.md"
+      ]
+    },
+    {
+      "task_id": "TASK-007",
+      "title": "既存の討議ファイル・仕分けファイルを破棄する（FNC-010）",
+      "priority": 50,
+      "status": "pending",
+      "design_id": null,
+      "depends_on": [
+        "TASK-006"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        ".claude/.temp/review/triage.md（存在する場合）・.claude/.temp/consult/*.md（存在する場合）の内容を確認する",
+        "未決着項目が含まれる場合、その内容を利用者へ一覧して伝え、確認を得てから削除する",
+        "破棄後、.claude/.temp/review/ ・ .claude/.temp/consult/ に放置ファイルが残らないことを確認する"
+      ],
+      "acceptance_criteria": [
+        "破棄対象ファイルの内容（未決着項目の有無）が利用者へ提示され、確認を得た記録が残る",
+        "実行後、.claude/.temp/review/ .claude/.temp/consult/ に対象ファイルが残存しない、または元から対象が存在しなかった旨が明示される"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md",
+        "plugins/forge/skills/consult/SKILL.md"
+      ]
+    }
+  ],
+  "revision_history": []
+}

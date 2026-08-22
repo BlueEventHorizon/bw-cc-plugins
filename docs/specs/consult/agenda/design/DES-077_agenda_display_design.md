@@ -58,7 +58,7 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 ```
 
 - **FNC-003（提示と記録の一致）**: `agenda_render.py` は `agenda.json` の内容のみから HTML 文字列を組み立てる。AI が HTML を直接書く経路を持たない
-- 出力値は `html.escape()` を通す（`yaml_to_html.py` の既存パターンを踏襲。今回は入力が JSON のため PyYAML 依存は生じない）
+- 出力値は `html.escape()` を通す（`json_to_html.py` の既存パターンを踏襲）
 
 ### 3.1 状態表示は背景全面ではなく「ガターのドット 1 点」に集約する
 
@@ -170,4 +170,4 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 | コンポーネント           | ファイルパス                                                      | 用途                                                                                                               |
 | ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | 討議ファイルテンプレート | `plugins/forge/skills/consult/assets/discussion_file_template.md` | 表示テンプレートへリライトして転用（移行手順は実装戦略書が持つ。[DES-075](DES-075_agenda_mechanism_design.md) §1） |
-| HTML エスケープパターン  | `plugins/anvil/skills/prepare-figma/scripts/yaml_to_html.py`      | `agenda_render.py` の `html.escape()` 使用箇所の参考（PyYAML 依存は踏襲しない）                                    |
+| HTML エスケープパターン  | `plugins/anvil/skills/prepare-figma/scripts/json_to_html.py`      | `agenda_render.py` の `html.escape()` 使用箇所の参考                                                               |
