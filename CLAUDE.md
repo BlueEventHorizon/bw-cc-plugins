@@ -97,10 +97,11 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-<!-- FORGE_ONBOARDING_START hash=5fa5b096fe98 -->
+<!-- FORGE_ONBOARDING_START hash=c290fc5d7d81 -->
 
 > このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
 > `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
+> forge はこのブロックの範囲だけ CLAUDE.md を利用している。ブロックの外側はプロジェクトの所有物。
 
 ## forge SSOT の定義
 
