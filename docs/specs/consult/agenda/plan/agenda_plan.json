@@ -226,7 +226,7 @@
       "task_id": "TASK-002",
       "title": "agenda_render.py（表示生成）を実装する",
       "priority": 85,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-077",
       "depends_on": [],
       "group_id": null,

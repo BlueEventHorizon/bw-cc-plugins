@@ -1,0 +1,64 @@
+{
+  "task_id": "TASK-002",
+  "title": "agenda_render.py（表示生成）を実装する",
+  "priority": 85,
+  "status": "pending",
+  "design_id": "DES-077",
+  "depends_on": [],
+  "group_id": null,
+  "build_check": "per_task",
+  "description": [
+    "DES-077 §3 のテンプレート構造（アジェンダ表・項目節・generated-notice）を html.escape() を通して生成する",
+    "DES-077 §3.1 のガタードット方式（.state-dot.changed / .state-dot.current）を実装する",
+    "DES-077 §3.1a の severity バッジを config.severity_field 経由で表示し、未指定時は要素自体を出力しないこと（FNC-009 の中立性）",
+    "DES-077 §4.2 の agenda.html / agenda_state.js の2ファイル生成ロジックを実装する（content_version 変化時のみ agenda.html を再生成）",
+    "DES-077 §4.3 のスクロール位置保持スクリプト（pagehide/sessionStorage）を埋め込む",
+    "json_to_html.py の html.escape() 使用パターンを参考にする",
+    "agenda.json 相当の fixture を手作りして単体で動作確認する（agenda_store.py の完成を待たない）"
+  ],
+  "acceptance_criteria": [
+    "tests/forge/agenda/test_agenda_render.py が新規作成され、pass する",
+    "DES-077 §5 が列挙する各検証項目（data-changed/data-current 付与、HTML エスケープ、生成物注記、agenda_state.js の contentVersion/currentItemId/changedItemIds が入力と一致、severity_field 有無でのバッジ出力/非出力）がすべてテストされる",
+    "DES-077 §5 の手動検証観点のうち、<script src> 差し替えによる部分更新・スクロール位置保持について、実際のブラウザで動作することを手動で確認する"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
+      "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [
+      "plugins/anvil/skills/prepare-figma/scripts/json_to_html.py",
+      "plugins/forge/scripts/agenda/agenda_schema.py",
+      "tests/forge/agenda/test_agenda_schema.py",
+      "plugins/forge/skills/consult/assets/discussion_file_template.md"
+    ],
+    "additional": []
+  },
+  "scope_in": "agenda_render.py（agenda.html/agenda_state.js生成、severityバッジ、状態ドット、部分更新スクリプト、スクロール保持）の新規実装と単体テストまで",
+  "scope_out": [
+    {
+      "item": "agenda_store.py の CLI（init/update/next/pending/record-structural-judgment/set-current）・永続化・書き込み成功後の agenda_render.py 自動呼び出し",
+      "owner_task_id": "TASK-003",
+      "reason": "戦略書（agenda_strategy.md フェーズ1タスク分解）でschema→render→storeの依存順に分離されており、CLI・永続化・呼び出し側統合はTASK-003が担う（TASK-002はagenda.json相当のfixtureを手作りして単体で動作確認する）"
+    },
+    {
+      "item": "discussion_file_template.md を表示専用リファレンスへリライトする",
+      "owner_task_id": "TASK-005",
+      "reason": "戦略書の判断（テンプレートリライトはTASK-002・TASK-003完成後、実際に生成されたagenda.htmlを見てから着手する）により後続タスクへ分離されている"
+    }
+  ],
+  "implementation_instructions": "plugins/forge/scripts/agenda/agenda_render.py を新規作成する。json_to_html.py の html.escape() を用いたインライン HTML 構築パターン（外部テンプレートファイルを読み込まず、f-string で直接組み立てる。DES-077の設計判断どおり、templates/*.html は新設しない）を踏襲する。実装する内容は以下のとおり。(1) DES-077 §3 のテンプレート構造（アジェンダ表 #agenda-summary、項目ごとの section、generated-notice の生成物注記）。(2) DES-077 §3.1 のガタードット方式: 変更箇所（last_changed_fieldsが空でない項目）に.state-dot.changed、対話中の項目（current_item_idと一致）に.state-dot.currentを付与する。両者は別クラス・別位置で、同時に両方立つ場合もある。(3) DES-077 §3.1a のseverityバッジ: config.severity_fieldが指定されている場合のみ、fields[severity_field]の値をdata-severity属性とテキストラベルの両方で表示する。severity_fieldが未指定（null）の場合はバッジ要素自体を出力しない（FNC-009の中立性。agenda_render.pyはseverityというキー名を決め打ちせず、config.severity_field経由で参照する）。(4) DES-077 §4.2 の2ファイル生成: agenda.html（全項目の完全な内容、DES-075のcontent_versionが増える操作の時のみ再生成対象）とagenda_state.js（{currentItemId, changedItemIds, contentVersion, updatedAt}のみを持つ軽量ファイル、書き込み系操作すべてで再生成対象）。本タスクでは実際の再生成トリガー判定はagenda_store.py（TASK-003）が担うため、agenda_render.pyは「agenda.jsonの内容を受け取ってagenda.html文字列を返す関数」「agenda.jsonの内容を受け取ってagenda_state.js文字列を返す関数」という2つの生成関数として実装する（呼び出し側の再生成タイミング判定ロジックは持たない）。agenda.html内には、ページ内JSとしてagenda_state.jsを2秒ごとに<script src>差し替えで読み込み、contentVersion不変時はDOM属性のみ更新し、変化時はlocation.reload()するスクリプトを埋め込む（DES-077 §4.2）。(5) DES-077 §4.3 のスクロール位置保持スクリプト（pagehide時にsessionStorageへ保存、読み込み後に復元）をagenda.html生成時に埋め込む。(6) 出力値はすべてhtml.escape()を通す。(7) agenda.json相当のfixture（dictまたはJSON文字列）を手作りして単体テストで動作確認する。agenda_store.pyの完成を待たない。tests/forge/agenda/test_agenda_render.pyを新規作成し、test_agenda_schema.pyのimportlib.util.spec_from_file_locationパターンを踏襲して、DES-077 §5が列挙する単体テスト対象（data-changed/data-current付与、HTMLエスケープ、生成物注記、agenda_state.jsのcontentVersion/currentItemId/changedItemIdsが入力と一致、severity_field有無でのバッジ出力/非出力）をすべて検証する。DES-077 §5の手動検証観点（<script src>差し替え・スクロール位置保持が実際のブラウザで動作すること）は単体テストでは検証できないため、acceptance_criteriaが求める手動確認の実施結果をnotesに記録する。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "required",
+    "tests_reason": null
+  }
+}
