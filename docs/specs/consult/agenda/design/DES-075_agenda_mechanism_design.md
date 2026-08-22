@@ -11,11 +11,12 @@ feature_note:
 
 ## メタデータ
 
-| 項目     | 値                                              |
-| -------- | ----------------------------------------------- |
-| 設計ID   | DES-075                                         |
-| 関連要件 | agenda:REQ-019, agenda:REQ-021, consult:REQ-017 |
-| 作成日   | 2026-08-19                                      |
+| 項目     | 値                                                    |
+| -------- | ----------------------------------------------------- |
+| 設計ID   | DES-075                                               |
+| 関連要件 | agenda:REQ-019, agenda:REQ-021, consult:REQ-017       |
+| 子設計書 | [DES-077](DES-077_agenda_display_design.md)（表示層） |
+| 作成日   | 2026-08-19                                            |
 
 ## 1. 概要
 
@@ -40,24 +41,26 @@ flowchart TB
     Store -->|"書き込み成功後に自動呼び出し"| Render
     Render -->|"読み取りのみ"| JSON
     Render -->|"生成"| HTML
-    Consult -.->|"アンカーリンクで案内"| HTML
+    Consult -->|"初回のみ open で起動"| HTML
+    Consult -.->|"以降はアンカーリンクで案内<br/>(利用者が開いたタブが自動追従)"| HTML
 ```
 
 - **依存方向は一方向**: `consult` → `agenda_store`。agenda 側は `consult` / `review` を知らない（呼び出し側固有の値は FNC-009 に従い引数で受け取る。用途中立性は [consult:REQ-017](../../requirements/REQ-017_consult_skill.md) NFR-002 と対応する）
-- **`agenda_store` の書き込み系操作は完了後に `agenda_render` を自動的に呼ぶ**（§8.3）。呼び出し側（consult）が明示的に再描画を要求する経路は持たない。**理由**: 呼び出す/呼び出さないを consult の記憶に委ねると、`update` 後に再描画を呼び忘れた場合、提示（HTML）が記録より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」を構造的に壊す経路になるため、生成のトリガーを機構側（store）に持たせ、呼び忘れという人的失敗経路そのものを無くす
+- **`agenda_store` の書き込み系操作は完了後に `agenda_render` を自動的に呼ぶ**（§8.1）。呼び出し側（consult）が明示的に再描画を要求する経路は持たない。**理由**: 呼び出す/呼び出さないを consult の記憶に委ねると、`update` 後に再描画を呼び忘れた場合、提示（HTML）が記録より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」を構造的に壊す経路になるため、生成のトリガーを機構側（store）に持たせ、呼び忘れという人的失敗経路そのものを無くす
 - **`agenda_render` は `agenda_store` の内部構造に依存しない**: 両者は `agenda.json` というデータ契約のみを共有する（スキーマは §4 で固定）。`agenda_store` は `agenda_render` を呼び出す（サブプロセスまたは関数呼び出し）が、`agenda_render` は `agenda_store` の内部 API を一切参照せず、独立して直接呼び出すことも妨げない
 - **`review` は `consult` を経由する間接呼び出し**であり、agenda を直接呼ばない（[DES-066](../../../forge/design/DES-066_review_body_design.md) §3.11・[consult:REQ-017](../../requirements/REQ-017_consult_skill.md) §1.2 と整合）
+- **初回表示は consult が能動的に開く**: `agenda_store.py init` 実行直後、consult が Bash で `open` コマンドを実行し表示物をブラウザで開く。以降の更新は表示層側の自動追従機構に委ねる（詳細設計は [DES-077](DES-077_agenda_display_design.md) §2.2）
 
 ## 3. モジュール設計
 
 ### 3.1 モジュール一覧
 
-| モジュール                                      | 責務                                                                                                                                                                           | 依存                                                                                               |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `plugins/forge/scripts/agenda/agenda_store.py`  | 記録の CRUD・状態遷移の可否判定・検証記録の必須化（FNC-011）・構造判定の必須化（FNC-012）・変更情報の保持（FNC-013）・書き込み成功後の `agenda_render.py` 自動呼び出し（§8.3） | 標準ライブラリのみ（`json`）。`agenda_render.py` を呼び出す                                        |
-| `plugins/forge/scripts/agenda/agenda_render.py` | `agenda.json` から HTML を生成する（FNC-001〜005・NFR-001）                                                                                                                    | 標準ライブラリのみ（`html`）。`agenda_store.py` から呼ばれるが、それに依存しない（独立実行も可能） |
-| `plugins/forge/scripts/agenda/agenda_schema.py` | レコードのスキーマ定義・状態遷移ルールの定義（`plan_contract.py` と同型の契約モジュール）                                                                                      | なし                                                                                               |
-| `plugins/forge/scripts/agenda/__init__.py`      | パッケージマーカー（`plan/__init__.py` と同型）                                                                                                                                | なし                                                                                               |
+| モジュール                                      | 責務                                                                                                                                                                           | 依存                                                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `plugins/forge/scripts/agenda/agenda_store.py`  | 記録の CRUD・状態遷移の可否判定・検証記録の必須化（FNC-011）・構造判定の必須化（FNC-012）・変更情報の保持（FNC-013）・書き込み成功後の `agenda_render.py` 自動呼び出し（§8.1） | 標準ライブラリのみ（`json`）。`agenda_schema.py`（`TransitionRule`。§3.2・§5.1）と `agenda_render.py` を呼び出す |
+| `plugins/forge/scripts/agenda/agenda_render.py` | `agenda.json` から表示を生成する（詳細設計は [DES-077](DES-077_agenda_display_design.md)）                                                                                     | 標準ライブラリのみ（`html`）。`agenda_store.py` から呼ばれるが、それに依存しない（独立実行も可能）               |
+| `plugins/forge/scripts/agenda/agenda_schema.py` | レコードのスキーマ定義・状態遷移ルールの定義（`plan_contract.py` と同型の契約モジュール）                                                                                      | なし                                                                                                             |
+| `plugins/forge/scripts/agenda/__init__.py`      | パッケージマーカー（`plan/__init__.py` と同型）                                                                                                                                | なし                                                                                                             |
 
 いずれも `plugins/forge/scripts/` 直下の既存パターン（`doc_backend/`・`doc_structure/`・`plan/`・`review/`）に倣い、複数 SKILL（`consult`・将来的な他呼び出し側）が共有する置き場に配置する。
 
@@ -67,9 +70,10 @@ flowchart TB
 classDiagram
     class AgendaStore {
         -path: Path
-        +init(identity, status_vocabulary, terminal_statuses, active_statuses, item_fields) AgendaRecord
+        +init(identity, status_vocabulary, terminal_statuses, active_statuses, item_fields, severity_field) AgendaRecord
         +load() AgendaRecord
         +upsert_item(item_id, updates) TransitionResult
+        +set_current_item(item_id) None
         +next_item() ItemId | None
         +pending_fields() list
         +remaining_count() int
@@ -79,6 +83,8 @@ classDiagram
     class AgendaRecord {
         +owner: str
         +created_at: str
+        +content_version: int
+        +current_item_id: str | None
         +config: Config
         +structural_judgment: StructuralJudgment | None
         +items: list~Item~
@@ -89,6 +95,7 @@ classDiagram
         +terminal_statuses: list~str~
         +active_statuses: list~str~
         +item_fields: list~str~
+        +severity_field: str | None
     }
     class Item {
         +id: str
@@ -116,9 +123,6 @@ classDiagram
         +required_fields_for(target_status) list
         +validate(item, target_status) TransitionResult
     }
-    class AgendaRenderer {
-        +render(record) str
-    }
 
     AgendaStore --> AgendaRecord
     AgendaRecord --> Config
@@ -126,10 +130,13 @@ classDiagram
     Item --> VerificationRecord
     Item --> Decision
     AgendaStore ..> TransitionRule : 状態遷移時に参照
-    AgendaRenderer ..> AgendaRecord : 読み取りのみ
 ```
 
 `fields` は呼び出し側が定義する項目属性（例: `severity`・`confidence`）をまとめて保持する（§4 の `items[].fields` と対応。agenda 機構はキー名の意味を解釈しない。FNC-009）。`add`/`update` の CLI 分離は設けず、`AgendaStore.upsert_item()` に一本化する（項目が存在しなければ追加、存在すれば更新。1 項目 = 1 回の受け渡しという FNC-005 の趣旨に合わせ、呼び出し側が「新規か更新か」を判定する負担を無くす）。CLI 側も §6 のとおり `update` サブコマンド 1 つで両方を扱う。
+
+**本図に `agenda_render.py` を含めない**: [DES-077](DES-077_agenda_display_design.md) の表示層は、UML クラスとして設計されたコンポーネントではなく、`agenda_render.py` モジュールの関数群（`agenda.html`/`agenda_state.js` を生成する処理）として設計されている（[DES-077](DES-077_agenda_display_design.md) §4.2）。`AgendaRecord` を読み取る関係は §2 のアーキテクチャ図（`Render -->|"読み取りのみ"| JSON`）が既に示しており、本図（データ構造のクラス図）で重複して表現しない。
+
+**`content_version` のインクリメント対象と `set_current_item()` の位置づけ**: `init`・`upsert_item`・`record_structural_judgment`（いずれも `items`・`structural_judgment` という「本文」を変える操作）は `save()` 時に `content_version` を 1 増やす。**`set_current_item()` は `content_version` を増やさない**——`current_item_id` の変更は表示層（[DES-077](DES-077_agenda_display_design.md) §4.2）が軽量な部分更新（ページ再読み込みなし）で反映する対象であり、「本文が変わった」という信号に含めると、対話の進行だけで不要なページ再読み込みが発生してしまう（[DES-077](DES-077_agenda_display_design.md) §4.2 が解決した問題の再発）。
 
 **`VerificationRecord` と `Decision` の役割分担**: 両者は別の関心事を記録する。`VerificationRecord`（`referenced`・`action`・`reason`）は**外部指摘由来の項目に固有の検証記録**（FNC-011）であり、「指摘の真偽を確かめるために何を参照したか」「採否（`action`）とその理由」を保持する。`action` が採否を表す唯一のフィールドであり、真偽二値の重複表現は持たない。`Decision`（`by`・`outcome`・`reason`）は**項目全般に対する利用者（またはAIが代行した場合はその旨）の最終判断記録**（[consult:REQ-017](../../requirements/REQ-017_consult_skill.md) FNC-008）であり、外部指摘由来かどうかに関わらずすべての決着項目が持つ。§5.1 の遷移条件が `verification` 側のみを検証対象とするのは、決着への遷移可否を機械的に判定するのは検証記録の充足（FNC-011）であり、`decision` の記入自体は呼び出し側（consult）が FNC-008 の要求（判断を得ないまま埋めない）として担保する対話進行上の責務であるため（agenda 機構は記録の形式のみを扱い、判断が実際に下されたかの意味的な妥当性は判定しない。FNC-009「内容の妥当性の判定は呼び出し側が行う」）。
 
@@ -143,6 +150,8 @@ classDiagram
 {
   "owner": "consult",
   "created_at": "2026-08-19T10:00:00",
+  "content_version": 7,
+  "current_item_id": "02",
   "config": {
     "identity": "20260819-agenda-design",
     "status_vocabulary": [
@@ -155,7 +164,8 @@ classDiagram
     ],
     "terminal_statuses": ["決着", "対象外", "取り下げ"],
     "active_statuses": ["未着手", "進行中"],
-    "item_fields": ["severity", "confidence"]
+    "item_fields": ["severity", "confidence"],
+    "severity_field": "severity"
   },
   "structural_judgment": {
     "recorded": true,
@@ -183,17 +193,20 @@ classDiagram
 }
 ```
 
-| フィールド                    | 意味                                                                                                                                                                                                                                                                                       | 対応する要件     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
-| `owner`                       | 呼び出し側の識別（`consult` 固定。将来の呼び出し側追加時に増える）                                                                                                                                                                                                                         | FNC-009          |
-| `config.identity`             | 記録の識別名（`review` は固定名 `review`、`consult` は主題スラッグ）                                                                                                                                                                                                                       | FNC-009・NFR-003 |
-| `config.status_vocabulary`    | 呼び出し側が渡す状態語彙                                                                                                                                                                                                                                                                   | FNC-009          |
-| `config.terminal_statuses`    | `status_vocabulary` のうち、§5.1 の必須フィールドを課す終端状態への役割マッピング。`TransitionRule` はこの集合への遷移かどうかだけを見る（語彙の意味には立ち入らない）                                                                                                                     | FNC-008・FNC-009 |
-| `config.active_statuses`      | `status_vocabulary` のうち、`remaining_count()`・§7 の記録削除条件が参照する「未対応」とみなす状態への役割マッピング。**`terminal_statuses` とは独立した集合であり、両者の和集合が `status_vocabulary` 全体を覆うとは限らない**（例: `保留` はいずれの集合にも属さない中間状態でありうる） | FNC-006・NFR-003 |
-| `config.item_fields`          | 呼び出し側が `items[].fields` に含める属性キーの一覧（agenda 側は意味を解釈しない）                                                                                                                                                                                                        | FNC-009          |
-| `structural_judgment`         | FNC-012 の判定結果。**個別項目の状態遷移が起きる前に、このフィールドが埋まっていなければならない**                                                                                                                                                                                         | FNC-012          |
-| `items[].verification`        | FNC-011 が要求する検証記録。`referenced` は位置情報（ファイル:行 / コマンドと出力）を必須とする                                                                                                                                                                                            | FNC-011          |
-| `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）                                                                                                                                                                                                                            | FNC-013          |
+| フィールド                    | 意味                                                                                                                                                                                                                                                                                                                                           | 対応する要件     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `owner`                       | 呼び出し側の識別（`consult` 固定。将来の呼び出し側追加時に増える）                                                                                                                                                                                                                                                                             | FNC-009          |
+| `content_version`             | `agenda_store.py` が書き込みごとにインクリメントする整数。表示層（[DES-077](DES-077_agenda_display_design.md) §4.2）が「本文が変わったか」を判定する唯一の根拠であり、タイムスタンプではなく比較が確実な整数を使う                                                                                                                             | FNC-013          |
+| `current_item_id`             | 呼び出し側（consult）が今対話中の項目 ID、または未着手（`null`）。同時に対話中とみなす項目は 1 つに限る（consult:REQ-017 FNC-002「進行の主導権を本スキルが持つ」と対応）。表示層（[DES-077](DES-077_agenda_display_design.md) §3.1）が状態表示に使う                                                                                           | FNC-013          |
+| `config.identity`             | 記録の識別名（`review` は固定名 `review`、`consult` は主題スラッグ）                                                                                                                                                                                                                                                                           | FNC-009・NFR-003 |
+| `config.status_vocabulary`    | 呼び出し側が渡す状態語彙                                                                                                                                                                                                                                                                                                                       | FNC-009          |
+| `config.terminal_statuses`    | `status_vocabulary` のうち、§5.1 の必須フィールドを課す終端状態への役割マッピング。`TransitionRule` はこの集合への遷移かどうかだけを見る（語彙の意味には立ち入らない）                                                                                                                                                                         | FNC-008・FNC-009 |
+| `config.active_statuses`      | `status_vocabulary` のうち、`remaining_count()`・§7 の記録削除条件が参照する「未対応」とみなす状態への役割マッピング。**`terminal_statuses` とは独立した集合であり、両者の和集合が `status_vocabulary` 全体を覆うとは限らない**（例: `保留` はいずれの集合にも属さない中間状態でありうる）                                                     | FNC-006・NFR-003 |
+| `config.item_fields`          | 呼び出し側が `items[].fields` に含める属性キーの一覧（agenda 側は意味を解釈しない）                                                                                                                                                                                                                                                            | FNC-009          |
+| `config.severity_field`       | `item_fields` のうち、表示層（[DES-077](DES-077_agenda_display_design.md) §3.1a）が重大度バッジとして強調表示する対象キー名。未指定（`null`）ならバッジを表示しない。**キー名を指定するだけで、値の意味（`critical` が何を指すか等）には agenda 側は立ち入らない**（`terminal_statuses` と同じ役割マッピングの考え方。FNC-009 の中立性を保つ） | FNC-009          |
+| `structural_judgment`         | FNC-012 の判定結果。**個別項目の状態遷移が起きる前に、このフィールドが埋まっていなければならない**                                                                                                                                                                                                                                             | FNC-012          |
+| `items[].verification`        | FNC-011 が要求する検証記録。`referenced` は位置情報（ファイル:行 / コマンドと出力）を必須とする                                                                                                                                                                                                                                                | FNC-011          |
+| `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）                                                                                                                                                                                                                                                                                | FNC-013          |
 
 **値の境界は JSON の構文自身が持つ**（NFR-001）。`background` / `essence` 等の自由記述フィールドに区切り文字・改行・記号が含まれても、JSON の文字列リテラルとしてエスケープされるため保存が破損しない。
 
@@ -243,6 +256,7 @@ python3 agenda_store.py init --identity "20260819-agenda-design" \
   --terminal-statuses '["決着","対象外","取り下げ"]' \
   --active-statuses '["未着手","進行中"]' \
   --item-fields '["severity","confidence"]' \
+  --severity-field "severity" \
   --path <path-to-agenda.json>
 
 # 1 項目の追加・更新（1 件 = 1 回の受け渡し。FNC-005）
@@ -255,6 +269,9 @@ python3 agenda_store.py pending --path <path>
 
 # 構造判定の記録（FNC-012。個別項目の遷移より先に実行する）
 python3 agenda_store.py record-structural-judgment --path <path> --note "..."
+
+# 対話中の項目を示す（content_version は増えない。表示層の軽量反映のみ。DES-077 §4.2）
+python3 agenda_store.py set-current --path <path> --item-id "02"
 ```
 
 **失敗は既定値で補わない（NFR-006）**: 各コマンドは JSON の読み書きに失敗した場合、非ゼロ終了と `{"status": "error", "message": "..."}` を返す。呼び出し側（consult）は成功を仮定して進行しない。
@@ -277,13 +294,15 @@ sequenceDiagram
     actor Consult as consult (呼び出し側)
     participant Store as agenda_store.py
 
-    Consult ->> Store: init(identity, status_vocabulary, terminal_statuses, active_statuses, item_fields)
+    Consult ->> Store: init(identity, status_vocabulary, terminal_statuses, active_statuses, item_fields, severity_field)
     Store -->> Consult: AgendaRecord
 
     Consult ->> Store: record-structural-judgment(note)
     Note over Store: structural_judgment.recorded = true
 
     loop 項目ごと
+        Consult ->> Store: set_current_item(item_id)
+        Note over Store: content_version は増えない（DES-077 §4.2）
         Consult ->> Store: update(item_id, item.json)
         alt structural_judgment.recorded == false
             Store -->> Consult: TransitionResult(ok=false, missing=[structural_judgment])
@@ -311,75 +330,24 @@ sequenceDiagram
 
 ## 8. 表示生成設計（agenda:REQ-021）
 
-### 8.1 生成形式
+表示層（`agenda_render.py`、HTML 生成・状態表示・更新方式・初回表示のトリガー）の設計は [DES-077](DES-077_agenda_display_design.md) が持つ。本文書はデータ保存層の責務として、書き込み成功後に表示層の再生成を呼び出す契約（§8.1）のみを扱う。
 
-HTML を採用する（採用理由: 識別子からの直接到達（FNC-005）をアンカーリンク `#item-01` で実現できる。[consult:REQ-017](../../requirements/REQ-017_consult_skill.md) §1.2 が示す 3 つの理由——大量情報の整理・番号指定ジャンプ・コンソールノイズからの分離——のうち後 2 つは HTML でのみ満たせる）。
+### 8.1 再描画のトリガー（呼び出し側から独立させる）
 
-### 8.2 テンプレートの構造
+**`agenda_store.py` の書き込み系コマンド（`init`・`update`・`record-structural-judgment`・`set-current`）は、JSON への書き込みが成功した直後に `agenda_render.py` を呼び出し、表示を再生成する。** 呼び出し側（consult）が明示的に再描画を要求する CLI コマンド・引数は持たない。
 
-既存 `plugins/forge/skills/consult/assets/discussion_file_template.md` が持つ構造（アジェンダ表 + `## [ID] 項目名` の項目節）を、レンダリング出力の構造としてそのまま引き継ぐ。ただし本テンプレートは**保存形式ではなく表示専用**（agenda:REQ-019 NFR-001 が禁じるのは「保存に使うこと」であり、読み戻さない生成専用の表示は対象外）。
-
-```html
-<head>
-  <!-- ブラウザで開いたタブの自動更新（§8.2a 参照） -->
-  <meta http-equiv="refresh" content="{reload_interval_seconds}">
-</head>
-<h1>アジェンダ: {identity}</h1>
-<!-- 生成物であることを示す注記（NFR-001） -->
-<p class="generated-notice">この提示は agenda_render.py によって {generated_at} に生成された。手編集しても保存されない。</p>
-
-<table id="agenda-summary"><!-- ID/項目/重要度/状態/結果・課題 の一覧。FNC-001 --></table>
-
-<section id="item-01"><!-- FNC-005: アンカーリンク到達点 -->
-  <h2>[01] {title}</h2>
-  <p class="changed-marker" data-changed="{is_last_changed}"><!-- FNC-002 --></p>
-  <p>背景: ...</p>
-  <p>本質: ...</p>
-  <p>決着: ...</p>
-</section>
-```
-
-- **FNC-003（提示と記録の一致）**: `agenda_render.py` は `agenda.json` の内容のみから HTML 文字列を組み立てる。AI が HTML を直接書く経路を持たない
-- **FNC-002（変更箇所の可視化）**: `items[].last_changed_fields` が空でない項目に `data-changed="true"` を付与し、CSS で強調する
-- 出力値は `html.escape()` を通す（`yaml_to_html.py` の既存パターンを踏襲。今回は入力が JSON のため PyYAML 依存は生じない）
-
-#### 8.2a ブラウザタブの自動更新
-
-`agenda_render.py` は §8.3 のトリガーで `agenda.html` を都度上書き生成するが、**既に開いているブラウザタブは自動では更新されない**。`file://` で開く運用（本機構は NFR-005 と同じ理由で外部公開・サーバー常駐を前提としない。§1.1）のまま、開いているタブを追従させるため、`<meta http-equiv="refresh" content="{reload_interval_seconds}">` による定期ポーリングリロードを採用する。
-
-- **サーバー不要である理由**: `meta refresh` はブラウザ標準機能であり、`file://` で開いたファイルもブラウザが単純に同じパスを再読み込みするだけで動作する。JavaScript の `fetch`/`XHR` による差分検出は `file://` オリジンが CORS 制約でブロックされ、ローカル HTTP サーバーの起動が前提になる（機構に新たな責務が増える）ため採らない
-- **`reload_interval_seconds` の値は未確定**: 「利用者が読んでいる最中にリロードされて煩わしくないか」は実行後に人間が体感して決める性質の値であり、AI が数値例から推測して確定しない（`spec_priorities_spec.md` §3.4）。初期実装では暫定値から始め、運用しながら調整する
-- 双方向インタラクション（HTML 上での操作をサーバー経由で AI へ伝える等）は本機構のスコープ外である（agenda:REQ-021 §2.2）。判断の取得はコンソール（consult との対話）が担い、HTML は一方向の提示に留まる
-
-#### 8.2b CSS の適用対象（値は実装時に決定）
-
-どのセレクタが何をスタイリングするかは設計事項として以下に固定する。**具体的な値（色コード・px サイズ等）は本設計書で確定しない**——実装後に生成された `agenda.html` を実際に見て、あなたと調整しながら決める（design_principles_spec.md「実行後に人間が体感して決める値」と同じ扱い）。
-
-| セレクタ                               | 適用対象                                              | 備考                                                                                       |
-| -------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `body`                                 | 全体のベースフォント・行間・背景色                    | 落ち着いたトーンとする（きつい原色は避ける）                                               |
-| `h1`, `h2`                             | タイトル階層（アジェンダ全体タイトル / 項目タイトル） | 階層が視覚的に区別できる程度の差（フォントサイズ・太さ）                                   |
-| `.generated-notice`                    | 生成物であることを示す注記（§8.1 NFR-001）            | 本文より控えめな見た目（例: 小さめ・薄い色）にして目立たせすぎない                         |
-| `#agenda-summary`                      | アジェンダ表（ID/項目/重要度/状態/結果・課題）        | 罫線・余白で表として読みやすくする                                                         |
-| `.changed-marker[data-changed="true"]` | 直前の更新で変わった項目の強調（FNC-002）             | 背景色等でハイライトする。**severity の色分けとは独立**（下記参照）                        |
-| （severity 表示）                      | 重大度（🔴/🟡/🟢）                                    | **CSS では追加の色分けをしない**。絵文字自体が色を表現しているため、二重に色を重ねない方針 |
-| `section`                              | 項目ごとの区切り（アンカーリンク到達点）              | 項目間の境界が視認できる程度の区切り（罫線・余白）                                         |
-
-### 8.3 再描画のトリガー（呼び出し側から独立させる）
-
-**`agenda_store.py` の書き込み系コマンド（`init`・`update`・`record-structural-judgment`）は、JSON への書き込みが成功した直後に `agenda_render.py` を呼び出し、`agenda.html` を再生成する。** 呼び出し側（consult）が明示的に再描画を要求する CLI コマンド・引数は持たない。
-
-- **理由**: 再描画の要否・タイミングを呼び出し側の記憶に委ねると、`update` の後に再描画を呼び忘れた場合、提示（`agenda.html`）が記録（`agenda.json`）より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」が禁じる状態そのものであり、呼び忘れという人的な失敗経路を許すことになる。生成のトリガーを機構側（`agenda_store.py`）に持たせることで、記録が変わった時点で提示も必ず追従する構造にする
+- **理由**: 再描画の要否・タイミングを呼び出し側の記憶に委ねると、`update` の後に再描画を呼び忘れた場合、提示が記録（`agenda.json`）より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」が禁じる状態そのものであり、呼び忘れという人的な失敗経路を許すことになる。生成のトリガーを機構側（`agenda_store.py`）に持たせることで、記録が変わった時点で提示も必ず追従する構造にする
+- **`content_version` の増減に応じて再生成範囲が変わる**（[DES-077](DES-077_agenda_display_design.md) §4.2）: `init`・`update`・`record-structural-judgment` は `content_version` を増やし、`agenda.html`・`agenda_state.js` の両方を再生成する。`set-current` は `content_version` を増やさず、`agenda_state.js` のみを再生成する（`agenda.html` 本体は書き換えない。表示側の部分更新が `data-current` 属性を反映するため、本体側の再生成は不要）
 - **実装方針**: `agenda_store.py` は書き込み成功後、`agenda_render.py` の描画関数を呼び出す（同一プロセス内の関数呼び出し、または軽量なサブプロセス起動）。読み取り専用コマンド（`next`・`pending`）は記録を変更しないため再描画を伴わない
 - **失敗時の扱い（NFR-006 と同じ扱い）**: 再描画に失敗した場合も、JSON への書き込み自体が成功しているなら状態遷移は成立させる。ただし再描画の失敗は隠さず、呼び出し側（consult）へ明示的に伝える（`{"status": "partial", "message": "record updated but render failed: ..."}` 等）。**記録の正しさを表示の失敗で道連れにしない**——記録は単体の真実源であり、表示側の障害で記録の更新自体を巻き戻す理由にはならない
 
 ## 9. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_store.py`: 状態遷移の必要条件（§5.1 の各行）を満たさない更新が拒否されること、`structural_judgment` 未記録時に個別項目の遷移が拒否されること（FNC-012）、外部指摘由来の項目で `referenced` が空の場合は採否によらず決着が拒否されること、`verification.action != adopt` の場合はさらに `reason` が空でも拒否されること（いずれも FNC-011）、JSON 読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item()`/`pending_fields()`/`remaining_count()` が `active_statuses` に基づき次項目・未記入欄・残件を正しく返すこと（FNC-006）、`update`/`init`/`record-structural-judgment` の書き込み成功後に `agenda_render.py` が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.3）
-  - `agenda_render.py`: `last_changed_fields` に応じた強調表示、HTML エスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力
+  - `agenda_store.py`: 状態遷移の必要条件（§5.1 の各行）を満たさない更新が拒否されること、`structural_judgment` 未記録時に個別項目の遷移が拒否されること（FNC-012）、外部指摘由来の項目で `referenced` が空の場合は採否によらず決着が拒否されること、`verification.action != adopt` の場合はさらに `reason` が空でも拒否されること（いずれも FNC-011）、JSON 読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item()`/`pending_fields()`/`remaining_count()` が `active_statuses` に基づき次項目・未記入欄・残件を正しく返すこと（FNC-006）、`update`/`init`/`record-structural-judgment` の書き込み成功後に `agenda_render.py` が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.1）、`init`/`update`/`record-structural-judgment` の実行で `content_version` が 1 増えること・`set_current_item()` の実行では増えないこと（§3.2）、`set_current_item()` が `current_item_id` を更新し `agenda_state.js` のみを再生成すること（`agenda.html` 本体は書き換えないこと）
   - `agenda_schema.py`: スキーマ検証（不正な JSON 構造の拒否）
-- **統合テスト対象**: `agenda_store.py init` → `record-structural-judgment`（構造判定は個別項目の遷移より先に行う。FNC-012） → `update` × N（決着等への遷移を含む） → `next`/`pending` の一連の呼び出しで、記録が意図通り遷移すること。あわせて、各書き込み操作の直後に `agenda.html` が再生成され、内容が最新の `agenda.json` と一致すること（§8.3）
+  - `agenda_render.py` の単体テストは [DES-077](DES-077_agenda_display_design.md) §5 が持つ
+- **統合テスト対象**: `agenda_store.py init` → `record-structural-judgment`（構造判定は個別項目の遷移より先に行う。FNC-012） → `update` × N（決着等への遷移を含む） → `next`/`pending` の一連の呼び出しで、記録が意図通り遷移すること。あわせて、各書き込み操作の直後に表示が再生成され、内容が最新の `agenda.json` と一致すること（§8.1・[DES-077](DES-077_agenda_display_design.md)）
 
 ## 10. FNC-004 充足の測定方法
 
@@ -393,11 +361,11 @@ agenda:REQ-019 FNC-004（記録の維持に AI が使う出力量・読み取り
 
 ## 11. 使用する既存コンポーネント
 
-| コンポーネント           | ファイルパス                                                      | 用途                                                                            |
-| ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 討議ファイルテンプレート | `plugins/forge/skills/consult/assets/discussion_file_template.md` | 表示テンプレートへリライトして転用（移行手順は実装戦略書が持つ。§1）            |
-| 単一責務モジュール構成   | `plugins/forge/scripts/plan/plan_contract.py`                     | `agenda_schema.py` のモジュール構成の参考                                       |
-| 状態機械 + CLI パターン  | `plugins/forge/scripts/review/parse_findings.py`                  | `agenda_store.py` の CLI 設計・JSON 出力設計の参考                              |
-| HTML エスケープパターン  | `plugins/anvil/skills/prepare-figma/scripts/yaml_to_html.py`      | `agenda_render.py` の `html.escape()` 使用箇所の参考（PyYAML 依存は踏襲しない） |
+| コンポーネント          | ファイルパス                                     | 用途                                               |
+| ----------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| 単一責務モジュール構成  | `plugins/forge/scripts/plan/plan_contract.py`    | `agenda_schema.py` のモジュール構成の参考          |
+| 状態機械 + CLI パターン | `plugins/forge/scripts/review/parse_findings.py` | `agenda_store.py` の CLI 設計・JSON 出力設計の参考 |
+
+表示層が使用する既存コンポーネント（討議ファイルテンプレート・HTML エスケープパターン）は [DES-077](DES-077_agenda_display_design.md) §7 が持つ。
 
 再利用しない判断: `update_triage.py` 相当の永続化スクリプトは本リポジトリに実在しない（review 側の仕分けは会話内で完結していたため）。したがって置き換え対象は `consult` の自前 Markdown 実装のみである。
