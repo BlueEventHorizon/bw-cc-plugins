@@ -34,7 +34,9 @@
       "requirement_id": "REQ-019 FNC-010",
       "title": "既存記録の破棄",
       "design_id": null,
-      "task_ids": ["TASK-007"],
+      "task_ids": [
+        "TASK-007"
+      ],
       "status": "pending"
     },
     {
@@ -194,7 +196,7 @@
       "task_id": "TASK-001",
       "title": "agenda_schema.py（状態遷移契約）を実装する",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [],
       "group_id": null,

@@ -1,0 +1,68 @@
+{
+  "task_id": "TASK-001",
+  "title": "agenda_schema.py（状態遷移契約）を実装する",
+  "priority": 90,
+  "status": "pending",
+  "design_id": "DES-075",
+  "depends_on": [],
+  "group_id": null,
+  "build_check": "per_task",
+  "description": [
+    "DES-075 §5.1 の TransitionRule を実装し、遷移先ごとの必須フィールド判定を機械可読に定義する",
+    "verification.action の固定語彙（adopt / それ以外）を実装する（呼び出し側の status_vocabulary とは独立した agenda 機構固有のスキーマ。§4）",
+    "TransitionRule.validate() が TransitionResult(ok, missing_fields) を返すことを実装する",
+    "config.terminal_statuses / active_statuses への役割マッピング参照のみを行い、状態語彙自体の意味を解釈しないこと（FNC-009 の中立性を保つ）",
+    "plugins/forge/scripts/agenda/__init__.py（パッケージマーカー）を作成する",
+    "plan_contract.py と同型のモジュール構成（関数＋契約）を採用し、UML クラスをそのまま class 化しない"
+  ],
+  "acceptance_criteria": [
+    "tests/forge/agenda/test_agenda_schema.py が新規作成され、pass する",
+    "DES-075 §9 が agenda_schema.py について列挙する単体テスト対象（スキーマ検証。不正な JSON 構造の拒否を含む）がすべて検証される",
+    "REQ-019 FNC-008 の4条件（終端状態遷移に background/essence 必須、外部指摘由来項目は referenced 必須、action != adopt は reason 必須、structural_judgment 未記録時は個別遷移拒否）をすべてテストで検証する",
+    "verification.action の語彙が agenda_schema.py 内に固定定義され、呼び出し側から受け取らないことをテストで確認する"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [
+      "plugins/forge/scripts/plan/plan_contract.py",
+      "plugins/forge/scripts/plan/__init__.py",
+      "tests/forge/plan/test_plan_contract.py",
+      "plugins/forge/scripts/review/parse_findings.py"
+    ],
+    "additional": []
+  },
+  "scope_in": "agenda_schema.py（TransitionRule と verification.action 固定語彙）の新規実装と単体テストまで",
+  "scope_out": [
+    {
+      "item": "agenda_store.py の CLI（init/update/next/pending/record-structural-judgment/set-current）・永続化・content_version 管理",
+      "owner_task_id": "TASK-003",
+      "reason": "戦略書（agenda_strategy.md フェーズ1タスク分解）でschema→render→storeの依存順に分離されており、CLI・永続化はTASK-003が担う"
+    },
+    {
+      "item": "agenda 機構の統合テスト（init→record-structural-judgment→update×N→next/pending の一連の動作確認）",
+      "owner_task_id": "TASK-004",
+      "reason": "単体テスト（本タスクの範囲）と、複数コマンドを跨ぐ統合テストは計画上別タスクに分離されている"
+    },
+    {
+      "item": "consult SKILL.md の agenda 機構呼び出しへの書き換え",
+      "owner_task_id": "TASK-006",
+      "reason": "呼び出し側（consult）の変更は本タスク（機構内部のスキーマ実装）とは別レイヤーであり、TASK-003完成後の後続タスクに分離されている"
+    }
+  ],
+  "implementation_instructions": "plugins/forge/scripts/agenda/__init__.py（パッケージマーカー。plugins/forge/scripts/plan/__init__.py と同じ空ファイル）と plugins/forge/scripts/agenda/agenda_schema.py を新規作成する。agenda_schema.py は plan_contract.py と同型の「関数＋契約」構成（UMLクラスをそのままclass化しない。DES-075 §3.2 の注記どおり）とし、以下を実装する。(1) 遷移先ごとの必須フィールドを判定する関数 required_fields_for(item, target_status, config) — config.terminal_statuses に target_status が含まれる場合は background・essence が空でないことを要求し、item が verification キーを持つ（外部指摘由来）場合は verification.referenced が空でないことを追加で要求し、さらに verification.action が固定語彙の adopt でない場合は verification.reason が空でないことを追加で要求する。個別項目への遷移全般（target_statusを問わない）で structural_judgment.recorded が true であることを要求する（DES-075 §5.1 の4条件、REQ-019 FNC-008/FNC-011/FNC-012）。不足フィールド名のリストを返す。(2) validate(item, target_status, config) — required_fields_for の結果を用いて {\"ok\": bool, \"missing_fields\": [...]} 形式の dict を返す（plan_contract.py の PlanContractError 的なエラー明示スタイルを踏襲し、例外を投げず判定結果を返す）。(3) verification.action の固定語彙を本モジュール内で定義する（呼び出し側の status_vocabulary とは独立した agenda 機構固有のスキーマ。DES-075 §4）。値は adopt と reject の2値とし、config や呼び出し側から受け取らずモジュール内の定数として固定する。config.terminal_statuses / config.active_statuses は役割マッピングとして参照するのみで、状態語彙そのものの意味（\"決着\"が何を意味するか等）には立ち入らない（FNC-009の中立性）。tests/forge/agenda/test_agenda_schema.py を新規作成し、tests/forge/plan/test_plan_contract.py の書き方（_valid_task() 的なオーバーライド可能なファクトリ関数で境界値テストを組み立てる）を参考に、TASK-001の acceptance_criteria が列挙する項目（FNC-008の4条件、verification.action語彙の固定定義、不正なJSON構造相当の入力の拒否）をすべて検証する。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "required",
+    "tests_reason": null
+  }
+}
