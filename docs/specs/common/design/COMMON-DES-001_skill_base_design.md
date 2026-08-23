@@ -173,7 +173,7 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 
 ### 6.2 fork 型からカスタム Agent への移行（歴史的記録）
 
-過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。**現在 forge はカスタム Agent を持たない**（`plugins/forge/agents/` は存在しない）。
+過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンド（ADR-071）の導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
 
 この移行で確立したカスタム Agent の system prompt 共通設計は、将来カスタム Agent を新設する際の規約として維持する:
 
