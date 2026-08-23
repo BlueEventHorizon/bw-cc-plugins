@@ -251,7 +251,7 @@ doc-advisor:ADR-002_query_skill_subagent_isolation で採択した多重防御�
 SKILL / Agent の静的検証を以下のテストで実装している:
 
 - `tests/common/test_no_fork_skill.py`: すべての SKILL.md frontmatter に `context: fork` が **含まれない** ことを検証 (§6 不採用方針の担保)
-- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。現在 forge はカスタム Agent を持たないため、ディレクトリ不在時は skip する設計になっている
+- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。ディレクトリ不在時は skip する設計になっている（§6.2 の通り、現在は reviewer.md / evaluator.md が存在するため実際に検証が走る）
 
 新規にカスタム Agent を追加した場合は同等の静的検証 (frontmatter + Role 制約) を追加する。fork 型 SKILL を新規追加する経路は閉じている (§6)。
 
