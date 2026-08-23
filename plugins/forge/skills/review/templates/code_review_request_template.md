@@ -43,6 +43,7 @@
 ### 規範（違反を検出する対象）
 
 - `{{PLUGIN_ROOT}}/docs/forge_anti_patterns.md` — 言語・プロジェクトに依らない汎用アンチパターン
+- `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）。fix 採用前の3点チェック対象
 
 ### プロジェクト固有のルール文書
 

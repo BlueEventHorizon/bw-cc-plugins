@@ -43,8 +43,10 @@
 ### 規範（違反を検出する対象）
 
 - `{{PLUGIN_ROOT}}/docs/plan_principles_spec.md` — 計画策定の原則
+- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`requirements_traceability` 先の要件定義書の `feature_type` による追加 feature 判定・旧仕様優先度
+- `{{PLUGIN_ROOT}}/docs/spec_priorities_spec.md` — 構造品質の直接数値化禁止・倒錯パターン
 - `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則。目的に対して過剰な構造・ステップ数になっていないか
-- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` §5.3 — `required_reading` 等が指すパスの実在性（Markdown 記法規定は YAML の計画書に適用しない）
+- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` §5.3 — `required_reading` 等が指すパスの実在性（Markdown 記法規定は JSON の計画書に適用しない）
 
 ### プロジェクト固有のルール文書
 

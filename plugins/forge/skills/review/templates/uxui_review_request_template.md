@@ -43,6 +43,9 @@
 ### 規範（違反を検出する対象）
 
 - Apple Human Interface Guidelines: `https://developer.apple.com/design/human-interface-guidelines/`（Apple プラットフォームを対象とする場合）
+- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` — 文書スタイル（暫定フォールバック規範）
+- `{{PLUGIN_ROOT}}/docs/spec_priorities_spec.md` — 構造品質の直接数値化禁止・倒錯パターン
+- `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）。fix 採用前の3点チェック対象
 
 ### プロジェクト固有のルール文書
 
