@@ -211,6 +211,9 @@ _STYLE = """
     background: #eee;
     color: #555;
   }
+  .severity-badge[data-severity="critical"] { background: #fbdada; color: #8a2c2c; }
+  .severity-badge[data-severity="major"] { background: #fdeec2; color: #8a6d1f; }
+  .severity-badge[data-severity="minor"] { background: #dcf0da; color: #2f6b3a; }
 """
 
 # ページ内 JS: agenda_state.js を 2 秒ごとに <script src> 差し替えで読み込む

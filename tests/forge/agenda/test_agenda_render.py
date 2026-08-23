@@ -11,6 +11,7 @@ agenda_store.py（TASK-003）の完成を待たず、agenda.json 相当の fixtu
 
 import importlib.util
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -280,6 +281,38 @@ class SeverityBadgeTest(unittest.TestCase):
         )
         self.assertIn('data-severity="confirmed"', html_doc)
         self.assertIn('data-severity="unconfirmed"', html_doc)
+
+    def test_critical_major_minor_have_distinct_colors(self):
+        # DES-077 §3.1a: 重大度ごとのパステル配色（TASK-008）。
+        # critical/major/minor それぞれに専用の CSS ルールがあり、背景色が重複しないこと。
+        agenda = _fixture_agenda()
+        html_doc = agenda_render.render_agenda_html(
+            agenda, generated_at="2026-08-22T00:00:00"
+        )
+        colors = {}
+        for severity in ("critical", "major", "minor"):
+            selector = f'.severity-badge[data-severity="{severity}"]'
+            self.assertIn(selector, html_doc)
+            rule_start = html_doc.index(selector)
+            rule = html_doc[rule_start : rule_start + 200]
+            match = re.search(r"background:\s*(#[0-9a-fA-F]{3,6})", rule)
+            self.assertIsNotNone(match, f"{severity} 用の background 値が見つからない")
+            colors[severity] = match.group(1)
+        self.assertEqual(
+            len(set(colors.values())), 3, "critical/major/minor の背景色が重複している"
+        )
+
+    def test_unknown_severity_value_falls_back_to_default_color(self):
+        # DES-077 §3.1a・FNC-009: 中立性。critical/major/minor 以外の値は
+        # 呼び出し側が渡した任意の文字列であり、専用の配色ルールを持たず
+        # 既定（.severity-badge の共通スタイル）にフォールバックする。
+        agenda = _fixture_agenda()
+        agenda["items"][0]["fields"]["severity"] = "unknown_value"
+        html_doc = agenda_render.render_agenda_html(
+            agenda, generated_at="2026-08-22T00:00:00"
+        )
+        self.assertIn('data-severity="unknown_value"', html_doc)
+        self.assertNotIn('.severity-badge[data-severity="unknown_value"]', html_doc)
 
 
 class MalformedInputTest(unittest.TestCase):

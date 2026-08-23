@@ -177,7 +177,8 @@
       ],
       "task_ids": [
         "TASK-002",
-        "TASK-005"
+        "TASK-005",
+        "TASK-008"
       ]
     },
     {
@@ -398,6 +399,35 @@
         "docs/specs/consult/agenda/plan/agenda_strategy.md",
         "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md",
         "plugins/forge/skills/consult/SKILL.md"
+      ]
+    },
+    {
+      "task_id": "TASK-008",
+      "title": "agenda_render.py の severity バッジに重要度別パステル配色を実装する",
+      "priority": 65,
+      "status": "completed",
+      "design_id": "DES-077",
+      "depends_on": [
+        "TASK-002"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": [
+        "DES-077 §3.1a・§3.2 が確定要求として定める「重大度ごとのパステル配色（低彩度・高明度）+ テキストラベル」を .severity-badge[data-severity] の CSS に実装する（現状は data-severity 値に関わらず単一の灰色固定）",
+        "critical/major/minor の3値に対応する配色を data-severity 属性セレクタ（例: [data-severity=\"critical\"] { ... }）で分岐させる。慣習的な重大度の色相（critical=赤系・major=黄系・minor=緑系）を採用し、いずれもパステル調（低彩度・高明度）に統一する。きつい原色は避ける（DES-077 §3.1a）",
+        "config.severity_field 経由で渡される値は呼び出し側が自由に決める文字列であり、agenda 機構はその意味を解釈しない（FNC-009）。critical/major/minor 以外の未知の値は既定の配色（現状の灰色）にフォールバックする",
+        "実装後に生成された agenda.html を実際に見て、配色を確認する（DES-077 §3.2「実行後に人間が体感して決める値」）"
+      ],
+      "acceptance_criteria": [
+        "tests/forge/agenda/test_agenda_render.py に、critical/major/minor それぞれで異なる配色が出力されることを検証するテストが追加され、pass する",
+        "未知の severity 値では既定（現状の灰色）にフォールバックすることがテストで検証される",
+        "discussion_file_template.md の「重要度バッジ」節・「既知の未解決事項」節から、この未実装を示す記述を削除する（実装完了後は事実と一致しなくなるため）"
+      ],
+      "required_reading": [
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
+        "plugins/forge/scripts/agenda/agenda_render.py",
+        "tests/forge/agenda/test_agenda_render.py",
+        "plugins/forge/skills/consult/assets/discussion_file_template.md"
       ]
     }
   ],
