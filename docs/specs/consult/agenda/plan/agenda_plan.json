@@ -290,7 +290,7 @@
       "task_id": "TASK-004",
       "title": "agenda 機構の統合テストを実装する",
       "priority": 75,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-003"
