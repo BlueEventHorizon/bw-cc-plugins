@@ -256,7 +256,7 @@
       "task_id": "TASK-003",
       "title": "agenda_store.py（データ保存層 CLI）を実装する",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-001",
