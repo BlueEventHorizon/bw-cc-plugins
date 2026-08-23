@@ -91,37 +91,37 @@
       "requirement_id": "REQ-021 FNC-001",
       "title": "俯瞰可能性",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-002",
       "title": "変更箇所の可視化",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-003",
       "title": "提示と記録の一致",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-004",
       "title": "AI は人間向けの提示物を読まない",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-005",
       "title": "識別子からの直接到達",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 NFR-001",
       "title": "提示は生成物であると読み取れる",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-017 NFR-001",
@@ -316,7 +316,7 @@
       "task_id": "TASK-005",
       "title": "discussion_file_template.md を表示専用リファレンスへリライトする",
       "priority": 70,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-077",
       "depends_on": [
         "TASK-002",
