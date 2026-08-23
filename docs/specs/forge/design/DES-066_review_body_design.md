@@ -31,10 +31,14 @@ flowchart TB
         Targets["scripts/resolve_targets.py"]
         Branch["scripts/analyze_branch_point.py"]
         Builder["scripts/build_review_request.py"]
+        EvalParse["scripts/parse_evaluation.py"]
         Split["scripts/split_by_location.py"]
         Baseline["scripts/capture_syntax_baseline.py"]
         Verify["scripts/verify_fix_safety.py"]
         Collect["scripts/collect_modified_files.py"]
+    end
+    subgraph Agents["plugins/forge/agents/"]
+        Evaluator["evaluator.md<br/>（read-only カスタム Agent・所見評価）"]
     end
     subgraph Shared["plugins/forge/scripts/review/"]
         Parse["parse_findings.py<br/>（共通書式の解釈・全バックエンド共通）"]
@@ -44,6 +48,9 @@ flowchart TB
 
     User --> Skill
     Skill --> Targets & Branch & Builder & Split & Baseline & Verify & Collect
+    Skill -->|"依頼本文・所見配列（Agent ツール）"| Evaluator
+    Evaluator -->|"disposition・severity・confidence・fix_confident（JSON）"| EvalParse
+    EvalParse --> Skill
     Skill -->|"review_id・ラウンド・依頼本文"| Backends
     Backends -->|"判定・所見配列"| Skill
     Skill -->|"提示へ回る所見（同一コンテキスト）"| Consult
@@ -121,17 +128,19 @@ review:
 
 ### 3.1 モジュール一覧
 
-| モジュール                   | 責務                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| `SKILL.md`                   | 引数解釈・パターン確定・バックエンド委譲・所見評価・修正の実施・終端処理（§3.2） |
-| `resolve_review_backend.py`  | 明示指定・設定・既定の候補順から解決順を決める（§2.1）                           |
-| `analyze_branch_point.py`    | `--branch` の base 候補を分岐点解析で推定する                                    |
-| `resolve_targets.py`         | 対象の実在検証と allowlist（target_files）の供給（§3.1.1）                       |
-| `build_review_request.py`    | テンプレートへの動的データ埋め込みと `review_id` の生成                          |
-| `split_by_location.py`       | 位置情報の有無による所見の振り分け（located / unlocated）。判断はしない          |
-| `capture_syntax_baseline.py` | 修正前の構文検証 baseline の取得                                                 |
-| `verify_fix_safety.py`       | allowlist 逸脱・構文破壊の検出（ロールバックはしない）                           |
-| `collect_modified_files.py`  | ラウンド終了時の変更集合の独立取得                                               |
+| モジュール                          | 責務                                                                                                                                                                                                                                                                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SKILL.md`                          | 引数解釈・パターン確定・バックエンド委譲・所見評価の委譲・修正の実施・終端処理（§3.2）                                                                                                                                                                                                                           |
+| `resolve_review_backend.py`         | 明示指定・設定・既定の候補順から解決順を決める（§2.1）                                                                                                                                                                                                                                                           |
+| `analyze_branch_point.py`           | `--branch` の base 候補を分岐点解析で推定する                                                                                                                                                                                                                                                                    |
+| `resolve_targets.py`                | 対象の実在検証と allowlist（target_files）の供給（§3.1.1）                                                                                                                                                                                                                                                       |
+| `build_review_request.py`           | テンプレートへの動的データ埋め込みと `review_id` の生成                                                                                                                                                                                                                                                          |
+| `plugins/forge/agents/evaluator.md` | read-only カスタム Agent。reviewer と同一の依頼本文・所見配列を受け取り、所見ごとの `disposition`（`valid`/`invalid`/`misunderstanding`/`out_of_scope`）・`severity`（委譲先 principles の重大度カタログで再検証）・`confidence`/`fix_confident` を JSON で返す（本体が `Agent` ツールで起動。修正は分離しない） |
+| `parse_evaluation.py`               | evaluator 応答（厳密な JSON 契約）の検証。件数・`index`・`disposition`/`severity`/`confidence`/`fix_confident` の値域を機械的に検証する                                                                                                                                                                          |
+| `split_by_location.py`              | 位置情報の有無による所見の振り分け（located / unlocated）。判断はしない                                                                                                                                                                                                                                          |
+| `capture_syntax_baseline.py`        | 修正前の構文検証 baseline の取得                                                                                                                                                                                                                                                                                 |
+| `verify_fix_safety.py`              | allowlist 逸脱・構文破壊の検出（ロールバックはしない）                                                                                                                                                                                                                                                           |
+| `collect_modified_files.py`         | ラウンド終了時の変更集合の独立取得                                                                                                                                                                                                                                                                               |
 
 #### 3.1.1 base ブランチの受け渡し [MANDATORY]
 
@@ -230,13 +239,13 @@ finding 単位で「適用 → 検証 → 判断 → 次へ」を逐次繰り返
 
 介入軸そのもの（2 値・既定・相互排他・確信が可否を決めること）は REQ-013 FNC-1304 が定める。本節が定めるのは、その要件を満たすための実装の形である。
 
-**スクリプトは判断をしない [MANDATORY]**。`split_by_location.py` が見るのは所見が位置情報を持っているかだけで、対象のコードも文書も読まない。修正できるか・修正してよいかは、**いずれも本体（AI）が所見と対象を読んで決める**。
+**スクリプトは判断をしない [MANDATORY]**。`split_by_location.py` が見るのは所見が位置情報を持っているかだけで、対象のコードも文書も読まない。修正できるか・修正してよいかは、**いずれも evaluator（カスタム Agent）が所見と対象を読んで決める**。本体はその判定結果（`disposition`/`confidence`/`fix_confident`）を `parse_evaluation.py` で契約検証したうえで振り分けに使う。
 
-| 決めること                         | 決める主体                                 |
-| ---------------------------------- | ------------------------------------------ |
-| 所見に位置情報があるか             | `split_by_location.py`（データの欠損検査） |
-| レビュアーの指摘が正しいか         | **本体**（確信度 ☑️）                       |
-| その修正を責任を持って実行できるか | **本体**（`✅`）                           |
+| 決めること                         | 決める主体                                                |
+| ---------------------------------- | --------------------------------------------------------- |
+| 所見に位置情報があるか             | `split_by_location.py`（データの欠損検査）                |
+| レビュアーの指摘が正しいか         | **evaluator**（確信度 ☑️。本体は判定結果を検証・使用する） |
+| その修正を責任を持って実行できるか | **evaluator**（`✅`。実際の修正実施は本体が行う）         |
 
 `split_by_location.py` の出力は 2 群である。
 
@@ -288,19 +297,19 @@ finding 単位で「適用 → 検証 → 判断 → 次へ」を逐次繰り返
 
 ## 4. ユースケース設計
 
-| ID    | ユースケース                                                | 主体                          |
-| ----- | ----------------------------------------------------------- | ----------------------------- |
-| UC-01 | 依頼を組み立ててバックエンドへ委譲する                      | 利用者 → 本体 → バックエンド  |
-| UC-02 | 所見を評価・修正して次ラウンドを依頼する                    | 本体                          |
-| UC-03 | 承認を受けて終える（再開時に承認済みと判明した場合を含む）  | 本体                          |
-| UC-04 | 未対応所見を残したまま終える（`halted_with_open_findings`） | 本体                          |
-| UC-05 | バックエンドの失敗を確定して報告する                        | 本体                          |
-| UC-06 | 利用者の中止を受けて終える                                  | 利用者 → 本体                 |
-| UC-07 | 未知の backend 名で起動を拒否する                           | 本体                          |
-| UC-08 | 明示指定なしで候補順から実行主体を決める                    | 本体 → 各候補（可用性検査）   |
-| UC-09 | 候補が全滅して依頼を送らず終える                            | 本体                          |
-| UC-10 | 所見を 1 件ずつ提示して採否を得る（consult へ委譲）         | 本体（consult 経由） ⇄ 利用者 |
-| UC-11 | 前回のレビューの残りを片付ける（消すか、続きから再開する）  | 利用者 → 本体                 |
+| ID    | ユースケース                                                 | 主体                          |
+| ----- | ------------------------------------------------------------ | ----------------------------- |
+| UC-01 | 依頼を組み立ててバックエンドへ委譲する                       | 利用者 → 本体 → バックエンド  |
+| UC-02 | 所見を評価（evaluator へ委譲）・修正して次ラウンドを依頼する | 本体 ⇄ evaluator              |
+| UC-03 | 承認を受けて終える（再開時に承認済みと判明した場合を含む）   | 本体                          |
+| UC-04 | 未対応所見を残したまま終える（`halted_with_open_findings`）  | 本体                          |
+| UC-05 | バックエンドの失敗を確定して報告する                         | 本体                          |
+| UC-06 | 利用者の中止を受けて終える                                   | 利用者 → 本体                 |
+| UC-07 | 未知の backend 名で起動を拒否する                            | 本体                          |
+| UC-08 | 明示指定なしで候補順から実行主体を決める                     | 本体 → 各候補（可用性検査）   |
+| UC-09 | 候補が全滅して依頼を送らず終える                             | 本体                          |
+| UC-10 | 所見を 1 件ずつ提示して採否を得る（consult へ委譲）          | 本体（consult 経由） ⇄ 利用者 |
+| UC-11 | 前回のレビューの残りを片付ける（消すか、続きから再開する）   | 利用者 → 本体                 |
 
 UC-03〜UC-06 は終端処理 Step（§3.2）を通り、終了通知を発行する。
 
@@ -314,6 +323,7 @@ sequenceDiagram
     participant U as "利用者"
     participant B as "/forge:review 本体"
     participant K as "バックエンド SKILL"
+    participant E as "evaluator（カスタム Agent）"
 
     U->>B: "/forge:review design --dirs ... --backend <name>"
     B->>B: "引数解釈・バックエンド解決（未知なら fail closed）"
@@ -322,7 +332,9 @@ sequenceDiagram
         B->>K: "review_id・ラウンド・依頼本文"
         K-->>B: "判定・所見配列"
         alt 所見の修正を終えて再依頼する
-            B->>B: "所見評価 → 修正 → 安全検証"
+            B->>E: "依頼本文・所見配列（Agent ツール）"
+            E-->>B: "disposition・severity・confidence・fix_confident（JSON）"
+            B->>B: "位置による振り分け → 修正 → 安全検証"
         else 終端（approved / halted_with_open_findings / failure / interrupted）
             B->>B: "終端処理 Step"
             B->>K: "終了通知（review_id）"

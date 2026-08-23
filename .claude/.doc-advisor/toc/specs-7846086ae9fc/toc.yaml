@@ -5,38 +5,10 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-17T09:34:54Z
-  file_count: 58
+  generated_at: 2026-08-23T07:34:22Z
+  file_count: 61
 
 docs:
-  docs/specs/agenda/requirements/REQ-019_agenda_record.md:
-    title: REQ-019 Agenda Record Mechanism Requirements Specification
-    purpose: Specifies requirements for a recording mechanism enabling humans to oversee all agenda items collectively and address each individually while maintaining record accuracy and consistency
-    content_details:
-      - Functional requirements for comprehensive agenda visibility and state management (FNC-001–FNC-012)
-      - Non-functional requirements for storage format with value boundaries and generated content recognizability (NFR-001–NFR-006)
-      - State transition preconditions requiring verification records and structural validity judgment before individual item processing
-      - Unified mechanism design shared by /forge:review and /forge:consult with configurable scope (record count, item fields, state vocabulary)
-      - Verification mandate requiring position-linked references for external feedback validation and countermeasure justification
-      - Storage format constraint prohibiting custom parsers; conflict resolution required with existing consult:REQ-017 and forge:DES-066
-      - Unresolved decisions on storage format selection, AI generation measurement baseline, and scalability with additional callers (TBD-001–TBD-006)
-    applicable_tasks:
-      - Requirements design for agenda record mechanism implementation
-      - Unified state transition validation system design for review and consult skills
-      - Verification record structure definition with position-linked reference format
-      - Storage format evaluation and selection (YAML vs standard library)
-      - Integration planning for /forge:review and /forge:consult as unified mechanism
-      - Existing record migration strategy for consult and review subsystems
-    keywords:
-      - agenda
-      - record mechanism
-      - state transitions
-      - verification records
-      - presentation consistency
-      - unified architecture
-      - storage format
-      - structural validity
-      - review consult integration
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
     title: agent-review Backend Design
     purpose: Defines a stateless architecture that launches a read-only custom Agent reviewer per round and converts output to common review result format
@@ -420,38 +392,36 @@ docs:
       - plugin documentation
       - SoT
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
-    title: "COMMON-DES-001: SKILL Base Design"
-    purpose: Defines SKILL execution models, decision principles for type selection (inherited vs fork vs custom Agent), argument passing constraints, and multi-layer defense architecture for plugin SKILLs
+    title: SKILL Base Design (COMMON-DES-001)
+    purpose: Defines the execution model, decision principles, and responsibility boundaries for SKILL type selection (inheritance type vs Agent vs fork type abandonment) in bw-cc-plugins
     content_details:
-      - Inheritance type SKILL execution model as default (parent context inheritance)
-      - "Fork SKILL deprecation with 9 documented Claude Code issues (Issue #18394, #34164, #60720, #55592, #34328, #19751, #17283, #17351, #68233)"
-      - Custom Agent adoption for isolated context scenarios
-      - SKILL argument passing constraints (allowed vs forbidden items in section 4 table)
-      - Five-step decision flowchart for execution path selection (Bash subprocess, one-shot Agent, custom Agent, SKILL, inheritance type)
-      - Custom Agent system prompt design pattern (Role constraint, argument interpretation guard, self-recursion prohibition, tools allowlist)
-      - Responsibility boundary declaration requirement in SKILL.md frontmatter (section 7.2 mandatory 1-liner)
-      - Multi-layer defense architecture with 4 layers (Agent boundary, Role constraint, allowlist, physical deny)
-      - Static verification tests (test_no_fork_skill.py, test_agent_frontmatter.py)
+      - SKILL execution model - inheritance type (context inherited) vs fork type (abandoned due to structural bugs) vs custom agents (isolated context)
+      - Decision principle that all SKILL must be inheritance type; fork type adoption prohibited
+      - Criteria for choosing Agent instead of SKILL - when context isolation is needed, role specialization required
+      - SKILL call argument principles - never pass parent task prompt, Issue body, or working diff
+      - Launch path selection guide - decision tree for choosing between inheritance SKILL, custom Agent, general-purpose Agent, and Bash subprocess
+      - Fork type SKILL non-adoption basis - 9 official structural bugs with context fork mechanism
+      - Inheritance type SKILL responsibility boundary - minimal args and role constraint as two invariant conditions
+      - "Multi-layered defense layers - A: agent boundary, B: role constraint, C: allowlist, D: physical deny"
+      - Static verification tests for SKILL frontmatter and agent compliance
     applicable_tasks:
-      - SKILL architecture and compliance review
-      - SKILL type selection decision making
-      - Custom Agent design and implementation
-      - SKILL argument validation and constraint verification
-      - Responsibility boundary definition for SKILL.md
-      - Multi-layer security and isolation implementation
-      - Fork SKILL deprecation and migration planning
-      - SKILL and Agent governance testing
+      - SKILL architecture design and implementation planning
+      - Context isolation decision-making for new features
+      - SKILL vs Agent type selection for isolated work units
+      - SKILL role and responsibility boundary definition
+      - Multi-layered security defense implementation
+      - Fork-type SKILL migration to custom Agent
+      - Inheritance SKILL argument design and validation
     keywords:
       - SKILL
-      - inherited-SKILL
-      - fork-SKILL
-      - custom-Agent
-      - context-inheritance
-      - responsibility-boundary
-      - multi-layer-defense
-      - subagent-isolation
-      - argument-passing
-      - Claude-Code
+      - fork type
+      - inheritance type
+      - custom agent
+      - context isolation
+      - role constraint
+      - subagent
+      - multi-layered defense
+      - decision principle
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -508,38 +478,131 @@ docs:
       - external errors
       - internal bugs
       - try/except
-  docs/specs/consult/requirements/REQ-017_consult_skill.md:
-    title: REQ-017 Consult Dialogue Progression Skill Requirements Specification
-    purpose: Defines functional and non-functional requirements for the consult skill, which manages dialogue progression with judgment recording and discussion file persistence
+  docs/specs/consult/agenda/design/NOTES_open_design_questions.md:
+    title: Design Questions for agenda Mechanism
+    purpose: Collects unresolved design questions and technical decisions required for the agenda mechanism, extracted from requirements for resolution during formal design phase
     content_details:
-      - Dialogue issue extraction and confidence verification before presentation
-      - Agenda table structure with importance, status, results, and progressive disclosure
-      - "Item presentation sequence: background-essence → recommendations → choices"
-      - "Confidence level notation: confirmed/reasoned/unverified distinction"
-      - Discussion file format with Markdown, stable identifiers, and decision attribution
-      - Judgment recording with adoption/rejection/hold status and reasoning
-      - Suspension and continuation support with out-of-scope and hold status visibility
-      - Context re-presentation requirement instead of reference-only
-      - "Media-specific volume limits: console restricted, discussion file unrestricted"
-      - Confidential information masking in both presentation and records
+      - JSON as primary format for agenda storage (using standard library json module)
+      - agenda.json as primary filename consideration
+      - Standard library-only constraint (PyYAML non-adoption)
+      - NFR-001 requirement that value boundaries are defined by the format itself
+      - FNC-004 measurement criteria for AI output and input reduction
+      - TOML unsuitability for update operations (read-only library limitation)
+      - Baseline metrics from existing implementation (update_triage.py)
     applicable_tasks:
-      - Implementation of consult SKILL from requirements
-      - Code review of consult SKILL against specifications
-      - Testing of dialogue progression features
-      - Design of discussion file structure
-      - Planning judgment recording system
-      - Validation of confidential information handling
+      - Formal design document creation for agenda mechanism
+      - Storage format and filename decision making
+      - Non-functional requirement FNC-004 verification design
+      - Technical constraint resolution
+      - Implementation baseline assessment
+    keywords:
+      - agenda
+      - JSON
+      - storage format
+      - NFR-001
+      - FNC-004
+      - measurement methodology
+      - update_triage.py
+      - TOML
+      - PyYAML
+  docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md:
+    title: REQ-019 Agenda Record Mechanism - Requirements Definition
+    purpose: Defines requirements for a record-keeping layer that enables humans to manage discussion items and their states while reducing AI effort on record maintenance
+    content_details:
+      - Record structure for managing discussion items and their states with change tracking
+      - Agenda concept - consolidated view of all items and their status for human oversight
+      - Five core functional requirements (FNC-004 to FNC-013) defining data persistence layer behavior
+      - State transition rules with machine-readable validation conditions and necessary preconditions
+      - Structural validation requirement - collection-level assessment before individual item processing
+      - Verification and evidence recording requirement for external findings with position-specific references
+      - Legacy record deletion from existing forge:review and forge:consult systems
+      - Non-functional requirements including YAML save format, confidentiality handling, and failure visibility
+      - Receiver configuration per calling side - record count, identification method, lifetime, field types
+      - Input/output interface specification - single structured handoff per item with no AI-generated formatting
+    applicable_tasks:
+      - Designing the agenda record storage and state machine layer
+      - Implementing state transition validation with machine-readable conditions
+      - Integrating with forge:consult calling side
+      - Implementing structural validation logic for discussion item collections
+      - Building verification recording mechanism with position-specific evidence tracking
+      - Developing legacy record migration and deletion process
+      - Implementing change tracking information for display layer
+      - Testing state transition rejection conditions and validation
+    keywords:
+      - agenda
+      - record
+      - state transition
+      - discussion item
+      - verification
+      - structural validation
+      - change tracking
+      - forge:consult
+      - machine-readable
+  docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md:
+    title: REQ-021 Agenda Display Layer - Requirements Definition
+    purpose: Defines requirements for a presentation layer that generates human-readable agenda displays from the record storage layer while maintaining consistency and visibility of changes
+    content_details:
+      - Generation of human-readable presentations from record storage layer
+      - Overview visibility - complete display of all discussion items, their states, and remaining items at a glance
+      - Change tracking visualization - distinguishing modified items from unchanged ones in presentation
+      - Consistency guarantee - presentation content exactly matches record content with no independent modification paths
+      - AI does not read back from human-facing presentations - no feedback loop on generated output
+      - Direct item access by identifier without scrolling or searching required
+      - Non-functional requirement that generated nature is evident in the presentation itself
+      - Separation of concerns - display layer excludes record storage, state transitions, calling side timing
+      - Terminology alignment with record storage layer definitions - agenda, discussion item, record, presentation
+      - Scope boundaries - display does NOT determine presentation timing, question phrasing, or methodology
+    applicable_tasks:
+      - Designing the agenda display generation format and rendering method
+      - Implementing change tracking visualization logic
+      - Building direct item access mechanism by identifier
+      - Ensuring record-to-display consistency validation
+      - Implementing overview generation for complete item visibility
+      - Designing the display as a generated artifact marking
+      - Integrating display layer with record storage layer REQ-019
+      - Testing display consistency against record updates
+    keywords:
+      - display layer
+      - presentation
+      - agenda
+      - overview
+      - change tracking
+      - consistency
+      - rendering
+      - identifier access
+      - human-readable
+  docs/specs/consult/requirements/REQ-017_consult_skill.md:
+    title: Consult Dialogue Progress Skill Requirements
+    purpose: Defines requirements for the consult skill that manages user dialogue, discussion, and consultation with point extraction, progress coordination, and judgment recording via agenda mechanism.
+    content_details:
+      - "Three-layer architecture: dialogue layer, data storage layer, display layer separation"
+      - Point extraction and verification before presentation
+      - Multiple point progress management with importance levels and status differentiation
+      - Item presentation with background, essence, recommendation, and confidence levels
+      - Context re-presentation requirement without reference-only explanations
+      - Console versus generated presentation volume separation
+      - Question-and-answer handling distinguishing understanding from judgment requests
+      - Judgment acquisition and recording with AI vs. human decision differentiation
+      - Interruption, hold, and out-of-scope handling without item deletion
+      - Discussion mode without judgment-seeking questions
+    applicable_tasks:
+      - Dialogue progress management implementation for forge
+      - Consultation and discussion skill specification
+      - Agenda system integration and record collaboration
+      - Discussion mode design and behavior specification
+      - Point extraction and verification logic design
+      - Confidence level representation and UI handling
     keywords:
       - consult
-      - dialogue progression
-      - agenda table
-      - judgment recording
-      - discussion file
-      - confidence level
-      - discussion mode
-      - item presentation
-      - decision attribution
-      - confidential information
+      - dialogue
+      - agenda
+      - discussion_mode
+      - confidence_level
+      - point_extraction
+      - judgment
+      - record_collaboration
+      - requirement
+      - FNC
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md:
     title: ADR-058 doc-db error discrimination contract
     purpose: Establishes contract for distinguishing missing keys from trashed keys in doc-db integration using error identifiers rather than message text
@@ -1062,35 +1125,35 @@ docs:
       - AI review
       - parallel agent execution
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: Create Plan Workflow Design
-    purpose: Specifies orchestrator workflow and design for the start-plan skill, which creates implementation plans by extracting tasks from design documents through multi-phase context collection and strategy formulation
+    title: DES-019 forge Create Plan Workflow Design
+    purpose: Orchestrates plan creation from design specifications through context collection, strategy formulation, task extraction, and AI review phases
     content_details:
-      - Orchestrator pattern design with delegation to general-purpose agents
-      - Context collection phase via query agents for specs and rules
-      - Implementation strategy phase with user approval
-      - Plan creation with task extraction and division
-      - AI review phase and completion processing
-      - "Task granularity definition: 1 Agent per task, 5-10 items"
-      - Traceability matrix requirements for requirement to design to task mapping
-      - Mode handling for new creation vs. update
-      - Phase details with mandatory checklists
+      - Orchestrator pattern with agent delegation
+      - Prerequisite confirmation phase with doc_structure.yaml, feature name, and mode detection
+      - Context collection using specs and rules agents
+      - Implementation strategy formulation with user approval loop
+      - Plan creation with task extraction based on strategy phases
+      - "Task granularity requirements: 5-10 items, single agent execution unit"
+      - "Traceability matrix validation: requirements to design to tasks mapping"
+      - Existing asset confirmation in update mode
+      - Phase detail specifications with mandatory checkpoints
     applicable_tasks:
-      - Planning feature implementation roadmap
-      - Creating implementation strategy from design documents
-      - Extracting and organizing implementation tasks
-      - Reviewing implementation plans
-      - Updating existing implementation plans
-      - Designing orchestrator workflow patterns
+      - Plan creation workflow SKILL implementation
+      - Strategy formulation supervision
+      - Task extraction and decomposition
+      - Traceability validation across requirements and design
+      - Orchestration pattern review
     keywords:
-      - start-plan
       - orchestrator
-      - task extraction
+      - forge:start-plan
       - strategy formulation
+      - task extraction
       - traceability matrix
-      - implementation planning
-      - phase division
-      - workflow design
       - agent delegation
+      - plan workflow
+      - phase division
+      - mandate check
+      - task granularity
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: Parallel Agent Output Contract Design
     purpose: Defines output contract pattern for parallel agent execution that prevents race conditions by requiring agents to return results via return values rather than writing to shared files, eliminating concurrent write conflict conditions
@@ -1183,36 +1246,35 @@ docs:
       - dependency direction
       - script placement
   docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md:
-    title: Implementation Strategy Phase for start-plan
-    purpose: Documents the decision to insert an implementation strategy formulation phase between document reading and task extraction in the start-plan workflow
+    title: DES-027 Start-Plan Implementation Strategy Phase Introduction (ADR)
+    purpose: Architectural decision record introducing implementation strategy phase between design specification and task extraction to address the gap between target state and execution approach
     content_details:
-      - Four implementation approaches (bottom-up, skeleton-first, risk-driven, feature-slice) and their applicability
-      - Problem of strategic gap between design specification and mechanical task decomposition
-      - "Strategy output format: {feature}_strategy.md as ephemeral Markdown file in plan/ directory"
-      - Five required sections in strategy file (approach selection, phase division, validation points, risks/mitigations, existing asset usage)
-      - "New workflow: Phase 2.5 (strategy formulation) inserted between document reading and task extraction"
-      - "Rationale for separation: strategy is time-dependent narrative unsuitable for design documents or YAML"
-      - "Ephemeral document lifecycle: created during planning, deleted after implementation completion"
-      - "Impact analysis: changes to SKILL.md, plan_principles_spec.md, and DES-019 flow diagrams"
-      - No schema changes to plan_format.md or start-implement logic required
-      - Strategy document as required reading for executor agents and implementers
+      - "Design and planning quality gap: missing strategic path between design and task execution"
+      - "Four implementation strategy approaches: bottom-up, skeleton-first, risk-driven, feature-slice with use cases"
+      - "New phase insertion point: between context collection and task extraction"
+      - "Strategy file format: {feature}_strategy.md as ephemeral markdown document"
+      - "Strategy content requirements: approach selection with rationale, phase division 2-4 phases, verification points per phase"
+      - Risk identification and mitigation timing across phases
+      - Existing asset integration approach from design
+      - "Rationale: ephemeral document maintenance, design boundary preservation, structured data integrity"
+      - "File impact mapping: SKILL.md, plan_principles_spec.md, DES-019 flowchart updates"
     applicable_tasks:
-      - Implementing the strategy formulation phase in start-plan SKILL
-      - Reviewing architecture decisions for planning workflow
-      - Updating plan_principles_spec.md with strategy document positioning
-      - Updating flow diagrams and workflow descriptions
-      - Training executor agents on strategy document usage
+      - Start-plan SKILL workflow enhancement
+      - Strategy phase integration implementation
+      - Risk-driven task decomposition design
+      - Phase-based execution planning
+      - Executor context and required reading setup
     keywords:
-      - start-plan
-      - implementation strategy
-      - strategy.md
-      - phase division
-      - bottom-up
-      - skeleton-first
+      - ADR
+      - strategy phase
+      - implementation approach
       - risk-driven
       - feature-slice
-      - plan.yaml
-      - start-implement
+      - skeleton-first
+      - bottom-up
+      - phase division
+      - ephemeral document
+      - task extraction
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md:
     title: Launch Path Terminology TOML Extraction Design
     purpose: Establishes design for extracting official launch path terminology into machine-readable TOML format to reduce duplication and improve test maintainability
@@ -1245,31 +1307,38 @@ docs:
       - one-way validation
       - official terminology
   docs/specs/forge/design/DES-055_review_request_template_design.md:
-    title: Design for Review Request Templates
-    purpose: Defines the template-based architecture for review requests across 8 patterns with placeholder tokens and validation rules to keep scripts prose-free and pattern-independent.
+    title: DES-055 Review Request Template Design
+    purpose: Specifies review request template structure and placeholder token contract for the forge review SKILL, separating template-based specification from script-level implementation
     content_details:
-      - 8 review patterns with separate template files
-      - Placeholder token contract (REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, BASE_BRANCH, TARGET_BRANCH, TARGET_PATHS, FOCUS, SCOPE, SCAN_FINDINGS, SCAN_SUPPRESSED, SCAN_STATS)
-      - Fail-closed validation rules for token consumption, unknown tokens, newline injection, path absoluteness, dual axis rejection, required items, and scan results
-      - "Script responsibilities: build_review_request.py, analyze_branch_point.py, resolve_targets.py, scan_secrets.py"
-      - Self-verification procedure for all findings in review responses
-      - "Mandatory constraints: no prose in scripts, no branching by target axis, no wire protocol"
+      - "Eight review request templates by pattern: diff, branch, code, requirement, design, plan, uxui, secrets"
+      - Template placement in plugins/forge/skills/review/templates/ as skill-owned resources
+      - "Constraint principles: no prose in scripts, no conditional branching per target axis, no wire protocol in common templates"
+      - "Thirteen placeholder tokens with substitution contract: REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, BASE_BRANCH, TARGET_BRANCH, TARGET_PATHS, FOCUS, SCOPE, SCAN_FINDINGS, SCAN_SUPPRESSED, SCAN_STATS"
+      - "Template-specific forge perspective documents: criteria, principles, format guides by review type"
+      - "Fail-closed validation: unconsmed tokens, unknown tokens, newline injection, absolute paths, target axis exclusivity, required fields, scan results"
+      - "Four script modules with separated responsibilities: build_review_request.py, analyze_branch_point.py, resolve_targets.py, scan_secrets.py"
+      - Trust boundary design for secrets scanning integration
+      - Template pattern selection dispatch based on review type and target axis
     applicable_tasks:
-      - Review request template system design
-      - Template implementation in build_review_request.py
-      - Adding new review patterns
-      - Placeholder token validation
-      - Template test coverage design
-      - Integration of review criteria into templates
+      - Review SKILL template implementation
+      - Placeholder token substitution engine
+      - Template validation and error handling
+      - Secrets scanning trust boundary
+      - Perspective document integration
+      - Backend-neutral template design
     keywords:
       - review template
       - placeholder token
-      - "{{REVIEW_TYPE}}"
-      - "{{SCOPE}}"
-      - "{{TARGET_PATHS}}"
-      - template validation
+      - template substitution
+      - forge:review
       - secrets scanning
+      - backend neutral
       - fail-closed validation
+      - trust boundary
+      - pattern dispatch
+      - perspective
+      - prompt engineering
+      - token contract
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: Design for forge Project Configuration File
     purpose: Defines the container specification for .claude/.forge.yaml, a project-level configuration file to adjust forge behavior, covering placement, section-based structure, reading rules, and error handling.
@@ -1300,65 +1369,90 @@ docs:
       - configuration validation
       - forward compatibility
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: "DES-066: /forge:review Body (Backend-Independent) Design"
-    purpose: Specifies the design of /forge:review SKILL body independent of specific review backends, defining responsibility boundaries, argument parsing, target resolution, finding evaluation, safety verification, and termination handling across single-exit endpoint paths
+    title: DES-066 /forge:review Body (Backend-Independent) Design
+    purpose: "Defines the design of the /forge:review skill's core body that operates independently of backend implementation, covering request assembly, finding evaluation, fixing strategy, and backend delegation."
     content_details:
-      - Backend resolution via name-to-SKILL mapping, explicit/config/candidate order precedence with fail-closed on unknown backends
-      - "Default candidate order: agent-review, msg-review with no setting-overridable ordering"
-      - "Ten modules with specific responsibilities: backend resolution, branch analysis, target resolution, request building, location-based splitting, triage updates, baseline capture, safety verification"
-      - "Four terminal endpoints: approved, halted_with_open_findings, failure, interrupted"
-      - "Two confidence dimensions: indicated correctness (☑️) and fix capability (✅) both required for auto-apply"
-      - Staged presentation with fixed triage file location, append-only updates, no remake path, single finding list preserved
-      - "Granularity preservation: range specifications passed to backend, not expanded to files"
-      - Base branch handling via user confirmation with allowlist generation from confirmed base
-      - Located vs unlocated findings split based on position presence without judgment or severity input
+      - Backend resolution strategy (explicit assignment, config, default candidate order)
+      - Request assembly pipeline (branch analysis, target resolution, dependency discovery)
+      - Finding evaluation and fixing workflow (located/unlocated findings, confidence levels)
+      - Backend delegation contract and context preservation
+      - Progressive disclosure via consult delegation with same context
+      - Safety verification (syntax baseline, allowlist validation, independent verification)
+      - Endpoint handling paths (approved, halted_with_open_findings, failure, interrupted)
+      - Module architecture and responsibility distribution
     applicable_tasks:
-      - Review SKILL body implementation
-      - Backend integration and delegation design
-      - Finding evaluation and correction workflow
-      - Termination path and endpoint handling
-      - Triage file creation and update management
-      - Safety verification for fix application
-      - Base branch confirmation and target resolution
-      - Graduated presentation and user confirmation
-      - Multi-round review session coordination
+      - Review backend implementation planning
+      - Review backend contract design and validation
+      - Finding evaluation workflow implementation
+      - Safety verification mechanism design
+      - Progressive disclosure feature implementation
     keywords:
-      - review body
-      - backend resolution
-      - backend-independent
+      - forge:review
+      - backend delegation
       - finding evaluation
-      - termination paths
-      - triage file
-      - confidence levels
-      - location splitting
-      - graduated presentation
-      - fail-closed
-  docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md:
-    title: REQ-020 Plan JSON conversion and script-driven architecture requirements specification
-    purpose: Specifies requirements for converting plan format from YAML to JSON and implementing script-driven architecture for plan generation, parsing, task selection, and status management
+      - safety verification
+      - consult integration
+      - branch analysis
+      - request assembly
+      - endpoint paths
+  docs/specs/forge/executer/design/DES-074_plan_format_design.md:
+    title: Plan Default Format
+    purpose: Specifies default JSON schema and field definitions for plan documents, including requirement-design-task traceability structure and task field constraints
     content_details:
-      - Plan JSON schema structure preserving fields from current YAML format
-      - Script-based plan file generation and writing without direct AI YAML manipulation
-      - Task selection and dependency resolution via script execution
-      - Task status update and traceability tracking by script operations
-      - Task context JSON format for executor without PyYAML dependency
-      - Feature metadata representation in JSON using reserved keys
-      - Removal of PyYAML from CI environment
-      - AI schema independence for plan operations
+      - JSON schema with requirements_traceability, design_traceability, tasks, revision_history keys
+      - requirements_traceability mapping requirements to designs with status tracking
+      - design_traceability linking designs to requirements and tasks
+      - tasks field structure with 11 fields including task_id, priority, status, dependencies, acceptance criteria
+      - status state transitions pending to in_progress to completed
+      - priority ranges with semantic categories high medium low
+      - plan format rationale using JSON for machine parsing over Markdown
+      - no frontmatter for additive feature plans, traceability via referenced requirements
+      - field definitions and constraints for each top-level schema key
     applicable_tasks:
-      - Plan JSON schema design and specification
-      - Script implementation for plan generation and task operations
-      - Executor integration and task context format design
-      - Format conversion implementation and testing
-      - CI configuration update for dependency removal
+      - Implementing plan document creation and serialization scripts
+      - Implementing task selection and status update logic
+      - Implementing plan context building for task execution
+      - Validating plan JSON structure and field constraints
+      - Defining requirement-design-task traceability mappings
     keywords:
+      - requirements_traceability
+      - design_traceability
+      - task_id
+      - priority
+      - depends_on
+      - status
+      - acceptance_criteria
+      - build_check
+      - revision_history
+      - JSON
+  docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md:
+    title: JSON Planning Script-Driven Architecture Requirement
+    purpose: Establishes requirements for converting plan.yaml to JSON format and delegating plan generation, task selection, and state updates to scripts instead of AI, eliminating file format handling and PyYAML dependency
+    content_details:
+      - JSON format for plan files replacing YAML
+      - Script-driven plan generation with semantic content determined by AI
+      - Script-based executable task selection using status and dependency resolution
+      - Script-based task completion status and traceability updates
+      - JSON task context files without PyYAML dependency
+      - Plan frontmatter exclusion and feature type detection via requirements traceability
+      - AI input/output contract scoped to field names only
+    applicable_tasks:
+      - Plan JSON schema design and implementation
+      - Script-driven plan generation
+      - Task selection and dependency resolution
+      - Task context file generation
+      - PyYAML dependency elimination
+      - Forge start-plan command enhancement
+      - Forge start-implement command enhancement
+    keywords:
+      - JSON
       - plan.json
       - script-driven
       - PyYAML
-      - task context
-      - JSON schema
       - executor
-      - format conversion
+      - task status
+      - traceability
+      - dependency resolution
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: REQ-001 Orchestrator Pattern Requirements
     purpose: Defines orchestrator design pattern requirements for forge plugins, specifying how skills delegate work to agents and manage multi-phase processes
