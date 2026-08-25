@@ -30,6 +30,8 @@ forge の `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-
 
 既定の選択順序は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。先位の backend を利用できない場合は理由を通知して後位の backend を利用する。これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
 
+切り替えの詳細 — `.claude/.forge.yaml` の書き方、索引更新スキル（`/forge:update-db-rules` / `update-db-specs`）だけが持つ `--backend` 強制指定、および別軸であるレビュー実行主体（`agent-review` / `msg-review`）の切り替え — は [switch-forge-backend_ja.md](docs/readme/switch-forge-backend_ja.md) を参照。
+
 ## ワークフロー
 
 ```mermaid

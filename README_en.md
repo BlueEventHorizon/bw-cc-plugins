@@ -26,6 +26,8 @@ forge's `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update
 
 The default order puts doc-advisor first; change it with `doc_backend.prefer` in `.claude/.forge.yaml`. If the preferred backend is unavailable, forge notifies you and uses the other one. This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
 
+For the details of switching — the `.claude/.forge.yaml` syntax, the `--backend` forcing argument that only the index-update skills (`/forge:update-db-rules` / `update-db-specs`) accept, and the separate review-executor axis (`agent-review` / `msg-review`) — see [switch-forge-backend.md](docs/readme/switch-forge-backend.md).
+
 ## Workflow
 
 ```mermaid
