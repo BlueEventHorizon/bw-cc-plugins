@@ -5,6 +5,8 @@ feature_note:
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
   - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
   - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
+  - `doc_status: not_implemented`は「未着手」ではなく「既存実装との契約差し替え待ち」を意味する。`plugins/forge/scripts/agenda/agenda_render.py`は本設計書と異なる旧契約（`current_item_id`/`set-current`による軽量部分更新等）で既に実装・commit済みであり、本設計書はこの既存実装を置き換える対象として書かれている。実装追従は本feature完了時に一括して行う。
+doc_status: not_implemented
 ---
 
 # DES-077 agenda 表示層設計書
@@ -30,10 +32,10 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 ### 2.2 初回表示のトリガー（`open` コマンド）
 
-**consult は `agenda_store.py init` 実行直後、Bash で `open {path}/agenda.html` を実行し、ブラウザで自動的に開く。**
+**consult は `agenda_store.py start` 実行直後、Bash で `open {path}/agenda.html` を実行し、ブラウザで自動的に開く。**
 
 - **理由**: OS 標準の `open`（macOS）1 コマンドで、ローカルファイルをブラウザで開ける。専用の提示手段を追加せずに済み、既存の「サーバー不要・`file://` 前提」の設計方針を変えずに満たせる
-- **2 回目以降は `open` を呼ばない**: 初回に開いたタブが§4 の更新機構で最新状態に追従する。`update` の度に `open` を呼ぶと、ブラウザによっては重複タブが開く
+- **2 回目以降は `open` を呼ばない**: `record` の度に `open` を呼ぶと、ブラウザによっては重複タブが開く。**自動追従の仕組みは持たない**（§4）——最新の内容を見るには利用者がタブを手動で再読み込みする
 
 ## 3. テンプレートの構造
 
@@ -46,7 +48,7 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 <table id="agenda-summary"><!-- ID/項目/重要度/状態/結果・課題 の一覧。FNC-001 --></table>
 
-<section id="item-01" data-changed="{is_last_changed}" data-current="{is_current}"><!-- FNC-005: アンカーリンク到達点 -->
+<section id="item-01" data-changed="{is_last_changed}"><!-- FNC-005: アンカーリンク到達点 -->
   <h2>
     [01] {title}
     <span class="severity-badge" data-severity="{fields[severity_field]}">{fields[severity_field]}</span><!-- §3.1a。severity_field 未指定なら本要素を出力しない -->
@@ -62,10 +64,10 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 ### 3.1 状態表示は背景全面ではなく「ガターのドット 1 点」に集約する
 
-変更箇所（FNC-002）・対話中の項目の強調は、**カード左側の余白（ガター）に置く小さなドット 1 点に色を集約する**方式で表す（カード全体の背景色 + 左ボーダーによる強調は採らない）。
+変更箇所（FNC-002）の強調は、**カード左側の余白（ガター）に置く小さなドット 1 点に色を集約する**方式で表す（カード全体の背景色 + 左ボーダーによる強調は採らない）。
 
 - **理由**: カード全体を塗ると、severity バッジ（§3.1a）の配色と合わせて色の意味が重なり、画面が騒がしくなる。ガターの小さなドットに絞ることで、状態が「今どうなっているか」を示す信号を 1 箇所に限定できる
-- 「変更」（`.state-dot.changed`）と「対話中」（`.state-dot.current`）は別々のドット（別クラス。§3.2）であり、同時に両方が立つ項目もありうる（別々の位置・別々の色で並べて表示する）
+- 「対話中」の表示（`.state-dot.current`）は廃止した——agenda:REQ-019はこの機構を要求しておらず、人間は生きた対話そのものから「今何を話しているか」を把握でき、別途表示層へ伝える必要がない（設計判断。要件文書自体は変更していない）
 
 ### 3.1a 重大度は絵文字ではなく「パステル配色 + テキストラベル」で表す
 
@@ -81,7 +83,7 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 <span class="severity-badge" data-severity="{fields[severity_field]}">{fields[severity_field]}</span>
 ```
 
-- `data-severity` の値（`critical`/`major`/`minor` 等）は呼び出し側が渡した文字列そのままであり、agenda 側はこの値の意味（重大度の順序等）を解釈しない。CSS 側は `data-severity` の値ごとにパステル配色を対応させる（例: `[data-severity="critical"] { ... }`）が、これは表示層が呼び出し側の語彙に依存する数少ない箇所であり、[DES-075](DES-075_agenda_mechanism_design.md) §5.1 の `TransitionRule`（語彙の意味に立ち入らない）とは異なるレイヤーの話である
+- `data-severity` の値（`critical`/`major`/`minor` 等）は呼び出し側が渡した文字列そのままであり、agenda 側はこの値の意味（重大度の順序等）を解釈しない。CSS 側は `data-severity` の値ごとにパステル配色を対応させる（例: `[data-severity="critical"] { ... }`）が、これは表示層が呼び出し側の語彙に依存する数少ない箇所であり、[DES-075](DES-075_agenda_mechanism_design.md) §5.1 の状態遷移契約（`agenda_schema.py`の`required_fields_for()`/`validate()`。語彙の意味に立ち入らない）とは異なるレイヤーの話である
 
 ### 3.2 CSS の適用対象（値は実装時に決定）
 
@@ -94,76 +96,41 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 | `.generated-notice`                              | 生成物であることを示す注記（§2.1 NFR-001）            | 本文より控えめな見た目（例: 小さめ・薄い色）にして目立たせすぎない                                                                                            |
 | `#agenda-summary`                                | アジェンダ表（ID/項目/重要度/状態/結果・課題）        | 罫線・余白で表として読みやすくする                                                                                                                            |
 | `.state-dot.changed`（`section` 内のガター要素） | 変更箇所の状態表示（§3.1）                            | ガターに置く小さいドットのみに色を使う。カード背景・ボーダーは塗らない                                                                                        |
-| `.state-dot.current`（`section` 内のガター要素） | 対話中の状態表示（§3.1）                              | `.state-dot.changed` とは別クラス・別位置。同時に両方が立つ項目もありうる                                                                                     |
 | `.severity-badge[data-severity]`                 | 重大度バッジ（§3.1a）                                 | パステル配色（低彩度・高明度）+ テキストラベルを併用する。色だけに意味を依存させない（[WCAG 2.2 達成基準 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color)） |
 | `section`                                        | 項目ごとの区切り（アンカーリンク到達点）              | 項目間の境界が視認できる程度の区切り（罫線・余白）。状態によらず常にニュートラル                                                                              |
 
-## 4. 表示の更新方式
+### 3.3 「状態」欄の導出（独立フィールドを持たない）
 
-### 4.1 採用する技術的根拠: `<script src>` タグの動的差し替え
+[DES-075](DES-075_agenda_mechanism_design.md) §4「状態の表現」の通り、項目は独立した状態フィールドを持たない。アジェンダ表（`#agenda-summary`）の「状態」欄、および項目節の表示は、`background`・`essence`・`decision`の記入有無から次の状態遷移で導出する（consult:REQ-017 FNC-002が区別を要求する4状態と対応する）。
 
-`fetch`/`XHR` は `file://` オリジンで CORS 制約によりブロックされるが、**`<script>` タグの `src` 読み込みはこの制約を受けない**。この性質を用いて、ページ全体を再読み込みしない部分更新を `file://` 環境でも実現する。
-
-- `agenda_state.js`（`window.AGENDA_DATA = {...}` を代入するだけのファイル。§4.2）をページ内 JS が 2 秒ごとに新しい `<script src="agenda_state.js?t=<timestamp>">` として生成・差し替えることで、ファイルの内容変化を数秒以内にページへ反映できる（クエリのタイムスタンプはブラウザキャッシュの回避のため）
-
-### 4.2 採用方式: 状態フラグは即時反映、本文の変化は全体再読み込みに委ねる
-
-§4.1 の部分更新は、**軽量な状態フラグ（今どの項目が対話中か、どの項目が直前に変わったか）の反映には使えるが、本文（背景・本質・決着等のテキスト）や項目数の変化まで部分更新で扱うのは複雑になる**（新規項目の追加は、あらかじめ HTML 骨格に存在しない要素をどう生成するかという問題を生む）。したがって、次のハイブリッド方式を採る。
-
-`agenda_render.py` は書き込み成功時（[DES-075](DES-075_agenda_mechanism_design.md) §8.1 のトリガー）に、書き込みコマンドの種類に応じて次のファイルを生成する。
-
-| ファイル          | 内容                                                                                  | 再生成のタイミング                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `agenda.html`     | 全項目の完全な内容（本文含む）。§3 のテンプレートそのもの                             | `content_version` が増える操作（`init`・`update`・`record-structural-judgment`）のときのみ |
-| `agenda_state.js` | `{ currentItemId, changedItemIds, contentVersion, updatedAt }` のみを持つ軽量ファイル | 書き込み系操作すべて（`set-current` を含む）のとき                                         |
-
-`agenda_state.js` の各フィールドは `agenda.json`（[DES-075](DES-075_agenda_mechanism_design.md) §4）から次のように導出する。AI が新たに考案する値ではなく、既存フィールドの単純な転記・集約である。
-
-| `agenda_state.js` のフィールド | 導出元                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| `currentItemId`                | `agenda.json` トップレベルの `current_item_id` をそのまま転記             |
-| `changedItemIds`               | `items[]` のうち `last_changed_fields` が空でない項目の `id` を集めた配列 |
-| `contentVersion`               | `agenda.json` トップレベルの `content_version` をそのまま転記             |
-| `updatedAt`                    | 生成時刻                                                                  |
-
-ページ内 JS（`agenda.html` に埋め込む固定スクリプト、`agenda_render.py` が生成する）は次のように振る舞う。
-
-1. 2 秒ごとに `agenda_state.js` を §4.1 の手法（`<script src>` 差し替え）で読み込む
-2. 読み込んだ `contentVersion` が、直前に自分が保持していた値と**同じ**なら、`currentItemId`/`changedItemIds` の変化だけを既存の DOM（`data-current`/`data-changed` 属性）へ反映する。ページの再読み込みは発生しない
-3. `contentVersion` が**異なる**なら、本文自体が変わった（新規項目の追加・決着内容の記入等）とみなし、`location.reload()` でページ全体を再読み込みする
-
-**`contentVersion` は `agenda_store.py` が書き込みごとにインクリメントする整数**とする（`items` 配列の要素数・内容が変わるたびに増える。単純なタイムスタンプではなく、比較が確実な整数を使う。増減の対象操作は [DES-075](DES-075_agenda_mechanism_design.md) §3.2「`content_version` のインクリメント対象」を参照）。
-
-この方式により、対話中の移動や変更マーカーのような軽量な状態変化は瞬時に（ページ再読み込みなしに）反映され、本文自体の変化があった場合に限りページ全体を再読み込みする。**「短すぎるポーリング間隔でも読んでいる最中に何度もページ先頭へ戻される」という問題は、`contentVersion` が変わらない限り再読み込みが起きないことで解消される。**
-
-### 4.3 スクロール位置の保持（全体再読み込み時のみ必要）
-
-§4.2 の手順 3（`location.reload()`）が発生したときに限り、ページ全体の再読み込みでスクロール位置が失われる。これを防ぐため、`pagehide` 時にスクロール位置を `sessionStorage` へ保存し、読み込み後に復元する。
-
-```html
-<script>
-  window.addEventListener("pagehide", function () {
-    sessionStorage.setItem("agendaScrollY", String(window.scrollY));
-  });
-  (function () {
-    var y = sessionStorage.getItem("agendaScrollY");
-    if (y !== null) window.scrollTo(0, parseInt(y, 10));
-  })();
-</script>
+```mermaid
+stateDiagram-v2
+    [*] --> 未着手
+    未着手 --> 進行中: 背景・本質が記入される
+    進行中 --> 決着または棄却: 結論（decision）が記入される
+    決着または棄却 --> [*]
 ```
 
-- これらは `sessionStorage`・`window.scrollTo` という**ページ自身の中だけで完結する API** であり、`fetch`/`XHR` のような外部リソースアクセスを伴わない。`file://` の CORS 制約に抵触しない
-- 双方向インタラクション（HTML 上での操作をサーバー経由で AI へ伝える等）は本機構のスコープ外である（agenda:REQ-021 §2.2）。これらのスクリプトは表示の追従のみを行い、判断の取得はコンソール（consult との対話）が担う
+| 状態       | 判定条件（`agenda_render.py`が`agenda.json`を読んで導出）     | 表示文言                                                                                                               |
+| ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 未着手     | `background`・`essence`のいずれも空                           | 「未着手」                                                                                                             |
+| 進行中     | `background`・`essence`のいずれかが非空、かつ`decision`が無い | 「進行中」                                                                                                             |
+| 決着／棄却 | `decision`が存在する                                          | `decision.outcome`の内容をそのまま表示（「決着」「棄却」等、呼び出し側の自由記述。agenda機構は内容の意味を解釈しない） |
+
+判定は`background`→`essence`→`decision`の順に記入されるという、consultの対話進行（1項目につき2回の判断記録。[DES-075](DES-075_agenda_mechanism_design.md) §6.2）と対応しており、この順序を逆行する記入（`decision`のみ先に記入する等）は`agenda_schema.py`の状態遷移契約（[DES-075](DES-075_agenda_mechanism_design.md) §5.1。`decision`を含む差分パッチは`background`/`essence`の非空を要求する）により拒否される。
+
+## 4. 表示の更新方式
+
+**自動追従の仕組みは持たない**。`agenda_render.py`は書き込み成功時（[DES-075](DES-075_agenda_mechanism_design.md) §8.1のトリガー）に`agenda.html`を`agenda.json`の内容のみから毎回まるごと再生成する、単純な生成専用ファイルである（§3のテンプレートそのもの）。開いているブラウザタブへ変更を伝える手段（ポーリング・部分更新・スクロール位置の保持）は持たない。最新の内容を見るには利用者がタブを手動で再読み込みする。
+
+**理由**: `start`/`record`（agenda機構が持つ唯一の書き込み系コマンド。§2）はいずれも本文を変える操作であり、常に全項目の再表示が要る。「本文を変えずに軽量な状態フラグだけを更新する」という書き込みが存在しないため、全体再読み込みと部分更新を使い分ける仕組み自体が不要である。
 
 ## 5. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_render.py`: `last_changed_fields`/`current_item_id` に応じた `data-changed`/`data-current` 属性の付与、HTML エスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`agenda_state.js` の `contentVersion`/`currentItemId` が `agenda.json` の同名フィールドと一致すること、`changedItemIds` が `last_changed_fields` が空でない項目の `id` 集合と一致すること、`config.severity_field` が指定されている場合に `fields[severity_field]` の値がバッジとして出力されること・未指定の場合にバッジ要素自体が出力されないこと（§3.1a）
-  - ページ内 JS（生成される固定スクリプト）: `contentVersion` 不変時に DOM 属性のみ更新し `location.reload()` を呼ばないこと、`contentVersion` 変化時に `location.reload()` を呼ぶこと（ブラウザ実行が前提のため、実装時に手動確認 or ヘッドレスブラウザでの検証を検討する）
+  - `agenda_render.py`: `last_changed_fields`に応じた`data-changed`属性の付与、HTMLエスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`config.severity_field`が指定されている場合に`fields[severity_field]`の値がバッジとして出力されること・未指定の場合にバッジ要素自体が出力されないこと（§3.1a）
 - **手動検証観点**（ブラウザの実際の挙動に依存し、単体テストで機械的に保証できない事項）:
   - `open` コマンドでの初回表示が実際のブラウザで動作すること
-  - `<script src>` 差し替えによる部分更新が主要ブラウザで動作すること
-  - スクロール位置保持が実際に機能すること
 
 ## 6. 使用する既存コンポーネント
 

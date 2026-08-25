@@ -1,104 +1,72 @@
-# agenda 機構 実装戦略
+# agenda 実装戦略
 
-`/forge:start-plan` の実装戦略フェーズ（[DES-027](../../../forge/design/DES-027_plan_strategy_phase_adr.md)）に基づく、agenda 機構への移行戦略。実装完了後に削除する ephemeral 文書であり、恒久文書ではない。
+## アプローチ
 
-## メタデータ
+**選択**: ボトムアップ（依存の薄い基盤モジュールから積み上げる）＋各フェーズにリスク駆動の検証観点を組み込む
 
-| 項目     | 値                                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| feature  | consult/agenda                                                                                                                                                        |
-| 関連設計 | [DES-075](../design/DES-075_agenda_mechanism_design.md), [DES-077](../design/DES-077_agenda_display_design.md), [ADR-076](../design/ADR-076_agenda_storage_format.md) |
+**根拠**:
 
-## アプローチ選択
+このFeatureは新規実装ではなく**旧実装の全面置き換え**である。`plugins/forge/scripts/agenda/agenda_schema.py`・`agenda_store.py`・`agenda_render.py`は既にcommit済みだが、いずれも承認済み設計（DES-075/077）と異なる旧CLI契約（`status_vocabulary`/`terminal_statuses`/`active_statuses`、`current_item_id`/`set-current`、`agenda_state.js`によるポーリング部分更新、`--set key=value`）で書かれている。実体を読んで確認した結果、3ファイルとも新設計と字面・構造の両面で非互換であり、部分修正では収束しない（例: `agenda_render.py`は`render_agenda_state_js()`・ポーリング`<script>`・スクロール保持`<script>`という新設計に存在しない責務を丸ごと持つ）。
 
-**フィーチャースライス**（新機構を先に単体で成立させ、その後に既存呼び出し元を1つずつ縦断的に繋ぎ替える）を採用する。
+モジュール間の依存はDES-075 §3.1が明示する一方向グラフである: `agenda_store.py` → `agenda_schema.py`（状態遷移契約）、`agenda_store.py` → `agenda_render.py`（書き込み成功後の自動呼び出し）。`agenda_schema.py`と`agenda_render.py`は互いに依存せず、`agenda_store.py`にも依存されるだけで依存しない（独立実行可能）。この形は「安定した基盤から積み上げる」ボトムアップに適合する。加えて、新設計の中核ロジック（`decision`キーの有無だけで状態を判定する構造遷移契約）は本Featureで最もリスクが高い部分（後述リスク表）であるため、最初のフェーズに配置し早期に手戻りを検出する（リスク駆動の要素を最初のフェーズへ混ぜる）。
 
-理由: `agenda_store.py` / `agenda_render.py` は `consult` の既存実装から独立して動作を確認できる（CLI 単体で init→update→render の一連が完結する）。先に新機構だけを動作確認してから呼び出し元（`consult` SKILL.md）を繋ぎ替える方が、繋ぎ替え作業中に新機構自体のバグを疑う必要がなくなり、切り分けが容易になる。
+フェーズ分割と依存順序は、タスク依頼で既に指定された順序（agenda_schema.py→agenda_render.py→agenda_store.py→tests→discussion_file_template.md→consult SKILL.md→旧討議ファイル破棄）をそのまま採用する。この順序はモジュールの実依存方向と矛盾しない。ただし、「最後のタスクまで検証を先送りしない」という分割原則を満たすため、各フェーズに**そのフェーズ単体で確認できる検証観点**を明示する（フェーズ1・2は完全なユニットテストをフェーズ3へ委ねるが、その間は簡易な手動検証で代替し、無検証のまま2フェーズを積み上げることはしない）。
 
-## フェーズ順序の判断 [IMPORTANT]
+## フェーズ
 
-`discussion_file_template.md` のリライトは、独立フェーズではなく**フェーズ1の末尾タスク**として実装群に統合する。
+### フェーズ 1: 基盤層（`agenda_schema.py` + `agenda_render.py`）の全面書き換え
 
-根拠: `agenda_render.py` はテンプレートファイルを実行時に読み込まない設計であり（DES-075 §3.1 の依存は標準ライブラリ `html` のみ）、コード上の依存関係を持たない。一方、DES-077 §3.1a・§3.2 は「重大度の具体的な配色は本設計書で確定せず、実装後に生成された `agenda.html` を見ながら利用者と調整する」と明記しており、テンプレートリライトは実際に動く `agenda_render.py` が生成した実物の `agenda.html` を見て書くのが最も正確である。設計書の記述だけを転記して先に書くと、実装後の調整で書き直す二度手間になる。したがってテンプレートリライトはフェーズ1の実装（T2・T3）完成後に着手する。
+- **目標**: 状態遷移契約（DES-075 §5.1・§5.1a）と表示生成（DES-077 §3・§4）が、それぞれ独立した純粋関数として新設計どおりに動作する。両モジュールは互いに依存しないため並行に書ける
+- **スコープ**:
+  - `agenda_schema.py`: `status_vocabulary`/`terminal_statuses`/`active_statuses`を全廃し、`patch_keys`（差分パッチのキー集合）に`decision`を含むかどうかをトリガーとする判定へ置き換える（DES-075 §5.1表）。`verification.action`固定語彙（`adopt`/`reject`）はそのまま維持する。§5.1aの「新規項目追加時は`structural_judgment.note`同時指定必須」という**新規に追加すべき契約**をここで実装する
+  - `agenda_render.py`: `current_item_id`・`agenda_state.js`生成・ポーリング`<script>`・スクロール保持`<script>`を全廃する。状態表示は`background`/`essence`/`decision`の記入有無から導出する3状態（未着手/進行中/決着または棄却。DES-077 §3.3のstateDiagram）に置き換える。ガターのドットは`state-dot.changed`のみ残し`state-dot.current`を削除する（DES-077 §3.1）。単一関数`render_agenda_html()`のみを公開する（`render_agenda_state_js()`は削除）
+- **検証ポイント**:
+  - 両モジュールともbuild_parser等のCLIを持たないため、Pythonの対話実行（`python3 -c`等）で手作りのfixture dictを渡し、`agenda_schema.validate()`が新旧の境界ケース（§5.1a: 新規項目でnote無し→拒否、既存項目更新でnote無し→許可）で期待通りの`{"ok": bool, "missing_fields": [...]}`を返すこと、`agenda_render.render_agenda_html()`が`current_item_id`引数を要求せず、生成HTMLに`agenda_state.js`参照・ポーリングスクリプトが一切含まれないことを目視確認する
+  - **正式なユニットテストの導入はフェーズ3**（tests全面書き換え）だが、フェーズ1完了時点を「無検証のまま次へ積む」状態にしないため、上記の簡易確認をこのフェーズの完了条件とする
 
-## フェーズ分割
+### フェーズ 2: 統合層（`agenda_store.py`）の全面書き換え
 
-| フェーズ | 内容                                                                                                                                                | 対応する設計書の節                        |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| 1        | `agenda_schema.py` → `agenda_render.py` → `agenda_store.py` の実装（CLI 単体で動作確認可能な状態にする）＋ `discussion_file_template.md` のリライト | DES-075 §3, §4, §5, §6, §8 / DES-077 全節 |
-| 2        | `consult` SKILL.md の書き換え（下記「置き換え対応表」）                                                                                             | consult:REQ-017 §1.2 準拠                 |
-| 3        | 既存記録の破棄（FNC-010）                                                                                                                           | agenda:REQ-019 FNC-010                    |
+- **目標**: DES-075 §6の5コマンド（`start`/`record`/`next`/`pending`/`finish`）が、フェーズ1で書き換えた`agenda_schema.py`/`agenda_render.py`を正しく呼び出し、CLI全体として一貫動作する
+- **スコープ**:
+  - `--input-file`による候補JSON受け取り（`--set key=value`を全廃。DES-075 §6.1「AIが渡し方を組み立てない」）
+  - `config.identity`の`--path`親ディレクトリ名からの自動導出（§4）、`structural_judgment.recorded`/`recorded_at`の自動導出（呼び出し側は`note`のみ渡す）
+  - `upsert_item()`の差分パッチ意味論の書き換え: `structural_judgment`キーはレコード直下へ、それ以外は項目へ振り分ける2経路マージ（§6.1）。`fields`等の入れ子キーはトップレベル単位で丸ごと置換（キー単位の再帰マージをしない）
+  - `next_item_id()`/`pending_item_ids()`を`decision`キーの有無で判定するよう置き換え（旧`active_statuses`参照を全廃）
+  - `finish`コマンドの新設: 全項目に`decision`が記録されていれば`agenda.json`を削除、残っていれば`remaining_count`を返す（§7）
+  - 書き込み成功後の自動再描画（§8.1）を`render_agenda_html()`のみの呼び出しに簡素化（`agenda_state.js`書き込み分岐を削除）。再描画失敗時は`{"status": "partial", ...}`を返す既存方針を維持
+- **検証ポイント**:
+  - CLIの手動スモークテスト: スクラッチパスに対し`start`（items+structural_judgment.noteをまとめて）→`record`（background/essence）→`record`（decision）→`finish`を順に実行し、各ステップで`agenda.html`が再生成されること、`agenda_state.js`が一切生成されないこと、`finish`が全件decision後に`agenda.json`を削除することをコンソール出力とファイル存在確認で確かめる
+  - 旧CLI引数（`--status-vocabulary`等）を渡すと`argparse`が明確なエラーで拒否すること（新旧混在の呼び出しが黙って通らないことの確認）
 
-### フェーズ1: タスク分解の材料
+### フェーズ 3: テスト全面書き換え・スイート通過
 
-DES-075 §3.1 の依存列から導かれる実装順序は **schema → render → store** である。`agenda_schema.py` と `agenda_render.py` の間にコード依存は無く、並列実行候補になる。
+- **目標**: `tests/forge/agenda/`配下4ファイル（`test_agenda_schema.py`・`test_agenda_render.py`・`test_agenda_store.py`・`test_agenda_integration.py`、計約1400行）を新契約に基づき全面書き換えし、`python3 -m unittest discover -s tests -p 'test_*.py'`が全体通過する
+- **スコープ**:
+  - `test_agenda_schema.py`: §5.1の`decision`トリガー判定、§5.1aの新規項目`structural_judgment.note`必須化、`verification.action`語彙・`reject`時の`reason`必須を検証
+  - `test_agenda_render.py`: 3状態導出（未着手/進行中/決着）、`current`ドット削除の確認、`severity_field`未指定時のバッジ非表示、`agenda_state.js`関連関数が存在しないこと
+  - `test_agenda_store.py`: 5コマンドの正常系・異常系、`identity`自動導出、`structural_judgment`の2経路マージ、`finish`の削除条件
+  - `test_agenda_integration.py`: DES-075 §6.2のシーケンス（start→record×N→next/pending→finish）と、各書き込み直後に表示が最新`agenda.json`と一致すること
+  - **必須の追加テストケース（既知の未解決事項の再発防止）**: 旧`discussion_file_template.md`の「既知の未解決事項」節が記録していた不具合——検証が特定キー（旧`status`）を含むパッチにのみ発火し、それ以外のパッチは素通りする——は、新設計でも構造的に同型のリスクを持つ。新トリガーは`decision`キーの有無であるため、**「既に`decision`が記録済みの項目に対し、`decision`を含まない差分パッチ（`background`のみ等）で`record`を呼ぶ」ケースを明示的にテストし、新設計がこれをどう扱う（許可するなら意図的な仕様として、拒否するなら拒否として）かを固定する**。DES-075はこの境界を明文化していないため、実装時に挙動を決め、テストとフェーズ4のドキュメント反映（下記リスク表参照）の両方に残す
+- **検証ポイント**: `python3 -m unittest discover -s tests -p 'test_*.py' -v`が全件成功し、フェーズ1・2で手動確認した境界ケースが自動テストとして固定化されていること
 
-| タスク候補 | ファイル / 対象                                                                                             | 内容                                                                                                                                                                                                                                                                                                                              | 依存           |
-| ---------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| T1         | `plugins/forge/scripts/agenda/__init__.py`（新規）、`plugins/forge/scripts/agenda/agenda_schema.py`（新規） | DES-075 §5.1 の `TransitionRule`（`required_fields_for` / `validate` → `TransitionResult(ok, missing_fields)`）と `verification.action` の固定語彙を実装する。`plan_contract.py` と同型（関数＋契約でよい。UML クラスをそのまま class 化する必要はない）                                                                          | なし（並列可） |
-| T2         | `plugins/forge/scripts/agenda/agenda_render.py`（新規）                                                     | 手作りの fixture（`agenda.json` 相当）から `agenda.html` / `agenda_state.js` を生成する。`html.escape()` パターンは `plugins/anvil/skills/prepare-figma/scripts/json_to_html.py` に倣う。DES-077 §3〜§4.3 の各要素（アジェンダ表、ガタードット、severity バッジ、`<script src>` 差し替え、スクロール保持）を実装する              | なし（並列可） |
-| T3         | `plugins/forge/scripts/agenda/agenda_store.py`（新規）                                                      | `init` / `update`（差分パッチ。§6.1） / `next` / `pending` / `record-structural-judgment` / `set-current` の CLI（`argparse`）＋ CRUD・`content_version` インクリメント規則（§3.2）・書き込み成功後の `agenda_render.py` 自動呼び出し（§8.1）を実装する。CLI 設計は `plugins/forge/scripts/review/parse_findings.py` を参考にする | T1, T2         |
-| T4         | 統合テスト（`tests/forge/agenda/` 配下）                                                                    | DES-075 §9 の統合テスト（`init → record-structural-judgment → update×N → next/pending`）。各書き込み直後に表示が再生成され、内容が最新の `agenda.json` と一致することも検証する（テストタスクそのもの）                                                                                                                           | T3             |
-| T5         | `plugins/forge/skills/consult/assets/discussion_file_template.md`（既存・改修）                             | 保存フォーマットとしての記述を破棄し、T2・T3 完成後に実際に生成した `agenda.html` の構造を材料に、表示専用のリファレンス文書へリライトする。「書くときの約束」節（ID 不変・状態行を消さない等）は §5.1 の `TransitionRule` が機械的に強制するため、散文としての記述は縮小・削除する                                               | T2, T3         |
+### フェーズ 4: 呼び出し側・配布物・旧成果物の整理
 
-T1・T2 はそれぞれ単体で（互いを待たずに）テスト可能であり、フェーズ1着手直後に検証点を持てる。T3 は両者の統合点であり、フェーズ1の中核検証（DES-075 §9 の一連の CLI 呼び出し）はここで初めて成立する。
-
-**物理的な HTML テンプレートファイル（`templates/agenda_display_template.html` 等）は新設しない。** 参考実装 `json_to_html.py` は Python の f-string によるインライン HTML 構築であり、外部テンプレートファイルを読み込む構成を取っていない。`agenda_render.py` も同じパターン（インライン構築 + `html.escape()`）を採る。テンプレート構造の文書としての記述は T5 の `discussion_file_template.md` が担う（コードが読み込む実体ではなく、人間が読む構造リファレンス）。
-
-### 新規ファイル一覧
-
-```
-plugins/forge/scripts/agenda/
-├── __init__.py            # パッケージマーカー（plan/__init__.py と同型）
-├── agenda_schema.py        # T1: TransitionRule・verification.action 語彙
-├── agenda_render.py        # T2: agenda.html / agenda_state.js 生成
-└── agenda_store.py         # T3: CRUD・CLI・自動 render 呼び出し
-```
-
-### フェーズ2: consult SKILL.md の置き換え対応表
-
-現行の Phase 2（討議ファイルの用意）・Phase 4（進行における討議ファイル更新）・Phase 5（終了時のファイル参照）を、`agenda_store.py` / `agenda_render.py` の CLI 呼び出しに置換する。
-
-| 現行（Markdown 自前実装）                                         | 変更後（agenda 機構）                                                                                                                                                                                |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.claude/.temp/consult/<日付>-<主題>.md` を Write で新規作成      | `agenda_store.py init` を呼ぶ。直後に Bash で `open {path}/agenda.html` を実行する（初回表示。DES-077 §2.2）                                                                                         |
-| 討議ファイルへの Edit（決着・状態更新）                           | `agenda_store.py update --item-file <item.json>` を呼ぶ（差分パッチ。§6.1）                                                                                                                          |
-| 討議ファイルを Read して既存ファイル・再開候補を確認（Phase 2.1） | `agenda_store.py pending` / `next` を呼ぶ                                                                                                                                                            |
-| 対話中の項目をコンソールへ明示                                    | `agenda_store.py set-current --item-id <id>` を呼ぶ（`content_version` は増えない。DES-077 §4.2）                                                                                                    |
-| コンソールへのアジェンダ表再掲（Phase 4 手順 6）                  | `agenda_render.py` を明示的に呼ばない（`update` 完了時に自動生成済み。[DES-075](../design/DES-075_agenda_mechanism_design.md) §8.1）。2 回目以降は `open` を呼ばない（DES-077 §2.2「重複タブ」注記） |
-| Phase 0〜1・Phase 3（アジェンダ提示）・Phase 5 の未判断件数明示   | 変更なし（agenda 機構が置き換えるのは記録の保存・表示だけであり、対話進行の手順・作法は consult 側の責務のまま。consult:REQ-017 §1.2）                                                               |
-
-T6（フェーズ2 のタスク）は `plugins/forge/skills/consult/SKILL.md` の Phase 2・Phase 4・Phase 5 の該当箇所をこの対応表に沿って書き換える 1 タスクとする。depends_on: T3（`agenda_store.py` が動作すること）, T5（テンプレートリライト後の表示構造と SKILL.md の説明文を整合させるため）。SKILL.md はテキスト規約であり自動テスト困難なため、テストタスクは `implementation_guidelines.md` の例外に従い省略する。受け入れ基準は Yes/No で判定できる形にする（例:「Phase 2/4/5 の本文に `.claude/.temp/consult/` への Write/Edit の記述が残っていない」）。
-
-### フェーズ3: 既存記録の破棄（FNC-010）
-
-T7（1 タスク）: `.claude/.temp/review/triage.md`（存在する場合）・`.claude/.temp/consult/*.md`（存在する場合）を対象に、削除前に未決着項目の有無を一覧して利用者へ提示し、確認を得てから削除する。depends_on: T6（consult がこれらのファイルを新規作成しなくなった後に実施する一度限りの移行作業のため）。
-
-コード実装ではなく一度限りの移行作業（レガシーデータの後始末）であり、独立したテストタスクは設けない。受け入れ基準は Yes/No で判定できる形にする（例:「実行後、`.claude/.temp/review/` `.claude/.temp/consult/` に対象ファイルが残存しない、または元から対象が存在しなかった旨が明示される」）。
-
-## 検証ポイント
-
-| フェーズ | 完了時の検証事項                                                                                                                                                                                                                                                           |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1        | T1・T2 が単体テストで個別に合格する（T3 完了を待たずに検証可能）。`agenda_store.py init → record-structural-judgment → update → next/pending` が意図通り動作する（T4）。リライトした `discussion_file_template.md` が、生成された `agenda.html` の構造を過不足なく説明する |
-| 2        | 既存 `consult` の Phase 0〜5 の対話フローが、置き換え後も同じ利用者体験を提供する。SKILL.md 本文に `.claude/.temp/consult/` への直接 Write/Edit の記述が残っていない                                                                                                       |
-| 3        | 既存記録の破棄後、`.claude/.temp/review/` `.claude/.temp/consult/` に放置ファイルが残っていない。破棄前に未決着項目の一覧提示が行われている                                                                                                                                |
+- **目標**: `consult` SKILLが新CLI契約のみで動作し、表示構造の参照文書が新設計と一致し、旧形式の討議ファイルが残存しない
+- **スコープ**:
+  - `plugins/forge/skills/consult/assets/discussion_file_template.md`の全面リライト: 3状態導出・`current`ドット廃止・`agenda_state.js`削除・「表示の更新」節（ポーリング記述）の削除、および上記「既知の未解決事項」節を新設計での決定内容（フェーズ3で固定した挙動）に置き換える
+  - `plugins/forge/skills/consult/SKILL.md`のPhase 2/4書き換え: `init`→`start`（items+structural_judgment.noteを1回で）、`update --set ...`→`record --input-file`（Writeツールで候補JSONを一時ファイルへ書き`--input-file`で渡す）、`set-current`呼び出しの削除（Phase 4の手順1を丸ごと削除）、Phase 5の`pending`呼び出しはそのまま維持。「初回のみopenで開く」記述は`start`実行直後に変更
+  - `.claude/.temp/consult/20260818-consult-review-findings.md`の削除（REQ-019 FNC-010。旧形式の討議ファイルであり新設計のagenda.jsonへ変換する価値がないため単純破棄）
+- **検証ポイント**:
+  - `grep -rn "status-vocabulary\|terminal-statuses\|active-statuses\|set-current\|current_item_id\|agenda_state.js"` を`plugins/forge/skills/consult/`配下・`plugins/forge/scripts/agenda/`配下で実行し、旧記述の残存がゼロであることを機械的に確認する
+  - `dprint check`（Markdown編集を伴うため）と`python3 -m unittest discover -s tests -p 'test_*.py'`の再実行で最終グリーンを確認する
+  - `.claude/.temp/consult/`配下に旧形式ファイルが残っていないことを`find`で確認する
 
 ## リスクと対策
 
-| リスク                                                                                       | 対策                                                                                                                                                       |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| フェーズ3の既存記録破棄で、未決着の議題を利用者に気づかせずに失う                            | フェーズ3実行前に、破棄対象ファイルの内容（未決着項目の有無）を一覧して利用者に確認を取ってから破棄する（FNC-010 が要求する事前把握）                      |
-| フェーズ2の書き換え中、consult の対話フロー自体を壊す                                        | フェーズ1で新機構を単体動作確認（T1〜T4）してから着手することで、フェーズ2で問題が起きた場合に「新機構のバグか、置き換え作業のミスか」を切り分けやすくする |
-| T5（テンプレートリライト）を T2・T3 完成前に着手すると、実装後に調整する値を先取りしてしまう | T5 の depends_on を T2・T3 とし、実際に生成された `agenda.html` を見てから書く順序を固定する                                                               |
-
-## 既存資産の活用
-
-| コンポーネント                          | ファイルパス                                                      | 用途                                                                           |
-| --------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 単一責務モジュール構成                  | `plugins/forge/scripts/plan/plan_contract.py`                     | `agenda_schema.py`（T1）のモジュール構成の参考。クラスではなく関数＋契約でよい |
-| 状態機械 + CLI パターン                 | `plugins/forge/scripts/review/parse_findings.py`                  | `agenda_store.py`（T3）の CLI 設計・JSON 出力設計の参考                        |
-| HTML エスケープ・インライン構築パターン | `plugins/anvil/skills/prepare-figma/scripts/json_to_html.py`      | `agenda_render.py`（T2）の `html.escape()` 使用・f-string インライン構築の参考 |
-| 討議ファイルテンプレート                | `plugins/forge/skills/consult/assets/discussion_file_template.md` | T5 でリライトして転用（保存フォーマット→表示構造リファレンス）                 |
-
-再利用しない判断: `update_triage.py` 相当の永続化スクリプトは本リポジトリに実在しない（review 側の仕分けは会話内で完結していたため）。置き換え対象は `consult` の自前 Markdown 実装のみである。
+| リスク                                                                                                                                                                                                                                                                                                                                            | 影響度 | 対策（どのフェーズで潰すか）                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`decision`トリガー検証の抜け穴**: 既に`decision`が記録済みの項目へ`decision`を含まない差分パッチ（`background`単独等）を送ると検証が素通りする。旧`discussion_file_template.md`の「既知の未解決事項」が記録した不具合（旧`status`キーの有無で発火する検証）と構造的に同型のリスクが、新トリガー（`decision`キーの有無）でも形を変えて存在しうる | 高     | フェーズ3で明示的な境界テストケースを追加し挙動を固定する。フェーズ4で`discussion_file_template.md`の記述をその決定内容に更新する（ドキュメントに「未解決」として先送りしない）                     |
+| §5.1aの「新規追加と再判定をアトミックに完結させる」要件（中間状態を永続化しない）を`agenda_store.py`が満たさず、判定が古いまま保存される瞬間が生まれる                                                                                                                                                                                            | 中     | フェーズ2で`upsert_item()`とレコード直下`structural_judgment`マージを同一トランザクション（同一`save_agenda()`呼び出し）内で完結させる実装にし、フェーズ2の手動スモークテストで新規追加ケースを確認 |
+| `fields`のトップレベル置換（再帰マージしない）という設計と、呼び出し側（consult SKILL.md）の実際の呼び出しパターンが噛み合わず、`severity`等の既存値が意図せず消える                                                                                                                                                                              | 中     | フェーズ4のSKILL.md書き換え時に「`fields`の一部だけ変えたい場合は呼び出し側が全体を読み取ってから渡す」という設計原則（DES-075 §6.1）を手順に明記する                                               |
+| 旧CLI契約（`--set`・`status`語彙）を前提にした呼び出しが、書き換え漏れにより`consult` SKILL.md以外の場所（将来の`review`直接呼び出し等）に残存する                                                                                                                                                                                                | 低     | 着手前のgrep調査で現時点の参照元が`consult`のみであることを確認済み。フェーズ4で機械的grepにより再発を検出                                                                                          |
+| `agenda_render.py`の表示生成が`agenda_store.py`に依存しないという設計制約（独立実行可能）を、書き換え中に誤って`agenda_store`側の内部データ構造へ依存させてしまう                                                                                                                                                                                 | 低     | フェーズ1で`agenda_render.py`単体のスモークテスト（`agenda_store`を一切importしない手動実行）を検証ポイントとすることで、依存混入があれば即座に失敗する                                             |

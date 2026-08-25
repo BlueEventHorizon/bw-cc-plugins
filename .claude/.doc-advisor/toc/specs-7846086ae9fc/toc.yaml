@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-23T07:34:22Z
-  file_count: 61
+  generated_at: 2026-08-25T00:31:29Z
+  file_count: 64
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -392,36 +392,32 @@ docs:
       - plugin documentation
       - SoT
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
-    title: SKILL Base Design (COMMON-DES-001)
-    purpose: Defines the execution model, decision principles, and responsibility boundaries for SKILL type selection (inheritance type vs Agent vs fork type abandonment) in bw-cc-plugins
+    title: SKILL Base Design Specification
+    purpose: Defines base design principles for SKILLs in bw-cc-plugins, including execution models, fork-type deprecation rationale, inheritance-type responsibilities, and multi-layered defense architecture
     content_details:
-      - SKILL execution model - inheritance type (context inherited) vs fork type (abandoned due to structural bugs) vs custom agents (isolated context)
-      - Decision principle that all SKILL must be inheritance type; fork type adoption prohibited
-      - Criteria for choosing Agent instead of SKILL - when context isolation is needed, role specialization required
-      - SKILL call argument principles - never pass parent task prompt, Issue body, or working diff
-      - Launch path selection guide - decision tree for choosing between inheritance SKILL, custom Agent, general-purpose Agent, and Bash subprocess
-      - Fork type SKILL non-adoption basis - 9 official structural bugs with context fork mechanism
-      - Inheritance type SKILL responsibility boundary - minimal args and role constraint as two invariant conditions
-      - "Multi-layered defense layers - A: agent boundary, B: role constraint, C: allowlist, D: physical deny"
-      - Static verification tests for SKILL frontmatter and agent compliance
+      - Inheritance-type SKILL as default execution model with parent context inheritance
+      - Fork-type SKILL deprecation with 9 official Claude Code bugs as justification
+      - Responsibility boundary clarification (agents/name.md placement for custom Agents)
+      - "SKILL invocation arguments constraints (prohibited: parent task prompt, Issue body, diffs)"
+      - Multi-layered defense layers (Agent boundary / Role constraints / allowlist / physical deny)
+      - Custom Agent vs. general-purpose Agent decision procedure with flowchart
+      - Fork-type to custom Agent migration path (reviewer.md, evaluator.md examples)
+      - Static test suite (test_no_fork_skill.py, test_agent_frontmatter.py)
     applicable_tasks:
-      - SKILL architecture design and implementation planning
-      - Context isolation decision-making for new features
-      - SKILL vs Agent type selection for isolated work units
-      - SKILL role and responsibility boundary definition
-      - Multi-layered security defense implementation
-      - Fork-type SKILL migration to custom Agent
-      - Inheritance SKILL argument design and validation
+      - SKILL architecture design and decision-making
+      - Evaluating fork-type SKILL deprecation impact
+      - Creating and placing custom Agents in plugin architecture
+      - Implementing multi-layered defense for Agent isolation
+      - Migrating legacy fork-type SKILLs to custom Agents
     keywords:
       - SKILL
-      - fork type
-      - inheritance type
-      - custom agent
-      - context isolation
-      - role constraint
-      - subagent
+      - custom Agent
+      - inheritance-type SKILL
+      - fork-type SKILL
       - multi-layered defense
-      - decision principle
+      - Agent boundary
+      - Role constraints
+      - context isolation
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -478,6 +474,104 @@ docs:
       - external errors
       - internal bugs
       - try/except
+  docs/specs/consult/agenda/design/ADR-076_agenda_storage_format.md:
+    title: ADR-076 Agenda Storage Format
+    purpose: Decides to use JSON (standard library only) for agenda record storage, rejecting YAML/TOML/custom formats and prioritizing structural boundary preservation to prevent data corruption
+    content_details:
+      - JSON adopted as storage format using standard library json module
+      - Requirements for boundary preservation from agenda:REQ-019 NFR-001
+      - "Corruption issues: pipe character mixing and truncation from bold formatting"
+      - Rejection of YAML due to external dependency and unnecessary human readability
+      - Rejection of TOML due to read-only support in standard library
+      - Rejection of custom text format as it solves the problem this ADR addresses
+      - "Trade-off gains: structural boundary guarantee from json.dump/json.load"
+      - "Prerequisite: agenda.json is AI-only intermediate format, not human editing target"
+    applicable_tasks:
+      - Implementation of agenda storage mechanism
+      - Selection and validation of record serialization format
+      - Data integrity review and corruption prevention
+      - External dependency management for Python scripts
+      - Design review of storage architecture
+    keywords:
+      - JSON
+      - agenda storage
+      - boundary preservation
+      - data integrity
+      - NFR-001
+      - serialization
+      - YAML
+      - TOML
+      - external dependencies
+  docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md:
+    title: DES-075 Agenda Mechanism Design
+    purpose: Specifies the architecture, data schema, state transitions, and CLI interfaces for the agenda mechanism handling record-keeping, status judgment, and display generation for discussion items
+    content_details:
+      - "Three-layer architecture: data storage (agenda_store.py)"
+      - JSON schema with AgendaRecord containing Config, Items, StructuralJudgment
+      - State representation using decision presence (no independent status vocabulary)
+      - "CLI commands: start, record, next, pending, finish with diff-patch semantics"
+      - Required fields for state transitions by decision type with verification for external-sourced items
+      - "Structural judgment prerequisite: must be recorded before item state transitions"
+      - "Storage locations per context: review uses fixed path, consult uses session-scoped directory"
+      - Automatic re-rendering of agenda.html on successful agenda_store.py write
+      - "Record lifecycle: deletion when all items have decisions recorded"
+      - Verification record and Decision record role separation for item documentation
+    applicable_tasks:
+      - Implementation of agenda data storage layer
+      - Implementation of record schema validation
+      - Implementation of display generation
+      - State transition validation and required field checking
+      - CLI interface design and testing
+      - JSON schema design and serialization
+      - Verification and decision record management
+      - Integration between consult SKILL and agenda mechanism
+      - Design review of data persistence architecture
+    keywords:
+      - agenda mechanism
+      - state transition
+      - JSON schema
+      - verification record
+      - decision recording
+      - agenda_store.py
+      - CLI interface
+      - structural judgment
+      - content_version
+      - diff-patch semantics
+  docs/specs/consult/agenda/design/DES-077_agenda_display_design.md:
+    title: DES-077 Agenda Display Layer Design
+    purpose: Specifies the HTML display generation (agenda_render.py) for agenda records, including template structure, state derivation, severity badge display with WCAG accessibility compliance, and CSS styling targets
+    content_details:
+      - HTML format with anchor links for direct item navigation
+      - "Initial display trigger: consult calls Bash open command after agenda_store.py start"
+      - "Template structure: agenda summary table plus item sections with background/essence/decision fields"
+      - "State representation derived from field presence: not-started, in-progress, resolved/rejected"
+      - State-dot indicator in gutter area (small colored dot) for highlighting changed items
+      - "Severity badge display: pastel colors plus text label for WCAG 2.2 color accessibility compliance"
+      - "CSS selector targets: body, h1/h2, generated-notice, agenda-summary, state-dot, severity-badge, section"
+      - HTML escaping for secure output of special characters and confidential information
+      - Full re-render of agenda.html on successful agenda_store.py write without auto-follow
+      - Manual refresh required by users to see updates in already-opened browser tab
+    applicable_tasks:
+      - Implementation of display generation (agenda_render.py)
+      - HTML template design and rendering
+      - State derivation logic from record fields
+      - Severity badge styling with accessibility compliance
+      - CSS selector definition and implementation
+      - HTML escaping for security
+      - Browser open command integration
+      - Testing HTML generation with actual browser behavior
+      - Design review of user-facing agenda display
+    keywords:
+      - agenda_render.py
+      - HTML display
+      - state derivation
+      - severity badge
+      - WCAG accessibility
+      - anchor links
+      - CSS styling
+      - agenda.json rendering
+      - state-dot
+      - accessibility
   docs/specs/consult/agenda/design/NOTES_open_design_questions.md:
     title: Design Questions for agenda Mechanism
     purpose: Collects unresolved design questions and technical decisions required for the agenda mechanism, extracted from requirements for resolution during formal design phase
@@ -506,103 +600,95 @@ docs:
       - TOML
       - PyYAML
   docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md:
-    title: REQ-019 Agenda Record Mechanism - Requirements Definition
-    purpose: Defines requirements for a record-keeping layer that enables humans to manage discussion items and their states while reducing AI effort on record maintenance
+    title: REQ-019 Agenda Record Requirements
+    purpose: Specifies recording mechanism for agenda items to maintain human understanding of collective state and individual responses while minimizing AI input/output for record maintenance
     content_details:
-      - Record structure for managing discussion items and their states with change tracking
-      - Agenda concept - consolidated view of all items and their status for human oversight
-      - Five core functional requirements (FNC-004 to FNC-013) defining data persistence layer behavior
-      - State transition rules with machine-readable validation conditions and necessary preconditions
-      - Structural validation requirement - collection-level assessment before individual item processing
-      - Verification and evidence recording requirement for external findings with position-specific references
-      - Legacy record deletion from existing forge:review and forge:consult systems
-      - Non-functional requirements including YAML save format, confidentiality handling, and failure visibility
-      - Receiver configuration per calling side - record count, identification method, lifetime, field types
-      - Input/output interface specification - single structured handoff per item with no AI-generated formatting
+      - Agenda item and terminology definitions
+      - "FNC-004: AI generates only judgment content, not record maintenance"
+      - "FNC-005: single structured input transfer from AI to record"
+      - "FNC-008: state transition prerequisites as machine-readable definitions"
+      - "FNC-011: mandatory verification records for external findings with position information"
+      - "FNC-012: structure validation judgment of item collections before individual transitions"
+      - "FNC-013: change information tracking for display layer"
+      - "NFR-001: storage format with self-contained value boundaries"
+      - Caller configuration options (record count, naming, lifetime, fields, state vocabulary)
+      - "FNC-010: elimination of legacy review and consult discussion files"
     applicable_tasks:
-      - Designing the agenda record storage and state machine layer
-      - Implementing state transition validation with machine-readable conditions
-      - Integrating with forge:consult calling side
-      - Implementing structural validation logic for discussion item collections
-      - Building verification recording mechanism with position-specific evidence tracking
-      - Developing legacy record migration and deletion process
-      - Implementing change tracking information for display layer
-      - Testing state transition rejection conditions and validation
+      - Agenda record mechanism design and implementation
+      - State transition validation logic specification
+      - SKILL integration interface design
+      - Record data storage format selection
+      - Legacy record migration and removal planning
     keywords:
       - agenda
-      - record
+      - record mechanism
       - state transition
-      - discussion item
-      - verification
-      - structural validation
-      - change tracking
-      - forge:consult
-      - machine-readable
+      - verification requirements
+      - structure validation
+      - FNC-004
+      - FNC-011
+      - FNC-012
+      - NFR-001
+      - machine-readable definitions
   docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md:
-    title: REQ-021 Agenda Display Layer - Requirements Definition
-    purpose: Defines requirements for a presentation layer that generates human-readable agenda displays from the record storage layer while maintaining consistency and visibility of changes
+    title: REQ-021 Agenda Display Layer Requirements
+    purpose: Specifies display layer requirements for generating human-readable agenda presentation from records, maintaining separation between storage and rendering to prevent value boundary collisions
     content_details:
-      - Generation of human-readable presentations from record storage layer
-      - Overview visibility - complete display of all discussion items, their states, and remaining items at a glance
-      - Change tracking visualization - distinguishing modified items from unchanged ones in presentation
-      - Consistency guarantee - presentation content exactly matches record content with no independent modification paths
-      - AI does not read back from human-facing presentations - no feedback loop on generated output
-      - Direct item access by identifier without scrolling or searching required
-      - Non-functional requirement that generated nature is evident in the presentation itself
-      - Separation of concerns - display layer excludes record storage, state transitions, calling side timing
-      - Terminology alignment with record storage layer definitions - agenda, discussion item, record, presentation
-      - Scope boundaries - display does NOT determine presentation timing, question phrasing, or methodology
+      - "FNC-001: Overview visibility (all items, states, remaining work visible at once)"
+      - "FNC-002: Changed portions visualization from direct previous update"
+      - "FNC-003: Presentation and record consistency (generated from record, no parallel write paths)"
+      - "FNC-004: AI does not read human-facing presentation (no read-back implementation)"
+      - "FNC-005: Direct navigation by identifier without scrolling or searching"
+      - "NFR-001: Generated nature must be apparent from presentation itself"
+      - Separation of storage (persistence, state transition) and display (human-readable conversion) responsibilities
+      - Terminology inherited from agenda:REQ-019 (agenda item, agenda, record, presentation, caller)
     applicable_tasks:
-      - Designing the agenda display generation format and rendering method
-      - Implementing change tracking visualization logic
-      - Building direct item access mechanism by identifier
-      - Ensuring record-to-display consistency validation
-      - Implementing overview generation for complete item visibility
-      - Designing the display as a generated artifact marking
-      - Integrating display layer with record storage layer REQ-019
-      - Testing display consistency against record updates
+      - Agenda display layer design and implementation
+      - Presentation format specification (HTML adoption)
+      - Change visualization logic specification
+      - Record-to-presentation data mapping design
+      - Display consistency validation with storage layer
     keywords:
+      - agenda
       - display layer
       - presentation
-      - agenda
-      - overview
-      - change tracking
-      - consistency
-      - rendering
-      - identifier access
-      - human-readable
+      - FNC-001
+      - FNC-002
+      - FNC-003
+      - FNC-004
+      - FNC-005
+      - change visualization
+      - HTML rendering
   docs/specs/consult/requirements/REQ-017_consult_skill.md:
-    title: Consult Dialogue Progress Skill Requirements
-    purpose: Defines requirements for the consult skill that manages user dialogue, discussion, and consultation with point extraction, progress coordination, and judgment recording via agenda mechanism.
+    title: consult Dialogue Progression Skill Requirements Definition
+    purpose: Establishes functional, non-functional, and behavioral requirements for the consult dialogue progression skill, including dialogue management, multi-topic progression, item presentation, decision recording with agenda mechanism, and execution constraints
     content_details:
-      - "Three-layer architecture: dialogue layer, data storage layer, display layer separation"
-      - Point extraction and verification before presentation
-      - Multiple point progress management with importance levels and status differentiation
-      - Item presentation with background, essence, recommendation, and confidence levels
-      - Context re-presentation requirement without reference-only explanations
-      - Console versus generated presentation volume separation
-      - Question-and-answer handling distinguishing understanding from judgment requests
-      - Judgment acquisition and recording with AI vs. human decision differentiation
-      - Interruption, hold, and out-of-scope handling without item deletion
-      - Discussion mode without judgment-seeking questions
+      - "Three-layer architecture: dialogue layer (consult) / data persistence layer (agenda) / presentation layer"
+      - "Item presentation sequence: background/essence → recommendation/reasoning → options"
+      - "Confidence levels: verified / inferred / unverified with unverified as default"
+      - Multi-topic progression with mandatory AI-led lead (not user selection)
+      - "Decision vocabulary: adopt / reject / hold with mandatory reasons"
+      - "Interruption/hold handling: items recorded as rejection with reason (never deleted)"
+      - "Execution boundary: consult ends at decision recording (no execution of decisions)"
+      - "State unification: agenda mechanism as single source of truth"
     applicable_tasks:
-      - Dialogue progress management implementation for forge
-      - Consultation and discussion skill specification
-      - Agenda system integration and record collaboration
-      - Discussion mode design and behavior specification
-      - Point extraction and verification logic design
-      - Confidence level representation and UI handling
+      - Implementation of consult dialogue progression mechanism
+      - Design of multi-topic dialogue management
+      - Specification of agenda mechanism integration
+      - Design of dialogue presentation structure
+      - Implementation of decision recording
+      - Review of consult requirements compliance
     keywords:
       - consult
       - dialogue
+      - progression
       - agenda
-      - discussion_mode
-      - confidence_level
-      - point_extraction
-      - judgment
-      - record_collaboration
-      - requirement
-      - FNC
+      - decision
+      - multi-topic
+      - confidence
+      - interruption
+      - state
+      - fidelity
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md:
     title: ADR-058 doc-db error discrimination contract
     purpose: Establishes contract for distinguishing missing keys from trashed keys in doc-db integration using error identifiers rather than message text
@@ -1369,32 +1455,41 @@ docs:
       - configuration validation
       - forward compatibility
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review Body (Backend-Independent) Design
-    purpose: "Defines the design of the /forge:review skill's core body that operates independently of backend implementation, covering request assembly, finding evaluation, fixing strategy, and backend delegation."
+    title: Design of /forge:review Body (Backend-Independent)
+    purpose: Defines the architecture and module design of the /forge:review body layer that processes review requests and findings independently from backend implementation.
     content_details:
-      - Backend resolution strategy (explicit assignment, config, default candidate order)
-      - Request assembly pipeline (branch analysis, target resolution, dependency discovery)
-      - Finding evaluation and fixing workflow (located/unlocated findings, confidence levels)
-      - Backend delegation contract and context preservation
-      - Progressive disclosure via consult delegation with same context
-      - Safety verification (syntax baseline, allowlist validation, independent verification)
-      - Endpoint handling paths (approved, halted_with_open_findings, failure, interrupted)
-      - Module architecture and responsibility distribution
+      - "Backend resolution mechanism: explicit argument > configuration > candidate order (agent-review, msg-review)"
+      - Module responsibilities decomposed across 12 Python scripts and evaluator custom Agent
+      - "Terminal control paths: approved / halted_with_open_findings / failure / interrupted (single exit point)"
+      - "Location-based finding classification: located (split_by_location.py) / unlocated decision boundary"
+      - Evaluator disposition assessment with disposition / severity / confidence / fix_confident fields
+      - Finding-evaluation index-based combination (combine_findings_and_evaluations.py) with validation
+      - Request construction with FOCUS (emphasis perspective) and SCOPE (completion level) orthogonal tokens
+      - Base branch resolution and allowlist generation for target validation
+      - "Confidence split: fix_confident (modification safety) vs confidence (finding validity)"
+      - Interactive finding presentation via consult SKILL delegation with context preservation
     applicable_tasks:
-      - Review backend implementation planning
-      - Review backend contract design and validation
-      - Finding evaluation workflow implementation
-      - Safety verification mechanism design
-      - Progressive disclosure feature implementation
+      - Backend resolution logic implementation and testing
+      - Evaluator Agent design and finding assessment contract definition
+      - Finding-evaluation combination with index matching and validation
+      - Location-based finding split and classification mechanism
+      - Terminal path routing and single exit point control flow
+      - Safety verification script implementation for code modifications
+      - Base branch and allowlist handling in target resolution
+      - Interactive finding presentation coordination via consult
+      - Module interaction and contract compliance testing
+      - Review request construction with dynamic FOCUS/SCOPE token substitution
     keywords:
-      - forge:review
-      - backend delegation
-      - finding evaluation
-      - safety verification
-      - consult integration
-      - branch analysis
-      - request assembly
-      - endpoint paths
+      - /forge:review
+      - backend resolution
+      - evaluator
+      - disposition
+      - fix_confident
+      - located findings
+      - combine_findings_and_evaluations
+      - split_by_location
+      - consult delegation
+      - agent-review
   docs/specs/forge/executer/design/DES-074_plan_format_design.md:
     title: Plan Default Format
     purpose: Specifies default JSON schema and field definitions for plan documents, including requirement-design-task traceability structure and task field constraints
