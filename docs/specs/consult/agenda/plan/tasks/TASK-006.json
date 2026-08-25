@@ -1,0 +1,69 @@
+{
+  "task_id": "TASK-006",
+  "title": "agenda_schema.py を新設計へ全面書き換えする",
+  "priority": 100,
+  "status": "pending",
+  "design_id": "DES-075",
+  "depends_on": [],
+  "group_id": "GROUP-001 (1/4)",
+  "build_check": "skip",
+  "description": [
+    "status_vocabulary/terminal_statuses/active_statuses を全廃し、patch_keysにdecisionを含むかどうかをトリガーとする判定へ置き換える（DES-075 §5.1表）",
+    "verification.action固定語彙（adopt/reject）と、reject時のreason必須・adopt時もreferenced必須という既存契約はそのまま維持する（§5.1）",
+    "§5.1aの新規契約を実装する: recordが新規項目を追加する呼び出し（--item-idが既存項目を指さない）では、structural_judgment.note（非空文字列）の同時指定を必須とし、無ければ呼び出し全体を拒否する",
+    "structural_judgmentは項目パッチではなくレコード直下へのパッチであるという§6.1のルーティング契約を、validate()のインターフェース（patch_keysの由来）として反映する",
+    "required_fields_for(item, patch_keys, config)・validate(item, patch_keys, config)のシグネチャへ変更し、target_status/terminal_statuses/is_terminal判定ロジックを全削除する"
+  ],
+  "acceptance_criteria": [
+    "tests/forge/agenda/test_agenda_schema.py が新設計のシグネチャ・境界ケースに合わせて全面書き換えられ、pass する（TASK-009で実施するため、このタスクでは手動のスモーク確認のみでよい）",
+    "python3 -c によるスモーク実行で、新規項目追加時にnote無しだと拒否され、既存項目更新時はnote無しでも許可されることを確認する",
+    "decisionを含まないpatch_keysでは背景・本質・decision関連フィールドの非空チェックが一切課されないことを確認する"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [
+      "plugins/forge/scripts/plan/plan_contract.py",
+      "plugins/forge/scripts/agenda/agenda_store.py"
+    ],
+    "additional": []
+  },
+  "scope_in": "agenda_schema.py（required_fields_for()/validate()）をDES-075 §5.1・§5.1aの新契約へ全面書き換える。structural_judgment.recorded/recorded_atの自動導出はagenda_store.py側（TASK-008）の責務であり、agenda_schema.pyはpatch_keysとconfigを受け取って検証するだけ",
+  "scope_out": [
+    {
+      "item": "agenda_store.pyのCLI（start/record/next/pending/finish）実装・呼び出し側の更新",
+      "owner_task_id": "TASK-008",
+      "reason": "agenda_schema.pyは検証ロジックのみを持ち、CLI・呼び出し側の配線はTASK-008の責務"
+    },
+    {
+      "item": "agenda_render.pyの表示生成（3状態導出等）",
+      "owner_task_id": "TASK-007",
+      "reason": "同じGROUP-001の別メンバーであり、表示層はTASK-007が担当"
+    },
+    {
+      "item": "test_agenda_schema.pyの全面書き換え・pass確認",
+      "owner_task_id": "TASK-009",
+      "reason": "テストの全面書き換えはTASK-009に一体化されている（GROUP-001内でbuild_check: skip）"
+    },
+    {
+      "item": "discussion_file_template.md・consult SKILL.mdの新CLI反映",
+      "owner_task_id": "TASK-010・TASK-011",
+      "reason": "呼び出し側・配布物の整理は後続タスク"
+    }
+  ],
+  "implementation_instructions": "対象ファイル: plugins/forge/scripts/agenda/agenda_schema.py（全面書き換え）。DES-075 §5.1の遷移条件表に従い、required_fields_for(item, patch_keys, config)のシグネチャへ変更する。第2引数patch_keysは今回のrecord呼び出しで実際に渡されたトップレベルキーの集合（項目パッチ側のキーのみ。structural_judgmentはこの集合に含まれない——それはレコード直下のパッチでありagenda_store.py側で別経路として扱われる。§6.1）。判定ロジック: (1) 'decision'がpatch_keysに含まれる場合のみ、background・essence・decision.by/outcome/reasonの非空チェックを課す。これらのチェックは、今回のパッチだけでなくupsert_item()がマージした後の項目全体に対して行う（§5.1本文）。(2) verificationを持つ項目全般には、採否によらずverification.referencedの非空を課す。(3) verification.action != 'adopt'の場合はverification.reasonの非空も課す。verification.actionの語彙（'adopt'/'reject'固定2値）はagenda_schema.py内で固定定義し、呼び出し側から受け取らない。(4) 個別項目への遷移全般（=decisionを含む呼び出し）で、config['structural_judgment']['recorded'] is True であることを課す（FNC-012）。§5.1aの新規契約: これはagenda_store.py（TASK-008）が新規項目追加時にstructural_judgment.recorded/recorded_atをリセットまたは要求するロジックの一部だが、agenda_schema.py側では『configで渡されたstructural_judgmentのrecordedがTrueでなければ拒否する』という既存の(4)の判定がそのまま新規追加ケースにも作用する形でよい。agenda_schema.py自体に新規追加/既存更新を区別するロジックは持たせない（区別はagenda_store.py側がconfigの内容を作る際に行う）。戻り値契約は維持する: validate(item, patch_keys, config) は {'ok': bool, 'missing_fields': list[str]} を返す。全廃対象: status_vocabulary/terminal_statuses/active_statuses/target_status/is_terminal判定ロジックを完全に削除する。これらのキー・引数はagenda_schema.py内のどこにも残さない。plan_contract.pyと同型の構成（独立関数群、UMLクラスをそのままclass化しない）を踏襲する。既存の関数外の補助（非空判定ヘルパー等）は維持してよいが、旧語彙に依存する部分は削除する。",
+  "verification": {
+    "build": "skipped",
+    "build_reason": "GROUP-001内のbuild_check: skip。TASK-009でテスト全面書き換え・pass確認を行う",
+    "tests": "skipped",
+    "tests_reason": "test_agenda_schema.pyの書き換えはTASK-009の責務。本タスクでは手動のスモーク確認のみ行う（acceptance_criteria参照）"
+  }
+}

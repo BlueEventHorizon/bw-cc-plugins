@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """agenda 機構の表示層。``agenda.json`` 相当の dict から表示物の文字列を生成する。
 
-設計は agenda:DES-077（表示層設計書）が持つ。本モジュールが公開する 2 関数は、
-どちらも「``agenda.json`` の内容を受け取って文字列を返す」だけの純粋関数であり、
-``agenda.html`` / ``agenda_state.js`` の再生成タイミング判定（`content_version` の
-増減に応じてどちらを再生成するか）は呼び出し側（``agenda_store.py``）が担う
-（DES-077 §4.2）。本モジュールは ``agenda_store.py`` に依存せず、単体で直接
-呼び出すこともできる（DES-075 §3.1）。
+設計は agenda:DES-077（表示層設計書）が持つ。本モジュールが公開する唯一の関数
+``render_agenda_html()`` は、``agenda.json`` の内容を受け取って ``agenda.html``
+文字列を返すだけの純粋関数である。自動追従の仕組み（ポーリング・部分更新・
+スクロール位置保持）は持たない（DES-077 §4）。呼び出し側（``agenda_store.py``）
+は書き込み成功のたびに本関数を呼び、``agenda.html`` を毎回まるごと再生成する。
+本モジュールは ``agenda_store.py`` に依存せず、単体で直接呼び出すこともできる
+（DES-075 §3.1）。
 
 HTML エスケープパターンは ``plugins/anvil/skills/prepare-figma/scripts/json_to_html.py``
 の ``html.escape()`` 使用パターンを踏襲する。
@@ -15,7 +16,6 @@ HTML エスケープパターンは ``plugins/anvil/skills/prepare-figma/scripts
 from __future__ import annotations
 
 import html
-import json
 from datetime import datetime
 from typing import Any
 
@@ -32,16 +32,14 @@ def _escape(value: Any) -> str:
     return html.escape(str(value))
 
 
-def _severity_badge_html(item: dict, severity_field: str | None) -> str:
-    """severity バッジの HTML を返す。
+def _severity_value(item: dict, severity_field: str | None) -> str:
+    """`config.severity_field` が指すキーの生の値を `item["fields"]` から取り出す。
 
     DES-077 §3.1a・agenda:REQ-019 FNC-009（中立性）: ``severity`` というキー名を
-    本モジュールが決め打ちしてはならない。``config.severity_field`` が指すキー名
-    を ``item.get("fields", {})`` から動的に取り出す。``severity_field`` が
-    未指定（``None``）、または対応する値が存在しない場合はバッジ要素自体を
-    出力しない（空文字列を返す）。空文字列も「値が存在しない」として扱う
-    （`_summary_row_html` の「重要度」列が空文字列を `-` と表示する判定と
-    揃える。同一の値に対しモジュール内で解釈が割れないようにする）。
+    本モジュールが決め打ちしてはならない。``severity_field`` が未指定、または
+    対応する値が存在しない場合は空文字列を返す。エスケープ・フォールバック
+    表示（`-` 等）は呼び出し側の責務とする（表示先ごとに異なるため。
+    `_severity_badge_html` はバッジ非表示、`_summary_row_html` は `-` 表示）。
     """
     if not severity_field:
         return ""
@@ -49,10 +47,42 @@ def _severity_badge_html(item: dict, severity_field: str | None) -> str:
     if not isinstance(fields, dict):
         return ""
     value = fields.get(severity_field)
+    return str(value) if value else ""
+
+
+def _severity_badge_html(item: dict, severity_field: str | None) -> str:
+    """severity バッジの HTML を返す。
+
+    値が存在しない場合はバッジ要素自体を出力しない（空文字列を返す）。
+    """
+    value = _severity_value(item, severity_field)
     if not value:
         return ""
     escaped = _escape(value)
     return f'<span class="severity-badge" data-severity="{escaped}">{escaped}</span>'
+
+
+def _derive_status_label(item: dict) -> str:
+    """項目の状態表示文言を、独立フィールドではなく記入有無から導出する。
+
+    DES-077 §3.3 のstateDiagram-v2・判定条件表のとおり、``decision``・
+    ``background``・``essence`` の記入有無だけを見る（独立した状態フィールドは
+    持たない）:
+
+    - ``decision`` が存在する → 「決着または棄却」。``decision.outcome`` の
+      内容をそのまま表示する（呼び出し側の自由記述。agenda 機構は意味を
+      解釈しない）
+    - ``decision`` が無く、``background``・``essence`` のいずれかが非空 →
+      「進行中」
+    - 両方空 → 「未着手」
+    """
+    decision = item.get("decision")
+    if isinstance(decision, dict):
+        outcome = decision.get("outcome")
+        return outcome if outcome else "(未定)"
+    if item.get("background") or item.get("essence"):
+        return "進行中"
+    return "未着手"
 
 
 def _decision_text(item: dict) -> str:
@@ -76,45 +106,38 @@ def _decision_text(item: dict) -> str:
 
 
 def _result_summary(item: dict) -> str:
-    """アジェンダ表の「結果・課題」列に表示する短い要約を返す。
+    """アジェンダ表の「結果・課題」列に表示する短い要約を、raw のまま返す。
 
     ``decision`` が記入済みなら outcome を、未記入なら「未着手」を意味する
     プレースホルダを返す（軽微な表示詳細。§3 のテンプレートは列の存在のみを
     定め、内容の導出方法は定めていないため、DES-075 §4 の既存フィールドから
-    妥当な範囲で推測する）。
+    妥当な範囲で推測する）。**エスケープしない**——他の導出ヘルパー
+    （`_derive_status_label`/`_decision_text`）と契約を揃え、エスケープは
+    呼び出し側（`_summary_row_html`）が一律に行う。
     """
     decision = item.get("decision")
     if isinstance(decision, dict) and decision.get("outcome"):
         reason = decision.get("reason")
         if reason:
-            return _escape(f"{decision['outcome']}: {reason}")
-        return _escape(decision["outcome"])
+            return f"{decision['outcome']}: {reason}"
+        return decision["outcome"]
     return "-"
 
 
 def _is_changed(item: dict) -> bool:
-    """`last_changed_fields` が空でない項目かどうかを返す（DES-077 §3.1・§4.2）。"""
+    """`last_changed_fields` が空でない項目かどうかを返す（DES-077 §3.1）。"""
     last_changed_fields = item.get("last_changed_fields")
     return isinstance(last_changed_fields, list) and len(last_changed_fields) > 0
 
 
-def _is_current(item: dict, current_item_id: Any) -> bool:
-    """項目が対話中（`current_item_id` と一致）かどうかを返す（DES-077 §3.1）。"""
-    return current_item_id is not None and item.get("id") == current_item_id
-
-
-def _summary_row_html(item: dict, severity_field: str | None, current_item_id: Any) -> str:
+def _summary_row_html(item: dict, severity_field: str | None) -> str:
     """`#agenda-summary` テーブルの 1 行分の HTML を返す（DES-077 §3 FNC-001）。"""
     item_id = _escape(item.get("id"))
     title = _escape(item.get("title"))
-    status = _escape(item.get("status"))
-    severity_value = ""
-    if severity_field:
-        fields = item.get("fields")
-        if isinstance(fields, dict):
-            severity_value = _escape(fields.get(severity_field))
+    status = _escape(_derive_status_label(item))
+    severity_value = _escape(_severity_value(item, severity_field))
     severity_cell = severity_value or "-"
-    result_cell = _result_summary(item)
+    result_cell = _escape(_result_summary(item))
     return (
         "<tr>"
         f"<td>{item_id}</td>"
@@ -126,7 +149,7 @@ def _summary_row_html(item: dict, severity_field: str | None, current_item_id: A
     )
 
 
-def _item_section_html(item: dict, severity_field: str | None, current_item_id: Any) -> str:
+def _item_section_html(item: dict, severity_field: str | None) -> str:
     """項目ごとの `<section>` の HTML を返す（DES-077 §3・§3.1・§3.1a）。"""
     item_id_raw = item.get("id")
     item_id = _escape(item_id_raw)
@@ -135,17 +158,12 @@ def _item_section_html(item: dict, severity_field: str | None, current_item_id: 
     essence = _escape(item.get("essence"))
     decision_text = _escape(_decision_text(item))
     changed = _is_changed(item)
-    current = _is_current(item, current_item_id)
     severity_badge = _severity_badge_html(item, severity_field)
 
     return (
         f'<section id="item-{item_id}" '
-        f'data-changed="{"true" if changed else "false"}" '
-        f'data-current="{"true" if current else "false"}">\n'
-        f'  <div class="gutter">'
-        f'<span class="state-dot changed"></span>'
-        f'<span class="state-dot current"></span>'
-        f"</div>\n"
+        f'data-changed="{"true" if changed else "false"}">\n'
+        f'  <div class="gutter"><span class="state-dot changed"></span></div>\n'
         f"  <h2>[{item_id}] {title} {severity_badge}</h2>\n"
         f"  <p>背景: {background}</p>\n"
         f"  <p>本質: {essence}</p>\n"
@@ -202,7 +220,6 @@ _STYLE = """
     background: transparent;
   }
   section[data-changed="true"] .state-dot.changed { background: #f0c36d; }
-  section[data-current="true"] .state-dot.current { background: #7fb3e8; }
   .severity-badge {
     display: inline-block;
     font-size: 0.7em;
@@ -216,90 +233,40 @@ _STYLE = """
   .severity-badge[data-severity="minor"] { background: #dcf0da; color: #2f6b3a; }
 """
 
-# ページ内 JS: agenda_state.js を 2 秒ごとに <script src> 差し替えで読み込む
-# 部分更新機構（DES-077 §4.1・§4.2）。`file://` の CORS 制約を <script src> の
-# 動的差し替えで回避する。contentVersion が不変なら DOM 属性のみ更新し、
-# 変化した場合のみ location.reload() する。
-_POLLING_SCRIPT = """
-<script>
-  window.__agendaLastVersion = %(content_version)s;
-  function agendaApplyState(data) {
-    var sections = document.querySelectorAll('section[id^="item-"]');
-    sections.forEach(function (section) {
-      var itemId = section.id.slice("item-".length);
-      var isCurrent = data.currentItemId !== null && itemId === data.currentItemId;
-      var isChanged = data.changedItemIds.indexOf(itemId) !== -1;
-      section.setAttribute("data-current", isCurrent ? "true" : "false");
-      section.setAttribute("data-changed", isChanged ? "true" : "false");
-    });
-  }
-  function agendaPoll() {
-    var script = document.createElement("script");
-    script.src = "agenda_state.js?t=" + Date.now();
-    script.onload = function () {
-      var data = window.AGENDA_DATA;
-      script.remove();
-      if (!data) return;
-      if (data.contentVersion !== window.__agendaLastVersion) {
-        window.location.reload();
-        return;
-      }
-      agendaApplyState(data);
-    };
-    document.body.appendChild(script);
-  }
-  setInterval(agendaPoll, 2000);
-</script>
-"""
-
-# スクロール位置保持（DES-077 §4.3）。`location.reload()` によるスクロール位置の
-# ロスを防ぐため、`pagehide` 時に sessionStorage へ保存し、読み込み後に復元する。
-_SCROLL_PRESERVATION_SCRIPT = """
-<script>
-  window.addEventListener("pagehide", function () {
-    sessionStorage.setItem("agendaScrollY", String(window.scrollY));
-  });
-  (function () {
-    var y = sessionStorage.getItem("agendaScrollY");
-    if (y !== null) window.scrollTo(0, parseInt(y, 10));
-  })();
-</script>
-"""
-
 
 def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
     """``agenda.json`` の内容から ``agenda.html`` 文字列を生成する（DES-077 §3・§4）。
 
-    再生成タイミング（`content_version` が増える操作のときのみ）の判定は
-    呼び出し側（``agenda_store.py``。TASK-003）の責務であり、本関数は持たない。
+    自動追従の仕組み（ポーリング・部分更新・スクロール位置保持）は持たない。
+    書き込みのたびに呼び出し側（``agenda_store.py``）が本関数を呼び、
+    ``agenda.html`` を毎回まるごと再生成する前提の単純な生成専用関数である。
     """
     config = agenda.get("config")
     if not isinstance(config, dict):
-        config = {}
+        raise ValueError(
+            f"agenda['config'] は dict である必要があります（実際の型: {type(config).__name__}）。"
+            "record が破損している可能性があります（agenda:REQ-019 NFR-006: 既定値で補って進行しない）"
+        )
     severity_field = config.get("severity_field")
     identity = _escape(config.get("identity"))
-    current_item_id = agenda.get("current_item_id")
-    content_version = agenda.get("content_version")
     items = agenda.get("items")
     if not isinstance(items, list):
-        items = []
+        raise ValueError(
+            f"agenda['items'] は list である必要があります（実際の型: {type(items).__name__}）。"
+            "record が破損している可能性があります（agenda:REQ-019 NFR-006: 既定値で補って進行しない）"
+        )
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise ValueError(
+                f"agenda['items'][{index}] は dict である必要があります"
+                f"（実際の型: {type(item).__name__}）。"
+                "record が破損している可能性があります（agenda:REQ-019 NFR-006: 既定値で補って進行しない）"
+            )
 
     generated_at_value = generated_at or datetime.now().isoformat()
 
-    rows_html = "\n".join(
-        _summary_row_html(item, severity_field, current_item_id)
-        for item in items
-        if isinstance(item, dict)
-    )
-    sections_html = "\n".join(
-        _item_section_html(item, severity_field, current_item_id)
-        for item in items
-        if isinstance(item, dict)
-    )
-
-    polling_script = _POLLING_SCRIPT % {
-        "content_version": json.dumps(content_version),
-    }
+    rows_html = "\n".join(_summary_row_html(item, severity_field) for item in items)
+    sections_html = "\n".join(_item_section_html(item, severity_field) for item in items)
 
     return f"""<!DOCTYPE html>
 <html lang="ja">
@@ -320,38 +287,6 @@ def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
   </tbody>
 </table>
 {sections_html}
-{polling_script}
-{_SCROLL_PRESERVATION_SCRIPT}
 </body>
 </html>
 """
-
-
-def render_agenda_state_js(agenda: dict, *, generated_at: str | None = None) -> str:
-    """``agenda.json`` の内容から ``agenda_state.js`` 文字列を生成する（DES-077 §4.2）。
-
-    ``{currentItemId, changedItemIds, contentVersion, updatedAt}`` のみを持つ
-    軽量ファイル。各フィールドは ``agenda.json`` の既存フィールドの単純な転記・
-    集約であり、AI が新たに考案する値ではない（DES-077 §4.2 の対応表）。
-    """
-    current_item_id = agenda.get("current_item_id")
-    content_version = agenda.get("content_version")
-    items = agenda.get("items")
-    if not isinstance(items, list):
-        items = []
-
-    changed_item_ids = [
-        item.get("id")
-        for item in items
-        if isinstance(item, dict) and _is_changed(item)
-    ]
-
-    updated_at = generated_at or datetime.now().isoformat()
-
-    state = {
-        "currentItemId": current_item_id,
-        "changedItemIds": changed_item_ids,
-        "contentVersion": content_version,
-        "updatedAt": updated_at,
-    }
-    return f"window.AGENDA_DATA = {json.dumps(state, ensure_ascii=False)};\n"

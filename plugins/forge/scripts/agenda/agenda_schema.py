@@ -6,9 +6,23 @@ UML クラス（`TransitionRule`）をそのまま class 化しない）。状�
 （DES-075 §5.1、agenda:REQ-019 FNC-008/FNC-011/FNC-012）を機械可読な定義として持ち、
 不足フィールド名を列挙する判定結果を返す。
 
+**状態語彙は持たない（DES-075 §3.2・§4「状態の表現」）**。`status_vocabulary`/
+`terminal_statuses`/`active_statuses`/`target_status`/`is_terminal` 判定は
+本モジュールに存在しない。判定のトリガーは「今回の `record` 呼び出しが渡した
+差分パッチのキー集合（`patch_keys`）に `decision` を含むかどうか」だけであり、
+遷移先の値そのものは解釈しない（DES-075 §5.1）。
+
+`patch_keys` 引数について: 呼び出し側（`agenda_store.py`）が渡すのは、今回の
+`record` 呼び出しで実際に渡されたトップレベルキーの集合のうち**項目パッチ側**
+のものだけである。`structural_judgment` はレコード直下へのパッチでありこの
+集合に含まれない（DES-075 §6.1）。
+
+`item` 引数について: `decision` トリガー成立時の必須フィールド判定は、今回の
+差分パッチ単独ではなく、`upsert_item()` が既存項目へ差分パッチを適用した後の
+**項目全体**に対して行う（DES-075 §5.1本文）。呼び出し側はマージ後の項目を渡す。
+
 `config` 引数について: 呼び出し側（`agenda_store.py`）は、`AgendaRecord.config`
-（DES-075 §4 の `terminal_statuses`/`active_statuses` 等）に加え、
-`AgendaRecord.structural_judgment`（DES-075 §3.2・§4）を 1 フィールドとして
+に加え、`AgendaRecord.structural_judgment`（DES-075 §3.2・§4）を 1 フィールドとして
 合わせた dict をこの引数へ渡す。個別項目への遷移可否の判定は record 全体の
 構造判定状態（FNC-012）に依存するため、`item`（項目単位のデータ）ではなく
 record レベルの状態を保持する `config` 側にこの情報を含める。
@@ -17,9 +31,10 @@ record レベルの状態を保持する `config` 側にこの情報を含める
 from __future__ import annotations
 
 #: 検証記録（`items[].verification`）の採否を表す固定語彙（agenda:REQ-019 FNC-011、
-#: DES-075 §4・§5.1）。呼び出し側（consult）が自由に定義する `status_vocabulary`
-#: とは独立した、agenda 機構固有のスキーマである。呼び出し側（config・引数）から
-#: 受け取らず、本モジュール内の定数として固定する（FNC-009 の中立性の対象外）。
+#: DES-075 §4・§5.1）。呼び出し側（consult）が自由に定義しうる項目属性
+#: （`config.item_fields`）とは独立した、agenda 機構固有のスキーマである。
+#: 呼び出し側（config・引数）から受け取らず、本モジュール内の定数として
+#: 固定する（FNC-009 の中立性の対象外）。
 VERIFICATION_ACTIONS = frozenset({"adopt", "reject"})
 
 #: `VERIFICATION_ACTIONS` のうち、`reason` の追加記入を要求しない唯一の値。
@@ -35,30 +50,46 @@ def _non_empty(value) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
 
-def required_fields_for(item, target_status, config) -> list:
-    """`target_status` への遷移に必要なフィールドのうち、不足しているものを返す。
+def _decision_triggered(patch_keys) -> bool:
+    """`patch_keys` に `decision` を含むかどうかを判定する。
 
-    DES-075 §5.1 の4条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）を順に判定する。
+    `patch_keys` が `set`/`list`/`tuple`/`frozenset` のいずれでもない場合
+    （呼び出し側の不正な型混入）は、含む/含まないを判定できない。楽観的に
+    「含まない」とみなして検証を素通りさせると FNC-008 の必須フィールド検証を
+    丸ごと迂回できてしまうため、判定不能な場合は「含む」側（検証を課す側）に
+    倒す（NFR-006「既定値で補って進行しない」と同じ fail-closed 方針）。
+    """
+    if isinstance(patch_keys, (set, frozenset)):
+        return "decision" in patch_keys
+    if isinstance(patch_keys, (list, tuple)):
+        return "decision" in patch_keys
+    return True
 
-    1. `config.terminal_statuses` に `target_status` が含まれる場合、
-       `background`・`essence` が空でないことを要求する（FNC-008）
+
+def required_fields_for(item, patch_keys, config) -> list:
+    """今回の `record` 呼び出しに必要なフィールドのうち、不足しているものを返す。
+
+    DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）を順に判定する。
+
+    1. `patch_keys` に `decision` を含む（＝決着させる `record` 呼び出し）場合、
+       `background`・`essence`・`decision.by`・`decision.outcome`・`decision.reason`
+       が空でないことを要求する（FNC-008）
     2. 上記かつ `item` が `verification` キー（dict）を持つ場合、
-       `verification.referenced` が空でないことを追加で要求する（FNC-011）
+       `verification.action` が `VERIFICATION_ACTIONS`（固定語彙。呼び出し側から
+       受け取らない）に含まれること、および `verification.referenced` が
+       空でないことを追加で要求する（採否によらず検証を要求する。FNC-011）
     3. 上記かつ `verification.action` が `adopt` でない場合、
        `verification.reason` が空でないことを追加で要求する（FNC-011）
-    4. 個別項目への遷移全般（`target_status` を問わない）で、
-       `structural_judgment.recorded` が `True` であることを要求する（FNC-012）
+    4. 個別項目への遷移全般（＝`decision` を含む呼び出し。DES-075 §5.1表の
+       「個別項目への遷移全般」は本モジュールの実装上 `decision` トリガーと
+       同じ呼び出しを指す）で、`structural_judgment.recorded` が `True`
+       であることを要求する（FNC-012）
+
+    `patch_keys` に `decision` を含まない呼び出し（`background`/`essence` のみ等）
+    では、上記のいずれの非空チェックも課さない（空リストを返す）。
 
     `item` / `config` が dict でない場合や、期待するキーの型が異なる場合も
     クラッシュせず、該当フィールドを不足として扱う（不正な JSON 構造の拒否）。
-    型が不正で終端遷移かどうか判定できない場合は「終端ではない」と楽観視せず、
-    判定不能を終端側とみなして要求を維持する（NFR-006「既定値で補って進行しない」）。
-    同様に `verification` キーが存在するが型が不正な場合も、内容を検証できないため
-    全項目を不足として扱う。
-
-    `config.terminal_statuses` は役割マッピングとして参照するのみで、
-    状態語彙そのものの意味（`"決着"` が何を意味するか等）には立ち入らない
-    （FNC-009 の中立性）。
     """
     if not isinstance(item, dict):
         item = {}
@@ -67,36 +98,44 @@ def required_fields_for(item, target_status, config) -> list:
 
     missing: list = []
 
-    terminal_statuses = config.get("terminal_statuses")
-    terminal_statuses_malformed = not isinstance(terminal_statuses, list)
-    if terminal_statuses_malformed:
-        terminal_statuses = []
+    if not _decision_triggered(patch_keys):
+        return missing
 
-    is_terminal = terminal_statuses_malformed or (target_status in terminal_statuses)
+    if not _non_empty(item.get("background")):
+        missing.append("background")
+    if not _non_empty(item.get("essence")):
+        missing.append("essence")
 
-    if is_terminal:
-        if not _non_empty(item.get("background")):
-            missing.append("background")
-        if not _non_empty(item.get("essence")):
-            missing.append("essence")
+    decision = item.get("decision")
+    if isinstance(decision, dict):
+        if not _non_empty(decision.get("by")):
+            missing.append("decision.by")
+        if not _non_empty(decision.get("outcome")):
+            missing.append("decision.outcome")
+        if not _non_empty(decision.get("reason")):
+            missing.append("decision.reason")
+    else:
+        missing.append("decision.by")
+        missing.append("decision.outcome")
+        missing.append("decision.reason")
 
-        if "verification" in item:
-            verification = item.get("verification")
-            if isinstance(verification, dict):
-                action = verification.get("action")
-                if action not in VERIFICATION_ACTIONS:
-                    missing.append("verification.action")
-
-                if not _non_empty(verification.get("referenced")):
-                    missing.append("verification.referenced")
-
-                if action != VERIFICATION_ACTION_ADOPT:
-                    if not _non_empty(verification.get("reason")):
-                        missing.append("verification.reason")
-            else:
+    if "verification" in item:
+        verification = item.get("verification")
+        if isinstance(verification, dict):
+            action = verification.get("action")
+            if not isinstance(action, str) or action not in VERIFICATION_ACTIONS:
                 missing.append("verification.action")
+
+            if not _non_empty(verification.get("referenced")):
                 missing.append("verification.referenced")
-                missing.append("verification.reason")
+
+            if action != VERIFICATION_ACTION_ADOPT:
+                if not _non_empty(verification.get("reason")):
+                    missing.append("verification.reason")
+        else:
+            missing.append("verification.action")
+            missing.append("verification.referenced")
+            missing.append("verification.reason")
 
     structural_judgment = config.get("structural_judgment")
     recorded = (
@@ -109,12 +148,12 @@ def required_fields_for(item, target_status, config) -> list:
     return missing
 
 
-def validate(item, target_status, config) -> dict:
-    """`required_fields_for()` の結果を `TransitionResult` 形式にまとめて返す。
+def validate(item, patch_keys, config) -> dict:
+    """`required_fields_for()` の結果を `{"ok": bool, "missing_fields": [...]}`
+    形式にまとめて返す。
 
-    例外を投げず判定結果の dict（`{"ok": bool, "missing_fields": [...]}`）を返す
-    （DES-075 §5.1・`TransitionRule.validate()` の契約）。呼び出し側（consult）は
+    例外を投げず判定結果の dict を返す（DES-075 §5.1）。呼び出し側（consult）は
     この dict をそのまま利用者・コンソールへ提示できる。
     """
-    missing_fields = required_fields_for(item, target_status, config)
+    missing_fields = required_fields_for(item, patch_keys, config)
     return {"ok": not missing_fields, "missing_fields": missing_fields}

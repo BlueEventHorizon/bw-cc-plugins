@@ -1,0 +1,68 @@
+{
+  "task_id": "TASK-007",
+  "title": "agenda_render.py を新設計へ全面書き換えする",
+  "priority": 100,
+  "status": "pending",
+  "design_id": "DES-077",
+  "depends_on": [],
+  "group_id": "GROUP-001 (2/4)",
+  "build_check": "skip",
+  "description": [
+    "current_item_id引数・render_agenda_state_js()・ポーリング用<script>・スクロール保持用<script>を全廃する（DES-077 §4「表示の更新方式」）",
+    "状態表示を、decisionの有無・background/essenceの記入有無から導出する3状態（未着手/進行中/決着または棄却。DES-077 §3.3のstateDiagram-v2と判定条件表）へ置き換える",
+    "ガターのドット表示から.state-dot.currentを削除し、.state-dot.changedのみ残す（DES-077 §3.1・§3.2 CSS適用対象表）",
+    "公開関数をrender_agenda_html()のみに絞る（render_agenda_state_js()を削除）",
+    "severity_field未指定時はバッジを表示しないという既存の中立性契約は維持する（DES-077 §3.1a）"
+  ],
+  "acceptance_criteria": [
+    "tests/forge/agenda/test_agenda_render.py が新設計に合わせて全面書き換えられ、pass する（TASK-009で実施するため、このタスクでは手動のスモーク確認のみでよい）",
+    "agenda_storeを一切importしない単体スモーク実行で、fixture dictからHTMLが生成でき、生成HTMLにagenda_state.js参照・current_item_id関連のdata属性が一切含まれないことを確認する"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [
+      "plugins/anvil/skills/prepare-figma/scripts/json_to_html.py",
+      "plugins/forge/scripts/agenda/agenda_store.py"
+    ],
+    "additional": []
+  },
+  "scope_in": "agenda_render.py（render_agenda_html()）をDES-077 §3・§4の新設計へ全面書き換える。current_item_id・agenda_state.js・ポーリング/スクロール保持スクリプトを全廃し、decision/background/essenceの記入有無から導出する3状態表示に置き換える",
+  "scope_out": [
+    {
+      "item": "agenda_schema.pyの状態遷移契約書き換え",
+      "owner_task_id": "TASK-006",
+      "reason": "同じGROUP-001の別メンバーであり、状態遷移契約はTASK-006が担当"
+    },
+    {
+      "item": "agenda_store.pyのCLI（start/record/next/pending/finish）実装・自動再描画呼び出しの簡素化",
+      "owner_task_id": "TASK-008",
+      "reason": "agenda_render.pyはCLIを持たない独立関数群であり、呼び出し側の配線はTASK-008の責務"
+    },
+    {
+      "item": "test_agenda_render.pyの全面書き換え・pass確認",
+      "owner_task_id": "TASK-009",
+      "reason": "テストの全面書き換えはTASK-009に一体化されている（GROUP-001内でbuild_check: skip）"
+    },
+    {
+      "item": "discussion_file_template.md・consult SKILL.mdの新CLI反映",
+      "owner_task_id": "TASK-010・TASK-011",
+      "reason": "呼び出し側・配布物の整理は後続タスク"
+    }
+  ],
+  "implementation_instructions": "対象ファイル: plugins/forge/scripts/agenda/agenda_render.py（全面書き換え）。current_item_id引数・render_agenda_state_js()関数・ポーリング用<script>・スクロール保持用<script>を全廃する（DES-077 §4「表示の更新方式」。自動追従の仕組みは持たず、利用者が手動で再読み込みする前提に変わる）。状態表示のロジックをDES-077 §3.3のstateDiagram-v2・判定条件表に従って書き換える: decision.outcomeが非空なら『決着』表示としてdecision.outcomeの内容をそのまま表示（呼び出し側の自由記述、agenda機構は意味を解釈しない）。decisionが無く、background/essenceのいずれかが非空なら『進行中』。両方空なら『未着手』。ガターのドット表示から.state-dot.currentを削除し、.state-dot.changed（last_changed_fieldsに基づく変更箇所ハイライト）のみ残す（DES-077 §3.1・§3.2のCSS適用対象表）。公開関数はrender_agenda_html()のみに絞り、render_agenda_state_js()は削除する（呼び出し元のagenda_store.py側の対応はTASK-008が行う）。severity_field未指定時（config.severity_fieldがnull）はバッジを表示しないという既存の中立性契約は維持する（DES-077 §3.1a、agenda機構はキー名の意味を解釈しない）。HTMLエスケープは既存の_escape()による一元化パターンとjson_to_html.pyのhtml.escape()の使い方を踏襲する。既存のdiscussion_file_template.mdが定めるアジェンダ表+項目節の構造自体（保存形式ではなく表示専用の構造）はそのまま維持し、変更しない。",
+  "verification": {
+    "build": "skipped",
+    "build_reason": "GROUP-001内のbuild_check: skip。TASK-009でテスト全面書き換え・pass確認を行う",
+    "tests": "skipped",
+    "tests_reason": "test_agenda_render.pyの書き換えはTASK-009の責務。本タスクでは手動のスモーク確認のみ行う（acceptance_criteria参照）"
+  }
+}
