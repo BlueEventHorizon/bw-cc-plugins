@@ -26,14 +26,14 @@ forge's `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update
 
 The default order puts doc-advisor first; change it with `doc_backend.prefer` in `.claude/.forge.yaml`. If the preferred backend is unavailable, forge notifies you and uses the other one. This eliminates context gaps: AI implements and reviews with the same knowledge a senior team member would have.
 
-Index updates (`/forge:update-db-rules` / `/forge:update-db-specs`) accept an argument that forces a specific backend:
+This ordered list (the `doc_backend.prefer` setting) applies to all four search / index-update skills. Index updates (`/forge:update-db-rules` / `/forge:update-db-specs`) additionally accept an argument that forces a specific backend, taking precedence over the setting:
 
 ```
 /forge:update-db-rules --backend doc-db
 /forge:update-db-specs --backend doc-advisor
 ```
 
-If the forced backend is unavailable, the skill fails with an explicit error instead of switching to the other one (fail closed). Search (`/forge:query-db-rules` / `/forge:query-db-specs`) does not take this flag; backend selection for search is always decided by the ordered list (the `doc_backend.prefer` setting).
+If the forced backend is unavailable, the skill fails with an explicit error instead of switching to the other one (fail closed). Search (`/forge:query-db-rules` / `/forge:query-db-specs`) does not take this flag; backend selection for search is always decided by the ordered list.
 
 Note that the review executor (`agent-review` / `msg-review`) is a separate axis from the document-search backends: switch it with `/forge:review --backend <name>` or `review.backend` in `.claude/.forge.yaml` (also fail closed when specified explicitly). See [guide_review.md](docs/readme/forge/guide_review.md) for details.
 
