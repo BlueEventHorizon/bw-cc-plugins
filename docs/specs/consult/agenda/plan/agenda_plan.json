@@ -262,7 +262,7 @@
       "task_id": "TASK-008",
       "title": "agenda_store.py を新CLI（start/record/next/pending/finish）へ全面書き換えする",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-006",

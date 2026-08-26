@@ -1,8 +1,12 @@
-"""agenda.json の読み込み・保存、状態遷移の検証、表示層への再描画委譲を行う CLI ツール。
+"""agenda.json の読み書き・状態遷移の検証・表示層への再描画委譲を行う CLI ツール。
 
-JSON 書き込み成功直後に `agenda_render.py` を呼び出し、表示を再生成する
-（DES-075 §8.1）。再描画が失敗しても記録側の状態遷移は成立させ、
-`{"status": "partial", ...}` として呼び出し側へ失敗を明示する
+start/record/next/pending/finish の5サブコマンドを持つ（DES-075 §6）。AI（consult）から
+本ツールへの入力は常に `--input-file` による候補JSON方式であり、値をシェルコマンド書式
+（`--set key=value` 等）に組み立てる経路は持たない（DES-075 §6・agenda:REQ-019 FNC-005）。
+
+JSON 書き込み成功直後に `agenda_render.py` の `render_agenda_html()` を呼び出し、
+`agenda.html` を再生成する（DES-075 §8.1）。再描画が失敗しても記録側の状態遷移は
+成立させ、`{"status": "partial", ...}` として呼び出し側へ失敗を明示する
 （記録の正しさを表示の失敗で道連れにしない。DES-075 §8.1）。
 
 保存形式は ADR-076 の決定に従い、標準ライブラリ `json` のみを使用する
@@ -14,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,16 +29,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agenda_render  # noqa: E402
 import agenda_schema  # noqa: E402
 
-OWNER = "consult"
-
 
 class AgendaStoreError(Exception):
     """agenda.json の読み込み・書き込みに失敗した場合に送出する（NFR-006）。"""
 
 
 # ---------------------------------------------------------------------------
-# JSON 読み書き（plan_contract.py の load_plan/save_plan と同型のパターンだが、
-# 異なるドメインのモジュールであるため agenda_store.py 内に個別に実装する）
+# JSON 読み書き
 # ---------------------------------------------------------------------------
 
 
@@ -59,42 +59,290 @@ def save_agenda(path: str | Path, record: dict) -> None:
         raise AgendaStoreError(f"agenda.json を書き込めません: {exc}") from exc
 
 
-def build_init_record(
-    *,
-    identity: str,
-    status_vocabulary: list,
-    terminal_statuses: list,
-    active_statuses: list,
-    item_fields: list,
-    severity_field: str | None,
-) -> dict:
-    """新規 agenda.json の初期状態を組み立てる（DES-075 §4）。"""
-    return {
-        "owner": OWNER,
-        "created_at": datetime.now().isoformat(),
-        "content_version": 1,
-        "current_item_id": None,
-        "config": {
-            "identity": identity,
-            "status_vocabulary": status_vocabulary,
-            "terminal_statuses": terminal_statuses,
-            "active_statuses": active_statuses,
-            "item_fields": item_fields,
-            "severity_field": severity_field,
-        },
-        "structural_judgment": {"recorded": False, "note": None, "recorded_at": None},
-        "items": [],
-    }
+def _read_input_file(input_file: str) -> tuple[dict | None, str | None]:
+    """`--input-file` の内容を候補JSON（object）として読み込む。
+
+    AI が Write ツールで書いた一時ファイルのパスを受け取るだけであり（DES-075 §6.1）、
+    値をシェルコマンド書式へ組み立てる経路は持たない。
+    """
+    try:
+        with Path(input_file).open(encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return None, f"--input-file を JSON として読み込めません: {exc}"
+    if not isinstance(data, dict):
+        return None, "--input-file の内容は object である必要があります"
+    return data, None
 
 
 def _non_empty_string(value: Any) -> bool:
-    """値が非空の文字列であるかどうかを判定する。
+    return isinstance(value, str) and value.strip() != ""
 
-    真偽値判定（`not value`）は文字列以外の truthy な値（数値・list・dict 等）を
-    「欠落していない有効な id/title」として素通りさせてしまう（`id`/`title` は
-    仕様上文字列型を前提とするため、型を明示的に検証する）。
+
+def _unknown_keys_error(label: str, raw: dict, allowed: set) -> str | None:
+    """`raw` のトップレベルキーのうち `allowed` に含まれないものを検出する（超過拒否）。"""
+    unknown = sorted(set(raw) - allowed)
+    if unknown:
+        return f"{label} に未知フィールドがあります: {unknown}"
+    return None
+
+
+# ---------------------------------------------------------------------------
+# 表示層への再描画委譲（DES-075 §8.1）
+# ---------------------------------------------------------------------------
+
+
+def _render(path: str | Path, record: dict) -> list:
+    """書き込み成功後に `agenda.html` を再生成する。失敗しても例外を伝播させず、
+    エラー文字列のリストを返す（表示層は agenda_store.py に依存しない独立モジュール
+    であり、内部で何が起きても記録側の状態遷移を巻き戻さない。DES-075 §8.1）。
     """
-    return isinstance(value, str) and value != ""
+    out_dir = Path(path).parent
+    errors: list = []
+    try:
+        html_str = agenda_render.render_agenda_html(record)
+        (out_dir / "agenda.html").write_text(html_str, encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001 - DES-075 §8.1: 再描画失敗は記録を巻き戻さない
+        errors.append(f"agenda.html: {exc}")
+    return errors
+
+
+def _finalize_write(path: str | Path, record: dict) -> dict:
+    """書き込み成功後の共通処理: 再描画を行い、結果 dict を組み立てる（DES-075 §8.1）。"""
+    render_errors = _render(path, record)
+    result = {"status": "ok", "content_version": record.get("content_version")}
+    if render_errors:
+        result["status"] = "partial"
+        result["message"] = "記録は更新されたが再描画に失敗した: " + "; ".join(render_errors)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# start（DES-075 §6・§6.2）
+# ---------------------------------------------------------------------------
+
+_START_ALLOWED_KEYS = {"structural_judgment", "config", "items"}
+_START_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
+_START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field"}
+_START_ITEM_ALLOWED_KEYS = {"id", "title", "fields", "verification"}
+
+
+def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
+    """`start` の候補JSONを検証し、`(normalized | None, errors)` を返す。
+
+    トップレベル許可キーは固定・超過拒否（DES-075 §6の実装指示）。
+    `config.identity` は候補JSONから受け付けない（--path の親ディレクトリ名から導出する）。
+    """
+    errors: list = []
+    unknown = _unknown_keys_error("candidate", raw, _START_ALLOWED_KEYS)
+    if unknown:
+        errors.append(unknown)
+
+    structural_judgment = raw.get("structural_judgment")
+    note = None
+    if isinstance(structural_judgment, dict):
+        sj_unknown = _unknown_keys_error(
+            "structural_judgment", structural_judgment, _START_STRUCTURAL_JUDGMENT_ALLOWED_KEYS
+        )
+        if sj_unknown:
+            errors.append(sj_unknown)
+        note = structural_judgment.get("note")
+    else:
+        errors.append("structural_judgment は object である必要があります")
+    if not _non_empty_string(note):
+        errors.append("structural_judgment.note は空でない文字列である必要があります")
+
+    config = raw.get("config")
+    item_fields: list = []
+    severity_field = None
+    if isinstance(config, dict):
+        config_unknown = _unknown_keys_error("config", config, _START_CONFIG_ALLOWED_KEYS)
+        if config_unknown:
+            errors.append(config_unknown)
+        if "identity" in config:
+            errors.append(
+                "config.identity は候補JSONから受け付けません"
+                "（--path の親ディレクトリ名から自動導出します）"
+            )
+        item_fields = config.get("item_fields")
+        if not isinstance(item_fields, list) or not all(
+            isinstance(value, str) and value for value in item_fields
+        ):
+            errors.append("config.item_fields は空でない文字列の配列である必要があります")
+            item_fields = []
+        severity_field = config.get("severity_field")
+        if severity_field is not None and not isinstance(severity_field, str):
+            errors.append("config.severity_field は文字列または null である必要があります")
+    else:
+        errors.append("config は object である必要があります")
+
+    items_raw = raw.get("items")
+    items: list = []
+    if isinstance(items_raw, list):
+        seen_ids: set = set()
+        for index, item in enumerate(items_raw):
+            label = f"items[{index}]"
+            if not isinstance(item, dict):
+                errors.append(f"{label} は object である必要があります")
+                continue
+            item_unknown = _unknown_keys_error(label, item, _START_ITEM_ALLOWED_KEYS)
+            if item_unknown:
+                errors.append(item_unknown)
+            item_id = item.get("id")
+            title = item.get("title")
+            if not _non_empty_string(item_id):
+                errors.append(f"{label}.id は空でない文字列である必要があります")
+            elif item_id in seen_ids:
+                errors.append(f"{label}.id が重複しています: {item_id!r}")
+            else:
+                seen_ids.add(item_id)
+            if not _non_empty_string(title):
+                errors.append(f"{label}.title は空でない文字列である必要があります")
+            fields = item.get("fields", {})
+            if fields is not None and not isinstance(fields, dict):
+                errors.append(f"{label}.fields は object である必要があります")
+                fields = {}
+            verification = item.get("verification")
+            if verification is not None and not isinstance(verification, dict):
+                errors.append(f"{label}.verification は object である必要があります")
+                verification = None
+            new_item = {
+                "id": item_id,
+                "title": title,
+                "fields": fields if isinstance(fields, dict) else {},
+                "background": "",
+                "essence": "",
+                "decision": None,
+                "last_changed_fields": [],
+            }
+            # verification は「外部指摘由来かどうか」を表すキーの有無であるため、
+            # 未指定なら明示的にキー自体を持たせない（agenda_schema.py の
+            # `"verification" in item` 判定を誤発火させないため）。
+            if isinstance(verification, dict):
+                new_item["verification"] = verification
+            items.append(new_item)
+    else:
+        errors.append("items は配列である必要があります")
+
+    if errors:
+        return None, errors
+
+    return (
+        {
+            "note": note,
+            "item_fields": item_fields,
+            "severity_field": severity_field,
+            "items": items,
+        },
+        [],
+    )
+
+
+def handle_start(args: argparse.Namespace) -> dict:
+    raw, read_error = _read_input_file(args.input_file)
+    if read_error:
+        return {"status": "error", "message": read_error}
+
+    normalized, errors = _validate_start_candidate(raw)
+    if errors:
+        return {"status": "error", "message": "; ".join(errors)}
+
+    path = Path(args.path)
+    # 既存ファイルの有無を問わず無条件に新規開始として上書きする。「削除して新しく
+    # 始めるか・続きから進めるか」の判断は呼び出し側（review/consult SKILL の
+    # Step 1.1 相当。今後 TASK-010/011 が実装する想定）が start を呼ぶ前に済ませる
+    # べきものであり、agenda_store.py 側で二重にガードしない（agenda:REQ-019
+    # FNC-010: 放置された記録が start を恒久的にブロックしない）。
+
+    record = {
+        "content_version": 1,
+        "config": {
+            "identity": path.parent.name,
+            "item_fields": normalized["item_fields"],
+            "severity_field": normalized["severity_field"],
+        },
+        "structural_judgment": {
+            "recorded": True,
+            "note": normalized["note"],
+        },
+        "items": normalized["items"],
+    }
+
+    try:
+        save_agenda(path, record)
+    except AgendaStoreError as exc:
+        return {"status": "error", "message": str(exc)}
+
+    return _finalize_write(path, record)
+
+
+# ---------------------------------------------------------------------------
+# record（差分パッチ。DES-075 §6.1・§5.1a）
+# ---------------------------------------------------------------------------
+
+_RECORD_ALLOWED_KEYS = {
+    "title",
+    "background",
+    "essence",
+    "decision",
+    "verification",
+    "fields",
+    "structural_judgment",
+}
+_RECORD_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
+_RECORD_ITEM_PATCH_STRING_KEYS = ("title", "background", "essence")
+_RECORD_ITEM_PATCH_DICT_KEYS = ("fields", "verification", "decision")
+
+
+def _validate_record_candidate(raw: dict) -> tuple[dict | None, str | None, list]:
+    """`record` の候補JSONを検証し、`(item_patch | None, structural_judgment_note, errors)`
+    を返す（DES-075 §6.1: `structural_judgment` キーとそれ以外の項目パッチキーの2経路）。
+    """
+    errors: list = []
+    unknown = _unknown_keys_error("candidate", raw, _RECORD_ALLOWED_KEYS)
+    if unknown:
+        errors.append(unknown)
+    if "id" in raw:
+        errors.append("id は --item-id で指定してください（候補JSONに含めることはできません）")
+
+    structural_judgment_note = None
+    if "structural_judgment" in raw:
+        sj = raw.get("structural_judgment")
+        if not isinstance(sj, dict):
+            errors.append("structural_judgment は object である必要があります")
+        else:
+            sj_unknown = _unknown_keys_error(
+                "structural_judgment", sj, _RECORD_STRUCTURAL_JUDGMENT_ALLOWED_KEYS
+            )
+            if sj_unknown:
+                errors.append(sj_unknown)
+            note = sj.get("note")
+            if not _non_empty_string(note):
+                errors.append("structural_judgment.note は空でない文字列である必要があります")
+            else:
+                structural_judgment_note = note
+
+    item_patch: dict = {}
+    for key in _RECORD_ITEM_PATCH_STRING_KEYS:
+        if key not in raw:
+            continue
+        value = raw[key]
+        if not isinstance(value, str):
+            errors.append(f"{key} は文字列である必要があります")
+            continue
+        item_patch[key] = value
+    for key in _RECORD_ITEM_PATCH_DICT_KEYS:
+        if key not in raw:
+            continue
+        value = raw[key]
+        if not isinstance(value, dict):
+            errors.append(f"{key} は object である必要があります")
+            continue
+        item_patch[key] = value
+
+    if errors:
+        return None, None, errors
+    return item_patch, structural_judgment_note, []
 
 
 def _find_item_index(items: list, item_id: Any) -> int | None:
@@ -104,300 +352,191 @@ def _find_item_index(items: list, item_id: Any) -> int | None:
     return None
 
 
-def upsert_item(record: dict, item_patch: dict) -> dict:
-    """差分パッチ `item_patch` を `record["items"]` へ適用する（DES-075 §6.1）。
+def upsert_item(items: list, item_id: Any, item_patch: dict) -> tuple[dict, bool]:
+    """既存項目があれば差分パッチをマージし、無ければ新規項目を組み立てる（DES-075 §3.2・§5.1）。
 
-    既存項目なら渡されたキーだけを既存値へマージし、存在しなければ新規追加する。
-    戻り値は状態確認用の `{"ok": bool, ...}` 形式（record 全体のコピーではない）
-    であり、`ok: False` の場合は呼び出し側（`handle_update`）が書き込みを行わない
-    （拒否時は本関数の呼び出し前に record を退避しておくか、拒否後に
-    save しない運用で整合を保つ。現在の `handle_update` は拒否時に
-    `save_agenda` を呼ばないため、拒否された変更がファイルへ永続化されない）。
-    `record["items"]` を in-place に書き換える。
+    戻り値は `(マージ後の項目全体, 新規追加かどうか)`。`items` への反映（追加/置換）・
+    検証・保存は呼び出し側（`handle_record`）が構造判定を経てから行う（本関数は
+    純粋関数であり `items` を変更しない）。
     """
-    if not isinstance(item_patch, dict) or not _non_empty_string(item_patch.get("id")):
-        return {"ok": False, "missing_fields": ["id"]}
-    items = record.get("items")
-    if not isinstance(items, list):
-        items = []
-    record["items"] = items
-    item_id = item_patch["id"]
     index = _find_item_index(items, item_id)
     is_new = index is None
     if is_new:
-        missing_new_fields = []
-        if not _non_empty_string(item_patch.get("title")):
-            missing_new_fields.append("title")
-        if not _non_empty_string(item_patch.get("status")):
-            # status 未設定の項目は config.active_statuses にも config.terminal_statuses にも
-            # 属さない「第三の状態」になり、next_item_id()/pending_item_ids() から永久に見えなくなる
-            # うえ、§7 の削除条件（全項目の status が active_statuses に含まれなくなった時点）を
-            # 満たしてしまい、未処理の項目が残ったまま記録が削除されうる。新規追加時に必須とする
-            # ことで、この「第三の状態」が生まれる経路自体を塞ぐ（DES-075 §6.1）。
-            missing_new_fields.append("status")
-        if missing_new_fields:
-            return {"ok": False, "missing_fields": missing_new_fields}
-    existing = items[index] if not is_new else {}
-    merged = dict(existing)
-    merged.update(item_patch)
-    if "status" in item_patch:
-        target_status = item_patch["status"]
-        config = dict(record.get("config")) if isinstance(record.get("config"), dict) else {}
-        config["structural_judgment"] = record.get("structural_judgment")
-        result = agenda_schema.validate(merged, target_status, config)
-        if not result["ok"]:
-            return {"ok": False, "missing_fields": result["missing_fields"]}
-
-    # last_changed_fields は今回渡されたキーの集合を記録する（DES-075 §6.1・§4）。
-    # id は項目を識別する固定キーであり、CLI の --item-id 由来で常に item_patch に
-    # 含まれるが、値そのものが「変わった」わけではないため対象から除く
-    # （DES-075 §4 のスキーマ例が id を含めていないことに合わせる）。
-    merged["last_changed_fields"] = sorted(key for key in item_patch.keys() if key != "id")
-
-    if is_new:
-        items.append(merged)
+        existing: dict = {"id": item_id, "fields": {}, "background": "", "essence": "", "decision": None}
     else:
-        items[index] = merged
-    return {"ok": True, "item": merged}
+        existing = dict(items[index])
+    merged_item = dict(existing)
+    merged_item.update(item_patch)
+    merged_item["id"] = item_id
+    return merged_item, is_new
 
 
-def _require_active_statuses(record: dict) -> list:
-    """`config.active_statuses` を取り出す。list でない場合は既定値で補わず例外を送出する
-    （NFR-006・agenda_schema.py の fail-closed 方針と対称にする。壊れた config を
-    「対象項目なし」と誤判定させない）。
-    """
-    config = record.get("config")
-    active_statuses = config.get("active_statuses") if isinstance(config, dict) else None
-    if not isinstance(active_statuses, list):
-        raise AgendaStoreError("config.active_statuses が不正です（list ではありません）")
-    return active_statuses
+def handle_record(args: argparse.Namespace) -> dict:
+    if not _non_empty_string(args.item_id):
+        return {"status": "error", "message": "--item-id は空でない文字列である必要があります"}
+
+    raw, read_error = _read_input_file(args.input_file)
+    if read_error:
+        return {"status": "error", "message": read_error}
+
+    item_patch, structural_judgment_note, errors = _validate_record_candidate(raw)
+    if errors:
+        return {"status": "error", "message": "; ".join(errors)}
+
+    try:
+        record = load_agenda(args.path)
+    except AgendaStoreError as exc:
+        return {"status": "error", "message": str(exc)}
+
+    items = record.get("items")
+    if not isinstance(items, list):
+        return {"status": "error", "message": "agenda.json の items が不正です（list ではありません）"}
+
+    index = _find_item_index(items, args.item_id)
+    is_new = index is None
+
+    # §5.1a: 新規追加の場合、集合全体への再判定（structural_judgment.note）と
+    # Item スキーマが要求する title を、この record 呼び出し全体で伴わなければ拒否する
+    # （中間状態を永続化しない。項目・判定ともに保存しない）。
+    missing_precondition: list = []
+    if is_new:
+        if structural_judgment_note is None:
+            missing_precondition.append("structural_judgment.note")
+        if not _non_empty_string(item_patch.get("title")):
+            missing_precondition.append("title")
+    if missing_precondition:
+        return {"status": "error", "ok": False, "missing_fields": missing_precondition}
+
+    merged_item, _ = upsert_item(items, args.item_id, item_patch)
+
+    # レコード直下 structural_judgment を先に確定させる。新規追加でこの呼び出し内に
+    # note が伴う場合、直後の decision トリガー判定（下記）は更新後の判定状態を参照する
+    # 必要があるため（§5.1a「中間状態を永続化しない」）、save 前にこの時点で計算する。
+    structural_judgment = record.get("structural_judgment")
+    if not isinstance(structural_judgment, dict):
+        structural_judgment = {"recorded": False, "note": None}
+    if structural_judgment_note is not None:
+        structural_judgment = {
+            "recorded": True,
+            "note": structural_judgment_note,
+        }
+
+    patch_keys = set(item_patch.keys())
+    config_for_schema = (
+        dict(record.get("config")) if isinstance(record.get("config"), dict) else {}
+    )
+    config_for_schema["structural_judgment"] = structural_judgment
+    validation = agenda_schema.validate(merged_item, patch_keys, config_for_schema)
+    if not validation["ok"]:
+        return {"status": "error", "ok": False, "missing_fields": validation["missing_fields"]}
+
+    item_changed = bool(item_patch) or is_new
+    if item_changed:
+        merged_item["last_changed_fields"] = sorted(patch_keys)
+        if is_new:
+            items.append(merged_item)
+        else:
+            items[index] = merged_item
+        record["items"] = items
+
+    if structural_judgment_note is not None:
+        record["structural_judgment"] = structural_judgment
+    record["content_version"] = record.get("content_version", 0) + 1
+
+    try:
+        save_agenda(args.path, record)
+    except AgendaStoreError as exc:
+        return {"status": "error", "message": str(exc)}
+
+    return _finalize_write(args.path, record)
+
+
+# ---------------------------------------------------------------------------
+# next / pending（FNC-006。decision が dict 型で outcome が非空かという値ベースで判定。DES-075 §4「状態の表現」）
+# ---------------------------------------------------------------------------
+
+
+def _is_pending(item: dict) -> bool:
+    decision = item.get("decision")
+    if not isinstance(decision, dict):
+        return True
+    return not _non_empty_string(decision.get("outcome"))
 
 
 def next_item_id(record: dict) -> Any | None:
-    """`config.active_statuses` に含まれる最初の項目の id を返す（実装指示 (3) next）。"""
-    active_statuses = _require_active_statuses(record)
     items = record.get("items")
     if not isinstance(items, list):
         return None
     for item in items:
-        if isinstance(item, dict) and item.get("status") in active_statuses:
+        if isinstance(item, dict) and _is_pending(item):
             return item.get("id")
     return None
 
 
 def pending_item_ids(record: dict) -> list:
-    """`config.active_statuses` に含まれる全項目の id を返す（実装指示 (4) pending）。
+    """`decision` キーを持たない、または `decision.outcome` が空の全項目の id を返す。
 
-    `remaining_count` は `len()` で導出可能なため別コマンド化しない（DES-075 §5.1）。
+    `remaining_count` は呼び出し元が `len()` で導出する（DES-075 §5.1）。
     """
-    active_statuses = _require_active_statuses(record)
     items = record.get("items")
     if not isinstance(items, list):
         return []
     return [
         item.get("id")
         for item in items
-        if isinstance(item, dict) and item.get("status") in active_statuses
+        if isinstance(item, dict) and _is_pending(item)
     ]
-
-
-# ---------------------------------------------------------------------------
-# 表示層への再描画委譲（DES-075 §8.1）
-# ---------------------------------------------------------------------------
-
-
-def _render(path: str | Path, record: dict, *, include_html: bool) -> list:
-    """書き込み成功後に表示を再生成する。失敗しても例外を伝播させず、エラー文字列のリストを返す。
-
-    `content_version` が増える操作（init/update/record-structural-judgment）は
-    `include_html=True` で agenda.html と agenda_state.js の両方を再生成し、
-    増えない操作（set-current）は `include_html=False` で agenda_state.js のみを
-    再生成する（DES-075 §8.1・§3.2）。表示層は `agenda_store.py` に依存しない
-    独立モジュールであり、内部で何が起きても記録側の状態遷移を巻き戻さない
-    （DES-075 §8.1「記録の正しさを表示の失敗で道連れにしない」）。
-    """
-    out_dir = Path(path).parent
-    errors: list = []
-
-    try:
-        state_js = agenda_render.render_agenda_state_js(record)
-        (out_dir / "agenda_state.js").write_text(state_js, encoding="utf-8")
-    except Exception as exc:  # noqa: BLE001 - DES-075 §8.1: 再描画失敗は記録を巻き戻さない
-        errors.append(f"agenda_state.js: {exc}")
-
-    if include_html:
-        try:
-            html_str = agenda_render.render_agenda_html(record)
-            (out_dir / "agenda.html").write_text(html_str, encoding="utf-8")
-        except Exception as exc:  # noqa: BLE001 - 同上
-            errors.append(f"agenda.html: {exc}")
-
-    return errors
-
-
-def _finalize_write(path: str | Path, record: dict, *, include_html: bool) -> dict:
-    """書き込み成功後の共通処理: 再描画を行い、結果 dict を組み立てる（DES-075 §8.1）。"""
-    render_errors = _render(path, record, include_html=include_html)
-    result = {"status": "ok", "content_version": record.get("content_version")}
-    if render_errors:
-        result["status"] = "partial"
-        result["message"] = "記録は更新されたが再描画に失敗した: " + "; ".join(render_errors)
-    return result
-
-
-# ---------------------------------------------------------------------------
-# サブコマンド本体（argparse から分離。テストは parse_args() を経由せず直接呼べる）
-# ---------------------------------------------------------------------------
-
-
-def handle_init(args: argparse.Namespace) -> dict:
-    try:
-        status_vocabulary = json.loads(args.status_vocabulary)
-        terminal_statuses = json.loads(args.terminal_statuses)
-        active_statuses = json.loads(args.active_statuses)
-        item_fields = json.loads(args.item_fields)
-    except json.JSONDecodeError as exc:
-        return {"status": "error", "message": f"引数を JSON として解析できません: {exc}"}
-
-    record = build_init_record(
-        identity=args.identity,
-        status_vocabulary=status_vocabulary,
-        terminal_statuses=terminal_statuses,
-        active_statuses=active_statuses,
-        item_fields=item_fields,
-        severity_field=args.severity_field,
-    )
-
-    try:
-        save_agenda(args.path, record)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    return _finalize_write(args.path, record, include_html=True)
-
-
-def _parse_set_flags(pairs: list) -> dict:
-    """`--set key=value` の繰り返し指定を差分パッチ dict へ変換する。
-
-    値は常に argparse 由来の文字列であり、AI が JSON 構文を直接組み立てる経路を持たない
-    （`id` を数値で書き間違える等の型混入が構造的に起こらない）。`key` に `.` を含む場合、
-    `top.sub` の 1 階層ネストとして `{top: {sub: value}}` を組み立てる（DES-075 §6.1 の
-    「fields 等の入れ子はトップレベルキー単位で丸ごと置換」と同じ粒度）。
-    """
-    patch: dict = {}
-    for pair in pairs:
-        if "=" not in pair:
-            raise ValueError(f"--set は key=value 形式である必要があります: {pair!r}")
-        key, value = pair.split("=", 1)
-        if not key:
-            raise ValueError(f"--set のキーが空です: {pair!r}")
-        if "." in key:
-            top, _, sub = key.partition(".")
-            if not top or not sub or "." in sub:
-                raise ValueError(f"--set は 'top.sub' の1階層ネストのみ対応します: {pair!r}")
-            existing = patch.setdefault(top, {})
-            if not isinstance(existing, dict):
-                raise ValueError(f"--set のキーが競合しています: {key!r}")
-            existing[sub] = value
-        else:
-            if isinstance(patch.get(key), dict):
-                raise ValueError(f"--set のキーが競合しています: {key!r}")
-            patch[key] = value
-    return patch
-
-
-def handle_update(args: argparse.Namespace) -> dict:
-    if not isinstance(args.item_id, str) or args.item_id == "":
-        return {"status": "error", "message": "--item-id は空でない文字列である必要があります"}
-    try:
-        item_patch = _parse_set_flags(args.set)
-    except ValueError as exc:
-        return {"status": "error", "message": str(exc)}
-    if "id" in item_patch:
-        return {"status": "error", "message": "id は --item-id で指定してください（--set id=... は使用できません）"}
-    item_patch["id"] = args.item_id
-
-    try:
-        record = load_agenda(args.path)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    upsert_result = upsert_item(record, item_patch)
-    if not upsert_result["ok"]:
-        return {
-            "status": "error",
-            "ok": False,
-            "missing_fields": upsert_result["missing_fields"],
-        }
-
-    record["content_version"] = record.get("content_version", 0) + 1
-    try:
-        save_agenda(args.path, record)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    return _finalize_write(args.path, record, include_html=True)
 
 
 def handle_next(args: argparse.Namespace) -> dict:
     try:
         record = load_agenda(args.path)
-        result = next_item_id(record)
     except AgendaStoreError as exc:
         return {"status": "error", "message": str(exc)}
-    return {"status": "ok", "next_item_id": result}
+    return {"status": "ok", "item_id": next_item_id(record)}
 
 
 def handle_pending(args: argparse.Namespace) -> dict:
     try:
         record = load_agenda(args.path)
-        pending = pending_item_ids(record)
     except AgendaStoreError as exc:
         return {"status": "error", "message": str(exc)}
+    pending = pending_item_ids(record)
     return {"status": "ok", "pending_item_ids": pending, "remaining_count": len(pending)}
 
 
-def handle_record_structural_judgment(args: argparse.Namespace) -> dict:
-    if not isinstance(args.note, str) or not args.note.strip():
+# ---------------------------------------------------------------------------
+# finish（DES-075 §7）
+# ---------------------------------------------------------------------------
+
+
+def handle_finish(args: argparse.Namespace) -> dict:
+    try:
+        record = load_agenda(args.path)
+    except AgendaStoreError as exc:
+        return {"status": "error", "message": str(exc)}
+
+    items = record.get("items")
+    if not isinstance(items, list):
+        return {"status": "error", "message": "agenda.json の items が不正です（list ではありません）"}
+
+    pending_ids = pending_item_ids(record)
+    if pending_ids:
         return {
-            "status": "error",
-            "message": "--note は空でない文字列である必要があります（FNC-012: 判断の根拠を記録すること）",
+            "status": "ok",
+            "deleted": False,
+            "remaining_count": len(pending_ids),
+            "pending_item_ids": pending_ids,
         }
 
+    path = Path(args.path)
     try:
-        record = load_agenda(args.path)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
+        path.unlink(missing_ok=True)
+        (path.parent / "agenda.html").unlink(missing_ok=True)
+    except OSError as exc:
+        return {"status": "error", "message": f"agenda.json/agenda.html を削除できません: {exc}"}
 
-    record["structural_judgment"] = {
-        "recorded": True,
-        "note": args.note,
-        "recorded_at": datetime.now().isoformat(),
-    }
-    record["content_version"] = record.get("content_version", 0) + 1
-
-    try:
-        save_agenda(args.path, record)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    return _finalize_write(args.path, record, include_html=True)
-
-
-def handle_set_current(args: argparse.Namespace) -> dict:
-    try:
-        record = load_agenda(args.path)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    record["current_item_id"] = args.item_id
-
-    try:
-        save_agenda(args.path, record)
-    except AgendaStoreError as exc:
-        return {"status": "error", "message": str(exc)}
-
-    return _finalize_write(args.path, record, include_html=False)
+    return {"status": "ok", "deleted": True}
 
 
 # ---------------------------------------------------------------------------
@@ -409,26 +548,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agenda_store.py")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    p_init = subparsers.add_parser("init", help="agenda.json の新規作成")
-    p_init.add_argument("--identity", required=True)
-    p_init.add_argument("--status-vocabulary", required=True)
-    p_init.add_argument("--terminal-statuses", required=True)
-    p_init.add_argument("--active-statuses", required=True)
-    p_init.add_argument("--item-fields", required=True)
-    p_init.add_argument("--severity-field", default=None)
-    p_init.add_argument("--path", required=True)
+    p_start = subparsers.add_parser("start", help="agenda.json の新規作成")
+    p_start.add_argument("--path", required=True)
+    p_start.add_argument("--input-file", required=True)
 
-    p_update = subparsers.add_parser("update", help="1 項目の差分パッチ適用")
-    p_update.add_argument("--path", required=True)
-    p_update.add_argument("--item-id", required=True)
-    p_update.add_argument(
-        "--set",
-        action="append",
-        default=[],
-        metavar="KEY=VALUE",
-        help="変更するフィールドを key=value で指定する（複数指定可）。"
-        "'verification.action=adopt' のように 1 階層のネストを dot で表せる",
-    )
+    p_record = subparsers.add_parser("record", help="1項目への判断の記録（差分パッチ）")
+    p_record.add_argument("--path", required=True)
+    p_record.add_argument("--item-id", required=True)
+    p_record.add_argument("--input-file", required=True)
 
     p_next = subparsers.add_parser("next", help="次に扱う項目の id")
     p_next.add_argument("--path", required=True)
@@ -436,24 +563,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_pending = subparsers.add_parser("pending", help="未対応項目の id 一覧")
     p_pending.add_argument("--path", required=True)
 
-    p_rsj = subparsers.add_parser("record-structural-judgment", help="構造判定の記録")
-    p_rsj.add_argument("--path", required=True)
-    p_rsj.add_argument("--note", required=True)
-
-    p_set_current = subparsers.add_parser("set-current", help="対話中の項目を示す")
-    p_set_current.add_argument("--path", required=True)
-    p_set_current.add_argument("--item-id", required=True)
+    p_finish = subparsers.add_parser("finish", help="全項目決着していれば記録を削除")
+    p_finish.add_argument("--path", required=True)
 
     return parser
 
 
 _HANDLERS = {
-    "init": handle_init,
-    "update": handle_update,
+    "start": handle_start,
+    "record": handle_record,
     "next": handle_next,
     "pending": handle_pending,
-    "record-structural-judgment": handle_record_structural_judgment,
-    "set-current": handle_set_current,
+    "finish": handle_finish,
 }
 
 

@@ -5,7 +5,7 @@ feature_note:
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
   - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
   - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
-  - `doc_status: not_implemented`は「未着手」ではなく「既存実装との契約差し替え待ち」を意味する。`plugins/forge/scripts/agenda/agenda_store.py`/`agenda_render.py`/`agenda_schema.py`は本設計書と異なる旧CLI契約（`init --status-vocabulary/--terminal-statuses/--active-statuses`・`update --set key=value`・`record-structural-judgment`・`set-current`）で既に実装・commit済みであり、本設計書はこの既存実装を置き換える対象として書かれている。実装追従は本feature完了時に一括して行う。
+  - `doc_status: not_implemented`は「未着手」ではなく「本feature配下の残タスク完了待ち」を意味する。`plugins/forge/scripts/agenda/agenda_store.py`/`agenda_render.py`/`agenda_schema.py`は本設計書が置き換え対象とした旧CLI契約（`init --status-vocabulary/--terminal-statuses/--active-statuses`・`update --set key=value`・`record-structural-judgment`・`set-current`）から、本設計書が定める新CLI契約（`start`/`record`/`next`/`pending`/`finish`）へ既に書き換え済みである。残るのは呼び出し側（`plugins/forge/skills/consult/SKILL.md`）の追従とテストスイートの書き換えであり、それらの完了をもって本feature完了とする。
 doc_status: not_implemented
 ---
 
@@ -104,7 +104,6 @@ classDiagram
     class StructuralJudgment {
         +recorded: bool
         +note: str | None
-        +recorded_at: str | None
     }
     AgendaRecord --> Config
     AgendaRecord --> Item
@@ -139,8 +138,7 @@ classDiagram
   },
   "structural_judgment": {
     "recorded": true,
-    "note": "同型の指摘は無い。個別の食い違いに留まる",
-    "recorded_at": "2026-08-19T10:05:00"
+    "note": "同型の指摘は無い。個別の食い違いに留まる"
   },
   "items": [
     {
@@ -167,19 +165,19 @@ classDiagram
 | `config.identity`             | 記録の識別名。`agenda_store.py` が `--path` 引数の**親ディレクトリ名**から機械的に導出する（`Path(path).parent.name`）。起点の判定を別途行わない——`--path` は呼び出し側（consult）が既に完全に指定する値であり、ファイル名は起点を問わず常に`agenda.json`（[DES-077](DES-077_agenda_display_design.md)が前提とする固定名）、親ディレクトリ名だけが起点で変わる（review 起点は`.claude/.temp/review/agenda.json`→識別名`"review"`、consult 直接利用は`.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json`→識別名は`${CLAUDE_SESSION_ID}`の値。§7参照）。呼び出し側は `identity` を組み立てて渡さない | FNC-009・NFR-003        |
 | `config.item_fields`          | 呼び出し側が `items[].fields` に含める属性キーの一覧（agenda 側は意味を解釈しない）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | FNC-009                 |
 | `config.severity_field`       | `item_fields` のうち、表示層（[DES-077](DES-077_agenda_display_design.md) §3.1a）が重大度バッジとして強調表示する対象キー名。未指定（`null`）ならバッジを表示しない。**キー名を指定するだけで、値の意味には agenda 側は立ち入らない**                                                                                                                                                                                                                                                                                                                                                                   | FNC-009                 |
-| `structural_judgment`         | FNC-012 の判定結果。**個別項目の状態遷移が起きる前に、このフィールドが埋まっていなければならない**。呼び出し側が候補JSONで渡すのは`note`のみであり、`recorded`（bool）・`recorded_at`（timestamp）は`content_version`（本表）と同様に`agenda_store.py`が自動導出する——`note`が非空文字列で渡された`start`呼び出し・`record`呼び出し（新規項目追加時。§5.1a）のいずれでも、`agenda_store.py`はその場で`recorded: true`・`recorded_at: 現在時刻`を書き込む。呼び出し側はこの2フィールドを渡さない（渡しても無視される）                                                                                   | FNC-012                 |
+| `structural_judgment`         | FNC-012 の判定結果。**個別項目の状態遷移が起きる前に、このフィールドが埋まっていなければならない**。呼び出し側が候補JSONで渡すのは`note`のみであり、`recorded`（bool）は`content_version`（本表）と同様に`agenda_store.py`が自動導出する——`note`が非空文字列で渡された`start`呼び出し・`record`呼び出し（新規項目追加時。§5.1a）のいずれでも、`agenda_store.py`はその場で`recorded: true`を書き込む。呼び出し側はこのフィールドを渡さない（渡すと未知フィールドとして拒否される。`recorded_at`のような監査用タイムスタンプは、どのロジック・表示からも参照されない不要フィールドと判断し設計しない）    | FNC-012                 |
 | `items[].verification`        | FNC-011 が要求する検証記録。`referenced` は位置情報（ファイル:行 / コマンドと出力）を必須とする                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | FNC-011                 |
-| `items[].decision`            | 項目の最終判断記録（§3.2）。**このキーが存在することが「決着済み」を表す**（下記「状態の表現」参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | consult:REQ-017 FNC-008 |
+| `items[].decision`            | 項目の最終判断記録（§3.2）。**このキーが `dict` 型で `outcome` が非空であることが「決着済み」を表す**（下記「状態の表現」参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | consult:REQ-017 FNC-008 |
 | `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | FNC-013                 |
 
 ### 状態の表現（独立した状態語彙を持たない）
 
 `status` フィールド・`config.status_vocabulary`/`terminal_statuses`/`active_statuses`は持たない。項目の状態は次の構造的事実だけで表す。
 
-- **`decision`キーを持たない項目** = 未対応（残件）
-- **`decision`キーを持つ項目** = 決着済み。`decision.outcome`が「どう決着したか」（`"adopt"`・`"取り下げ"`・`"対象外"`等、呼び出し側の自由記述）を表す
+- **`decision`が `dict` 型で `outcome` が非空でない項目**（`decision`キー自体が無い場合を含む）= 未対応（残件）
+- **`decision`が `dict` 型で `outcome` が非空の項目** = 決着済み。`decision.outcome`が「どう決着したか」（`"adopt"`・`"取り下げ"`・`"対象外"`等、呼び出し側の自由記述）を表す
 
-独立した語彙を持たないことで、`agenda_schema.py`は「`decision`を含む差分パッチかどうか」だけを見て終端相当の検証（§5.1）を課せばよくなり、呼び出し側は語彙を宣言する負担（旧`--status-vocabulary`等）を持たない。
+`agenda_store.py`は新規項目の初期値として `decision` キー自体を（値 `None` で）持たせる実装を取ってよい——判定は常に上記の値ベースの条件（`isinstance(decision, dict) and decision.get("outcome")`）で行われ、キーの有無そのものを見ないため、初期値としてキーを持たせるか省略するかは実装判断に委ねられる。独立した語彙を持たないことで、`agenda_schema.py`は「`decision`を含む差分パッチかどうか」だけを見て終端相当の検証（§5.1）を課せばよくなり、呼び出し側は語彙を宣言する負担（旧`--status-vocabulary`等）を持たない。
 
 **値の境界は JSON の構文自身が持つ**（NFR-001）。`background` / `essence` 等の自由記述フィールドに区切り文字・改行・記号が含まれても、JSON の文字列リテラルとしてエスケープされるため保存が破損しない。
 
@@ -205,7 +203,7 @@ classDiagram
 
 条件を満たさない `record` 呼び出しは拒否し、不足しているフィールド名を含む `{"ok": bool, "missing_fields": list[str]}` を返す。呼び出し側（consult）はこれをそのまま利用者・コンソールへ提示できる。`verification.action` の語彙（`adopt` / `reject` の2値）はFNC-011が定める agenda 機構固有のスキーマである（§4）。
 
-**残件数は「`decision` を持たない項目」の件数として算出する**（FNC-006）。`pending_item_ids()` は `decision` キーを持たない、または `decision.outcome` が空の項目の `id` を返し、呼び出し元が `len()` で件数を導出する（§9）。§7 の記録削除条件（「全項目に `decision` が記録された時点」）も同じ判定を参照する。
+**残件数は「`decision` が未決着の項目」の件数として算出する**（FNC-006）。`pending_item_ids()` は `decision` が `dict` 型でない、または `decision.outcome` が空の項目の `id` を返し、呼び出し元が `len()` で件数を導出する（§9）。§7 の記録削除条件（「全項目に `decision` が記録された時点」）も同じ判定を参照する。
 
 ### 5.1a 新規項目の追加に伴う構造判定の再要求（FNC-012）
 
@@ -331,7 +329,7 @@ sequenceDiagram
 ## 9. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_store.py`: `decision`を含む`record`呼び出しでのみ`background`/`essence`/`decision.*`が必須になること（§5.1）、`structural_judgment`未記録時に個別項目の遷移が拒否されること（FNC-012）、外部指摘由来の項目で`referenced`が空の場合は採否によらず決着が拒否されること、`verification.action != adopt`の場合はさらに`reason`が空でも拒否されること（いずれもFNC-011）、JSON読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item_id()`/`pending_item_ids()`が`decision`の有無に基づき次項目・残件（`pending_item_ids()`の呼び出し元が`len()`で導出する）を正しく返すこと（FNC-006）、`start`/`record`の書き込み成功後に`agenda_render.py`が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.1）、`start`/`record`の実行で`content_version`が1増えること、`items[].last_changed_fields`が今回の差分パッチで渡されたキーの集合（`id`を除く）と一致すること（FNC-013）、`finish`が未対応項目を残したまま呼ばれても記録を削除しないこと、全項目に`decision`が記録された場合は削除すること
+  - `agenda_store.py`: `decision`を含む`record`呼び出しでのみ`background`/`essence`/`decision.*`が必須になること（§5.1）、`structural_judgment`未記録時に個別項目の遷移が拒否されること（FNC-012）、外部指摘由来の項目で`referenced`が空の場合は採否によらず決着が拒否されること、`verification.action != adopt`の場合はさらに`reason`が空でも拒否されること（いずれもFNC-011）、JSON読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item_id()`/`pending_item_ids()`が`decision`の値ベース判定（`dict`型で`outcome`が非空か）に基づき次項目・残件（`pending_item_ids()`の呼び出し元が`len()`で導出する）を正しく返すこと（FNC-006）、`start`/`record`の書き込み成功後に`agenda_render.py`が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.1）、`start`/`record`の実行で`content_version`が1増えること、`items[].last_changed_fields`が今回の差分パッチで渡されたキーの集合（`id`を除く）と一致すること（FNC-013）、`finish`が未対応項目を残したまま呼ばれても記録を削除しないこと、全項目に`decision`が記録された場合は削除すること
   - `agenda_schema.py`: スキーマ検証（不正な JSON 構造の拒否）
   - `agenda_render.py` の単体テストは [DES-077](DES-077_agenda_display_design.md) §5 が持つ
 - **統合テスト対象**: `agenda_store.py start`（項目群＋構造判定をまとめて渡す） → `record` × N（背景・本質→決着への遷移を含む） → `next`/`pending` → `finish`の一連の呼び出しで、記録が意図通り遷移すること。あわせて、各書き込み操作の直後に表示が再生成され、内容が最新の`agenda.json`と一致すること（§8.1・[DES-077](DES-077_agenda_display_design.md)）
