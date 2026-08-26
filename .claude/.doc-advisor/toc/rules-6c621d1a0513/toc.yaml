@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-13T03:43:11Z
+  generated_at: 2026-08-26T15:06:36Z
   file_count: 7
 
 docs:
@@ -68,32 +68,31 @@ docs:
       - docs/rules docs/specs scope
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
-    purpose: Defines the two allowed routes for forge internal code (SKILL/agent/scripts) to reach documentation, and forbids other access patterns
+    purpose: "Defines how forge internal components (SKILL/agent/scripts) access documentation through two designated routes: direct reference for built-in docs and semantic query for project-specific specs/rules"
     content_details:
-      - "Route A (direct reference): forge built-in docs under plugins/forge/docs/* or the referencing skill's own plugins/forge/skills/{skill}/docs/*, read via ${CLAUDE_PLUGIN_ROOT}/docs/xxx.md or ${CLAUDE_SKILL_DIR}/docs/xxx.md"
-      - "Route B (query): project-specific spec/rules under docs/specs/ and docs/rules/, accessed via /forge:query-db-specs and /forge:query-db-rules"
-      - Restriction that Route A skill-local docs may only be referenced by that same skill, not by other skills
-      - "Rationale: forge built-in docs are versioned with their reference sites so fixed paths never rot, while project docs churn so dynamic query is required"
-      - "Anti-pattern: querying for forge built-in docs when a fixed path would suffice"
-      - "Anti-pattern: referencing project spec/rules from distributed plugin artifacts via path or spec ID (DES-028 §3.4.1 style references)"
-      - "Anti-pattern: encoding forge internal procedural logic as a built-in doc instead of keeping it in SKILL.md/scripts"
-      - "Anti-pattern: passing session_dir as an agent argument and receiving results via file instead of Agent return value"
-      - "Anti-pattern: one skill directly referencing another skill's docs/* causing silent breakage when the other skill's directory layout changes"
-      - Rule that shared documents needed by multiple skills should be promoted to plugins/forge/docs/*
+      - "Route A (Direct Reference): Built-in forge docs at plugins/forge/docs/ and skill-specific docs at plugins/forge/skills/{skill}/docs/"
+      - "Route B (Query): Project specs/rules via /forge:query-db-specs and /forge:query-db-rules SKILL calls"
+      - "Route A scope constraint: Skills cannot directly reference other skills' docs/ directories; shared documents must be promoted to plugins/forge/docs/"
+      - Anti-patterns including redundant querying of built-in docs, project doc references in distribution materials, and file-based result passing via session_dir
+      - "Design rationale: Built-in docs have stable fixed paths, project specs/rules change frequently requiring dynamic discovery"
+      - "Document access boundary: Internal logic should remain declarative in docs, not procedural in SKILL/scripts"
+      - "External access: Project users access built-in docs via /forge:query-forge-rules SKILL"
     applicable_tasks:
-      - Adding a new document reference from a forge SKILL/agent/script
-      - Reviewing forge skill code for doc access anti-patterns
-      - Deciding whether a document belongs in a skill-local docs/ or the shared plugins/forge/docs/
-      - Designing forge internal architecture for documentation access
+      - forge plugin development and SKILL maintenance
+      - Documentation architecture design in plugins
+      - SKILL creation and document placement decisions
+      - Project document indexing and query implementation
+      - forge internal documentation review and validation
+      - Preventing documentation access anti-patterns
     keywords:
-      - CLAUDE_PLUGIN_ROOT
-      - CLAUDE_SKILL_DIR
+      - forge
       - query-db-specs
       - query-db-rules
-      - Route A Route B
-      - forge built-in docs
-      - session_dir anti-pattern
-      - plugins/forge/docs
+      - query-forge-rules
+      - CLAUDE_PLUGIN_ROOT
+      - CLAUDE_SKILL_DIR
+      - direct reference
+      - plugins/forge/docs/
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
     purpose: Defines rules for plugin script language selection, testing, SKILL.md structure, asset placement, distribution boundaries, and prohibiting reflexive fallbacks or unauthorized version file edits

@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-18T14:27:06Z
+  generated_at: 2026-08-26T16:30:10Z
   file_count: 40
 
 docs:
@@ -59,35 +59,36 @@ docs:
       - adr-naming
   plugins/forge/docs/adr_principles_spec.md:
     title: ADR Operational Principles
-    purpose: Defines operational principles for creating, modifying, and using Architecture Decision Records, including scope criteria, non-binding nature, variable document handling, obsolescence marking, and severity violations.
+    purpose: Defines operational principles for creating, maintaining, and using ADRs to capture decision context and rejection rationale for future proposals
     content_details:
-      - Purpose and beneficiaries - ADRs serve future proposers with examined alternatives and rejection reasons
-      - Scope criteria for writing ADRs - creating ADRs only when future proposals are likely and not answered by code/rules
-      - Conditions for writing scope sections to clarify decision boundaries
-      - Non-binding nature of ADRs allowing re-proposal if premises change
-      - Variable document principles allowing section updates while maintaining fixed section numbers
-      - Migration procedures from old format to current format
-      - Obsolescence handling with markers for decisions superseded by other ADRs
-      - Rejection reason writing guidelines using future proposal vocabulary and explicit premises
-      - Placement and ID numbering conventions shared with design documents
-      - Severity catalog table for ADR violation patterns
+      - Purpose and recipients of ADRs for future proposers
+      - Scope of ADR writing — what to document vs what not to document
+      - Creating ADRs only when future proposals are likely and rejection is not obvious from code/rules/specs
+      - Scope field conditions — when to write scope boundaries explicitly
+      - ADRs are not binding — readers must verify premises before dismissing proposals
+      - ADRs are mutable documents — sections can be updated but section numbers must remain fixed
+      - Invalidation marker usage — adding markers only when decisions are superseded by other ADRs
+      - Rejection reason writing — using future proposal vocabulary and explicitly stating premises
+      - ADR placement and ID numbering — sharing IDs with design specs and mandatory next-spec-id usage
+      - Gray area tolerance matrix and severity catalog for ADR modification patterns
     applicable_tasks:
-      - Evaluating whether a design decision warrants an ADR
-      - Creating ADRs with appropriate scope and content boundaries
-      - Writing rejection reasons with future vocabulary and explicit premises
-      - Detecting and marking obsolete ADRs when specifications change
-      - Migrating existing ADRs to current format
-      - Reviewing ADR compliance with mandatory structure and severity rules
-      - Assessing if specification changes invalidate existing ADR premises
+      - ADR creation and maintenance
+      - Decision rationale documentation during design reviews
+      - ADR evaluation when dismissing proposals
+      - ADR format migration from old structures
+      - Detecting invalidated decisions during specification updates
+      - Reviewing ADR structure compliance
     keywords:
       - ADR
-      - adr-principles
-      - rejection-reason
-      - obsolescence-marker
-      - scope-section
-      - decision-premise
-      - adr-non-binding
-      - severity-catalog
+      - decision rationale
+      - rejection reasoning
+      - decision validity
+      - decision supersession
+      - scope boundary
+      - specification reference
+      - decision mutation
+      - invalidation marker
+      - premise verification
   plugins/forge/docs/consult_principles_spec.md:
     title: Consult Presentation Principles
     purpose: Establishes principles for presenting consultations, decisions, and recommendations to users, emphasizing clarity, context, and structured communication.
@@ -327,28 +328,38 @@ docs:
       - severity judgment
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
-    purpose: Provides generic design document format when project-specific format is not found, including frontmatter requirements for additive features, file naming conventions, and template structure
+    purpose: Defines standard structure, naming conventions, and template for design documents when project-specific formats are not available
     content_details:
-      - Frontmatter metadata for additive feature design documents
-      - File naming convention using design ID and target name
-      - Metadata section structure with design ID and related requirements
-      - Overview section for problem statement and approach
-      - Architecture overview describing components and responsibility separation
-      - Module design section with module list and class diagrams
-      - Use case design with sequence diagrams and flow descriptions
-      - Existing components reference section
-      - Test design targeting unit and integration test cases
+      - Additive feature frontmatter requirements — temporary-feature marker and related metadata
+      - Feature note requirements — referencing req definition, merge strategy, and scope separation
+      - File naming convention — format {DesignID}_{target-name}_design.md
+      - "Template structure with required sections: overview, architecture, module design, use cases, components, testing"
+      - Architecture overview section — component diagrams, layer composition, and responsibility distribution
+      - Module design section with module list table showing responsibility and dependencies
+      - Class diagram section — Mermaid format diagrams for class relationships
+      - Use case design section — list with description and sequence diagrams
+      - Existing components section — table referencing reusable components and usage
+      - Test design section — unit test targets and integration test targets
     applicable_tasks:
-      - Design document creation and template setup
+      - Design document creation and maintenance
       - Additive feature design documentation
-      - Design document structure validation
-      - Architecture design specification
+      - Design document template instantiation
+      - Frontmatter setup for temporary features
+      - Architecture specification and diagramming
+      - Module structure and class hierarchy definition
+      - Use case and sequence diagram design
+      - Component dependency mapping
+      - Test strategy planning
     keywords:
-      - design document
+      - design format
+      - design template
       - frontmatter
-      - architecture
+      - temporary-feature
+      - architecture overview
       - module design
       - use case
+      - sequence diagram
+      - component dependency
       - test design
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
@@ -720,36 +731,39 @@ docs:
       - criteria
   plugins/forge/docs/spec_format.md:
     title: ID Classification Catalog
-    purpose: Generic reference catalog for ID classification, file naming conventions, document reference notation, and cross-reference principles, used when project-specific spec_format.md does not exist.
+    purpose: Defines specification format, ID catalogs, naming conventions, and reference principles for requirements, design, and task documents
     content_details:
-      - Feature definition and usage patterns (additive development, agile, small projects)
-      - Directory structure for features with requirements, design, and plan organization
-      - Requirements ID catalog (APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG)
-      - Design ID catalog (DES for designs, ADR for architecture decisions)
-      - Task ID catalog (TASK for generic tasks, layer-based prefixes)
-      - Priority range catalog (70-99 high, 40-69 medium, 1-39 low)
-      - File naming rules for requirements, design, and plan documents
-      - Document reference notation principles (necessary references only, markdown links)
-      - ID number space management and SKILL-based adoption
-      - Cross-reference principles and modifier notation for cross-directory references
+      - Feature concept and usage patterns — development unit for additive/agile development
+      - Feature directory structure — specs/{feature}/ with requirements, design, plan subdirectories
+      - Requirement ID catalog — APP, SCR, CMP, THEME, NAV, FNC, BL, DM, API, EXT, NFR, SEC, ERR, INT, BUG prefixes
+      - Design ID catalog — DES for generic design, ADR for architecture decision records
+      - Task ID catalog — TASK-xxx for generic tasks and layer-specific prefixes
+      - Priority catalog — ranges 70-99 high, 40-69 medium, 1-39 low
+      - File naming conventions — REQ-ID_{name}_spec.md, DES-ID_{name}_design.md, {feature}_plan.json
+      - Document reference principles — only necessary references using markdown link format, no direct path writing
+      - Prohibited reference patterns — no related documents sections or metadata sections
+      - ID namespace rules — namespace per spec directory, SKILL-based mandatory adoption, cross-directory reference handling
     applicable_tasks:
-      - Creating requirement documents with appropriate ID prefixes
-      - Creating design documents and architecture decision records
-      - Planning task organization with correct ID prefixes
-      - Organizing feature structures and directory layouts
-      - Establishing document reference notation standards
-      - Managing ID number spaces across spec directories
-      - Setting up cross-directory reference conventions
+      - Requirements definition document creation
+      - Design document creation
+      - ID adoption and numbering
+      - Feature definition and organization
+      - Document reference writing
+      - Cross-directory specification reference handling
+      - Spec directory namespace management
+      - File naming convention verification
+      - Priority assignment
     keywords:
       - ID classification
-      - REQ ID catalog
-      - DES ID
-      - ADR
-      - feature namespace
-      - spec directory
-      - document reference notation
-      - cross-reference
-      - markdown link
+      - requirement ID
+      - design ID
+      - task ID
+      - spec format
+      - file naming
+      - document reference
+      - namespace
+      - feature structure
+      - ID adoption
   plugins/forge/docs/spec_priorities_spec.md:
     title: Specification and Design Document Priority Principles
     purpose: Defines universal principles prioritizing structural design factors in requirements and design documents, and prohibits distractions like quantifying structural quality or fabricating undefined numerical targets
