@@ -94,14 +94,6 @@ class AgentReviewContractTest(unittest.TestCase):
         ):
             self.assertIn(phrase, self.evaluator)
 
-    def test_availability_check_covers_advisor_prohibition_clause(self):
-        """可用性検査の条件が advisor 禁止条文の存在を検査対象に含むこと。
-
-        Agent 定義から条文が消えたとき、可用性検査が missing として
-        検知できる形（SKILL.md 条件 4）が維持されているかを検証する。
-        """
-        self.assertIn("`advisor` ツールの呼び出しを禁じ", self.skill)
-
     def test_reviewer_keeps_common_reply_contract(self):
         for phrase in (
             "🔴 critical",

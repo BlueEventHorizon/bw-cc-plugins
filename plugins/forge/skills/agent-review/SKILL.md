@@ -30,7 +30,7 @@ Agent を起動せず、`${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` を Read し�
 1. 定義ファイルが存在し、名前が `reviewer` である
 2. frontmatter の `tools` が `Read, Grep, Glob, Bash` と一致し、編集専用ツール（`Write` / `Edit` / Notebook 編集）・Agent 起動・Skill 起動を含まない
 3. `model: inherit` と `permissionMode: plan` がある
-4. Role が read-only の禁止列挙と、許可する git 操作の列挙・変更操作の禁止列挙を規定し、他 Agent 起動と `advisor` ツールの呼び出しを禁じ、共通完了宣言を規定している
+4. Role が read-only の禁止列挙と、許可する git 操作の列挙・変更操作の禁止列挙を規定し、他 Agent 起動を禁じ、共通完了宣言を規定している
 5. このスキルの `allowed-tools` に `Agent` があり、現在のホストで Agent ツールを利用できる
 
 **条件 2 で「外部通信ツールを含まない」と断定しません [MANDATORY]**。`Bash` は外部通信も成果物の変更も可能にするため、断定すると検査条文が事実と食い違います。`Bash` を許可するのはレビュアーが差分・ブランチ対象を自分で確定するために必要だからです（これを外すと `--diff` / `--branch` のレビューが成立しません）。

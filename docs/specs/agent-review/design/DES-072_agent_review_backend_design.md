@@ -26,7 +26,7 @@ keywords:
   - REVIEW_RESULT
   - parse_findings
 type: doc-advisor
-body_hash: sha256:bc4c77accc63e663dfb929ff4c5e3c4ec27703729bfc9bd609a632d3edbd1930
+body_hash: sha256:fe0251ff6cabfde4dee57e0cafb6ebee041e6ee48fd8404d536ecf1deb6d03aa
 ---
 
 # DES-072 agent-review バックエンド設計
@@ -105,7 +105,7 @@ read-only を能力の限定で保証する設計を採らない経緯は ADR-07
 2. Agent 起動ツールが現在のホストで利用できる
 3. Agent 定義が編集専用ツール・Agent 起動・Skill 起動を許可していない
 4. permission mode が `plan` である
-5. 統一返信形式と read-only の役割指示が定義されている（汎用コマンド実行を許可している場合は、許可する git 操作の列挙と変更操作の禁止列挙があること）。`advisor` ツールの呼び出し禁止が定義されている（条文が消えた場合に不足として検知する）
+5. 統一返信形式と read-only の役割指示が定義されている（汎用コマンド実行を許可している場合は、許可する git 操作の列挙と変更操作の禁止列挙があること）
 
 汎用コマンド実行を許可していること自体は不足として扱わない（§2.2 のとおり対象の確定に必要である）。検査は Agent 定義が意図どおりに書かれていることを確認する。
 
