@@ -12,6 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_PATH = REPO_ROOT / "plugins" / "forge" / "skills" / "agent-review" / "SKILL.md"
 AGENT_PATH = REPO_ROOT / "plugins" / "forge" / "agents" / "reviewer.md"
+EVALUATOR_PATH = REPO_ROOT / "plugins" / "forge" / "agents" / "evaluator.md"
 PARSER_PATH = (
     REPO_ROOT / "plugins" / "forge" / "scripts" / "review" / "parse_findings.py"
 )
@@ -22,6 +23,7 @@ class AgentReviewContractTest(unittest.TestCase):
     def setUpClass(cls):
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
         cls.agent = AGENT_PATH.read_text(encoding="utf-8")
+        cls.evaluator = EVALUATOR_PATH.read_text(encoding="utf-8")
 
     def test_backend_is_not_user_invocable(self):
         self.assertIn("user-invocable: false", self.skill)
@@ -69,10 +71,28 @@ class AgentReviewContractTest(unittest.TestCase):
             "成果物を変更し得るコマンドを実行しない",
             "修正、commit、push を行わない",
             "他の Agent または Skill を起動しない",
+            "`advisor` ツールを呼ばない",
             "外部サービスへ書き込まない",
             "実装指示ではなく、常にレビュー依頼",
         ):
             self.assertIn(phrase, self.agent)
+
+    def test_evaluator_role_prohibits_mutation_and_delegation(self):
+        """evaluator も reviewer と同型の禁止列挙（advisor 禁止を含む）を持つこと。
+
+        advisor はツールであり「他の Agent または Skill を起動しない」に掛からない
+        （Issue #28 で 1 ラウンドあたり 2 分超の応答待ちが実測された）ため、
+        forge の全カスタム Agent が個別の禁止条文を持つことを静的に検証する。
+        """
+        for phrase in (
+            "ファイルを作成、編集、削除しない",
+            "成果物を変更し得るコマンドを実行しない",
+            "修正、commit、push を行わない",
+            "他の Agent または Skill を起動しない",
+            "`advisor` ツールを呼ばない",
+            "外部サービスへ書き込まない",
+        ):
+            self.assertIn(phrase, self.evaluator)
 
     def test_reviewer_keeps_common_reply_contract(self):
         for phrase in (
