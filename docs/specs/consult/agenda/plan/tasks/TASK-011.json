@@ -1,0 +1,72 @@
+{
+  "task_id": "TASK-011",
+  "title": "consult SKILL.md を新CLI呼び出しへ書き換える",
+  "priority": 70,
+  "status": "pending",
+  "design_id": "DES-075",
+  "depends_on": [
+    "TASK-009"
+  ],
+  "group_id": null,
+  "build_check": "per_task",
+  "description": [
+    "【計画時の前提修正】consult SKILL.mdの現状（TASK-011着手時点）はagenda機構への統合が一切存在しない（旧CLI呼び出しも無い。Markdown討議ファイルをWriteツールで直接手書きする、agenda機構導入前の設計のまま）。本タスクは『旧CLI呼び出しを新CLI呼び出しへ置換する』のではなく、agenda_store.pyの5コマンド契約（start/record/next/pending/finish）への統合をゼロから設計・実装するタスクである。以下はその統合内容",
+    "Phase 2.1「既存ファイルの確認」: `.claude/.temp/consult/` のls確認を、agenda.json（`.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json`相当）の存在確認・中断中の記録の再開可否判断に置き換える",
+    "Phase 2.2「新規作成」: 討議ファイルをWriteツールで直接書く方式を廃し、候補JSON（structural_judgment.note + items[] + config.item_fields/severity_field）をWriteツールで一時ファイルへ書いてから `agenda_store.py start` を1回呼ぶ手順に置き換える。候補ファイル命名は${CLAUDE_SESSION_ID}ベースとし、start-implement/SKILL.md 4.3節の前例（Writeツールでの一時ファイル書き込み→Bashで1回実行）に倣う",
+    "Phase 2.2完了直後、DES-075 §2「初回表示はconsultが能動的に開く」に従いBashで`open`コマンドを実行しagenda.htmlをブラウザで開く手順を追加する",
+    "Phase 3「アジェンダの提示」: アジェンダ表の出所を、agenda_store.pyの`next`/`pending`呼び出し結果、またはagenda.json自体の読み取りに置き換える",
+    "Phase 4「進行」手順5「決着したら討議ファイルを更新する」を、record呼び出し2回（背景・本質が分かった時点で1回、決着時にもう1回）に分割する。分かった時点で都度記録することを明記する",
+    "「議論の途中で論点が動いたとき」節を、decision.outcomeに自由文（例:\"取り下げ\"）を書くだけの通常のrecord呼び出しへ置き換える。特別なコマンドではないことを明記する",
+    "Phase 5「終了」: agenda_store.pyの`finish`呼び出しに置き換える。未対応項目が残る場合は削除されず`remaining_count`が返るため、その値をそのまま「未判断のまま残った件数」として提示する",
+    "自由記述文をシェル文字列に直接埋め込まない理由（1文）を明記する"
+  ],
+  "acceptance_criteria": [
+    "consult SKILL.mdに--set・status_vocabulary・set-current・record-structural-judgmentという旧CLIの語がgrepで一切ヒットしない",
+    "start/record/next/pending/finishの5コマンドのみが呼び出されている"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+      "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/consult/requirements/REQ-017_consult_skill.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md",
+      "docs/rules/skill_authoring_notes.md",
+      "docs/rules/document_writing_rules.md",
+      "docs/rules/skill_launch_paths_definitions.md"
+    ],
+    "reference_code": [
+      "plugins/forge/skills/start-implement/SKILL.md",
+      "plugins/forge/scripts/agenda/agenda_store.py"
+    ],
+    "additional": [
+      "plugins/forge/skills/consult/SKILL.md",
+      "plugins/forge/skills/consult/assets/discussion_file_template.md",
+      "plugins/forge/docs/consult_principles_spec.md"
+    ]
+  },
+  "scope_in": "plugins/forge/skills/consult/SKILL.md を、Markdown討議ファイルの直接手書き方式からagenda_store.pyの5コマンド契約（start/record/next/pending/finish）への統合へゼロから書き換えること",
+  "scope_out": [
+    {
+      "item": "discussion_file_template.mdの表示専用構造リファレンスへのリライト",
+      "owner_task_id": "TASK-010",
+      "reason": "計画上分離（別タスク。並列実行中でありTASK-010の変更内容には依存しない）"
+    },
+    {
+      "item": "旧形式Markdown討議ファイルの削除（条件付き）",
+      "owner_task_id": "TASK-012",
+      "reason": "計画上分離（別タスク。本タスク完了後の後始末）"
+    }
+  ],
+  "implementation_instructions": "plugins/forge/skills/consult/SKILL.md の現状（着手時点）はagenda機構への統合が一切存在しない。Phase 2.1で`.claude/.temp/consult/`をlsして既存Markdown討議ファイルを確認し、Phase 2.2でWriteツールを使い`assets/discussion_file_template.md`の書式に従ったMarkdownを直接新規作成する設計のままである。本タスクはこれをagenda_store.pyの5コマンド契約へゼロから統合する。\n\n記録先パスはDES-075 §7が定める`consult直接利用`の識別名規則に従う: `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json`（親ディレクトリ名`${CLAUDE_SESSION_ID}`がconfig.identityとして自動導出される）。\n\nPhase 2.1「既存ファイルの確認」: 既存agenda.jsonの有無を確認する手順に置き換える。存在する場合、その内容（items配列・pending件数）を読み取り、再開の候補として提示し、再開するか新規に始めるかをAskUserQuestionで確認する（既存のPhase 2.1の『進行中/終了』という状態判定の考え方は維持しつつ、判定対象をMarkdownの状態欄からagenda.jsonのdecision記入状況に置き換える）。新規に始める場合は`agenda_store.py start`が既存ファイルを無条件上書きする設計（DES-075のstart仕様。agenda:REQ-019 FNC-010）を前提としてよい。\n\nPhase 2.2「新規作成」: 論点の識別子・タイトルからなるitems配列と、structural_judgment.note（Phase 1で確認済みの構造的判断）、config.item_fields/severity_field（consultは重要度概念を使わないためitem_fieldsは空配列、severity_fieldはnullでよい。判断に迷う場合はDES-075 §4のconfig仕様を確認して決定する）を候補JSONとして組み立て、Writeツールで`.claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json`へ書き、`agenda_store.py start --path .claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json --input-file <上記パス>`をBashで1回実行する手順に置き換える。候補ファイルの命名・Write→Bash実行という流れはplugins/forge/skills/start-implement/SKILL.md 4.3節の前例（256〜265行目）に倣う。自由記述文をシェル文字列に直接埋め込まない理由（1文）をSKILL.md本文に明記する。\n\nstart実行直後、DES-075 §2「初回表示はconsultが能動的に開く」に従い、Bashで`open`コマンドを実行しagenda.htmlをブラウザで開く手順を追加する。\n\nPhase 3「アジェンダの提示」: アジェンダ表の出所を、`agenda_store.py pending`（残件一覧）またはagenda.json自体の読み取りに置き換える。\n\nPhase 4「進行」手順5「決着したら討議ファイルを更新する」を、record呼び出し2回に分割する: (a) 背景・本質が分かった時点で`{\"background\": \"...\", \"essence\": \"...\"}`を候補JSONとしてrecord呼び出し、(b) 決着時に`{\"decision\": {\"by\": \"human または AI\", \"outcome\": \"...\", \"reason\": \"...\"}}`を候補JSONとしてrecord呼び出し。分かった時点で都度記録することを明記する。手順7「次の項目へ自分で進む」は`agenda_store.py next`の返り値を使う。\n\n「議論の途中で論点が動いたとき」節: `decision.outcome`に自由文（例:\"取り下げ\"）を書くだけの通常のrecord呼び出しへ置き換える。特別なコマンドではないことを明記する。新しく生まれた論点は新しいitem-idでrecord呼び出しする（新規追加時はstructural_judgment.noteと title が同一呼び出し内で必須。DES-075 §5.1a）。\n\nPhase 5「終了」: `agenda_store.py finish`呼び出しに置き換える。返り値の`remaining_count`をそのまま「未判断のまま残った件数」として提示する。deletedがfalseの場合は記録が残る旨も伝える。\n\n候補JSONの命名は`.claude/.temp/agenda-{start|record-<item-id>}-${CLAUDE_SESSION_ID}.candidate.json`のように統一する。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "skipped",
+    "tests_reason": "SKILL.mdはテスト困難なため例外（CLAUDE.md「Testing」節）。手動確認（grep・構文確認）で代替する"
+  }
+}

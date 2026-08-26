@@ -1,28 +1,14 @@
 ---
-feature_type: temporary-feature
-feature_note:
-  - 正本は対応する追加 feature 要件定義書（[agenda:REQ-019](../requirements/REQ-019_agenda_record.md) / [agenda:REQ-021](../requirements/REQ-021_agenda_display.md)）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
-  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
-  - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
-  - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
-  - `doc_status: not_implemented`は「未着手」ではなく「本feature配下の残タスク完了待ち」を意味する。`plugins/forge/scripts/agenda/agenda_store.py`/`agenda_render.py`/`agenda_schema.py`は本設計書が置き換え対象とした旧CLI契約（`init --status-vocabulary/--terminal-statuses/--active-statuses`・`update --set key=value`・`record-structural-judgment`・`set-current`）から、本設計書が定める新CLI契約（`start`/`record`/`next`/`pending`/`finish`）へ既に書き換え済みである。残るのは呼び出し側（`plugins/forge/skills/consult/SKILL.md`）の追従とテストスイートの書き換えであり、それらの完了をもって本feature完了とする。
 doc_status: not_implemented
 ---
 
 # DES-075 agenda 機構 設計書
 
-## メタデータ
-
-| 項目     | 値                                                    |
-| -------- | ----------------------------------------------------- |
-| 設計ID   | DES-075                                               |
-| 関連要件 | agenda:REQ-019, agenda:REQ-021, consult:REQ-017       |
-| 子設計書 | [DES-077](DES-077_agenda_display_design.md)（表示層） |
-| 作成日   | 2026-08-19                                            |
+> `doc_status: not_implemented` は「未着手」ではなく「依存先の機構がまだ実装・設計されていない」ことを意味する。`plugins/forge/scripts/agenda/agenda_store.py`/`agenda_render.py`/`agenda_schema.py` は本設計書が定める CLI 契約（`start`/`record`/`next`/`pending`/`finish`）へ既に書き換え済みである。残るのは呼び出し側（`plugins/forge/skills/consult/SKILL.md`）の追従であり、その完了をもって本キーを削除する。
 
 ## 1. 概要
 
-agenda 機構は、`review`・`consult` が扱う議題項目（レビュー所見・議論の論点）の**記録・状態遷移判定・表示生成**を担う共通機構である。データ保存層（agenda:REQ-019）と表示層（agenda:REQ-021）の 2 責務に分かれ、呼び出し側（`consult`。`review` は `consult` を経由する間接呼び出し）は CLI スクリプト経由で構造化データを渡すだけで、状態を自ら保持しない。
+agenda 機構は、`review`・`consult`（consult:REQ-017）が扱う議題項目（レビュー所見・議論の論点）の**記録・状態遷移判定・表示生成**を担う共通機構である。データ保存層（agenda:REQ-019）と表示層（agenda:REQ-021。表示層の設計は子設計書 DES-077 が持つ）の 2 責務に分かれ、呼び出し側（`consult`。`review` は `consult` を経由する間接呼び出し）は CLI スクリプト経由で構造化データを渡すだけで、状態を自ら保持しない。
 
 保存形式は JSON（標準ライブラリ `json` のみ）を採用する。採用理由・PyYAML を採らない理由は [ADR-076](ADR-076_agenda_storage_format.md) に記す。
 
@@ -125,6 +111,8 @@ classDiagram
 ## 4. データ設計（スキーマ）
 
 `agenda.json` のトップレベル構造。`fields`（呼び出し側固有の項目属性。例: `severity`）は agenda 側が意味を解釈しない値としてそのまま格納する（FNC-009）。
+
+**新規フィールドを追加する前に [consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2.2 の必要性契約を満たすことを確認する**: 対応する情報移動の場面が対話シーケンス（同 §2）に存在しないフィールドは追加しない。
 
 `verification.action` の語彙（`adopt` / `reject` の2値）は FNC-011 が定める agenda 機構固有のスキーマである。この語彙は `agenda_schema.py` が固定して定義し、呼び出し側から受け取らない。
 
@@ -274,6 +262,8 @@ python3 agenda_store.py finish --path <path>
 - **マージの粒度はトップレベルキー単位である**: `fields`のような入れ子キーは1階層として扱い、`fields`全体をそのパッチの`fields`で置き換える（キー単位の再帰マージは行わない）。`fields`の一部キーだけを変えたい場合、呼び出し側が既存の`fields`全体を読み取ったうえで変更後の全体を渡す
 
 ### 6.2 正常系のコマンド呼び出し順序
+
+本節は consult↔agenda_store.py 間の CLI レベルの呼び出し順序のみを扱う。review・reviewer・evaluator・人間を含む端から端までの全体シーケンス、および `items[]` が起点（review 経由か直接利用か）によってどう組み立てられるかは [consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2・§3 が持つ。
 
 ```mermaid
 sequenceDiagram

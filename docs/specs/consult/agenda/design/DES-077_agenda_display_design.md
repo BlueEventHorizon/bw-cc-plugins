@@ -1,28 +1,14 @@
 ---
-feature_type: temporary-feature
-feature_note:
-  - 正本は対応する追加 feature 要件定義書（[agenda:REQ-021](../requirements/REQ-021_agenda_display.md)）。本設計書と旧設計書が矛盾する場合は要件定義書を優先する。
-  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリとして切り出すこと。
-  - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
-  - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
-  - `doc_status: not_implemented`は「未着手」ではなく「既存実装との契約差し替え待ち」を意味する。`plugins/forge/scripts/agenda/agenda_render.py`は本設計書と異なる旧契約（`current_item_id`/`set-current`による軽量部分更新等）で既に実装・commit済みであり、本設計書はこの既存実装を置き換える対象として書かれている。実装追従は本feature完了時に一括して行う。
 doc_status: not_implemented
 ---
 
 # DES-077 agenda 表示層設計書
 
-## メタデータ
-
-| 項目     | 値                                                               |
-| -------- | ---------------------------------------------------------------- |
-| 設計ID   | DES-077                                                          |
-| 関連要件 | agenda:REQ-021, agenda:REQ-019, consult:REQ-017                  |
-| 親設計書 | [DES-075](DES-075_agenda_mechanism_design.md)（agenda 機構全体） |
-| 作成日   | 2026-08-22                                                       |
+> `doc_status: not_implemented` は「未着手」ではなく「依存先の機構がまだ実装・設計されていない」ことを意味する。`plugins/forge/scripts/agenda/agenda_render.py` は本設計書が定める契約（`render_agenda_html()` 単一の公開関数・自動追従の仕組みを持たない単純な生成専用モジュール）へ既に書き換え済みである。残るのは呼び出し側（`plugins/forge/skills/consult/SKILL.md`）の追従であり、その完了をもって本キーを削除する。
 
 ## 1. 概要
 
-agenda:REQ-021 が定める表示層（`agenda_render.py`）の設計。データ保存層・状態遷移・CLI 設計は [DES-075](DES-075_agenda_mechanism_design.md) が持つ。本文書は[DES-075](DES-075_agenda_mechanism_design.md) §8 から分離した（表示層の実装詳細が量的に増え、単一ファイルが肥大化したため。[design_principles_spec.md](../../../../../plugins/forge/docs/design_principles_spec.md)「階層構造ガイドライン」）。
+agenda:REQ-021 が定める表示層（`agenda_render.py`）の設計。データ保存層・状態遷移・CLI 設計は親設計書 [DES-075](DES-075_agenda_mechanism_design.md)（agenda 機構全体。agenda:REQ-019 / consult:REQ-017 も対応）が持つ。本文書は[DES-075](DES-075_agenda_mechanism_design.md) §8 から分離した（表示層の実装詳細が量的に増え、単一ファイルが肥大化したため。design_principles_spec.md「階層構造ガイドライン」）。
 
 ## 2. 生成形式と初回表示
 

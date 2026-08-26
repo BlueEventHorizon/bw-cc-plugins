@@ -2,13 +2,13 @@
 
 ## メタデータ
 
-| 項目     | 値                                                                                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 設計ID   | DES-066                                                                                                                                                                                                               |
-| 関連要件 | REQ-013（FNC-1303 / FNC-1304 / FNC-1310 / FNC-1312 / FNC-1313 / FNC-1318 / FNC-1319 / FNC-1320）、consult:REQ-017（段階的提示の委譲先）、agenda:REQ-019（段階的提示の委譲先が持つ記録）、agenda:REQ-021（同・表示層） |
-| 関連設計 | ADR-060（バックエンド軸）、ADR-065（契約の 3 要素）、ADR-066（本体と backend の分離）、ADR-071（既定順と任意拡張）、ADR-073（ラウンドごとの変更検出機構を廃止した経緯）、DES-061（`.forge.yaml` の入れ物）            |
-| 作成日   | 2026-08-03                                                                                                                                                                                                            |
-| 対象     | forge プラグイン `/forge:review` 本体                                                                                                                                                                                 |
+| 項目     | 値                                                                                                                                                                                                                                                                          |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 設計ID   | DES-066                                                                                                                                                                                                                                                                     |
+| 関連要件 | REQ-013（FNC-1303 / FNC-1304 / FNC-1310 / FNC-1312 / FNC-1313 / FNC-1318 / FNC-1319 / FNC-1320 / FNC-1321 / FNC-1322）、consult:REQ-017（段階的提示の委譲先）、agenda:REQ-019（段階的提示の委譲先が持つ記録）、agenda:REQ-021（同・表示層）                                 |
+| 関連設計 | ADR-060（バックエンド軸）、ADR-065（契約の 3 要素）、ADR-066（本体と backend の分離）、ADR-071（既定順と任意拡張）、ADR-073（ラウンドごとの変更検出機構を廃止した経緯）、DES-061（`.forge.yaml` の入れ物）、consult:DES-078（段階的提示の委譲先が持つ対話進行フロー全体像） |
+| 作成日   | 2026-08-03                                                                                                                                                                                                                                                                  |
+| 対象     | forge プラグイン `/forge:review` 本体                                                                                                                                                                                                                                       |
 
 > **本文書のスコープ**
 >
@@ -281,7 +281,7 @@ finding 単位で「適用 → 検証 → 判断 → 次へ」を逐次繰り返
 
 `secrets` パターンは介入軸によらず `confirmed_fix` を空として終端処理へ進む。**確認なしの修正だけでなく段階的提示も行わない**——採否を聞いても採用の行き先が修正であり、その修正を禁じている（REQ-013）ためである。
 
-### 3.10a reviewer所見とevaluator判定の結合
+### 3.10a reviewer所見とevaluator判定の結合（REQ-013 FNC-1322）
 
 `R`（Reviewer）が返す所見配列（`parse_findings.py`が生成した実体。何が問題でどこを指すか）と、evaluatorが返す判定配列（`parse_evaluation.py`が検証済みの`disposition`/`severity`/`confidence`/`fix_confident`）は、**別々の配列として届く**。両者は`index`で対応するが、この対応付け（何番目の所見が何番目の判定に対応するか）をAIが自分のコンテキストの中で記憶に頼って結合すると、件数の不一致・`index`の欠落や重複を検証しないまま結合してしまう危険がある。
 
@@ -305,7 +305,7 @@ finding 単位で「適用 → 検証 → 判断 → 次へ」を逐次繰り返
 
 **consult へ渡すのは「提示へ回るすべての所見」である [MANDATORY]**。`✅` として自動修正する所見・位置未確定の所見・ドロップした所見も、consult が記録として保持できるよう含める（採否を聞くかどうかと、記録するかどうかは別の問いである）。
 
-対話進行の詳細（アジェンダの構造・状態遷移・記録の保存と表示・中断からの再開）は consult 側（[consult:REQ-017](../../consult/requirements/REQ-017_consult_skill.md) / [agenda:REQ-019](../../consult/agenda/requirements/REQ-019_agenda_record.md) / [agenda:REQ-021](../../consult/agenda/requirements/REQ-021_agenda_display.md)）が持つ。本設計はそれを重複して規定しない。
+対話進行の詳細（アジェンダの構造・状態遷移・記録の保存と表示・中断からの再開）は consult 側（[consult:REQ-017](../../consult/requirements/REQ-017_consult_skill.md) / [consult:DES-078](../../consult/design/DES-078_consult_dialogue_flow_design.md) / [agenda:REQ-019](../../consult/agenda/requirements/REQ-019_agenda_record.md) / [agenda:REQ-021](../../consult/agenda/requirements/REQ-021_agenda_display.md)）が持つ。本設計はそれを重複して規定しない。review 起点で consult に渡す `items[]` が reviewer/evaluator の結合結果であり、consult 自身が論点を新たに立てる工程を経由しないことは [consult:DES-078](../../consult/design/DES-078_consult_dialogue_flow_design.md) §3 が定める。
 
 **段階的提示の中断は終端経路の `interrupted` ではない**。所見を残したままレビューが完了する経路（`halted_with_open_findings`）であり、`interrupted` は利用者が**レビューそのものを終えると判断した**場合（中止の指示・再開の辞退。§3.8）に限る。取り違えると未対応所見の一覧が要約報告から落ちる。
 

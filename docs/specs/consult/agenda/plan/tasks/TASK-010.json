@@ -1,0 +1,57 @@
+{
+  "task_id": "TASK-010",
+  "title": "discussion_file_template.md を新設計に合わせてリライトする",
+  "priority": 70,
+  "status": "pending",
+  "design_id": "DES-077",
+  "depends_on": [
+    "TASK-009"
+  ],
+  "group_id": null,
+  "build_check": "per_task",
+  "description": [
+    "3状態導出（未着手/進行中/決着または棄却）・.state-dot.current廃止・agenda_state.js削除を反映するよう全面リライトする",
+    "「表示の更新」節のポーリング記述を削除し、自動追従の仕組みを持たないこと・利用者が手動で再読み込みすることを明記する（DES-077 §4）",
+    "旧「既知の未解決事項」節（status キーの有無で発火する検証の抜け穴）を、TASK-009で固定した実際の挙動の記述に置き換える"
+  ],
+  "acceptance_criteria": [
+    "discussion_file_template.mdに旧CLI・旧状態語彙（status_vocabulary/current_item_id/agenda_state.js/set-current）への言及が一切残っていないことをgrepで確認する",
+    "dprint check が通過する"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/consult/agenda/plan/agenda_strategy.md",
+    "design_docs": [
+      "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md"
+    ],
+    "requirement_docs": [],
+    "rule_docs": [
+      "docs/rules/document_writing_rules.md",
+      "docs/rules/forge_doc_access_principle.md",
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [],
+    "additional": [
+      "plugins/forge/skills/consult/assets/discussion_file_template.md"
+    ]
+  },
+  "scope_in": "plugins/forge/skills/consult/assets/discussion_file_template.md を新設計（3状態導出・.state-dot.current廃止・agenda_state.js削除）に合わせて全面リライトすること",
+  "scope_out": [
+    {
+      "item": "consult SKILL.mdを新CLI契約呼び出しへ書き換えること",
+      "owner_task_id": "TASK-011",
+      "reason": "計画上分離（別タスク。呼び出し側SKILLの書き換えでありテンプレート文書のリライトではない）"
+    },
+    {
+      "item": "旧形式Markdown討議ファイルの削除（条件付き）",
+      "owner_task_id": "TASK-012",
+      "reason": "計画上分離（別タスク。TASK-011完了後の後始末）"
+    }
+  ],
+  "implementation_instructions": "plugins/forge/skills/consult/assets/discussion_file_template.md は「表示専用の構造リファレンス」（討議ファイルの構造・書き方の約束を示す文書。TASK-005で表示専用構造リファレンスへリライト済みの前提を、agenda機構の新設計（DES-075/DES-077の状態語彙全廃・新CLI設計）に合わせて更に更新する）。以下を反映すること。\n\n1. 「対話中」ドット（`data-current`属性・`.state-dot.current`）への言及を全て削除する。DES-077 §3.1は『「対話中」の表示は廃止した——agenda:REQ-019はこの機構を要求しておらず、人間は生きた対話そのものから「今何を話しているか」を把握できる』と明記している。残るガター表示は`data-changed`（変更ドット）のみである。\n\n2. 廃止済みの`agenda_state.js`ポーリング・スクロール位置復元機構（「ページ末尾の2つの<script>ブロック」等の記述）を丸ごと削除する。DES-077 §4は『自動追従の仕組みは持たない…最新の内容を見るには利用者がタブを手動で再読み込みする』という単純化された方式に置き換えている。この単純化された記述に差し替えること。\n\n3. 旧CLIコマンド名（init/update/record-structural-judgment/set-current）への言及を、新5コマンド体系（start/record/next/pending/finish）に置き換える。「表示の更新」節は、DES-075 §8.1「書き込み系コマンド（start・record）はいずれも全体再生成、読み取り専用コマンド（next・pending）は再描画を伴わない」という単純化された規則に合わせて書き換える。「ID振り直し・削除操作を機構が提供しない」節のコマンド列挙も新5コマンド体系へ更新する。\n\n4. 状態導出ロジック（DES-077 §3.3。未着手/進行中/決着または棄却の3状態。decision/background/essenceの記入有無から導出する）への言及を、テンプレートの粒度（表示専用の構造リファレンス）に合わせて簡潔に追加するかどうかは実装者の判断に委ねる。既存の「重要度バッジ」「決着欄」節は新設計と矛盾しないためそのまま維持してよい。\n\n5. 【配布物の境界】本ファイルは`plugins/`配下の配布物であり、`docs/specs/`配下のプロジェクト開発文書（DES-077等）への具体的なパス参照・spec ID参照を本文に書き込んではならない（プロジェクトのCLAUDE.md「配布物のうち利用者環境で読まれるものからプロジェクト開発文書を参照しない」）。設計の意図はここでは要約して書き、DES-077へのリンクは書かない。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "skipped",
+    "tests_reason": "Markdown文書のリライトでありユニットテスト対象外（テストコード変更を伴わない）"
+  }
+}
