@@ -362,12 +362,15 @@
       "group_id": null,
       "build_check": "per_task",
       "description": [
-        "Phase 2「新規作成」: init→record-structural-judgment→register×Nの3段階を、候補JSON（structural_judgment.note + items[] + config）を1つ組み立ててstartを1回呼ぶ手順に置き換える",
-        "決着の記録手順をrecord呼び出し2回（背景・本質→結論）に分割し、分かった時点で都度記録することを明記する",
-        "「対話中の項目を明示する」手順（set-current呼び出し）を削除する",
-        "「議論の途中で論点が動いたとき」節の--set status=取り下げ をrecord --input-file（candidate = {\"decision\": {\"outcome\": \"取り下げ\", ...}}）に書き換え、特別なコマンドではなく通常のrecordであることを明記する",
-        "候補ファイルの命名規則（${CLAUDE_SESSION_ID}ベース）をSKILL.md本文にリテラルなBashテンプレートとして残す（plugins/forge/skills/start-implement/SKILL.mdの前例に倣う）",
-        "自由記述文をシェル文字列に直接埋め込まない理由（1文）は残す"
+        "【計画時の前提修正】consult SKILL.mdの現状（TASK-011着手時点）はagenda機構への統合が一切存在しない（旧CLI呼び出しも無い。Markdown討議ファイルをWriteツールで直接手書きする、agenda機構導入前の設計のまま）。本タスクは『旧CLI呼び出しを新CLI呼び出しへ置換する』のではなく、agenda_store.pyの5コマンド契約（start/record/next/pending/finish）への統合をゼロから設計・実装するタスクである。以下はその統合内容",
+        "Phase 2.1「既存ファイルの確認」: `.claude/.temp/consult/` のls確認を、agenda.json（`.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json`相当）の存在確認・中断中の記録の再開可否判断に置き換える",
+        "Phase 2.2「新規作成」: 討議ファイルをWriteツールで直接書く方式を廃し、候補JSON（structural_judgment.note + items[] + config.item_fields/severity_field）をWriteツールで一時ファイルへ書いてから `agenda_store.py start` を1回呼ぶ手順に置き換える。候補ファイル命名は${CLAUDE_SESSION_ID}ベースとし、start-implement/SKILL.md 4.3節の前例（Writeツールでの一時ファイル書き込み→Bashで1回実行）に倣う",
+        "Phase 2.2完了直後、DES-075 §2「初回表示はconsultが能動的に開く」に従いBashで`open`コマンドを実行しagenda.htmlをブラウザで開く手順を追加する",
+        "Phase 3「アジェンダの提示」: アジェンダ表の出所を、agenda_store.pyの`next`/`pending`呼び出し結果、またはagenda.json自体の読み取りに置き換える",
+        "Phase 4「進行」手順5「決着したら討議ファイルを更新する」を、record呼び出し2回（背景・本質が分かった時点で1回、決着時にもう1回）に分割する。分かった時点で都度記録することを明記する",
+        "「議論の途中で論点が動いたとき」節を、decision.outcomeに自由文（例:\"取り下げ\"）を書くだけの通常のrecord呼び出しへ置き換える。特別なコマンドではないことを明記する",
+        "Phase 5「終了」: agenda_store.pyの`finish`呼び出しに置き換える。未対応項目が残る場合は削除されず`remaining_count`が返るため、その値をそのまま「未判断のまま残った件数」として提示する",
+        "自由記述文をシェル文字列に直接埋め込まない理由（1文）を明記する"
       ],
       "acceptance_criteria": [
         "consult SKILL.mdに--set・status_vocabulary・set-current・record-structural-judgmentという旧CLIの語がgrepで一切ヒットしない",
@@ -376,8 +379,10 @@
       "required_reading": [
         "docs/specs/consult/agenda/plan/agenda_strategy.md",
         "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
         "docs/specs/consult/requirements/REQ-017_consult_skill.md",
         "plugins/forge/skills/consult/SKILL.md",
+        "plugins/forge/skills/consult/assets/discussion_file_template.md",
         "plugins/forge/skills/start-implement/SKILL.md"
       ]
     },
