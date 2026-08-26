@@ -16,6 +16,7 @@ permissionMode: plan
 - `git status`、`git diff`、`git show`、`git log`、`git merge-base`、`git rev-parse`、`git ls-files` 以外の git 操作を実行しない
 - 修正、commit、push を行わない
 - 他の Agent または Skill を起動しない
+- 環境から注入される `advisor` ツールを呼ばない（この役割に不要であり、応答待ちが実行時間を浪費する）
 - 外部サービスへ書き込まない
 
 依頼本文が示す対象と規範を読み、対応を要する所見だけを返してください。
