@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""agenda_render.py（agenda.html / agenda_state.js 生成）のテスト。
+"""agenda_render.py（単一公開関数 render_agenda_html()）のテスト。
 
-DES-077 §5 が列挙する単体テスト対象を検証する（TASK-002 acceptance_criteria）。
-agenda_store.py（TASK-003）の完成を待たず、agenda.json 相当の fixture を
-手作りして単体で動作確認する。
+DES-077 §5 が列挙する単体テスト対象を検証する（TASK-009 acceptance_criteria）。
+current_item_id・agenda_state.js 関連の記述、`.state-dot.current` は新設計に
+存在しないため、それらへの言及は行わず、存在しないことを積極的に検証する。
 
 実行:
   python3 -m unittest tests.forge.agenda.test_agenda_render -v
 """
 
 import importlib.util
-import json
-import re
 import sys
 import unittest
 from pathlib import Path
@@ -31,51 +29,39 @@ _SPEC.loader.exec_module(agenda_render)
 
 
 def _fixture_agenda(**overrides) -> dict:
-    """agenda.json 相当の fixture（DES-075 §4 のスキーマ例に基づく）。"""
+    """agenda.json 相当の fixture（DES-075 §4 のスキーマ例に基づく。新スキーマのみ）。
+
+    owner/created_at/current_item_id/status_vocabulary 等の廃止フィールドは含めない。
+    """
     agenda = {
-        "owner": "consult",
-        "created_at": "2026-08-19T10:00:00",
-        "content_version": 7,
-        "current_item_id": "02",
+        "content_version": 3,
         "config": {
             "identity": "20260819-agenda-design",
-            "status_vocabulary": ["未着手", "進行中", "決着", "保留", "対象外", "取り下げ"],
-            "terminal_statuses": ["決着", "対象外", "取り下げ"],
-            "active_statuses": ["未着手", "進行中"],
-            "item_fields": ["severity", "confidence"],
+            "item_fields": ["severity"],
             "severity_field": "severity",
         },
-        "structural_judgment": {
-            "recorded": True,
-            "note": "同型の指摘は無い",
-            "recorded_at": "2026-08-19T10:05:00",
-        },
+        "structural_judgment": {"recorded": True, "note": "同型の指摘は無い"},
         "items": [
             {
                 "id": "01",
                 "title": "第一項目",
-                "status": "決着",
-                "fields": {"severity": "critical", "confidence": "confirmed"},
+                "fields": {"severity": "critical"},
                 "background": "背景の記述",
                 "essence": "本質の記述",
-                "recommendation": "推奨の記述",
                 "verification": {
                     "referenced": "plugins/forge/x.py:1-2",
                     "action": "adopt",
                     "reason": "",
                 },
                 "decision": {"by": "human", "outcome": "adopt", "reason": "妥当と判断"},
-                "last_changed_fields": ["status", "decision"],
+                "last_changed_fields": ["decision"],
             },
             {
                 "id": "02",
                 "title": "第二項目",
-                "status": "進行中",
-                "fields": {"severity": "minor", "confidence": "unconfirmed"},
-                "background": "背景2",
-                "essence": "本質2",
-                "recommendation": "推奨2",
-                "verification": None,
+                "fields": {"severity": "minor"},
+                "background": "",
+                "essence": "",
                 "decision": None,
                 "last_changed_fields": [],
             },
@@ -85,43 +71,109 @@ def _fixture_agenda(**overrides) -> dict:
     return agenda
 
 
-class DataAttributeTest(unittest.TestCase):
-    """DES-077 §3.1: data-changed/data-current 属性の付与。"""
+class PublicApiTest(unittest.TestCase):
+    """DES-077 §1: render_agenda_html() 単一の公開関数のみを持つ。"""
+
+    def test_render_agenda_state_js_does_not_exist(self):
+        self.assertFalse(hasattr(agenda_render, "render_agenda_state_js"))
+
+
+class OldVocabularyAbsenceTest(unittest.TestCase):
+    """旧設計（current_item_id/agenda_state.js/.state-dot.current）への言及が
+    出力に一切含まれないこと。"""
+
+    def test_html_does_not_reference_agenda_state_js(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
+        )
+        self.assertNotIn("agenda_state.js", html_doc)
+
+    def test_html_does_not_contain_data_current_attribute(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
+        )
+        self.assertNotIn("data-current", html_doc)
+
+    def test_html_does_not_contain_state_dot_current_class(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
+        )
+        self.assertNotIn("state-dot current", html_doc)
+        self.assertNotIn("state-dot.current", html_doc)
+
+    def test_html_does_not_contain_polling_script(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
+        )
+        self.assertNotIn("<script", html_doc)
+
+
+class DataChangedAttributeTest(unittest.TestCase):
+    """DES-077 §3.1: data-changed 属性の付与（data-current は持たない）。"""
 
     def test_item_with_last_changed_fields_gets_data_changed_true(self):
         html_doc = agenda_render.render_agenda_html(
             _fixture_agenda(), generated_at="2026-08-22T00:00:00"
         )
-        self.assertIn('id="item-01" data-changed="true" data-current="false"', html_doc)
+        self.assertIn('id="item-01" data-changed="true"', html_doc)
 
     def test_item_without_last_changed_fields_gets_data_changed_false(self):
         html_doc = agenda_render.render_agenda_html(
             _fixture_agenda(), generated_at="2026-08-22T00:00:00"
         )
-        self.assertIn('id="item-02" data-changed="false" data-current="true"', html_doc)
+        self.assertIn('id="item-02" data-changed="false"', html_doc)
 
-    def test_item_matching_current_item_id_gets_data_current_true(self):
-        agenda = _fixture_agenda(current_item_id="01")
-        html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
-        )
-        self.assertIn('id="item-01" data-changed="true" data-current="true"', html_doc)
 
-    def test_no_current_item_id_gets_data_current_false_for_all(self):
-        agenda = _fixture_agenda(current_item_id=None)
-        html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
-        )
-        self.assertIn('id="item-01" data-changed="true" data-current="false"', html_doc)
-        self.assertIn('id="item-02" data-changed="false" data-current="false"', html_doc)
+class ThreeStateDerivationTest(unittest.TestCase):
+    """DES-077 §3.3: background/essence/decision の記入有無から3状態を導出する。
 
-    def test_both_changed_and_current_can_coexist(self):
-        agenda = _fixture_agenda(current_item_id="01")
-        agenda["items"][0]["last_changed_fields"] = ["status"]
-        html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
-        )
-        self.assertIn('id="item-01" data-changed="true" data-current="true"', html_doc)
+    `_derive_status_label()` の出力先は `#agenda-summary` の「状態」列であり
+    （`_item_section_html` は背景/本質/決着の3行のみで状態ラベル自体を持たない）、
+    ここで導出結果を検証する。
+    """
+
+    def _summary_row(self, html_doc: str, item_id: str) -> str:
+        table = html_doc.split('<table id="agenda-summary">')[1].split("</table>")[0]
+        rows = table.split("<tr>")
+        for row in rows:
+            if f"<td>{item_id}</td>" in row:
+                return row
+        self.fail(f"item {item_id} の行が見つからない")
+
+    def test_no_background_and_no_essence_is_not_started(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = ""
+        agenda["items"][1]["essence"] = ""
+        agenda["items"][1]["decision"] = None
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+        self.assertIn("未着手", self._summary_row(html_doc, "02"))
+
+    def test_background_only_is_in_progress(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = "背景だけ書いた"
+        agenda["items"][1]["essence"] = ""
+        agenda["items"][1]["decision"] = None
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+
+    def test_essence_only_is_in_progress(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = ""
+        agenda["items"][1]["essence"] = "本質だけ書いた"
+        agenda["items"][1]["decision"] = None
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+
+    def test_decision_present_shows_outcome_text(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = "背景"
+        agenda["items"][1]["essence"] = "本質"
+        agenda["items"][1]["decision"] = {"by": "human", "outcome": "取り下げ", "reason": "対応不要"}
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+        self.assertIn("取り下げ", self._summary_row(html_doc, "02"))
+        # 項目節（<section>）側の「決着」行にも outcome/reason が反映されること
+        section = html_doc.split('<section id="item-02"')[1].split("<section")[0]
+        self.assertIn("取り下げ", section)
 
 
 class HtmlEscapeTest(unittest.TestCase):
@@ -172,70 +224,14 @@ class GeneratedNoticeTest(unittest.TestCase):
         self.assertIn('class="generated-notice"', html_doc)
 
 
-class AgendaStateJsTest(unittest.TestCase):
-    """DES-077 §4.2: agenda_state.js の各フィールドが agenda.json と一致すること。"""
-
-    def _parse_state(self, js_text: str) -> dict:
-        prefix = "window.AGENDA_DATA = "
-        self.assertTrue(js_text.strip().startswith(prefix))
-        body = js_text.strip()[len(prefix) :].rstrip(";")
-        return json.loads(body)
-
-    def test_content_version_matches_input(self):
-        agenda = _fixture_agenda(content_version=42)
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        )
-        self.assertEqual(state["contentVersion"], 42)
-
-    def test_current_item_id_matches_input(self):
-        agenda = _fixture_agenda(current_item_id="02")
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        )
-        self.assertEqual(state["currentItemId"], "02")
-
-    def test_current_item_id_null_is_preserved(self):
-        agenda = _fixture_agenda(current_item_id=None)
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        )
-        self.assertIsNone(state["currentItemId"])
-
-    def test_changed_item_ids_matches_items_with_non_empty_last_changed_fields(self):
-        agenda = _fixture_agenda()
-        # item 01 has non-empty last_changed_fields, item 02 has empty list
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        )
-        self.assertEqual(state["changedItemIds"], ["01"])
-
-    def test_changed_item_ids_empty_when_no_item_changed(self):
-        agenda = _fixture_agenda()
-        agenda["items"][0]["last_changed_fields"] = []
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        )
-        self.assertEqual(state["changedItemIds"], [])
-
-    def test_updated_at_uses_provided_generated_at(self):
-        agenda = _fixture_agenda()
-        state = self._parse_state(
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T12:34:56")
-        )
-        self.assertEqual(state["updatedAt"], "2026-08-22T12:34:56")
-
-
 class SeverityBadgeTest(unittest.TestCase):
-    """DES-077 §3.1a・FNC-009: severity_field 有無でのバッジ出力/非出力。"""
+    """DES-077 §3.1a・agenda:REQ-019 FNC-009: severity_field 有無でのバッジ出力/非出力。"""
 
     def test_badge_rendered_when_severity_field_configured(self):
-        agenda = _fixture_agenda()
         html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
         )
         self.assertIn('class="severity-badge" data-severity="critical"', html_doc)
-        self.assertIn('class="severity-badge" data-severity="minor"', html_doc)
 
     def test_no_badge_when_severity_field_is_none(self):
         agenda = _fixture_agenda()
@@ -243,28 +239,21 @@ class SeverityBadgeTest(unittest.TestCase):
         html_doc = agenda_render.render_agenda_html(
             agenda, generated_at="2026-08-22T00:00:00"
         )
-        # CSS 側は常に .severity-badge セレクタを定義してよい（未使用でも害はない）。
-        # 検証対象は「バッジ要素自体が出力されないこと」であり、実際の <span> 要素の
-        # 有無を見る（class 属性値の文字列一致で判定する）。
         self.assertNotIn('class="severity-badge"', html_doc)
 
     def test_no_badge_when_severity_field_points_to_missing_value(self):
         agenda = _fixture_agenda()
         agenda["config"]["severity_field"] = "confidence"
-        agenda["items"][0]["fields"] = {}
         html_doc = agenda_render.render_agenda_html(
             agenda, generated_at="2026-08-22T00:00:00"
         )
-        # item 01 has no "confidence" key in fields -> no badge for that item
+        # item 01/02 いずれも fields に "confidence" キーを持たない
         sections = html_doc.split('<section id="item-01"')[1].split("<section")[0]
         self.assertNotIn("severity-badge", sections)
 
     def test_no_badge_when_severity_value_is_empty_string(self):
-        # 空文字列は「重要度」列（_summary_row_html）が "-" と表示する判定と
-        # 揃え、バッジ側（_severity_badge_html）でも「値なし」として扱う。
         agenda = _fixture_agenda()
-        agenda["config"]["severity_field"] = "confidence"
-        agenda["items"][0]["fields"]["confidence"] = ""
+        agenda["items"][0]["fields"]["severity"] = ""
         html_doc = agenda_render.render_agenda_html(
             agenda, generated_at="2026-08-22T00:00:00"
         )
@@ -276,64 +265,45 @@ class SeverityBadgeTest(unittest.TestCase):
         # （agenda_render.py が "severity" という文字列を決め打ちしていないことの検証）
         agenda = _fixture_agenda()
         agenda["config"]["severity_field"] = "confidence"
+        agenda["items"][0]["fields"] = {"confidence": "confirmed"}
         html_doc = agenda_render.render_agenda_html(
             agenda, generated_at="2026-08-22T00:00:00"
         )
         self.assertIn('data-severity="confirmed"', html_doc)
-        self.assertIn('data-severity="unconfirmed"', html_doc)
 
-    def test_critical_major_minor_have_distinct_colors(self):
-        # DES-077 §3.1a: 重大度ごとのパステル配色（TASK-008）。
-        # critical/major/minor それぞれに専用の CSS ルールがあり、背景色が重複しないこと。
+
+class TypeValidationTest(unittest.TestCase):
+    """config/items の型検証（不正な型で ValueError が送出されること。agenda:REQ-019 NFR-006）。"""
+
+    def test_config_not_a_dict_raises_value_error(self):
         agenda = _fixture_agenda()
-        html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
-        )
-        colors = {}
-        for severity in ("critical", "major", "minor"):
-            selector = f'.severity-badge[data-severity="{severity}"]'
-            self.assertIn(selector, html_doc)
-            rule_start = html_doc.index(selector)
-            rule = html_doc[rule_start : rule_start + 200]
-            match = re.search(r"background:\s*(#[0-9a-fA-F]{3,6})", rule)
-            self.assertIsNotNone(match, f"{severity} 用の background 値が見つからない")
-            colors[severity] = match.group(1)
-        self.assertEqual(
-            len(set(colors.values())), 3, "critical/major/minor の背景色が重複している"
-        )
-
-    def test_unknown_severity_value_falls_back_to_default_color(self):
-        # DES-077 §3.1a・FNC-009: 中立性。critical/major/minor 以外の値は
-        # 呼び出し側が渡した任意の文字列であり、専用の配色ルールを持たず
-        # 既定（.severity-badge の共通スタイル）にフォールバックする。
-        agenda = _fixture_agenda()
-        agenda["items"][0]["fields"]["severity"] = "unknown_value"
-        html_doc = agenda_render.render_agenda_html(
-            agenda, generated_at="2026-08-22T00:00:00"
-        )
-        self.assertIn('data-severity="unknown_value"', html_doc)
-        self.assertNotIn('.severity-badge[data-severity="unknown_value"]', html_doc)
-
-
-class MalformedInputTest(unittest.TestCase):
-    """不正な入力（items 欠落等）でも例外を投げないこと。"""
-
-    def test_missing_items_key_does_not_raise(self):
-        agenda = _fixture_agenda()
-        del agenda["items"]
-        try:
+        agenda["config"] = "not-a-dict"
+        with self.assertRaises(ValueError):
             agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
-            agenda_render.render_agenda_state_js(agenda, generated_at="2026-08-22T00:00:00")
-        except Exception as exc:  # noqa: BLE001 - 例外を投げないことの検証
-            self.fail(f"予期しない例外: {exc}")
 
-    def test_missing_config_key_does_not_raise(self):
+    def test_missing_config_key_raises_value_error(self):
         agenda = _fixture_agenda()
         del agenda["config"]
-        try:
+        with self.assertRaises(ValueError):
             agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
-        except Exception as exc:  # noqa: BLE001
-            self.fail(f"予期しない例外: {exc}")
+
+    def test_items_not_a_list_raises_value_error(self):
+        agenda = _fixture_agenda()
+        agenda["items"] = "not-a-list"
+        with self.assertRaises(ValueError):
+            agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+
+    def test_missing_items_key_raises_value_error(self):
+        agenda = _fixture_agenda()
+        del agenda["items"]
+        with self.assertRaises(ValueError):
+            agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+
+    def test_item_not_a_dict_raises_value_error(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0] = "not-a-dict"
+        with self.assertRaises(ValueError):
+            agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
 
 
 if __name__ == "__main__":

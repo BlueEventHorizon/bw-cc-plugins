@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""agenda_schema.py（TransitionRule・verification.action 固定語彙）のテスト。
+"""agenda_schema.py（decision トリガー方式の状態遷移契約）のテスト。
 
-DES-075 §5.1 の4条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）・
+DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）・
 verification.action の固定語彙・不正な JSON 構造相当の入力の拒否を検証する
-（TASK-001 acceptance_criteria）。
+（TASK-009 acceptance_criteria）。
+
+`required_fields_for(item, patch_keys, config)`/`validate(item, patch_keys, config)`
+の新シグネチャを対象とする。旧シグネチャ（`target_status` を第2引数に取る／
+`status_vocabulary`・`terminal_statuses`・`active_statuses` を含む config）への
+言及は行わない（DES-075 §3.2「状態語彙は持たない」）。
 
 実行:
   python3 -m unittest tests.forge.agenda.test_agenda_schema -v
@@ -31,10 +36,7 @@ _SPEC.loader.exec_module(agenda_schema)
 def _valid_config(**overrides):
     config = {
         "identity": "20260819-agenda-design",
-        "status_vocabulary": ["未着手", "進行中", "決着", "保留", "対象外", "取り下げ"],
-        "terminal_statuses": ["決着", "対象外", "取り下げ"],
-        "active_statuses": ["未着手", "進行中"],
-        "item_fields": ["severity", "confidence"],
+        "item_fields": ["severity"],
         "severity_field": "severity",
         "structural_judgment": {"recorded": True, "note": "同型の指摘は無い"},
     }
@@ -46,59 +48,133 @@ def _valid_item(**overrides):
     item = {
         "id": "01",
         "title": "テスト項目",
-        "status": "進行中",
-        "fields": {"severity": "critical", "confidence": "confirmed"},
+        "fields": {"severity": "critical"},
         "background": "背景の記述",
         "essence": "本質の記述",
-        "recommendation": "推奨の記述",
+        "decision": {"by": "human", "outcome": "adopt", "reason": "妥当と判断"},
+        "last_changed_fields": ["decision"],
     }
     item.update(overrides)
     return item
 
 
-class RequiredFieldsForTerminalTransitionTest(unittest.TestCase):
-    """FNC-008: 終端状態遷移に background/essence 必須。"""
+class DecisionTriggerTest(unittest.TestCase):
+    """判定のトリガーは patch_keys に "decision" を含むかどうかだけである（DES-075 §5.1）。"""
+
+    def test_patch_without_decision_returns_no_missing(self):
+        # background のみのパッチでは、background/essence/decision.* 等いずれの
+        # 非空チェックも課さない（既に background/essence が空でも通る）。
+        item = _valid_item(background="", essence="", decision=None)
+        missing = agenda_schema.required_fields_for(item, {"background"}, _valid_config())
+        self.assertEqual(missing, [])
+
+    def test_patch_with_decision_triggers_full_validation(self):
+        item = _valid_item(background="", essence="", decision=None)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("background", missing)
+        self.assertIn("essence", missing)
+
+    def test_patch_keys_accepts_list_and_tuple_and_frozenset(self):
+        item = _valid_item()
+        for patch_keys in (["decision"], ("decision",), frozenset({"decision"})):
+            with self.subTest(patch_keys=patch_keys):
+                missing = agenda_schema.required_fields_for(item, patch_keys, _valid_config())
+                self.assertEqual(missing, [])
+
+    def test_unexpected_patch_keys_type_fails_closed_as_triggered(self):
+        # patch_keys が set/list/tuple/frozenset のいずれでもない場合、
+        # 検証を素通りさせず「含む」側に倒す（NFR-006 と同じ fail-closed 方針）。
+        item = _valid_item(background="", essence="", decision=None)
+        for bogus in (None, "decision", 123):
+            with self.subTest(patch_keys=bogus):
+                missing = agenda_schema.required_fields_for(item, bogus, _valid_config())
+                self.assertIn("background", missing)
+
+
+class RequiredFieldsForDecisionTest(unittest.TestCase):
+    """FNC-008: decision トリガー時に background/essence/decision.* が必須。"""
 
     def test_valid_item_has_no_missing_fields(self):
         missing = agenda_schema.required_fields_for(
-            _valid_item(), "決着", _valid_config()
+            _valid_item(), {"decision"}, _valid_config()
         )
         self.assertEqual(missing, [])
 
     def test_missing_background_is_reported(self):
         item = _valid_item(background="")
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("background", missing)
 
     def test_missing_essence_is_reported(self):
         item = _valid_item(essence="")
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("essence", missing)
 
     def test_background_key_absent_is_treated_as_missing(self):
         item = _valid_item()
         del item["background"]
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("background", missing)
 
-    def test_non_terminal_transition_does_not_require_background_essence(self):
-        item = _valid_item(background="", essence="")
-        missing = agenda_schema.required_fields_for(item, "進行中", _valid_config())
-        self.assertNotIn("background", missing)
-        self.assertNotIn("essence", missing)
+    def test_decision_key_absent_reports_all_decision_subfields(self):
+        item = _valid_item()
+        del item["decision"]
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("decision.by", missing)
+        self.assertIn("decision.outcome", missing)
+        self.assertIn("decision.reason", missing)
+
+    def test_decision_none_reports_all_decision_subfields(self):
+        item = _valid_item(decision=None)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("decision.by", missing)
+        self.assertIn("decision.outcome", missing)
+        self.assertIn("decision.reason", missing)
+
+    def test_decision_missing_by_is_reported(self):
+        item = _valid_item(decision={"outcome": "adopt", "reason": "妥当"})
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("decision.by", missing)
+
+    def test_decision_missing_outcome_is_reported(self):
+        item = _valid_item(decision={"by": "human", "reason": "妥当"})
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("decision.outcome", missing)
+
+    def test_decision_missing_reason_is_reported(self):
+        item = _valid_item(decision={"by": "human", "outcome": "adopt"})
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("decision.reason", missing)
 
 
 class RequiredFieldsForVerificationTest(unittest.TestCase):
-    """FNC-011: 外部指摘由来項目は referenced 必須。action != adopt は reason 必須。"""
+    """FNC-011: 外部指摘由来項目（verification キーを持つ）は referenced 必須。
+    action != adopt は reason 必須。"""
+
+    def test_item_without_verification_key_is_not_external(self):
+        item = _valid_item()
+        self.assertNotIn("verification", item)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertNotIn("verification.referenced", missing)
+        self.assertNotIn("verification.reason", missing)
+        self.assertNotIn("verification.action", missing)
 
     def test_external_item_missing_referenced_is_reported(self):
         item = _valid_item(
             verification={"referenced": "", "action": "adopt", "reason": ""}
         )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("verification.referenced", missing)
 
-    def test_external_item_with_referenced_and_adopt_needs_no_reason(self):
+    def test_verification_referenced_required_regardless_of_action(self):
+        # 採用する場合も検証を要求すること（FNC-011「指摘を認める方向へ倒すときこそ検証が要る」）
+        item = _valid_item(
+            verification={"referenced": "", "action": "adopt", "reason": "理由あり"}
+        )
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("verification.referenced", missing)
+
+    def test_adopt_with_referenced_needs_no_reason(self):
         item = _valid_item(
             verification={
                 "referenced": "plugins/x.py:1-2",
@@ -106,7 +182,7 @@ class RequiredFieldsForVerificationTest(unittest.TestCase):
                 "reason": "",
             }
         )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertEqual(missing, [])
 
     def test_action_not_adopt_without_reason_is_reported(self):
@@ -117,7 +193,7 @@ class RequiredFieldsForVerificationTest(unittest.TestCase):
                 "reason": "",
             }
         )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("verification.reason", missing)
 
     def test_action_not_adopt_with_reason_is_satisfied(self):
@@ -128,66 +204,90 @@ class RequiredFieldsForVerificationTest(unittest.TestCase):
                 "reason": "採用しない理由",
             }
         )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertEqual(missing, [])
 
-    def test_item_without_verification_key_is_not_external(self):
-        item = _valid_item()
-        self.assertNotIn("verification", item)
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
-        self.assertNotIn("verification.referenced", missing)
-        self.assertNotIn("verification.reason", missing)
-
-    def test_verification_referenced_required_regardless_of_action(self):
-        # 採用する場合も検証を要求すること（FNC-011「指摘を認める方向へ倒すときこそ検証が要る」）
+    def test_action_outside_fixed_vocabulary_is_reported_as_missing(self):
         item = _valid_item(
-            verification={"referenced": "", "action": "adopt", "reason": "理由あり"}
+            verification={
+                "referenced": "plugins/x.py:1-2",
+                "action": "approve",
+                "reason": "理由あり",
+            }
         )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
-        self.assertIn("verification.referenced", missing)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertIn("verification.action", missing)
+
+    def test_action_within_fixed_vocabulary_is_not_reported_as_missing(self):
+        item = _valid_item(
+            verification={
+                "referenced": "plugins/x.py:1-2",
+                "action": "reject",
+                "reason": "理由あり",
+            }
+        )
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertNotIn("verification.action", missing)
+
+    def test_verification_present_but_not_triggered_by_non_decision_patch(self):
+        # decision を含まないパッチでは verification チェック自体を課さない
+        # （decision トリガー判定が全体の入口であるため）。
+        item = _valid_item(
+            verification={"referenced": "", "action": "adopt", "reason": ""}
+        )
+        missing = agenda_schema.required_fields_for(item, {"background"}, _valid_config())
+        self.assertEqual(missing, [])
 
 
 class RequiredFieldsForStructuralJudgmentTest(unittest.TestCase):
-    """FNC-012: structural_judgment 未記録時は個別遷移拒否（target_status を問わない）。"""
+    """FNC-012: decision トリガー時、structural_judgment.recorded が True でなければ拒否する。
 
-    def test_unrecorded_structural_judgment_blocks_terminal_transition(self):
-        config = _valid_config(structural_judgment={"recorded": False})
-        missing = agenda_schema.required_fields_for(_valid_item(), "決着", config)
-        self.assertIn("structural_judgment.recorded", missing)
+    本モジュールの実装は DES-075 §5.1表「個別項目への遷移全般」を decision トリガーと
+    同一視する（agenda_schema.py 冒頭 docstring）。decision を含まないパッチでは
+    structural_judgment の状態そのものを判定しない。
+    """
 
-    def test_unrecorded_structural_judgment_blocks_non_terminal_transition(self):
+    def test_unrecorded_structural_judgment_blocks_decision_transition(self):
         config = _valid_config(structural_judgment={"recorded": False})
-        missing = agenda_schema.required_fields_for(_valid_item(), "進行中", config)
+        missing = agenda_schema.required_fields_for(_valid_item(), {"decision"}, config)
         self.assertIn("structural_judgment.recorded", missing)
 
     def test_missing_structural_judgment_key_is_treated_as_unrecorded(self):
         config = _valid_config()
         del config["structural_judgment"]
-        missing = agenda_schema.required_fields_for(_valid_item(), "進行中", config)
+        missing = agenda_schema.required_fields_for(_valid_item(), {"decision"}, config)
         self.assertIn("structural_judgment.recorded", missing)
 
     def test_recorded_structural_judgment_does_not_block(self):
         missing = agenda_schema.required_fields_for(
-            _valid_item(), "進行中", _valid_config()
+            _valid_item(), {"decision"}, _valid_config()
         )
         self.assertNotIn("structural_judgment.recorded", missing)
+
+    def test_non_decision_patch_does_not_check_structural_judgment(self):
+        # decision を含まない呼び出しでは structural_judgment.recorded が
+        # False でも missing に含めない（トリガー判定自体が入口のため）。
+        config = _valid_config(structural_judgment={"recorded": False})
+        item = _valid_item(background="", essence="", decision=None)
+        missing = agenda_schema.required_fields_for(item, {"background"}, config)
+        self.assertEqual(missing, [])
 
 
 class ValidateTest(unittest.TestCase):
     def test_valid_transition_returns_ok_true(self):
-        result = agenda_schema.validate(_valid_item(), "決着", _valid_config())
+        result = agenda_schema.validate(_valid_item(), {"decision"}, _valid_config())
         self.assertEqual(result, {"ok": True, "missing_fields": []})
 
     def test_invalid_transition_returns_ok_false_with_missing_fields(self):
         item = _valid_item(background="", essence="")
-        result = agenda_schema.validate(item, "決着", _valid_config())
+        result = agenda_schema.validate(item, {"decision"}, _valid_config())
         self.assertFalse(result["ok"])
         self.assertIn("background", result["missing_fields"])
         self.assertIn("essence", result["missing_fields"])
 
     def test_validate_does_not_raise(self):
         try:
-            agenda_schema.validate(_valid_item(), "決着", _valid_config())
+            agenda_schema.validate(_valid_item(), {"decision"}, _valid_config())
         except Exception as exc:  # noqa: BLE001 - 例外を投げない契約自体の検証
             self.fail(f"validate() が例外を投げた: {exc}")
 
@@ -200,7 +300,7 @@ class VerificationActionVocabularyTest(unittest.TestCase):
         self.assertEqual(agenda_schema.VERIFICATION_ACTIONS, frozenset({"adopt", "reject"}))
 
     def test_vocabulary_is_not_read_from_config(self):
-        # config に status_vocabulary 相当のキーで別の action 語彙を混入させても、
+        # config に action_vocabulary 相当のキーで別の語彙を混入させても、
         # 判定はモジュール内の固定定数だけを見る（config からは受け取らない）。
         config = _valid_config(action_vocabulary=["approve", "deny"])
         item = _valid_item(
@@ -210,80 +310,39 @@ class VerificationActionVocabularyTest(unittest.TestCase):
                 "reason": "",
             }
         )
-        missing = agenda_schema.required_fields_for(item, "決着", config)
-        # "approve" は固定語彙の adopt と一致しないため、reason が必須になる
-        # （config 側にどう書かれていても固定語彙の判定は変わらない）。
-        self.assertIn("verification.reason", missing)
-
-    def test_action_outside_fixed_vocabulary_is_reported_as_missing(self):
-        # 固定語彙（adopt/reject）に属さない値は、verification.action 自体が
-        # 不足として報告される（VERIFICATION_ACTIONS を実際に検証対象にする）。
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "approve",
-                "reason": "理由あり",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
         self.assertIn("verification.action", missing)
-
-    def test_action_within_fixed_vocabulary_is_not_reported_as_missing(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "reject",
-                "reason": "理由あり",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
-        self.assertNotIn("verification.action", missing)
 
 
 class MalformedInputRejectionTest(unittest.TestCase):
-    """不正な JSON 構造相当の入力の拒否（DES-075 §9）。"""
+    """不正な JSON 構造相当の入力の拒否（DES-075 §9・agenda:REQ-019 NFR-006）。"""
 
     def test_item_not_a_dict_is_treated_as_missing_everything(self):
-        missing = agenda_schema.required_fields_for("not-a-dict", "決着", _valid_config())
+        missing = agenda_schema.required_fields_for("not-a-dict", {"decision"}, _valid_config())
         self.assertIn("background", missing)
         self.assertIn("essence", missing)
 
-    def test_config_not_a_dict_is_treated_as_potentially_terminal_and_unrecorded(self):
-        # config 自体が不正な場合も、終端判定を「終端ではない」と楽観視しない
-        # （NFR-006: 既定値で補って進行しない）。
+    def test_config_not_a_dict_is_treated_as_unrecorded(self):
         item = _valid_item(background="", essence="")
-        missing = agenda_schema.required_fields_for(item, "決着", "not-a-dict")
+        missing = agenda_schema.required_fields_for(item, {"decision"}, "not-a-dict")
         self.assertIn("background", missing)
         self.assertIn("essence", missing)
-        # structural_judgment も得られないため未記録として拒否される
         self.assertIn("structural_judgment.recorded", missing)
 
-    def test_terminal_statuses_malformed_is_treated_as_potentially_terminal(self):
-        # terminal_statuses の型が不正で終端かどうか判定できない場合、
-        # 「終端ではない」と楽観視せず background/essence の要求を維持する
-        # （NFR-006: 既定値で補って進行しない）。
-        config = _valid_config(terminal_statuses="決着")
-        item = _valid_item(background="", essence="")
-        missing = agenda_schema.required_fields_for(item, "決着", config)
-        self.assertIn("background", missing)
-        self.assertIn("essence", missing)
-
     def test_verification_wrong_type_is_treated_as_malformed_external_item(self):
-        # verification キーが存在するが型が不正な場合、内容を検証できないため
-        # 全項目を不足として扱う（NFR-006: 既定値で補って進行しない）。
         item = _valid_item(verification="not-a-dict")
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("verification.referenced", missing)
         self.assertIn("verification.reason", missing)
         self.assertIn("verification.action", missing)
 
     def test_background_wrong_type_is_treated_as_missing(self):
         item = _valid_item(background=123)
-        missing = agenda_schema.required_fields_for(item, "決着", _valid_config())
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
         self.assertIn("background", missing)
 
     def test_validate_on_malformed_input_returns_ok_false_without_raising(self):
-        result = agenda_schema.validate("not-a-dict", "決着", "also-not-a-dict")
+        result = agenda_schema.validate("not-a-dict", {"decision"}, "also-not-a-dict")
         self.assertFalse(result["ok"])
         self.assertTrue(result["missing_fields"])
 

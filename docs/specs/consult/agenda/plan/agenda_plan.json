@@ -297,7 +297,7 @@
       "task_id": "TASK-009",
       "title": "agenda機構のテストスイートを新設計に合わせて全面書き換える",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-008"
