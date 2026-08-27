@@ -47,7 +47,25 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 判別できない場合は**議論**を既定とする。議論を決定へ変えるのは利用者の明示指示があったときだけで、
 AI から促さない。
 
-## Phase 1: 論点の抽出と検証
+### 起点の判定 [MANDATORY]
+
+本スキルは、利用者からの直接依頼（**consult 起点**）としても、review 本体からの委譲（**review 起点**）
+としても起動する。両者は別プロセス・別セッションではなく、同一の会話が続いたまま振る舞いが切り替わる
+だけである。したがって起点は外部から渡される構造化フラグではなく、**AI 自身が置かれている文脈**で
+判断する——直前に reviewer/evaluator との往復を行い、結合済みの所見配列（何が問題か・どこを指すか・
+重大度・採否の確信度）を会話コンテキストに既に持っている場合は review 起点、それ以外（一般的な議論・
+課題解決・たたき台のレビューを問わない）は consult 起点として扱う。
+
+review 起点は、所見への採否を得ることが目的であるため**決定モード**として扱う（上表の判定を経由しない）。
+
+review 起点では **Phase 1 を経由しない**（次節参照）。所見群についての構造的な判断（同型の指摘の
+繰り返し・複数指摘が同一の土台に由来していないか）も、review 本体の実行中に既に行われているため、
+その内容を Phase 2.2 でそのまま `structural_judgment.note` として渡す。
+
+## Phase 1: 論点の抽出と検証（consult 起点のみ）
+
+**review 起点はこの Phase を飛ばし、Phase 2 から続ける**（起点の判定を参照）。所見配列は
+reviewer/evaluator が既に評価済みであり、consult 自身が新たに論点を立てる工程は不要である。
 
 1. 対象を把握する（渡された文書・コード・会話の流れ）
 2. 論点を立てる。各論点に**識別子**を与える（`01` `02` …。派生は `03a` `03b`）
@@ -63,7 +81,20 @@ AI から促さない。
 
 ### 2.1 既存記録の確認
 
-新規に始める前に、中断中の記録がないかを見る。
+新規に始める前に、中断中の記録がないかを見る。**確認方法は起点で異なる**（記録の置き場が起点ごとに
+固定パスかセッション単位かで変わるため。2.2 参照）。
+
+**review 起点**: review は同時に 1 つのレビューしか実行しないため、記録は固定パスに常に高々 1 つしか
+存在しない。列挙は不要で、直接確認する。
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path ".claude/.temp/review/agenda.json" 2>/dev/null
+```
+
+ファイルが存在しなければ新規に始める。存在し `remaining_count` が 0 より大きければ、未判断の件数を
+1〜2 行で示し、**再開するか新規に始めるかを AskUserQuestion で確認する**。
+
+**consult 起点**: 複数の記録が同時に存在しうるため、列挙してから個別に残件を確認する。
 
 ```bash
 ls -1d .claude/.temp/consult/*/ 2>/dev/null
@@ -80,15 +111,44 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path "<
 AskUserQuestion で確認する**（進行上の機械的な二者択一であり、議論の内容ではない）。候補が無ければ
 新規に始める。
 
-再開する場合、その `agenda.json` の実パスを以降の全コマンドの `--path` に使い続ける。**既存の識別子を
-そのまま引き継ぐ**（`agenda_store.py` は識別子を振り直さない）。`decision` が記録済みの項目は再び提示しない。
+**いずれの起点でも**、再開する場合はその `agenda.json` の実パスを以降の全コマンドの `--path` に使い続ける。
+**既存の識別子をそのまま引き継ぐ**（`agenda_store.py` は識別子を振り直さない）。`decision` が記録済みの
+項目は再び提示しない。
 
 ### 2.2 新規開始
 
-新規に始める場合、記録の置き場は `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json` とする
-（`config.identity` はこのパスの親ディレクトリ名から `agenda_store.py` 自身が導出するため、AI は渡さない）。
+記録の置き場・`config` は起点で異なる（`config.identity` はいずれもパスの親ディレクトリ名から
+`agenda_store.py` 自身が導出するため、AI は渡さない）。
 
-候補 JSON を組み立てる:
+| 起点         | 置き場                                                   | `config.item_fields` | `config.severity_field` | `config.requires_verification` |
+| ------------ | -------------------------------------------------------- | -------------------- | ----------------------- | ------------------------------ |
+| review 起点  | `.claude/.temp/review/agenda.json`（固定）               | `["severity"]`       | `"severity"`            | `true`                         |
+| consult 起点 | `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json` | `[]`                 | `null`                  | 渡さない（`false` 相当）       |
+
+**review 起点**の候補 JSON:
+
+```json
+{
+  "structural_judgment": { "note": "<review 本体で判断済みの構造的判断>" },
+  "config": {
+    "item_fields": ["severity"],
+    "severity_field": "severity",
+    "requires_verification": true
+  },
+  "items": [
+    {
+      "id": "<結合済み配列の通し番号>",
+      "title": "<所見の要約>",
+      "fields": { "severity": "<evaluator が確認・訂正した重大度>" }
+    }
+  ]
+}
+```
+
+`items[]` は、reviewer 所見と evaluator 判定を結合した配列（会話コンテキストに既にある）をそのまま用いる。
+consult 自身は新たに論点を立てない（Phase 1 を経由しないため）。
+
+**consult 起点**の候補 JSON:
 
 ```json
 {
@@ -100,9 +160,7 @@ AskUserQuestion で確認する**（進行上の機械的な二者択一であ�
 }
 ```
 
-consult 自身が起点となる議論は重要度概念を用いないため、`config.item_fields` は空配列、
-`config.severity_field` は `null` とする（レビュー所見を委譲経由で扱う場合は、渡された重要度の
-キー名をそのまま `item_fields`/`severity_field` に反映する）。
+以下、起点を問わず共通の手順である（`<置き場>` は上表の値を使う）。
 
 1. **Write** ツールで候補 JSON を `.claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json` へ書く。
    **自由記述文（背景・本質・タイトル等）をシェルコマンドの引用符へ直接埋め込まない**——改行・引用符・
@@ -112,7 +170,7 @@ consult 自身が起点となる議論は重要度概念を用いないため、
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" start \
-     --path ".claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json" \
+     --path "<置き場>" \
      --input-file ".claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json"
    ```
 
@@ -122,7 +180,7 @@ consult 自身が起点となる議論は重要度概念を用いないため、
 3. **開始直後、Bash で表示物を開く**（初回のみ）:
 
    ```bash
-   open ".claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.html"
+   open "<置き場と同じディレクトリ>/agenda.html"
    ```
 
    **2 回目以降は `open` を呼ばない**（重複タブを避けるため）。**自動追従の仕組みは持たない**——以降の
