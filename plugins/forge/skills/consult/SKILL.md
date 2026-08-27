@@ -85,14 +85,17 @@ reviewer/evaluator が既に評価済みであり、consult 自身が新たに�
 固定パスかセッション単位かで変わるため。2.2 参照）。
 
 **review 起点**: review は同時に 1 つのレビューしか実行しないため、記録は固定パスに常に高々 1 つしか
-存在しない。列挙は不要で、直接確認する。
+存在しない。列挙は不要で、ファイルの存在を確認してから直接確認する。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path ".claude/.temp/review/agenda.json" 2>/dev/null
+test -f ".claude/.temp/review/agenda.json" && \
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path ".claude/.temp/review/agenda.json"
 ```
 
 ファイルが存在しなければ新規に始める。存在し `remaining_count` が 0 より大きければ、未判断の件数を
-1〜2 行で示し、**再開するか新規に始めるかを AskUserQuestion で確認する**。
+1〜2 行で示し、**再開するか新規に始めるかを AskUserQuestion で確認する**。**ファイルが存在するのに
+`status` が `error`（JSON 破損等）の場合は「存在しない」と同一視せず、利用者へ報告して対応を確認する**
+（`start` は既存内容を無条件に上書きするため、破損記録を新規開始として黙って上書き・消失させない）。
 
 **consult 起点**: 複数の記録が同時に存在しうるため、列挙してから個別に残件を確認する。
 
@@ -100,7 +103,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path ".
 ls -1d .claude/.temp/consult/*/ 2>/dev/null
 ```
 
-見つかった各ディレクトリについて `agenda.json` の有無を確認し、存在するものは残件を取得する。
+見つかった各ディレクトリについて `agenda.json` の有無を確認し、**存在するものだけ**残件を取得する。
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path "<ディレクトリ>agenda.json"
@@ -109,7 +112,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path "<
 **残件（`remaining_count`）が 0 より大きい記録があれば、再開の候補として扱う。** その要点（主題＝
 `config.identity`・未判断の件数・項目の一覧）をコンソールに 1〜2 行で示し、**再開するか新規に始めるかを
 AskUserQuestion で確認する**（進行上の機械的な二者択一であり、議論の内容ではない）。候補が無ければ
-新規に始める。
+新規に始める。**`agenda.json` が存在するのに `status` が `error`（JSON 破損等）の記録は候補から除外せず、
+利用者へ報告して対応を確認する**（他の候補と同列に「無かったこと」にしない）。
 
 **いずれの起点でも**、再開する場合はその `agenda.json` の実パスを以降の全コマンドの `--path` に使い続ける。
 **既存の識別子をそのまま引き継ぐ**（`agenda_store.py` は識別子を振り直さない）。`decision` が記録済みの
@@ -120,21 +124,17 @@ AskUserQuestion で確認する**（進行上の機械的な二者択一であ�
 記録の置き場・`config` は起点で異なる（`config.identity` はいずれもパスの親ディレクトリ名から
 `agenda_store.py` 自身が導出するため、AI は渡さない）。
 
-| 起点         | 置き場                                                   | `config.item_fields` | `config.severity_field` | `config.requires_verification` |
-| ------------ | -------------------------------------------------------- | -------------------- | ----------------------- | ------------------------------ |
-| review 起点  | `.claude/.temp/review/agenda.json`（固定）               | `["severity"]`       | `"severity"`            | `true`                         |
-| consult 起点 | `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json` | `[]`                 | `null`                  | 渡さない（`false` 相当）       |
+| 起点         | 置き場                                                   | `config.item_fields` | `config.severity_field` |
+| ------------ | -------------------------------------------------------- | -------------------- | ----------------------- |
+| review 起点  | `.claude/.temp/review/agenda.json`（固定）               | `["severity"]`       | `"severity"`            |
+| consult 起点 | `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json` | `[]`                 | `null`                  |
 
 **review 起点**の候補 JSON:
 
 ```json
 {
   "structural_judgment": { "note": "<review 本体で判断済みの構造的判断>" },
-  "config": {
-    "item_fields": ["severity"],
-    "severity_field": "severity",
-    "requires_verification": true
-  },
+  "config": { "item_fields": ["severity"], "severity_field": "severity" },
   "items": [
     {
       "id": "<結合済み配列の通し番号>",

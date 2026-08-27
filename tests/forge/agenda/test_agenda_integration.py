@@ -109,12 +109,7 @@ class AgendaIntegrationTest(unittest.TestCase):
                 "config": {"item_fields": ["severity"], "severity_field": "severity"},
                 "items": [
                     {"id": "01", "title": "項目1", "fields": {"severity": "major"}},
-                    {
-                        "id": "02",
-                        "title": "項目2（外部指摘由来）",
-                        "fields": {"severity": "critical"},
-                        "verification": {"referenced": "", "action": "adopt", "reason": ""},
-                    },
+                    {"id": "02", "title": "項目2", "fields": {"severity": "critical"}},
                 ],
             }
         )
@@ -132,7 +127,7 @@ class AgendaIntegrationTest(unittest.TestCase):
         item01 = next(i for i in record["items"] if i["id"] == "01")
         self.assertEqual(item01["last_changed_fields"], sorted(["background", "essence"]))
 
-        # --- record②（決着。項目01。verification を持たないため background/essence のみで足りる） ---
+        # --- record②（決着。項目01。background/essence が揃っていれば足りる） ---
         r2 = self._record(
             "01", {"decision": {"by": "human", "outcome": "adopt", "reason": "妥当と判断"}}
         )
@@ -164,20 +159,7 @@ class AgendaIntegrationTest(unittest.TestCase):
         self.assertEqual(premature_finish["remaining_count"], 1)
         self.assertTrue(Path(self.agenda_path).exists())
 
-        # --- record②（決着。項目02）を referenced 無しで試みると拒否される
-        #     （FNC-011: 採用する場合も検証を要求する） ---
-        rejected = self._record(
-            "02", {"decision": {"by": "human", "outcome": "adopt", "reason": "妥当"}}
-        )
-        self.assertEqual(rejected["status"], "error")
-        self.assertIn("verification.referenced", rejected["missing_fields"])
-        record = self._record_record()
-        self.assertEqual(record["content_version"], 4)  # 拒否は content_version を増やさない
-        item02 = next(i for i in record["items"] if i["id"] == "02")
-        self.assertIsNone(item02["decision"])  # 拒否された変更は永続化されない
-
-        # --- verification.referenced を追記して再実行すると成功する ---
-        self._record("02", {"verification": {"referenced": "path/to/file.py:10", "action": "adopt"}})
+        # --- record②（決着。項目02） ---
         r4 = self._record(
             "02", {"decision": {"by": "human", "outcome": "adopt", "reason": "妥当と判断2"}}
         )

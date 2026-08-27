@@ -123,8 +123,8 @@ def _finalize_write(path: str | Path, record: dict) -> dict:
 
 _START_ALLOWED_KEYS = {"structural_judgment", "config", "items"}
 _START_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
-_START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field", "requires_verification"}
-_START_ITEM_ALLOWED_KEYS = {"id", "title", "fields", "verification"}
+_START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field"}
+_START_ITEM_ALLOWED_KEYS = {"id", "title", "fields"}
 
 
 def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
@@ -173,13 +173,8 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
         severity_field = config.get("severity_field")
         if severity_field is not None and not isinstance(severity_field, str):
             errors.append("config.severity_field は文字列または null である必要があります")
-        requires_verification = config.get("requires_verification", False)
-        if not isinstance(requires_verification, bool):
-            errors.append("config.requires_verification は真偽値である必要があります")
-            requires_verification = False
     else:
         errors.append("config は object である必要があります")
-        requires_verification = False
 
     items_raw = raw.get("items")
     items: list = []
@@ -207,10 +202,6 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
             if fields is not None and not isinstance(fields, dict):
                 errors.append(f"{label}.fields は object である必要があります")
                 fields = {}
-            verification = item.get("verification")
-            if verification is not None and not isinstance(verification, dict):
-                errors.append(f"{label}.verification は object である必要があります")
-                verification = None
             new_item = {
                 "id": item_id,
                 "title": title,
@@ -220,11 +211,6 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
                 "decision": None,
                 "last_changed_fields": [],
             }
-            # verification は「外部指摘由来かどうか」を表すキーの有無であるため、
-            # 未指定なら明示的にキー自体を持たせない（agenda_schema.py の
-            # `"verification" in item` 判定を誤発火させないため）。
-            if isinstance(verification, dict):
-                new_item["verification"] = verification
             items.append(new_item)
     else:
         errors.append("items は配列である必要があります")
@@ -237,7 +223,6 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
             "note": note,
             "item_fields": item_fields,
             "severity_field": severity_field,
-            "requires_verification": requires_verification,
             "items": items,
         },
         [],
@@ -266,7 +251,6 @@ def handle_start(args: argparse.Namespace) -> dict:
             "identity": path.parent.name,
             "item_fields": normalized["item_fields"],
             "severity_field": normalized["severity_field"],
-            "requires_verification": normalized["requires_verification"],
         },
         "structural_judgment": {
             "recorded": True,
@@ -292,13 +276,12 @@ _RECORD_ALLOWED_KEYS = {
     "background",
     "essence",
     "decision",
-    "verification",
     "fields",
     "structural_judgment",
 }
 _RECORD_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
 _RECORD_ITEM_PATCH_STRING_KEYS = ("title", "background", "essence")
-_RECORD_ITEM_PATCH_DICT_KEYS = ("fields", "verification", "decision")
+_RECORD_ITEM_PATCH_DICT_KEYS = ("fields", "decision")
 
 
 def _validate_record_candidate(raw: dict) -> tuple[dict | None, str | None, list]:

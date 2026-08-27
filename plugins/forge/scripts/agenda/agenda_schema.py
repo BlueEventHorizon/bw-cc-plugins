@@ -3,7 +3,7 @@
 
 `plan_contract.py` と同型の「関数＋契約」構成（DES-075 §3.2 の注記どおり、
 UML クラス（`TransitionRule`）をそのまま class 化しない）。状態遷移の必要条件
-（DES-075 §5.1、agenda:REQ-019 FNC-008/FNC-011/FNC-012）を機械可読な定義として持ち、
+（DES-075 §5.1、agenda:REQ-019 FNC-008/FNC-012）を機械可読な定義として持ち、
 不足フィールド名を列挙する判定結果を返す。
 
 **状態語彙は持たない（DES-075 §3.2・§4「状態の表現」）**。`status_vocabulary`/
@@ -29,16 +29,6 @@ record レベルの状態を保持する `config` 側にこの情報を含める
 """
 
 from __future__ import annotations
-
-#: 検証記録（`items[].verification`）の採否を表す固定語彙（agenda:REQ-019 FNC-011、
-#: DES-075 §4・§5.1）。呼び出し側（consult）が自由に定義しうる項目属性
-#: （`config.item_fields`）とは独立した、agenda 機構固有のスキーマである。
-#: 呼び出し側（config・引数）から受け取らず、本モジュール内の定数として
-#: 固定する（FNC-009 の中立性の対象外）。
-VERIFICATION_ACTIONS = frozenset({"adopt", "reject"})
-
-#: `VERIFICATION_ACTIONS` のうち、`reason` の追加記入を要求しない唯一の値。
-VERIFICATION_ACTION_ADOPT = "adopt"
 
 
 def _non_empty(value) -> bool:
@@ -69,23 +59,12 @@ def _decision_triggered(patch_keys) -> bool:
 def required_fields_for(item, patch_keys, config) -> list:
     """今回の `record` 呼び出しに必要なフィールドのうち、不足しているものを返す。
 
-    DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）を順に判定する。
+    DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-012）を順に判定する。
 
     1. `patch_keys` に `decision` を含む（＝決着させる `record` 呼び出し）場合、
        `background`・`essence`・`decision.by`・`decision.outcome`・`decision.reason`
        が空でないことを要求する（FNC-008）
-    2. 上記かつ `item` が `verification` キー（dict）を持つ場合、
-       `verification.action` が `VERIFICATION_ACTIONS`（固定語彙。呼び出し側から
-       受け取らない）に含まれること、および `verification.referenced` が
-       空でないことを追加で要求する（採否によらず検証を要求する。FNC-011）。
-       `config.requires_verification` が `True` の場合、`item` が
-       `verification` キー自体を持たないことも不足として扱う——呼び出し側が
-       キーを渡し忘れる（または意図的に省く）ことで検証必須の記録を素通り
-       させられないようにするための record 単位の宣言である（FNC-011。
-       DES-075 §7「review 起点」の記録は `start` 時点でこのフラグを立てる）
-    3. 上記かつ `verification.action` が `adopt` でない場合、
-       `verification.reason` が空でないことを追加で要求する（FNC-011）
-    4. 個別項目への遷移全般（＝`decision` を含む呼び出し。DES-075 §5.1表の
+    2. 個別項目への遷移全般（＝`decision` を含む呼び出し。DES-075 §5.1表の
        「個別項目への遷移全般」は本モジュールの実装上 `decision` トリガーと
        同じ呼び出しを指す）で、`structural_judgment.recorded` が `True`
        であることを要求する（FNC-012）
@@ -123,29 +102,6 @@ def required_fields_for(item, patch_keys, config) -> list:
         missing.append("decision.by")
         missing.append("decision.outcome")
         missing.append("decision.reason")
-
-    requires_verification = config.get("requires_verification") is True
-    if "verification" in item:
-        verification = item.get("verification")
-        if isinstance(verification, dict):
-            action = verification.get("action")
-            if not isinstance(action, str) or action not in VERIFICATION_ACTIONS:
-                missing.append("verification.action")
-
-            if not _non_empty(verification.get("referenced")):
-                missing.append("verification.referenced")
-
-            if action != VERIFICATION_ACTION_ADOPT:
-                if not _non_empty(verification.get("reason")):
-                    missing.append("verification.reason")
-        else:
-            missing.append("verification.action")
-            missing.append("verification.referenced")
-            missing.append("verification.reason")
-    elif requires_verification:
-        missing.append("verification.action")
-        missing.append("verification.referenced")
-        missing.append("verification.reason")
 
     structural_judgment = config.get("structural_judgment")
     recorded = (

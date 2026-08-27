@@ -60,15 +60,12 @@ class AgendaStoreTestCase(unittest.TestCase):
         note="同型の指摘は無い",
         item_fields=None,
         severity_field=None,
-        requires_verification=None,
         items=None,
     ):
         config = {
             "item_fields": item_fields if item_fields is not None else ["severity"],
             "severity_field": severity_field,
         }
-        if requires_verification is not None:
-            config["requires_verification"] = requires_verification
         candidate = {
             "structural_judgment": {"note": note},
             "config": config,
@@ -265,102 +262,6 @@ class StartSuccessTest(AgendaStoreTestCase):
         self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
 
 
-class RequiresVerificationConfigTest(AgendaStoreTestCase):
-    """FNC-011: `config.requires_verification` の CLI 契約（agenda_schema.py の
-    RequiresVerificationConfigTest とは別レイヤー。start の候補JSON検証・
-    record を通した end-to-end 強制を検証する）。"""
-
-    def test_requires_verification_true_is_accepted_and_stored(self):
-        result = self._start(requires_verification=True)
-        self.assertEqual(result["status"], "ok")
-        record = self._load()
-        self.assertTrue(record["config"]["requires_verification"])
-
-    def test_requires_verification_omitted_defaults_to_false(self):
-        result = self._start()
-        self.assertEqual(result["status"], "ok")
-        record = self._load()
-        self.assertFalse(record["config"]["requires_verification"])
-
-    def test_requires_verification_non_bool_is_rejected(self):
-        candidate = {
-            "structural_judgment": {"note": "問題なし"},
-            "config": {
-                "item_fields": [],
-                "severity_field": None,
-                "requires_verification": "true",
-            },
-            "items": [],
-        }
-        result = _run(
-            ["start", "--path", self.agenda_path, "--input-file", self._write_candidate(candidate)]
-        )
-        self.assertEqual(result["status"], "error")
-
-    def test_decision_without_verification_is_rejected_when_required(self):
-        # start 時点で verification キーを持たない項目（review 起点で AI が
-        # 指示に反して省略した場合の想定）は、requires_verification: true の
-        # record では decision を含む record 呼び出しが拒否される。
-        self._start(
-            requires_verification=True,
-            items=[{"id": "01", "title": "外部指摘由来の項目"}],
-        )
-        result = self._record(
-            "01",
-            {
-                "background": "背景",
-                "essence": "本質",
-                "decision": {"by": "AI", "outcome": "adopt", "reason": "妥当"},
-            },
-        )
-        self.assertEqual(result["status"], "error")
-        self.assertIn("verification.action", result["missing_fields"])
-        self.assertIn("verification.referenced", result["missing_fields"])
-        self.assertIn("verification.reason", result["missing_fields"])
-
-    def test_decision_with_verification_at_start_succeeds_when_required(self):
-        self._start(
-            requires_verification=True,
-            items=[
-                {
-                    "id": "01",
-                    "title": "外部指摘由来の項目",
-                    "verification": {
-                        "referenced": "plugins/x.py:1-2",
-                        "action": "adopt",
-                        "reason": "",
-                    },
-                }
-            ],
-        )
-        result = self._record(
-            "01",
-            {
-                "background": "背景",
-                "essence": "本質",
-                "decision": {"by": "AI", "outcome": "adopt", "reason": "妥当"},
-            },
-        )
-        self.assertEqual(result["status"], "ok")
-
-    def test_decision_without_verification_is_accepted_when_not_required(self):
-        # requires_verification: false（consult 起点相当）では、従来どおり
-        # verification 無しでも decision が通る（regression 防止）。
-        self._start(
-            requires_verification=False,
-            items=[{"id": "01", "title": "consult 自身が立てた論点"}],
-        )
-        result = self._record(
-            "01",
-            {
-                "background": "背景",
-                "essence": "本質",
-                "decision": {"by": "human", "outcome": "adopt", "reason": "妥当"},
-            },
-        )
-        self.assertEqual(result["status"], "ok")
-
-
 class RecordCandidateValidationTest(AgendaStoreTestCase):
     """record の候補JSON検証。"""
 
@@ -527,65 +428,6 @@ class DecisionTransitionTest(AgendaStoreTestCase):
         result = self._record("01", {"decision": {"outcome": "adopt", "reason": "妥当"}})
         self.assertEqual(result["status"], "error")
         self.assertIn("decision.by", result["missing_fields"])
-
-
-class VerificationTransitionTest(AgendaStoreTestCase):
-    """FNC-011: 外部指摘由来項目（verification を持つ項目）の決着に検証記録を要求する。"""
-
-    def setUp(self):
-        super().setUp()
-        self._start(
-            items=[
-                {
-                    "id": "01",
-                    "title": "項目1",
-                    "verification": {"referenced": "", "action": "adopt", "reason": ""},
-                }
-            ]
-        )
-        self._record("01", {"background": "背景", "essence": "本質"})
-
-    def test_decision_without_referenced_is_rejected_even_when_adopt(self):
-        result = self._record(
-            "01", {"decision": {"by": "human", "outcome": "adopt", "reason": "妥当"}}
-        )
-        self.assertEqual(result["status"], "error")
-        self.assertIn("verification.referenced", result["missing_fields"])
-
-    def test_decision_with_referenced_and_adopt_succeeds_without_verification_reason(self):
-        self._record(
-            "01", {"verification": {"referenced": "path/to/file.py:1", "action": "adopt"}}
-        )
-        result = self._record(
-            "01", {"decision": {"by": "human", "outcome": "adopt", "reason": "妥当"}}
-        )
-        self.assertEqual(result["status"], "ok")
-
-    def test_reject_action_without_reason_is_rejected(self):
-        self._record(
-            "01", {"verification": {"referenced": "path/to/file.py:1", "action": "reject"}}
-        )
-        result = self._record(
-            "01", {"decision": {"by": "human", "outcome": "取り下げ", "reason": "対応不要"}}
-        )
-        self.assertEqual(result["status"], "error")
-        self.assertIn("verification.reason", result["missing_fields"])
-
-    def test_reject_action_with_reason_succeeds(self):
-        self._record(
-            "01",
-            {
-                "verification": {
-                    "referenced": "path/to/file.py:1",
-                    "action": "reject",
-                    "reason": "採らない理由",
-                }
-            },
-        )
-        result = self._record(
-            "01", {"decision": {"by": "human", "outcome": "取り下げ", "reason": "対応不要"}}
-        )
-        self.assertEqual(result["status"], "ok")
 
 
 class DecisionTriggerLoopholeTest(AgendaStoreTestCase):

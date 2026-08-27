@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """agenda_schema.py（decision トリガー方式の状態遷移契約）のテスト。
 
-DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-011/FNC-012）・
-verification.action の固定語彙・不正な JSON 構造相当の入力の拒否を検証する
-（TASK-009 acceptance_criteria）。
+DES-075 §5.1 の判定条件（agenda:REQ-019 FNC-008/FNC-012）・
+不正な JSON 構造相当の入力の拒否を検証する（TASK-009 acceptance_criteria）。
 
 `required_fields_for(item, patch_keys, config)`/`validate(item, patch_keys, config)`
 の新シグネチャを対象とする。旧シグネチャ（`target_status` を第2引数に取る／
@@ -147,150 +146,6 @@ class RequiredFieldsForDecisionTest(unittest.TestCase):
         self.assertIn("decision.reason", missing)
 
 
-class RequiredFieldsForVerificationTest(unittest.TestCase):
-    """FNC-011: 外部指摘由来項目（verification キーを持つ）は referenced 必須。
-    action != adopt は reason 必須。"""
-
-    def test_item_without_verification_key_is_not_external(self):
-        item = _valid_item()
-        self.assertNotIn("verification", item)
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertNotIn("verification.referenced", missing)
-        self.assertNotIn("verification.reason", missing)
-        self.assertNotIn("verification.action", missing)
-
-    def test_external_item_missing_referenced_is_reported(self):
-        item = _valid_item(
-            verification={"referenced": "", "action": "adopt", "reason": ""}
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertIn("verification.referenced", missing)
-
-    def test_verification_referenced_required_regardless_of_action(self):
-        # 採用する場合も検証を要求すること（FNC-011「指摘を認める方向へ倒すときこそ検証が要る」）
-        item = _valid_item(
-            verification={"referenced": "", "action": "adopt", "reason": "理由あり"}
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertIn("verification.referenced", missing)
-
-    def test_adopt_with_referenced_needs_no_reason(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "adopt",
-                "reason": "",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertEqual(missing, [])
-
-    def test_action_not_adopt_without_reason_is_reported(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "reject",
-                "reason": "",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertIn("verification.reason", missing)
-
-    def test_action_not_adopt_with_reason_is_satisfied(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "reject",
-                "reason": "採用しない理由",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertEqual(missing, [])
-
-    def test_action_outside_fixed_vocabulary_is_reported_as_missing(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "approve",
-                "reason": "理由あり",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertIn("verification.action", missing)
-
-    def test_action_within_fixed_vocabulary_is_not_reported_as_missing(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "reject",
-                "reason": "理由あり",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertNotIn("verification.action", missing)
-
-    def test_verification_present_but_not_triggered_by_non_decision_patch(self):
-        # decision を含まないパッチでは verification チェック自体を課さない
-        # （decision トリガー判定が全体の入口であるため）。
-        item = _valid_item(
-            verification={"referenced": "", "action": "adopt", "reason": ""}
-        )
-        missing = agenda_schema.required_fields_for(item, {"background"}, _valid_config())
-        self.assertEqual(missing, [])
-
-
-class RequiresVerificationConfigTest(unittest.TestCase):
-    """FNC-011: `config.requires_verification` が True の record では、`item` が
-    `verification` キー自体を持たないことも不足として扱う（キー省略で検証必須を
-    素通りさせられないようにするための record 単位の宣言。review 起点で使う）。"""
-
-    def test_item_without_verification_key_is_missing_when_required(self):
-        item = _valid_item()
-        self.assertNotIn("verification", item)
-        config = _valid_config(requires_verification=True)
-        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
-        self.assertIn("verification.action", missing)
-        self.assertIn("verification.referenced", missing)
-        self.assertIn("verification.reason", missing)
-
-    def test_item_without_verification_key_is_not_missing_when_not_required(self):
-        # requires_verification 未指定（既定 False 相当）では、従来どおり
-        # キーの有無で判定する（consult 起点の記録に影響しない）。
-        item = _valid_item()
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertNotIn("verification.action", missing)
-        self.assertNotIn("verification.referenced", missing)
-        self.assertNotIn("verification.reason", missing)
-
-    def test_item_without_verification_key_is_not_missing_when_explicitly_false(self):
-        item = _valid_item()
-        config = _valid_config(requires_verification=False)
-        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
-        self.assertNotIn("verification.action", missing)
-        self.assertNotIn("verification.referenced", missing)
-        self.assertNotIn("verification.reason", missing)
-
-    def test_well_formed_verification_satisfies_requirement(self):
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "adopt",
-                "reason": "",
-            }
-        )
-        config = _valid_config(requires_verification=True)
-        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
-        self.assertNotIn("verification.action", missing)
-        self.assertNotIn("verification.referenced", missing)
-        self.assertNotIn("verification.reason", missing)
-
-    def test_not_triggered_by_non_decision_patch_even_when_required(self):
-        item = _valid_item()
-        config = _valid_config(requires_verification=True)
-        missing = agenda_schema.required_fields_for(item, {"background"}, config)
-        self.assertEqual(missing, [])
-
-
 class RequiredFieldsForStructuralJudgmentTest(unittest.TestCase):
     """FNC-012: decision トリガー時、structural_judgment.recorded が True でなければ拒否する。
 
@@ -344,28 +199,6 @@ class ValidateTest(unittest.TestCase):
             self.fail(f"validate() が例外を投げた: {exc}")
 
 
-class VerificationActionVocabularyTest(unittest.TestCase):
-    """verification.action の語彙が agenda_schema.py 内に固定定義され、
-    呼び出し側から受け取らないこと。"""
-
-    def test_vocabulary_is_fixed_to_adopt_and_reject(self):
-        self.assertEqual(agenda_schema.VERIFICATION_ACTIONS, frozenset({"adopt", "reject"}))
-
-    def test_vocabulary_is_not_read_from_config(self):
-        # config に action_vocabulary 相当のキーで別の語彙を混入させても、
-        # 判定はモジュール内の固定定数だけを見る（config からは受け取らない）。
-        config = _valid_config(action_vocabulary=["approve", "deny"])
-        item = _valid_item(
-            verification={
-                "referenced": "plugins/x.py:1-2",
-                "action": "approve",
-                "reason": "",
-            }
-        )
-        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
-        self.assertIn("verification.action", missing)
-
-
 class MalformedInputRejectionTest(unittest.TestCase):
     """不正な JSON 構造相当の入力の拒否（DES-075 §9・agenda:REQ-019 NFR-006）。"""
 
@@ -380,13 +213,6 @@ class MalformedInputRejectionTest(unittest.TestCase):
         self.assertIn("background", missing)
         self.assertIn("essence", missing)
         self.assertIn("structural_judgment.recorded", missing)
-
-    def test_verification_wrong_type_is_treated_as_malformed_external_item(self):
-        item = _valid_item(verification="not-a-dict")
-        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
-        self.assertIn("verification.referenced", missing)
-        self.assertIn("verification.reason", missing)
-        self.assertIn("verification.action", missing)
 
     def test_background_wrong_type_is_treated_as_missing(self):
         item = _valid_item(background=123)

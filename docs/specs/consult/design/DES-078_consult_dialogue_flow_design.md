@@ -1,10 +1,4 @@
----
-doc_status: not_implemented
----
-
 # DES-078 consult 対話進行フロー設計書
-
-> `doc_status: not_implemented` は「未着手」ではなく「依存先の機構がまだ実装・設計されていない」ことを意味する。本設計書が定める review 起点/consult 起点の分岐は `plugins/forge/skills/consult/SKILL.md` にまだ反映されていない。反映が完了した時点で本キーを削除する。
 
 ## 1. 概要
 
