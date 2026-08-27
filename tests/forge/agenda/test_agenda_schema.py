@@ -239,6 +239,58 @@ class RequiredFieldsForVerificationTest(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class RequiresVerificationConfigTest(unittest.TestCase):
+    """FNC-011: `config.requires_verification` が True の record では、`item` が
+    `verification` キー自体を持たないことも不足として扱う（キー省略で検証必須を
+    素通りさせられないようにするための record 単位の宣言。review 起点で使う）。"""
+
+    def test_item_without_verification_key_is_missing_when_required(self):
+        item = _valid_item()
+        self.assertNotIn("verification", item)
+        config = _valid_config(requires_verification=True)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
+        self.assertIn("verification.action", missing)
+        self.assertIn("verification.referenced", missing)
+        self.assertIn("verification.reason", missing)
+
+    def test_item_without_verification_key_is_not_missing_when_not_required(self):
+        # requires_verification 未指定（既定 False 相当）では、従来どおり
+        # キーの有無で判定する（consult 起点の記録に影響しない）。
+        item = _valid_item()
+        missing = agenda_schema.required_fields_for(item, {"decision"}, _valid_config())
+        self.assertNotIn("verification.action", missing)
+        self.assertNotIn("verification.referenced", missing)
+        self.assertNotIn("verification.reason", missing)
+
+    def test_item_without_verification_key_is_not_missing_when_explicitly_false(self):
+        item = _valid_item()
+        config = _valid_config(requires_verification=False)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
+        self.assertNotIn("verification.action", missing)
+        self.assertNotIn("verification.referenced", missing)
+        self.assertNotIn("verification.reason", missing)
+
+    def test_well_formed_verification_satisfies_requirement(self):
+        item = _valid_item(
+            verification={
+                "referenced": "plugins/x.py:1-2",
+                "action": "adopt",
+                "reason": "",
+            }
+        )
+        config = _valid_config(requires_verification=True)
+        missing = agenda_schema.required_fields_for(item, {"decision"}, config)
+        self.assertNotIn("verification.action", missing)
+        self.assertNotIn("verification.referenced", missing)
+        self.assertNotIn("verification.reason", missing)
+
+    def test_not_triggered_by_non_decision_patch_even_when_required(self):
+        item = _valid_item()
+        config = _valid_config(requires_verification=True)
+        missing = agenda_schema.required_fields_for(item, {"background"}, config)
+        self.assertEqual(missing, [])
+
+
 class RequiredFieldsForStructuralJudgmentTest(unittest.TestCase):
     """FNC-012: decision トリガー時、structural_judgment.recorded が True でなければ拒否する。
 

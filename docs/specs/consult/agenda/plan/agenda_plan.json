@@ -362,7 +362,8 @@
       "group_id": null,
       "build_check": "per_task",
       "description": [
-        "【計画時の前提修正】consult SKILL.mdの現状（TASK-011着手時点）はagenda機構への統合が一切存在しない（旧CLI呼び出しも無い。Markdown討議ファイルをWriteツールで直接手書きする、agenda機構導入前の設計のまま）。本タスクは『旧CLI呼び出しを新CLI呼び出しへ置換する』のではなく、agenda_store.pyの5コマンド契約（start/record/next/pending/finish）への統合をゼロから設計・実装するタスクである。以下はその統合内容",
+        "【2026-08-27 再改訂】TASK-011着手当初（下記【計画時の前提修正】）の作業は既に完了し、consult SKILL.mdはagenda_store.pyの5コマンド契約（start/record/next/pending/finish）へ全面統合済みである。統合直後のレビューで『review委譲時に固定パス・固定識別名を使う分岐が実装されていない』欠陥が見つかり、この欠陥を機に新設された DES-078（consult対話進行フロー設計書）が review起点/consult起点の分岐を正本化した。本タスクの残作業は、この分岐（DES-078 §3・§3.1）をconsult SKILL.mdへ実装することに限定される",
+        "【計画時の前提修正（当初完了済み分）】consult SKILL.mdの現状（TASK-011着手時点）はagenda機構への統合が一切存在しない（旧CLI呼び出しも無い。Markdown討議ファイルをWriteツールで直接手書きする、agenda機構導入前の設計のまま）。本タスクは『旧CLI呼び出しを新CLI呼び出しへ置換する』のではなく、agenda_store.pyの5コマンド契約（start/record/next/pending/finish）への統合をゼロから設計・実装するタスクである。以下はその統合内容",
         "Phase 2.1「既存ファイルの確認」: `.claude/.temp/consult/` のls確認を、agenda.json（`.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json`相当）の存在確認・中断中の記録の再開可否判断に置き換える",
         "Phase 2.2「新規作成」: 討議ファイルをWriteツールで直接書く方式を廃し、候補JSON（structural_judgment.note + items[] + config.item_fields/severity_field）をWriteツールで一時ファイルへ書いてから `agenda_store.py start` を1回呼ぶ手順に置き換える。候補ファイル命名は${CLAUDE_SESSION_ID}ベースとし、start-implement/SKILL.md 4.3節の前例（Writeツールでの一時ファイル書き込み→Bashで1回実行）に倣う",
         "Phase 2.2完了直後、DES-075 §2「初回表示はconsultが能動的に開く」に従いBashで`open`コマンドを実行しagenda.htmlをブラウザで開く手順を追加する",
@@ -370,17 +371,27 @@
         "Phase 4「進行」手順5「決着したら討議ファイルを更新する」を、record呼び出し2回（背景・本質が分かった時点で1回、決着時にもう1回）に分割する。分かった時点で都度記録することを明記する",
         "「議論の途中で論点が動いたとき」節を、decision.outcomeに自由文（例:\"取り下げ\"）を書くだけの通常のrecord呼び出しへ置き換える。特別なコマンドではないことを明記する",
         "Phase 5「終了」: agenda_store.pyの`finish`呼び出しに置き換える。未対応項目が残る場合は削除されず`remaining_count`が返るため、その値をそのまま「未判断のまま残った件数」として提示する",
-        "自由記述文をシェル文字列に直接埋め込まない理由（1文）を明記する"
+        "自由記述文をシェル文字列に直接埋め込まない理由（1文）を明記する",
+        "【残作業（本改訂の対象）】DES-078 §3.1: consult SKILL.mdのPhase 0・Phase 1・Phase 2.2に、起点判定（review委譲直後の文脈か、利用者から直接依頼を受けた文脈か）を明示的な手順として持たせる。判定はAI自身の文脈認識で行い、外部から渡される構造化フラグは新設しない",
+        "【残作業】review起点と判定した場合、Phase 1（論点の抽出）を経由せず、review本体から渡された結合済みの所見配列（reviewer所見とevaluator判定を結合したもの。DES-066 §3.10a）をそのまま items[] として用いる",
+        "【残作業】review起点の場合、record先パスをDES-075 §7の固定値に切り替える: `.claude/.temp/review/agenda.json`（固定パス）、識別名`review`（親ディレクトリ名固定）。consult起点（`${CLAUDE_SESSION_ID}`ベース）と分岐する",
+        "【残作業】review起点の場合、structural_judgment.noteの材料は「同型の指摘の繰り返し・複数指摘が同一の土台に由来していないか」（reviewer所見群を見て判断）とし、consult起点の「consult自身が立てた論点群を見て判断する」と書き分ける（DES-078 §3表）",
+        "【残作業】review起点の場合、config.item_fields/severity_fieldにreviewer/evaluatorが確認・訂正した重要度をそのまま反映する（consult:REQ-017 FNC-002）。consult起点は`item_fields: []`, `severity_field: null`のまま変更しない"
       ],
       "acceptance_criteria": [
         "consult SKILL.mdに--set・status_vocabulary・set-current・record-structural-judgmentという旧CLIの語がgrepで一切ヒットしない",
-        "start/record/next/pending/finishの5コマンドのみが呼び出されている"
+        "start/record/next/pending/finishの5コマンドのみが呼び出されている",
+        "consult SKILL.mdのPhase 0・Phase 1・Phase 2.2に、review委譲文脈かどうかを判定する明示的な手順が存在する（DES-078 §3.1）",
+        "review起点の分岐を辿った場合に`.claude/.temp/review/agenda.json`（固定パス・固定識別名`review`）が使われることが手順として明記されている（DES-075 §7）",
+        "review起点の分岐を辿った場合、Phase 1の論点抽出を経由せず、渡された結合済み配列をそのままitems[]として使う手順になっている"
       ],
       "required_reading": [
         "docs/specs/consult/agenda/plan/agenda_strategy.md",
+        "docs/specs/consult/design/DES-078_consult_dialogue_flow_design.md",
         "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md",
         "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md",
         "docs/specs/consult/requirements/REQ-017_consult_skill.md",
+        "docs/specs/forge/design/DES-066_review_body_design.md",
         "plugins/forge/skills/consult/SKILL.md",
         "plugins/forge/skills/consult/assets/discussion_file_template.md",
         "plugins/forge/skills/start-implement/SKILL.md"

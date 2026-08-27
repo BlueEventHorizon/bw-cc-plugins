@@ -1,10 +1,4 @@
----
-doc_status: not_implemented
----
-
 # DES-077 agenda 表示層設計書
-
-> `doc_status: not_implemented` は「未着手」ではなく「依存先の機構がまだ実装・設計されていない」ことを意味する。`plugins/forge/scripts/agenda/agenda_render.py` は本設計書が定める契約（`render_agenda_html()` 単一の公開関数・自動追従の仕組みを持たない単純な生成専用モジュール）へ既に書き換え済みである。残るのは呼び出し側（`plugins/forge/skills/consult/SKILL.md`）の追従であり、その完了をもって本キーを削除する。
 
 ## 1. 概要
 

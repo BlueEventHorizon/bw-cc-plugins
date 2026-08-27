@@ -123,7 +123,7 @@ def _finalize_write(path: str | Path, record: dict) -> dict:
 
 _START_ALLOWED_KEYS = {"structural_judgment", "config", "items"}
 _START_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
-_START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field"}
+_START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field", "requires_verification"}
 _START_ITEM_ALLOWED_KEYS = {"id", "title", "fields", "verification"}
 
 
@@ -173,8 +173,13 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
         severity_field = config.get("severity_field")
         if severity_field is not None and not isinstance(severity_field, str):
             errors.append("config.severity_field は文字列または null である必要があります")
+        requires_verification = config.get("requires_verification", False)
+        if not isinstance(requires_verification, bool):
+            errors.append("config.requires_verification は真偽値である必要があります")
+            requires_verification = False
     else:
         errors.append("config は object である必要があります")
+        requires_verification = False
 
     items_raw = raw.get("items")
     items: list = []
@@ -232,6 +237,7 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
             "note": note,
             "item_fields": item_fields,
             "severity_field": severity_field,
+            "requires_verification": requires_verification,
             "items": items,
         },
         [],
@@ -249,10 +255,10 @@ def handle_start(args: argparse.Namespace) -> dict:
 
     path = Path(args.path)
     # 既存ファイルの有無を問わず無条件に新規開始として上書きする。「削除して新しく
-    # 始めるか・続きから進めるか」の判断は呼び出し側（review/consult SKILL の
-    # Step 1.1 相当。今後 TASK-010/011 が実装する想定）が start を呼ぶ前に済ませる
-    # べきものであり、agenda_store.py 側で二重にガードしない（agenda:REQ-019
-    # FNC-010: 放置された記録が start を恒久的にブロックしない）。
+    # 始めるか・続きから進めるか」の判断は呼び出し側（consult SKILL.md Phase 2.1が
+    # 実装済み）が start を呼ぶ前に済ませるべきものであり、agenda_store.py 側で
+    # 二重にガードしない（agenda:REQ-019 FNC-010: 放置された記録が start を
+    # 恒久的にブロックしない）。
 
     record = {
         "content_version": 1,
@@ -260,6 +266,7 @@ def handle_start(args: argparse.Namespace) -> dict:
             "identity": path.parent.name,
             "item_fields": normalized["item_fields"],
             "severity_field": normalized["severity_field"],
+            "requires_verification": normalized["requires_verification"],
         },
         "structural_judgment": {
             "recorded": True,

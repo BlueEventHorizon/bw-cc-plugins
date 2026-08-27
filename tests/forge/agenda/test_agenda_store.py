@@ -54,13 +54,24 @@ class AgendaStoreTestCase(unittest.TestCase):
         path.write_text(json.dumps(candidate, ensure_ascii=False), encoding="utf-8")
         return str(path)
 
-    def _start(self, *, note="同型の指摘は無い", item_fields=None, severity_field=None, items=None):
+    def _start(
+        self,
+        *,
+        note="同型の指摘は無い",
+        item_fields=None,
+        severity_field=None,
+        requires_verification=None,
+        items=None,
+    ):
+        config = {
+            "item_fields": item_fields if item_fields is not None else ["severity"],
+            "severity_field": severity_field,
+        }
+        if requires_verification is not None:
+            config["requires_verification"] = requires_verification
         candidate = {
             "structural_judgment": {"note": note},
-            "config": {
-                "item_fields": item_fields if item_fields is not None else ["severity"],
-                "severity_field": severity_field,
-            },
+            "config": config,
             "items": items if items is not None else [],
         }
         return _run(
@@ -252,6 +263,102 @@ class StartSuccessTest(AgendaStoreTestCase):
     def test_start_does_not_write_agenda_state_js(self):
         self._start()
         self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
+
+
+class RequiresVerificationConfigTest(AgendaStoreTestCase):
+    """FNC-011: `config.requires_verification` の CLI 契約（agenda_schema.py の
+    RequiresVerificationConfigTest とは別レイヤー。start の候補JSON検証・
+    record を通した end-to-end 強制を検証する）。"""
+
+    def test_requires_verification_true_is_accepted_and_stored(self):
+        result = self._start(requires_verification=True)
+        self.assertEqual(result["status"], "ok")
+        record = self._load()
+        self.assertTrue(record["config"]["requires_verification"])
+
+    def test_requires_verification_omitted_defaults_to_false(self):
+        result = self._start()
+        self.assertEqual(result["status"], "ok")
+        record = self._load()
+        self.assertFalse(record["config"]["requires_verification"])
+
+    def test_requires_verification_non_bool_is_rejected(self):
+        candidate = {
+            "structural_judgment": {"note": "問題なし"},
+            "config": {
+                "item_fields": [],
+                "severity_field": None,
+                "requires_verification": "true",
+            },
+            "items": [],
+        }
+        result = _run(
+            ["start", "--path", self.agenda_path, "--input-file", self._write_candidate(candidate)]
+        )
+        self.assertEqual(result["status"], "error")
+
+    def test_decision_without_verification_is_rejected_when_required(self):
+        # start 時点で verification キーを持たない項目（review 起点で AI が
+        # 指示に反して省略した場合の想定）は、requires_verification: true の
+        # record では decision を含む record 呼び出しが拒否される。
+        self._start(
+            requires_verification=True,
+            items=[{"id": "01", "title": "外部指摘由来の項目"}],
+        )
+        result = self._record(
+            "01",
+            {
+                "background": "背景",
+                "essence": "本質",
+                "decision": {"by": "AI", "outcome": "adopt", "reason": "妥当"},
+            },
+        )
+        self.assertEqual(result["status"], "error")
+        self.assertIn("verification.action", result["missing_fields"])
+        self.assertIn("verification.referenced", result["missing_fields"])
+        self.assertIn("verification.reason", result["missing_fields"])
+
+    def test_decision_with_verification_at_start_succeeds_when_required(self):
+        self._start(
+            requires_verification=True,
+            items=[
+                {
+                    "id": "01",
+                    "title": "外部指摘由来の項目",
+                    "verification": {
+                        "referenced": "plugins/x.py:1-2",
+                        "action": "adopt",
+                        "reason": "",
+                    },
+                }
+            ],
+        )
+        result = self._record(
+            "01",
+            {
+                "background": "背景",
+                "essence": "本質",
+                "decision": {"by": "AI", "outcome": "adopt", "reason": "妥当"},
+            },
+        )
+        self.assertEqual(result["status"], "ok")
+
+    def test_decision_without_verification_is_accepted_when_not_required(self):
+        # requires_verification: false（consult 起点相当）では、従来どおり
+        # verification 無しでも decision が通る（regression 防止）。
+        self._start(
+            requires_verification=False,
+            items=[{"id": "01", "title": "consult 自身が立てた論点"}],
+        )
+        result = self._record(
+            "01",
+            {
+                "background": "背景",
+                "essence": "本質",
+                "decision": {"by": "human", "outcome": "adopt", "reason": "妥当"},
+            },
+        )
+        self.assertEqual(result["status"], "ok")
 
 
 class RecordCandidateValidationTest(AgendaStoreTestCase):

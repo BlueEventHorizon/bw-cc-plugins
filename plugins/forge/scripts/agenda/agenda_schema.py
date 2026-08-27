@@ -77,7 +77,12 @@ def required_fields_for(item, patch_keys, config) -> list:
     2. 上記かつ `item` が `verification` キー（dict）を持つ場合、
        `verification.action` が `VERIFICATION_ACTIONS`（固定語彙。呼び出し側から
        受け取らない）に含まれること、および `verification.referenced` が
-       空でないことを追加で要求する（採否によらず検証を要求する。FNC-011）
+       空でないことを追加で要求する（採否によらず検証を要求する。FNC-011）。
+       `config.requires_verification` が `True` の場合、`item` が
+       `verification` キー自体を持たないことも不足として扱う——呼び出し側が
+       キーを渡し忘れる（または意図的に省く）ことで検証必須の記録を素通り
+       させられないようにするための record 単位の宣言である（FNC-011。
+       DES-075 §7「review 起点」の記録は `start` 時点でこのフラグを立てる）
     3. 上記かつ `verification.action` が `adopt` でない場合、
        `verification.reason` が空でないことを追加で要求する（FNC-011）
     4. 個別項目への遷移全般（＝`decision` を含む呼び出し。DES-075 §5.1表の
@@ -119,6 +124,7 @@ def required_fields_for(item, patch_keys, config) -> list:
         missing.append("decision.outcome")
         missing.append("decision.reason")
 
+    requires_verification = config.get("requires_verification") is True
     if "verification" in item:
         verification = item.get("verification")
         if isinstance(verification, dict):
@@ -136,6 +142,10 @@ def required_fields_for(item, patch_keys, config) -> list:
             missing.append("verification.action")
             missing.append("verification.referenced")
             missing.append("verification.reason")
+    elif requires_verification:
+        missing.append("verification.action")
+        missing.append("verification.referenced")
+        missing.append("verification.reason")
 
     structural_judgment = config.get("structural_judgment")
     recorded = (
