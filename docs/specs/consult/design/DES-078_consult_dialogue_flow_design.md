@@ -29,6 +29,7 @@ sequenceDiagram
     participant AI as AI（review 本体を実行中）
     participant Reviewer as reviewer（Agent）
     participant Evaluator as evaluator（Agent）
+    participant Consult as consult
 
     Human->>AI: レビューを依頼する
     AI->>Reviewer: 対象・観点を渡す
@@ -37,25 +38,26 @@ sequenceDiagram
     Evaluator-->>AI: 各レビュー結果についての判定結果を返す（正しいか・根拠・確信の程度）
     AI->>AI: レビュー結果と判定結果を1対1に結び付ける（結合。<br/>reviewer・evaluatorのどちらもこの結合を行わない。<br/>indexの機械的対応でありscript化する）
     AI->>AI: 項目群全体を見て、構造的な誤りがないか判断する<br/>（同型の指摘の繰り返し・複数指摘が同一の土台に由来していないか等。<br/>内容の意味理解を要する判断であり、AIがコンテキストの中で行う）
-    AI->>AI: 段階的提示を consult へ委譲する<br/>（別プロセス・別セッションの起動ではない。<br/>同一コンテキストのまま consult の振る舞いへ切り替わる。DES-066 §3.11）
+    AI->>Consult: 段階的提示を委譲する<br/>（別プロセス・別セッションの起動ではない。<br/>同一コンテキストのまま consult の振る舞いへ切り替わる。DES-066 §3.11）
 ```
 
-この区間の「AI」は review 本体（`/forge:review` の SKILL.md）を実行している。consult ではない。最後の自己メッセージが、review 本体から consult への委譲（切り替え）を表す。以降は図 B（共通本体。ここでの「AI」は consult を実行している）へ続く。
+この区間の「AI」は review 本体（`/forge:review` の SKILL.md）を実行している。consult ではない。最後の矢印が、review 本体から consult への委譲（切り替え）を表す。以降は図 B（共通本体）へ続く。
 
 ### 図 A-2: consult 起点（review を経由しない直接利用。議論・課題解決を問わない）
 
 ```mermaid
 sequenceDiagram
     actor Human
-    participant AI as AI（consult）
+    participant AI as AI
+    participant Consult as consult
 
     Human->>AI: 相談・議論を依頼する（たたき台のレビュー・方針の相談・課題解決を含む）
-    AI->>AI: 対象を把握し、論点を立てる<br/>（確信度が低く検証できる論点は、提示する前に検証する）
-    AI->>AI: 項目群全体を見て、構造的な誤りがないか判断する
-    AI->>AI: 自身の進行（consult の対話進行）へそのまま続ける<br/>（委譲先の別スキルは無い。同一の consult が続く）
+    AI->>Consult: 依頼をそのまま渡す<br/>（別プロセス・別セッションの起動ではない。<br/>同一コンテキストのまま consult の振る舞いへ切り替わる）
+    Consult->>Consult: 対象を把握し、論点を立てる<br/>（確信度が低く検証できる論点は、提示する前に検証する）
+    Consult->>Consult: 項目群全体を見て、構造的な誤りがないか判断する<br/>（同型の指摘の繰り返し・複数指摘が同一の土台に由来していないか等）
 ```
 
-この時点で `items[]`（AI 自身が立てた論点）と `structural_judgment.note` が揃う。reviewer・evaluator は登場しない——review 起点でないかぎり、この 2 者は存在自体しない。最後の自己メッセージは図 A-1 の委譲に相当するが、宛先が別スキルではなく consult 自身である点が異なる。以降は図 B（共通本体）へ続く。
+この時点で `items[]`（consult 自身が立てた論点）と `structural_judgment.note` が揃う。reviewer・evaluator は登場しない——review 起点でないかぎり、この 2 者は存在自体しない。図 A-1 との違いは、対象の把握・論点の抽出・構造判断が「review 本体」の文脈で行われるか（図 A-1）、それとも consult 自身の文脈（Phase 1 相当）で行われるか（本図）だけであり、いずれも consult 自身から見れば区別する情報を持たない。以降は図 B（共通本体）へ続く。
 
 ### 図 B: 共通本体（起点を問わず同一）
 
