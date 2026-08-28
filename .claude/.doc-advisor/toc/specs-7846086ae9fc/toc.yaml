@@ -5,40 +5,37 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-23T07:34:22Z
+  generated_at: 2026-08-27T15:54:37Z
   file_count: 61
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
     title: agent-review Backend Design
-    purpose: Defines a stateless architecture that launches a read-only custom Agent reviewer per round and converts output to common review result format
+    purpose: Defines the design of the agent-review backend that launches a fresh read-only reviewer custom Agent per round and converts its response into the common review result
     content_details:
-      - Agent definition constraints (read-only, no write tools, permission mode)
-      - Round execution workflow (startup, output validation, result conversion)
-      - Availability checking (Agent resolution, tool availability, constraint validation)
-      - Unified response format (approved/findings/failure states)
-      - Findings parser (severity, text, location mapping)
-      - Stateless backend design (no session/transcript/history retention)
-      - Failure classification by stage (availability/launch/execution/response)
-      - Wire header handling and input validation
+      - Responsibility separation between the reviewer Agent definition and the backend SKILL
+      - Agent definition constraints including prohibition of the injected advisor tool
+      - Availability check conditions verified without launching an Agent
+      - Round execution flow and conversion via the shared findings parser
+      - Termination notice as a no-op and history restoration as unsupported
+      - Output contract mapping REVIEW_RESULT to approved, findings, or failure
+      - Statelessness rules prohibiting sessions, transcripts, and DB records
+      - Test design for availability, lifecycle, read-only constraints, and wire neutrality
     applicable_tasks:
-      - agent-review backend implementation
-      - reviewer Agent implementation
-      - agent-review contract testing
-      - agent-review availability checking
-      - Round execution workflow implementation
-      - Response validation implementation
-      - Failure handling in agent-review
+      - Implementation of the agent-review backend SKILL
+      - Modification of the reviewer Agent definition and its prohibition clauses
+      - Contract testing of agent-review availability and round execution
+      - Review of availability check condition changes
     keywords:
       - agent-review
       - reviewer
       - custom Agent
       - read-only
       - stateless
-      - REVIEW_RESULT
+      - advisor
       - availability check
-      - findings parser
-      - permission mode
+      - REVIEW_RESULT
+      - parse_findings
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md:
     title: agent-review Backend Requirements Definition
     purpose: Defines the behavior and boundaries of a read-only custom Agent as the review execution entity without external dependencies
@@ -360,68 +357,63 @@ docs:
       - scope
       - self-contained
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md:
-    title: "ADR-056: Necessity Judgment and Notation for Cross-Document References (Distribution Materials Exemption)"
-    purpose: Clarifies necessity-first principles for document references within project documents, distinguishing between discovery and direct reference purposes. Exempts distribution materials which have different path stability properties.
+    title: ADR-056 Document Reference Necessity and Notation
+    purpose: Specifies rules for cross-document reference necessity, notation style by document scope, and resolves conflicts between prior standards
     content_details:
-      - Conflict between ADR-052 (requires markdown links in plugins/forge/docs/) and CLAUDE.md (blanket prohibition on path writing)
-      - "Two separate purposes of document references: discovery (finding related documents) and direct reference (pointing to known documents)"
-      - "Rule for project documents (docs/): write reference links only when necessary to understand the main text"
-      - "Markdown link notation for necessary references: [display-name](relative-path) format required"
-      - Exempts distribution materials (plugins/) from necessity judgment; allows internal links within distribution boundaries
-      - Maintains prohibition from distribution materials to project development documents (ADR-055)
-      - Metadata fields (related requirements, related design) use ID notation only (provisional rule)
-      - "Alternative options considered with rejection reasons: ID-only unified approach, blanket path prohibition, always-allow-links"
-      - "Impact: resolves conflict between distribution and project document rules; requires author judgment per reference"
-      - Alignment with spec_format.md in distributed forge plugins for spec document writing
+      - Context of conflict between ADR-052 and CLAUDE.md
+      - "Problem: ID-based references force unnecessary query-docs searches"
+      - "Reference distinction: discovery vs. known-document navigation"
+      - "First principle: omit references unless comprehension requires them"
+      - "Notation for project documents: markdown links [display](relative-path) when necessary"
+      - Withdrawal of related-requirement and related-design metadata sections
+      - "Distribution artifacts exemption: plugins/ may use internal links per ADR-052"
+      - Impact on CLAUDE.md, document_writing_rules.md, and forge spec_format.md
     applicable_tasks:
-      - Document reference review and validation
-      - Project specification writing standards enforcement
-      - Cross-reference link maintenance
-      - Document architecture assessment
-      - Plugin documentation internal linking
-      - Spec document reference notation audit
+      - Creating or revising project documents with cross-references
+      - Reviewing and enforcing documentation reference standards
+      - Evaluating documentation structure and dependency clarity
+      - Planning documentation style guide updates
+      - Auditing broken or unnecessary reference links
     keywords:
       - cross-reference
-      - necessity judgment
-      - markdown link
-      - ADR
-      - distribution boundary
-      - spec format
-      - relative path
-      - discovery
-      - plugin documentation
-      - SoT
+      - document-reference
+      - markdown-link
+      - reference-notation
+      - ADR-052
+      - CLAUDE.md
+      - spec-format
+      - distribution-artifact
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
-    title: SKILL Base Design (COMMON-DES-001)
-    purpose: Defines the execution model, decision principles, and responsibility boundaries for SKILL type selection (inheritance type vs Agent vs fork type abandonment) in bw-cc-plugins
+    title: COMMON-DES-001 SKILL Base Design
+    purpose: Defines the base design for SKILLs in bw-cc-plugins, establishing execution models, decision principles, context isolation strategy, and multi-layer defense mechanisms
     content_details:
-      - SKILL execution model - inheritance type (context inherited) vs fork type (abandoned due to structural bugs) vs custom agents (isolated context)
-      - Decision principle that all SKILL must be inheritance type; fork type adoption prohibited
-      - Criteria for choosing Agent instead of SKILL - when context isolation is needed, role specialization required
-      - SKILL call argument principles - never pass parent task prompt, Issue body, or working diff
-      - Launch path selection guide - decision tree for choosing between inheritance SKILL, custom Agent, general-purpose Agent, and Bash subprocess
-      - Fork type SKILL non-adoption basis - 9 official structural bugs with context fork mechanism
-      - Inheritance type SKILL responsibility boundary - minimal args and role constraint as two invariant conditions
-      - "Multi-layered defense layers - A: agent boundary, B: role constraint, C: allowlist, D: physical deny"
-      - Static verification tests for SKILL frontmatter and agent compliance
+      - "Design purpose: efficiency through context inheritance, fork-type rejection, safety via custom Agents"
+      - "SKILL execution model: inheritance-type only; fork-type deprecated with 9 documented bugs"
+      - "Decision principle: all SKILLs must be inheritance-type; isolation requires Agent tools"
+      - "SKILL call arguments: never pass parent task prompts, Issue body, or diffs"
+      - "Decision criteria for execution path: deterministic external process vs. reusable instructions vs. one-time composition"
+      - "Fork-type deprecation: 9 official Claude Code bugs documented"
+      - "Migration history: fork-type reviewer/evaluator/fixer replaced with custom Agents"
+      - "Inheritance-type responsibility boundary: declare role scope and omit parent task context"
+      - "Multi-layer defense: Agent boundary, Role constraint, allowlist, physical deny layers"
+      - "Static verification: test_no_fork_skill.py validates absence of context:fork"
     applicable_tasks:
-      - SKILL architecture design and implementation planning
-      - Context isolation decision-making for new features
-      - SKILL vs Agent type selection for isolated work units
-      - SKILL role and responsibility boundary definition
-      - Multi-layered security defense implementation
-      - Fork-type SKILL migration to custom Agent
-      - Inheritance SKILL argument design and validation
+      - Creating or selecting between inheritance-type SKILL, custom Agent, and general-purpose Agent
+      - Designing context isolation strategy for execution paths
+      - Reviewing SKILL responsibility boundaries and argument handling
+      - Migrating fork-type SKILL to custom Agent
+      - Implementing multi-layer defense in Agent design
+      - Validating SKILL argument compliance and context patterns
+      - Planning frontmatter and allowlist configuration
     keywords:
       - SKILL
-      - fork type
-      - inheritance type
-      - custom agent
-      - context isolation
-      - role constraint
-      - subagent
-      - multi-layered defense
-      - decision principle
+      - custom-Agent
+      - fork-type
+      - context-isolation
+      - responsibility-boundary
+      - multi-layer-defense
+      - allowlist
+      - inheritance-type
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -1369,32 +1361,35 @@ docs:
       - configuration validation
       - forward compatibility
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review Body (Backend-Independent) Design
-    purpose: "Defines the design of the /forge:review skill's core body that operates independently of backend implementation, covering request assembly, finding evaluation, fixing strategy, and backend delegation."
+    title: DES-066 Design of /forge:review Main Body (Backend-Independent)
+    purpose: Defines the architecture and implementation of the backend-independent review orchestration layer, including request assembly, finding evaluation via evaluator Agent, fix safety verification, and terminal processing.
     content_details:
-      - Backend resolution strategy (explicit assignment, config, default candidate order)
-      - Request assembly pipeline (branch analysis, target resolution, dependency discovery)
-      - Finding evaluation and fixing workflow (located/unlocated findings, confidence levels)
-      - Backend delegation contract and context preservation
-      - Progressive disclosure via consult delegation with same context
-      - Safety verification (syntax baseline, allowlist validation, independent verification)
-      - Endpoint handling paths (approved, halted_with_open_findings, failure, interrupted)
-      - Module architecture and responsibility distribution
+      - Backend resolution with explicit vs. candidate order fallback; default order is agent-review then msg-review
+      - Evaluator Agent interface for assessing finding disposition, severity, confidence, and fix_confident as JSON contract
+      - Finding split by location information into located and unlocated categories with no judgment logic
+      - Two-confidence model distinguishing fix_confident (fix responsibility) from confidence (finding accuracy)
+      - Four terminal pathways (approved, halted_with_open_findings, failure, interrupted) with single exit point in SKILL.md
+      - Safety verification of modifications using allowlist deviation detection and syntax baseline comparison
+      - History restoration as optional backend extension; unsupported backends reconstruct full request for next round
+      - Staged presentation delegation to consult SKILL with same conversation context carrying evaluation results
+      - Module responsibilities for target resolution, request building, backend invocation, evaluator delegation, and file collection
     applicable_tasks:
-      - Review backend implementation planning
-      - Review backend contract design and validation
-      - Finding evaluation workflow implementation
-      - Safety verification mechanism design
-      - Progressive disclosure feature implementation
+      - Backend integration and availability checking for review implementations
+      - Finding evaluation and disposition determination logic
+      - Safety verification for fix implementation within allowlist scope
+      - Review resumption and history restoration handling
+      - Staged presentation and user interaction workflow
     keywords:
-      - forge:review
-      - backend delegation
-      - finding evaluation
-      - safety verification
-      - consult integration
-      - branch analysis
-      - request assembly
-      - endpoint paths
+      - backend-independent
+      - evaluator Agent
+      - finding disposition
+      - fix_confident
+      - confidence
+      - review_id
+      - allowlist verification
+      - consult delegation
+      - terminal pathways
+      - history restoration
   docs/specs/forge/executer/design/DES-074_plan_format_design.md:
     title: Plan Default Format
     purpose: Specifies default JSON schema and field definitions for plan documents, including requirement-design-task traceability structure and task field constraints
@@ -1540,55 +1535,64 @@ docs:
       - intervention modes
       - scope specification
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
-    title: "ADR-061: Codex Wake Path Multiplexing (Adding app-server Path)"
-    purpose: Determines push-type wake mechanisms for Codex sessions by adding app-server path alongside cmux path
+    title: ADR-061 Codex Wake-up Path Multiplexing
+    purpose: Architectural decision on providing push-type wake-up for resident Codex sessions, addressing cmux limitations through app-server path addition
     content_details:
-      - Codex session turn-ending problem in pull-type messaging
-      - Decision to add app-server wake path with route selection
-      - WebSocket client implementation using Python standard library
-      - Route selection logic with app-server preference and fallback
-      - Evaluation of alternative approaches (msg-sys push, cmux replacement, external tools)
-      - Impact analysis of benefits and costs including experimental interface dependency
+      - msg-sys pull-model limitation causing Codex session stall
+      - "Observed issues: 7-hour wait, round 2+ stops, 4 manual wake-ups per review"
+      - Codex CLI app-server subcommand with listen modes (stdio, unix, ws)
+      - WebSocket-over-UDS implementation using Python standard library
+      - "Selection priority: app-server preferred for no input field corruption"
+      - "Rejected alternatives: msg-sys requirement, replacement, external tools, MCP, daemon, proxy"
+      - "Benefits: push wake-up without cmux, unnecessary safety gates removed, Codex-generated protocol definitions"
+      - "Unverified assumptions: TUI remote connection behavior, socket type support"
+      - "Decision expired: ADR-063 adopted independent backend approach"
     applicable_tasks:
-      - Codex wake path strategy design
-      - Message system integration review
-      - App-server push notification implementation
-      - Wake path alternative evaluation
+      - Codex session push wake-up path design
+      - Architecture decision evaluation for agent communication
+      - Experimental interface stability assessment
+      - Terminal-independent wake-up mechanism implementation
+      - Protocol compatibility review for Codex CLI
     keywords:
-      - Codex
-      - push-type wake
+      - Codex wake-up
       - app-server
-      - WebSocket
-      - JSON-RPC
+      - push notification
       - cmux
+      - WebSocket
       - msg-sys
-      - message delivery
-      - TUI
+      - JSON-RPC
+      - ADR-063
+      - REQ-006
   docs/specs/msg-review/design/ADR-068_availability_probe_determinism_boundary.md:
-    title: "ADR-068: Availability Probe Limited to Deterministic Judgments"
-    purpose: Defines availability probe boundaries by restricting checks to deterministic judgments and abolishing screen-based speculation
+    title: ADR-068 Availability Probe Determinism Boundary
+    purpose: Defines availability probe boundaries for review backends, restricting checks to deterministic judgment (tool and process presence) while eliminating screen-based inference and local review fallback
     content_details:
-      - Conflict between ADR-067 availability probe and old DES-048 screen-based inference approaches
-      - "Three-axis separation: cmux availability, Codex session presence, actual responsiveness capability"
-      - Deterministic judgment limitation including only axes A and B in availability checks
-      - Abolishment of old DES-048 screen-based liveness speculation and local review path
-      - Independent script implementation for each judgment axis to allow future architectural changes
-      - Missing premises reported individually to enable user diagnosis and decision-making
+      - ADR-067 established availability check requirement; this ADR implements it for msg-review backend
+      - Conflict between old DES-048 screen-based inference and new deterministic approach with opposite behaviors
+      - "Three judgment axes: A - wake-up tool availability, B - Codex process residence, C - response capability (inference only)"
+      - "Decision: include axes A and B in availability check, exclude axis C and old DES-048"
+      - "Axes A and B are deterministic reads: cmux command existence and direct Codex process confirmation via cmux top"
+      - Axis C inference (shell prompt, Claude Code UI detection) unreliable when Codex process actively running
+      - Screen reading for push wake-up safety gate maintained as separate concern
+      - Local review pathway discontinued; independent backend with isolated context is better fallback
+      - "Rejected alternatives: combined single script, axis C inclusion, maintaining unreached branches"
+      - "Impact: deterministic failures confirmed before send, independent premise checks, no dead test paths"
     applicable_tasks:
-      - Availability probe mechanism design for review backends
-      - Codex session presence deterministic verification
-      - Backend availability specification compliance (ADR-067)
-      - Probe boundary definition and future extensibility
+      - Review backend availability probe implementation
+      - Deterministic vs. heuristic judgment boundary decisions
+      - Codex session presence verification design
+      - msg-review backend error handling architecture
+      - Backend prerequisite checking and failure reporting
     keywords:
       - availability probe
       - deterministic judgment
-      - Codex
       - cmux
-      - liveness check
-      - backend availability
-      - decision boundary
+      - Codex process
       - ADR-067
-      - push wake
+      - backend availability
+      - screen inference
+      - local review fallback
+      - msg-sys
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
     title: "DES-045: msg-review Review Backend Design"
     purpose: Defines msg-review backend design for executing review rounds with Codex sessions including availability probe, message wire formatting, delivery, wake-up, reply waiting, and history restoration

@@ -20,13 +20,12 @@ msg-sys の新着検知は pull 型である。Codex 側・Claude 側いずれ�
 
 ### 1.1 実測で確認した事実（2026-08-02、codex-cli 0.146.0）
 
-- Codex CLI 自身が app-server サブコマンドを持ち、`--listen`（`stdio://` 既定 / `unix://` / `ws://IP:PORT` / `off`）で JSON-RPC の口を開ける。これは OpenAI 公式 CLI の機能であり、第三者ツールの発明ではない
-- プロトコル定義を CLI 自身から生成できる（`generate-json-schema`）。クライアントが送れる 127 メソッドに `thread/loaded/list`・`turn/start`・`turn/steer`・`thread/inject_items`・`process/spawn` が含まれる
+- Codex CLI 自身が app-server サブコマンドを持ち、`--listen`（`stdio://` 既定 / `unix://` / `ws://IP:PORT` / `off`）で JSON-RPC の口を開ける（OpenAI 公式 CLI の機能）
+- プロトコル定義を CLI 自身から生成できる（`generate-json-schema`）
 - TUI は `--remote <ADDR>` で既存の app-server に接続する。**起動後に接続する経路は無い**
 - `app-server daemon` は公式インストーラ版の standalone install を要求し、Homebrew 版では起動できない
 - `app-server proxy` は生バイト中継であり、WebSocket アダプタではない（終了コード 0・出力なしを実測）
-- `unix://` トランスポートは素の改行区切り JSON-RPC を拒否する（接続クローズを実測）。実体は WebSocket-over-UDS である
-- 以上より、クライアント側に RFC 6455 の実装が必要になる。ただし Python 標準ライブラリで完結し、Node・サードパーティ依存は生じない
+- `unix://` トランスポートは素の改行区切り JSON-RPC を拒否する（接続クローズを実測）。実体は WebSocket-over-UDS であり、クライアント側に RFC 6455 の実装が要る。Python 標準ライブラリで完結し、Node・サードパーティ依存は生じない
 
 ## 2. 決定 ⚠️失効（ADR-063 が独立バックエンド化を採用）
 
@@ -61,7 +60,7 @@ msg-sys の新着検知は pull 型である。Codex 側・Claude 側いずれ�
 ### 4.1 得るもの
 
 - cmux 非導入環境でも push 起床が成立し、待機予算いっぱいのタイムアウトと手動起床が不要になる
-- 入力欄を書き換えないため、下書き破壊・作業割り込みのリスクが消える。cmux 経路が必要としていた作業中判定などの安全ゲートは、app-server 経路では不要になる
+- cmux 経路が必要としていた作業中判定などの安全ゲートは、入力欄を書き換えない app-server 経路では不要になる
 - プロトコル定義を Codex 自身から生成できるため、インターフェース変更の検出を画面パースなどの推測に頼らずに済む
 
 ### 4.2 失うもの・新たに生じる制約
@@ -83,4 +82,4 @@ msg-sys の新着検知は pull 型である。Codex 側・Claude 側いずれ�
 
 ### 4.4 DES-061 との同番号を解消しない
 
-本 ADR の番号 061 は `docs/specs/forge/design/DES-061` と同番号である。`spec_format.md`「新規採番では発生させない」に反するが、**改番による波及リスクを避けるため個別の例外として現状維持とする（利用者判断）**。同文書の「既存の同居の扱い」による過去事例の容認とは別の判断である。
+本 ADR の番号 061 は `docs/specs/forge/design/DES-061` と同番号であり `spec_format.md`「新規採番では発生させない」に反するが、改番による波及リスクを避けるため例外として現状維持する。
