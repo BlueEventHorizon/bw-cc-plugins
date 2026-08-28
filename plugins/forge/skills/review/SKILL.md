@@ -336,7 +336,17 @@ Step 1.5 で解決したバックエンド SKILL を `Skill` ツールで起動�
 
    `status: "error"` の場合、evaluator へ 1 回だけ契約違反を指摘して再依頼する。再度失敗した場合、当該ラウンドの全所見を「対応しない（理由: evaluator の応答が契約に反したため評価不能。人間の確認が必要です）」として扱い、手順 3〜5 と Step 7.5 を実行せず Step 8 へ進む（終端経路 `halted_with_open_findings`）——評価が成立しないまま修正を進めることはできない。一時ファイルは検証後に削除する。
 
-   `status: "ok"` の場合、`evaluations` の各要素（`index` / `disposition` / `reason` / `confidence` / `fix_confident`）を、対応する所見に結び付けて以後の手順で使う。`disposition` の意味は次の通り（判定基準の詳細は `evaluator.md` を参照）。
+   `status: "ok"` の場合、`evaluations`（`index` / `disposition` / `reason` / `confidence` / `fix_confident` を要素に持つ配列）と所見配列（`index` を付けたもの）を、対応付けを記憶に頼らず機械的に検証したうえで結合する。
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/combine_findings_and_evaluations.py" \
+     --findings-json '<所見配列（indexを付けたもの）のJSON>' \
+     --evaluations-json '<evaluations配列のJSON>'
+   ```
+
+   `status: "error"`（両配列の長さ不一致、または `evaluations` の `index` 集合が `{0, ..., len-1}` と不一致）の場合、結合せず、手順 3〜5 と Step 7.5 を実行せず Step 8 へ進む（終端経路 `halted_with_open_findings`）——対応付けが検証できないまま修正を進めることはできない。
+
+   `status: "ok"` の場合、標準出力の `combined` 配列（所見と評価が `index` で 1 件ずつ結合されたもの）を以後の手順で使う。`combined` の各要素が持つ `disposition` の意味は次の通り（判定基準の詳細は `evaluator.md` を参照）。
 
    | `disposition`      | 意味                                                     | 対応表への記載                                                                  |
    | ------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -360,7 +370,7 @@ Step 1.5 で解決したバックエンド SKILL を `Skill` ツールで起動�
 
    要約報告には所見ごとに「該当箇所」「必要な失効対象」「人間が実施すべきこと」を列挙する。**検出値そのものは報告に書かない**。
 
-2. **位置が確定している所見とそうでない所見を分ける**: バックエンドから受け取った所見配列を次に渡す（介入軸によらず実行する）:
+2. **位置が確定している所見とそうでない所見を分ける**: 手順 1 で得た結合済み配列（`combined`）を所見配列として次に渡す（介入軸によらず実行する）:
    ```bash
    python3 "${CLAUDE_SKILL_DIR}/scripts/split_by_location.py" --findings-json '<所見配列>'
    ```
