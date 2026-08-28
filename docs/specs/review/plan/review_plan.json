@@ -25,7 +25,7 @@
       "task_id": "TASK-013",
       "title": "combine_findings_and_evaluations.pyを実装し、reviewer所見とevaluator判定の機械的結合をテストする",
       "priority": 20,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-066",
       "depends_on": [],
       "group_id": null,

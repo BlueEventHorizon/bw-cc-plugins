@@ -1,0 +1,56 @@
+{
+  "task_id": "TASK-013",
+  "title": "combine_findings_and_evaluations.pyを実装し、reviewer所見とevaluator判定の機械的結合をテストする",
+  "priority": 20,
+  "status": "pending",
+  "design_id": "DES-066",
+  "depends_on": [],
+  "group_id": null,
+  "build_check": "per_task",
+  "description": [
+    "plugins/forge/skills/review/scripts/combine_findings_and_evaluations.pyを新規作成する（DES-066 §3.1モジュール一覧・§3.10a）",
+    "reviewer所見配列（parse_findings.py生成）とevaluator判定配列（parse_evaluation.py検証済み。index/disposition/severity/confidence/fix_confident）を受け取る",
+    "検証条件1: 両配列の長さが一致すること",
+    "検証条件2: evaluator側indexの集合が{0,...,len-1}と完全一致すること（欠落・重複の検出）",
+    "いずれか不成立なら結合せずエラーを返す（呼び出し元がhalted_with_open_findingsとして終端処理へ回せる形）",
+    "成立する場合のみindexで1件ずつ結合した配列を返す",
+    "既存スクリプト（plugins/forge/scripts/review/parse_findings.py、plugins/forge/skills/review/scripts/parse_evaluation.py・split_by_location.py）の実装規約（標準ライブラリのみ・argparse・JSON標準入出力・判断を持たない決定論的CLI）を踏襲する"
+  ],
+  "acceptance_criteria": "tests/forge/review/test_combine_findings_and_evaluations.pyが新規作成され、python3 -m unittest tests.forge.review.test_combine_findings_and_evaluations -vが通ること。正常系（長さ一致・index過不足なし）でindex昇順に結合されること。異常系3パターン（件数不一致・index欠落・index重複）でいずれも結合せずエラーを返すこと。dprint checkが通ること。",
+  "required_reading": {
+    "strategy_doc": "docs/specs/review/plan/review_strategy.md",
+    "design_docs": [
+      "docs/specs/forge/design/DES-066_review_body_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/forge/requirements/REQ-013_review_policy.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [
+      "plugins/forge/skills/review/scripts/parse_evaluation.py",
+      "plugins/forge/scripts/review/parse_findings.py",
+      "plugins/forge/skills/review/scripts/split_by_location.py",
+      "tests/forge/review/test_split_by_location.py",
+      "tests/forge/review/test_parse_evaluation.py",
+      "tests/forge/scripts/test_parse_findings.py"
+    ],
+    "additional": []
+  },
+  "scope_in": "combine_findings_and_evaluations.pyの新規実装とそのユニットテスト作成まで",
+  "scope_out": [
+    {
+      "item": "review/SKILL.md Step 7手順1の記述更新、DES-066の陳腐化した「未実装」表記の解消",
+      "owner_task_id": "TASK-014",
+      "reason": "スクリプトの実装確定後に呼び出し側の文言を追従させる作業であり、依存関係上分離されている"
+    }
+  ],
+  "implementation_instructions": "plugins/forge/skills/review/scripts/combine_findings_and_evaluations.pyを新規作成する（split_by_location.pyと同じスタイル: 純粋関数 + 薄いargparse CLI、判断をしない・データの整合性検査のみ）。関数シグネチャ例: combine_findings_and_evaluations(findings: list[dict], evaluations: list[dict]) -> dict。findingsはparse_findings.pyの出力（severity/location/text等を持つ配列）、evaluationsはparse_evaluation.pyの出力のevaluations配列（index/disposition/severity/confidence/fix_confident等、DES-066 §3.10a準拠）。検証: (1) len(findings) == len(evaluations) (2) {e['index'] for e in evaluations} == set(range(len(findings)))。いずれか不成立なら{'status': 'error', 'message': '...'}を返し結合しない（例外を投げない）。成立する場合は{'status': 'ok', 'combined': [...]}を返す。combinedの各要素はindexで対応するfindingとevaluationをマージしたdict（両者のキーを1つのdictへ統合。キー衝突が無いことを前提とするが、衝突した場合はevaluation側を優先し、その旨をdocstringに明記する）。CLIは--findings-jsonと--evaluations-jsonを受け取りJSON文字列として標準出力へ結果を書く（parse_evaluation.py/split_by_location.pyのCLI引数規約に倣う）。標準ライブラリのみ使用し外部依存を追加しない。docstringの冒頭にDES-066 §3.10a・REQ-013 FNC-1322を参照する1行を書く。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "required",
+    "tests_reason": null
+  }
+}
