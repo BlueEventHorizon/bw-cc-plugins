@@ -322,6 +322,51 @@ class TestScanIdsInBranch(unittest.TestCase):
         )
 
     @patch('scan_spec_ids._run_git')
+    def test_task_id_embedded_in_plan_json_content_is_detected(self, mock_git):
+        """TASK は plan.json 本文へ埋め込まれるため、ファイル名に ID が
+        現れなくても本文スキャンで検出できること（実際に TASK-012 が
+        agenda_plan.json に存在するのに next_id として再び TASK-012 が
+        返された事故の回帰防止）。"""
+        def fake_git(*args, **kwargs):
+            if args[0] == 'ls-tree':
+                return 'docs/specs/x/plan/x_plan.json'
+            if args[0] == 'show':
+                return '{"tasks": [{"task_id": "TASK-005", "title": "..."}]}'
+            return ''
+        mock_git.side_effect = fake_git
+
+        result = scan_ids_in_branch('main', 'TASK', ['docs/specs/'], cwd='/tmp')
+        ids = [r[0] for r in result]
+        self.assertIn('TASK-005', ids)
+
+    @patch('scan_spec_ids._run_git')
+    def test_plan_json_content_not_scanned_for_non_task_prefix(self, mock_git):
+        """plan.json は design_id/requirement_ids 等で他プレフィックスの ID を
+        参照として含むが、これは定義ではないため duplicate として誤検出しない
+        こと（DES/REQ プレフィックスでは本文スキャンを行わない）。"""
+        def fake_git(*args, **kwargs):
+            if args[0] == 'ls-tree':
+                return 'docs/specs/x/plan/x_plan.json'
+            if args[0] == 'show':
+                return '{"tasks": [{"design_id": "DES-005"}]}'
+            return ''
+        mock_git.side_effect = fake_git
+
+        result = scan_ids_in_branch('main', 'DES', ['docs/specs/'], cwd='/tmp')
+        self.assertEqual(result, [])
+
+    @patch('scan_spec_ids._run_git')
+    def test_tasks_directory_artifact_is_excluded(self, mock_git):
+        """`tasks/{TASK-ID}.json` は build_task_context.py が plan.json から
+        都度再生成する一時アーティファクト（正本の複製）であり、ファイル名に
+        ID を含んでいてもスキャン対象に含めないこと（正本と同じ ID を
+        duplicate として誤検出しないため）。"""
+        mock_git.return_value = 'docs/specs/x/plan/tasks/TASK-006.json'
+
+        result = scan_ids_in_branch('main', 'TASK', ['docs/specs/'], cwd='/tmp')
+        self.assertEqual(result, [])
+
+    @patch('scan_spec_ids._run_git')
     def test_zero_padded_ids(self, mock_git):
         mock_git.return_value = (
             'specs/SCR-001_a.md\n'
