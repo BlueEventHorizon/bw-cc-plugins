@@ -4,151 +4,145 @@
       "requirement_id": "REQ-019 FNC-005",
       "title": "AIが渡し方そのものを組み立てない（--input-file方式）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-006",
       "title": "残件数の算出（decisionを持たない項目）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-008",
       "title": "終端相当の遷移に必須フィールドを課す",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-009",
       "title": "呼び出し側固有の値は引数で受け取り中立性を保つ",
       "design_id": "DES-075",
-      "status": "pending"
-    },
-    {
-      "requirement_id": "REQ-019 FNC-011",
-      "title": "外部指摘由来項目のverification必須化",
-      "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-012",
       "title": "構造判定の必須化（新規追加時の再要求を含む）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-013",
       "title": "content_version・last_changed_fieldsの保持",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 NFR-001",
       "title": "値の境界はJSON構文自身が持つ",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 NFR-003",
       "title": "記録寿命と識別名の導出",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-010",
       "title": "既存の討議ファイルを破棄すること",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 FNC-004",
       "title": "FNC-004充足の測定方法",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 NFR-004",
       "title": "検証可能性",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 NFR-005",
       "title": "機密情報の扱い",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-019 NFR-006",
       "title": "失敗の可視性（既定値で補わない）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-001",
       "title": "記録の内容を人間が読める形へ変換する",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-002",
       "title": "状態・変更箇所の視覚的表示",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-003",
       "title": "提示と記録の一致",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-004",
       "title": "AIは提示物を読まない",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 FNC-005",
       "title": "識別子からの直接到達",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-021 NFR-001",
       "title": "提示は生成物と読み取れる",
       "design_id": "DES-077",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "consult:REQ-017 FNC-002",
       "title": "複数論点の進行管理（未着手/進行中/決着/棄却）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "consult:REQ-017 FNC-011",
       "title": "記録との連携（1件決着ごとの入力）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "consult:REQ-017 FNC-008",
       "title": "判断の取得",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "consult:REQ-017 NFR-002",
       "title": "用途中立性",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "consult:REQ-017 NFR-004",
       "title": "機密情報の扱い（呼び出し側が満たす制約）",
       "design_id": "DES-075",
-      "status": "pending"
+      "status": "completed"
     }
   ],
   "design_traceability": [
@@ -161,7 +155,6 @@
         "REQ-019 FNC-006",
         "REQ-019 FNC-008",
         "REQ-019 FNC-009",
-        "REQ-019 FNC-011",
         "REQ-019 FNC-012",
         "REQ-019 FNC-013",
         "REQ-019 NFR-001",
@@ -328,7 +321,7 @@
       "task_id": "TASK-010",
       "title": "discussion_file_template.md を新設計に合わせてリライトする",
       "priority": 70,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-077",
       "depends_on": [
         "TASK-009"
@@ -354,7 +347,7 @@
       "task_id": "TASK-011",
       "title": "consult SKILL.md を新CLI呼び出しへ書き換える",
       "priority": 70,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-009"
@@ -401,7 +394,7 @@
       "task_id": "TASK-012",
       "title": "旧形式の討議ファイルを破棄する",
       "priority": 60,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-075",
       "depends_on": [
         "TASK-011"
