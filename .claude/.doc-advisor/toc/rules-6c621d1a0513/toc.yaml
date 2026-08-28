@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-26T15:06:36Z
+  generated_at: 2026-08-27T06:36:03Z
   file_count: 7
 
 docs:
@@ -38,34 +38,37 @@ docs:
       - PASS FAIL
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: "Defines meta-rules for consistency across all project documents: headings, terminology, emphasis, structure, and reference notation"
+    purpose: Meta-rule document that defines standards for consistency across all project documentation, including heading conventions, terminology, formatting, references, and structural patterns.
     content_details:
-      - "[MANDATORY]/[CRITICAL]/[IMPORTANT] tag placement at end of heading line with exactly 1 preceding space"
-      - Terminology unification table (必読文書 to 必須参照文書 etc.)
-      - English emphasis phrases (NEVER skip./NEVER/MUST/DO NOT/ALWAYS) for AI effectiveness
-      - Choonpu (long vowel) omission rule per JIS Z 8301 (ディレクトリ not ディレクトリー)
-      - "Required sections per document type: workflow docs need frontmatter + 必須参照文書 section, rule docs need 基本原則/詳細ルール/例外"
-      - "Document reference notation rule: only write references when body meaning is unverifiable without them, use markdown link format [表示名](相対パス)"
-      - Rule that document body describes only current state, migration/deprecation history goes to CHANGELOG.md only
-      - "docs/rules/ abstraction rule: use Foo/Bar/Hoge/Fuga placeholders instead of project-specific names"
-      - "Heading level limit of #### (4 levels), list nesting limit of 2 levels, table column limit of 6"
-      - Scope table mapping directories (docs/rules, docs/specs, plugins/*/docs, .claude/skills, plugins/*/skills) to their nature
+      - Heading and MANDATORY/CRITICAL/IMPORTANT tag placement rules
+      - Standardized terminology dictionary (required vs optional terminology)
+      - English emphasis phrases for AI comprehension (NEVER, MUST, ALWAYS, DO NOT)
+      - JIS Z 8301 long-vowel abbreviation rules
+      - Document-type-specific structure templates (rules, specs, workflows)
+      - YAML frontmatter metadata requirements
+      - Text formatting conventions (bold, inline code, lists, tables, max 6 columns)
+      - Document reference notation rules using markdown links only, no path direct-writing
+      - Document property separation and directory roles (rules vs specs vs skills)
+      - Current-state-only principle with no historical narratives in main text
     applicable_tasks:
-      - Writing or editing rule documents in docs/rules/
-      - Writing or editing spec documents in docs/specs/
-      - Reviewing document formatting consistency
-      - Creating new SKILL.md or workflow documents
-      - Auditing heading tag placement and terminology in project docs
+      - Documentation authoring or revision
+      - Style consistency review and enforcement
+      - Formatting and tag compliance validation
+      - Reference notation correctness verification
+      - Frontmatter and metadata structure check
+      - Documentation structure template selection
+      - Terminology consistency across documents
+      - Project-specific vs generic example usage verification
     keywords:
-      - MANDATORY tag
-      - 必須参照文書
-      - NEVER skip
-      - choonpu 長音ルール
-      - document reference notation
-      - Foo Bar placeholder
+      - documentation
+      - style guide
       - frontmatter
-      - CHANGELOG history separation
-      - docs/rules docs/specs scope
+      - MANDATORY
+      - references
+      - formatting
+      - terminology
+      - markup
+      - meta-rule
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines how forge internal components (SKILL/agent/scripts) access documentation through two designated routes: direct reference for built-in docs and semantic query for project-specific specs/rules"

@@ -161,9 +161,16 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 
 タスク分割の前に、設計書全体を俯瞰し「どういうアプローチで実装に到達するか」を汎用 Agent (general-purpose) に策定させる。
 
+### 3.0 既存の実装戦略書の確認 [MANDATORY]
+
+`{output_dir}/{feature}_strategy.md`（命名規則に従う戦略書。特定の生成元を問わず、このパスに実装戦略書が既に存在するかで判定する）の存在を Glob 等で確認する。
+
+- **存在する場合**: 削除・上書きせず `Read` する。設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割等が既に記録されている可能性があるため、ゼロから策定し直さない。3.1 の Agent 起動時、既存戦略書の全文を prompt に含めて渡し、**既存内容を土台に、不足している観点（アプローチ選択・検証ポイント・リスク対策等）を補う・詳細化する**よう指示する（新規策定ではなく差分の追記・精緻化）
+- **存在しない場合**: 3.1 へ進み、現行どおり新規に策定する
+
 ### 3.1 汎用 Agent の起動
 
-Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す:
+Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す。3.0 で既存戦略書を発見した場合は、その全文も渡す:
 
 ```
 Agent ツール起動: 実装戦略策定 (subagent_type: general-purpose)
@@ -174,7 +181,9 @@ prompt:
   - feature: {feature}
   - design_docs: [{設計書パス1}, {設計書パス2}, ...]  ← Phase 1 仕様書 return value から抽出
   - rules_docs: [{ルール文書パス1}, ...]              ← Phase 1 計画書ルール return value から抽出
+  - existing_strategy: {既存戦略書の全文、または「なし」}  ← 3.0 の確認結果
 
+  existing_strategy が「なし」でない場合、ゼロから策定せず、その内容を土台に不足を補う・詳細化すること。
   策定した実装戦略の markdown を return value として返すこと。
   (ファイルへの書き出しは不要。main AI が return value を受け取ってから配置する)
 ```
