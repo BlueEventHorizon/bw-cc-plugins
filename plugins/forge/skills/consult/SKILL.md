@@ -79,25 +79,32 @@ reviewer/evaluator が既に評価済みであり、consult 自身が新たに�
 
 ## Phase 2: アジェンダの用意
 
+記録の置き場（DES-075 §7）・`config`（`item_fields`・`severity_field`）は起点で異なるが、
+この対応は consult 自身の事情であり、`agenda_store.py`（起点を知らない汎用機構。
+agenda:REQ-019 FNC-009）は関知しない。この対応を SKILL.md 本文へ複製すると、
+`agenda_store.py` 側のスキーマ変更に追随できず陳腐化する（実例: `config.requires_verification`
+撤回時、複数箇所の複製を手で直す事故が起きた）。したがって本 Phase では
+`agenda_store.py` を直接呼ばず、対応を内部に持つラッパー
+`${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py` を経由する。
+**AI は置き場の文字列にも `config` の中身にも一切触れない**（`--origin` と、起点に
+応じたセッション ID・サブコマンド固有の内容だけを渡す）。
+
 ### 2.1 既存記録の確認
 
-新規に始める前に、中断中の記録がないかを見る。**確認方法は起点で異なる**（記録の置き場が起点ごとに
-固定パスかセッション単位かで変わるため。2.2 参照）。
-
-**review 起点**: review は同時に 1 つのレビューしか実行しないため、記録は固定パスに常に高々 1 つしか
-存在しない。列挙は不要で、ファイルの存在を確認してから直接確認する。
+**review 起点**: review は同時に 1 つのレビューしか実行しないため、記録は常に高々 1 つ。
 
 ```bash
-test -f ".claude/.temp/review/agenda.json" && \
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path ".claude/.temp/review/agenda.json"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" --origin review pending
 ```
 
-ファイルが存在しなければ新規に始める。存在し `remaining_count` が 0 より大きければ、未判断の件数を
-1〜2 行で示し、**再開するか新規に始めるかを AskUserQuestion で確認する**。**ファイルが存在するのに
-`status` が `error`（JSON 破損等）の場合は「存在しない」と同一視せず、利用者へ報告して対応を確認する**
-（`start` は既存内容を無条件に上書きするため、破損記録を新規開始として黙って上書き・消失させない）。
+`exists: false` なら新規に始める（2.2 へ）。`exists: true` かつ `remaining_count` が 0 より
+大きければ、未判断の件数を 1〜2 行で示し、**再開するか新規に始めるかを AskUserQuestion で
+確認する**。以降このセッションの review 起点の全コマンド（start/record/next/finish）は、
+**常にこのラッパーへ `--origin review` を渡すだけでよい**（置き場は常に同じであり、意識する
+必要がない）。
 
-**consult 起点**: 複数の記録が同時に存在しうるため、列挙してから個別に残件を確認する。
+**consult 起点**: 複数の記録が同時に存在しうるため、まず他セッションの記録を列挙する
+（ラッパーは今回のセッションの置き場しか解決できないため、この列挙だけは直接行う）。
 
 ```bash
 ls -1d .claude/.temp/consult/*/ 2>/dev/null
@@ -112,75 +119,44 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" pending --path "<
 **残件（`remaining_count`）が 0 より大きい記録があれば、再開の候補として扱う。** その要点（主題＝
 `config.identity`・未判断の件数・項目の一覧）をコンソールに 1〜2 行で示し、**再開するか新規に始めるかを
 AskUserQuestion で確認する**（進行上の機械的な二者択一であり、議論の内容ではない）。候補が無ければ
-新規に始める。**`agenda.json` が存在するのに `status` が `error`（JSON 破損等）の記録は候補から除外せず、
-利用者へ報告して対応を確認する**（他の候補と同列に「無かったこと」にしない）。
+新規に始める（2.2 へ）。**`agenda.json` が存在するのに `status` が `error`（JSON 破損等）の記録は
+候補から除外せず、利用者へ報告して対応を確認する**（他の候補と同列に「無かったこと」にしない）。
 
-**いずれの起点でも**、再開する場合はその `agenda.json` の実パスを以降の全コマンドの `--path` に使い続ける。
-**既存の識別子をそのまま引き継ぐ**（`agenda_store.py` は識別子を振り直さない）。`decision` が記録済みの
-項目は再び提示しない。
+- **他セッションの記録を再開する場合**: 見つかった実パスを、以降の全コマンドの `--path` に使い続け、
+  `agenda_store.py` を直接呼ぶ（ラッパーは今回のセッション ID から置き場を導出するため、他セッションの
+  記録には使えない）。**既存の識別子をそのまま引き継ぐ**（`agenda_store.py` は識別子を振り直さない）。
+  `decision` が記録済みの項目は再び提示しない
+- **新規に始める、または今回のセッションで既に始めている記録を続ける場合**: 以降このセッションの
+  consult 起点の全コマンドは、ラッパーへ `--origin consult --session-id "${CLAUDE_SESSION_ID}"` を
+  渡すだけでよい
 
 ### 2.2 新規開始
 
-記録の置き場・`config` は起点で異なる（`config.identity` はいずれもパスの親ディレクトリ名から
-`agenda_store.py` 自身が導出するため、AI は渡さない）。
-
-| 起点         | 置き場                                                   | `config.item_fields` | `config.severity_field` |
-| ------------ | -------------------------------------------------------- | -------------------- | ----------------------- |
-| review 起点  | `.claude/.temp/review/agenda.json`（固定）               | `["severity"]`       | `"severity"`            |
-| consult 起点 | `.claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json` | `[]`                 | `null`                  |
-
-**review 起点**の候補 JSON:
-
-```json
-{
-  "structural_judgment": { "note": "<review 本体で判断済みの構造的判断>" },
-  "config": { "item_fields": ["severity"], "severity_field": "severity" },
-  "items": [
-    {
-      "id": "<結合済み配列の通し番号>",
-      "title": "<所見の要約>",
-      "fields": { "severity": "<evaluator が確認・訂正した重大度>" }
-    }
-  ]
-}
-```
-
-`items[]` は、reviewer 所見と evaluator 判定を結合した配列（会話コンテキストに既にある）をそのまま用いる。
-consult 自身は新たに論点を立てない（Phase 1 を経由しないため）。
-
-**consult 起点**の候補 JSON:
-
-```json
-{
-  "structural_judgment": { "note": "<Phase 1 手順 5 でまとめた構造的判断>" },
-  "config": { "item_fields": [], "severity_field": null },
-  "items": [
-    { "id": "01", "title": "<短い名前>" }
-  ]
-}
-```
-
-以下、起点を問わず共通の手順である（`<置き場>` は上表の値を使う）。
+候補 JSON を組み立てる（`config` は含めない——ラッパーが起点から解決して注入する）。
+`structural_judgment.note` は review 起点なら review 本体で判断済みの内容、consult 起点なら
+Phase 1 手順 5 の内容。`items[]` は review 起点なら reviewer/evaluator を結合した配列（会話
+コンテキストに既にある。consult 自身は新たに論点を立てない）、consult 起点なら Phase 1 で
+立てた論点。
 
 1. **Write** ツールで候補 JSON を `.claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json` へ書く。
    **自由記述文（背景・本質・タイトル等）をシェルコマンドの引用符へ直接埋め込まない**——改行・引用符・
    記号を含む自由記述をシェル文字列に組み立てると、エスケープの崩れによる構文破壊や注入のリスクを生むため、
    常にファイル経由（`--input-file`）で渡す
-2. 次のコマンドを **1 回**実行する:
+2. 次のコマンドを **1 回**実行する（`<起点引数>` は review なら `--origin review`、consult なら
+   `--origin consult --session-id "${CLAUDE_SESSION_ID}"`）:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" start \
-     --path "<置き場>" \
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点引数> start \
      --input-file ".claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json"
    ```
 
-   `status` が `error` の場合、`message` に従って候補 JSON を訂正し、Write から同じ手順をもう 1 回だけ
-   実行する。2 回目も失敗した場合は論点の把握に失敗したものとして利用者へ報告する。
+   `status` が `error` の場合、`message`（または `missing_fields`）に従って候補 JSON を訂正し、Write から
+   同じ手順をもう 1 回だけ実行する。2 回目も失敗した場合は論点の把握に失敗したものとして利用者へ報告する。
 
-3. **開始直後、Bash で表示物を開く**（初回のみ）:
+3. **開始直後、Bash で表示物を開く**（初回のみ）。手順 2 の応答に含まれる `path` を使う:
 
    ```bash
-   open "<置き場と同じディレクトリ>/agenda.html"
+   open "$(dirname "<手順2の応答のpath>")/agenda.html"
    ```
 
    **2 回目以降は `open` を呼ばない**（重複タブを避けるため）。**自動追従の仕組みは持たない**——以降の
@@ -196,11 +172,15 @@ consult 自身は新たに論点を立てない（Phase 1 を経由しないた�
 
 ## Phase 4: 進行
 
-**重要度の高い順に、AI が自分で 1 件ずつ入る。** 次に扱う項目は次のコマンドで得る:
+**重要度の高い順に、AI が自分で 1 件ずつ入る。** Phase 2 の呼び出し方をそのまま引き継ぐ
+（通常はラッパー。**他セッションの記録を直接の `--path` で再開した場合のみ**
+`agenda_store.py <サブコマンド> --path "<path>"` の形を使う）。次に扱う項目は次のコマンドで得る:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" next --path "<agenda.jsonのパス>"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点引数> next
 ```
+
+（`<起点引数>` は `--origin review`、または `--origin consult --session-id "${CLAUDE_SESSION_ID}"`）
 
 各項目で行うこと:
 
@@ -222,8 +202,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" next --path "<age
    次を実行する:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" record \
-     --path "<agenda.jsonのパス>" --item-id "<item-id>" \
+   python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点引数> record \
+     --item-id "<item-id>" \
      --input-file ".claude/.temp/agenda-record-<item-id>-${CLAUDE_SESSION_ID}.candidate.json"
    ```
 
@@ -270,7 +250,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" next --path "<age
 利用者が終える意思を示したら、その時点で確定する。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_store.py" finish --path "<agenda.jsonのパス>"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点引数> finish
 ```
 
 - `deleted: true` の場合、全項目が決着済みであり記録は削除された旨を伝える
