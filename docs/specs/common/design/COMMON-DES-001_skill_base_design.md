@@ -1,16 +1,5 @@
 # COMMON-DES-001 SKILL 基本設計書
 
-## メタデータ
-
-| 項目       | 値                                                 |
-| ---------- | -------------------------------------------------- |
-| 設計 ID    | COMMON-DES-001                                     |
-| 関連要件   | -                                                  |
-| 関連 ADR   | doc-advisor:ADR-002_query_skill_subagent_isolation |
-| 関連ルール | `docs/rules/skill_authoring_notes.md`              |
-| 作成日     | 2026-05-18                                         |
-| 適用範囲   | bw-cc-plugins 配下の全プラグイン（forge / anvil）  |
-
 ## 1. 概要
 
 bw-cc-plugins における SKILL の基本設計を定義する。SKILL は Claude Code が解釈する単位の実行指示書であり、フォーマット規約（HOW）は `docs/rules/skill_authoring_notes.md` で管理する。本設計書は、その**設計判断の根拠（WHY）と全体像**を記録する。

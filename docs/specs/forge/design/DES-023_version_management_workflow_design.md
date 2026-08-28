@@ -1,18 +1,5 @@
 # DES-023 バージョン管理ワークフロー設計書
 
-## メタデータ
-
-| 項目   | 値         |
-| ------ | ---------- |
-| 設計ID | DES-023    |
-| 作成日 | 2026-03-22 |
-
----
-
-> 対象プラグイン: forge | スキル: `/forge:setup-version-config`, `/forge:update-version`
-
----
-
 ## 1. 概要
 
 マルチプラグインリポジトリにおいて、バージョン番号が複数ファイル（plugin.json, marketplace.json, README, CHANGELOG）に散在する。手動更新は不整合の原因となるため、設定ファイル `.version-config.yaml` を中心に一括更新する仕組みを提供する。

@@ -1,16 +1,5 @@
 # DES-013 コンテキスト収集タスク仕様
 
-## メタデータ
-
-| 項目     | 値                                                              |
-| -------- | --------------------------------------------------------------- |
-| 設計ID   | DES-013                                                         |
-| 関連設計 | DES-010 (DES-010_create_skills_orchestrator_design.md), DES-022 |
-| 作成日   | 2026-03-14                                                      |
-| 対象     | start-requirements, start-design, start-plan, start-implement   |
-
----
-
 ## 1. 概要
 
 forge の create-\* スキルおよび start-implement スキルが使用するコンテキスト収集タスクの仕様を定義する。
