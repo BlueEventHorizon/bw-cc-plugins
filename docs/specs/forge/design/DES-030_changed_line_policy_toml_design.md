@@ -1,17 +1,5 @@
 # DES-030 変更行 gate 起動経路用語 TOML 化 設計書
 
-## メタデータ
-
-| 項目       | 値                                                                                                                               |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 設計 ID    | DES-030                                                                                                                          |
-| 関連設計   | COMMON-DES-001_skill_base_design                                                                                                 |
-| 関連ルール | `docs/rules/skill_launch_paths_definitions.md`, `docs/rules/skill_authoring_notes.md`, `docs/rules/implementation_guidelines.md` |
-| 作成日     | 2026-05-26                                                                                                                       |
-| 適用範囲   | `tests/forge/subagent/test_changed_lines_policy.py` の変更行 gate                                                                |
-
----
-
 ## 1. 概要
 
 forge-subagent の変更行 gate では、slash command の近傍に起動経路の説明があるかを判定するため、起動経路の公式用語を Python テスト内に直書きしている。

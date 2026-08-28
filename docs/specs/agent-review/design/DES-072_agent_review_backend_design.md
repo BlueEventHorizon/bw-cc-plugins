@@ -31,16 +31,6 @@ body_hash: sha256:fe0251ff6cabfde4dee57e0cafb6ebee041e6ee48fd8404d536ecf1deb6d03
 
 # DES-072 agent-review バックエンド設計
 
-## メタデータ
-
-| 項目     | 値                                    |
-| -------- | ------------------------------------- |
-| 設計 ID  | DES-072                               |
-| 関連要件 | REQ-016 / REQ-013 FNC-1318            |
-| 関連設計 | ADR-066 / ADR-071 / DES-055 / DES-066 |
-| 作成日   | 2026-08-06                            |
-| 対象     | `agent-review` と `reviewer` Agent    |
-
 ## 1. 概要
 
 `agent-review` は `/forge:review` 本体から共通依頼本文を受け取り、read-only カスタム Agent `reviewer` を 1 ラウンドにつき 1 回起動する継承型バックエンド SKILL である。

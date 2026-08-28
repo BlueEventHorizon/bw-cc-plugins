@@ -1,17 +1,5 @@
 # DES-025 issue-driven-flow 設計: GitHub Issue を起点にした SDD パイプライン連携
 
-## メタデータ
-
-| 項目     | 値                           |
-| -------- | ---------------------------- |
-| 設計ID   | DES-025                      |
-| 関連要件 | REQ-005, COMMON-REQ-002      |
-| 親設計   | なし（feature トップレベル） |
-| 作成日   | 2026-04-25                   |
-| 対象     | anvil プラグイン             |
-
----
-
 ## 1. 概要
 
 GitHub Issue を入口に、要件定義 → 設計 → 計画 → 実装 → PR 作成までを一連で回せるオーケストレーションを anvil プラグイン配下の skill 群として構成する。SDD 各工程は forge 既存 skill（`/forge:start-requirements`, `/forge:start-design`, `/forge:start-plan`, `/forge:start-implement`）を Skill tool 経由で呼び出し、forge は改変しない（NFR-01）。Issue への書き戻しは「ユーザー記述セクション」と「機械追記セクション」を HTML コメントマーカーで分離し、機械追記セクションのみを冪等に上書きすることで I-03（ユーザー記述不変）を **機械的に検証可能** にする。

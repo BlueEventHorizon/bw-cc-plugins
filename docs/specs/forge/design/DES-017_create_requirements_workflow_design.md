@@ -1,18 +1,5 @@
 # DES-017 forge 要件定義書作成ワークフロー 設計書
 
-## メタデータ
-
-| 項目   | 値         |
-| ------ | ---------- |
-| 設計ID | DES-017    |
-| 作成日 | 2026-03-14 |
-
----
-
-> 対象プラグイン: forge | スキル: `/forge:start-requirements`
-
----
-
 ## 1. 概要
 
 `/forge:start-requirements` は3つのモード（interactive / reverse-engineering / from-figma）で
