@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: レビュー対象と規範を読み、read-only で所見と共通完了宣言を返す
+description: レビュー対象と規範を読み、read-only で所見と共通完了宣言を返す。単独起動禁止（/forge:review 経由のみ。evaluator の独立検証を省略しない）
 tools: [Read, Grep, Glob, Bash]
 model: inherit
 permissionMode: plan

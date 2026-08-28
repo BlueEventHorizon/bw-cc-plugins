@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-26T16:30:10Z
+  generated_at: 2026-08-27T13:44:39Z
   file_count: 40
 
 docs:
@@ -362,34 +362,39 @@ docs:
       - component dependency
       - test design
   plugins/forge/docs/design_principles_spec.md:
-    title: Design Document Creation Principles
-    purpose: Establishes principles for writing design documents, defining required structure, content guidelines, architectural patterns, responsibility division, and maintenance practices
+    title: Design Principles Specification
+    purpose: Defines principles and guidelines for creating design documents, including mandatory structure elements, scope boundaries, content rules, diagram usage, and maintenance expectations
     content_details:
-      - Design versus requirements boundary — How vs What distinction
-      - Required structural elements — module list, component/class diagrams, use case list, sequence diagrams
-      - Prohibited content — excessive source code, unjustified technology selection, out-of-scope features, quantitative guarantees
-      - Quantitative target handling — design intentions versus performance guarantees
-      - Architectural dependency rules — layered/clean architecture patterns, circular dependency prevention
-      - Responsibility separation — single responsibility, coupling avoidance, YAGNI principle
-      - Availability and SPOF guidelines — redundancy, retry logic, timeout/fallback mechanisms
-      - Design violation severity catalog — critical, major, minor levels
-      - Design maintenance practices — updating for implementation drift, ADR for design changes
+      - "Mandatory structure elements: module list, component/class diagrams, use case list, sequence diagrams"
+      - "Design scope boundary: How vs What separation, implementation details specification"
+      - "Prohibited content: excessive code listings, unwarranted performance guarantees, speculative numeric targets"
+      - "Quantitative goal handling: design structure and policy, not performance guarantees"
+      - "Decision criteria for design content judgment: implementers can implement it"
+      - "File naming convention: ID_name_design.md format"
+      - "Diagram usage guidelines: Mermaid format for flowchart, class diagram, sequence diagram"
+      - "Design maintenance rules: update specification when implementation diverges"
+      - "Architecture dependency principles: layered/clean architecture, no cyclic dependencies, explicit exception rationale"
+      - "Responsibility division and cohesion rules: single responsibility, interface-based dependencies, Rule of Three, resource ownership alignment"
     applicable_tasks:
-      - Design document review
-      - Architecture pattern compliance validation
-      - Responsibility separation review
-      - Quantitative target assessment
-      - Circular dependency detection
+      - Design document creation and specification
+      - Design document review and validation
+      - Architecture design pattern verification
+      - Responsibility division and dependency analysis
+      - Design principle compliance checking
+      - Technical decision documentation
+      - Implementation feasibility assessment
+      - Diagram requirement verification
     keywords:
       - design principles
       - architecture patterns
-      - responsibility separation
-      - YAGNI
-      - clean architecture
-      - layered architecture
-      - SPOF
-      - design maintenance
+      - dependency direction
+      - component responsibility
+      - design boundaries
+      - Mermaid diagrams
+      - SPOF availability
       - cohesion
+      - specification maintenance
+      - scope separation
   plugins/forge/docs/design_taxonomy.md:
     title: Document Taxonomy
     purpose: Defines a classification system for development documents organized by content type, authority source, and scope to guide document analysis and responsibility division between forge and projects

@@ -1,9 +1,9 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-23T07:34:22Z
-file_count: 61
+generated_at: 2026-08-28T01:51:30Z
+file_count: 65
 checksums:
-  docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 6a98ef5a5c8e0b60075f19d2294d55e6f5d47bf487504f944016e087f84a863b
+  docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: ffae2f98aa29aaef2f06e2de42d76457ad92954fe72a43b3d87692d93cd26544
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md: 320c637ad9dc123a0ee0ff3a3bcf208fa26dade5e8ac7785bbf8f80ca104fddc
   docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: ab25ea1fa5f167e9fee33ce5589870f9fffe98324186418fcdb70c2aec1867bc
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: 0d457e1a32f2fe4d4244d194202ffa8c94bc9af9c48d73be33dab3a25ad3bebf
@@ -15,14 +15,18 @@ checksums:
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: 955300ea4e2023cc5944ab8fec38b6f3a7fa839faa769c821b9552e45b489fb6
   docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: a622144644b49918285000214b860da83b02031b5a261351bc864d34795a0020
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 9bad3ee2282a2ee5e3d48a643f84344bcf971466b37a166731fd1f8ecdf5d71e
-  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: fc5eeaa58cce25f4b79b79165fc8d92481756ddab58ac17941d01304053541e1
-  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: f7979f6d36ad0076e304ce0184189b59b1e658dc106692961db1cd6ac606893a
+  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: 30be564f09b709b0c1b0d5471f049cbc445351d1d6eca5c1449b4701785a37a3
+  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: c4cc14783f1e6b88cdde40285cfa40bac1a9869f303574977b2b7fe1499c60f0
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
+  docs/specs/consult/agenda/design/ADR-076_agenda_storage_format.md: 8e17afe9bca22989b6b1627525c5146442386ed043c9867e3935af287a7480f0
+  docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md: ee9c31d6f11ed0113eb7e9d23d754cbe6cbddb19c29f60b10171e4bd7d75b24b
+  docs/specs/consult/agenda/design/DES-077_agenda_display_design.md: 692fb95bb8400b2a0bfb10acfb25885ee56bb0210f46dc5f2e44591275cd2915
   docs/specs/consult/agenda/design/NOTES_open_design_questions.md: 5d780a7395879bfef2801cd03446b99b027cf6612f8a3de5cf0e4a97f54c35fe
-  docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md: 9bea78741c75b996dc6cd5dae043dc7942316d41098a9af7552d183cbe0994c2
-  docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md: d8a8d49c1aa2f8d2691bffc110c44aec2e8e97187d7f01ec487a3a6c6a00e7be
-  docs/specs/consult/requirements/REQ-017_consult_skill.md: 7abf8097de56257dd1e4a53fd18e6492693a58c02517cb4f45578c04a4e7faf7
+  docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md: a433b91e53cfe3eec387ae8f32b18b650312668d68b0af3ae8e693e3ba67eefb
+  docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md: 28b3b5a8515e2b0a269eb221a88e5213c7df177255b0beb5641a9fa6d97d6f0c
+  docs/specs/consult/design/DES-078_consult_dialogue_flow_design.md: a3028d7a590b7a52c9664c5780c254d0b9ed9b17f353c15f30abc3ecfdcd31ed
+  docs/specs/consult/requirements/REQ-017_consult_skill.md: 9c066e96d00b837202163da8b0478e2dcd06dcd97b9f555a0fcabc6affd7f543
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md: f7be33458880592526da7315d47f299b6ee28acaf7c6c49d706f90203d296671
   docs/specs/doc-db/design/DES-057_doc_db_backend_selection_design.md: 1aae9878f9cd960a01af63d0214dc4eb8afccf69fb7ed3183b8f1f034d2b4118
   docs/specs/doc-db/requirements/REQ-014_doc_db_backend_selection_spec.md: 48b127bfbf18494610a178008158781db3887ebc3b2083b109a4df3ef740e150
@@ -49,12 +53,12 @@ checksums:
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md: 0e56c8b729d59c1cce06a864ddb7abedbb293109edaff93756b2632e74a022b2
   docs/specs/forge/design/DES-055_review_request_template_design.md: 285722c587e88f53c9cc33d76170729c4e55db001c34244c0347941461aedd79
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: fb5d41c403b20e0853df20c44bfdcc56c9389a6040066e0789cfa738d916a01b
-  docs/specs/forge/design/DES-066_review_body_design.md: f71394d80c8d31cddc9a7e899de2b344360a7c1837991627a2c8a89e219d01fd
+  docs/specs/forge/design/DES-066_review_body_design.md: 52b5437292015908f9bb9ad138736127a873f818b11b4f4fdec7c9bf46812ccf
   docs/specs/forge/executer/design/DES-074_plan_format_design.md: 427dda0e354d77b9bc6adfeac2b89e39c2295f2f3366c027ce41347637b4eb48
   docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md: 4f6973bfc1e747c236380ccf24ef3ef415a7bbfee230c1ddca6e49b0f921d098
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: d6734dfee59a1614236f992988ed1cb9ecabacead6616f0fda10ff6b0d56ded5
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 1f5e7d99b96f4679df8485d5f306b8c0483de50d5048652abf3878f05eb1eea4
-  docs/specs/forge/requirements/REQ-013_review_policy.md: a079da166dcfaf1faba8de137c250959a10d14f9543d4fbcf7eb745a1191b37d
+  docs/specs/forge/requirements/REQ-013_review_policy.md: 8c583858019e31d7c94ee74a4af45ac4e801c2ec2807d56d36a6b259411c3147
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md: da53cf22e32ce755f06c460e171dda47bad968823e8199cfcde021b51ca9e4ee
   docs/specs/msg-review/design/ADR-068_availability_probe_determinism_boundary.md: 74db272e94c4c91e3c180c51c9bc8533cb211d9a32d6b6751f0188eaa9894d88
   docs/specs/msg-review/design/DES-045_msg_review_skill_design.md: 20cce25df913a2f1baaaa8a1fd45c223aeb010e41ae24faf31d5ace4abe7a823
