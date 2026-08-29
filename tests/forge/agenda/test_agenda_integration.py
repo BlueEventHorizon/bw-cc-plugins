@@ -86,10 +86,13 @@ class AgendaIntegrationTest(unittest.TestCase):
     def _assert_render_matches_agenda(self):
         """実際に書き出された agenda.html が、実際に load_agenda() で読み込んだ
         最新の agenda.json のみから独立に再生成した内容と一致することを検証する
-        （FNC-003: 提示と記録の一致）。agenda_state.js は新設計に存在しないため
-        生成されないことも合わせて確認する。"""
+        （FNC-003: 提示と記録の一致）。agenda_state.js（自動追従用の世代番号。
+        DES-077 §4.2）も最新の content_version と一致することを合わせて確認する。"""
         record = self._record_record()
-        self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
+        state_js = (self.agenda_dir / "agenda_state.js").read_text(encoding="utf-8")
+        self.assertEqual(
+            state_js, agenda_render.render_agenda_state_js(record.get("content_version"))
+        )
 
         html_path = self.agenda_dir / "agenda.html"
         self.assertTrue(html_path.exists())
@@ -182,6 +185,7 @@ class AgendaIntegrationTest(unittest.TestCase):
         self.assertTrue(finish_result["deleted"])
         self.assertFalse(Path(self.agenda_path).exists())
         self.assertFalse((self.agenda_dir / "agenda.html").exists())
+        self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
 
     def test_new_item_added_mid_session_requires_structural_judgment_note(self):
         # §5.1a: start 後に record で新規項目を追加する場合、集合全体への

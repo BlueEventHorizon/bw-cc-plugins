@@ -136,7 +136,10 @@ AskUserQuestion で確認する**（進行上の機械的な二者択一であ�
 `structural_judgment.note` は review 起点なら review 本体で判断済みの内容、consult 起点なら
 Phase 1 手順 5 の内容。`items[]` は review 起点なら reviewer/evaluator を結合した配列（会話
 コンテキストに既にある。consult 自身は新たに論点を立てない）、consult 起点なら Phase 1 で
-立てた論点。
+立てた論点。**各項目の `problem` に「何が問題か・何を決めたいのか」（論点そのもの）を書く**
+——review 起点なら所見の内容（何が問題か・どこを指すか）、consult 起点なら立てた論点の本文。
+`title` は短い名前であり、`problem` を欠くと表示物の読み手は推奨・決着を判断の文脈なしに
+読むことになる。
 
 1. **Write** ツールで候補 JSON を `.claude/.temp/agenda-start-${CLAUDE_SESSION_ID}.candidate.json` へ書く。
    **自由記述文（背景・本質・タイトル等）をシェルコマンドの引用符へ直接埋め込まない**——改行・引用符・
@@ -159,8 +162,8 @@ Phase 1 手順 5 の内容。`items[]` は review 起点なら reviewer/evaluato
    open "$(dirname "<手順2の応答のpath>")/agenda.html"
    ```
 
-   **2 回目以降は `open` を呼ばない**（重複タブを避けるため）。**自動追従の仕組みは持たない**——以降の
-   更新を見るには利用者がタブを手動で再読み込みする。
+   **2 回目以降は `open` を呼ばない**（重複タブを避けるため）。開いたタブは記録の更新を検知して
+   自動で再読み込みされるため、以降の更新で利用者に再読み込みを求めない。
 
 ## Phase 3: アジェンダの提示
 
@@ -190,12 +193,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点
 3. **原文への到達手段を併記する**。要約して提示してよいが、利用者が自分で原文を確かめられるよう
    `ファイルパス:行` や出典を添える。これを欠くと、利用者は要約の正しさを検証できない
 4. 利用者の応答を受ける。理解を求める応答（「詳しく」「なぜ」）には、判断を促さず答える
-5. **背景・本質が分かった時点で record を呼ぶ**（決着を待たない。分かった時点で都度記録する）:
+5. **背景・本質が分かった時点で record を呼ぶ**（決着を待たない。分かった時点で都度記録する）。
+   **決定モードでは、コンソールへ述べた推奨と同じ内容を `recommendation` にも含める**
+   （提示と記録を一致させる。議論モードでは含めない）:
 
    候補 JSON（例）:
 
    ```json
-   { "background": "...", "essence": "..." }
+   { "background": "...", "essence": "...", "recommendation": "..." }
    ```
 
    Write ツールで `.claude/.temp/agenda-record-<item-id>-${CLAUDE_SESSION_ID}.candidate.json` へ書き、

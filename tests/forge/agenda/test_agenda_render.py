@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""agenda_render.py（単一公開関数 render_agenda_html()）のテスト。
+"""agenda_render.py（render_agenda_html() / render_agenda_state_js()）のテスト。
 
-DES-077 §5 が列挙する単体テスト対象を検証する（TASK-009 acceptance_criteria）。
-current_item_id・agenda_state.js 関連の記述、`.state-dot.current` は新設計に
-存在しないため、それらへの言及は行わず、存在しないことを積極的に検証する。
+DES-077 §5 が列挙する単体テスト対象を検証する。current_item_id・
+`.state-dot.current`（旧設計の対話中表示）は存在しないことを積極的に検証する。
+自動追従（DES-077 §4.2・§4.3）は、スクリプトの埋め込み・世代番号の一致・
+`agenda_state.js` の生成内容を検証する。
 
 実行:
   python3 -m unittest tests.forge.agenda.test_agenda_render -v
@@ -71,22 +72,82 @@ def _fixture_agenda(**overrides) -> dict:
     return agenda
 
 
-class PublicApiTest(unittest.TestCase):
-    """DES-077 §1: render_agenda_html() 単一の公開関数のみを持つ。"""
+class FollowScriptTest(unittest.TestCase):
+    """DES-077 §4.2・§4.3: 自動追従スクリプトの埋め込みと agenda_state.js の生成。"""
 
-    def test_render_agenda_state_js_does_not_exist(self):
-        self.assertFalse(hasattr(agenda_render, "render_agenda_state_js"))
-
-
-class OldVocabularyAbsenceTest(unittest.TestCase):
-    """旧設計（current_item_id/agenda_state.js/.state-dot.current）への言及が
-    出力に一切含まれないこと。"""
-
-    def test_html_does_not_reference_agenda_state_js(self):
+    def test_html_contains_follow_script_with_known_version(self):
         html_doc = agenda_render.render_agenda_html(
             _fixture_agenda(), generated_at="2026-08-22T00:00:00"
         )
-        self.assertNotIn("agenda_state.js", html_doc)
+        self.assertIn("agenda_state.js", html_doc)
+        self.assertIn("var known = 3;", html_doc)
+        self.assertIn("location.reload()", html_doc)
+
+    def test_html_contains_scroll_restore(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
+        )
+        self.assertIn("sessionStorage", html_doc)
+        self.assertIn("agendaScrollY", html_doc)
+
+    def test_html_embeds_null_when_content_version_missing(self):
+        agenda = _fixture_agenda()
+        del agenda["content_version"]
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-22T00:00:00")
+        self.assertIn("var known = null;", html_doc)
+
+    def test_render_agenda_state_js_contains_only_content_version(self):
+        state_js = agenda_render.render_agenda_state_js(3)
+        self.assertEqual(state_js, 'window.AGENDA_STATE = {"contentVersion": 3};\n')
+
+    def test_render_agenda_state_js_non_int_becomes_null(self):
+        state_js = agenda_render.render_agenda_state_js("3")
+        self.assertEqual(state_js, 'window.AGENDA_STATE = {"contentVersion": null};\n')
+
+
+class ProblemRecommendationRowTest(unittest.TestCase):
+    """DES-077 §3: problem / recommendation は記入があるときだけ行を出す。"""
+
+    def test_problem_row_rendered_when_filled(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["problem"] = "何が問題かの記述"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-29T00:00:00")
+        self.assertIn("<dt>問題</dt><dd>何が問題かの記述</dd>", html_doc)
+
+    def test_problem_row_absent_when_missing_or_empty(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["problem"] = ""
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-29T00:00:00")
+        self.assertNotIn("<dt>問題</dt>", html_doc)
+
+    def test_recommendation_row_rendered_with_label_class(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["recommendation"] = "案Aを推奨（確信度: 中）"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-29T00:00:00")
+        self.assertIn(
+            '<dt class="label-recommend">推奨</dt><dd>案Aを推奨（確信度: 中）</dd>', html_doc
+        )
+
+    def test_recommendation_row_absent_when_missing(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-08-29T00:00:00"
+        )
+        self.assertNotIn("推奨</dt>", html_doc)
+
+    def test_problem_and_recommendation_are_escaped(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["problem"] = "<i>問題</i>"
+        agenda["items"][0]["recommendation"] = "<i>推奨</i>"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-08-29T00:00:00")
+        self.assertNotIn("<i>問題</i>", html_doc)
+        self.assertNotIn("<i>推奨</i>", html_doc)
+        self.assertIn("&lt;i&gt;問題&lt;/i&gt;", html_doc)
+        self.assertIn("&lt;i&gt;推奨&lt;/i&gt;", html_doc)
+
+
+class OldVocabularyAbsenceTest(unittest.TestCase):
+    """旧設計（current_item_id/.state-dot.current の対話中表示）への言及が
+    出力に一切含まれないこと。"""
 
     def test_html_does_not_contain_data_current_attribute(self):
         html_doc = agenda_render.render_agenda_html(
@@ -100,12 +161,6 @@ class OldVocabularyAbsenceTest(unittest.TestCase):
         )
         self.assertNotIn("state-dot current", html_doc)
         self.assertNotIn("state-dot.current", html_doc)
-
-    def test_html_does_not_contain_polling_script(self):
-        html_doc = agenda_render.render_agenda_html(
-            _fixture_agenda(), generated_at="2026-08-22T00:00:00"
-        )
-        self.assertNotIn("<script", html_doc)
 
 
 class DataChangedAttributeTest(unittest.TestCase):

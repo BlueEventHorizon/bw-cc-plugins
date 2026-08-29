@@ -4,8 +4,9 @@ start/record/next/pending/finish の5サブコマンドを持つ（DES-075 §6�
 本ツールへの入力は常に `--input-file` による候補JSON方式であり、値をシェルコマンド書式
 （`--set key=value` 等）に組み立てる経路は持たない（DES-075 §6・agenda:REQ-019 FNC-005）。
 
-JSON 書き込み成功直後に `agenda_render.py` の `render_agenda_html()` を呼び出し、
-`agenda.html` を再生成する（DES-075 §8.1）。再描画が失敗しても記録側の状態遷移は
+JSON 書き込み成功直後に `agenda_render.py` を呼び出し、`agenda.html` と
+`agenda_state.js`（自動追従用の世代番号）を再生成する（DES-075 §8.1・DES-077 §4.2）。
+再描画が失敗しても記録側の状態遷移は
 成立させ、`{"status": "partial", ...}` として呼び出し側へ失敗を明示する
 （記録の正しさを表示の失敗で道連れにしない。DES-075 §8.1）。
 
@@ -93,7 +94,8 @@ def _unknown_keys_error(label: str, raw: dict, allowed: set) -> str | None:
 
 
 def _render(path: str | Path, record: dict) -> list:
-    """書き込み成功後に `agenda.html` を再生成する。失敗しても例外を伝播させず、
+    """書き込み成功後に `agenda.html` と `agenda_state.js`（自動追従用の世代番号
+    ファイル。DES-077 §4.2）を再生成する。失敗しても例外を伝播させず、
     エラー文字列のリストを返す（表示層は agenda_store.py に依存しない独立モジュール
     であり、内部で何が起きても記録側の状態遷移を巻き戻さない。DES-075 §8.1）。
     """
@@ -104,6 +106,11 @@ def _render(path: str | Path, record: dict) -> list:
         (out_dir / "agenda.html").write_text(html_str, encoding="utf-8")
     except Exception as exc:  # noqa: BLE001 - DES-075 §8.1: 再描画失敗は記録を巻き戻さない
         errors.append(f"agenda.html: {exc}")
+    try:
+        state_js = agenda_render.render_agenda_state_js(record.get("content_version"))
+        (out_dir / "agenda_state.js").write_text(state_js, encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001 - 同上
+        errors.append(f"agenda_state.js: {exc}")
     return errors
 
 
@@ -124,7 +131,7 @@ def _finalize_write(path: str | Path, record: dict) -> dict:
 _START_ALLOWED_KEYS = {"structural_judgment", "config", "items"}
 _START_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
 _START_CONFIG_ALLOWED_KEYS = {"item_fields", "severity_field"}
-_START_ITEM_ALLOWED_KEYS = {"id", "title", "fields"}
+_START_ITEM_ALLOWED_KEYS = {"id", "title", "fields", "problem"}
 
 
 def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
@@ -202,12 +209,18 @@ def _validate_start_candidate(raw: dict) -> tuple[dict | None, list]:
             if fields is not None and not isinstance(fields, dict):
                 errors.append(f"{label}.fields は object である必要があります")
                 fields = {}
+            problem = item.get("problem", "")
+            if not isinstance(problem, str):
+                errors.append(f"{label}.problem は文字列である必要があります")
+                problem = ""
             new_item = {
                 "id": item_id,
                 "title": title,
                 "fields": fields if isinstance(fields, dict) else {},
+                "problem": problem,
                 "background": "",
                 "essence": "",
+                "recommendation": "",
                 "decision": None,
                 "last_changed_fields": [],
             }
@@ -273,14 +286,16 @@ def handle_start(args: argparse.Namespace) -> dict:
 
 _RECORD_ALLOWED_KEYS = {
     "title",
+    "problem",
     "background",
     "essence",
+    "recommendation",
     "decision",
     "fields",
     "structural_judgment",
 }
 _RECORD_STRUCTURAL_JUDGMENT_ALLOWED_KEYS = {"note"}
-_RECORD_ITEM_PATCH_STRING_KEYS = ("title", "background", "essence")
+_RECORD_ITEM_PATCH_STRING_KEYS = ("title", "problem", "background", "essence", "recommendation")
 _RECORD_ITEM_PATCH_DICT_KEYS = ("fields", "decision")
 
 
@@ -352,7 +367,15 @@ def upsert_item(items: list, item_id: Any, item_patch: dict) -> tuple[dict, bool
     index = _find_item_index(items, item_id)
     is_new = index is None
     if is_new:
-        existing: dict = {"id": item_id, "fields": {}, "background": "", "essence": "", "decision": None}
+        existing: dict = {
+            "id": item_id,
+            "fields": {},
+            "problem": "",
+            "background": "",
+            "essence": "",
+            "recommendation": "",
+            "decision": None,
+        }
     else:
         existing = dict(items[index])
     merged_item = dict(existing)
@@ -523,8 +546,12 @@ def handle_finish(args: argparse.Namespace) -> dict:
     try:
         path.unlink(missing_ok=True)
         (path.parent / "agenda.html").unlink(missing_ok=True)
+        (path.parent / "agenda_state.js").unlink(missing_ok=True)
     except OSError as exc:
-        return {"status": "error", "message": f"agenda.json/agenda.html を削除できません: {exc}"}
+        return {
+            "status": "error",
+            "message": f"agenda.json/agenda.html/agenda_state.js を削除できません: {exc}",
+        }
 
     return {"status": "ok", "deleted": True}
 

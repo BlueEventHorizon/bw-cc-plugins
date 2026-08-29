@@ -257,9 +257,54 @@ class StartSuccessTest(AgendaStoreTestCase):
         self._start()
         self.assertTrue((self.agenda_dir / "agenda.html").exists())
 
-    def test_start_does_not_write_agenda_state_js(self):
+    def test_start_writes_agenda_state_js_with_content_version(self):
+        # DES-077 §4.2: 書き込み成功のたびに世代番号ファイルを再生成する。
         self._start()
-        self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
+        state_js = (self.agenda_dir / "agenda_state.js").read_text(encoding="utf-8")
+        self.assertEqual(state_js, 'window.AGENDA_STATE = {"contentVersion": 1};\n')
+
+    def test_start_stores_problem_and_defaults_recommendation(self):
+        # DES-075 §4: problem は start で項目とともに渡す。recommendation は空で初期化する。
+        self._start(items=[{"id": "01", "title": "項目1", "problem": "何が問題か"}])
+        item = self._load()["items"][0]
+        self.assertEqual(item["problem"], "何が問題か")
+        self.assertEqual(item["recommendation"], "")
+
+    def test_start_without_problem_defaults_to_empty(self):
+        self._start(items=[{"id": "01", "title": "項目1"}])
+        self.assertEqual(self._load()["items"][0]["problem"], "")
+
+    def test_start_rejects_non_string_problem(self):
+        result = self._start(items=[{"id": "01", "title": "項目1", "problem": 123}])
+        self.assertEqual(result["status"], "error")
+        self.assertIn("problem", result["message"])
+
+
+class RecordProblemRecommendationTest(AgendaStoreTestCase):
+    """DES-075 §6.1: problem / recommendation を差分パッチとして受け付ける。"""
+
+    def setUp(self):
+        super().setUp()
+        self._start(items=[{"id": "01", "title": "項目1"}])
+
+    def test_record_patches_recommendation(self):
+        result = self._record(
+            "01", {"background": "背景", "essence": "本質", "recommendation": "案Aを推奨（確信度: 中）"}
+        )
+        self.assertEqual(result["status"], "ok")
+        item = self._load()["items"][0]
+        self.assertEqual(item["recommendation"], "案Aを推奨（確信度: 中）")
+        self.assertIn("recommendation", item["last_changed_fields"])
+
+    def test_record_patches_problem(self):
+        result = self._record("01", {"problem": "後から言語化した問題"})
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(self._load()["items"][0]["problem"], "後から言語化した問題")
+
+    def test_record_rejects_non_string_recommendation(self):
+        result = self._record("01", {"recommendation": 123})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("recommendation", result["message"])
 
 
 class RecordCandidateValidationTest(AgendaStoreTestCase):
@@ -603,6 +648,7 @@ class FinishTest(AgendaStoreTestCase):
         self.assertTrue(result["deleted"])
         self.assertFalse(Path(self.agenda_path).exists())
         self.assertFalse((self.agenda_dir / "agenda.html").exists())
+        self.assertFalse((self.agenda_dir / "agenda_state.js").exists())
 
 
 class IoFailureTest(AgendaStoreTestCase):
