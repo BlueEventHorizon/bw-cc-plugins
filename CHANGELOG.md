@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.4] - 2026-08-29
+
+### marketplace
+
+- **chore**: forge 0.5.0 / anvil 0.1.3 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.5.0] - 2026-08-29
+
+### forge
+
+- **feat**: 議事記録（agenda）機構を新設。段階的提示・確信度別配色・固定語彙による検証記録を実装し、record/next/pending/finish の CLI 契約で AI が JSON を手書きしない設計とした
+- **feat**: consult スキルを新設し、review からの委譲分岐・AskUserQuestion の適用境界を規定。review の自動修正可否判定を重大度から確信度ベースへ移行し、reviewer 所見と evaluator 判定を機械的に結合する combine_findings_and_evaluations.py を実装
+- **feat**: 計画書を plan.yaml から plan.json 化（REQ-020）。executor の失敗予測・結果検証を強化
+- **fix**: next-spec-id が plan.json 内部の task_id を見逃し ID 衝突を返す不具合を修正
+- **fix**: reviewer エージェントの薄さ・review 依頼テンプレートの参照文書漏れ・可用性検査の欠落を解消し、条文の存在担保を CI の契約テストへ一本化
+- **fix**: scope/exclude のスカラー形式 YAML を単一要素リストとして解釈する不具合、merge-specs の `*_plan.yaml` 表記の追従漏れを修正
+- **refactor**: review の終端判定・段階的提示・仕分けを単一の出口へ集約し、finalize_review.py・clean-rules 等の重複経路を廃止。索引整備の入口を update-db-* へ一本化
+- **docs**: GFM アラート記法の使い分けを document_style_guide.md に新設。規範タグ選別を全配布文書へ展開（Issue #12）。ADR 運用ガイド整備、frontmatter 定義の独立文書化、feature_type の temporary-feature への統一
+
+## [anvil 0.1.3] - 2026-08-29
+
+### anvil
+
+- **feat**: triage-issue の判定構造をフロー責務定義に基づく 3 フローへ再設計し、SDD 偏向・トリアージ条件の判定規律を強化（Issue #32）
+- **refactor**: prepare-figma のレイアウト定義を YAML から JSON へ移行し PyYAML 依存を除去。commit から検索インデックスの除外分岐を撤去
+- **fix**: 「軽量実装」の呼称を「ワンショット実装」に統一
+- **docs**: create-issue の `start-*` 表記をバッククォート囲みに統一。規範タグ選別を anvil 配布文書へ展開（Issue #12）
+
 ## [marketplace 0.3.3] - 2026-08-10
 
 ### marketplace

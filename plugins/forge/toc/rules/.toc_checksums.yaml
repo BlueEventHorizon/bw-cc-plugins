@@ -18,7 +18,7 @@ checksums:
   plugins/forge/docs/design_principles_spec.md: 668a6244a9dad5f4deb8f3d1aa36fa4ed7d6ac000d7dda84e9eece82d4743af2
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e
-  plugins/forge/docs/document_style_guide.md: 4d0db1e7f8cfec24fbf084cb48dd0c6c6732722fdbd0b81eda141db3b4a28f8e
+  plugins/forge/docs/document_style_guide.md: 1ebd707d605941f3d4ddb4ac0fae46d1a91f35cac742f75a626f81fb85d91858
   plugins/forge/docs/forge_anti_patterns.md: c12e23d4fb124122226d893c60d1e702c9ce2d08fe43828c5d1dddf3c765b892
   plugins/forge/docs/frontmatter_format.md: 86ef4900f3bfc15bbdd4b038b9cf85ea357fb6b58b0bca8180716e6749e8914c
   plugins/forge/docs/plan_principles_spec.md: f4d2f175f027dced7fe6dc94df48f9357626ef59b12606ac686da567c1a2fc33
