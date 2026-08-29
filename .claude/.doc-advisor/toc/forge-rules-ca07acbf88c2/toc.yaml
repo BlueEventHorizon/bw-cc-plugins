@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-29T03:05:13Z
+  generated_at: 2026-08-29T03:43:02Z
   file_count: 40
 
 docs:
@@ -952,70 +952,68 @@ docs:
       - quality validation
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
     title: Interactive Requirements Definition Workflow
-    purpose: Defines a structured workflow for creating requirement specifications through user dialogue when design documents do not exist, covering both new applications and feature additions to existing systems.
+    purpose: Describes the dialogue-based workflow for creating requirement specifications when Figma or screen designs are unavailable, covering both new application creation and feature additions with multi-phase structured approach.
     content_details:
-      - Six-phase workflow (Phase 0-4) with decision branches for new vs. additive feature development
-      - Pre-confirmation checklist covering scope, target users, reference applications, mandatory/excluded features, constraints
-      - Development rule documents retrieval using /forge:query-db-rules and existing specs with /forge:query-db-specs SKILL
-      - Vision and value clarification including APP-001 specification drafting
-      - Experience flow and interface design with screen list, navigation diagrams, and scenario documentation
-      - Glossary establishment, architecture definition, state model, and data model exploration with mandatory ordering
-      - Requirement creation (SCR/FNC/BL/DM/others) with ID assignment via scan_spec_ids.py script
-      - Quality checklist for format, content, and consistency validation with undecided items tracked via TBD table
-      - Eleven dialogue principles including choice-first approach, visual confirmation, scope management, discussion vs. decision distinction
-      - Anti-patterns table listing 13 identified issues with mitigation strategies and special review criteria for ambiguous expressions
+      - Phase 0 pre-check and scope definition
+      - Phase 0.5 development rules and existing specifications acquisition
+      - Phase 1 vision and value clarification with APP-001 draft
+      - Phase 2 user experience flow and screen/interface structure
+      - Phase 3 detailed specifications including glossary, terminology, architecture, state model, data model
+      - Phase 4 integration and quality verification with ID numbering and AI review
+      - Dialogue basic principles including choice-first, visual confirmation, TBD tolerance
+      - "Critical principle 11 for system features: term → architecture → state → data model → requirements order"
+      - Anti-patterns and their remedies for common workflow pitfalls
+      - Special rules for ambiguous expressions management via TBD tracking
     applicable_tasks:
-      - Planning new application development from requirements gathering
-      - Adding features to existing applications with existing asset review
-      - Creating interactive requirement specifications collaboratively with users
-      - Defining application experience flows and interface architecture
-      - Specifying business logic, data models, and system architecture
-      - Conducting Phase 0 pre-confirmation and scope definition discussions
-      - Reviewing requirement specifications for clarity and completeness
-      - Managing scope inflation and requirement consistency
-      - Establishing shared terminology and domain glossaries
-      - Validating What vs. How boundary in requirement definitions
+      - Interactive requirements definition workflow execution
+      - Requirement clarification during feature planning
+      - New application specification creation
+      - Feature addition scope and impact analysis
+      - Requirements documentation quality verification
+      - Glossary and terminology definition
+      - Phase completion confirmation and user sign-off
     keywords:
-      - Interactive workflow
-      - requirement specification
-      - dialogue principles
+      - requirements definition
+      - interactive workflow
+      - phase management
+      - APP-001
+      - glossary
+      - scenario
+      - TBD
       - scope management
-      - APP-001
-      - SCR
-      - FNC
-      - BL
-      - DM
-      - quality checklist
+      - feature addition
+      - dialogue principles
   plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
-    title: Requirements Reverse Engineering Workflow
-    purpose: Defines a 5-phase workflow for extracting and documenting application requirements from existing source code during legacy application modernization and redesign
+    title: Requirements Definition Document Creation Workflow (Reverse-Engineering Edition)
+    purpose: Describes the workflow for extracting requirements from existing application source code when performing ground-up rebuild or legacy redesign, preserving functionality while optionally refreshing design through systematic code analysis.
     content_details:
-      - "Phase 1: User confirmation (design policy, source code paths) and context collection through parallel agent execution"
-      - "Phase 2: Source code analysis including project structure, view/component identification, and screen transition mapping"
-      - "Phase 3: Requirement extraction with priority order (APP-001, SCR-xxx, FNC-xxx, BL-xxx, DM-xxx ID prefixes)"
-      - User action detection from code (button taps, gestures, input operations) and feature extraction
-      - Requirement extraction checklist covering user actions, UI elements, data processing, screen transitions, business rules, external integration
-      - "Phase 4: Requirement document creation with mandatory ID numbering via scan_spec_ids.py script"
-      - "Phase 5: Quality assurance including mandatory AI review via /forge:review SKILL and specs database update"
-      - Design policy handling to determine whether to refresh or retain existing design elements
+      - Phase 1 pre-preparation including user design confirmation, rule document queries, existing spec confirmation, and parallel agent-based context collection for rules and code
+      - Phase 2 source code analysis covering project structure understanding, screen/component analysis, navigation mapping
+      - "Phase 3 requirement extraction with priority order: APP-001, SCR-xxx, FNC-xxx, BL-xxx, DM-xxx, and other requirement types"
+      - "Phase 3 practical extraction procedures: user action identification from code, conditional branch requirement conversion, data persistence detection, error handling extraction"
+      - Phase 3 extraction checklist covering user actions, UI elements, data processing, screen transitions, business rules, external integration
+      - Phase 4 requirement document creation with script-based ID numbering via scan_spec_ids.py
+      - Phase 4 principles emphasizing What over How using user manual criterion for judgment
+      - Phase 5 quality verification including essential file checklist, content completeness confirmation, AI review execution, ToC update
     applicable_tasks:
-      - Creating requirement documents from existing applications
-      - Legacy application modernization and re-architecture
-      - Reverse engineering requirements from source code implementation
-      - Screen and navigation structure documentation
-      - Business logic and data processing requirement extraction
-      - Feature preservation during application redesign
+      - Legacy application rebuild with requirements extraction
+      - Reverse-engineering requirements from existing source code
+      - Design refresh workflow maintaining functionality
+      - Source code structure analysis and mapping
+      - UI/screen requirement extraction from implementation
+      - Business logic and data model identification from code
+      - Requirement specification quality verification
     keywords:
-      - requirements reverse engineering
+      - reverse engineering
       - source code analysis
-      - APP-001
-      - SCR-xxx
-      - FNC-xxx
-      - user action detection
-      - screen transition mapping
       - requirement extraction
+      - APP-001
+      - legacy application
+      - screen requirement
+      - What vs How
+      - refactoring
+      - navigation structure
       - business logic extraction
-      - design policy
   plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
     title: Apple Design Principles & UX/UI Philosophy Knowledge Base
     purpose: "Knowledge base for design analysis, defining Apple's design philosophy, HIG principles, typography system, color semantics, usability heuristics, visual perception principles, and accessibility standards"
@@ -1219,33 +1217,32 @@ docs:
       - multi-window
   plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md:
     title: UX/UI Design Creation Workflow
-    purpose: Defines the complete UX/UI design creation workflow across 6 phases, from requirements analysis through design token creation and component specification, with emphasis on design intent-driven branching and knowledge base integration
+    purpose: Comprehensive workflow for creating UX/UI designs from requirements, defining design tokens, component visual specifications, and conducting UX evaluation
     content_details:
-      - "Phase 1: Requirements loading and analysis from specification documents"
-      - "Phase 2.0: Design Intent acquisition structure (user experience, tension axis, distinctiveness, references)"
-      - "Phase 2: Design direction determination including character analysis, tension axis, cultural references, and provocation generation"
-      - "Phase 3: Design token creation (color palette, typography, spacing, radius, shadow design)"
-      - "Phase 4: Component visual design with ASCII art conversion to visual specs and HIG compliance"
-      - "Phase 5: UX self-evaluation using Norman 3-layer check, Dieter Rams principles, and distinctiveness metrics"
-      - "Phase 6: Document generation and quality verification workflow"
-      - Context management rules and /forge:query-forge-rules integration for phase-specific knowledge retrieval
+      - Phase 1 Requirements Loading and screen specification collection
+      - Phase 2.0 Design Intent Acquisition establishing design direction foundation
+      - Phase 2 Design Direction Determination with brand tension axis and cultural references
+      - Phase 2.4 Design Provocation Generation creating multiple distinct directions
+      - Phase 3 Design Token Creation including colors, typography, spacing, radius, shadows
+      - Phase 4 Component Visual Design converting ASCII art layouts to visual specifications
+      - Phase 5 UX Self-Evaluation using Don Norman 3-layer check, Rams principles, and HIG compliance
+      - Phase 6 Document Generation producing THEME, CMP, and UXEVAL specification documents
     applicable_tasks:
-      - UX/UI design creation from requirements specifications
-      - Design token and design system creation
-      - Component visual specification and documentation
-      - Design direction and intent definition
-      - Design philosophy application and evaluation
-      - HIG and platform-specific UI design planning
-      - Brand and signature element development
-      - Design review and UX self-assessment
+      - UX/UI design creation from requirements
+      - Design token specification and design
+      - Component visual specification definition
+      - Design Intent formulation and validation
+      - Design system workflow execution
+      - Design philosophy and brand tension application
+      - UX evaluation against design principles
     keywords:
-      - UX/UI-design
-      - design-tokens
-      - component-specification
-      - design-intent
-      - design-philosophy
-      - design-evaluation
-      - HIG-compliance
-      - ASCII-art-conversion
-      - design-system
-      - phase-workflow
+      - UX/UI Design
+      - Design tokens
+      - UI components
+      - Design Intent
+      - Design philosophy
+      - Visual specifications
+      - HIG compliance
+      - Brand tension
+      - Design workflow
+      - Rams principles

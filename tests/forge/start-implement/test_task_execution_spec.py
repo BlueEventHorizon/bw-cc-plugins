@@ -79,7 +79,7 @@ class ExecutorPreMortemContractTest(unittest.TestCase):
             self.start_implement,
         )
         result_contract = self.start_implement.split(
-            "### 4.5 executor の結果受領 [MANDATORY]",
+            "### 4.5 executor の結果受領",
             maxsplit=1,
         )[1].split("\n---", maxsplit=1)[0]
         self.assertNotIn("#### 単一タスク実行時", result_contract)
