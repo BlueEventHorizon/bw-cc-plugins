@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-29T05:21:33Z
+  generated_at: 2026-08-29T08:26:57Z
   file_count: 40
 
 docs:
@@ -371,36 +371,38 @@ docs:
       - test design
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
-    purpose: Specifies principles, mandatory components, and judgment criteria for creating design documents that describe implementation method (How) rather than requirements (What)
+    purpose: Defines principles and rules for creating design specifications, including required components, judgment criteria, and maintenance guidelines to ensure design documents are complete and executable by implementers.
     content_details:
-      - Design documents specify How (implementation method), not What (requirements); separate boundary defined in referenced specs
-      - "Mandatory components: module list, component/class diagram, use cases, sequence diagrams with Mermaid format"
-      - Include implementation details, technical selections with adoption rationale, processing flow, data flow between components
-      - Avoid source code in excess of examples, technology choices without reasoning, quantitative guarantees, and AI-inferred design goals
-      - "Quantitative targets: describe structure and alternatives only; verification is post-implementation testing, not design"
-      - "Judgment criterion: Can an implementer code this design? Yes = include; No = needs more detail or belongs in requirements"
-      - Hierarchical structure for large designs exceeding 500 lines; child documents must reference parent design, top-level must list children
-      - "Architecture dependency patterns: explicit pattern adoption, no circular dependencies, maintain layer rules and pattern inversion with interfaces"
-      - Module cohesion and responsibility segregation; single responsibility per component; no direct internal structure dependencies
-      - Availability design including SPOF handling, retry strategies, timeout and fallback for external APIs, error and failure behavior flows
+      - "Required composition: module list with dependencies, component/class diagrams, use case lists, sequence diagrams in Mermaid"
+      - "Design vs requirements boundary: design specifies How; requirements specify What; implementer executability criterion"
+      - "Content guidelines: describe implementation methods (class/method names), technical details with rationale, data flow, test cases (normal/abnormal)"
+      - "Prohibited content: raw source code (except 5-10 line examples), framework choice without rationale, out-of-scope features, quantitative achievement guarantees"
+      - "Architecture dependency rules: explicit direction per pattern (layered/clean architecture); no circular dependencies; dependency inversion patterns with interface definitions"
+      - "Responsibility division rules: single responsibility per component; no tight coupling; Rule of Three for utility patterns (3+ usage locations)"
+      - "File naming convention: {DesignID}_{target_name}_design.md in snake_case"
+      - "Optional sections: data flow design, state management, error handling, performance, security considerations"
+      - "Diagram syntax: Mermaid (flowchart TB, classDiagram, sequenceDiagram); specific style rules (no lowercase 'end')"
+      - "Maintenance rule: update design when implementation diverges; record design judgment changes in ADR"
     applicable_tasks:
-      - Design document creation and structure planning
-      - Design review for compliance with mandatory elements and guidelines
-      - Architecture pattern validation and dependency verification
-      - Responsibility segregation and cohesion review
-      - Design maintenance and update decisions when implementation diverges
-      - Technical selection rationale documentation
+      - Design specification creation
+      - Design document review and validation
+      - Architecture review and dependency direction validation
+      - Implementation planning from design
+      - Design-implementation divergence detection and fix
+      - Design judgment documentation in ADR
+      - Responsibility division and cohesion review
+      - Severity assessment for design violations
     keywords:
       - design principles
-      - implementation method
       - architecture patterns
-      - responsibility segregation
+      - module structure
+      - sequence diagram
+      - Mermaid
+      - data flow
+      - single responsibility
       - dependency direction
-      - cohesion rules
-      - SPOF handling
-      - design hierarchy
-      - design review
-      - quantitative targets
+      - design boundary
+      - YAGNI
   plugins/forge/docs/design_taxonomy.md:
     title: Document Taxonomy
     purpose: Defines a classification system for development documents organized by content type, authority source, and scope to guide document analysis and responsibility division between forge and projects
@@ -547,37 +549,38 @@ docs:
       - differential feature
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Document Creation Principles
-    purpose: Specifies rules for creating plan documents in JSON format, defining task granularity, traceability matrices, dependency management, acceptance criteria, and build validation checkpoints
+    purpose: Defines principles and rules for planning implementation tasks in JSON format, including task granularity criteria, dependency management, acceptance criteria norms, and traceability to requirements and design.
     content_details:
-      - "Plan documents must be JSON-only with exactly 4 sections: requirements traceability, design traceability, tasks, revision history; no other keys permitted"
-      - "Task granularity: sized to one Agent execution; 5-10 content items; achieves build and test success on completion; single file or tightly related files only"
-      - Implementation details (property names, types, method signatures) must not be transcribed from design; reference design section locations only to avoid double management and misalignment
-      - Required reading field contains project-root-relative file paths in JSON array format; must include feature strategy document in all tasks if strategy exists
-      - "Task grouping for multi-task coordination uses group_id and build_check fields: per_task for independent, skip for group intermediates, on_group_complete for group finals"
-      - "Early validation condition: groups must include minimum operational unit completion point before final tasks; if included only at group end, entire group is single unit"
-      - "Dependency management: explicit no circular dependencies; critical patterns include frontend-API, integration-implementation, migration-schema, deployment-build dependencies"
-      - "Acceptance criteria must be Yes/No decidable; prohibit subjective expressions like 'appropriate operation' or 'smooth handling`"
-      - "Test task requirement: primary feature tasks must have unit or integration test tasks; placed in same group or immediately following; SKILL and Markdown editing tasks are exceptions"
-      - "Traceability: all requirement IDs in requirements traceability matrix with corresponding task ID or explicit exclusion reason; feature_type frontmatter resides in requirements only, not in plan"
+      - "4-section JSON structure: requirements_traceability, design_traceability, tasks, revision_history (no other keys allowed)"
+      - "Task granularity: single Agent execution unit, 5-10 action items, build/test success at completion, single file or tightly related files"
+      - "Required reading field: project-root-relative paths in JSON array format; mandatory for design/spec references; strategy document listed for all tasks"
+      - "Task grouping rules: when build fails between tasks, group them with group_id and build_check fields (per_task / skip / on_group_complete)"
+      - "Implicit dependency patterns: frontend-to-API, integration test-to-all features, migration-to-schema, deploy-to-build/test (marked critical/major severity)"
+      - "Acceptance criteria norms: Yes/No judging possible criteria required; no subjective expressions; major features must have test tasks planned"
+      - "Test task mandatory requirements: major feature implementation requires unit or integration test task; test task grouped or placed immediately after implementation"
+      - "Traceability requirements: all requirement IDs in requirements_traceability with corresponding task IDs; exclusion reasons for missing tasks"
+      - "File naming convention: {feature}_plan.json (JSON format only)"
+      - "Minimum viable validation unit concept: early verification ensures defects detected at first-viable-point, not deferred to group completion"
     applicable_tasks:
-      - Plan document creation and JSON structure initialization
-      - Task granularity analysis and design
-      - Dependency detection including implicit dependency patterns
-      - Traceability matrix construction and requirement-task mapping
-      - Acceptance criteria definition for testability and Yes/No decidability
-      - Test task integration with implementation tasks
-      - Build validation checkpoint and group strategy design
+      - Plan document creation for features
+      - Task granularity review and refinement
+      - Dependency relationship analysis and validation
+      - Acceptance criteria definition
+      - Test plan verification
+      - Traceability matrix creation and validation
+      - Task grouping design when builds fail mid-sequence
+      - Implicit dependency detection review
     keywords:
       - plan principles
       - task granularity
-      - JSON format
-      - traceability matrix
       - dependency management
-      - circular dependencies
       - acceptance criteria
-      - test task integration
-      - build validation
+      - traceability matrix
+      - test task mandatory
+      - required reading
       - task grouping
+      - build check
+      - implicit dependency
   plugins/forge/docs/requirement_format.md:
     title: Default Requirement Definition Format
     purpose: Specifies the standard format and structure for requirement definition documents, including frontmatter rules for additive features and body sections
@@ -674,37 +677,39 @@ docs:
       - secret scanning
       - severity
   plugins/forge/docs/spec_design_boundary_spec.md:
-    title: Boundary Between Specification and Design Documents
-    purpose: Clarifies boundaries between requirements (What) and design (How) with judgment criteria, category-specific guidelines, and severity catalog to guide documentation authoring
+    title: Specification and Design Boundary Guide
+    purpose: Clarifies the boundary between requirements (What) and design (How) through judgment criteria, category-specific guidelines, and severity catalog to ensure correct document classification.
     content_details:
-      - Basic principles distinguishing requirements (user view, concept level) from design (developer view, implementation level)
-      - "Primary decision criteria: Would this content appear in a user manual?"
-      - Supplementary decision criteria including implementation-independence, technology dependency
-      - Judgment flowchart combining primary and supplementary criteria
-      - Category-specific guidelines for data, state, management, processing, business rules, tests, quantitative targets
-      - Concrete examples showing correct vs incorrect placement of requirements vs design content
-      - Gray zones (data model types, diagrams) with explicit tolerance ranges
-      - Severity catalog for 8 What/How boundary violation patterns (critical, major, minor)
-      - Tolerance ranges for data types and diagram types in specifications vs design
-      - Lightweight traceability norms for design review including related requirements metadata
+      - "Core principles: requirements specify What from user perspective; design specifies How from developer perspective"
+      - "Primary criterion: Would this appear in user manual? Yes → requirements; No → design"
+      - "Supplementary criteria: implementation-independence, technology specificity, class/method names, How-question answers"
+      - "Judgment flowchart: user manual → technology specificity → implementation-independence decision path"
+      - "Data categories: data types and content in requirements; Service→DataStore→ViewModel flow and stream implementation in design"
+      - "State categories: visible states like loading/error in requirements; ViewState enum and state management implementation in design"
+      - "Business rules: rule content and conditions in requirements; validation implementation algorithm in design"
+      - "Quantitative targets: confirmed business or contract targets in requirements; achievement strategy and structure in design; never guarantee outcomes at design stage"
+      - "Gray zone allowances: conceptual and implementation types acceptable in requirements; user diagrams in requirements; internal sequence/data flow/class diagrams in design"
+      - "Traceability norm: design references requirement IDs in metadata; no design-only feature additions; no isolated references"
     applicable_tasks:
-      - Requirements specification documentation review
-      - Design document review
-      - What/How boundary violation detection
-      - Documentation content classification
-      - Gray zone judgment in specifications
-      - Requirements traceability verification
-      - Documentation severity assessment
+      - Specification and requirements document authoring
+      - Design document authoring
+      - What/How boundary validation in reviews
+      - Spec/design traceability verification
+      - Scope creep detection and prevention
+      - Quantitative target handling and placement
+      - Diagram classification and placement
+      - Gray zone judgment for data types and diagrams
     keywords:
-      - specification
-      - requirements
-      - design
-      - What/How boundary
-      - judgment criteria
+      - What versus How
+      - requirements specification
+      - design specification
+      - boundary criteria
       - user manual test
-      - gray zones
-      - traceability
-      - severity catalog
+      - traceability verification
+      - data flow design
+      - quantitative targets
+      - scope creep detection
+      - acceptance criteria
   plugins/forge/docs/spec_format.md:
     title: ID Classification Catalog
     purpose: Defines specification format, ID catalogs, naming conventions, and reference principles for requirements, design, and task documents
