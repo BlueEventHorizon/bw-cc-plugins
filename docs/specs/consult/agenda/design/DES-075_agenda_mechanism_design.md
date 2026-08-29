@@ -24,14 +24,14 @@ flowchart TB
     Render -->|"読み取りのみ"| JSON
     Render -->|"生成"| HTML
     Consult -->|"初回のみ open で起動"| HTML
-    Consult -.->|"以降はアンカーリンクで案内<br/>(自動追従の仕組みは持たない。利用者が手動で再読み込みする)"| HTML
+    Consult -.->|"以降はアンカーリンクで案内<br/>(タブは content_version の変化を検知して自動で再読み込みする)"| HTML
 ```
 
 - **依存方向は一方向**: `consult` → `agenda_store`。agenda 側は `consult` / `review` を知らない（呼び出し側固有の値は FNC-009 に従い引数で受け取る。用途中立性は [consult:REQ-017](../../requirements/REQ-017_consult_skill.md) NFR-002 と対応する）
 - **`agenda_store` の書き込み系操作は完了後に `agenda_render` を自動的に呼ぶ**（§8.1）。呼び出し側（consult）が明示的に再描画を要求する経路は持たない。**理由**: 呼び出す/呼び出さないを consult の記憶に委ねると、`update` 後に再描画を呼び忘れた場合、提示（HTML）が記録より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」を構造的に壊す経路になるため、生成のトリガーを機構側（store）に持たせ、呼び忘れという人的失敗経路そのものを無くす
 - **`agenda_render` は `agenda_store` の内部構造に依存しない**: 両者は `agenda.json` というデータ契約のみを共有する（スキーマは §4 で固定）。`agenda_store` は `agenda_render` を呼び出す（サブプロセスまたは関数呼び出し）が、`agenda_render` は `agenda_store` の内部 API を一切参照せず、独立して直接呼び出すことも妨げない
 - **`review` は `consult` を経由する間接呼び出し**であり、agenda を直接呼ばない（[DES-066](../../../forge/design/DES-066_review_body_design.md) §3.11・[consult:REQ-017](../../requirements/REQ-017_consult_skill.md) §1.2 と整合）
-- **初回表示は consult が能動的に開く**: `agenda_store.py start` 実行直後、consult が Bash で `open` コマンドを実行し表示物をブラウザで開く。**自動追従の仕組みは持たない**——以降の更新を見るには利用者がタブを手動で再読み込みする（詳細設計は [DES-077](DES-077_agenda_display_design.md) §2.2・§4）
+- **初回表示は consult が能動的に開く**: `agenda_store.py start` 実行直後、consult が Bash で `open` コマンドを実行し表示物をブラウザで開く。開いたタブは `content_version` の変化を検知して自動で全体を再読み込みする（詳細設計は [DES-077](DES-077_agenda_display_design.md) §2.2・§4）
 
 ## 3. モジュール設計
 
@@ -65,8 +65,10 @@ classDiagram
         +id: str
         +title: str
         +fields: dict
+        +problem: str
         +background: str
         +essence: str
+        +recommendation: str
         +decision: Decision | None
         +last_changed_fields: list~str~
     }
@@ -120,8 +122,10 @@ classDiagram
       "id": "01",
       "title": "<短い名前>",
       "fields": { "severity": "critical" },
+      "problem": "...",
       "background": "...",
       "essence": "...",
+      "recommendation": "...",
       "decision": { "by": "human", "outcome": "adopt", "reason": "..." },
       "last_changed_fields": ["decision"]
     }
@@ -136,6 +140,8 @@ classDiagram
 | `config.item_fields`          | 呼び出し側が `items[].fields` に含める属性キーの一覧（agenda 側は意味を解釈しない）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | FNC-009                 |
 | `config.severity_field`       | `item_fields` のうち、表示層（[DES-077](DES-077_agenda_display_design.md) §3.1a）が重大度バッジとして強調表示する対象キー名。未指定（`null`）ならバッジを表示しない。**キー名を指定するだけで、値の意味には agenda 側は立ち入らない**                                                                                                                                                                                                                                                                                                                                                                   | FNC-009                 |
 | `structural_judgment`         | FNC-012 の判定結果。**個別項目の状態遷移が起きる前に、このフィールドが埋まっていなければならない**。呼び出し側が候補JSONで渡すのは`note`のみであり、`recorded`（bool）は`content_version`（本表）と同様に`agenda_store.py`が自動導出する——`note`が非空文字列で渡された`start`呼び出し・`record`呼び出し（新規項目追加時。§5.1a）のいずれでも、`agenda_store.py`はその場で`recorded: true`を書き込む。呼び出し側はこのフィールドを渡さない（渡すと未知フィールドとして拒否される。`recorded_at`のような監査用タイムスタンプは、どのロジック・表示からも参照されない不要フィールドと判断し設計しない）    | FNC-012                 |
+| `items[].problem`             | 何が問題か・何を決めたいのか（論点そのもの）。任意の自由記述。`start` の候補 JSON で項目とともに渡す（review 起点なら結合済み所見の内容、consult 起点なら consult 自身が立てた論点。[consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2.2）。`record` での追記・修正も可。状態遷移の判定（§5.1）には関与しない                                                                                                                                                                                                                                                                   | agenda:REQ-021 FNC-001  |
+| `items[].recommendation`      | 選択肢と帰結を踏まえた推奨 + 確信度。任意の自由記述。決定モードで AI がコンソールへ述べる内容と同じもの（提示と記録の構造を一致させる。[consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2.2）。`record` の差分パッチで渡す。状態遷移の判定（§5.1）には関与しない                                                                                                                                                                                                                                                                                                                | agenda:REQ-021 FNC-003  |
 | `items[].decision`            | 項目の最終判断記録（§3.2）。**このキーが `dict` 型で `outcome` が非空であることが「決着済み」を表す**（下記「状態の表現」参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | consult:REQ-017 FNC-008 |
 | `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | FNC-013                 |
 
@@ -207,13 +213,13 @@ python3 agenda_store.py start --path <path-to-agenda.json> --input-file <candida
 # {
 #   "structural_judgment": { "note": "同型の指摘は無い。個別の食い違いに留まる" },
 #   "config": { "item_fields": ["severity"], "severity_field": "severity" },
-#   "items": [ { "id": "01", "title": "<短い名前>" }, ... ]
+#   "items": [ { "id": "01", "title": "<短い名前>", "problem": "<何が問題か・何を決めたいのか>" }, ... ]
 # }
 # config.identity は agenda_store.py 自身が --path の親ディレクトリ名から導出する（AIは渡さない）
 
 # 項目への判断を記録する（1項目につき2回。背景・本質が分かった時点で1回、結論が出た時点でもう1回）
 python3 agenda_store.py record --path <path> --item-id "01" --input-file <candidate.json>
-# 呼び出し①候補: {"background": "...", "essence": "..."}
+# 呼び出し①候補: {"background": "...", "essence": "..."}（決定モードなら "recommendation": "..." も）
 # 呼び出し②候補: {"decision": {"by": "human", "outcome": "adopt", "reason": "..."}}
 # --item-id が既存項目を指さない（新規追加）場合、structural_judgment.note の同時指定が必須（§5.1a）:
 # {"title": "...", "structural_judgment": {"note": "追加後もなお構造的な誤りは無い"}}
@@ -233,7 +239,7 @@ python3 agenda_store.py finish --path <path>
 `agenda_store.py`の`record`コマンドは、**変更したいフィールドだけを`--item-id`（必須）と候補JSON（`--input-file`）で受け取る**。`agenda_store.py`はこの候補JSONを差分パッチdictとして扱い、既存項目に対しては渡されたキーだけを既存値へマージし、渡されなかったキーは変更しない。
 
 - **`id`は`--item-id`専用**: 候補JSONに`id`キーを含めることは曖昧さを避けるため拒否する
-- **`structural_judgment`は項目パッチではなくレコード直下（`AgendaRecord.structural_judgment`。§3.2）へのパッチである**: 候補JSONのトップレベルキーのうち`structural_judgment`だけは項目（`items[itemId]`）へマージせず、レコード直下の`structural_judgment`フィールドへ別経路でマージする。他の全キー（`title`/`background`/`essence`/`decision`/`fields`）は項目パッチである。`agenda_store.py`はこの2つの宛先を候補JSONのキー名だけで機械的に振り分ける（`structural_judgment`かどうかで分岐し、それ以外は`upsert_item()`へ渡す）。新規追加時にこのキーを要求する条件は§5.1aで定める
+- **`structural_judgment`は項目パッチではなくレコード直下（`AgendaRecord.structural_judgment`。§3.2）へのパッチである**: 候補JSONのトップレベルキーのうち`structural_judgment`だけは項目（`items[itemId]`）へマージせず、レコード直下の`structural_judgment`フィールドへ別経路でマージする。他の全キー（`title`/`problem`/`background`/`essence`/`recommendation`/`decision`/`fields`）は項目パッチである。`agenda_store.py`はこの2つの宛先を候補JSONのキー名だけで機械的に振り分ける（`structural_judgment`かどうかで分岐し、それ以外は`upsert_item()`へ渡す）。新規追加時にこのキーを要求する条件は§5.1aで定める
 - 例: 背景・本質だけを先に記録したい場合、`{"background": "...", "essence": "..."}`だけを渡せば足りる。`decision`等、まだ決まっていないフィールドを含める必要はない
 - **理由（FNC-004との対応）**: 全フィールドを毎回書き直すフルオブジェクト方式は、一部だけを変える更新でもAIに無関係なフィールドの再送を強いる。これは「記録の維持にAIが使う出力量を減らす」という本機構の存在意義（agenda:REQ-019 §1.1）に反する。差分パッチは、AIが生成する量を「実際に変わった内容」だけに絞る
 - **理由（AIが渡し方を組み立てない。FNC-009の入力境界）**: `--input-file`はAIがWriteツールで書いた候補JSONファイルのパスを渡すだけであり、AIが値をシェルコマンドの書式（`--set key=value`等）に組み立てる工程を持たない。`agenda_store.py`が候補JSONの型・キー集合を検証する（旧`--item-file`方式が持っていた「AIが自由な構造のJSONを組み立てられる」という型混入経路とは異なり、許可するトップレベルキー集合をscript側が固定する）
@@ -256,7 +262,7 @@ sequenceDiagram
         Consult ->> Store: next / pending
         Store -->> Consult: 次の項目 / 未記入欄 / 残件
 
-        Consult ->> Store: record(item_id, {background, essence})
+        Consult ->> Store: record(item_id, {background, essence, recommendation?})
         Store -->> Consult: {status: ok, content_version: N}
 
         Consult ->> Store: record(item_id, {decision})
@@ -293,7 +299,7 @@ sequenceDiagram
 **`agenda_store.py` の書き込み系コマンド（`start`・`record`）は、JSON への書き込みが成功した直後に `agenda_render.py` を呼び出し、表示を再生成する。** 呼び出し側（consult）が明示的に再描画を要求する CLI コマンド・引数は持たない。
 
 - **理由**: 再描画の要否・タイミングを呼び出し側の記憶に委ねると、`record` の後に再描画を呼び忘れた場合、提示が記録（`agenda.json`）より古いまま取り残される。これは FNC-003「提示の内容と記録の内容が食い違わないこと」が禁じる状態そのものであり、呼び忘れという人的な失敗経路を許すことになる。生成のトリガーを機構側（`agenda_store.py`）に持たせることで、記録が変わった時点で提示も必ず追従する構造にする
-- `start`・`record`はいずれも`content_version`を増やし、`agenda.html`を再生成する（[DES-077](DES-077_agenda_display_design.md) §4。表示層は`agenda.html`のみを生成する単純な仕組みであり、自動追従の仕組みは持たない）
+- `start`・`record`はいずれも`content_version`を増やし、`agenda.html`と`agenda_state.js`を再生成する（[DES-077](DES-077_agenda_display_design.md) §4。開いているタブは`content_version`の変化を検知して自動で全体を再読み込みする）
 - **実装方針**: `agenda_store.py` は書き込み成功後、`agenda_render.py` の描画関数を呼び出す（同一プロセス内の関数呼び出し、または軽量なサブプロセス起動）。読み取り専用コマンド（`next`・`pending`）は記録を変更しないため再描画を伴わない
 - **失敗時の扱い（NFR-006 と同じ扱い）**: 再描画に失敗した場合も、JSON への書き込み自体が成功しているなら状態遷移は成立させる。ただし再描画の失敗は隠さず、呼び出し側（consult）へ明示的に伝える（`{"status": "partial", "message": "記録は更新されたが再描画に失敗した: ..."}` 等）。**記録の正しさを表示の失敗で道連れにしない**——記録は単体の真実源であり、表示側の障害で記録の更新自体を巻き戻す理由にはならない
 

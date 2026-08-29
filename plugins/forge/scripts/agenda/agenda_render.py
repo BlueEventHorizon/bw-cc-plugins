@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """agenda 機構の表示層。``agenda.json`` 相当の dict から表示物の文字列を生成する。
 
-設計は agenda:DES-077（表示層設計書）が持つ。本モジュールが公開する唯一の関数
-``render_agenda_html()`` は、``agenda.json`` の内容を受け取って ``agenda.html``
-文字列を返すだけの純粋関数である。自動追従の仕組み（ポーリング・部分更新・
-スクロール位置保持）は持たない（DES-077 §4）。呼び出し側（``agenda_store.py``）
-は書き込み成功のたびに本関数を呼び、``agenda.html`` を毎回まるごと再生成する。
-本モジュールは ``agenda_store.py`` に依存せず、単体で直接呼び出すこともできる
-（DES-075 §3.1）。
+設計は agenda:DES-077（表示層設計書）が持つ。公開関数は 2 つで、いずれも
+入力から表示物の文字列を返すだけの純粋関数である:
+
+- ``render_agenda_html()``: ``agenda.json`` の内容から ``agenda.html`` 文字列を返す。
+  生成物には自動追従スクリプト（DES-077 §4.2）が含まれ、開いているタブは
+  ``agenda_state.js`` の世代番号（``content_version``）の変化を検知したときだけ
+  ``location.reload()`` で全体を再読み込みする（スクロール位置は保持。§4.3）
+- ``render_agenda_state_js()``: 世代番号だけを持つ ``agenda_state.js`` 文字列を返す
+
+呼び出し側（``agenda_store.py``）は書き込み成功のたびに両関数を呼び、2 ファイルを
+毎回まるごと再生成する。本モジュールは ``agenda_store.py`` に依存せず、単体で
+直接呼び出すこともできる（DES-075 §3.1）。
 
 HTML エスケープパターンは ``plugins/anvil/skills/prepare-figma/scripts/json_to_html.py``
 の ``html.escape()`` 使用パターンを踏襲する。
@@ -16,6 +21,7 @@ HTML エスケープパターンは ``plugins/anvil/skills/prepare-figma/scripts
 from __future__ import annotations
 
 import html
+import json
 from datetime import datetime
 from typing import Any
 
@@ -143,75 +149,157 @@ def _summary_row_html(item: dict, severity_field: str | None) -> str:
         f"<td>{item_id}</td>"
         f"<td>{title}</td>"
         f"<td>{severity_cell}</td>"
-        f"<td>{status}</td>"
+        f'<td><span class="status-pill" data-status="{status}">{status}</span></td>'
         f"<td>{result_cell}</td>"
         "</tr>"
     )
 
 
+def _decision_dd_html(item: dict) -> str:
+    """項目節の「決着」の `<dd>` 内容を返す。未定は控えめな表示にする（DES-077 §3）。"""
+    text = _decision_text(item)
+    if text == "(未定)":
+        return '<span class="undecided">(未定)</span>'
+    return _escape(text)
+
+
 def _item_section_html(item: dict, severity_field: str | None) -> str:
-    """項目ごとの `<section>` の HTML を返す（DES-077 §3・§3.1・§3.1a）。"""
+    """項目ごとの `<section>` の HTML を返す（DES-077 §3・§3.1・§3.1a）。
+
+    問題（`problem`）と推奨（`recommendation`）は任意フィールドであり、
+    記入があるときだけ行を出す（空のラベルチップを並べない。DES-077 §3）。
+    """
     item_id_raw = item.get("id")
     item_id = _escape(item_id_raw)
     title = _escape(item.get("title"))
     background = _escape(item.get("background"))
     essence = _escape(item.get("essence"))
-    decision_text = _escape(_decision_text(item))
+    decision_dd = _decision_dd_html(item)
     changed = _is_changed(item)
     severity_badge = _severity_badge_html(item, severity_field)
+
+    rows: list = []
+    problem = item.get("problem")
+    if problem:
+        rows.append(f"    <dt>問題</dt><dd>{_escape(problem)}</dd>")
+    rows.append(f"    <dt>背景</dt><dd>{background}</dd>")
+    rows.append(f"    <dt>本質</dt><dd>{essence}</dd>")
+    recommendation = item.get("recommendation")
+    if recommendation:
+        rows.append(
+            f'    <dt class="label-recommend">推奨</dt><dd>{_escape(recommendation)}</dd>'
+        )
+    rows.append(f'    <dt class="label-decision">決着</dt><dd>{decision_dd}</dd>')
+    rows_html = "\n".join(rows)
 
     return (
         f'<section id="item-{item_id}" '
         f'data-changed="{"true" if changed else "false"}">\n'
         f'  <div class="gutter"><span class="state-dot changed"></span></div>\n'
-        f"  <h2>[{item_id}] {title} {severity_badge}</h2>\n"
-        f"  <p>背景: {background}</p>\n"
-        f"  <p>本質: {essence}</p>\n"
-        f"  <p>決着: {decision_text}</p>\n"
+        f'  <h2><span class="item-no">[{item_id}]</span>{title} {severity_badge}</h2>\n'
+        "  <dl>\n"
+        f"{rows_html}\n"
+        "  </dl>\n"
         "</section>"
     )
 
 
 _STYLE = """
   * { box-sizing: border-box; }
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --ink-muted: #6b7280;
+    --line: #e5e8ee;
+    --accent: #4a6fa5;
+    --changed: #f0c36d;
+  }
   body {
     margin: 0;
-    padding: 24px;
+    padding: 32px 24px 64px;
     font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans',
       'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', Meiryo, sans-serif;
-    line-height: 1.6;
-    background: #fafafa;
-    color: #222;
+    line-height: 1.75;
+    background: var(--bg);
+    color: var(--ink);
+    font-feature-settings: "palt";
   }
-  h1 { font-size: 1.6em; }
-  h2 { font-size: 1.2em; }
+  main { max-width: 860px; margin: 0 auto; }
+
+  header { margin-bottom: 20px; }
+  h1 {
+    font-size: 1.45em;
+    margin: 0 0 2px;
+    letter-spacing: 0.01em;
+  }
+  h1::before {
+    content: "アジェンダ";
+    display: block;
+    font-size: 0.55em;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+  }
   .generated-notice {
-    font-size: 0.8em;
-    color: #888;
+    font-size: 0.78em;
+    color: var(--ink-muted);
+    margin: 4px 0 0;
   }
+
   #agenda-summary {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     width: 100%;
-    margin-bottom: 24px;
+    margin: 20px 0 36px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 0.92em;
+    box-shadow: 0 1px 2px rgba(31, 36, 48, 0.04);
+  }
+  #agenda-summary th {
+    background: #eef1f5;
+    color: #3d4657;
+    font-weight: 600;
+    font-size: 0.85em;
+    letter-spacing: 0.06em;
   }
   #agenda-summary th, #agenda-summary td {
-    border: 1px solid #ddd;
-    padding: 6px 10px;
+    padding: 9px 14px;
     text-align: left;
+    border-bottom: 1px solid var(--line);
   }
+  #agenda-summary tr:last-child td { border-bottom: none; }
+  #agenda-summary tbody tr:hover { background: #f6f9fd; }
+  #agenda-summary td:first-child, #agenda-summary th:first-child {
+    text-align: center; width: 3em; color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .status-pill {
+    display: inline-block;
+    font-size: 0.82em;
+    padding: 1px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #f2f4f7;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+  .status-pill[data-status="進行中"] { background: #e8f0fb; border-color: #c9daf1; color: #33567f; }
+  .status-pill[data-status="決着"], .status-pill[data-status="adopt"] { background: #e6f2e4; border-color: #cbe3c8; color: #2f6b3a; }
+
   section {
-    border-bottom: 1px solid #e0e0e0;
-    padding: 12px 0;
     position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px 14px;
+    margin: 0 0 16px;
+    box-shadow: 0 1px 2px rgba(31, 36, 48, 0.04);
   }
-  .gutter {
-    position: absolute;
-    left: -18px;
-    top: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .gutter { position: absolute; left: -18px; top: 22px; }
   .state-dot {
     display: inline-block;
     width: 8px;
@@ -219,27 +307,111 @@ _STYLE = """
     border-radius: 50%;
     background: transparent;
   }
-  section[data-changed="true"] .state-dot.changed { background: #f0c36d; }
+  section[data-changed="true"] .state-dot.changed { background: var(--changed); }
+
+  h2 {
+    font-size: 1.08em;
+    margin: 0 0 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  h2 .item-no {
+    color: var(--ink-muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-right: 6px;
+  }
+
+  dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; row-gap: 8px; column-gap: 14px; }
+  dt {
+    align-self: start;
+    margin-top: 0.3em;
+    font-size: 0.72em;
+    font-weight: 600;
+    line-height: 1;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: #8494ab;
+    color: #fff;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  dt.label-recommend { background: var(--accent); }
+  dt.label-decision { background: #5d7a5f; }
+  dd { margin: 0; }
+  dd .undecided { color: var(--ink-muted); }
+
   .severity-badge {
     display: inline-block;
-    font-size: 0.7em;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-size: 0.68em;
+    padding: 2px 8px;
+    border-radius: 999px;
     background: #eee;
     color: #555;
+    vertical-align: 2px;
+    letter-spacing: 0.05em;
   }
   .severity-badge[data-severity="critical"] { background: #fbdada; color: #8a2c2c; }
   .severity-badge[data-severity="major"] { background: #fdeec2; color: #8a6d1f; }
   .severity-badge[data-severity="minor"] { background: #dcf0da; color: #2f6b3a; }
 """
 
+# 自動追従スクリプト（DES-077 §4.2・§4.3）。`file://` では fetch/XHR が CORS で
+# ブロックされるため、`<script src>` の差し替えで agenda_state.js の世代番号を読み、
+# 自ページに埋め込まれた世代番号と異なるときだけ全体を再読み込みする。
+# __KNOWN_VERSION__ は render_agenda_html() が生成時点の content_version（無ければ
+# null。null の場合は最初に読めた値を世代番号として採用する）へ置換する。
+_FOLLOW_SCRIPT_TEMPLATE = """<script>
+(function () {
+  var known = __KNOWN_VERSION__;
+  function apply(state) {
+    if (!state || typeof state.contentVersion !== "number") return;
+    if (known === null) { known = state.contentVersion; return; }
+    if (state.contentVersion !== known) location.reload();
+  }
+  function poll() {
+    var el = document.createElement("script");
+    el.src = "agenda_state.js?t=" + Date.now();
+    el.onload = function () { el.remove(); apply(window.AGENDA_STATE); };
+    el.onerror = function () { el.remove(); };
+    document.head.appendChild(el);
+  }
+  setInterval(poll, 2000);
+  window.addEventListener("pagehide", function () {
+    try { sessionStorage.setItem("agendaScrollY", String(window.scrollY)); } catch (e) {}
+  });
+  try {
+    var y = sessionStorage.getItem("agendaScrollY");
+    if (y !== null) window.scrollTo(0, parseInt(y, 10));
+  } catch (e) {}
+})();
+</script>"""
+
+
+def _follow_script_html(content_version: Any) -> str:
+    """自動追従スクリプトの HTML を返す。世代番号は整数のみ埋め込む（それ以外は null）。"""
+    known = content_version if isinstance(content_version, int) else None
+    return _FOLLOW_SCRIPT_TEMPLATE.replace("__KNOWN_VERSION__", json.dumps(known))
+
+
+def render_agenda_state_js(content_version: Any) -> str:
+    """``agenda_state.js`` 文字列を生成する（DES-077 §4.2）。
+
+    世代番号（``content_version``）だけを持つ軽量ファイル。``agenda.html`` 内の
+    自動追従スクリプトが ``<script src>`` 差し替えで読み込み、埋め込まれた世代番号と
+    比較する。
+    """
+    known = content_version if isinstance(content_version, int) else None
+    return "window.AGENDA_STATE = " + json.dumps({"contentVersion": known}) + ";\n"
+
 
 def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
     """``agenda.json`` の内容から ``agenda.html`` 文字列を生成する（DES-077 §3・§4）。
 
-    自動追従の仕組み（ポーリング・部分更新・スクロール位置保持）は持たない。
     書き込みのたびに呼び出し側（``agenda_store.py``）が本関数を呼び、
-    ``agenda.html`` を毎回まるごと再生成する前提の単純な生成専用関数である。
+    ``agenda.html`` を毎回まるごと再生成する前提の生成専用関数である。
+    生成物には自動追従スクリプト（§4.2・§4.3。世代番号が変わったときだけ
+    全体を再読み込みする）を埋め込む。部分更新（DOM の差し替え）は持たない。
     """
     config = agenda.get("config")
     if not isinstance(config, dict):
@@ -267,6 +439,7 @@ def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
 
     rows_html = "\n".join(_summary_row_html(item, severity_field) for item in items)
     sections_html = "\n".join(_item_section_html(item, severity_field) for item in items)
+    follow_script = _follow_script_html(agenda.get("content_version"))
 
     return f"""<!DOCTYPE html>
 <html lang="ja">
@@ -276,8 +449,11 @@ def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
 <style>{_STYLE}</style>
 </head>
 <body>
-<h1>アジェンダ: {identity}</h1>
+<main>
+<header>
+<h1>{identity}</h1>
 <p class="generated-notice">この提示は agenda_render.py によって {_escape(generated_at_value)} に生成された。手編集しても保存されない。</p>
+</header>
 <table id="agenda-summary">
   <thead>
     <tr><th>ID</th><th>項目</th><th>重要度</th><th>状態</th><th>結果・課題</th></tr>
@@ -287,6 +463,8 @@ def render_agenda_html(agenda: dict, *, generated_at: str | None = None) -> str:
   </tbody>
 </table>
 {sections_html}
+</main>
+{follow_script}
 </body>
 </html>
 """

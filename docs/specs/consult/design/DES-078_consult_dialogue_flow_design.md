@@ -71,8 +71,8 @@ sequenceDiagram
         AI->>Data: 残りを問う（次に扱う項目はどれか・まだ残っているか）
         Data-->>AI: 次の項目（無ければループを抜ける）
 
-        AI->>AI: 項目の背景・本質を考える<br/>（対象を読む・裏付けを取る等。ここで初めて内容が生まれる）
-        AI->>Data: 背景・本質を記録する（この時点で分かっている内容。結論はまだ無い）
+        AI->>AI: 項目の背景・本質（・決定モードなら推奨）を考える<br/>（対象を読む・裏付けを取る等。ここで初めて内容が生まれる）
+        AI->>Data: 背景・本質（・決定モードなら推奨）を記録する（この時点で分かっている内容。結論はまだ無い）
         Data-->>Browser: 自動再生成
         AI->>Human: 背景・本質（・決定モードなら推奨）を述べる
         Human->>AI: 質問・応答（複数往復）
@@ -97,19 +97,21 @@ sequenceDiagram
 
 本図（§2 の図 A-1・図 A-2・図 B）は、consult が扱う情報の移動をすべて列挙したものである。情報が移動する場面は次の 3 つに限られる。
 
-1. `start`: `items[]` と `structural_judgment.note`
-2. `record`（背景・本質）: `background`・`essence`
+1. `start`: `items[]`（各項目の `id`・`title`・`fields`・`problem`。`problem` は「何が問題か・何を決めたいのか」という論点そのもので、review 起点では結合済み所見の内容、consult 起点では consult 自身が立てた論点がここへ移る）と `structural_judgment.note`
+2. `record`（背景・本質）: `background`・`essence`・`recommendation`（推奨。決定モードで AI がコンソールへ述べる内容と同じもの。任意）
 3. `record`（決着）: `decision.by`・`decision.outcome`・`decision.reason`
 
 **[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4 のスキーマが持つフィールドは、上記 3 つのいずれかに対応することを要件とする。** 対応するメッセージを本図に持たないフィールドをスキーマへ追加してはならない。スキーマへフィールドを追加する変更は、まず本図を更新し、対応するメッセージ（情報が移動する新しい場面）を追加することから始める。
 
 | 対応するメッセージが無かったため削除されたフィールド                                                   | 出典                                                                            |
 | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `owner`・`created_at`・`recommendation`                                                                | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2             |
+| `owner`・`created_at`                                                                                  | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2             |
 | `current_item_id`（`set-current`）                                                                     | 同上                                                                            |
 | 状態語彙（`status_vocabulary`/`terminal_statuses`/`active_statuses`）                                  | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4「状態の表現」 |
 | `config.identity`（呼び出し側が組み立てて渡す旧方式。`--path` の親ディレクトリ名からの自動導出に置換） | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7               |
 | `structural_judgment.recorded_at`                                                                      | 本文書起草の契機となった TASK-008 レビュー                                      |
+
+`recommendation` はかつてこの表に載っていた（旧設計で削除）。その後、表示物に「問題そのものが書かれていないのに推奨だけ表示しても判断できない」という利用者所見を受けて、`problem` とともに図 B のメッセージへ載せたうえで復活させた（提示（コンソールの 問題 → 背景 → 本質 → 推奨 → 決着）と記録の構造を一致させる。agenda:REQ-021 FNC-003 の思想と整合）。
 
 ## 3. 起点による分岐（review 起点 / consult 起点）
 
