@@ -136,7 +136,7 @@ JSON 出力から `new` を取得する。`status: "error"` の場合はエラ�
 新バージョン ({target_name}): {new_version}
 ```
 
-### Step 5: 変更内容の収集 [MANDATORY]
+### Step 5: 変更内容の収集
 
 > **このステップはバージョンファイル更新（Step 6）より前に実行する。** バージョン番号を書き換える前にコミット履歴を収集することで、バージョン番号変更のノイズが混入しない。
 
@@ -191,7 +191,7 @@ git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 
 生成した CHANGELOG エントリはコンテキストに保持し、Step 7 で挿入する。
 
-### Step 6: ファイルの更新 [MANDATORY]
+### Step 6: ファイルの更新
 
 #### 6-1. version_file の更新
 
@@ -320,7 +320,7 @@ CHANGELOG ファイルを Read し、`changelog.format` に応じて挿入アン
 
 `section_per_target: true` の場合、各 target の変更を `### {target_name}` サブセクションに分ける。
 
-### Step 8: README 影響判定 [MANDATORY]
+### Step 8: README 影響判定
 
 CHANGELOG に記載した変更内容が README に影響するかを判断する。
 

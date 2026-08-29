@@ -7,7 +7,7 @@
 
 ---
 
-## 計画書の構成ルール [MANDATORY]
+## 計画書の構成ルール
 
 計画書は JSON 形式で、以下の4セクションのみで構成する:
 
@@ -22,7 +22,7 @@
 
 ---
 
-## タスクの粒度 [MANDATORY]
+## タスクの粒度
 
 | 基準       | 内容                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +39,7 @@
 
 ---
 
-## 「やるべき内容」の記載原則 [MANDATORY]
+## 「やるべき内容」の記載原則
 
 設計書を参照すればわかる実装詳細（プロパティ名、型、メソッドシグネチャ等）は計画書に書かない。設計書の**該当セクションを特定できるレベル**の記述にとどめること。
 
@@ -47,7 +47,7 @@
 
 ---
 
-## `required_reading` フィールドの仕様 [MANDATORY]
+## `required_reading` フィールドの仕様
 
 タスク実行前に必ず読むべき文書のファイルパスを `tasks[].required_reading` 配列に列挙する。
 
@@ -65,7 +65,7 @@
 }
 ```
 
-**実装戦略書 [MANDATORY]**: `/forge:start-plan` が `{feature}_strategy.md` を作成した場合、すべてのタスクの `required_reading` にその戦略書パスを含める。戦略書は executor が全体戦略・フェーズ意図・リスク対策を理解するための必読文書である。
+**実装戦略書**: `/forge:start-plan` が `{feature}_strategy.md` を作成した場合、すべてのタスクの `required_reading` にその戦略書パスを含める。戦略書は executor が全体戦略・フェーズ意図・リスク対策を理解するための必読文書である。
 
 **誤った例**:
 
@@ -106,7 +106,7 @@
 | `build_check` | `skip`              | グループ途中タスク       |
 | `build_check` | `on_group_complete` | グループ最終タスク       |
 
-### 早期検証の妥当性条件 [MANDATORY]
+### 早期検証の妥当性条件
 
 **用語定義**:
 
@@ -134,7 +134,7 @@
 
 ---
 
-## タスク受け入れ基準規範 [MANDATORY] (forge-review feature 統合で追加)
+## タスク受け入れ基準規範 (forge-review feature 統合で追加)
 
 ### 規範
 
@@ -154,7 +154,7 @@
 
 ---
 
-## テストタスク必須化規範 [MANDATORY] (forge-review feature 統合で追加)
+## テストタスク必須化規範 (forge-review feature 統合で追加)
 
 ### 規範
 
@@ -173,7 +173,7 @@
 
 ---
 
-## 暗黙依存検出規範 [MANDATORY] (forge-review feature 統合で追加)
+## 暗黙依存検出規範 (forge-review feature 統合で追加)
 
 ### 規範
 
@@ -194,7 +194,7 @@
 
 ---
 
-## トレーサビリティ規範 [MANDATORY] (forge-review feature 統合で追加)
+## トレーサビリティ規範 (forge-review feature 統合で追加)
 
 ### 規範
 
@@ -211,7 +211,7 @@
 
 ---
 
-## 重大度カタログ [MANDATORY] (forge-review feature 統合で追加)
+## 重大度カタログ (forge-review feature 統合で追加)
 
 本文書内の各規範を、違反時の重大度に対応付ける。
 

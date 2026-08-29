@@ -18,7 +18,7 @@ allowed-tools: Read, Bash, Skill
 
 ## Procedure
 
-### Step 1: 対象 backend を確定する [MANDATORY]
+### Step 1: 対象 backend を確定する
 
 `$ARGUMENTS` に `--backend doc-db` または `--backend doc-advisor` がある場合、その backend を対象として
 Step 2 を飛ばし、対応する手順（`doc-db` → Step 3 / `doc-advisor` → Step 4）へ直行する。指定された
@@ -40,7 +40,7 @@ exit code だけで分岐する:
 | 0         | JSON の `order`（例 `["doc-advisor", "doc-db"]`）を順序リストとして Step 2 へ進む                                         |
 | 20        | 設定不正（`settings_invalid`）。**既定値へ落ちず**、JSON の `message` を添えて明示エラーとして終了する。Step 2 へ進まない |
 
-### Step 2: 順序リストの先位から backend を試す（指定が無い場合のみ）[MANDATORY]
+### Step 2: 順序リストの先位から backend を試す（指定が無い場合のみ）
 
 順序リストの先頭から、backend ごとの手順を実行する:
 
@@ -71,7 +71,7 @@ JSON field の組合せから状態を再構成しない:
 | 10        | doc-db 利用不能 | **`--backend` の指定を受けている場合は切り替えず明示エラーとして終了する。** 指定が無い場合の次の行動は順序リストから決める: 後位が残っていれば理由を控えて Step 2 の次の backend へ、残っていなければ明示エラー |
 | 20        | operation 失敗  | 明示エラーとして終了する（対象文書 0 件を含む）。backend を切り替えない                                                                                                                                          |
 
-#### Step 3.2: 完了までポーリングし、進捗を毎回報告する [MANDATORY]
+#### Step 3.2: 完了までポーリングし、進捗を毎回報告する
 
 `--status` を **2 秒間隔** で繰り返し呼ぶ。ポーリングのループは本 SKILL が駆動する（script 内に完了待ちはない）。
 
@@ -134,7 +134,7 @@ doc-advisor 側でもパスの任意の階層にある同名ディレクトリ�
 
 `doc-advisor:index-docs` の完了レポート（added / updated / deleted / toc_path 等）は構造変換せず親へ返す。
 
-### Step 5: 結果と経路の通知 [MANDATORY]
+### Step 5: 結果と経路の通知
 
 結果の報告に次を含める:
 

@@ -316,7 +316,7 @@ flowchart TD
 
 ---
 
-## 8. 重大度カタログ [MANDATORY]
+## 8. 重大度カタログ
 
 本文書内の各規範を、違反時の重大度に対応付ける。本節は重大度判定の SoT であり、criteria 側は本節を MANDATORY 参照する（判断は criteria に持たせない）。
 
@@ -345,7 +345,7 @@ flowchart TD
 
 ---
 
-## 9. グレーゾーン許容範囲 [MANDATORY]
+## 9. グレーゾーン許容範囲
 
 §6 の暗黙的「許容する」を断定形に置換する。レビュー時の false positive 警告は principles 側で執筆者にも見える形で持つ。criteria 側に「false positive 注意」を書いてはならない。
 
