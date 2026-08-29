@@ -1,6 +1,6 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-08-27T13:44:39Z
+generated_at: 2026-08-29T03:05:13Z
 file_count: 40
 checksums:
   plugins/forge/docs/additive_development_spec.md: 0083ee5e9305cc1bcfd05a1797725e4644161a455f74e42c5daa90ccee413311
@@ -18,7 +18,7 @@ checksums:
   plugins/forge/docs/design_principles_spec.md: 6783f16e03414b7d93d75468e7176e744a9a1c45d3bd5c453a33e0de8230622a
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e
-  plugins/forge/docs/document_style_guide.md: 5b6395a3883b2813e20f38c42903c4e17c72428b5804baa8ee28912eaf55fce8
+  plugins/forge/docs/document_style_guide.md: 4d0db1e7f8cfec24fbf084cb48dd0c6c6732722fdbd0b81eda141db3b4a28f8e
   plugins/forge/docs/forge_anti_patterns.md: c12e23d4fb124122226d893c60d1e702c9ce2d08fe43828c5d1dddf3c765b892
   plugins/forge/docs/frontmatter_format.md: 86ef4900f3bfc15bbdd4b038b9cf85ea357fb6b58b0bca8180716e6749e8914c
   plugins/forge/docs/plan_principles_spec.md: 510dfefc9213f8ac695d22ac9e29e154239dfff5f1469039f220c0763815461f

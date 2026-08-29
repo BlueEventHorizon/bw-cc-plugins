@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-27T13:44:39Z
+  generated_at: 2026-08-29T03:05:13Z
   file_count: 40
 
 docs:
@@ -457,37 +457,32 @@ docs:
       - document paths
   plugins/forge/docs/document_style_guide.md:
     title: Document Style Guide
-    purpose: Defines standard writing style conventions for forge-generated documents including tags, heading levels, emphasis, structure, reference notation, and formatting rules to ensure consistent, maintainable documentation
+    purpose: Defines writing standards for Forge plugin documentation including tag usage, heading hierarchy, emphasis conventions, structure formatting, document reference notation, and metadata requirements.
     content_details:
-      - Tag usage ([MANDATORY], [CRITICAL], [IMPORTANT]) with signal value maintenance criteria
-      - "Heading levels (# through ####) and their usage (title, main sections, subsections, details)"
-      - Emphasis and notation rules (bold, italic, code formatting, long vowel conventions)
-      - Code block rules with required language specification
-      - List and table formatting conventions
-      - Document reference notation with different rules for docs/ internal vs. external references
-      - ${CLAUDE_PLUGIN_ROOT} placeholder usage for SKILL.md and agents from docs/ outside references
-      - Abstract example naming conventions (Foo/Bar/Hoge vs. domain-specific names)
-      - No historical change logs or revision tables in documents
-      - No related documents sections to prevent link rot and stale references
+      - Tag usage rules for MANDATORY, CRITICAL, IMPORTANT designations
+      - "Heading hierarchy constraints: 4 levels maximum (#, ##, ###, ####)"
+      - "Emphasis formatting: bold for important words, italic for references, code for identifiers"
+      - Code block requirements with mandatory language specification
+      - List and nesting structure limits (2 levels maximum)
+      - Table formatting rules (maximum 6 columns, no nested code blocks)
+      - "Document reference notation: relative paths in docs/, placeholder CLAUDE_PLUGIN_ROOT for external"
+      - Metadata conventions including JIS Z 8301 long-sound rules and naming requirements
     applicable_tasks:
-      - Writing new requirement or design documents
-      - Creating planning documents and implementation guides
-      - Reviewing document style compliance and reference validity
-      - Establishing documentation standards for projects
-      - Setting up heading hierarchy and structure for documents
-      - Creating Architecture Decision Records (ADR)
-      - Correcting document references and broken links
+      - Review documentation for style compliance
+      - Write Forge plugin documentation
+      - Validate document reference integrity
+      - Create AI-readable structured documentation
+      - Plan documentation hierarchy and structure
+      - Enforce consistent documentation standards across projects
     keywords:
-      - document style
-      - tags [MANDATORY]
+      - SKILL.md
+      - agents
+      - commands
+      - document reference
+      - markdown
+      - code block
       - heading levels
-      - Markdown reference
-      - ${CLAUDE_PLUGIN_ROOT}
-      - relative paths
-      - code blocks
-      - abstract naming
-      - link validity
-      - documentation standards
+      - JIS Z 8301
   plugins/forge/docs/forge_anti_patterns.md:
     title: forge Anti-Patterns Collection
     purpose: Provides the base anti-pattern collection that /forge:review SKILL uses as fallback for P1 rule compliance checks when project-specific rules are unavailable, covering industry-standard patterns across multiple domains
