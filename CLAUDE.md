@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.4.3) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
-- **anvil** (v0.1.2) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
+- **forge** (v0.5.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
+- **anvil** (v0.1.3) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
 > 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
 

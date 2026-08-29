@@ -2,7 +2,7 @@
 
 Claude Code plugins for **Spec-Driven Development** — write specs first, then let AI implement and review with full context.
 
-**Marketplace version: 0.3.3**
+**Marketplace version: 0.3.4**
 
 The marketplace ships **2 plugins** (forge, anvil). forge's search skills select a document-search backend (**doc-advisor** / **doc-db**) from an ordered list. The default puts doc-advisor first; you can change the order with `doc_backend.prefer` in `.claude/.forge.yaml`. doc-advisor is provided by a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) (`index-docs` / `query-docs`).
 
@@ -44,8 +44,8 @@ flowchart LR
 
 | Plugin    | Version | Description                                                                                              |
 | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| **forge** | 0.4.3   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
-| **anvil** | 0.1.2   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
+| **forge** | 0.5.0   | AI-powered document lifecycle tool. Create, review, and auto-fix requirements/design/plan docs and code. |
+| **anvil** | 0.1.3   | GitHub operations toolkit. Create PRs, manage issues, and automate GitHub workflows.                     |
 
 > **The document-search backends (doc-advisor / doc-db) are external dependencies**: doc-advisor ships from a separate repository, [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor). Install with `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`. doc-db is a locally running document-search server; when the `doc-db` command is installed, it becomes an available candidate, and forge starts and uses it automatically when the ordered list selects it. Neither backend is gated on a version: availability is judged by whether the required features can be used.
 
