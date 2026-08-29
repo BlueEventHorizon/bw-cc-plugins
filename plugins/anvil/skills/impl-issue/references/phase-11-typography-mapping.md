@@ -5,7 +5,7 @@
 > **原則**: トークン名を「だいたい」選ぶと font / color が大量にズレる。
 > **実装コードを 1 行も書く前に、Typography 対応表を必ず作る。**
 
-## 手順 [MANDATORY]
+## 手順
 
 ### Step 1: 全テキストノードを抽出
 
@@ -89,7 +89,7 @@ Typography がデザイン仕様書と不一致でも、共用コンポーネン
 ## インタラクション同時実装
 
 デザイン仕様書「アクション一覧」「状態バリエーション」は見た目と同時に実装する。
-詳細パターンは [phase-11-ui-implementation.md の「インタラクション同時実装」](phase-11-ui-implementation.md#インタラクション同時実装-mandatory)を参照。
+詳細パターンは [phase-11-ui-implementation.md の「インタラクション同時実装」](phase-11-ui-implementation.md#インタラクション同時実装)を参照。
 
 ---
 
