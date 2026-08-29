@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-29T02:54:16Z
+  generated_at: 2026-08-29T12:12:34Z
   file_count: 66
 
 docs:
@@ -176,67 +176,59 @@ docs:
       - batch investigation
       - phase dependency
   docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md:
-    title: "DES-038 Development Flow Branching (Triage) Design: Phase Structure, SoT Analysis and anvil Improvements"
-    purpose: Analyzes triage-issue Phase structure and redesigns execution flow to complete investigation before risk and design decisions
+    title: "DES-038 Development Flow Triage Design: Phase Structure and SoT Analysis"
+    purpose: Specifies anvil:triage-issue phase structure, judgment logic analysis, and routing decision design within forge-anvil one-way dependency constraint
     content_details:
-      - Phase 0-9 current structure and dependency analysis
-      - Source of truth (SoT) classification for judgment logic
-      - Phase directness evaluation showing Phase 1-only vs multi-phase dependencies
-      - Phase 5 code investigation results requiring Phase 2-3 backing validation
-      - Redesigned Phase ordering with new Phase 5.5 for uncertainty resolution
-      - "Phase 5.5: code-based keyword re-search and unresolved issue tracking"
-      - "Three SDD routing options: requirements, design, planning"
-      - "Risk gate conditions: backward difficulty, silent destruction, individual judgment volume"
-      - Feature necessity judgment reference to additive development spec
-      - Test verification and out-of-scope items requiring forge changes
+      - Phase 0-8 structure analysis and dependency mapping
+      - SoT classification for judgment logic (fixed rules vs context-dependent decisions)
+      - Phase 5.5 re-search procedure with query-db-specs/query-db-rules calls
+      - Judgment A (one-shot fulfillment) and Judgment B (remaining decisions) criteria
+      - Flow responsibility definition and routing entrypoint logic
+      - Existing component matrix and dependencies (Phase 2-5 references)
+      - One-way anvil→forge dependency constraint enforcement (REQ-005/REQ-007 NFR-01)
+      - Phase-specific test design and integration verification items
     applicable_tasks:
-      - Implementation of triage-issue Phase redesign
-      - Issue investigation flow improvement
-      - Triage decision gate validation
-      - Feature necessity determination procedures
-      - Design review for anvil triage workflow
+      - Anvil triage-issue skill design and implementation
+      - Phase structure and dependency verification
+      - Judgment logic and routing decision validation
+      - Uncertainty resolution procedure design review
+      - One-way dependency constraint verification
     keywords:
       - triage-issue
       - Phase structure
-      - Source of Truth
-      - Risk gate
-      - additive development spec
-      - Phase 5.5
-      - uncertainty resolution
-      - code investigation
-      - requirement routing
+      - judgment logic
+      - SoT
+      - routing decision
+      - query-db-specs
+      - query-db-rules
+      - anvil flow
+      - one-way dependency
+      - additive_development_spec
   docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md:
-    title: REQ-007 Development Flow Triage Requirements
-    purpose: Defines requirements for a centralized triage decision point that routes GitHub Issues to either single-shot implementation or full SDD workflow based on change scope and uncertainty
+    title: REQ-007 Development Flow Branching (Triage) Requirements Definition
+    purpose: Establishes requirements for a unified triage process to classify GitHub Issues and direct them to one-shot implementation, SDD flow, or plan mode route based on required development documents
     content_details:
-      - Triage decision logic for routing Issues to one-shot implementation vs SDD workflow
-      - "Investigation pipeline stages: spec search, rule search, similar PR analysis, existing code search"
-      - "SDD entry point determination: requirements definition vs design vs planning based on remaining certainty"
-      - Hand-off of investigation results to implementation phase to eliminate duplicate work
-      - Risk gate mechanism for escalating certain changes from implementation to planning
-      - Decision criteria based on requirement certainty and design decision points, not numerical scoring
-      - Issue comment format for audit trail of triage decision and rationale
-      - "Resource reorganization: separation of investigation procedure (triage responsibility) from result usage (implementation responsibility)"
+      - Issue classification into three routing types (one-shot implementation, SDD, plan mode) based on development document requirements
+      - Triage decision criteria emphasizing document type needs, not change size or scope
+      - "Decision investigation process categories: specifications, rules, similar PRs, existing code"
+      - Investigation result handover mechanism from triage to implementation to eliminate duplicate work
+      - SDD entry point determination (requirements definition or design stage) with dependency validation
+      - Flow asset responsibility repositioning between triage-issue and impl-issue skills
+      - Triage decision recording and auditability through Issue comments
     applicable_tasks:
-      - Implementation of triage-issue SKILL with investigation and routing logic
-      - Integration of triage-issue with impl-issue to unify development entry point
-      - Implementation of query-db-specs and query-db-rules search integration
-      - Design and implementation of decision criteria engine for one-shot vs SDD routing
-      - Design of Issue comment format for decision recording and audit compliance
-      - Refactoring of investigation procedure references from impl-issue to triage-issue
-      - Development of investigation result hand-off mechanism between triage and implementation phases
-      - Integration with forge SDD entry points (start-requirements, start-design, start-plan)
+      - GitHub Issue triage workflow implementation
+      - Development flow entry point design and control
+      - Anvil triage-issue SKILL specification
     keywords:
       - triage
-      - Issue routing
-      - development flow
-      - SDD
-      - investigation pipeline
+      - issue-driven development
       - one-shot implementation
-      - entry point determination
-      - audit trail
+      - SDD entry point
+      - investigation result handover
       - decision criteria
-      - workflow decision gate
+      - responsibility boundary
+      - flow control
+      - GitHub Issue classification
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md:
     title: "ADR-063: Codex app-server as Independent Review Backend"
     purpose: Establishes Codex app-server as an independent review backend with thread ownership, eliminating dependencies on human TUI sessions, cmux, and related infrastructure
@@ -503,76 +495,64 @@ docs:
       - serialization
   docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md:
     title: DES-075 Agenda Mechanism Design
-    purpose: Design specification for agenda mechanism managing discussion item records, state transitions, and display generation; separates data persistence (agenda_store.py) and presentation (agenda_render.py) responsibilities with no external dependencies
+    purpose: Defines architecture, modules, data schema, state transitions, CLI interface, and display generation for the agenda mechanism that manages discussion topics and their lifecycle in review and consult workflows
     content_details:
-      - "Two-layer architecture: data storage and display generation separated by agenda.json contract"
-      - "Module design: agenda_store.py (CRUD, state transitions), agenda_render.py (HTML generation), agenda_schema.py (validation), __init__.py marker"
-      - "Data schema: AgendaRecord with Config, Item, Decision, StructuralJudgment structures; status determined by presence/value of decision field only (no separate status vocabulary)"
-      - "State transition requirements: decision recording requires background, essence, decision.by/outcome/reason; structural_judgment.recorded must be true before item transitions"
-      - "CLI interface design: start (initialize), record (upsert items), next/pending (query), finish (cleanup with auto-deletion when all items decided)"
-      - "Storage lifecycle: stored in .claude/.temp with key-specific organization (review fixed path, consult session-scoped); deletion triggered by decision completion, not by parent skill termination"
-      - Automatic display regeneration after write operations to prevent stale HTML (triggered by agenda_store.py, not caller responsibility)
-      - "Difference patch semantics: record command accepts partial JSON patches; structural_judgment at record level, item fields at item level"
-      - "Caller-agnostic design: agenda accepts items without interpreting field meaning; consult/review provide context via identity derivation"
-      - "Tested jointly: integration test verifies start → record × N → next/pending → finish workflow with concurrent display regeneration"
+      - "Architecture overview with three components: data storage layer (agenda_store.py), display layer (agenda_render.py), and JSON data contract (agenda.json)"
+      - "Module design: agenda_store.py for CRUD and state transitions, agenda_render.py for display generation, agenda_schema.py for schema definitions"
+      - Data schema structure with content_version, config (identity, item_fields, severity_field), structural_judgment, and items with problem, background, essence, recommendation, decision fields
+      - State transition design using decision field to determine completion; structural_judgment required before item transitions
+      - "CLI interface with 5 subcommands: start (begin agenda), record (log item decision), next (get next item), pending (list remaining), finish (end agenda)"
+      - "Storage locations: review mode uses .claude/.temp/review/agenda.json; consult mode uses .claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json"
+      - Automatic display regeneration triggered by agenda_store.py after successful writes via agenda_render.py
+      - "Lifecycle management: records deleted when all items have decisions recorded"
     applicable_tasks:
-      - State machine design with transition validation
-      - Data persistence layer architecture
-      - CLI interface and command protocol design
-      - JSON schema definition and validation
-      - Multi-layer coordination and dependency management
-      - Automatic triggering on state changes
-      - Partial failure and error handling strategies
-      - Integration testing for multi-step workflows
-      - Caller-agnostic abstraction design
-      - Code generation and testing for state contracts
+      - Implementing the agenda mechanism for consult skill
+      - Designing data persistence for discussion records
+      - Implementing state transition validation for decision workflow
+      - Building CLI interfaces for agenda operations
+      - Creating HTML display generation system
     keywords:
-      - agenda.json
       - agenda_store.py
       - agenda_render.py
-      - AgendaRecord
-      - Decision
+      - agenda_schema.py
+      - content_version
+      - structural_judgment
+      - decision workflow
       - state transitions
-      - JSON schema
-      - CLI interface
-      - StructuralJudgment
-      - FNC-008 FNC-009 FNC-012
+      - JSON persistence
+      - consult SKILL
+      - review mechanism
   docs/specs/consult/agenda/design/DES-077_agenda_display_design.md:
-    title: DES-077 Agenda Display Design
-    purpose: Design specification for display layer (agenda_render.py) rendering agenda items as HTML with automatic generation, state tracking, and severity indication; maintains presentation/storage separation while ensuring consistency
+    title: DES-077 Agenda Display Layer Design
+    purpose: Defines the design of the display layer (agenda_render.py) that generates HTML output for agenda items, including template structure, styling, state display, and auto-refresh mechanism without server dependency
     content_details:
-      - "HTML format adopted for anchor navigation and console separation; initial display via 'open' command, no auto-follow on updates"
-      - "State visualization: small gutter dots for change tracking (FNC-002), severity badges with pastel colors + text labels (WCAG 2.2 compliant)"
-      - "State derivation without separate status field: four states (未着手/進行中/決着/棄却) derived from presence/values of background, essence, decision fields"
-      - "Configuration-based field references: severity_field lookup ensures caller-agnostic design; no hardcoded field names"
-      - Template structure inherited from discussion_file_template.md but display-only (saved form prohibited by NFR-001)
-      - CSS selectors with fixed structure (h1/h2, .generated-notice, .state-dot, .severity-badge, section) but concrete values (colors, sizes) deferred to implementation-time adjustment
-      - "No auto-sync mechanism: full HTML regeneration on each write (triggered by agenda_store.py); users manually reload browser tabs"
-      - HTML escaping via html.escape() for security; values read from agenda.json only (FNC-003 consistency guarantee)
-      - Gutter-based change highlighting prevents visual noise compared to full-card background highlighting, compatible with severity badge display
-      - "Test coverage: unit tests for data-driven rendering, manual verification of 'open' command functionality"
+      - HTML generation format using local file:// with anchor links (#item-01) for direct item access, enabling number-specified jumps and console noise separation
+      - "Initial display trigger: consult calls Bash open command to automatically launch agenda.html in browser after agenda_store.py start"
+      - Template structure with header (identity and generated-notice), summary table (ID/item/severity/status/result), and item sections with problem/background/essence/recommendation/decision fields rendered as definition lists
+      - State display using single dot in gutter area for change indicators (FNC-002) instead of full background coloring to avoid visual clutter
+      - "Severity badge styling: pastel colors (low saturation, high brightness) with text labels (not emoji only) to comply with WCAG 2.2 criterion 1.4.1 on color usage"
+      - CSS styling specification with selectors for body/h1/h2, generated-notice, agenda-summary table, status-pill, state-dot, severity-badge, section cards, and label chips
+      - "State derivation: four states (未着手/進行中/決着/棄却) determined by background/essence/decision field contents rather than explicit status field"
+      - "Auto-refresh mechanism: embedded script periodically checks agenda_state.js for content_version changes via script tag src parameter, reloads page if version differs"
+      - "Regeneration process: agenda_render.py recreates agenda.html and agenda_state.js files on every write operation from agenda_store.py"
+      - "Scroll position preservation: sessionStorage saves and restores scroll position across page reloads using pagehide/load events"
     applicable_tasks:
-      - Display layer architecture for data-driven systems
-      - Accessibility design and WCAG 2.2 compliance implementation
-      - HTML/CSS template generation from data schemas
-      - State machine visualization without separate status fields
-      - Caller-agnostic presentation layer design
-      - Change tracking visualization and indicator design
-      - CSS strategy for dynamic attributes and conditional rendering
-      - Anchor navigation and deep-linking (FNC-005 direct item access)
-      - Consistency assurance between storage and display layers
-      - Template reuse and migration from existing markdown formats
+      - Implementing the display and rendering layer for agenda mechanism
+      - Designing HTML generation from JSON data schema
+      - Building browser-based UI for discussion records without server dependency
+      - Implementing auto-refresh mechanism using file:// protocol and script tag techniques
+      - Ensuring web accessibility compliance for severity badges and state indicators
     keywords:
       - agenda_render.py
       - HTML generation
-      - state visualization
+      - anchor links
+      - content_version
+      - state derivation
+      - severity badge
       - WCAG accessibility
-      - config.severity_field
-      - agenda.json
-      - data-driven rendering
-      - change tracking
-      - CSS selectors
-      - FNC-002 FNC-003 FNC-005
+      - sessionStorage
+      - auto-refresh
+      - template rendering
   docs/specs/consult/agenda/design/NOTES_open_design_questions.md:
     title: Design Questions for agenda Mechanism
     purpose: Collects unresolved design questions and technical decisions required for the agenda mechanism, extracted from requirements for resolution during formal design phase
@@ -655,36 +635,36 @@ docs:
       - HTML output
   docs/specs/consult/design/DES-078_consult_dialogue_flow_design.md:
     title: DES-078 consult Dialogue Flow Design
-    purpose: Defines the end-to-end dialogue progression sequence for the consult skill, covering both review-initiated and direct consultation flows with unified handling and agenda-based discussion workflow
+    purpose: Defines dialogue progression for consult covering review-origin and consult-origin flows, including merger of reviewer findings with evaluator judgments and agenda-based iteration
     content_details:
-      - "Overview and scope: single unified sequence with two entry points (review-origin and consult-origin)"
-      - Dialogue sequence diagram showing reviewer/evaluator feedback integration and structural judgment
-      - Combined contract between items[] and structural_judgment.note for atomic updates
-      - Field necessity contract mapping information flows to schema fields
-      - "Deleted fields tracking: owner, created_at, recommendation, current_item_id, status vocabulary, config.identity, recorded_at"
-      - "Origin-based flow branching: review delegation vs direct consultation with different item[] sources"
-      - Context-based origin detection mechanism without external flags
-      - Reviewer observation and evaluator judgment merger logic for items[] composition
-      - Integration with agenda mechanism and DES-075 CLI contract
+      - "Figure A-1: Review-origin flow with reviewer Agent findings and evaluator Agent judgments"
+      - "Figure A-2: Consult-origin flow with direct user consultation"
+      - "Figure B: Unified agenda iteration (start, item loop, decision recording)"
+      - Merge contract for items[] and structural_judgment (atomic single-call binding)
+      - Schema field necessity contract (fields correspond to diagram messages)
+      - Origin detection in consult SKILL.md (context-based, without external flags)
+      - Structural judgment assessment (duplicate pattern detection, root-cause analysis)
+      - Recommendation field lifecycle (deletion and restoration after user feedback)
     applicable_tasks:
-      - Implementation of consult skill dialogue workflow
-      - Integration of review mechanism with consult behavior
-      - Agenda mechanism schema design and validation
-      - Understanding reviewer/evaluator observation integration
-      - Testing dialogue progression and state transitions
-      - Context-based flow branching implementation
-      - Field necessity contract verification
+      - Implementation of consult dialogue flow logic
+      - Review-to-consult delegation mechanism
+      - Reviewer and evaluator findings merger algorithm
+      - Consult SKILL.md Phase 0/1/2.2 branching implementation
+      - Agenda mechanism integration design
+      - Schema validation for merger contract
+      - Origin detection algorithm implementation
+      - Structural judgment assessment logic
     keywords:
       - consult
       - dialogue flow
-      - review integration
-      - agenda mechanism
+      - review-origin
+      - consult-origin
+      - items[] merge
       - structural_judgment
-      - items[]
-      - reviewer observations
+      - reviewer findings
       - evaluator judgments
+      - recommendation field
       - origin detection
-      - DES-078
   docs/specs/consult/requirements/REQ-017_consult_skill.md:
     title: REQ-017 Consult dialogue progression skill requirements definition
     purpose: Defines functional and non-functional requirements for the consult skill, which facilitates discussions, consultations, and collaborative decision-making by progressing dialogue through background analysis, recommendation, and decision capture without performing implementation
@@ -1089,7 +1069,7 @@ docs:
       - decision record
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
     title: DES-001 Document Search Wrapper (forge → document search backend) Design
-    purpose: "Defines forge'\\\\\\\\''s delegation to external document search backends, wrapper SKILL abstraction (query/update), and backend selection logic based on configuration and availability"
+    purpose: "Defines forge'\\\\\\\\\\\\\\\\''s delegation to external document search backends, wrapper SKILL abstraction (query/update), and backend selection logic based on configuration and availability"
     content_details:
       - 4 wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with roles and key mapping
       - "Query-docs execution flow: backend order resolution, availability checks, doc-advisor vs doc-db routing"

@@ -471,7 +471,7 @@ Closes <owner>/<repo>#<issue-number>  # 別リポの場合
 >
 > 1. **commit メッセージに `Closes #<issue-number>` を含めて push する**（13-1 で担保）。これにより create-pr のテンプレート生成でも本文に反映されやすくなる
 > 2. create-pr に委譲した後、**生成された PR 本文に `Closes #<issue-number>` が含まれているか確認**する。含まれていない場合は `gh pr edit <PR番号> --body-file` で本文を追記する
-> 3. PR 作成失敗時は `/anvil:create-pr` を直接再実行**せず**、`/anvil:triage-issue #<issue-number>` から再開する（impl-issue は直接起動できないため）。再起動された impl-issue は Phase 0-2 の「実装再開の判定」がブランチの commit 状況と Issue の解決内容セクションから実装済みを検知し、「Phase 13 から再開する」を選べば Phase 1〜12 を再実行せず直接 Phase 13 に進む（triage 側も Phase 1〜9 のフル再調査を経由するため、この検知がないと不要な再調査・再計画が発生する）
+> 3. PR 作成失敗時は `/anvil:create-pr` を直接再実行**せず**、`/anvil:triage-issue #<issue-number>` から再開する（impl-issue は直接起動できないため）。再起動された impl-issue は Phase 0-2 の「実装再開の判定」がブランチの commit 状況と Issue の解決内容セクションから実装済みを検知し、「Phase 13 から再開する」を選べば Phase 1〜12 を再実行せず直接 Phase 13 に進む（triage 側も Phase 1〜8 のフル再調査を経由するため、この検知がないと不要な再調査・再計画が発生する）
 >
 > 将来的に `/anvil:create-pr` の入力契約に `--issue-number` 引数を追加し、impl-issue 側で `Closes #N` 付き本文を組み立てて渡す運用に移行する。
 
