@@ -59,7 +59,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/scan_version_targets.py"
   CHANGELOG: CHANGELOG.md (keep-a-changelog 形式)
 ```
 
-### Step 3: 設定草案の生成 [MANDATORY]
+### Step 3: 設定草案の生成
 
 スキャン結果を解析して `.version-config.yaml` の草案を生成する。
 
@@ -146,7 +146,7 @@ git:
 
 ターゲットが1つのみの場合は `tag_format: "v{version}"` を使用する。
 
-### Step 4: 対話的確認 [MANDATORY]
+### Step 4: 対話的確認
 
 生成した草案を表示し、AskUserQuestion を使用してユーザーに確認する。
 

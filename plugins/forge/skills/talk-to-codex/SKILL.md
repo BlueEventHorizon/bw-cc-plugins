@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Bash, Monitor, AskUserQuestion
 
 このスキルは、常駐 Codex セッションとの msg-sys 経由の自由な相談・会話（依頼の送信・返信の受領と提示）のみを行う。所見の重大度評価・自動修正・`REVIEW_RESULT` 完了宣言行のような契約は一切持たない。親が依頼している他の作業を引き継いではならない。
 
-> **`disable-model-invocation: true` [MANDATORY]**: 本スキルは実際に常駐 Codex セッションへメッセージを送信し起床させる副作用のある操作であり、`docs/rules/skill_authoring_notes.md`「副作用ある操作 → `disable-model-invocation: true`」の対象に該当する。`description` のトリガー句は Claude の自動呼び出し判定には使われない（`disable-model-invocation: true` により description 自体が Claude の context から除外される）。利用者が「Codexに相談したい」等と話しただけで自動的に副作用を発生させないよう、利用者による明示的な `/forge:talk-to-codex` の入力、または利用者からの明確な依頼を受けた親ターンでの `Skill` ツール明示呼び出しのみを起動契機とする。
+> **`disable-model-invocation: true`**: 本スキルは実際に常駐 Codex セッションへメッセージを送信し起床させる副作用のある操作であり、`docs/rules/skill_authoring_notes.md`「副作用ある操作 → `disable-model-invocation: true`」の対象に該当する。`description` のトリガー句は Claude の自動呼び出し判定には使われない（`disable-model-invocation: true` により description 自体が Claude の context から除外される）。利用者が「Codexに相談したい」等と話しただけで自動的に副作用を発生させないよう、利用者による明示的な `/forge:talk-to-codex` の入力、または利用者からの明確な依頼を受けた親ターンでの `Skill` ツール明示呼び出しのみを起動契機とする。
 
 ## コマンド構文
 
@@ -47,7 +47,7 @@ allowed-tools: Read, Write, Bash, Monitor, AskUserQuestion
 
 **コンテキスト消失時に履歴から topic_id を推測してはならない [MANDATORY]**（Codex とのディスカッションで提起された改善提案への対応）: セッション再開・compaction 等でコンテキストを失った場合、`history.py`/`filter_review_history.py` 相当の手段で過去の `[msg-talk]` ヘッダを検索し、topic_id を推測して継続扱いにしてはならない。複数の会話（topic）が並行して存在しうる以上、推測は誤った topic への合流（無関係な会話の混線）を招く。利用者が「さっきの続き」等と述べても、対象の topic_id が本文・コンテキストのいずれからも一意に確定できない場合は、AskUserQuestion で利用者に該当 topic_id か新規会話かを確認する。確定できる場合（例: 利用者が直近の Codex 発言を引用・言及した）のみ、その根拠を明示したうえで継続として扱ってよい。
 
-### Step 1.5: Codex 側フックの自己修復 [MANDATORY]
+### Step 1.5: Codex 側フックの自己修復
 
 Codex は Claude Code のプラグイン hooks 自動登録機構を持たず、`.codex/hooks.json`（Codex CLI 自身がプロジェクトルート直下でのみ読む設定）に登録されたコマンドのパスは常に静的な文字列である。このパスが実在しないまま Codex の Stop フックが発火すると、コマンド自体が実行に失敗し、Codex はそれが解消されるまでブロックし続ける無限ループに陥る。これを避けるため、送信前に毎回実行して symlink・登録内容を自己修復する:
 
@@ -109,7 +109,7 @@ FORGE_MSG_PROJECT_ROOT="$(git rev-parse --show-toplevel)" \
 
 `Monitor` ツールでこのジョブを監視し、10秒おきの進捗行と最終結果を受け取る。
 
-**`nohup`・末尾 `&` での二重バックグラウンド化は禁止 [MANDATORY]**: `run_in_background: true` を指定した時点で既にバックグラウンド実行されるため、二重の `nohup`/`&` は不要かつ有害である。これを重ねると実際のポーリングプロセスがハーネスの追跡から外れ（ハーネスが完了を検知できるのは自身が起動したプロセスの終了のみ）、`replied`/`timeout` の完了通知が二度と届かなくなる。
+**`nohup`・末尾 `&` での二重バックグラウンド化は禁止**: `run_in_background: true` を指定した時点で既にバックグラウンド実行されるため、二重の `nohup`/`&` は不要かつ有害である。これを重ねると実際のポーリングプロセスがハーネスの追跡から外れ（ハーネスが完了を検知できるのは自身が起動したプロセスの終了のみ）、`replied`/`timeout` の完了通知が二度と届かなくなる。
 
 - 最終結果が `{"status": "replied", "messages": [...], "delivered_ids": [...]}` の場合 → Step 7 へ。**`delivered_ids` に含まれる id のメッセージ本文**を Codex の返信として使う（`messages` 全体を `sent_at` だけで走査して選んではならない。同一 poll 内で ack の成否がメッセージごとに異なりうるため、`sent_at` 最大値だけで選ぶと他プロセスが既に配信を受けたメッセージを二重処理する。`delivered_ids` はこの呼び出しが実際に配信権を得た返信のみを表す）
 - 最終結果が `{"status": "timeout", "last_observed_request_read_by_agent_b": ...}` の場合 → 確定したタイムアウト失敗として報告してターンを終える（フォールバックしない）。`last_observed_request_read_by_agent_b`（タイムアウト宣言の瞬間の状態ではなく、最後に完了したポーリング時点の観測値）が `false` の場合は「Codex は最後の確認時点では依頼をまだ読んでいませんでした（常駐していない・停止している可能性があります）」を、`true` の場合は「Codex は最後の確認時点では依頼を読んでいましたが応答していませんでした（処理中の可能性があります）」を追記する（`null` の場合は追記しない）

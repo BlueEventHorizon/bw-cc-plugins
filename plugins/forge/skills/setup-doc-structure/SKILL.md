@@ -55,11 +55,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/classify_dirs.py
 
 空ディレクトリの補完: ドキュメント系の親ディレクトリ（`docs/`, `rules/`, `specs/` 等）配下のサブディレクトリを Glob で探索し、スキャン結果にないものも候補に追加する。
 
-#### 2-2: AI 分類判定 [MANDATORY]
+#### 2-2: AI 分類判定
 
 同ディレクトリの `classification_rules.md` を Read し、そのルールに従ってスキャン結果の各ディレクトリに category と doc_type を割り当てる。
 
-**進捗表示 [MANDATORY]**: 各ディレクトリの判定ごとに結果をユーザーに表示すること。
+**進捗表示**: 各ディレクトリの判定ごとに結果をユーザーに表示すること。
 
 #### 2-3: 推奨ディレクトリの補完
 
@@ -78,7 +78,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/classify_dirs.py
 
 > **Feature ディレクトリについて**: 既存の Feature ディレクトリ（`docs/specs/{feature}/requirements/` 等）は Step 2 のスキャンで自動検出し、glob パターン（例: `docs/specs/*/requirements/`）として `.doc_structure.yaml` に設定する。ただし、まだ存在しない Feature の空ディレクトリをここで作成はしない。新規 Feature のディレクトリは `start-requirements` / `start-design` / `start-plan` が作業開始時に作成する。
 
-### Step 3: 候補の対話的確認 [MANDATORY]
+### Step 3: 候補の対話的確認
 
 スキャン結果と推奨ディレクトリを統合した**候補リスト**をユーザーに提示する。
 

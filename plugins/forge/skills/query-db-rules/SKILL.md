@@ -87,7 +87,7 @@ available-skills に `doc-advisor:index-docs` と `doc-advisor:query-docs` が�
 応答が `Required documents:` 形式であれば検索は成功である。0 件でも失敗ではないので、そのまま親へ返して
 Step 6 へ進む。
 
-**それ以外の応答を解析しない [MANDATORY]**。doc-advisor が保証している出力形式は `Required documents:` だけで
+**それ以外の応答を解析しない**。doc-advisor が保証している出力形式は `Required documents:` だけで
 あり、それ以外の応答（索引未整備の案内・エラーの説明）の文面は保証されていない。文面に一致させて種別を
 判定してはならない。
 

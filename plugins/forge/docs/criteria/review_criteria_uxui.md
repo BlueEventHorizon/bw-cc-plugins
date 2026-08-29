@@ -1,6 +1,6 @@
 # uxui レビュー基準
 
-> SoT: [review_priorities_spec.md](../review_priorities_spec.md) [MANDATORY]
+> SoT: [review_priorities_spec.md](../review_priorities_spec.md)
 > 重大度判定 / グレーゾーン許容範囲は委譲先 principles 側を参照すること。本ファイルは判断を持たない。
 > severity は委譲先 principles の重大度カタログから取得する ([review_priorities_spec.md](../review_priorities_spec.md) §2.2)。
 > uxui 種別の主要 SoT (HIG / プロジェクト固有デザインシステム規約) は当面未整備のため、暫定的に [document_style_guide.md](../document_style_guide.md) + プロジェクト固有 rules で代替する（内蔵ルールへのフォールバック）。

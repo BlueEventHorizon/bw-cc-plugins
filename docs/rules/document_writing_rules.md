@@ -18,7 +18,7 @@
 | `[CRITICAL]`  | 重要度最高         | 違反すると重大な問題が発生する項目     |
 | `[IMPORTANT]` | 重要               | 注意が必要な項目                       |
 
-**推奨**: `[MANDATORY]` を最優先で使用。AIへの効果が最も高い。
+**タグは「希少だから効く」信号であり、乱用すると効かなくなる**。付けてよい基準・格下げの順序・頻度の目安（1 文書 0〜3 箇所）・判定の証拠の扱いは [document_style_guide.md](../../plugins/forge/docs/document_style_guide.md) §1.2 に従う。
 
 ### 1.2 タグの配置ルール [MANDATORY]
 

@@ -29,7 +29,7 @@ Claude Code の plan mode で生成された **Markdown plan** を入口に、�
 > 本文書で単に「plan」と呼ぶときは **Markdown plan** を指す。
 > forge 実装計画書のことを指すときは必ず `{feature}_plan.json` と明示する。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
@@ -49,7 +49,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## Phase 1: plan ファイルの特定 [MANDATORY]
+## Phase 1: plan ファイルの特定
 
 ### 1.1 引数あり
 
@@ -81,7 +81,7 @@ JSON 出力を読み、`status` で分岐:
 
 ---
 
-## Phase 2: 対象 plugin（namespace）の確認 [MANDATORY]
+## Phase 2: 対象 plugin（namespace）の確認
 
 `docs/specs/` 配下の名前空間（プラグイン名 / `common`）から、要件定義書の格納先を決める。
 
@@ -110,7 +110,7 @@ AskUserQuestion を使って対象を確定する。推定した最有力候補�
 
 ---
 
-## Phase 3: feature 名の確定 [MANDATORY]
+## Phase 3: feature 名の確定
 
 plan のタイトル（先頭 H1）または冒頭の説明から feature 名を推定する。命名規則は kebab-case（例: `issue-driven-flow`）。
 
@@ -126,7 +126,7 @@ feature 名を確定してください
 
 ---
 
-## Phase 4: `--new` / `--add` モードの判定 [MANDATORY]
+## Phase 4: `--new` / `--add` モードの判定
 
 `forge:start-requirements` の `--new` / `--add` は **アプリ単位の判定** であり、ファイル衝突チェックではない:
 
@@ -158,7 +158,7 @@ feature 名を確定してください
 
 ---
 
-## Phase 5: 要件定義書の作成（forge:start-requirements 呼び出し）[MANDATORY]
+## Phase 5: 要件定義書の作成（forge:start-requirements 呼び出し）
 
 ### 5.1 plan を context として明示
 
@@ -179,7 +179,7 @@ Skill ツールで `/forge:start-requirements` を起動する:
 - skill: `forge:start-requirements`
 - args: `{feature} --mode interactive {--new または --add}`（Phase 4 の確定値を使用）
 
-### 5.3 interactive_workflow の Q&A 自動充填手順 [MANDATORY]
+### 5.3 interactive_workflow の Q&A 自動充填手順
 
 `/forge:start-requirements` は内部で `requirements_interactive_workflow.md` を Read し、Phase 0.1 〜 Phase 4 まで多数の Q&A を [MANDATORY] で実行する。これらは plan を読み込まずに対話する設計のため、本 skill 起動時には **plan の内容で各 Q&A を自動充填し、ユーザーには一括確認のみ求める** ように振る舞いを変更する。
 
@@ -226,7 +226,7 @@ plan に該当情報がない場合のみ、workflow の元の Q&A をユーザ�
 
 ---
 
-## Phase 6: 設計書の作成（forge:start-design 呼び出し）[MANDATORY]
+## Phase 6: 設計書の作成（forge:start-design 呼び出し）
 
 ### 6.1 引き継ぎ表示
 

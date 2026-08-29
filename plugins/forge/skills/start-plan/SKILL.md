@@ -16,7 +16,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 設計書からタスク抽出・計画書作成・レビュー+自動修正・commit まで完走すること。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
@@ -36,13 +36,13 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## 事前準備 [MANDATORY]
+## 事前準備
 
 ### Feature の確定
 
 対象 Feature を確定する。Feature が決まらないと、入力（どの設計書から計画するか）も出力先も決まらない。
 
-**フィーチャー概念の把握 [MANDATORY]**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
@@ -54,7 +54,7 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
   直接配置する（`additive_development_spec.md` §0 参照）
 - **引数なし・既存ファイルが存在する** → AskUserQuestion で対象 Feature を確認する
 
-### 新規/追加の確認 [MANDATORY]
+### 新規/追加の確認
 
 計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。判定結果によって frontmatter_format.md §1.3 の扱い（frontmatter を付与しない）は変わらないが、後続の要件・設計文書の参照解決に影響するため、計画書作成前に判定する。
 
@@ -62,7 +62,7 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
 - 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
 
-**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
+**`--add`（追加開発）の場合**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
 - `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` — frontmatter 定義一覧
@@ -76,7 +76,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 
 - `plan` に対応するエントリが無い場合は AskUserQuestion で出力先を確認する
 
-### モード判定 [MANDATORY]
+### モード判定
 
 出力先の計画書の存在を確認し、モードを決定する。
 
@@ -90,7 +90,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 - 既存計画書を更新する → 既存計画書を Read して現状を把握し Phase 1 へ
 - レビューのみ行う → Skill ツールで `/forge:review plan --files {既存計画書パス}` を起動して終了
 
-### プラグイン文書の読み込み [MANDATORY]
+### プラグイン文書の読み込み
 
 以下のプラグイン文書を**常に**読み込む:
 
@@ -100,7 +100,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 
 ---
 
-## Phase 1: コンテキスト収集 [MANDATORY]
+## Phase 1: コンテキスト収集
 
 以下の 2 つを **Agent ツールで並列起動** し、各 agent の **return value** を main AI コンテキストに直接保持する。エラー時は該当カテゴリなしで後続工程に進む。
 
@@ -140,7 +140,7 @@ prompt:
 
 ---
 
-## Phase 2: 文書の読み込み [MANDATORY]
+## Phase 2: 文書の読み込み
 
 ### 2.1 収集済み文書の読み込み
 
@@ -157,7 +157,7 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 
 ---
 
-## Phase 3: 実装戦略の策定 [MANDATORY]
+## Phase 3: 実装戦略の策定
 
 タスク分割の前に、設計書全体を俯瞰し「どういうアプローチで実装に到達するか」を汎用 Agent (general-purpose) に策定させる。
 
@@ -188,7 +188,7 @@ prompt:
   (ファイルへの書き出しは不要。main AI が return value を受け取ってから配置する)
 ```
 
-### 3.2 実装戦略書の配置 [MANDATORY]
+### 3.2 実装戦略書の配置
 
 Agent 完了後、return value (戦略書 markdown) を承認前にそのまま最終出力先へ Write する。チャットへの全文転記より先にファイルとして配置し、ユーザーが文書そのものを読んでレビューできるようにする:
 
@@ -211,9 +211,9 @@ Write 完了後:
 
 ---
 
-## Phase 4: 計画書の作成・更新 [MANDATORY]
+## Phase 4: 計画書の作成・更新
 
-### 4.1 更新モード: 既存作業の確認 [MANDATORY]
+### 4.1 更新モード: 既存作業の確認
 
 既存計画書がある場合（更新モード）、以下を必ず確認する:
 
@@ -223,7 +223,7 @@ Write 完了後:
 
 上記に未反映がある場合は AskUserQuestion を使用して先に更新するか確認する。
 
-### 4.2 実装戦略に基づきタスクを抽出 [MANDATORY]
+### 4.2 実装戦略に基づきタスクを抽出
 
 `{output_dir}/{feature}_strategy.md` を Read し、実装戦略のフェーズ分割に従ってタスクを抽出・分割する:
 
@@ -232,15 +232,15 @@ Write 完了後:
 3. 同一フェーズ内で依存関係を整理（依存される側から先に実装）
 4. 並列実行可能なタスクを識別（依存関係がないタスク群）
 
-**実装戦略書の必読化 [MANDATORY]**: すべてのタスクの `required_reading` に `{output_dir}/{feature}_strategy.md` を含める。executor が単一タスクだけを実装する場合でも、全体戦略・フェーズ意図・リスク対策を理解したうえで実装判断できるようにするため。
+**実装戦略書の必読化**: すべてのタスクの `required_reading` に `{output_dir}/{feature}_strategy.md` を含める。executor が単一タスクだけを実装する場合でも、全体戦略・フェーズ意図・リスク対策を理解したうえで実装判断できるようにするため。
 
 **タスクの粒度・グループ化**: タスク・グループとも「1つの Agent 実行で完結する」単位であることを基準とする。詳細な判定基準は `plan_principles_spec.md`「タスクの粒度」「タスクグループ」節に従う（事前準備で読み込み済み）。
 
-### 4.3 計画書の作成・更新 [MANDATORY]
+### 4.3 計画書の作成・更新
 
 **出力方式**: AI はタスクの意味内容（`title` / `description` / `acceptance_criteria` 等）を決定するが、計画書ファイルへの書き込みと構造検証は script が行う（AI は計画書ファイルの形式・キー配置を意識する必要はない）。ファイル名は script が `{feature}_plan.json` として決定する（拡張子は `.json`）。
 
-**タスクID採番** [MANDATORY]: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
+**タスクID採番**: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
 
 タスク ID を付与する際は、必ず以下のスクリプトで次の連番を取得する。手動での番号決定は禁止:
 
@@ -253,9 +253,9 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **優先度**: プロジェクトのフォーマットルールに従う。ルールがない場合は数値が大きいほど優先度が高い（例: 1〜99）。実装戦略のフェーズ順序を反映すること。
 
-**「やるべき内容」の記載原則・依存関係管理** [MANDATORY]: `plan_principles_spec.md`「『やるべき内容』の記載原則」「依存関係管理」節に従う（事前準備で読み込み済み）。依存関係は各タスクの `depends_on` 配列に落とし込み、計画書本体には依存関係マップを含めない。
+**「やるべき内容」の記載原則・依存関係管理**: `plan_principles_spec.md`「『やるべき内容』の記載原則」「依存関係管理」節に従う（事前準備で読み込み済み）。依存関係は各タスクの `depends_on` 配列に落とし込み、計画書本体には依存関係マップを含めない。
 
-**候補 JSON の組み立てと書き込み [MANDATORY]**:
+**候補 JSON の組み立てと書き込み**:
 
 1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
@@ -276,7 +276,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 
-### 4.4 完全性チェック [MANDATORY]
+### 4.4 完全性チェック
 
 計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
 
@@ -289,7 +289,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 ---
 
-## Phase 5: AIレビュー [MANDATORY]
+## Phase 5: AIレビュー
 
 計画書作成・更新後に Skill ツールで `/forge:review plan` を `--auto` モードで実行する:
 
