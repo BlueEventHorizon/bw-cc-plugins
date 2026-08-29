@@ -310,6 +310,6 @@ Issue を作成しました:
 
 ## 関連スキル
 
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge start-* を提案）
+- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge start-\* を提案、決め事が残るなら plan モードでの検討を提案）
 - [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
 - [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push
