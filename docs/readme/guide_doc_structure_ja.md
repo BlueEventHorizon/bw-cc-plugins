@@ -34,89 +34,9 @@ specs/
 
 ### スキーマ概要
 
-`rules` と `specs` の2カテゴリで構成される。
+`rules` と `specs` の2カテゴリで構成され、各カテゴリに `root_dirs`（対象ディレクトリ。glob 対応）・`doc_types_map`（パス→doc_typeのマッピング）・`patterns`（検索パターン・除外設定）を持つ。Feature ごとに個別設定を追加する必要はなく、`docs/specs/*/design/` のような glob パターン1つで全 Feature を横断できる（`**` を使えばネストした Feature も一括対応する。例: `docs/specs/forge/design/` と `docs/specs/forge/review-PR/design/` の両方が自動検出される）。Feature 追加時に `.doc_structure.yaml` 自体の変更は不要で、対象ディレクトリを作成するだけで自動的に検出される。
 
-```yaml
-# .doc_structure.yaml
-# doc_structure_version: 3.0
-
-rules:
-  root_dirs: # スキャン対象ディレクトリ（glob 対応）
-    - docs/rules/
-  doc_types_map: # ディレクトリ → doc_type のマッピング
-    docs/rules/: rule
-  patterns:
-    target_glob: "**/*.md"
-    exclude: [] # 除外ディレクトリ名
-
-specs:
-  root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/plan/"
-    - "docs/specs/*/requirement/"
-  doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/plan/": plan
-    "docs/specs/*/requirement/": requirement
-  patterns:
-    target_glob: "**/*.md"
-    exclude: []
-```
-
-| フィールド             | 説明                                                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| `root_dirs`            | ドキュメントディレクトリ。`*`（1レベル）/ `**`（任意の深さ）の glob パターン対応                         |
-| `doc_types_map`        | パス → doc_type のマッピング。推奨 doc_type: `rule`, `requirement`, `design`, `plan`, `api`, `reference` |
-| `patterns.target_glob` | ファイル検索パターン（デフォルト: `**/*.md`）                                                            |
-| `patterns.exclude`     | 除外するディレクトリ名（パス内の任意の深さでマッチ）                                                     |
-
-### 設定例
-
-#### シンプル構成（Feature なし）
-
-```yaml
-specs:
-  root_dirs:
-    - docs/specs/design/
-    - docs/specs/plan/
-    - docs/specs/requirement/
-  doc_types_map:
-    docs/specs/design/: design
-    docs/specs/plan/: plan
-    docs/specs/requirement/: requirement
-```
-
-#### Feature ベース構成
-
-```yaml
-specs:
-  root_dirs:
-    - "docs/specs/*/design/"
-    - "docs/specs/*/plan/"
-    - "docs/specs/*/requirement/"
-  doc_types_map:
-    "docs/specs/*/design/": design
-    "docs/specs/*/plan/": plan
-    "docs/specs/*/requirement/": requirement
-```
-
-Feature 追加時に `.doc_structure.yaml` の変更は不要。`docs/specs/payment/design/` ディレクトリを作成するだけで自動的に検出される。
-
-#### ネスト Feature 構成（サブ Feature あり）
-
-```yaml
-specs:
-  root_dirs:
-    - "docs/specs/**/design/"
-    - "docs/specs/**/plan/"
-    - "docs/specs/**/requirements/"
-  doc_types_map:
-    "docs/specs/**/design/": design
-    "docs/specs/**/plan/": plan
-    "docs/specs/**/requirements/": requirement
-```
-
-`docs/specs/forge/design/` と `docs/specs/forge/review-PR/design/` の両方が自動検出される。
+フィールドの詳細・具体的な yaml 例（シンプル構成・Feature ベース構成・ネスト Feature 構成）は [doc_structure_format.md](../../plugins/forge/docs/doc_structure_format.md) を参照。
 
 ## /forge:setup-doc-structure
 

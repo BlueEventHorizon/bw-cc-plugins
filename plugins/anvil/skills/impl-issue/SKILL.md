@@ -2,7 +2,7 @@
 name: impl-issue
 description: |
   GitHub Issue の実装を準備から完了まで一貫して行う。triage の判定調査結果（仕様書・ルール・類似PR・既存コードの特定）を引き継ぎ、実装計画の策定・Issue への解決内容記載・実装・レビューまで進める。UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、UI 実装、実装レビューまでカバーする。
-  `/anvil:triage-issue` が軽量実装と判定した Issue に対して Skill ツール経由でのみ起動される（ユーザーからの直接起動は不可）。
+  `/anvil:triage-issue` がワンショット実装と判定した Issue に対して Skill ツール経由でのみ起動される（ユーザーからの直接起動は不可）。
 user-invocable: false
 argument-hint: "<issue番号 または URL>"
 allowed-tools: Bash(git *), Bash(gh issue view *), Bash(gh issue edit *), Bash(gh pr list *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr edit *), Bash(gh repo view *), Bash(gh api *), Bash(tee *), Bash(python3 *), Bash(curl -s -H *api.figma.com*), AskUserQuestion, Agent, Skill, Read, Write, Edit, Grep, Glob
@@ -14,16 +14,16 @@ GitHub Issue の実装を準備から完了まで一貫して行うオーケス�
 UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、UI 実装、実装レビューまでカバーする。
 
 > [!IMPORTANT]
-> 本スキルは `user-invocable: false` であり、`/anvil:impl-issue` として直接起動できない。**`/anvil:triage-issue` が軽量実装と判定した後、Skill ツール経由で起動される**ことが唯一の開始経路。判定調査の結果（仕様書・ルール・類似 PR・既存コードの特定）は triage から引き継ぎ、Phase 2〜5 では**再調査しない**（引き継いだ参照先の精読は行う）。
+> 本スキルは `user-invocable: false` であり、`/anvil:impl-issue` として直接起動できない。**`/anvil:triage-issue` がワンショット実装と判定した後、Skill ツール経由で起動される**ことが唯一の開始経路。判定調査の結果（仕様書・ルール・類似 PR・既存コードの特定）は triage から引き継ぎ、Phase 2〜5 では**再調査しない**（引き継いだ参照先の精読は行う）。
 
 **このスキルが Issue に書き込む内容**: 解決の内容（対策・実装計画・TODO）のみ。
 課題の内容（背景/現象・原因）は `/anvil:create-issue` が作成済みのため、上書きしない。
 
 ## Goal
 
-Issue の調査・ブランチ確認・実装計画の Issue 記載・UI の場合はデザイン仕様書・実装・レビューまで、全 Phase を完走すること。`AskUserQuestion` が必要な判断点以外はユーザー介入なしに継続する。
+Issue の調査・ブランチ確認・実装計画の Issue 記載・UI の場合はデザイン仕様書・実装・レビューまで、全 Phase を完走すること。`AskUserQuestion` が必要な判断点と、Phase 12 のレビューで確信の持てない所見の採否以外は、ユーザー介入なしに継続する。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ `AskUserQuestion` で確認する。
 
@@ -98,7 +98,7 @@ Issue 番号のみ（URL ではない）で渡された場合はこのチェッ�
 2. **triage の調査結果を確定する**: Phase 2〜5 の入力となる調査結果（関連仕様書・ルール文書・類似 PR・既存コードの特定結果）を以下の優先順で確定する:
    - 同一セッションで triage を実行した直後 → コンテキスト上の調査結果をそのまま使う
    - コンテキストに無い（セッションを跨いだ再開等）→ 取得したコメントから `<!-- anvil:triage-result:v1:start -->` 〜 `<!-- anvil:triage-result:v1:end -->` のマーカーブロックを探す。複数存在する場合は**最も新しい（コメント一覧の末尾に近い）ブロックのみ**を採用する（手書きコメントや旧スキーマのマーカーなしコメントは無視する）
-   - どちらにも無い（マーカーブロックが 1 件も見つからない）→ **自前調査にフォールバックせず停止**し、「`/anvil:triage-issue <N>` を先に実行してください」と案内する（入口一本化の経路違反を検知するため。triage-issue はマーカーを軽量実装判定の場合のみ付与するため、SDD 判定の Issue はこの分岐で自動的に検知される）
+   - どちらにも無い（マーカーブロックが 1 件も見つからない）→ **自前調査にフォールバックせず停止**し、「`/anvil:triage-issue <N>` を先に実行してください」と案内する（入口一本化の経路違反を検知するため。triage-issue はマーカーをワンショット実装判定の場合のみ付与するため、SDD 判定の Issue はこの分岐で自動的に検知される）
 
 3. **実装再開の判定（PR 作成失敗からの再開検知）**: **現在のブランチ名に Issue 番号が含まれる場合のみ**判定する。別ブランチの探索・リモートブランチの checkout は行わない（狭い happy path のみ扱う。それ以外は人間に対象ブランチへの checkout を促す）。
 
@@ -152,7 +152,7 @@ Issue 番号のみ（URL ではない）で渡された場合はこのチェッ�
 
    c. ブランチ名を決定する。
 
-   **判定順序 [MANDATORY]**:
+   **判定順序**:
 
    1. **Issue のラベルから判定**（最優先・決定的）。リポジトリで使われているラベル命名は揺れるので、以下の語句を**部分一致・大文字小文字無視**で照合する。複数一致した場合は表の上位を優先：
 
@@ -222,7 +222,7 @@ triage 引き継ぎの確定・実装再開判定は Phase 0-2 で完了済み�
 
 関連仕様書の**特定**は triage の判定調査で完了している（Phase 0-2 で確定した調査結果を使う）。`/forge:query-db-specs` による再検索は行わない。
 
-引き継がれた各仕様書参照は `kind: local_path` または `kind: github_url` を持つ（外部リポジトリ・symlink 経由の仕様書は triage 側で `local_path` を保持できず `github_url` のみになる。triage-issue `references/phase-02-spec-investigation.md` 参照）。**種別に応じて取得方法を分岐する** [MANDATORY]:
+引き継がれた各仕様書参照は `kind: local_path` または `kind: github_url` を持つ（外部リポジトリ・symlink 経由の仕様書は triage 側で `local_path` を保持できず `github_url` のみになる。triage-issue `references/phase-02-spec-investigation.md` 参照）。**種別に応じて取得方法を分岐する**:
 
 - `kind: local_path` → Read tool でそのまま精読する（同一セッションで既に読了済みのものは再読不要）
 - `kind: github_url` → Read tool では開けない。記録されている URL は**外部リポジトリ**（symlink 実体）のものであり、現在の `<owner>/<repo>`（Phase 0-1 で解決した値）とは別リポジトリである。URL 自体から `<url-owner>` / `<url-repo>` / `<ref>`（ブランチ・タグ・コミット。無ければ `HEAD`） / `<path>` をパースし、以下で取得する:
@@ -262,7 +262,7 @@ triage 引き継ぎの確定・実装再開判定は Phase 0-2 で完了済み�
 再利用可能な既存コードの**特定**は triage の判定調査で完了している。新規の全体探索は行わない。
 
 - 引き継がれたコードパスを Read で精読し、再利用方針を把握する
-- **新規作成回避の原則・検証チェックリスト・共通コンポーネント採用判断（[`references/phase-05-reuse-principles.md`](references/phase-05-reuse-principles.md)）を Phase 5〜8 で適用する** [MANDATORY]。チェックリストに未確認項目が残る場合のみ補完調査する（全体の再探索はしない）
+- **新規作成回避の原則・検証チェックリスト・共通コンポーネント採用判断（[`references/phase-05-reuse-principles.md`](references/phase-05-reuse-principles.md)）を Phase 5〜8 で適用する**。チェックリストに未確認項目が残る場合のみ補完調査する（全体の再探索はしない）
 
 ## Phase 6: Figma デザイン仕様書を作成する（UI Issue のみ）
 
@@ -398,9 +398,9 @@ Phase 8 で作成する成果物は次の 2 つ。**用途・出力先・参照�
 6. **共用コンポーネントを 1 画面の typography に書き換えない**（画面専用コンポーネントを作る）
 7. 実装完了後、下記セルフチェックを通す
 
-### 実装後セルフチェック [MANDATORY]
+### 実装後セルフチェック
 
-[`references/phase-11-ui-implementation.md` の「実装後セルフチェック」](references/phase-11-ui-implementation.md#実装後セルフチェック-mandatory)を実施する。
+[`references/phase-11-ui-implementation.md` の「実装後セルフチェック」](references/phase-11-ui-implementation.md#実装後セルフチェック)を実施する。
 不合格があれば修正してから Phase 12 へ。妥協する場合は `AskUserQuestion` で確認。
 
 ## Phase 12: 実装レビューを行う
@@ -429,12 +429,12 @@ Phase 8 で作成する成果物は次の 2 つ。**用途・出力先・参照�
 
 ### 非 UI Issue の場合
 
-`Skill` ツールで `/forge:review code` を委譲実行する（デフォルトは `--diff`。エンジン軸フラグは `/forge:review` が持たないため付けない）。
+`Skill` ツールで `/forge:review code --auto` を委譲実行する（対象は既定の `--diff`。エンジン軸フラグは `/forge:review` が持たないため付けない）。
 
 ```
-Skill ツールで /forge:review code を呼び出す
+Skill ツールで /forge:review code --auto を呼び出す
 - 対象: 現ブランチの未 commit 差分
-- 指摘発生時: 提示された所見に従って修正、または --auto-critical 等を別途呼び直す
+- 指摘発生時: 確信のある所見は自動で修正される。確信の無い所見は 1 件ずつ提示されるので採否を判断する
 - 指摘なし: そのまま Phase 13 へ進む
 ```
 
@@ -471,7 +471,7 @@ Closes <owner>/<repo>#<issue-number>  # 別リポの場合
 >
 > 1. **commit メッセージに `Closes #<issue-number>` を含めて push する**（13-1 で担保）。これにより create-pr のテンプレート生成でも本文に反映されやすくなる
 > 2. create-pr に委譲した後、**生成された PR 本文に `Closes #<issue-number>` が含まれているか確認**する。含まれていない場合は `gh pr edit <PR番号> --body-file` で本文を追記する
-> 3. PR 作成失敗時は `/anvil:create-pr` を直接再実行**せず**、`/anvil:triage-issue #<issue-number>` から再開する（impl-issue は直接起動できないため）。再起動された impl-issue は Phase 0-2 の「実装再開の判定」がブランチの commit 状況と Issue の解決内容セクションから実装済みを検知し、「Phase 13 から再開する」を選べば Phase 1〜12 を再実行せず直接 Phase 13 に進む（triage 側も Phase 1〜9 のフル再調査を経由するため、この検知がないと不要な再調査・再計画が発生する）
+> 3. PR 作成失敗時は `/anvil:create-pr` を直接再実行**せず**、`/anvil:triage-issue #<issue-number>` から再開する（impl-issue は直接起動できないため）。再起動された impl-issue は Phase 0-2 の「実装再開の判定」がブランチの commit 状況と Issue の解決内容セクションから実装済みを検知し、「Phase 13 から再開する」を選べば Phase 1〜12 を再実行せず直接 Phase 13 に進む（triage 側も Phase 1〜8 のフル再調査を経由するため、この検知がないと不要な再調査・再計画が発生する）
 >
 > 将来的に `/anvil:create-pr` の入力契約に `--issue-number` 引数を追加し、impl-issue 側で `Closes #N` 付き本文を組み立てて渡す運用に移行する。
 

@@ -16,17 +16,7 @@ allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill
 
 ## merge の定義 [MANDATORY]
 
-**merge は意味の統合であり、文書の物理的な結合ではない。**
-
-追加開発の期間中、基本側は古いまま据え置かれる。実装完了時点では基本側の記述が現実と食い違っており、本 skill が解消するのはこの **齟齬・不足・誤り** である。
-
-したがって次は本 skill の目的ではない。
-
-- 追加 DIR を消すこと
-- 文書の本数を減らすこと
-- ディレクトリを 1 つに畳むこと
-
-完了条件は「**基本側の記述が新しい仕様と矛盾しなくなったこと**」であって、追加 DIR が空になったことではない。
+**merge は意味の統合であり、文書の物理的な結合ではない。** 完了条件は「基本側の記述が新しい仕様と矛盾しなくなったこと」であり、追加 DIR を消すこと・文書の本数を減らすことではない。定義・完了条件の詳細は `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4.1「merge の定義」を参照する。
 
 ## 用語
 
@@ -55,15 +45,9 @@ allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill
       追加 DIR = W のみが残る（W が無ければ、追加 DIR は役目を終えて削除できる）
 ```
 
-### スコープ判断 [MANDATORY]
+### スコープ判断
 
-追加側にしかない内容を基本側へ移すかどうかは、**スコープが同じか**で決める。物理的な位置ではなく、内容が意味的にどこに属すかで判断する。
-
-- その記述を基本側の文書に置いたとき、**前後の文脈と地続きに読めるか**
-- 基本側の読者が、その記述を **自分に関係する内容として読むか**
-- 独立した名前空間として扱い続ける価値があるか（別 backend、別サブシステム、別配布単位など）
-
-**スコープが異なるものを無理に一体化してはならない [MANDATORY]。** 独立したサブシステム相当の仕様を基本側の文書へ押し込むと、1 つの文書が複数の関心事を抱え、以後の改訂で毎回無関係な記述を読まされることになる。分離できるものは分離したまま維持する。
+追加側にしかない内容を基本側へ移すかどうかは、**スコープが同じか**で決める。物理的な位置ではなく、内容が意味的にどこに属すかで判断する。判断基準は `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4.2「何を移し、何を分離したまま残すか」に従う。
 
 判断に迷う場合は AskUserQuestion で確認する。**迷ったまま基本側へ移してはならない**（移動は後から分離するより高くつく）。
 
@@ -158,13 +142,13 @@ git rev-parse --abbrev-ref HEAD
 
 ### 0.3 追加開発モードの判定（任意検証）
 
-本 skill は forge の **追加開発ワークフロー**（[`additive_development_spec.md`](../../docs/additive_development_spec.md) §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書は frontmatter に `type: temporary-feature-*` を持つ（`temporary-feature-requirement` / `temporary-feature-design`）。
+本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書（要件定義書・設計書）は frontmatter に `feature_type: temporary-feature` を持つ。計画書には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
 
 追加 DIR (B) の各 `*.md` 先頭 frontmatter を確認し、判定する:
 
 ```bash
 # 追加 DIR 内に temporary-feature 文書が含まれるか
-grep -rlE '^type:[[:space:]]*temporary-feature-' "$additional_dir" 2>/dev/null
+grep -rlE '^feature_type:[[:space:]]*temporary-feature$' "$additional_dir" 2>/dev/null
 ```
 
 - **検出された場合（追加開発モード）**: 追加 DIR は差分開発の文書である可能性が高い。`additive_development_spec.md` §2 の優先度（追加開発の要件定義書が最優先＝正）と本 skill の「追加側が正」原則は一致する。Phase 8 の後始末も §4.3 と整合する。安心して進めてよい。
@@ -485,11 +469,11 @@ Phase 4 / 5 で追加側ファイルは一切書き換えていないため、�
 | **type-i**                        | 削除する。基本側へ改訂反映済み（Phase 4）で、追加側に残す内容が無い |
 | **type-ii**                       | 削除する。基本側へ移動済み（Phase 5）                               |
 | **type-iii / type-mix(iii 含む)** | **残す。** 別スコープの内容が残っており、分離を維持する対象である   |
-| 計画書（`*_plan.yaml`）           | 破棄する。実装済みのため役目を終えている                            |
+| 計画書（`*_plan.json`）           | 破棄する。実装済みのため役目を終えている                            |
 
-### 8.1 残す文書の frontmatter を外す [MANDATORY]
+### 8.1 残す文書の frontmatter を外す
 
-分離を維持すると判定した文書からは、一時 feature 用 frontmatter（`type: temporary-feature-*`）を外す。この frontmatter は「基本側が古いまま据え置かれている」状態を示すマーカーであり、齟齬を解消した後は成立しないためである。外した後は恒久的な仕様として扱う。
+分離を維持すると判定した文書からは、一時 feature 用 frontmatter（`feature_type: temporary-feature`）を外す。この frontmatter は「基本側が古いまま据え置かれている」状態を示すマーカーであり、齟齬を解消した後は成立しないためである。外した後は恒久的な仕様として扱う。
 
 ### 8.2 後始末の内容確認
 
@@ -565,6 +549,6 @@ git status --short
 
 ## 関連文書
 
-- [`additive_development_spec.md`](../../docs/additive_development_spec.md) — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `type: temporary-feature-*` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `feature_type: temporary-feature` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
 
 > What/How 境界・要件/設計/計画のフォーマット・文書品質の規範（`spec_design_boundary_spec` / `*_format` / `*_principles_spec` など）は、**特定の文書名をハードコードせず Phase 0.5 で検索して取得**する。本 skill は汎用ツールであり、ターゲットプロジェクトごとに規約の所在・内容が異なるため、固定リンクは持たない。

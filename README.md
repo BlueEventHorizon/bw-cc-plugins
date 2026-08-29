@@ -4,7 +4,7 @@
 
 **仕様駆動開発（Spec-Driven Development）** のための Claude Code プラグイン — 仕様を先に書き、AI がフルコンテキストで実装・レビューする。
 
-**マーケットプレイスバージョン: 0.3.3**
+**マーケットプレイスバージョン: 0.3.4**
 
 マーケットプレイスは **2 つのプラグイン**（forge、anvil）で構成される。forge の検索系スキルは、順序リストに基づいて文書検索 backend（**doc-advisor** / **doc-db**）を選択する。既定は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) が提供する（`index-docs` / `query-docs`）。
 
@@ -30,6 +30,8 @@ forge の `/forge:query-db-rules` / `/forge:query-db-specs` / `/forge:update-db-
 
 既定の選択順序は doc-advisor 先位で、`.claude/.forge.yaml` の `doc_backend.prefer` で変更できる。先位の backend を利用できない場合は理由を通知して後位の backend を利用する。これによりコンテキストの欠損がなくなる — AI がシニアメンバーと同じ知識で実装・レビューできるようになる。
 
+切り替えの詳細 — `.claude/.forge.yaml` の書き方、索引更新スキル（`/forge:update-db-rules` / `update-db-specs`）だけが持つ `--backend` 強制指定、および別軸であるレビュー実行主体（`agent-review` / `msg-review`）の切り替え — は [switch-forge-backend_ja.md](docs/readme/switch-forge-backend_ja.md) を参照。
+
 ## ワークフロー
 
 ```mermaid
@@ -46,8 +48,8 @@ flowchart LR
 
 | プラグイン | バージョン | 説明                                                                                                                    |
 | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **forge**  | 0.4.3      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
-| **anvil**  | 0.1.2      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
+| **forge**  | 0.5.0      | AI によるドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正、品質確定に対応 |
+| **anvil**  | 0.1.3      | GitHub 操作ツールキット。PR 作成、Issue 管理、GitHub ワークフロー自動化に対応                                           |
 
 > **文書検索 backend（doc-advisor / doc-db）は外部依存**: doc-advisor は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor) として配布される。インストールは `/plugin marketplace add BlueEventHorizon/DocAdvisor` → `/plugin install doc-advisor@DocAdvisor`。doc-db はローカルで稼働する文書検索サーバで、`doc-db` コマンドとして導入されていれば利用可能な候補として扱われ、順序リストに従って選択されたときに forge が自動的に起動・利用する。いずれの backend もバージョンを条件にせず、必要な機能が利用できるかで判定する。
 
@@ -104,6 +106,7 @@ flowchart LR
 | スキル                                                                                    | 説明                                                                                                                                                                                                                                                                                                                                                                                                                 | トリガー                            |
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | [**review**](docs/readme/forge/guide_review_ja.md)                                        | レビュー依頼の組み立てと所見の評価・修正・再依頼・完了判定をスキルの実行側が駆動し、レビュアーとの往復はレビューバックエンド SKILL へ委譲。`--backend` で指定、未指定なら候補を順に可用性検査（既定は外部依存を持たない agent-review、次に常駐 Codex を使う msg-review）。依頼/再開の2モード（再開は履歴復元に対応するバックエンドのみ）。`--secrets` で機密情報スキャン、`--scope` で到達目標と意図的な未実装を明示 | `"レビューして"`                    |
+| **consult**                                                                               | 利用者との議論を進行する。論点を立てて検証し、討議ファイルへ記録しながら背景と本質を述べて 1 件ずつ進む。次に何を扱うかは AI が決める。議論モード（既定）は決定を迫らず、決定モードは推奨を述べて決着させる                                                                                                                                                                                                          | `"議論したい"`                      |
 | **talk-to-codex**                                                                         | msg-sys 通信基盤上で常駐 Codex と、findings/完了判定契約を持たない自由な相談・会話を1往復単位で行う                                                                                                                                                                                                                                                                                                                  | `"Codexに相談したい"`               |
 | [**start-requirements**](docs/readme/forge/guide_create_docs_ja.md#start-requirements)    | 対話・ソース解析・Figma の 3 モードで要件定義書を作成                                                                                                                                                                                                                                                                                                                                                                | `"要件定義"`                        |
 | [**start-design**](docs/readme/forge/guide_create_docs_ja.md#start-design)                | 要件定義書から設計書を作成。既存資産の再利用を重視                                                                                                                                                                                                                                                                                                                                                                   | `"設計書作成"`                      |
@@ -115,7 +118,6 @@ flowchart LR
 | [**setup-doc-structure**](docs/readme/guide_doc_structure_ja.md#forgesetup-doc-structure) | `.doc_structure.yaml` 生成 + ディレクトリ scaffold                                                                                                                                                                                                                                                                                                                                                                   | `"初期設定"`                        |
 | [**setup-version-config**](docs/readme/forge/guide_setup_ja.md#setup-version-config)      | `.version-config.yaml` 生成・更新                                                                                                                                                                                                                                                                                                                                                                                    | `"バージョン設定"`                  |
 | [**update-version**](docs/readme/forge/guide_setup_ja.md#update-version)                  | バージョン一括更新。patch/minor/major/直接指定                                                                                                                                                                                                                                                                                                                                                                       | `"バージョン更新"`                  |
-| [**clean-rules**](docs/readme/forge/guide_setup_ja.md#clean-rules)                        | rules/ を分類学に基づいて分析・再構築                                                                                                                                                                                                                                                                                                                                                                                | `"rules を整理"`                    |
 | [**help**](docs/readme/forge/guide_setup_ja.md#help)                                      | インタラクティブヘルプ                                                                                                                                                                                                                                                                                                                                                                                               | `"ヘルプ"`                          |
 | **onboarding**                                                                            | セッション起動直後に 1 回実行。スキルを経由しない直接作業でも守るべき基盤文書を全件 Read し、規範をプロジェクトの CLAUDE.md へ承認のうえ転記する                                                                                                                                                                                                                                                                     | `"作業をやって"`                    |
 | [_doc-structure_](docs/readme/guide_doc_structure_ja.md)                                  | `.doc_structure.yaml` のパース・パス解決                                                                                                                                                                                                                                                                                                                                                                             | ※ 各オーケストレーターが呼び出し    |
@@ -125,18 +127,18 @@ flowchart LR
 
 > [詳細ガイド](docs/readme/guide_anvil_ja.md) — 使い方、使用例
 
-| スキル                                                   | 説明                                                                                      | トリガー                            |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- |
-| [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push                                  | `"コミットして"`                    |
-| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成                         | `"PR を作成"`                       |
-| **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）              | `"issue を作成"`                    |
-| **triage-issue**（試作）                                 | 開発フローの分岐点。軽量実装なら impl-issue を起動、SDD なら forge エントリポイントを提案 | `"このIssueをトリアージして"`       |
-| _impl-issue_                                             | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応）    | ※ triage-issue が呼び出し           |
-| **capture-emulator-screen**                              | Android Emulator / iOS Simulator 上で実装済みアプリ画面を起動・操作・キャプチャ           | ※ sync-screen-design 等から呼び出し |
-| **sync-screen-design**                                   | 画面設計書・Figma・実装キャプチャの三点突合で実装画面を仕様とデザインに同期               | `"Figma 通りに直して"`              |
-| _figma-mcp-guide_                                        | Figma MCP サーバーの公式知識ベース。get_design_context / get_screenshot 等のツール仕様    | ※ 他スキルが参照                    |
-| _prepare-figma_                                          | Figma デザインからデザイン仕様書を作成。nodeId 検証とプレビュー突合まで                   | ※ impl-issue が呼び出し             |
-| _resolve-figma-node_                                     | 画面名/ID から Figma 内の正しい nodeId と URL を PAT で検証して特定                       | ※ prepare-figma 等が呼び出し        |
+| スキル                                                   | 説明                                                                                                                                          | トリガー                            |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [**commit**](docs/readme/guide_anvil_ja.md#commit)       | 変更内容からコミットメッセージを自動生成し commit & push                                                                                      | `"コミットして"`                    |
+| [**create-pr**](docs/readme/guide_anvil_ja.md#create-pr) | GitHub PR をドラフト作成。コミット差分からタイトル/本文を自動生成                                                                             | `"PR を作成"`                       |
+| **create-issue**                                         | 問題・背景・原因を整理して GitHub Issue を作成（解決策は impl-issue が担当）                                                                  | `"issue を作成"`                    |
+| **triage-issue**（試作）                                 | 開発フローの分岐点。ワンショット実装なら impl-issue を起動、SDD なら forge エントリポイントを提案、決め事が残るなら plan モードでの検討を提案 | `"このIssueをトリアージして"`       |
+| _impl-issue_                                             | GitHub Issue から実装計画策定→ブランチ作成→実装→PR 作成までを一貫実行（UI Issue 対応）                                                        | ※ triage-issue が呼び出し           |
+| **capture-emulator-screen**                              | Android Emulator / iOS Simulator 上で実装済みアプリ画面を起動・操作・キャプチャ                                                               | ※ sync-screen-design 等から呼び出し |
+| **sync-screen-design**                                   | 画面設計書・Figma・実装キャプチャの三点突合で実装画面を仕様とデザインに同期                                                                   | `"Figma 通りに直して"`              |
+| _figma-mcp-guide_                                        | Figma MCP サーバーの公式知識ベース。get_design_context / get_screenshot 等のツール仕様                                                        | ※ 他スキルが参照                    |
+| _prepare-figma_                                          | Figma デザインからデザイン仕様書を作成。nodeId 検証とプレビュー突合まで                                                                       | ※ impl-issue が呼び出し             |
+| _resolve-figma-node_                                     | 画面名/ID から Figma 内の正しい nodeId と URL を PAT で検証して特定                                                                           | ※ prepare-figma 等が呼び出し        |
 
 > **太字** = ユーザー起動可能、_斜体_ = AI 専用（他スキルから内部的に呼び出される）
 
@@ -223,7 +225,7 @@ claude plugin update forge@bw-cc-plugins --scope local    # local スコープ�
 ## 動作要件
 
 - [Claude Code](https://claude.ai/code) CLI
-- Python 3（setup スキャン用）
+- Python 3.11 以上（Python スクリプト実行用。Python 3.10 以下はサポート対象外）
 - [Codex CLI](https://github.com/openai/codex)（任意。常駐 Codex セッションを使うレビューバックエンド `msg-review` と `/forge:talk-to-codex` に必要。未導入なら `msg-review` は候補として利用不可になる）
 - 文書検索を使う場合はいずれかの backend: 外部 [doc-advisor](https://github.com/BlueEventHorizon/DocAdvisor)（Python 標準ライブラリのみ・追加 API キー不要）、または doc-db（ローカル文書検索サーバ）
 - [gh CLI](https://cli.github.com/)（anvil 用、認証済み）

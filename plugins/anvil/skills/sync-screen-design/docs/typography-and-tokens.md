@@ -2,7 +2,7 @@
 
 Figma の値（fontSize / fontWeight / lineHeight / color）を **推測せず** `AppTextThemeJP` / `AppTextThemeEN` / `AppTextColors` 等のトークンへ機械的に変換するためのルール。
 
-> **教訓**: トークン名を「だいたい」で選ぶと font / color が大量にズレる。**Widget を直す前に Typography 対応表を作る。**
+> **原則**: トークン名を「だいたい」で選ぶと font / color が大量にズレる。**Widget を直す前に Typography 対応表を作る。**
 
 ## 目次
 

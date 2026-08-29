@@ -27,16 +27,17 @@ allowed-tools: Read, Grep      # 承認なしで使えるツールの allowlist
 
 ### フィールド一覧
 
-| フィールド                 | 必須 | 型             | デフォルト                   | 効果                                                                        |
-| -------------------------- | ---- | -------------- | ---------------------------- | --------------------------------------------------------------------------- |
-| `name`                     | 推奨 | string         | ディレクトリ名               | スキル識別名。小文字・数字・ハイフン、64 字以下                             |
-| `description`              | 推奨 | string         | Markdown 本文の第 1 段落     | Claude 自動呼び出し判定に使用。`when_to_use` と合算 1,536 字以下            |
-| `user-invocable`           | 任意 | boolean        | `true`                       | false で `/` メニュー非表示（Skill ツール経由は呼出可能）                   |
-| `argument-hint`            | 任意 | string         | なし                         | オートコンプリート時のヒント表示                                            |
-| `disable-model-invocation` | 任意 | boolean        | `false`                      | true で Claude 自動呼び出し禁止。`description` も context から削除される    |
-| `allowed-tools`            | 任意 | string \| list | 親 permission を継承         | 承認なしで使えるツールの **allowlist**（denylist ではない）                 |
-| `context`                  | 任意 | `fork`         | 未指定（継承型・インライン） | 公式フィールドだが本リポジトリでは使用禁止（fork 型 SKILL は採用しない）    |
-| `agent`                    | 任意 | string         | `general-purpose`            | `context: fork` 時のみ意味あり。本リポジトリでは `context` と同じく使用禁止 |
+| フィールド                 | 必須 | 型             | デフォルト                   | 効果                                                                         |
+| -------------------------- | ---- | -------------- | ---------------------------- | ---------------------------------------------------------------------------- |
+| `name`                     | 推奨 | string         | ディレクトリ名               | スキル識別名。小文字・数字・ハイフン、64 字以下                              |
+| `description`              | 推奨 | string         | Markdown 本文の第 1 段落     | Claude 自動呼び出し判定に使用。`when_to_use` と合算 1,536 字以下             |
+| `user-invocable`           | 任意 | boolean        | `true`                       | false で `/` メニュー非表示（Skill ツール経由は呼出可能）                    |
+| `argument-hint`            | 任意 | string         | なし                         | オートコンプリート時のヒント表示                                             |
+| `disable-model-invocation` | 任意 | boolean        | `false`                      | true で Claude 自動呼び出し禁止。`description` も context から削除される     |
+| `allowed-tools`            | 任意 | string \| list | 親 permission を継承         | 承認なしで使えるツールの **allowlist**（denylist ではない）                  |
+| `disallowed-tools`         | 任意 | string \| list | なし                         | 指定したツールをモデルから外す。**利用者が次のメッセージを送ると解除される** |
+| `context`                  | 任意 | `fork`         | 未指定（継承型・インライン） | 公式フィールドだが本リポジトリでは使用禁止（fork 型 SKILL は採用しない）     |
+| `agent`                    | 任意 | string         | `general-purpose`            | `context: fork` 時のみ意味あり。本リポジトリでは `context` と同じく使用禁止  |
 
 出典: [Claude Code Skills 公式 docs](https://code.claude.com/docs/en/skills)
 
@@ -107,18 +108,21 @@ SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分
 
 性質に応じて以下を組み合わせる (fork 境界に依存しない設計):
 
-| 層            | 役割                                                   | 実現方法                                          | カスタム Agent       | 継承型 SKILL                      |
-| ------------- | ------------------------------------------------------ | ------------------------------------------------- | -------------------- | --------------------------------- |
-| A. Agent 境界 | 親 context 漏洩の遮断 (Agent ツール起動で構造的に遮断) | `Agent` ツール (`subagent_type: <plugin>:<name>`) | 必須                 | (該当なし)                        |
-| B. Role 制約  | AI 行動規範で逸脱抑止                                  | system prompt / SKILL.md 内に否定形で明記         | 必須                 | 必須 (§7.2 / COMMON-DES-001 §7.2) |
-| C. allowlist  | 承認なしで使えるツール指定                             | `tools:` (Agent) / `allowed-tools:` (SKILL)       | 必須 (tools)         | 推奨                              |
-| D. 物理 deny  | 書き込み系ツールの強制禁止                             | `.claude/settings.json` の `permissions.deny`     | プロジェクト側で対応 | 同左                              |
+| 層            | 役割                                                   | 実現方法                                           | カスタム Agent       | 継承型 SKILL                      |
+| ------------- | ------------------------------------------------------ | -------------------------------------------------- | -------------------- | --------------------------------- |
+| A. Agent 境界 | 親 context 漏洩の遮断 (Agent ツール起動で構造的に遮断) | `Agent` ツール (`subagent_type: <plugin>:<name>`)  | 必須                 | (該当なし)                        |
+| B. Role 制約  | AI 行動規範で逸脱抑止                                  | system prompt / SKILL.md 内に否定形で明記          | 必須                 | 必須 (§7.2 / COMMON-DES-001 §7.2) |
+| C. allowlist  | 承認なしで使えるツール指定                             | `tools:` (Agent) / `allowed-tools:` (SKILL)        | 必須 (tools)         | 推奨                              |
+| D. 物理 deny  | 書き込み系ツールの強制禁止                             | `.claude/settings.json` の `permissions.deny` (注) | プロジェクト側で対応 | 同左                              |
 
 > A 層は旧 `context: fork` から **Agent ツール起動** へ置換されている。Agent ツール経由起動は親 context を確実に遮断し、`$ARGUMENTS` 不達バグも踏まない。
+>
+> 注: D 層には frontmatter の `disallowed-tools` もあるが、**利用者が次のメッセージを送ると解除される**ため、多ターンの対話では防御にならない (前掲「よくある誤解の訂正」)。単発で完結する SKILL でのみ D 層として数えられる。多ターンで禁止を効かせたい場合は `permissions.deny` か B 層 (Role 制約) で行う。
 
 ### よくある誤解の訂正 [MANDATORY]
 
-- **`allowed-tools` / `tools:` は禁止リストではない**。指定したツールを **承認プロンプトなしで** 使えるようにする allowlist であり、指定外のツールも (permission 設定が許せば) 呼び出し可能。書き込みを完全禁止したい場合は `.claude/settings.json` の `permissions.deny` を使う。frontmatter 単独では物理剥奪できない。
+- **`allowed-tools` / `tools:` は禁止リストではない**。指定したツールを **承認プロンプトなしで** 使えるようにする allowlist であり、指定外のツールも (permission 設定が許せば) 呼び出し可能。**この 2 つのフィールドから外すことは剥奪ではない**。
+- **`disallowed-tools` は恒久的な剥奪ではない**。指定したツールをモデルから外すが、**利用者が次のメッセージを送った時点で解除される** (Claude Code 2.1.227 の frontmatter スキーマを実測)。単発で完結する SKILL には効くが、**多ターンの対話では 2 通目以降に効かない**。セッション全体で禁じたい場合は `.claude/settings.json` の `permissions.deny` を使う。**frontmatter だけで多ターンにわたる禁止を保証することはできない**。
 - **`context: fork` は採用しない (廃止)**。`agent:` も `context: fork` と一緒に使うため不要。
 - **省略時のデフォルト**: `context:` 未指定 = 継承型 (本リポジトリの標準形)。
 - **Agent 経由でも prompt に親タスクを貼り付けない**。allowlist 外への書き込み / 無関係 refactor を誘発する。
@@ -290,6 +294,25 @@ AskUserQuestion を使用してエンジンを確認する:
 > SKILL.md に「ユーザーに確認する」「ユーザーに提示する」「ユーザーに問い合わせる」と書く箇所は、
 > すべて「AskUserQuestion を使用して確認する」と明記すること。
 
+### 例外: 議論の内容そのものの提示 [MANDATORY]
+
+利用者との**議論の進行そのものが成果物**である SKILL では、**議論の内容にあたる提示**を地の文で行う。
+論点・背景と本質・推奨、および議論上の選択肢がこれにあたる。
+
+理由: 選択肢 UI は背景と本質を置く場所を持たない。これらの SKILL が従う提示順序（背景 → 本質 →
+推奨 → 選択肢）を満たせず、背景抜きで選ばせる提示になる。
+
+**例外はここまでである。同じ SKILL の中でも、進行上の機械的な確認には AskUserQuestion を使う**
+（作業ファイルの再開 / 新規、件数・閾値の設定など）。SKILL 全体を規約の対象外にはしない。
+
+**この例外は SKILL 単位で明示的に宣言する。** 該当する SKILL は、本文に「どの提示を地の文で行い、
+どの確認を AskUserQuestion で行うか」の境界を書く。宣言しない SKILL は上記の [MANDATORY] に従う
+（「議論的だから」を理由に個々の判断で外れてはならない）。
+
+**`disallowed-tools: AskUserQuestion` による全面封じは行わない。** 多ターンの対話では利用者の次の
+メッセージで解除されるため機能せず（前掲「よくある誤解の訂正」）、機械的な確認まで巻き込んで
+禁じてしまう。境界は本文の Role 制約で示す。
+
 ---
 
 ## このプロジェクトでの規約
@@ -299,4 +322,4 @@ AskUserQuestion を使用してエンジンを確認する:
 - スクリプトのパス参照は `${CLAUDE_PLUGIN_ROOT}` を使用
 - `[MANDATORY]` マーカーは省略・変更不可の必須仕様に付ける
 - フォーマット・テンプレート類は `plugins/{plugin-name}/docs/` に配置
-- ユーザーへの質問・確認は必ず `AskUserQuestion` を使用する（上記参照）
+- ユーザーへの質問・確認は必ず `AskUserQuestion` を使用する（議論の内容そのものの提示だけが例外。上記参照）

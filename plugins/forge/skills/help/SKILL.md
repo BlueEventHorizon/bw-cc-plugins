@@ -22,13 +22,13 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 利用可能な forge スキル:
 
   review              : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+  consult             : 議論を進行。論点を立て、討議ファイルに記録しながら 1 件ずつ
   start-requirements  : 要件定義書の作成。3モード対応
   start-design        : 設計書の作成。レビュー+自動修正→commit
   start-plan          : 計画書の作成。レビュー+自動修正→commit
   start-implement     : 計画書から実装・レビュー・計画更新
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
   create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
-  clean-rules         : ルール文書を分析し重複を検出・削除
   merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
   setup-doc-structure : .doc_structure.yaml を対話的に生成
   setup-version-config: .version-config.yaml を対話的に生成
@@ -101,9 +101,8 @@ AskUserQuestion:
 ```
 修正モードを選択してください:
 - レビューのみ（修正なし）
-- 自動修正 1サイクル（🔴🟡を自動修正）
+- 自動修正 1サイクル（確信のあるものだけ確認なしに修正。確信の無いものは提示して採否を聞く）
 - 自動修正 Nサイクル（N サイクル）
-- --auto-critical（🔴致命的のみ自動修正）
 ```
 
 「自動修正 Nサイクル」を選んだ場合:
@@ -212,13 +211,13 @@ AskUserQuestion:
 ### create-feature-from-markdown-plan
 
 引数: Markdown plan のファイルパス（省略時は対話で決定）。
-入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.yaml`（YAML、`/forge:start-plan` が作成）とは別物。
+入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.json`（JSON、`/forge:start-plan` が作成）とは別物。
 
 ---
 
-### clean-rules
+### consult
 
-引数: ルールディレクトリパス（省略時はデフォルト）
+引数: 議論したい対象や問い（省略時は会話の流れから論点を立てる）
 
 ---
 

@@ -1,0 +1,18 @@
+{
+  "task_id": "<task_id>",
+  "status": "SUCCESS",
+  "files_modified": [],
+  "summary": "<implementation summary>",
+  "verification": {
+    "build": "success",
+    "build_reason": null,
+    "tests": "success",
+    "tests_reason": null
+  },
+  "pre_mortem": {
+    "actualized_risks": [],
+    "implementation_adjustments": []
+  },
+  "notes": [],
+  "error": null
+}

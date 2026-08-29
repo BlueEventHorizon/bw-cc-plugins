@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.4.3) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
-- **anvil** (v0.1.2) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
+- **forge** (v0.5.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
+- **anvil** (v0.1.3) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
 > 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
 
@@ -37,6 +37,8 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 - **本リポジトリは下流プロジェクトを導く SoT である**。配布された SKILL / agent / script を使っている最中に不具合・不足を発見したら、`~/.claude/plugins/cache/` のキャッシュ実体や下流プロジェクトでの回避策で済ませず、必ず本リポジトリ（`plugins/{anvil,forge}/...`）の原本を直す。キャッシュは次回 install で再生成されるため、原本を直すことが下流すべてへの正しい伝播経路になる。「刹那的に今のセッションで動くようにする」ではなく「プロジェクトを正しいものに完遂し、すべての他のプロジェクトを正しく導く」が目的。memory に回避策を保存するのは原本修正の代替にならない
 - **決定論的な定型処理（列挙・転記・集計・ファイル生成）は script 化する**。AI は判断のみ担い、手転記・手列挙をしない
 - **agent/SKILL のプロンプト指示は混入点でなく出力構築点に 1 箇所だけ置く**。近接した複数箇所への同一指示は重複であり追記しない
+- **存在しない機能・削除した機能への言及を本文に残さない**: 「これはやらない」という禁止の記述は、対応する現実的な混同リスク（類似の隣接機能・過去の誤実装実績等）がある場合にのみ書く。
+- **操作を自己流で組み立てる前に available-skills を照合する**: 一致する skill があれば使う。あえて使わないなら理由を明示する。素通りすると skill の契約が欠落し、後で気づいて修正・やり直しになる（実績: PR #31、`anvil:create-pr` 素通りで Issue クローズキーワードが欠落）
 
 ## meta/ ディレクトリ（現在不在）
 
@@ -48,8 +50,9 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ## Development
 
-ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみで動作する（外部依存を追加しない）**。`makefile` はビルドではなくインストール・外部接続用（`make install-forge` / `install-anvil` / `install-all`、Codex 向けは `install-*-codex`）。
+ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` はビルドではなくインストール・外部接続用（`make {forge,anvil}-install-claude-project-copy`、Codex 向けは `make {forge,anvil}-install-codex-project-copy`。いずれも `DIR=` 必須で、実ファイルを copy する。自動 uninstall は無い）。
 
+- **Python 3.11 以上をサポート対象とする**。Python 3.10 以下は対象外
 - **CI（`.github/workflows/ci.yml`）のゲートは 2 つ**: `python3 -m unittest discover -s tests -p 'test_*.py'` と `dprint check`。JSON / TOML / Markdown / YAML を編集したら [dprint](https://dprint.dev/) で `dprint fmt` を通す（設定は `dprint.jsonc`）。通さないと CI が落ちる
 - ローカル読み込み: `claude --plugin-dir ./plugins/forge --plugin-dir ./plugins/anvil`。詳細は [DEVELOPMENT.md](DEVELOPMENT.md)
 - `AGENTS.md` は `CLAUDE.md` へのシンボリックリンク（Codex 向け）。どちらを編集しても同一実体が変わる
@@ -95,35 +98,66 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-<!-- FORGE_ONBOARDING_START hash=d2d3c6b51826 -->
+<!-- FORGE_ONBOARDING_START hash=a989e6615060 -->
 
 > このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
 > `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
+> forge はこのブロックの範囲だけ CLAUDE.md を利用している。ブロックの外側はプロジェクトの所有物。
 
-## forge 必読文書 [MANDATORY]
+## forge SSOT の定義
 
-**NEVER skip.** 下記を全て読み込み、深く理解すること。
+- SSOT とは「真理が単一」であることではなく、ある関心事について「変更と不整合を収束させる先が一意」であること。正本は絶対的な真理ではなく、反証されれば更新される循環の現在値である。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md` — 文書を書く・直すときの記述スタイル
-- `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` — ADR を直接起票するときの書式
-- `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md` — 設計書の保守と歴史的記録の扱い
-- `${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md` — ADR に何を書き何を書かないか、可変性と失効の扱い
-- `${CLAUDE_PLUGIN_ROOT}/docs/forge_anti_patterns.md` — 実装・文書で踏んではならないアンチパターン
-- `${CLAUDE_PLUGIN_ROOT}/docs/sensitive_information_spec.md` — リポジトリに含めてはならない情報
-- `${CLAUDE_PLUGIN_ROOT}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）
+## forge 文書規範
 
-## forge プロジェクト文書 [MANDATORY]
+- タグ（`[MANDATORY]` / `[CRITICAL]` / `[IMPORTANT]`）は見出し行の末尾に付け、希少性を保つ（乱用すると効かなくなる。1 文書 0〜3 箇所が目安）。見出しは 4 階層（`####`）まで。語尾の長音は JIS Z 8301 に従い省略する（例: ディレクトリ、カテゴリ）
+- 文書内に「改定履歴」「変更履歴」等の履歴セクションを置かない。履歴は CHANGELOG と git 履歴が持ち、設計判断の変更は ADR に記録する
+- 「関連文書」等のリンク集セクションを置かない。必要でない参照は書かない。書かなければ本文が理解・検証できない参照だけを `[表示名](相対パス)` 形式で書く
+- 要件（What）と設計（How）の境界は「ユーザーマニュアルに書く内容か」で判定する。要件定義書にクラス名・メソッド名・シーケンス図を書かない。設計書に「本設計により X を達成する」等の保証表現を書かない
+- 未確定の定量値を推測して書かない（TBD とする）。責務分割・境界・依存方向などの構造品質を数値目標に翻訳しない
+- 実装・設計・命名を変えて文書と乖離が生じたら、同じ変更の中で文書も直す
+- ADR に仕様・ルールの本文を写さない（真実源が 2 つになる）。ADR を根拠に提案を見送るときは、棄却理由の前提が今も成立するかを確かめ、根拠にした ADR ID を添える。ADR の節番号は変えない
+- 新規の文書 ID（REQ- / DES- / ADR- 等）を手動で採番しない（採番スキルを使う。並行ブランチでの ID 衝突を防ぐ）
+- 差分 feature の要件定義書・設計書には一時 frontmatter（`feature_type: temporary-feature`）を付ける
+
+## forge 実装規範 [MANDATORY]
+
+- 読まずに書き始めない。必読文書・検索でヒットした文書は、見出しや部分読みで済ませず本文を読む。調査は「該当なし」も記録し、未調査と区別できるようにする
+- 推測で埋めない。仕様・設計に無い値を空想（類似からのコピー・「よくある値」）で実装しない。重要な仕様が未定義なら実装を止めて報告する
+- 既存資産を探してから作る。既存があれば改修 > 新規。兄弟機能で確立されたパターンを壊さない。スコープ境界や影響範囲の狭さを口実に、同種の実装を並列に新設しない
+- 複数箇所から参照される共用部品を、1 箇所の都合のために書き換えない
+- 実装の修正に伴い要件定義書・設計書の変更が必要になるなら差分 feature を使う（「バグ修正だから」等の変更の名目で判定しない）。実装期間中は旧仕様ファイルを書き換えず、新規ファイルへ切り出す
+- 修正の検証は変更を反映した実体で行う。変更前の状態で得た結果を根拠に「直った」と判断しない。大規模な書き換え・改名の後は、旧記述の残存を機械的に確認してから完了とする
+- 「理論上あり得る」だけを根拠にした防御実装・投機的対策を積み増さない。この抑止を適用してよいのは投機的な防御の類型だけであり、判定に迷う指摘は通常どおり修正対象として扱う
+
+## forge 機密情報 [MANDATORY]
+
+- 認証情報・秘密鍵・資格情報を含む接続文字列・実在する個人の情報・内部ネットワーク情報をリポジトリに含めない
+- commit された秘密は削除しても漏洩として扱う。修正は該当する秘密の失効・再発行を伴う
+- 例示に実在の値を一部改変したものを使わない（公式の例示値・明白なプレースホルダを使う）。混入かどうか判断に迷う値は混入として扱う
+- 検出した秘密の実体を報告・所見・ログに書き写さない。種別・位置・先頭数文字までに留める
+
+## forge 提示・議論の作法
+
+- 判断を求めるときは背景と本質を先に述べ、選択肢に帰結を添え、推奨を 1 つ明示する（推奨を伏せて中立を装わない）
+- 判断・提案には確信度を添える。過去の説明を「前述の通り」で済ませず、要点を再掲する
+- 「叩き台を作って」「議論しよう」は議論の起点であり、決定フローの依頼ではない。叩き台を書いたらそこで止まり、列挙した論点を連続質問で次々問わない
+
+## forge プロジェクト文書
 
 - プロジェクトルール文書の参照には `query-db-rules` SKILL を使う
 - プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
 - プロジェクト仕様の参照には `query-db-specs` SKILL を使う
 - プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
 
-## forge 重要規約 [MANDATORY]
+## forge 重要規約
 
 - **実装・文書改編に着手する前に `/forge:query-forge-rules`・`/forge:query-db-rules` で関連する原則・ルールを特定して読む**（スキル経由の作業は各スキルの調査 Phase がこれを担う。会話直の作業でも省略しない）
 - **ルールはルール文書管理**: コンテキスト肥大化防止のため、CLAUDE.md にルールを詰め込まないことを推奨する
 - **一般の作業で CHANGELOG.md・version 関連ファイルを編集しない**。リリースコミットでまとめて更新（`/forge:update-version` を使う）
 - **`.toc_work/` 等の消えるべき一時物は `.gitignore` に入れない**。残存が `git status` に untracked として出ることで異常を検知できる
+- セマンティック検索とは、字句の一致ではなく意味に基づいて文書を選ぶ検索であり、実現手段（ベクトル類似度か LLM による読解か）は問わない
+- query-db-xxx SKILL はセマンティック検索であり、ワード一致検索（grep）ではない。**取りこぼしを出さないこと（false negative 厳禁）を規約として検索する**ため、意味的に近い文書を広く拾って返す。最終的に何を読むかは、何を求めて検索したかを知っている検索の実行主体が判断する
+- doc-advisor のフロントマターを持つ文書を編集したら、`/doc-advisor:write-frontmatter --paths <編集した文書>` で再生成する。`Edit` / `Write` で直接書き換えてはならない（`body_hash` の打刻・値域検証・マージ規則は script の責務であり、手書きでは信頼されないフロントマターになる）。**編集した本人がその場で書いておく**。信頼できるフロントマターが原本にあれば、後日 `update-db-rules` / `update-db-specs` が走るときに AI 抽出が省かれ、索引が高速に作られる（信頼できなければ AI 抽出へフォールバックする）
 
 <!-- FORGE_ONBOARDING_END -->

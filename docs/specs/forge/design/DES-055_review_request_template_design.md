@@ -1,16 +1,5 @@
 # DES-055 レビュー依頼テンプレート設計
 
-## メタデータ
-
-| 項目     | 値                               |
-| -------- | -------------------------------- |
-| 設計 ID  | DES-055                          |
-| 関連要件 | REQ-013（FNC-1303 / FNC-1312）   |
-| 作成日   | 2026-07-26                       |
-| 対象     | forge プラグイン `/forge:review` |
-
----
-
 ## 1. 概要
 
 レビュー依頼本文を、**レビューのパターンごとに 1 枚の自然言語テンプレート**として持ち、スクリプトは動的データの埋め込みと検証のみを行う設計。共通本文はバックエンド中立とし、固有のワイヤプロトコルを含めない。
@@ -71,7 +60,7 @@
 | `code`        | `review_criteria_code.md`、`review_priorities_spec.md`、`forge_anti_patterns.md`                                                                                                                                                                                         |
 | `requirement` | `review_criteria_requirement.md`、`review_priorities_spec.md`、`requirement_format.md`、`spec_design_boundary_spec.md`、`spec_priorities_spec.md`、`document_style_guide.md`                                                                                             |
 | `design`      | `review_criteria_design.md`、`review_priorities_spec.md`、`design_format.md`、`adr_format.md`、`adr_principles_spec.md`、`design_principles_spec.md`、`spec_design_boundary_spec.md`、`document_style_guide.md`                                                          |
-| `plan`        | `review_criteria_plan.md`、`review_priorities_spec.md`、`plan_format.md`、`plan_principles_spec.md`、`scope_proportionality_spec.md`、`document_style_guide.md` §5.3                                                                                                     |
+| `plan`        | `review_criteria_plan.md`、`review_priorities_spec.md`、`plan_principles_spec.md`、`scope_proportionality_spec.md`、`document_style_guide.md` §5.3                                                                                                                       |
 | `uxui`        | `review_criteria_uxui.md`、`review_priorities_spec.md`、`start-uxui-design/docs/` 配下の設計原則                                                                                                                                                                         |
 | `secrets`     | `review_criteria_secrets.md`、`review_priorities_spec.md`、`sensitive_information_spec.md`                                                                                                                                                                               |
 
@@ -139,6 +128,12 @@
 
 **検出値の混入は検証で防がない**。スキャン結果の生成元を信頼境界の内側に置くことで、マスクを経ていない値が本文へ到達する経路自体を無くしている（§8.3。REQ-013 FNC-1316）。
 
+### 4.5 全所見の自己検証
+
+全テンプレートの返信形式契約に、すべての所見を対象とする自己検証手順を同じ文面で持たせる。レビュアーは所見の根拠を検証質問へ分解し、対象ファイル・参照文書・利用可能な実体で各質問を独立に検証する。反証・例外・重大度カタログとの不一致が見つかった所見は、返信前に修正または撤回する。
+
+検証過程は返信形式に含めず、検証後も成立する所見だけを出力させる。共通断片には分割しない。各テンプレートを単体で読めば依頼全体が分かる性質を維持し、8 枚の文面一致は §7 の契約テストで保証する。
+
 ---
 
 ## 5. スクリプトの責務
@@ -189,6 +184,7 @@
 | 観点文書の実在（契約テスト）       | テンプレートが名指しする `{{PLUGIN_ROOT}}` 配下の観点文書が実在する                                                                                                                         |
 | 重点観点（FNC-1313）               | 全テンプレートが `{{FOCUS}}` を持ち、値が埋め込まれ、未指定・空白時は `（指定なし）` になる。改行を含む値はエラー終了する。重点観点を渡しても内蔵観点の名指しが消えない                     |
 | 重大度マーカーの置き場（FNC-1318） | 全テンプレートの返信形式契約が、マーカーを所見 1 行目の行頭に置くことと、重大度を見出しにまとめる形が受理されないことを述べている                                                           |
+| 全所見の自己検証（FNC-1321）       | 全テンプレートの返信形式契約が、検証質問への分解、実体による独立検証、反証時の修正または撤回、検証後も成立する所見だけの出力を要求する                                                      |
 | 文書参照の恒久観点（FNC-1314）     | 文書系 criteria が文書スタイル規約を名指しし、規約側に重大度カタログが存在する                                                                                                              |
 | 機密情報の検出（FNC-1315）         | 既知形式を取りこぼさない。プレースホルダ・コード式・チェックサム表を誤検出しない                                                                                                            |
 | 検出値の非再掲（FNC-1316）         | 出力・依頼本文のどこにも実値が現れない。実値を持つキーを含むスキャン結果はエラー終了する                                                                                                    |

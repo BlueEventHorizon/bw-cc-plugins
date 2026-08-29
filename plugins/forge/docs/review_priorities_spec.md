@@ -1,4 +1,4 @@
-# レビュー優先度仕様 [MANDATORY]
+# レビュー優先度仕様
 
 レビューが検出する観点の優先度体系と、その判定における判断 (severity / グレーゾーン) の所在を定義する。
 本文書は forge が配布する `/forge:review` と、各 `review_criteria_*.md` が **MANDATORY 参照する基底ポリシー** である。
@@ -46,16 +46,16 @@
 
 priority と severity は **独立した二軸** であり、互いに置き換わらない。
 
-| 軸           | 役割                        | 値                                            | 用途                                      |
-| ------------ | --------------------------- | --------------------------------------------- | ----------------------------------------- |
-| **priority** | 観点の出所 (何で検出したか) | `P1` / `P2` / `P3`                            | finding の分類軸                          |
-| **severity** | 修正の緊急度                | `critical` / `major` / `minor` (🔴 / 🟡 / 🟢) | `--auto-critical` / `--auto` の対象選定軸 |
+| 軸           | 役割                        | 値                                            | 用途                                 |
+| ------------ | --------------------------- | --------------------------------------------- | ------------------------------------ |
+| **priority** | 観点の出所 (何で検出したか) | `P1` / `P2` / `P3`                            | finding の分類軸                     |
+| **severity** | 修正の緊急度                | `critical` / `major` / `minor` (🔴 / 🟡 / 🟢) | 提示順の材料（修正の可否は決めない） |
 
 ### 2.1 独立軸であることの帰結
 
 - P1 (ルール照合) で検出した違反が必ず critical とは限らない
 - P3 (不要な複雑化) であっても critical となる場合がある (例: Goodhart の罠を誘発する数値目標化)
-- finding は priority と severity の両方を持ち、`--auto-critical` は severity=critical のみを対象とする (priority 不問)
+- finding は priority と severity の両方を持つ。**severity は提示順の材料であり、確認なしに修正してよいかは決めない**（決めるのは本体の確信度。REQ-013 FNC-1304）
 
 ### 2.2 severity の SoT は委譲先 principles [MANDATORY]
 
@@ -85,13 +85,13 @@ severity の単一の真実源 (SoT) は **委譲先 principles の重大度カ�
 
 `logic` / `resilience` / `maintainability` / `architecture` / `completeness` 等の固有 perspective を criteria に追加することは原則禁止する。品質特性 (保守性・堅牢性・アーキテクチャ整合性等) のレビューは P1 のルール照合に委譲する。
 
-### 3.4 fix 判定の比例性確認 [MANDATORY]
+### 3.4 fix 判定の比例性確認
 
 指摘が [scope_proportionality_spec.md](scope_proportionality_spec.md) §2 の3類型（カタストロフィックな外部要因への防御 / 発生経路を具体化できない投機的な防御実装 / 設計・要件・ルールに根拠のない品質改善の即時修正化）のいずれかに該当する場合に限り、`fix` 採用条件の適用前に evaluator が同文書 §4 の3点チェックを確認する。いずれかを満たさない指摘は `fix` ではなく `skip` とする。
 
 **3類型に該当しない指摘（明示された要件・設計・ルール違反、具体的な実行時リスク、データ損失・セキュリティ・破壊的操作等）には本節を適用しない**。通常の `fix` 採用条件（各 criteria §3）のみで判定する。「レビューで発見されたこと」自体は3類型のいずれにも該当せず、`skip` の根拠にならない。
 
-### 3.5 criteria は severity を宣言しない [MANDATORY]
+### 3.5 criteria は severity を宣言しない
 
 各 `review_criteria_*.md` は **severity (🔴 / 🟡 / 🟢) を一切宣言しない**。
 
@@ -99,7 +99,7 @@ severity の単一の真実源 (SoT) は **委譲先 principles の重大度カ�
 - severity デフォルト表 (perspective 単位での重大度割り当て表) も廃止
 - severity は委譲先 principles の重大度カタログから取得する (§2.2)
 
-### 3.6 criteria はグレーゾーン判定を持たない [MANDATORY]
+### 3.6 criteria はグレーゾーン判定を持たない
 
 各 `review_criteria_*.md` は **グレーゾーンの許容範囲判定を持たない**。
 
@@ -133,7 +133,7 @@ ADR を根拠に所見を書く、または所見を落とすときは次に従�
 
 ---
 
-## 4. `recommendation: create_issue` の判定 3 条件 [MANDATORY]
+## 4. `recommendation: create_issue` の判定 3 条件
 
 レビューが「明文ルールでカバーできないが指摘すべき問題」を発見した場合、`recommendation: create_issue` でルール追加を促す Issue を起票する。
 evaluator は finding が以下の **3 条件をすべて満たす場合のみ** `recommendation: create_issue` に分類する。
@@ -150,7 +150,7 @@ evaluator は finding が以下の **3 条件をすべて満たす場合のみ**
 
 ---
 
-## 5. 各 `review_criteria_*.md` の構造 [MANDATORY]
+## 5. 各 `review_criteria_*.md` の構造
 
 すべての `review_criteria_*.md` は以下の 3 セクション固定構造を持つ。3 セクション以外のセクションを追加してはならない。criteria は判断を持たず、principles を参照する索引と、レビュー運用上の戦術 (チェック順 / 判定ルール) のみで構成する。
 
@@ -167,7 +167,7 @@ evaluator は finding が以下の **3 条件をすべて満たす場合のみ**
 ```markdown
 # {種別} レビュー基準
 
-> SoT: ${CLAUDE_PLUGIN_ROOT}/docs/review_priorities_spec.md [MANDATORY]
+> SoT: ${CLAUDE_PLUGIN_ROOT}/docs/review_priorities_spec.md
 > 重大度判定 / グレーゾーン許容範囲は委譲先 principles 側を参照すること。本ファイルは判断を持たない
 
 ## 1. SSOT参照

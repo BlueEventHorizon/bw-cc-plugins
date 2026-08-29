@@ -16,7 +16,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 要件定義書をもとにコンテキスト収集・設計書執筆・レビュー+自動修正・commit・完了案内まで完走すること。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
@@ -36,13 +36,13 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## 事前準備 [MANDATORY]
+## 事前準備
 
 ### Feature の確定
 
 対象 Feature を確定する。Feature が決まらないと、入力（どの要件定義書を設計するか）も出力先も決まらない。
 
-**フィーチャー概念の把握 [MANDATORY]**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
@@ -54,18 +54,18 @@ doc_type `design`（feature 未指定）で既存ファイルの有無を確認�
   直接配置する（`additive_development_spec.md` §0 参照）
 - **引数なし・既存ファイルが存在する** → AskUserQuestion で対象 Feature を確認する
 
-### 新規/追加の確認 [MANDATORY]
+### 新規/追加の確認
 
 設計書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。追加開発の設計書には frontmatter の付与が必須となるため、設計書執筆前に判定する。
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 対応する追加 feature 要件定義書（`type: temporary-feature-requirement` frontmatter を持つ要件定義書）が入力に含まれるかで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 対応する追加 feature 要件定義書（`feature_type: temporary-feature` frontmatter を持つ要件定義書）が入力に含まれるかで推定し、判断がつかなければ AskUserQuestion で確認する
 
-**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+**`--add`（追加開発）の場合**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` の「追加 feature 用 frontmatter」節 — `type: temporary-feature-design` 定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
+- `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` の §1.2 — `feature_type: temporary-feature` 定義
 
 ### 出力先の解決
 
@@ -76,7 +76,7 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 - `design` に対応するエントリが無い場合は AskUserQuestion で出力先を確認する
 
-### モード判定 [MANDATORY]
+### モード判定
 
 出力先ディレクトリの設計書ファイルを Glob で確認し、モードを決定:
 
@@ -91,7 +91,7 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 - 新たな設計書ファイルを追加作成する → Phase 1 へ
 - レビューのみ行う → Skill ツールで `/forge:review design --files {既存設計書パス}` を起動して終了
 
-### プラグイン文書の読み込み [MANDATORY]
+### プラグイン文書の読み込み
 
 以下のプラグイン文書を**常に**読み込む:
 
@@ -105,7 +105,7 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 ---
 
-## Phase 1: コンテキスト収集 [MANDATORY]
+## Phase 1: コンテキスト収集
 
 以下の 3 つを **Agent ツールで並列起動** し、各 agent の **return value** を main AI コンテキストに直接保持する。各 agent は markdown bullet list で返却し、エラー時は該当カテゴリなしで後続工程に進む。
 
@@ -163,7 +163,7 @@ prompt:
 
 ---
 
-## Phase 2: 要件定義書の分析 [MANDATORY]
+## Phase 2: 要件定義書の分析
 
 ### 2.1 収集済み文書の読み込み
 
@@ -202,7 +202,7 @@ Phase 1 の既存実装 return value に記載された既存実装を確認し�
 
 ---
 
-## Phase 3: 設計書の作成 [MANDATORY]
+## Phase 3: 設計書の作成
 
 ### 3.1 設計書フォーマットの適用
 
@@ -216,7 +216,7 @@ Phase 1 の既存実装 return value に記載された既存実装を確認し�
 - **使用する既存コンポーネント**: 再利用する既存実装のファイルパス
 - 再利用しない判断をした場合はその理由
 
-### 3.2 設計ID体系の確認・採番 [MANDATORY]
+### 3.2 設計ID体系の確認・採番
 
 プロジェクトのルールに従う（ルールがない場合は `DES-XXX` 形式を推奨）。
 
@@ -229,7 +229,7 @@ python3 "$SCAN_SCRIPT" DES --share-prefixes ADR,DES
 
 JSON 出力の `next_id` をファイル名・設計 ID として使用する。`duplicates` が空でない場合は警告を表示する（`duplicates` には「異なるファイルが同じ ID / 共有番号を主張している」実際の衝突のみが報告される。同一履歴由来の複数ブランチ出現はノイズとして除外済みのため、空でなければ必ずユーザーに提示する）。
 
-**ADR（アーキテクチャ決定記録）を作成する場合 [MANDATORY]**: 設計判断の根拠を ADR として新規作成する際も、ADR の ID は手動で決定せず、必ず `next-spec-id` で採番する（プレフィックスは `ADR`）。手動採番は並行ブランチでの番号衝突（同一 `ADR-NNN` が別内容で重複）の原因になる。ADR と DES は同一ディレクトリで通し番号を共有するため、必ず `--share-prefixes ADR,DES` を付与する:
+**ADR（アーキテクチャ決定記録）を作成する場合**: 設計判断の根拠を ADR として新規作成する際も、ADR の ID は手動で決定せず、必ず `next-spec-id` で採番する（プレフィックスは `ADR`）。手動採番は並行ブランチでの番号衝突（同一 `ADR-NNN` が別内容で重複）の原因になる。ADR と DES は同一ディレクトリで通し番号を共有するため、必ず `--share-prefixes ADR,DES` を付与する:
 
 ```bash
 python3 "$SCAN_SCRIPT" ADR --share-prefixes ADR,DES
@@ -241,23 +241,10 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
-- **追加開発（`--add`）の場合 [MANDATORY]**: `design_format.md`「追加 feature 用 frontmatter」が定義する `type: temporary-feature-design` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。notes の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
+- **追加開発（`--add`）の場合**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
 - **ユーザーレビューは AI レビュー（Phase 4）の後に実施する** — AI レビューで品質問題を修正してからユーザー確認を行う方が効率的
 
-**禁止事項**:
-
-- ❌ ソースコードの大量記載（説明用の小規模例は許容）
-- ❌ 技術選択の理由を記載せずにフレームワークを指定
-- ❌ 要件にない機能の追加
-- ❌ レビュー未完了での次工程着手
-- ❌ 設計IDの重複や欠番
-
-**よくある失敗パターン（注意）**:
-
-- 既存資産を1パターンの検索で諦め、重複実装してしまう → 複数キーワード・複数ツールで網羅的に検索
-- プロジェクトの定数定義を無視して値をハードコードしてしまう → 定数定義・デザイントークンを必ず参照
-- 同種の機能・画面の既存実装を確認せず独自設計してしまう → 既存の類似パターンを必ず確認
-- 設計判断の根拠を記載しない → 技術選択の理由・代替案を設計書に文書化すること
+**禁止事項・よくある失敗パターン**: `design_principles_spec.md`「記載してはいけない内容」「よくある失敗パターン」節に従う（事前準備で読み込み済み）。
 
 ---
 

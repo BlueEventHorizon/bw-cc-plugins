@@ -1,7 +1,7 @@
 ---
 name: start-plan
 description: |
-  設計書から実装戦略を策定し、タスクを抽出して YAML 計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
+  設計書から実装戦略を策定し、タスクを抽出して計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature> [--new|--add]"
@@ -14,9 +14,9 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 ## Goal
 
-設計書からタスク抽出・YAML計画書作成・レビュー+自動修正・commit まで完走すること。
+設計書からタスク抽出・計画書作成・レビュー+自動修正・commit まで完走すること。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
@@ -36,13 +36,13 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## 事前準備 [MANDATORY]
+## 事前準備
 
 ### Feature の確定
 
 対象 Feature を確定する。Feature が決まらないと、入力（どの設計書から計画するか）も出力先も決まらない。
 
-**フィーチャー概念の把握 [MANDATORY]**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
@@ -54,18 +54,18 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
   直接配置する（`additive_development_spec.md` §0 参照）
 - **引数なし・既存ファイルが存在する** → AskUserQuestion で対象 Feature を確認する
 
-### 新規/追加の確認 [MANDATORY]
+### 新規/追加の確認
 
-計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。追加開発の計画書には frontmatter マーカーの付与が必須となるため、計画書作成前に判定する。
+計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。判定結果によって frontmatter_format.md §1.3 の扱い（frontmatter を付与しない）は変わらないが、後続の要件・設計文書の参照解決に影響するため、計画書作成前に判定する。
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`type: temporary-feature-*` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
 
-**`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+**`--add`（追加開発）の場合**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外 / §6 frontmatter 定義一覧）
-- `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md` の「追加 feature 用 frontmatter」節 — `type: temporary-feature-plan` マーカー定義
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
+- `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` — frontmatter 定義一覧
 
 ### 出力先の解決
 
@@ -76,7 +76,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 
 - `plan` に対応するエントリが無い場合は AskUserQuestion で出力先を確認する
 
-### モード判定 [MANDATORY]
+### モード判定
 
 出力先の計画書の存在を確認し、モードを決定する。
 
@@ -90,18 +90,17 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 - 既存計画書を更新する → 既存計画書を Read して現状を把握し Phase 1 へ
 - レビューのみ行う → Skill ツールで `/forge:review plan --files {既存計画書パス}` を起動して終了
 
-### プラグイン文書の読み込み [MANDATORY]
+### プラグイン文書の読み込み
 
 以下のプラグイン文書を**常に**読み込む:
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
-- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`** — 計画書テンプレート
-- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン
+- **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン（計画書ファイルの形式そのものは script が保証するため、AI が読む必要はない）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ---
 
-## Phase 1: コンテキスト収集 [MANDATORY]
+## Phase 1: コンテキスト収集
 
 以下の 2 つを **Agent ツールで並列起動** し、各 agent の **return value** を main AI コンテキストに直接保持する。エラー時は該当カテゴリなしで後続工程に進む。
 
@@ -141,7 +140,7 @@ prompt:
 
 ---
 
-## Phase 2: 文書の読み込み [MANDATORY]
+## Phase 2: 文書の読み込み
 
 ### 2.1 収集済み文書の読み込み
 
@@ -158,13 +157,20 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 
 ---
 
-## Phase 3: 実装戦略の策定 [MANDATORY]
+## Phase 3: 実装戦略の策定
 
 タスク分割の前に、設計書全体を俯瞰し「どういうアプローチで実装に到達するか」を汎用 Agent (general-purpose) に策定させる。
 
+### 3.0 既存の実装戦略書の確認 [MANDATORY]
+
+`{output_dir}/{feature}_strategy.md`（命名規則に従う戦略書。特定の生成元を問わず、このパスに実装戦略書が既に存在するかで判定する）の存在を Glob 等で確認する。
+
+- **存在する場合**: 削除・上書きせず `Read` する。設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割等が既に記録されている可能性があるため、ゼロから策定し直さない。3.1 の Agent 起動時、既存戦略書の全文を prompt に含めて渡し、**既存内容を土台に、不足している観点（アプローチ選択・検証ポイント・リスク対策等）を補う・詳細化する**よう指示する（新規策定ではなく差分の追記・精緻化）
+- **存在しない場合**: 3.1 へ進み、現行どおり新規に策定する
+
 ### 3.1 汎用 Agent の起動
 
-Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す:
+Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す。3.0 で既存戦略書を発見した場合は、その全文も渡す:
 
 ```
 Agent ツール起動: 実装戦略策定 (subagent_type: general-purpose)
@@ -175,12 +181,14 @@ prompt:
   - feature: {feature}
   - design_docs: [{設計書パス1}, {設計書パス2}, ...]  ← Phase 1 仕様書 return value から抽出
   - rules_docs: [{ルール文書パス1}, ...]              ← Phase 1 計画書ルール return value から抽出
+  - existing_strategy: {既存戦略書の全文、または「なし」}  ← 3.0 の確認結果
 
+  existing_strategy が「なし」でない場合、ゼロから策定せず、その内容を土台に不足を補う・詳細化すること。
   策定した実装戦略の markdown を return value として返すこと。
   (ファイルへの書き出しは不要。main AI が return value を受け取ってから配置する)
 ```
 
-### 3.2 実装戦略書の配置 [MANDATORY]
+### 3.2 実装戦略書の配置
 
 Agent 完了後、return value (戦略書 markdown) を承認前にそのまま最終出力先へ Write する。チャットへの全文転記より先にファイルとして配置し、ユーザーが文書そのものを読んでレビューできるようにする:
 
@@ -203,9 +211,9 @@ Write 完了後:
 
 ---
 
-## Phase 4: 計画書の作成・更新 [MANDATORY]
+## Phase 4: 計画書の作成・更新
 
-### 4.1 更新モード: 既存作業の確認 [MANDATORY]
+### 4.1 更新モード: 既存作業の確認
 
 既存計画書がある場合（更新モード）、以下を必ず確認する:
 
@@ -215,7 +223,7 @@ Write 完了後:
 
 上記に未反映がある場合は AskUserQuestion を使用して先に更新するか確認する。
 
-### 4.2 実装戦略に基づきタスクを抽出 [MANDATORY]
+### 4.2 実装戦略に基づきタスクを抽出
 
 `{output_dir}/{feature}_strategy.md` を Read し、実装戦略のフェーズ分割に従ってタスクを抽出・分割する:
 
@@ -224,45 +232,15 @@ Write 完了後:
 3. 同一フェーズ内で依存関係を整理（依存される側から先に実装）
 4. 並列実行可能なタスクを識別（依存関係がないタスク群）
 
-**実装戦略書の必読化 [MANDATORY]**: すべてのタスクの `required_reading` に `{output_dir}/{feature}_strategy.md` を含める。executor が単一タスクだけを実装する場合でも、全体戦略・フェーズ意図・リスク対策を理解したうえで実装判断できるようにするため。
+**実装戦略書の必読化**: すべてのタスクの `required_reading` に `{output_dir}/{feature}_strategy.md` を含める。executor が単一タスクだけを実装する場合でも、全体戦略・フェーズ意図・リスク対策を理解したうえで実装判断できるようにするため。
 
-**タスクの粒度**:
-
-| 基準   | 内容                                                                                                    |
-| ------ | ------------------------------------------------------------------------------------------------------- |
-| 単位   | 1つのファイル、または「完結性」の基準（1つの Agent 実行で完結する）を満たす範囲の密接に関連するファイル |
-| 量     | やるべき内容は5〜10項目程度                                                                             |
-| 完結性 | タスク完了時にビルド・テストが成功する規模 [MANDATORY]                                                  |
-
-**タスクグループ化**: タスクを細かく分割すると途中でビルドが壊れることは普通に起きる。その場合は複数タスクをグループ化し、グループ完了時にビルドを確認する。
-
-「タスクN完了時点でビルドが通るか？」→ No ならグループ化。グループも「1つの Agent 実行で完結する単位」であることを基準とし、1 Agent が把握・実行しきれない規模になったら段階的に分割できないか検討する。
+**タスクの粒度・グループ化**: タスク・グループとも「1つの Agent 実行で完結する」単位であることを基準とする。詳細な判定基準は `plan_principles_spec.md`「タスクの粒度」「タスクグループ」節に従う（事前準備で読み込み済み）。
 
 ### 4.3 計画書の作成・更新
 
-**出力フォーマット [MANDATORY]**: `plan_format.md` の YAML スキーマに従って生成する。ファイル名: `{feature}_plan.yaml`（拡張子は `.yaml`、`.md` ではない）
+**出力方式**: AI はタスクの意味内容（`title` / `description` / `acceptance_criteria` 等）を決定するが、計画書ファイルへの書き込みと構造検証は script が行う（AI は計画書ファイルの形式・キー配置を意識する必要はない）。ファイル名は script が `{feature}_plan.json` として決定する（拡張子は `.json`）。
 
-**Markdown 出力の禁止 [MANDATORY]**:
-
-- **NEVER** 計画書本体を Markdown 形式で出力してはならない。拡張子 `.md` のファイル名で計画書を出力するのは禁止
-- **NEVER** Markdown 見出し（`#`）・Markdown table・Markdown 箇条書きで計画書本体（タスク・トレーサビリティ・改定履歴）を表現してはならない。これらはすべて YAML の構造化データとして表現する
-- **NEVER** Markdown table の「列」概念で計画書のフィールドを説明・出力してはならない。フィールドは `tasks[]` の YAML フィールド (`task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`) として記述する
-- **NEVER** `design_id` が無いタスクに `-` を入れてはならない。`design_id: null` を使用する
-- **NEVER** `required_reading` が無いタスクに `-` を入れてはならない。`required_reading: []` を使用する
-- `description` 内の各項目を YAML 配列要素として記述するのは可（`description` フィールドの値が文字列配列であるため）
-
-> Claude Code の plan mode が生成する **Markdown plan** とは別物。Markdown plan は `/forge:create-feature-from-markdown-plan` の入力素材であり、`/forge:start-plan` の出力ではない。
-
-フォーマットの優先順位:
-
-1. **プロジェクト固有ルール**: Phase 1 の計画書ルール return value に含まれるフォーマット定義
-2. **プラグイン文書**: `${CLAUDE_PLUGIN_ROOT}/docs/plan_format.md`
-
-**作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
-
-**追加開発（`--add`）の場合 [MANDATORY]**: `plan_format.md`「追加 feature 用 frontmatter」が定義する `type: temporary-feature-plan` マーカーを、ファイル先頭の**コメントブロック**（`# ---` で囲む YAML コメント）として付与する。plan.yaml はトップレベルキー追加が禁止（🟡 major 違反）のため、マーカーはキーではなくコメントで表現する（既存スキーマと衝突しない）。notes の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存計画書の更新時は付与しない。
-
-**タスクID採番** [MANDATORY]: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
+**タスクID採番**: プロジェクトのフォーマットルールに従う。ルールがない場合は `TASK-001`, `TASK-002` 等の連番。
 
 タスク ID を付与する際は、必ず以下のスクリプトで次の連番を取得する。手動での番号決定は禁止:
 
@@ -275,39 +253,43 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **優先度**: プロジェクトのフォーマットルールに従う。ルールがない場合は数値が大きいほど優先度が高い（例: 1〜99）。実装戦略のフェーズ順序を反映すること。
 
-**「やるべき内容」の記載原則** [MANDATORY]: 設計書を参照すればわかる実装詳細（プロパティ名、型、メソッドシグネチャ等）は計画書に書かない。設計書の該当セクションを特定できるレベルの記述にとどめること。計画書に実装詳細を転記すると設計書との二重管理になり、不整合の原因となる。
+**「やるべき内容」の記載原則・依存関係管理**: `plan_principles_spec.md`「『やるべき内容』の記載原則」「依存関係管理」節に従う（事前準備で読み込み済み）。依存関係は各タスクの `depends_on` 配列に落とし込み、計画書本体には依存関係マップを含めない。
 
-**依存関係マップ（作業メモ）**: タスク間の依存関係を整理するために作成してよいが、計画書本体には含めない。依存関係は各タスクの `depends_on` 配列に落とし込む。循環依存がないか確認すること。
+**候補 JSON の組み立てと書き込み**:
 
-### 4.4 完全性チェック [MANDATORY]
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
+2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
+3. **生成 script を 1 回実行する**。script が構造検証（4 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
-計画書作成後、以下を確認する。**ファイルを書き出す前に MUST 自己検査すること**。
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/write_plan.py" \
+     --input-file ".claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json" \
+     --output-path "{出力先ディレクトリ}/{feature}_plan.json"
+   ```
 
-**`plan_format.md` 必須スキーマ検査** [MANDATORY]:
+   exit code で分岐する:
 
-- [ ] ファイル名が `{feature}_plan.yaml` 形式（拡張子 `.yaml`）
-- [ ] top-level に `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーがすべて存在する
-- [ ] 上記 4 キー以外の top-level キーは追加していない（追加開発の `type: temporary-feature-plan` マーカーは先頭コメントブロックであり top-level キーではないため許容）
-- [ ] `tasks[]` の各要素が必須フィールドをすべて持つ: `task_id` / `title` / `priority` / `status` / `design_id` / `depends_on` / `group_id` / `build_check` / `description` / `acceptance_criteria` / `required_reading`
-- [ ] `tasks[].design_id` は文字列か `null`（`-` や `"-"` ではない）
-- [ ] `tasks[].depends_on` / `required_reading` は配列（なければ `[]`、`null` でも `-` でもない）
+   | exit code | 動作                                                                                                                                       |
+   | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+   | 0         | stdout の `output_path` を確認し、4.4 へ進む                                                                                               |
+   | 20        | stdout の `errors` に従って候補 JSON を訂正し、Write から同じ手順をもう 1 回だけ実行する。2 回目も失敗した場合はエラーとして報告し中断する |
+
+**作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
+
+### 4.4 完全性チェック
+
+計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
+
 - [ ] すべての `tasks[].required_reading` に `{output_dir}/{feature}_strategy.md` が含まれている
-- [ ] `tasks[].build_check` の値は `per_task` / `skip` / `on_group_complete` のいずれか
-- [ ] `tasks[].status` の値は `pending` / `in_progress` / `completed` のいずれか
-- [ ] `requirements_traceability[].status` の値は `pending` / `completed` のいずれか
-
-**計画品質検査** [MANDATORY]:
-
 - [ ] 実装戦略のフェーズ分割がタスクの優先度に反映されているか
 - [ ] 要件トレーサビリティマトリクスが全要件を網羅しているか
 - [ ] 設計トレーサビリティマトリクスが全設計書をカバーしているか
 - [ ] 全設計書がタスクに反映されているか
 - [ ] 依存関係に循環がないか
-- [ ] 計画書が `plan_format.md` の YAML フォーマットに従っているか（Markdown table・Markdown 見出しで計画書本体を表現していないか）
 
 ---
 
-## Phase 5: AIレビュー [MANDATORY]
+## Phase 5: AIレビュー
 
 計画書作成・更新後に Skill ツールで `/forge:review plan` を `--auto` モードで実行する:
 

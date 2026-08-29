@@ -1,15 +1,5 @@
 # DES-001 文書検索ラッパー（forge → 文書検索 backend）設計書
 
-## メタデータ
-
-| 項目         | 値                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| 設計 ID      | DES-001                                                                                         |
-| 対象スコープ | forge の文書検索ラッパー 4 SKILL                                                                |
-| 関連設計     | COMMON-DES-001_skill_base_design、DES-057（backend 選択・doc-db 経路）、DES-061（設定ファイル） |
-
----
-
 ## 1. 概要
 
 forge は文書検索（ルール・仕様の発見）と索引更新を外部の文書検索 backend に委譲する。
@@ -57,9 +47,12 @@ wrapper は category を固定し、当該 SKILL が必要とする操作だけ�
 
 1. `resolve_backend_order.py` で backend の順序リストを解決する（設定不正は既定値へ落ちず明示エラー。DES-057 §2.5）。
 2. 順序リストの先位から可用性を判定し、最初に利用可能な backend の経路を実行する。
-   - **doc-advisor 経路**: 検索前に索引更新を完了させてから（要否は判定せず常に行う。DES-057 §5.1）
-     `doc-advisor:query-docs --key {rules|specs} {task}` を呼び、応答をそのまま親に返す。
-   - **doc-db 経路**: query wrapper 経由で低レベル CLI を呼ぶ（未整備時の索引作成を含む。DES-057 §4.2）。
+   - **doc-advisor 経路**: `doc-advisor:query-docs --key {rules|specs} {task}` を 1 回呼び、応答をそのまま親に返す。
+   - **doc-db 経路**: query wrapper 経由で低レベル CLI を呼ぶ（DES-057 §4.2）。
+
+   **query は索引を書き換えない**（REQ-014 FNC-002）。索引の維持は update 系（§4）の責務である。
+   索引が未整備で検索が成立しない場合のみ、承認を得たうえで、**確定済みの backend を指定して
+   update 系 SKILL へ整備を委譲する**（整備の手順を query 側に持たない。DES-057 §5.3）。
 3. いずれの backend も利用できなければ、両者の理由を並べて明示エラーとする。grep 等による代替検索は行わない。
 
 ### 出力契約
@@ -72,7 +65,8 @@ wrapper は category を固定し、当該 SKILL が必要とする操作だけ�
 `/forge:query-db-rules` / `/forge:query-db-specs` は **継承型検索 SKILL**
 （COMMON-DES-001 §3.1 デフォルト方針 / §6 規定リスト外、`context: fork` を指定しない）。
 doc-advisor 経路の転送先 `doc-advisor:query-docs` も継承型 dispatcher であり、実検索は read-only なカスタム Agent（`doc-advisor:query-worker`）へ隔離される。隔離境界は Agent ツール起動が担うため、forge 側・doc-advisor 側のいずれも `context: fork` を使わない。
-`allowed-tools: Skill, Read, Bash`（Bash は wrapper / 順序リスト解決 CLI の実行に使う。`Grep` は許可しない —
+`allowed-tools: Skill, Read, Bash, AskUserQuestion`（Bash は wrapper / 順序リスト解決 CLI の実行に使い、
+`AskUserQuestion` はセッション内変更の確認と索引整備の承認に使う。`Grep` は許可しない —
 grep フォールバックは廃止済みであり、検索の代替にしない）。書き込み・コミット・自己再帰は行わない。
 
 呼び出し側は `args` を **検索キーワード + 短い自然文タスク記述のみ**に限定する。Issue 本文・実装指示・差分等の
@@ -84,7 +78,9 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 
 ### 実行フロー
 
-1. `resolve_backend_order.py` で順序リストを解決し、先位から可用性を判定する（query 系と同じ）。
+0. **`--backend` の指定がある場合は選択を行わず、指定された backend で更新する**（利用できなければ他方へ
+   切り替えず明示エラー。REQ-014 BL-006 / FNC-003）。指定は query 系が索引整備を委譲するときに渡す。
+1. 指定が無い場合、`resolve_backend_order.py` で順序リストを解決し、先位から可用性を判定する（query 系と同じ）。
 2. **doc-advisor 経路**: 索引入力準備 wrapper（`prepare_advisor_index.py`。dprint 適用と `.doc_structure.yaml` からの
    `dirs`（`root_dirs`）/ `exclude`（`patterns.exclude`）解決を行う）を実行し、その結果を `Skill` ツールで
    `doc-advisor:index-docs --key {rules|specs} --dirs-json '[...]' --exclude-json '[...]'`（常に dirs モード）として渡す。
@@ -95,9 +91,9 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 
 `allowed-tools: Read, Bash, Skill`。
 
-> `resolve_doc_structure.py --type` はファイルパス単位の解決が必要な他 consumer（`review` の
-> `resolve_review_context.py` 等）で引き続き使われるが、update 系の doc-advisor 経路はディレクトリ単位の
-> `dirs`/`exclude` 転送に移行済み（doc-advisor 側でのディレクトリ展開に統一するため）。
+> `resolve_doc_structure.py --type` はファイルパス単位の解決が必要な consumer で引き続き使われるが、update 系の
+> doc-advisor 経路はディレクトリ単位の `dirs`/`exclude` 転送に移行済み（doc-advisor 側でのディレクトリ展開に
+> 統一するため）。
 
 ### desired-state
 

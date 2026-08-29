@@ -17,7 +17,7 @@ argument-hint: ""
 forge 内の他スキルからの呼び出し専用（`user-invocable: false`）。
 `.doc_structure.yaml` のパス解決を担う自己完結設計（外部依存なし）。
 
-## `.doc_structure.yaml` が無い場合の共通ハンドオフ [MANDATORY]
+## `.doc_structure.yaml` が無い場合の共通ハンドオフ
 
 以下の各能力の手順中で `.doc_structure.yaml` が見つからない場合は、この手順に従う。
 **呼び出し元スキルは個別に存在確認を行わない**（本スキルに一本化する。設定ファイルの
@@ -91,8 +91,7 @@ consumer は `filtered_dirs` を使わず `dirs`/`exclude` を使う。自前で
 
 短縮名（例: `main`）・相対パス・絶対パスのいずれかを実ディレクトリへ解決したい他スキル
 （merge-specs 等）は、`.doc_structure.yaml` の `root_dirs` を自スキルの SKILL.md に書かず、
-本節を Read して以下の手順に従う。**外部ライブラリ（PyYAML 等）は使わない**（プロジェクト規約:
-Python は標準ライブラリのみで動作する）。
+本節を Read して以下の手順に従う。
 
 ### 入力
 
@@ -196,7 +195,7 @@ python3 "$SCRIPT" --type all --doc-structure /path/to/.doc_structure.yaml
 }
 ```
 
-## 他スキルからの呼び出し方 [MANDATORY]
+## 他スキルからの呼び出し方
 
 ### パターン 1: Bash でスクリプトを直接呼び出す
 

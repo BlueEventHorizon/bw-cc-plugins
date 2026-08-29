@@ -5,34 +5,33 @@ Select tasks from a plan, then execute context gathering → implementation → 
 ## start-implement
 
 ```
-/forge:start-implement [feature] [--task TASK-ID[,TASK-ID,...]]
+/forge:start-implement [feature] [-n N]
 ```
 
-| Argument  | Description                                                          |
-| --------- | -------------------------------------------------------------------- |
-| `feature` | Feature name (omit for interactive)                                  |
-| `--task`  | Task ID(s), comma-separated (omit for priority-based auto-selection) |
+| Argument  | Description                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------- |
+| `feature` | Feature name (omit for interactive)                                                                     |
+| `-n`      | Number of tasks to select by priority (default 1; parallel/wave execution is derived from dependencies) |
 
 ### Usage Examples
 
 ```bash
-/forge:start-implement login                              # Auto-select by priority
-/forge:start-implement login --task TASK-001              # Specific task
-/forge:start-implement login --task TASK-001,TASK-003     # Parallel execution
+/forge:start-implement login          # Auto-select 1 task by priority
+/forge:start-implement login -n 3     # Select and execute 3 tasks by priority
 ```
 
 ### When to Use
 
-- After a plan (`{feature}_plan.yaml`) is complete
+- After a plan (`{feature}_plan.json`) is complete
 - To implement `pending` tasks one at a time or in parallel
 
 ### Execution Flow
 
 ```mermaid
 flowchart TD
-    P1["Phase 1: Pre-check<br/>Confirm Feature, load plan"] --> P2
+    P1["Phase 1: Pre-check<br/>Confirm Feature, resolve plan path"] --> P2
 
-    P2["Phase 2: Task selection<br/>Dependency check"] --> P3
+    P2["Phase 2: Task selection<br/>Dependency check via script"] --> P3
 
     P3["Phase 3: Context gathering<br/>Design docs, rules, code (parallel)"] --> P4
 
@@ -46,21 +45,21 @@ flowchart TD
 ### Phase 1: Pre-check
 
 - Confirm Feature (interactive if omitted)
-- Load `specs/{feature}/plan/{feature}_plan.yaml` and display all task statuses
+- Resolve the path to `specs/{feature}/plan/{feature}_plan.json` (the AI does not read the whole plan)
 
 ### Phase 2: Task Selection
 
-| Method                     | Behavior                                                                 |
-| -------------------------- | ------------------------------------------------------------------------ |
-| No `--task`                | Auto-select 1 task from `pending` by priority                            |
-| `--task TASK-001`          | Execute specified task only                                              |
-| `--task TASK-001,TASK-003` | Execute all specified tasks in parallel (requires no inter-dependencies) |
+Priority sorting, dependency checks, and atomic group selection are performed by `select_tasks.py`.
+
+| Method  | Behavior                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| No `-n` | Auto-select 1 task from `pending` by priority                                                  |
+| `-n N`  | Select N tasks by priority. Tasks sharing a `group_id` are always selected as a complete group |
 
 #### Dependency Check
 
 - Tasks with unfinished `depends_on` entries cannot be executed
-- Inter-dependency among specified tasks → error, suggest sequential execution
-- Tasks within a group must execute sequentially from the first
+- Within the selected set, tasks with resolved dependencies form the executable group and unresolved ones form the waiting group (wave execution)
 
 ### Phase 3: Context Gathering
 
@@ -93,7 +92,7 @@ When a strategy document (`{feature}_strategy.md`) exists, it is passed as requi
 
 #### Parallel Execution
 
-When multiple tasks are specified with `--task TASK-001,TASK-003`:
+When `-n N` selects multiple tasks and the executable group contains more than one task:
 
 - Independent executors run simultaneously
 - After all complete, successful tasks are reviewed sequentially

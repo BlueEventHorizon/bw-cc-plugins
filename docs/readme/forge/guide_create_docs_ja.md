@@ -139,7 +139,7 @@ start-requirements → start-design → start-plan → start-implement
 
 ## start-plan
 
-設計書からタスクを抽出し、YAML 形式の計画書を作成する。
+設計書からタスクを抽出し、JSON 形式の計画書を作成する。
 
 ```
 /forge:start-plan [feature]
@@ -173,67 +173,71 @@ start-requirements → start-design → start-plan → start-implement
 | 完結性     | タスク完了時にビルド・テスト成功が条件     |
 | ファイル数 | 1 ファイル or 密接に関連する 2〜3 ファイル |
 
-### 計画書の構造（最小完全 YAML）
+### 計画書の構造（最小完全 JSON）
 
-計画書は YAML 形式の `{feature}_plan.yaml`。**Markdown ではない**。
-top-level は `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーのみ（`plan_format.md` の正本スキーマに従う）。
+計画書は JSON 形式の `{feature}_plan.json`。**Markdown ではない**。
+top-level は `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーのみ。計画書には追加開発時も frontmatter を付与しない（追加 feature の計画書かは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する）。計画書ファイルへの書き込みと構造検証は script（`write_plan.py` 等）が行うため、AI はファイル形式そのものを意識する必要はない。
 
-```yaml
-# {feature} 実装計画書
-
-# === トレーサビリティ ===
-requirements_traceability:
-  - requirement_id: REQ-001
-    title: 要件のタイトル
-    design_id: DES-001
-    status: pending # pending / completed
-
-design_traceability:
-  - design_id: DES-001
-    title: 設計書のタイトル
-    requirement_ids:
-      - REQ-001
-    task_ids:
-      - TASK-001
-
-# === タスク一覧 ===
-tasks:
-  - task_id: TASK-001
-    title: タスク名
-    priority: 90 # 高:70-99, 中:40-69, 低:1-39
-    status: pending # pending / in_progress / completed
-    design_id: DES-001 # 設計書なしは null（"-" ではない）
-    depends_on: [] # 依存タスク ID 配列。なければ []
-    group_id: null # 独立タスクは null、"GROUP-001 (1/3)" 等
-    build_check: per_task # per_task / skip / on_group_complete
-    description:
-      - やるべきこと 1
-      - やるべきこと 2
-    acceptance_criteria: 受け入れ基準の記述 # なければ null
-    required_reading: # 必読文書パスの配列。なければ []
-      - specs/{feature}/design/DES-001_xxx.md
-
-# === 改定履歴 ===
-revision_history:
-  - date: "2026-03-15"
-    content: 初版作成
+```json
+{
+  "requirements_traceability": [
+    {
+      "requirement_id": "REQ-001",
+      "title": "要件のタイトル",
+      "design_id": "DES-001",
+      "status": "pending"
+    }
+  ],
+  "design_traceability": [
+    {
+      "design_id": "DES-001",
+      "title": "設計書のタイトル",
+      "requirement_ids": ["REQ-001"],
+      "task_ids": ["TASK-001"]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "title": "タスク名",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-001",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": ["やるべきこと 1", "やるべきこと 2"],
+      "acceptance_criteria": "受け入れ基準の記述",
+      "required_reading": ["specs/{feature}/design/DES-001_xxx.md"]
+    }
+  ],
+  "revision_history": [{ "date": "2026-03-15", "content": "初版作成" }]
+}
 ```
+
+**フィールドの値域**:
+
+- `status`（要件）: `pending` / `completed`
+- `priority`: 高 70-99・中 40-69・低 1-39
+- `status`（タスク）: `pending` / `in_progress` / `completed`
+- `design_id`: 設計書なしは `null`（`-` ではない）
+- `depends_on`: 依存タスク ID 配列。なければ `[]`
+- `group_id`: 独立タスクは `null`、`"GROUP-001 (1/3)"` 等
+- `build_check`: `per_task` / `skip` / `on_group_complete`
+- `acceptance_criteria`: なければ `null`
+- `required_reading`: 必読文書パスの配列。なければ `[]`
 
 ### 重要な原則
 
 - `description` は設計書の該当セクションを特定できるレベルにとどめる（実装詳細は書かない）
-- `design_id` が無いタスクは `null`（`-` や `"-"` は使わない）
-- `depends_on` / `required_reading` が無い場合は空配列 `[]`（`null` や `-` ではない）
-- `build_check` の値は `per_task` / `skip` / `on_group_complete` のみ
 - 依存関係に循環がないか確認
 - トレーサビリティマトリクスで全要件・全設計が反映されていることを検証
 
 ### 出力
 
-`specs/{feature}/plan/{feature}_plan.yaml` に計画書（YAML）を生成。**Markdown 形式の計画書は出力しない**。
+`specs/{feature}/plan/{feature}_plan.json` に計画書（JSON）を生成。**Markdown 形式の計画書は出力しない**。
 Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件・設計を作る場合は `/forge:create-feature-from-markdown-plan` を使う）。
 
 ### 参考ドキュメント
 
-- `plugins/forge/docs/plan_format.md` — 計画書 YAML スキーマ
 - `plugins/forge/docs/plan_principles_spec.md` — タスク粒度・グループ化の考え方

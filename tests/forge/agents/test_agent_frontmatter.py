@@ -3,15 +3,18 @@
 forge カスタム Agent (`plugins/forge/agents/*.md`) の frontmatter 妥当性検証
 
 REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への置き換え」フィーチャー
-(no-fork-skill) における Agent 定義ファイルの整合性を静的に検証する。
+(no-fork-skill) は REQ-005 §11 / DES-029 へ fold 済みであり、DES-032 自体はもう存在しない
+（`docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §6 が置き換え後の唯一の
+正式記録）。tools allowlist は各 Agent の frontmatter（`plugins/forge/agents/*.md`）自体を
+正とし、本テストは frontmatter が構文的・慣習的に妥当であることを静的に検証する。
 
 検証内容:
 1. 各 .md ファイルが YAML frontmatter を持つこと
 2. 必須キー (`name` / `description` / `tools` / `model`) がすべて存在すること
-3. `tools` 値が DES-032 §3.1 の worker 表で規定された allowlist と一致すること
-   - reviewer: Read, Grep, Glob, Bash
-   - evaluator: Read, Bash
-   - fixer: Read, Edit, Write, Bash
+3. `tools` 値が既知 Agent の期待 allowlist と一致すること
+   - reviewer: Read, Grep, Glob, Bash（read-only、対象を自分で探索するため Grep/Glob を持つ）
+   - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
+   - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
 `plugins/forge/agents/` ディレクトリが存在しない / 空の場合は skipTest する
@@ -30,11 +33,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 AGENTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'agents'
 
-# DES-032 §3.1 worker 表で確定した tools allowlist (frozenset で順序非依存に比較)
+# 既知 Agent の tools allowlist (frozenset で順序非依存に比較)。値は各 Agent の
+# frontmatter 自体が正であり、本表はその値との回帰比較用スナップショット。
 EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
-    'evaluator': frozenset({'Read', 'Bash'}),
-    'fixer': frozenset({'Read', 'Edit', 'Write', 'Bash'}),
+    'evaluator': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
@@ -117,7 +120,7 @@ class TestAgentFrontmatter(unittest.TestCase):
                         required,
                         keys,
                         f"{agent_path.relative_to(REPO_ROOT)} の frontmatter に "
-                        f"必須キー `{required}` がない (DES-032 §3.1)",
+                        f"必須キー `{required}` がない",
                     )
 
     def test_name_matches_filename(self):
@@ -136,7 +139,7 @@ class TestAgentFrontmatter(unittest.TestCase):
                     f"がファイル名 `{expected}.md` と一致しない",
                 )
 
-    def test_tools_allowlist_matches_des032(self):
+    def test_tools_allowlist_matches_known_agents(self):
         for agent_path in self.agents:
             with self.subTest(agent=agent_path.name):
                 fm = _extract_frontmatter(agent_path)
@@ -146,14 +149,14 @@ class TestAgentFrontmatter(unittest.TestCase):
                 name = keys['name'].strip('"').strip("'")
                 expected = EXPECTED_TOOLS.get(name)
                 if expected is None:
-                    # DES-032 §3.1 に未掲載の Agent (将来追加分) はチェック対象外
+                    # EXPECTED_TOOLS に未掲載の Agent (将来追加分) はチェック対象外
                     continue
                 actual = _parse_tools(keys['tools'])
                 self.assertEqual(
                     actual,
                     expected,
                     f"{agent_path.relative_to(REPO_ROOT)} の tools allowlist が "
-                    f"DES-032 §3.1 と一致しない。"
+                    f"想定と一致しない。"
                     f"expected={sorted(expected)} actual={sorted(actual)}",
                 )
 
@@ -161,6 +164,16 @@ class TestAgentFrontmatter(unittest.TestCase):
         reviewer = AGENTS_DIR / 'reviewer.md'
         self.assertTrue(reviewer.is_file())
         fm = _parse_frontmatter_keys(_extract_frontmatter(reviewer))
+        tools = _parse_tools(fm['tools'])
+        self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob', 'Bash'}))
+        self.assertTrue({'Edit', 'Write', 'Agent'}.isdisjoint(tools))
+        self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
+        self.assertEqual(fm.get('permissionMode'), 'plan')
+
+    def test_evaluator_is_read_only_and_inherits_model(self):
+        evaluator = AGENTS_DIR / 'evaluator.md'
+        self.assertTrue(evaluator.is_file())
+        fm = _parse_frontmatter_keys(_extract_frontmatter(evaluator))
         tools = _parse_tools(fm['tools'])
         self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob', 'Bash'}))
         self.assertTrue({'Edit', 'Write', 'Agent'}.isdisjoint(tools))

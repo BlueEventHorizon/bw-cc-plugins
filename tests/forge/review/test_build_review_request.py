@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -753,11 +754,41 @@ class RequestEnvelopeTest(unittest.TestCase):
         self.assertNotIn("[msg-review]", payload["body"])
         self.assertTrue(payload["body"].startswith("## レビュー依頼"))
 
+    def test_review_id_is_a_readable_creation_timestamp(self):
+        """識別子は人が読めること（以前は uuid4 の 32 桁で、誰も読まなかった）。
+
+        ミリ秒まで持つのは、秒までに落とすと続けて起動した 2 回が同じ値になり、
+        仕分けファイルの混入ガードが素通りするためである。
+        """
+        _, stdout, _ = _run_cli(["--pattern", "diff", "--project-root", str(_REPO_ROOT)])
+        review_id = json.loads(stdout)["review_id"]
+        self.assertRegex(review_id, r"^\d{4}-\d{4}-\d{2}:\d{2}:\d{2}\.\d{3}$")
+        datetime.strptime(review_id, "%Y-%m%d-%H:%M:%S.%f")
+
     def test_review_id_is_unique_across_cli_invocations(self):
         argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT)]
         _, stdout1, _ = _run_cli(argv)
         _, stdout2, _ = _run_cli(argv)
         self.assertNotEqual(
+            json.loads(stdout1)["review_id"], json.loads(stdout2)["review_id"]
+        )
+
+    def test_cli_keeps_a_given_review_id(self):
+        """**識別するのはレビューであってラウンドではない [MANDATORY]**。
+
+        2 ラウンド目以降は同じ依頼本文を組み立て直すため、口が無いと毎回新しい
+        識別子になり、記録側の照合と必ず衝突する（実際にラウンド 2 で発生した）。
+        """
+        argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT)]
+        code, stdout, stderr = _run_cli(argv + ["--review-id", "2026-0813-17:25:18.933"])
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(json.loads(stdout)["review_id"], "2026-0813-17:25:18.933")
+
+    def test_cli_review_id_is_stable_across_rounds(self):
+        argv = ["--pattern", "diff", "--project-root", str(_REPO_ROOT), "--review-id", "FIXED"]
+        _, stdout1, _ = _run_cli(argv)
+        _, stdout2, _ = _run_cli(argv)
+        self.assertEqual(
             json.loads(stdout1)["review_id"], json.loads(stdout2)["review_id"]
         )
 
@@ -1075,6 +1106,19 @@ class ReplyContractTest(unittest.TestCase):
                 self.assertIn("🔴", body)
                 self.assertIn("🟡", body)
                 self.assertIn("🟢", body)
+
+    def test_every_template_requires_finding_self_verification(self):
+        expected_contract = (
+            "すべての所見は、返信前に次の自己検証を行ってください。"
+            "①所見の根拠となる主張を検証質問へ分解する "
+            "②各質問を対象ファイル・参照文書・利用可能な実体から独立に検証する "
+            "③反証・例外・重大度カタログとの不一致があれば所見を修正または撤回する。"
+            "検証過程は返信せず、検証後も成立する所見だけを出力してください。"
+        )
+        for pattern in build_review_request.VALID_PATTERNS:
+            with self.subTest(pattern=pattern):
+                body = _build(pattern)
+                self.assertIn(expected_contract, body)
 
     def test_every_template_prohibits_file_modification_twice(self):
         """冒頭と末尾の 2 箇所で変更禁止を明示すること。"""

@@ -40,27 +40,7 @@
 
 ### 設定の構造
 
-```yaml
-targets:
-  - name: forge # ターゲット名
-    version_file: plugins/forge/.claude-plugin/plugin.json # バージョンファイル
-    version_path: version # JSON パス
-    sync_files: # 同期対象
-      - path: README.md
-        pattern: "| **forge** | {version} |"
-        filter: "| **forge**"
-
-changelog:
-  file: CHANGELOG.md
-  format: keep-a-changelog
-  git_log_auto: false
-
-git:
-  tag_format: "{target}-v{version}"
-  commit_message: "chore: bump {target} to {version}"
-  auto_tag: false
-  auto_commit: false
-```
+`targets` / `changelog` / `git` の3セクションで構成される。スキーマの詳細は `DES-023` §2 または `setup-version-config` の Schema Reference を参照。
 
 ---
 
@@ -72,11 +52,11 @@ git:
 /forge:update-version [target] <patch | minor | major | X.Y.Z>
 ```
 
-| 引数                        | 説明                                   |
-| --------------------------- | -------------------------------------- |
-| `target`                    | ターゲット名（省略時は先頭ターゲット） |
-| `patch` / `minor` / `major` | バンプ種別                             |
-| `X.Y.Z`                     | バージョン番号を直接指定               |
+| 引数                        | 説明                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| `target`                    | ターゲット名（省略時は `scope` に一致する変更から自動検出。複数候補時は選択） |
+| `patch` / `minor` / `major` | バンプ種別                                                                    |
+| `X.Y.Z`                     | バージョン番号を直接指定                                                      |
 
 ### 使用例
 
@@ -94,7 +74,7 @@ git:
 4. main ブランチと比較（既にバンプ済みなら確認）
 5. 新バージョンを計算
 6. コミット履歴を収集（CHANGELOG 用）
-   - 前バージョンのタグを `v` 付き / `v` なしの両形式で検索する。見つからない場合は CHANGELOG の前エントリ日付で代替する
+   - 前バージョンのタグを、prefix の有無 × `v` の有無の 4 通りで検索する。単純な形式から順に見て最初に実在したものを採る（例: `1.2.3` → `v1.2.3` → `foo-1.2.3` → `foo-v1.2.3`）。見つからない場合は CHANGELOG の前エントリ日付で代替する
 7. ファイル更新
    - `version_file`（plugin.json 等）を更新
    - `sync_files`（README 等）のバージョンを同期
@@ -111,44 +91,6 @@ git:
 | `.version-config.yaml` がない | `/forge:setup-version-config` の実行を案内      |
 | 指定ターゲットが存在しない    | 利用可能なターゲット一覧を表示                  |
 | テスト失敗                    | バージョン更新は完了済み。テスト修正後に commit |
-
----
-
-## clean-rules
-
-プロジェクトの `rules/` ディレクトリを分析し、forge 内蔵ドキュメントとの重複削除・ファイル再構築を行う。
-
-```
-/forge:clean-rules
-```
-
-引数なし。デフォルトは分析レポートのみ出力（変更なし）。
-
-### いつ使うか
-
-- forge 導入後に既存ルールとの重複を整理したいとき
-- ルール文書が肥大化・散在して管理が困難になったとき
-
-### 実行フロー
-
-1. **分析**: `rules/` のファイル・セクションを分類
-   - Content Type: Constraint / Convention / Format / Process / Decision / Reference
-   - Authority: Tool-provided（forge 内蔵）/ Project-defined / External standard
-2. **重複検出**: forge 内蔵 docs との類似度をスコアリング
-3. **レポート出力**: 削除候補・再構築候補を一覧表示
-4. ユーザー確認後に実行:
-   - **削除**: forge でカバーされるセクションを除去
-   - **再構築**: Content Type が混在する大ファイルを分割・統合
-5. `.doc_structure.yaml` と検索インデックスを更新
-6. commit 確認
-
-### 安全性
-
-- デフォルトは分析のみ（変更なし）
-- 実行前に `git stash` で退避。問題時は `git stash pop` で復元可能
-- Project-defined のルールは絶対に削除しない
-
----
 
 ## help
 
@@ -167,11 +109,17 @@ forge スキル一覧を表示し、選択したスキルの引数をガイド�
 3. **コマンド確認**: 構築されたコマンドを表示して実行確認
 
 ```
-1. review              : コード・文書のレビュー
-2. start-uxui-design   : デザイントークン・UI コンポーネント生成
-3. start-requirements  : 要件定義書の作成
-4. start-design        : 設計書の作成
-5. start-plan          : 計画書の作成
-6. start-implement     : タスク実行・実装
-7. setup               : 初期設定
+1.  review                            : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+2.  consult                           : 議論を進行。論点を立て、討議ファイルに記録しながら 1 件ずつ
+3.  start-requirements                : 要件定義書の作成。3モード対応
+4.  start-design                      : 設計書の作成。レビュー+自動修正→commit
+5.  start-plan                        : 計画書の作成。レビュー+自動修正→commit
+6.  start-implement                   : 計画書から実装・レビュー・計画更新
+7.  start-uxui-design                 : デザイントークン・UI 視覚仕様を創造
+8.  create-feature-from-markdown-plan : Markdown plan から要件定義→設計書へ展開
+9.  merge-specs                       : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
+10. setup-doc-structure               : .doc_structure.yaml を対話的に生成
+11. setup-version-config              : .version-config.yaml を対話的に生成
+12. update-version                    : バージョンを一括更新。CHANGELOG 自動反映
+13. query-forge-rules                 : forge 内蔵知識ベースを ToC 検索
 ```

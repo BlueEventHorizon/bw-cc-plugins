@@ -23,7 +23,7 @@ argument-hint: "[base-branch]"
 
 ---
 
-## Phase 1: 環境確認 [MANDATORY]
+## Phase 1: 環境確認
 
 ### 1.1 gh CLI の確認
 
@@ -93,7 +93,7 @@ git branch -a | grep -E "(develop|main|master)"
 
 ---
 
-## Phase 2: コミット差分確認 [MANDATORY]
+## Phase 2: コミット差分確認
 
 ```bash
 git log <base>..HEAD --oneline

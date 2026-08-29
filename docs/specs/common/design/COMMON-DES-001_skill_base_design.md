@@ -1,16 +1,5 @@
 # COMMON-DES-001 SKILL 基本設計書
 
-## メタデータ
-
-| 項目       | 値                                                 |
-| ---------- | -------------------------------------------------- |
-| 設計 ID    | COMMON-DES-001                                     |
-| 関連要件   | -                                                  |
-| 関連 ADR   | doc-advisor:ADR-002_query_skill_subagent_isolation |
-| 関連ルール | `docs/rules/skill_authoring_notes.md`              |
-| 作成日     | 2026-05-18                                         |
-| 適用範囲   | bw-cc-plugins 配下の全プラグイン（forge / anvil）  |
-
 ## 1. 概要
 
 bw-cc-plugins における SKILL の基本設計を定義する。SKILL は Claude Code が解釈する単位の実行指示書であり、フォーマット規約（HOW）は `docs/rules/skill_authoring_notes.md` で管理する。本設計書は、その**設計判断の根拠（WHY）と全体像**を記録する。
@@ -135,7 +124,7 @@ args: "課題: doc-advisor auto モード再定義\n\n本文: ... 上記タス�
    - No、内部ワーカー用途である → 次へ
 6. 内部ワーカー用途の SKILL として扱う場合、以下のどれに該当するか？
    - 隔離 context が必要 → SKILL ではなく **カスタム Agent** を採用 (`plugins/<plugin>/agents/<name>.md`)。fork 型 SKILL は §6 で不採用
-   - 継承型 SKILL として内部から呼ぶ明確な理由がある → **継承型 SKILL**。ただし通常経路ではなく例外扱いとし、§7.1 の条件をすべて満たすこと
+   - 隔離は不要で、他 SKILL が所有する手順を呼び出して結果を受け取るだけである → **継承型 SKILL**。§7.1 の 2 不変条件（`args` 最小・責務境界と自己再帰禁止の明記）を満たすこと
    - 上記のどちらにも該当しない → SKILL として実装せず、ステップ 1 から再判断する（汎用 Agent / Bash subprocess / 通常ドキュメント化 / 設計の再分解を含む）
 
 ### 5.3 隔離 context が必要な場合は カスタム Agent を選ぶ
@@ -173,7 +162,7 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 
 ### 6.2 fork 型からカスタム Agent への移行（歴史的記録）
 
-過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。**現在 forge はカスタム Agent を持たない**（`plugins/forge/agents/` は存在しない）。
+過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンド（ADR-071）の導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
 
 この移行で確立したカスタム Agent の system prompt 共通設計は、将来カスタム Agent を新設する際の規約として維持する:
 
@@ -196,22 +185,18 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 
 ## 7. 継承型 SKILL の責務境界
 
-fork 型化が困難な継承型 SKILL は以下の方法で副作用範囲を制御する。
+継承型 SKILL は親 context を継承する。副作用範囲は以下の方法で制御する。
 
-### 7.1 継承型 SKILL を内部ワーカーにしない [MANDATORY]
+### 7.1 SKILL から SKILL を呼ぶ経路は隔離を与えない
 
-継承型 SKILL は親 context を継承するため、内部の隔離ワーカーとしては原則選ばない。
+継承型 SKILL は親 context を継承するため、**SKILL から SKILL を呼んでも context の隔離は得られない**。隔離が目的なら継承型 SKILL ではなくカスタム Agent（§5.3）を用いる。
 
-内部から継承型 SKILL を呼ぶ例外を許す場合は、以下をすべて満たすこと:
+隔離が目的でない合成（他 SKILL が所有する手順を呼び出して結果を受け取る等）は、継承型 SKILL の通常の使い方である。その場合に守る不変条件は 2 つである。
 
-- 親 context を活用することが明確に利益である
-- `args` が最小限で、親タスクのプロンプトや Issue 本文を貼り付けていない
-- SKILL.md に責務境界と自己再帰禁止が明記されている
-- 汎用 Agent / カスタム Agent / Bash subprocess では不適切な具体的理由が説明できる（例: 汎用 Agent では親 context の差分・既読情報が得られず情報不足になる、カスタム Agent では専用ロール定義の保守コストが過大になる、Bash では AI 判断が必要で deterministic に完結しない、等）
+- `args` は §7.3 に従い最小限とする（親タスクのプロンプト・Issue 本文・差分を貼り付けない）
+- SKILL.md に責務境界（§7.2）と自己再帰禁止を明記する
 
-上記を満たす場合でも、**採用理由を SKILL.md の Role セクション冒頭に記録する**（例: 「このスキルを継承型として内部から呼ぶのは〇〇のため。Agent 経由では△△が不適切」）。§6 の不採用方針に準じて根拠を残すことで、後続の設計判断で再利用できる。
-
-内部の隔離実行が目的なら、継承型 SKILL ではなく汎用 Agent / カスタム Agent / Bash subprocess を検討する。
+型の選択（継承型 / カスタム Agent / Bash subprocess）の判断基準は §5.1（主判定軸）と §5.2（決定手順）が持つ。本節は隔離が得られないという事実と、上記 2 不変条件だけを規定する。
 
 ### 7.2 責務境界の明記 [MANDATORY]
 
@@ -255,7 +240,7 @@ doc-advisor:ADR-002_query_skill_subagent_isolation で採択した多重防御�
 SKILL / Agent の静的検証を以下のテストで実装している:
 
 - `tests/common/test_no_fork_skill.py`: すべての SKILL.md frontmatter に `context: fork` が **含まれない** ことを検証 (§6 不採用方針の担保)
-- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。現在 forge はカスタム Agent を持たないため、ディレクトリ不在時は skip する設計になっている
+- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。ディレクトリ不在時は skip する設計になっている（§6.2 の通り、現在は reviewer.md / evaluator.md が存在するため実際に検証が走る）
 
 新規にカスタム Agent を追加した場合は同等の静的検証 (frontmatter + Role 制約) を追加する。fork 型 SKILL を新規追加する経路は閉じている (§6)。
 

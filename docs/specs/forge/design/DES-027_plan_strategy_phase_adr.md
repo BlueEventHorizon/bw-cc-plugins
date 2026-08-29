@@ -1,17 +1,5 @@
 # DES-027: start-plan への実装戦略フェーズ導入 (ADR)
 
-## メタデータ
-
-| 項目       | 値         |
-| ---------- | ---------- |
-| 設計ID     | DES-027    |
-| 種別       | ADR        |
-| 関連設計   | DES-019    |
-| 作成日     | 2026-05-09 |
-| ステータス | accepted   |
-
----
-
 ## コンテキスト
 
 `/forge:start-plan` は設計書からタスクを抽出し計画書を作成するスキルである。
@@ -116,5 +104,5 @@ plan.yaml は構造化データ（YAML）であり、`start-implement` が機械
 
 ### 変更不要
 
-- `plan_format.md` — plan.yaml のスキーマは変更なし
+- 計画書のスキーマ — 本 ADR の決定範囲外（当時のスキーマ自体に変更なし）
 - `start-implement` — タスク実行ロジックは影響なし。ただし executor が全体戦略・フェーズ意図・リスク対策を理解できるよう、strategy.md は全タスクの `required_reading` に含め、executor への必読文書として渡す

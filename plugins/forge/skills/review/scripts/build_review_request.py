@@ -5,7 +5,7 @@
 置換して標準出力へ書く。**本スクリプトは散文を持たない。** 依頼本文の文言・レビュー観点の
 名指しはすべてテンプレート側にあり、本スクリプトの責務は次の 3 点に限られる。
 
-    1. review_id の生成（uuid4）
+    1. review_id の生成（作成日時）
     2. 絶対パスの算出（{{PLUGIN_ROOT}} / {{PROJECT_ROOT}}）
     3. 埋め込むデータの検証（fail-closed）
 
@@ -61,7 +61,7 @@ import argparse
 import json
 import re
 import sys
-import uuid
+from datetime import datetime
 from pathlib import Path
 
 # 対象軸を含む「レビューのパターン」。テンプレートのファイル名に対応する（DES-055 §3）。
@@ -427,6 +427,28 @@ def build_body(
     return body
 
 
+#: `review_id` の書式。作成日時（年月日・時分秒・ミリ秒）で表す。
+#:
+#: **識別子に要るのは一意性だけではない [MANDATORY]**。以前は `uuid4().hex` の 32 桁
+#: だったが、会話でもファイルの見出しでも誰も読まない文字列だった。作成時刻なら
+#: いつのレビューかが読んで分かり、並べれば時系列になる。
+#:
+#: **ミリ秒まで持つ [MANDATORY]**。秒までに落とすと、続けて起動した 2 回のレビューが
+#: 同じ識別子になる。そうなると仕分けファイルの混入ガード（既存ファイルの `review_id`
+#: と食い違えば止める）が素通りし、前のレビューの所見へ今回の所見が追記される。
+#: **人が読める短さのために一意性を削ってはならない**——読みやすさは末尾 3 桁では
+#: ほとんど損なわれないが、衝突の実害は静かで大きい。
+#:
+#: **ファイル名の部品にしないこと**（コロンを含むため）。仕分けファイルは名前を
+#: 固定して `review_id` を中身へ持たせる設計であり、この制約と整合している。
+REVIEW_ID_FORMAT = "%Y-%m%d-%H:%M:%S.%f"
+
+
+def new_review_id(now: datetime | None = None) -> str:
+    # `%f` はマイクロ秒 6 桁を返す。ミリ秒 3 桁へ落として読みやすさを保つ。
+    return (now or datetime.now()).strftime(REVIEW_ID_FORMAT)[:-3]
+
+
 def build_request(
     pattern: str,
     project_root: Path,
@@ -435,7 +457,7 @@ def build_request(
     **kwargs,
 ) -> dict:
     """バックエンド非依存の依頼 envelope を構築する。"""
-    request_id = review_id or uuid.uuid4().hex
+    request_id = review_id or new_review_id()
     return {
         "review_id": request_id,
         "body": build_body(pattern=pattern, project_root=project_root, **kwargs),
@@ -456,6 +478,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--project-root",
         required=True,
         help="プロジェクトルート（絶対パスの起点。レビュアーへは絶対パスで渡す）",
+    )
+    parser.add_argument(
+        "--review-id",
+        default=None,
+        help=(
+            "既存の review_id。2 ラウンド目以降で渡す。"
+            "**識別するのはレビューであってラウンドではない** ため、"
+            "往復の間は同じ値を使い続ける。未指定なら新規に生成する"
+        ),
     )
     parser.add_argument(
         "--files-json",
@@ -544,6 +575,7 @@ def main() -> int:
         envelope = build_request(
             pattern=args.pattern,
             project_root=Path(args.project_root),
+            review_id=args.review_id,
             files=files,
             dirs=dirs,
             base_branch=args.base_branch,

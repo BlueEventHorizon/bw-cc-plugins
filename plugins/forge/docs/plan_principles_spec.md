@@ -7,22 +7,22 @@
 
 ---
 
-## 計画書の構成ルール [MANDATORY]
+## 計画書の構成ルール
 
-計画書は YAML 形式で、以下の4セクションのみで構成する:
+計画書は JSON 形式で、以下の4セクションのみで構成する:
 
 1. `requirements_traceability` — 要件トレーサビリティマトリクス
 2. `design_traceability` — 設計トレーサビリティマトリクス
 3. `tasks` — タスク一覧
 4. `revision_history` — 改定履歴
 
-**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。
+**上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。計画書には追加 feature 用の frontmatter も付与しない（[frontmatter_format.md](frontmatter_format.md) §1.3）。
 
-ファイル名: `{feature}_plan.yaml`（拡張子は `.yaml`）
+ファイル名: `{feature}_plan.json`（拡張子は `.json`）
 
 ---
 
-## タスクの粒度 [MANDATORY]
+## タスクの粒度
 
 | 基準       | 内容                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +39,7 @@
 
 ---
 
-## 「やるべき内容」の記載原則 [MANDATORY]
+## 「やるべき内容」の記載原則
 
 設計書を参照すればわかる実装詳細（プロパティ名、型、メソッドシグネチャ等）は計画書に書かない。設計書の**該当セクションを特定できるレベル**の記述にとどめること。
 
@@ -47,29 +47,32 @@
 
 ---
 
-## `required_reading` フィールドの仕様 [MANDATORY]
+## `required_reading` フィールドの仕様
 
 タスク実行前に必ず読むべき文書のファイルパスを `tasks[].required_reading` 配列に列挙する。
 
-**記載形式**: プロジェクトルートからの相対パス文字列の YAML 配列
+**記載形式**: プロジェクトルートからの相対パス文字列の JSON 配列
 
 **正しい例**:
 
-```yaml
-required_reading:
-  - specs/feature/design/DES-001_foo_design.md
-  - specs/feature/plan/feature_strategy.md
-  - rules/architecture/domain_core.md
+```json
+{
+  "required_reading": [
+    "specs/feature/design/DES-001_foo_design.md",
+    "specs/feature/plan/feature_strategy.md",
+    "rules/architecture/domain_core.md"
+  ]
+}
 ```
 
-**実装戦略書 [MANDATORY]**: `/forge:start-plan` が `{feature}_strategy.md` を作成した場合、すべてのタスクの `required_reading` にその戦略書パスを含める。戦略書は executor が全体戦略・フェーズ意図・リスク対策を理解するための必読文書である。
+**実装戦略書**: `/forge:start-plan` が `{feature}_strategy.md` を作成した場合、すべてのタスクの `required_reading` にその戦略書パスを含める。戦略書は executor が全体戦略・フェーズ意図・リスク対策を理解するための必読文書である。
 
 **誤った例**:
 
 - `foo_design` ❌（曖昧名）
 - `specs/*/design/*.md` ❌（glob 禁止）
 - `DES-001` ❌（ID のみ）
-- `-` ❌（旧 Markdown table 表現。YAML では `null` でも `-` でもなく **空配列 `[]`** を使う）
+- `-` ❌（旧 Markdown table 表現。JSON では `null` でも `-` でもなく **空配列 `[]`** を使う）
 
 **必読なし**: `required_reading: []`（空配列）
 
@@ -103,7 +106,7 @@ required_reading:
 | `build_check` | `skip`              | グループ途中タスク       |
 | `build_check` | `on_group_complete` | グループ最終タスク       |
 
-### 早期検証の妥当性条件 [MANDATORY]
+### 早期検証の妥当性条件
 
 **用語定義**:
 
@@ -131,7 +134,7 @@ required_reading:
 
 ---
 
-## タスク受け入れ基準規範 [MANDATORY] (forge-review feature 統合で追加)
+## タスク受け入れ基準規範
 
 ### 規範
 
@@ -151,7 +154,7 @@ required_reading:
 
 ---
 
-## テストタスク必須化規範 [MANDATORY] (forge-review feature 統合で追加)
+## テストタスク必須化規範
 
 ### 規範
 
@@ -170,7 +173,7 @@ required_reading:
 
 ---
 
-## 暗黙依存検出規範 [MANDATORY] (forge-review feature 統合で追加)
+## 暗黙依存検出規範
 
 ### 規範
 
@@ -191,7 +194,7 @@ required_reading:
 
 ---
 
-## トレーサビリティ規範 [MANDATORY] (forge-review feature 統合で追加)
+## トレーサビリティ規範
 
 ### 規範
 
@@ -208,7 +211,7 @@ required_reading:
 
 ---
 
-## 重大度カタログ [MANDATORY] (forge-review feature 統合で追加)
+## 重大度カタログ
 
 本文書内の各規範を、違反時の重大度に対応付ける。
 
@@ -217,8 +220,8 @@ required_reading:
 | 違反パターン                                                                                      | 違反時の重大度 | 理由                                            |
 | ------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------- |
 | `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
-| YAML 形式以外で記述                                                                               | 🔴 critical    | ツールチェーンが解釈不能                        |
-| ファイル名が `{feature}_plan.yaml` 規約から逸脱                                                   | 🟡 major       | 自動解決経路が機能しない                        |
+| JSON 形式以外で記述                                                                               | 🔴 critical    | ツールチェーンが解釈不能                        |
+| ファイル名が `{feature}_plan.json` 規約から逸脱                                                   | 🟡 major       | 自動解決経路が機能しない                        |
 
 ### タスクの粒度 (本文書既存)
 
@@ -243,7 +246,7 @@ required_reading:
 | 必読パスが glob (例: `specs/*/design/*.md`) | 🔴 critical    | 自動解決不能                                 |
 | 必読パスが曖昧名 (例: `foo_design`)         | 🔴 critical    | 自動解決不能                                 |
 | `required_reading` フィールドが未指定       | 🟡 major       | 「必読なし」は明示的に `[]` で表現する       |
-| `required_reading` に `-` 等の文字列を記載  | 🟡 major       | 旧 Markdown table 表現。YAML では空配列 `[]` |
+| `required_reading` に `-` 等の文字列を記載  | 🟡 major       | 旧 Markdown table 表現。JSON では空配列 `[]` |
 
 ### タスクグループ (本文書既存)
 
@@ -254,7 +257,7 @@ required_reading:
 | グループ最終タスクに `build_check: on_group_complete` 未指定                                  | 🟡 major       | グループ完了時のビルド確認漏れ                                                                   |
 | 最小の動作確認可能な単位の完成点を跨いで全タスク `skip` のまま継続 (検証点がグループ末尾のみ) | 🟡 major       | 早期検証の機会喪失。動作確認可能になった時点から最終タスクまでの間、不具合が検出されずに蓄積する |
 
-### 依存関係管理 (本文書既存 + forge-review feature 統合で追加)
+### 依存関係管理
 
 | 違反パターン                                              | 違反時の重大度          | 理由                                |
 | --------------------------------------------------------- | ----------------------- | ----------------------------------- |
@@ -262,7 +265,7 @@ required_reading:
 | 依存される側より依存する側が先に実装される順序            | 🔴 critical             | 実装不能                            |
 | 暗黙依存の未記載 (上記「典型的な暗黙依存パターン」表参照) | 🔴 critical 〜 🟡 major | パターンごとに重大度差あり (上記表) |
 
-### 受け入れ基準・テストタスク (forge-review feature 統合で追加)
+### 受け入れ基準・テストタスク
 
 | 違反パターン                                                     | 違反時の重大度 |
 | ---------------------------------------------------------------- | -------------- |
@@ -271,7 +274,7 @@ required_reading:
 | 主要機能タスクに対応するテストタスクが計画書に存在しない         | 🔴 critical    |
 | テストタスクが Markdown 文書編集等の例外条件に該当しないのに省略 | 🔴 critical    |
 
-### トレーサビリティ (forge-review feature 統合で追加)
+### トレーサビリティ
 
 | 違反パターン                                         | 違反時の重大度 |
 | ---------------------------------------------------- | -------------- |
@@ -279,10 +282,6 @@ required_reading:
 | 対応タスクなしの要件 ID に除外理由が記載されていない | 🟡 major       |
 | タスクが対応要件と矛盾する内容                       | 🔴 critical    |
 
-### 追加 feature 用 frontmatter
+### 追加 feature の計画書
 
-判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。マーカーの定義は [plan_format.md](plan_format.md)「追加 feature 用 frontmatter」節を参照（plan.yaml は先頭コメントブロックで表現する）。
-
-| 違反パターン                                                              | 違反時の重大度 | 理由                                                       |
-| ------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------- |
-| 追加 feature 計画書に `type: temporary-feature-plan` マーカーコメント欠如 | 🟡 major       | 一時計画書であることが宣言されず、merge/破棄判断を誤らせる |
+計画書には frontmatter を付与しない。追加 feature の計画書かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する（[frontmatter_format.md](frontmatter_format.md) §1.3）。

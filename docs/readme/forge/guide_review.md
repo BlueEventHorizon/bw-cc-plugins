@@ -11,25 +11,24 @@ The subject that actually performs the review is swappable (see "Review backends
 ## review
 
 ```
-/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto-critical | --auto] [--focus "<emphasis>"] [--scope "<target completeness>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
+/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto] [--focus "<emphasis>"] [--scope "<target completeness>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
 ```
 
-| Argument          | Description                                                                                          |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `type`            | `code` / `requirement` / `design` / `plan` / `uxui`                                                  |
-| `--diff`          | Uncommitted changes on the current branch (default)                                                  |
-| `--branch`        | All changes since the base-branch divergence point                                                   |
-| `--files`         | Explicit comma-separated file list                                                                   |
-| `--dirs`          | Everything under the given directories (comma-separated; see below)                                  |
-| `--interactive`   | Default. Currently aliased to `--auto` (see "Interim behavior")                                      |
-| `--auto`          | Auto-fix 🔴 + 🟡. 🟢 minor is out of scope                                                           |
-| `--auto-critical` | Auto-fix 🔴 only                                                                                     |
-| `--focus`         | What to pay extra attention to this time (free text, optional)                                       |
-| `--scope`         | How complete this change is meant to be, plus deliberate omissions (multi-line, optional; see below) |
-| `--project-rules` | Rule documents to hand to the reviewer (comma-separated, optional; see below)                        |
-| `--project-specs` | Specification documents to hand to the reviewer (comma-separated, optional; see below)               |
-| `--secrets`       | Standalone review for leaked secrets only (see below)                                                |
-| `--backend`       | Which subject actually performs the review (optional; see "Review backends")                         |
+| Argument          | Description                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `type`            | `code` / `requirement` / `design` / `plan` / `uxui`                                                                            |
+| `--diff`          | Uncommitted changes on the current branch (default)                                                                            |
+| `--branch`        | All changes since the base-branch divergence point                                                                             |
+| `--files`         | Explicit comma-separated file list                                                                                             |
+| `--dirs`          | Everything under the given directories (comma-separated; see below)                                                            |
+| `--interactive`   | Default. Nothing is fixed without asking; findings are presented one at a time. Accepted ones are fixed regardless of severity |
+| `--auto`          | **Fixes only what it is sure about; anything it is unsure about is presented for you to decide**                               |
+| `--focus`         | What to pay extra attention to this time (free text, optional)                                                                 |
+| `--scope`         | How complete this change is meant to be, plus deliberate omissions (multi-line, optional; see below)                           |
+| `--project-rules` | Rule documents to hand to the reviewer (comma-separated, optional; see below)                                                  |
+| `--project-specs` | Specification documents to hand to the reviewer (comma-separated, optional; see below)                                         |
+| `--secrets`       | Standalone review for leaked secrets only (see below)                                                                          |
+| `--backend`       | Which subject actually performs the review (optional; see "Review backends")                                                   |
 
 > **There is no engine axis (`--codex` / `--claude`).** The performing subject is selected only via `--backend`. Passing these legacy flags logs a warning and continues with the default behavior (so existing callers migrated from the legacy pipeline keep working). **`--codex` is never reinterpreted as `--backend codex`.**
 
@@ -182,7 +181,7 @@ When resolving by candidate order (no `--backend`, no setting), the next candida
 | ------------------------------- | ------------------------------------------------------ |
 | Pre-PR final check              | `--auto` for bulk fix, then review the diff            |
 | Document quality review         | `--auto`, then check the disposition table for reasons |
-| CI-style quality gate           | `--auto-critical` for minimal safe fixes               |
+| CI-style quality gate           | `--auto` — only confident fixes are applied            |
 | Completion step of other skills | start-design etc. call `--auto` internally             |
 
 ### Two Operating Modes
@@ -213,9 +212,19 @@ flowchart TD
     RESULT -->|"Approved"| DONE["Done. Summary report"]
     RESULT -->|"Findings"| EVAL
 
-    EVAL["Evaluate each finding<br/>valid / unnecessary / misread"] --> GATE
+    EVAL["Evaluate each finding<br/>valid / unnecessary / misread"] --> MODE
 
-    GATE["Gate auto-fix scope by severity"] --> CONFIRM
+    MODE{Intervention axis}
+    MODE -->|"--interactive (default)"| TRIAGE
+    MODE -->|"--auto"| SPLIT
+
+    SPLIT{"Is the finding ✅?<br/>(point correct AND fix certain)"}
+    SPLIT -->|"Yes"| CONFIRM
+    SPLIT -->|"No"| TRIAGE
+
+    TRIAGE["Write the triage file"] --> STEP
+
+    STEP["Present one at a time → you decide<br/>(spans turns)"] --> CONFIRM
 
     CONFIRM{Any fix to apply now?}
     CONFIRM -->|No| DONE2["Complete with unaddressed findings<br/>(reported distinctly from approval)"]
@@ -256,14 +265,14 @@ The verification scripts **only detect**; they never roll back automatically. De
 
 ### Convergence
 
-Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if no fix is to be applied this round, no re-review is requested and the review completes.**
+Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if nothing is to be fixed this round and nothing is queued for presentation, no re-review is requested and the review completes.** Interrupting the step-by-step presentation also completes the review — after applying the fixes already accepted — regardless of how many they were.
 
 That completion differs from completing by approval, and the summary distinguishes them:
 
 - **Completed by approval**: the reviewer reported no findings
 - **Completed with unaddressed findings**: the reviewer still reports findings, but none were in scope this round
 
-In the latter case every unfixed finding is listed with its reason (out of severity scope / severity undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
+In the latter case every unfixed finding is listed with its reason (you decided not to accept it / location undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
 
 ### Review Types
 
@@ -279,13 +288,15 @@ In the latter case every unfixed finding is listed with its reason (out of sever
 
 ### Severity Levels
 
-| Level       | Meaning                                              | Under auto modes                             |
-| ----------- | ---------------------------------------------------- | -------------------------------------------- |
-| 🔴 Critical | Must fix. Bugs, security, data loss, spec violations | Fixed by both `--auto` and `--auto-critical` |
-| 🟡 Major    | Should fix. Conventions, error handling, performance | Fixed by `--auto` only                       |
-| 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Never auto-fixed                             |
+| Level       | Meaning                                              | Under auto modes |
+| ----------- | ---------------------------------------------------- | ---------------- |
+| 🔴 Critical | Must fix. Bugs, security, data loss, spec violations | Presented first  |
+| 🟡 Major    | Should fix. Conventions, error handling, performance | Presented next   |
+| 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Presented last   |
 
-Findings whose severity could not be determined are excluded from auto-fix and left to human review.
+Severity never decides whether a finding is fixed without asking — it only orders the presentation. That decision comes from two separate judgements forge makes per finding: whether the reviewer's point is correct (`☑️`), and whether the fix can be carried out responsibly (`✅`). Only `✅` findings are fixed without asking, and `✅` implies `☑️`. Both marks appear in the agenda under `--interactive` too, so you can say "just fix the `✅` ones".
+
+Findings whose location cannot be determined are never fixed automatically — there is no place to apply the fix — and are left to human review regardless of severity or confidence.
 
 ### Review Criteria
 
@@ -296,14 +307,40 @@ The request embeds the paths of the type-specific criteria file and the project 
 | **Plugin-bundled**     | `review_criteria_<type>.md` per type (always included)                          |
 | **Doc-search backend** | Project documents returned by `/forge:query-db-rules` / `/forge:query-db-specs` |
 
-### Interim Behavior: `--interactive`
+### The Default `--interactive`: Step-by-Step Presentation
 
-**`--interactive` (the default) currently applies the same gating as `--auto`** (user-directed, user's responsibility [2026-07-19]). The intended step-by-step presentation — showing findings one at a time and asking the human to decide — is not implemented yet.
+**What may be fixed without asking is decided by confidence, not severity.** Confidence splits into two separate judgements, because they are about different things: whether the reviewer's point is correct, and whether the fix can be carried out responsibly.
 
-This is a deliberate interim measure to get the mechanism into real use across many projects and surface problems early. It will be implemented later, self-contained within this skill.
+| Mark   | Meaning                                                             | Under `--auto`       |
+| ------ | ------------------------------------------------------------------- | -------------------- |
+| ✅     | The point is correct **and** the fix can be carried out responsibly | Fixed without asking |
+| ☑️      | The point is correct, but the fix itself is uncertain               | Presented to you     |
+| (none) | The point's own validity is uncertain                               | Presented to you     |
 
-### No Session Directory
+`✅` implies `☑️`: a point that is not established as correct can never be fixed without asking.
 
-This skill does not persist finding state to files. Receiving, evaluating, fixing, and replying all complete within a single turn.
+Severity says how bad the problem is, not how sure the fix is. A 🔴 critical is not fixed if the fix itself is uncertain; a 🟢 minor is fixed when it is certain. Using weight as a proxy for certainty lets **an unsure fix through just because the finding was severe**.
+
+Stopping where it is unsure is what makes `--auto` trustworthy — get that wrong once and `--auto` becomes "the thing that makes mistakes".
+
+Severity remains as presentation order. The only findings that cannot be fixed at all are those whose location is undetermined, because there is nothing to point the fix at.
+
+`--interactive` presents every fixable finding; `--auto` presents only the ones it is unsure about.
+
+Presentation goes from the highest severity down. For each finding the skill states what the finding is, why it is a problem, what the decision actually hinges on, its recommendation with a reason, `path:line`, and its confidence. **The skill decides what to take up next**, so all you have to do is stop it, skip an item, or reorder.
+
+Findings are presented as prose and your response is free-form. Whether to accept a finding is a matter of substance, and a choice-list UI has nowhere to put the background.
+
+Findings whose location is undetermined are not put to a decision even under `--interactive`. Accepting one would not pin down what to fix, so a human has to read the finding directly. That count is shown together with the agenda.
+
+To reduce human turns, pass `--auto` explicitly. Note that **`--auto` still asks about anything it is unsure of**, so it does not guarantee an unattended run.
+
+### How State Is Held
+
+An `--auto` round completes within a single turn — receiving, evaluating, fixing, and replying — and holds no state in files.
+
+Only `--interactive` step-by-step presentation spans turns, because it waits on a human. That state (findings, evaluations, decisions) lives in `.claude/.temp/review/triage.md`, whose real path is printed to the console.
+
+**There is always exactly one such file, and it holds only the round in progress.** If you break off partway, it stays behind with its undecided rows, and the next review asks you whether to delete it and start fresh or pick up where you left off. That question is the resume entry point. Settled outcomes show up in the fixes themselves and in the reply table, so nothing accumulates in the file.
 
 When the round-trip history is needed it is requested from the backend, but **only on backends that provide history restoration** (for `msg-review`, the msg-sys message DB is the source; `agent-review` keeps no history). Restoration happens only when a user or the body asks for it with an explicit `review_id` — never automatically in response to a message arriving or a wait timing out.

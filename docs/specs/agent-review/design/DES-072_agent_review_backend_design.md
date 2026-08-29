@@ -1,33 +1,35 @@
 ---
-title: agent-review バックエンド設計
-purpose: read-only カスタム Agent reviewer をラウンドごとに新規起動し、共通レビュー結果へ変換する構成を定義する
+title: agent-review Backend Design
+purpose: Defines the design of the agent-review backend that launches a fresh read-only reviewer custom Agent per round and converts its response into the common review result
 content_details:
-  - Agent 定義とバックエンド SKILL の責務分離
-  - ラウンド実行と結果変換
-  - 可用性、終了通知、履歴非対応の設計
+  - Responsibility separation between the reviewer Agent definition and the backend SKILL
+  - Agent definition constraints including prohibition of the injected advisor tool
+  - Availability check conditions verified without launching an Agent
+  - Round execution flow and conversion via the shared findings parser
+  - Termination notice as a no-op and history restoration as unsupported
+  - Output contract mapping REVIEW_RESULT to approved, findings, or failure
+  - Statelessness rules prohibiting sessions, transcripts, and DB records
+  - Test design for availability, lifecycle, read-only constraints, and wire neutrality
 applicable_tasks:
-  - agent-review バックエンドの実装
-  - reviewer Agent の実装
-  - agent-review の契約試験
+  - Implementation of the agent-review backend SKILL
+  - Modification of the reviewer Agent definition and its prohibition clauses
+  - Contract testing of agent-review availability and round execution
+  - Review of availability check condition changes
 keywords:
   - agent-review
   - reviewer
   - custom Agent
   - read-only
   - stateless
+  - advisor
+  - availability check
+  - REVIEW_RESULT
+  - parse_findings
+type: doc-advisor
+body_hash: sha256:fe0251ff6cabfde4dee57e0cafb6ebee041e6ee48fd8404d536ecf1deb6d03aa
 ---
 
 # DES-072 agent-review バックエンド設計
-
-## メタデータ
-
-| 項目     | 値                                    |
-| -------- | ------------------------------------- |
-| 設計 ID  | DES-072                               |
-| 関連要件 | REQ-016 / REQ-013 FNC-1318            |
-| 関連設計 | ADR-066 / ADR-071 / DES-055 / DES-066 |
-| 作成日   | 2026-08-06                            |
-| 対象     | `agent-review` と `reviewer` Agent    |
 
 ## 1. 概要
 
@@ -73,6 +75,7 @@ flowchart LR
 - 差分・ブランチ対象の確定に必要な場合だけ、read-only git 照会を許可する
 - permission mode を `plan` とし、変更操作の承認要求へ昇格させない
 - 役割を「所見の判断と統一返信形式の返却」に限定し、修正やコミットを指示しない
+- 環境から注入される `advisor` ツールの呼び出しを役割定義で禁じる（レビュー判断に不要であり、応答待ちがラウンド実行時間を浪費する。ツールは「他 Agent・Skill の起動禁止」に掛からないため個別に禁じる）
 
 read-only git 照会は、`status`、`diff`、`show`、`log`、`merge-base`、`rev-parse`、`ls-files` などリポジトリを変更しない操作に限定する。`add`、`commit`、`checkout`、`switch`、`reset`、`clean`、`stash`、`rebase`、`merge`、`push` を含む変更操作を許可しない。
 

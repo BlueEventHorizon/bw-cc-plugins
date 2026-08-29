@@ -94,7 +94,7 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 4. Compare with main branch (confirm if already bumped)
 5. Calculate new version
 6. Collect commit history (for CHANGELOG)
-   - Look up the previous version's tag in both forms, with and without the `v` prefix. Fall back to the previous CHANGELOG entry's date when neither exists
+   - Look up the previous version's tag across all four combinations of prefix (present / absent) and `v` (present / absent), starting from the simplest form and taking the first one that exists: `1.2.3` → `v1.2.3` → `foo-1.2.3` → `foo-v1.2.3`. Fall back to the previous CHANGELOG entry's date when none exists
 7. Update files
    - `version_file` (plugin.json, etc.)
    - `sync_files` (README, etc.) version sync
@@ -111,44 +111,6 @@ Update versions across multiple files based on `.version-config.yaml`. Supports 
 | `.version-config.yaml` missing | Suggest running `/forge:setup-version-config`   |
 | Target not found               | Show available targets                          |
 | Test failure                   | Version update complete. Fix tests, then commit |
-
----
-
-## clean-rules
-
-Analyze the project's `rules/` directory, detect duplicates with forge built-in docs, and restructure files.
-
-```
-/forge:clean-rules
-```
-
-No arguments. Default is analysis report only (no changes).
-
-### When to Use
-
-- After adopting forge, to deduplicate with existing rules
-- When rule documents have become scattered or overgrown
-
-### Execution Flow
-
-1. **Analysis**: Classify `rules/` files and sections
-   - Content Type: Constraint / Convention / Format / Process / Decision / Reference
-   - Authority: Tool-provided (forge built-in) / Project-defined / External standard
-2. **Duplicate detection**: Score similarity against forge built-in docs
-3. **Report**: List deletion and restructuring candidates
-4. After user confirmation:
-   - **Delete**: Remove sections covered by forge
-   - **Restructure**: Split large files with mixed Content Types; merge small files
-5. Update `.doc_structure.yaml` and the search index
-6. Confirm commit
-
-### Safety
-
-- Default is analysis only (no changes)
-- `git stash` before execution; `git stash pop` to recover if needed
-- Project-defined rules are never deleted
-
----
 
 ## help
 

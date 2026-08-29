@@ -74,7 +74,7 @@ target が引数で明示指定されていない場合のみ実行する。
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/get_version_status.py
 ```
 
-`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。
+`summary.needs_bump` は「`scope` に一致する変更ファイルがあり、かつまだ version が更新されていない target」の配列。各 target に `.version-config.yaml` の `scope:`（glob、例: `plugins/forge/**`）が定義されている必要がある。`scope:` / `exclude:` はリスト形式（`scope:\n  - "..."`）・単一行スカラー形式（`scope: "..."`）のどちらでも解釈される。
 
 | `needs_bump` の状態 | 挙動                                                                                                        |
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -136,7 +136,7 @@ JSON 出力から `new` を取得する。`status: "error"` の場合はエラ�
 新バージョン ({target_name}): {new_version}
 ```
 
-### Step 5: 変更内容の収集 [MANDATORY]
+### Step 5: 変更内容の収集
 
 > **このステップはバージョンファイル更新（Step 6）より前に実行する。** バージョン番号を書き換える前にコミット履歴を収集することで、バージョン番号変更のノイズが混入しない。
 
@@ -146,21 +146,28 @@ JSON 出力から `new` を取得する。`status: "error"` の場合はエラ�
 
 前バージョンのタグから HEAD までのコミットを取得する。
 
-タグ名は `tag_format` から生成するが、**`v` の有無は運用によって揺れるため両形式を検索する**。タグは利用者が手で付けていることが多く、`tag_format` の宣言と実在タグの形式が一致しない。片方だけを見ると「タグが存在しない」と誤判定し、常にフォールバックへ落ちる:
+タグ名は `tag_format` から生成する。ただし **`tag_format` は宣言であって実在タグの保証ではない**。タグは利用者が手で付けていることが多く、`v` の有無も target prefix の有無も運用によって揺れる。宣言どおりの名前だけを見ると「タグが存在しない」と誤判定し、タグがあっても常にフォールバックへ落ちる。
+
+そこで **prefix の有無 × `v` の有無の 4 通り**を候補として検索する。**単純な形式から順に見て、最初に実在したものを `prev_tag` として採る**。prefix は `tag_format` の `{version}` より前の部分から `v` を除いた文字列（`{target}-v{version}` で target=foo なら `foo-`）:
+
+| # | 候補                  | 例（target=foo、前バージョン 0.0.23） |
+| - | --------------------- | ------------------------------------- |
+| 1 | prefix なし・`v` なし | `0.0.23`                              |
+| 2 | prefix なし・`v` 付き | `v0.0.23`                             |
+| 3 | prefix あり・`v` なし | `foo-0.0.23`                          |
+| 4 | prefix あり・`v` 付き | `foo-v0.0.23`                         |
 
 ```bash
-# tag_format: "{target}-v{version}"、target=foo、前バージョン 0.0.23 の場合
-#   候補は "foo-v0.0.23"（tag_format どおり）と "foo-0.0.23"（v なし）の 2 つ
-git tag --list "foo-v0.0.23" "foo-0.0.23"
+git tag --list "0.0.23" "v0.0.23" "foo-0.0.23" "foo-v0.0.23"
 ```
 
-見つかったものを `prev_tag` として使い、コミットを取得する:
+採った `prev_tag` でコミットを取得する:
 
 ```bash
 git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 ```
 
-両形式が見つかった場合は `tag_format` どおりの側を採る。
+> **候補 1・2 の注意**: prefix を持たないタグは target を区別しない。マルチ target のプロジェクトで別 target が同じバージョン番号を持つと、他 target のタグを拾いうる。拾ったタグが対象 target のものか、`git log -1 {prev_tag}` で内容を確認する。範囲が多少ずれても CHANGELOG の材料としては使えるため、確認のうえ採用してよい。
 
 タグが存在しない場合のフォールバック:
 
@@ -184,7 +191,7 @@ git log {prev_tag}..HEAD --pretty=format:"%s" --no-merges
 
 生成した CHANGELOG エントリはコンテキストに保持し、Step 7 で挿入する。
 
-### Step 6: ファイルの更新 [MANDATORY]
+### Step 6: ファイルの更新
 
 #### 6-1. version_file の更新
 
@@ -313,7 +320,7 @@ CHANGELOG ファイルを Read し、`changelog.format` に応じて挿入アン
 
 `section_per_target: true` の場合、各 target の変更を `### {target_name}` サブセクションに分ける。
 
-### Step 8: README 影響判定 [MANDATORY]
+### Step 8: README 影響判定
 
 CHANGELOG に記載した変更内容が README に影響するかを判断する。
 

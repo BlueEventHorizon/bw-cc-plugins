@@ -42,10 +42,11 @@
 
 ### 規範（違反を検出する対象）
 
-- `{{PLUGIN_ROOT}}/docs/plan_format.md` — 計画書の構成・必須項目
 - `{{PLUGIN_ROOT}}/docs/plan_principles_spec.md` — 計画策定の原則
+- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`requirements_traceability` 先の要件定義書の `feature_type` による追加 feature 判定・旧仕様優先度
+- `{{PLUGIN_ROOT}}/docs/spec_priorities_spec.md` — 構造品質の直接数値化禁止・倒錯パターン
 - `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則。目的に対して過剰な構造・ステップ数になっていないか
-- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` §5.3 — `required_reading` 等が指すパスの実在性（Markdown 記法規定は YAML の計画書に適用しない）
+- `{{PLUGIN_ROOT}}/docs/document_style_guide.md` §5.3 — `required_reading` 等が指すパスの実在性（Markdown 記法規定は JSON の計画書に適用しない）
 
 ### プロジェクト固有のルール文書
 
@@ -58,6 +59,8 @@
 ## 返信形式契約
 
 所見は自由記述 markdown で記述してください。**各所見は、その 1 行目の行頭に重大度マーカー（🔴 critical / 🟡 major / 🟢 minor）を置いて書き始めてください**（箇条書き記号 `-` / `*` / `1.` の直後も行頭として扱います）。**重大度を見出し（`## 🔴 critical` 等）にまとめ、その配下に所見を並べる形は受理されません**——所見ごとのマーカーが無いため 1 件も抽出できず、ラウンド全体が失敗します。あわせて各所見に `ファイルパス:行`、または特定できない場合は `位置未確定` と明示してください。
+
+すべての所見は、返信前に次の自己検証を行ってください。①所見の根拠となる主張を検証質問へ分解する ②各質問を対象ファイル・参照文書・利用可能な実体から独立に検証する ③反証・例外・重大度カタログとの不一致があれば所見を修正または撤回する。検証過程は返信せず、検証後も成立する所見だけを出力してください。
 
 返信の最終行には、次のいずれかの完了宣言行を必ず 1 行だけ置いてください。
 

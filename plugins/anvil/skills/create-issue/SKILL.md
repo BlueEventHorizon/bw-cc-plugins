@@ -31,7 +31,7 @@ GitHub Issue として記録するスキル。
 
 ---
 
-## Phase 0: 環境確認 [MANDATORY]
+## Phase 0: 環境確認
 
 ### 0.1 gh CLI の確認
 
@@ -78,7 +78,7 @@ git remote get-url origin
 
 ---
 
-## Phase 1: Issue 種別の選択 [MANDATORY]
+## Phase 1: Issue 種別の選択
 
 `AskUserQuestion` を使用して Issue 種別を確認する。種別ごとに本文の必須セクションが異なる。
 
@@ -93,7 +93,7 @@ git remote get-url origin
 
 ---
 
-## Phase 2: 必須セクションの収集 [MANDATORY]
+## Phase 2: 必須セクションの収集
 
 `<issue-kind>` に応じて以下の必須セクションを `AskUserQuestion` で**順に**収集する。
 情報が得られない項目は、空欄ではなく**閉じた集合の不在表現**のいずれかで埋める。
@@ -172,7 +172,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 
 ---
 
-## Phase 3: タイトルの確定 [MANDATORY]
+## Phase 3: タイトルの確定
 
 タイトル要件:
 
@@ -199,7 +199,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 
 ---
 
-## Phase 4: プレビュー & Issue 作成 [MANDATORY]
+## Phase 4: プレビュー & Issue 作成
 
 ### 4.1 本文の組み立て
 
@@ -288,7 +288,7 @@ Issue を作成しました:
   /anvil:triage-issue #<N>
 ```
 
-> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（軽量実装と判定されれば triage が impl-issue を起動する）。
+> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（ワンショット実装と判定されれば triage が impl-issue を起動する）。
 
 ---
 
@@ -310,6 +310,6 @@ Issue を作成しました:
 
 ## 関連スキル
 
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（軽量実装なら内部で `impl-issue` を起動、SDD なら forge start-* を提案）
+- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge `start-*` を提案、決め事が残るなら plan モードでの検討を提案）
 - [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
 - [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push

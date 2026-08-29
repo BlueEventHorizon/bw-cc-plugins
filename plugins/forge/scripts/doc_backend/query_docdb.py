@@ -317,7 +317,9 @@ def run(
         )
 
     if registered_series is None or docs.series not in registered_series:
-        # 未整備。索引は作成しない（SKILL が sync を駆動して再試行する）。
+        # 索引がまだ存在しない（KEY 未作成、または現在の branch に対応する series が未同期）。
+        # これは doc-db の障害ではないため operation 失敗にせず exit 30 で返し、索引を作成せずに戻る。
+        # 索引の作成は呼び出し側の SKILL が update 系 SKILL へ委譲して行い、その後 query を再試行する。
         # series を外した横断検索へも切り替えない。
         reason = (
             REASON_KEY_NOT_FOUND if registered_series is None

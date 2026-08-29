@@ -20,11 +20,11 @@ argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figm
 
 選択モード（interactive / reverse-engineering / from-figma）に応じて要件定義書を作成し、レビュー+自動修正・ToC更新・commit まで完走すること。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
-## 議論モードの基本原則 [MANDATORY]
+## 議論モードの基本原則
 
 ユーザーの「叩き台を作って」「全面改訂してレビューしよう」「議論しよう」「壁打ち」は **議論起点** であり、決定フローではない。詳細は `requirements_interactive_workflow.md` § 対話の基本原則 8-11 を参照。
 
@@ -51,7 +51,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## 前提確認 [MANDATORY]
+## 前提確認
 
 ### Step 1: モード選択
 
@@ -68,7 +68,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ## Phase 0: 事前確認（全モード共通）
 
-**フィーチャー概念の把握 [MANDATORY]**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
@@ -77,9 +77,9 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
    - `--add` 指定 → 既存アプリへの機能追加として処理
    - 未指定 → AskUserQuestion を使用して確認する
 
-   **`--add`（追加開発）の場合 [MANDATORY]**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
-   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外、§6 frontmatter 定義一覧
-   - `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` の「追加 feature 用 frontmatter」節 — `type: temporary-feature-requirement` 定義
+   **`--add`（追加開発）の場合**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外
+   - `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.1 — `feature_type: temporary-feature` 定義
 
 2. **Feature 名の確定**:
 
@@ -100,7 +100,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## ワークフローの実行 [MANDATORY]
+## ワークフローの実行
 
 モード確定後、該当するワークフローファイルを **Read** し、そのファイルの指示に従って作業を実行する。
 

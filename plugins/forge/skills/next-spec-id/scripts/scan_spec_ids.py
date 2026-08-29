@@ -133,6 +133,15 @@ def get_scan_branches(base_branch, cwd=None):
 def scan_ids_in_branch(branch, prefix, scan_dirs, cwd=None):
     """1つのブランチから指定プレフィックスの ID を抽出する。
 
+    DES/REQ/ADR 等は「1 文書 1 ファイル・ファイル名に ID を含む」ため、ファイル名の
+    スキャンだけで足りる。しかし TASK は複数タスクが 1 つの計画書ファイル
+    （`*_plan.json`）へ埋め込まれる設計であり、ID はファイル名ではなく `task_id`
+    フィールドの値として本文中にのみ現れる。ファイル名だけをスキャンすると、
+    計画書内に既に存在する TASK ID を検出できず、採番が衝突する
+    （実際に `TASK-012` が `agenda_plan.json` に存在するのに次の空き番号として
+    再び `TASK-012` が返された事故が発生した）。そのため `*_plan.json` は
+    ファイル名に加えて本文もスキャン対象にする。
+
     Returns:
         list[tuple[str, str, str]]: (id_string, branch_name, file_path) のリスト
     """
@@ -159,10 +168,30 @@ def scan_ids_in_branch(branch, prefix, scan_dirs, cwd=None):
         for filepath in output.split('\n'):
             if not filepath:
                 continue
+
+            # `tasks/{TASK-ID}.json` は `build_task_context.py` が plan.json の
+            # 該当タスクエントリから都度再生成する一時アーティファクトであり、
+            # 正本ではない（plan.json の複製）。正本と同じ ID を含むのは設計通り
+            # であり、重複としてもファイル名としても数えない。
+            if os.path.basename(os.path.dirname(filepath)) == 'tasks':
+                continue
+
             match = pattern.search(filepath)
             if match:
                 id_str = '{}-{}'.format(prefix, match.group(1))
                 results.append((id_str, branch, filepath))
+
+            # plan.json は `task_id` を自ら定義する一方、`design_id`/
+            # `requirement_ids` 等で他プレフィックス（DES/REQ）の ID を
+            # 参照として含む。本文スキャンは TASK が自身の ID を定義する
+            # 場合にのみ行う——他プレフィックスに適用すると、plan.json が
+            # 参照しているだけの DES/REQ ID を「plan.json がその ID を
+            # 主張している」duplicate として誤検出する。
+            if prefix == 'TASK' and filepath.endswith('_plan.json'):
+                content = _run_git('show', '{}:{}'.format(branch, filepath), cwd=cwd)
+                for content_match in pattern.finditer(content):
+                    id_str = '{}-{}'.format(prefix, content_match.group(1))
+                    results.append((id_str, branch, filepath))
 
     return results
 

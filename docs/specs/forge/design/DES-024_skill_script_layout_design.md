@@ -35,17 +35,6 @@ body_hash: sha256:18966854f94110225f8b5ff9309a60ba6e66d3603828bdf8b0c87191064079
 
 # DES-024 SKILL.md と script の配置・契約設計
 
-## メタデータ
-
-| 項目       | 値                |
-| ---------- | ----------------- |
-| 設計 ID    | DES-024           |
-| プラグイン | forge             |
-| 種別       | 設計 (How の決定) |
-| 関連要件   | REQ-003           |
-
----
-
 ## 1. 概要
 
 本設計は REQ-003「SKILL.md と script の責務分離」の How を定める。
@@ -155,7 +144,7 @@ SKILL.md が呼ぶローカル操作入口の path / 引数仕様 / stdout / std
 
 ## 4. 命名規則
 
-- operation 名 (動詞主体) を使う: `resolve_rules.py` / `scan_spec_ids.py` / `calculate_version.py` / `collect_modified_files.py`
+- operation 名 (動詞主体) を使う: `scan_spec_ids.py` / `calculate_version.py` / `collect_modified_files.py` / `resolve_doc_structure.py`
 - 低レベル script 名はラッパー名に含めない (`{low_level}_wrapper.py` のような名前を避ける)
 - 同一 operation を複数 SKILL が持つ場合、ファイル名は揃える
 
