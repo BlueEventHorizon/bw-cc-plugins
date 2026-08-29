@@ -98,7 +98,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-<!-- FORGE_ONBOARDING_START hash=c290fc5d7d81 -->
+<!-- FORGE_ONBOARDING_START hash=a989e6615060 -->
 
 > このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
 > `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
@@ -108,7 +108,7 @@ python3 -m unittest tests.forge.review.test_xxx -v
 
 - SSOT とは「真理が単一」であることではなく、ある関心事について「変更と不整合を収束させる先が一意」であること。正本は絶対的な真理ではなく、反証されれば更新される循環の現在値である。
 
-## forge 文書規範 [MANDATORY]
+## forge 文書規範
 
 - タグ（`[MANDATORY]` / `[CRITICAL]` / `[IMPORTANT]`）は見出し行の末尾に付け、希少性を保つ（乱用すると効かなくなる。1 文書 0〜3 箇所が目安）。見出しは 4 階層（`####`）まで。語尾の長音は JIS Z 8301 に従い省略する（例: ディレクトリ、カテゴリ）
 - 文書内に「改定履歴」「変更履歴」等の履歴セクションを置かない。履歴は CHANGELOG と git 履歴が持ち、設計判断の変更は ADR に記録する
@@ -143,14 +143,14 @@ python3 -m unittest tests.forge.review.test_xxx -v
 - 判断・提案には確信度を添える。過去の説明を「前述の通り」で済ませず、要点を再掲する
 - 「叩き台を作って」「議論しよう」は議論の起点であり、決定フローの依頼ではない。叩き台を書いたらそこで止まり、列挙した論点を連続質問で次々問わない
 
-## forge プロジェクト文書 [MANDATORY]
+## forge プロジェクト文書
 
 - プロジェクトルール文書の参照には `query-db-rules` SKILL を使う
 - プロジェクトルール文書の更新後には `update-db-rules` SKILL を使う
 - プロジェクト仕様の参照には `query-db-specs` SKILL を使う
 - プロジェクト仕様の更新後には `update-db-specs` SKILL を使う
 
-## forge 重要規約 [MANDATORY]
+## forge 重要規約
 
 - **実装・文書改編に着手する前に `/forge:query-forge-rules`・`/forge:query-db-rules` で関連する原則・ルールを特定して読む**（スキル経由の作業は各スキルの調査 Phase がこれを担う。会話直の作業でも省略しない）
 - **ルールはルール文書管理**: コンテキスト肥大化防止のため、CLAUDE.md にルールを詰め込まないことを推奨する

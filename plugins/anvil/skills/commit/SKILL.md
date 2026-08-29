@@ -23,7 +23,7 @@ argument-hint: "[message]"
 
 ---
 
-## Phase 0: フォーマット適用 [MANDATORY]
+## Phase 0: フォーマット適用
 
 commit 前に format 乱れを必ず解消する。format ずれたまま commit すると、後で誰かが fmt を走らせたときに無関係なファイルが diff に混入し、PR レビューや git blame が混乱する。
 
@@ -39,7 +39,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/run_dprint_fmt.sh"
 
 ---
 
-## Phase 1: 変更確認 [MANDATORY]
+## Phase 1: 変更確認
 
 ```bash
 git status --porcelain
@@ -74,7 +74,7 @@ Error: コミットする変更がありません。
 
 ---
 
-## Phase 3: ステージング確認 [MANDATORY]
+## Phase 3: ステージング確認
 
 ```bash
 git status
@@ -82,10 +82,10 @@ git status
 
 **原則: ステージ済みファイルのみをコミット対象とする。自動で `git add` しない。**
 
-**ただし「ステージ済みがあるから」を理由に、確認せず Phase 4 へ進んではならない [MANDATORY]。**
+**ただし「ステージ済みがあるから」を理由に、確認せず Phase 4 へ進んではならない。**
 先に 3.1 の状態検査を実行し、`stale_staged_paths`（index の内容が作業ツリーと食い違うパス）を確認する。
 
-**分岐は網羅する [MANDATORY]**。どの条件にも当てはまらない状態を残すと、そこで AI が手順から外れて即興する。
+**分岐は網羅する**。どの条件にも当てはまらない状態を残すと、そこで AI が手順から外れて即興する。
 
 | 状態                                                                                                  | 行き先                                  |
 | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
@@ -106,7 +106,7 @@ git status
 **ステージ対象は、いずれの場合も利用者に確認してから確定する。** AI が「必要と思われるファイル」を
 自分の判断だけでステージしない。
 
-#### 3.1 変更の状態を調べる [MANDATORY]
+#### 3.1 変更の状態を調べる
 
 **ステージの確認より前に実行する。**
 
@@ -116,11 +116,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/inspect_stage_state.py"
 
 出力 JSON の `tracked_paths` / `staged_paths` / `unstaged_paths` / `untracked_paths` / `stale_staged_paths` を使う。
 
-**混在の判定は `staged_paths` と `unstaged_paths` で行う [MANDATORY]**。`git status` の出力を自分で読んで判定しない（この分岐だけ手読みに戻すと、quote 表記・rename の `->` 表記で取り違える。script 化はそれを避けるためにある）。`tracked_paths` は両者の合算であり、混在の判定には使えない。
+**混在の判定は `staged_paths` と `unstaged_paths` で行う**。`git status` の出力を自分で読んで判定しない（この分岐だけ手読みに戻すと、quote 表記・rename の `->` 表記で取り違える。script 化はそれを避けるためにある）。`tracked_paths` は両者の合算であり、混在の判定には使えない。
 
 **`stale_staged_paths` が空でない場合、そのパスを利用者へ明示する [MANDATORY]**。「ステージ済みだが、その後さらに編集されている」ことは `git status` の 2 文字表記（`MM` / `AM`）にしか現れず、見落とすと古い内容が commit される。ステージし直せば解消するため、3.2 の選択肢は現在の内容で `git add` し直す形にする。
 
-#### 3.2 ステージ対象を確認する [MANDATORY]
+#### 3.2 ステージ対象を確認する
 
 `AskUserQuestion` で次を提示する。
 
@@ -130,7 +130,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/inspect_stage_state.py"
 
 2 番目の選択肢は Phase 3 冒頭の原則（ステージ済みのみをコミット対象とする）そのものである。意図的に一部だけステージした利用者に、これが無いと「無関係な変更まで巻き込む」か「中止する」しか残らない。
 
-**次のいずれかでは 2 番目を提示してはならない [MANDATORY]**。提示すると、選んだ結果が利用者の意図と食い違う。
+**次のいずれかでは 2 番目を提示してはならない**。提示すると、選んだ結果が利用者の意図と食い違う。
 
 | 条件                            | 提示しない理由                                                                                                           |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -180,7 +180,7 @@ git branch --show-current
 
 ---
 
-## Phase 4: コミット確認 [MANDATORY]
+## Phase 4: コミット確認
 
 以下の内容を表示した上で、AskUserQuestion を使用してコミットの承認を得る:
 
@@ -197,7 +197,7 @@ git branch --show-current
 
 ---
 
-## Phase 5: プッシュ確認 [MANDATORY]
+## Phase 5: プッシュ確認
 
 コミット成功後、AskUserQuestion を使用してプッシュの承認を得る:
 

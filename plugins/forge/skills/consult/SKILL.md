@@ -23,7 +23,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 利用者との議論を**進行する**スキル。論点を立て、背景と本質を述べ、質疑を経て、決着した内容を
 記録・表示機構（agenda）へ記録する。判断に基づく実行（修正・起票・commit）は行わない。
 
-## 規範の読み込み [MANDATORY]
+## 規範の読み込み
 
 着手前に `${CLAUDE_PLUGIN_ROOT}/docs/consult_principles_spec.md` を Read する。**提示の作法はすべて
 同文書が定める。本 SKILL.md に規範を書き写さない**（定義点が 2 つになるため）。本 SKILL.md が定めるのは
@@ -47,7 +47,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 判別できない場合は**議論**を既定とする。議論を決定へ変えるのは利用者の明示指示があったときだけで、
 AI から促さない。
 
-### 起点の判定 [MANDATORY]
+### 起点の判定
 
 本スキルは、利用者からの直接依頼（**consult 起点**）としても、review 本体からの委譲（**review 起点**）
 としても起動する。両者は別プロセス・別セッションではなく、同一の会話が続いたまま振る舞いが切り替わる
@@ -227,7 +227,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点
 7. アジェンダ表を再掲する（Phase 3 と同じやり方）
 8. **次の項目へ自分で進む**（`next` の返り値を使う）
 
-**「次はどれを見ますか」「これで進めてよいですか」と聞いてはならない [MANDATORY]。** 利用者がすることは
+**「次はどれを見ますか」「これで進めてよいですか」と聞いてはならない。** 利用者がすることは
 止める・飛ばす・順序を変えることだけでよい状態を保つ。
 
 同種の判断が繰り返される項目は、一括の判定表にまとめて提示してよい。往復が判断の質を上げない場面では、
@@ -282,7 +282,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点
 | 機密情報の値を提示・記録する                                         | 「どこに」「どの種類か」までに留める                       |
 | 自由記述文をシェル文字列へ直接埋め込む                               | エスケープの崩れによる構文破壊・注入のリスクを生む         |
 
-## AskUserQuestion の使い分け [MANDATORY]
+## AskUserQuestion の使い分け
 
 境界は「議論の内容か、進行上の機械的な確認か」である。
 
@@ -297,6 +297,6 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/consult/scripts/agenda_wrapper.py" <起点
 
 **迷ったら地の文にする。** 「機械的だから」を理由に議論の中身を選択肢 UI へ移してはならない。
 
-**自己呼び出しを行わない [MANDATORY]**。`Skill` ツールで本スキル自身を呼ばない。手順の一部として
+**自己呼び出しを行わない**。`Skill` ツールで本スキル自身を呼ばない。手順の一部として
 「本スキルを起動し直す」と書かない。本スキルは多くの議論の起点に置かれるため、自己呼び出しは
 暴走ループになりうる。

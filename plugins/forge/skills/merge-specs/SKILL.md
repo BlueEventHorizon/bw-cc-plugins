@@ -45,7 +45,7 @@ allowed-tools: Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill
       追加 DIR = W のみが残る（W が無ければ、追加 DIR は役目を終えて削除できる）
 ```
 
-### スコープ判断 [MANDATORY]
+### スコープ判断
 
 追加側にしかない内容を基本側へ移すかどうかは、**スコープが同じか**で決める。物理的な位置ではなく、内容が意味的にどこに属すかで判断する。判断基準は `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4.2「何を移し、何を分離したまま残すか」に従う。
 
@@ -471,7 +471,7 @@ Phase 4 / 5 で追加側ファイルは一切書き換えていないため、�
 | **type-iii / type-mix(iii 含む)** | **残す。** 別スコープの内容が残っており、分離を維持する対象である   |
 | 計画書（`*_plan.json`）           | 破棄する。実装済みのため役目を終えている                            |
 
-### 8.1 残す文書の frontmatter を外す [MANDATORY]
+### 8.1 残す文書の frontmatter を外す
 
 分離を維持すると判定した文書からは、一時 feature 用 frontmatter（`feature_type: temporary-feature`）を外す。この frontmatter は「基本側が古いまま据え置かれている」状態を示すマーカーであり、齟齬を解消した後は成立しないためである。外した後は恒久的な仕様として扱う。
 

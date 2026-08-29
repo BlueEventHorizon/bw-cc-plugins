@@ -23,7 +23,7 @@ UI Issue の場合は Figma デザイン仕様書・実装設計書の作成、U
 
 Issue の調査・ブランチ確認・実装計画の Issue 記載・UI の場合はデザイン仕様書・実装・レビューまで、全 Phase を完走すること。`AskUserQuestion` が必要な判断点と、Phase 12 のレビューで確信の持てない所見の採否以外は、ユーザー介入なしに継続する。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ `AskUserQuestion` で確認する。
 
@@ -152,7 +152,7 @@ Issue 番号のみ（URL ではない）で渡された場合はこのチェッ�
 
    c. ブランチ名を決定する。
 
-   **判定順序 [MANDATORY]**:
+   **判定順序**:
 
    1. **Issue のラベルから判定**（最優先・決定的）。リポジトリで使われているラベル命名は揺れるので、以下の語句を**部分一致・大文字小文字無視**で照合する。複数一致した場合は表の上位を優先：
 
@@ -222,7 +222,7 @@ triage 引き継ぎの確定・実装再開判定は Phase 0-2 で完了済み�
 
 関連仕様書の**特定**は triage の判定調査で完了している（Phase 0-2 で確定した調査結果を使う）。`/forge:query-db-specs` による再検索は行わない。
 
-引き継がれた各仕様書参照は `kind: local_path` または `kind: github_url` を持つ（外部リポジトリ・symlink 経由の仕様書は triage 側で `local_path` を保持できず `github_url` のみになる。triage-issue `references/phase-02-spec-investigation.md` 参照）。**種別に応じて取得方法を分岐する** [MANDATORY]:
+引き継がれた各仕様書参照は `kind: local_path` または `kind: github_url` を持つ（外部リポジトリ・symlink 経由の仕様書は triage 側で `local_path` を保持できず `github_url` のみになる。triage-issue `references/phase-02-spec-investigation.md` 参照）。**種別に応じて取得方法を分岐する**:
 
 - `kind: local_path` → Read tool でそのまま精読する（同一セッションで既に読了済みのものは再読不要）
 - `kind: github_url` → Read tool では開けない。記録されている URL は**外部リポジトリ**（symlink 実体）のものであり、現在の `<owner>/<repo>`（Phase 0-1 で解決した値）とは別リポジトリである。URL 自体から `<url-owner>` / `<url-repo>` / `<ref>`（ブランチ・タグ・コミット。無ければ `HEAD`） / `<path>` をパースし、以下で取得する:
@@ -262,7 +262,7 @@ triage 引き継ぎの確定・実装再開判定は Phase 0-2 で完了済み�
 再利用可能な既存コードの**特定**は triage の判定調査で完了している。新規の全体探索は行わない。
 
 - 引き継がれたコードパスを Read で精読し、再利用方針を把握する
-- **新規作成回避の原則・検証チェックリスト・共通コンポーネント採用判断（[`references/phase-05-reuse-principles.md`](references/phase-05-reuse-principles.md)）を Phase 5〜8 で適用する** [MANDATORY]。チェックリストに未確認項目が残る場合のみ補完調査する（全体の再探索はしない）
+- **新規作成回避の原則・検証チェックリスト・共通コンポーネント採用判断（[`references/phase-05-reuse-principles.md`](references/phase-05-reuse-principles.md)）を Phase 5〜8 で適用する**。チェックリストに未確認項目が残る場合のみ補完調査する（全体の再探索はしない）
 
 ## Phase 6: Figma デザイン仕様書を作成する（UI Issue のみ）
 
@@ -398,9 +398,9 @@ Phase 8 で作成する成果物は次の 2 つ。**用途・出力先・参照�
 6. **共用コンポーネントを 1 画面の typography に書き換えない**（画面専用コンポーネントを作る）
 7. 実装完了後、下記セルフチェックを通す
 
-### 実装後セルフチェック [MANDATORY]
+### 実装後セルフチェック
 
-[`references/phase-11-ui-implementation.md` の「実装後セルフチェック」](references/phase-11-ui-implementation.md#実装後セルフチェック-mandatory)を実施する。
+[`references/phase-11-ui-implementation.md` の「実装後セルフチェック」](references/phase-11-ui-implementation.md#実装後セルフチェック)を実施する。
 不合格があれば修正してから Phase 12 へ。妥協する場合は `AskUserQuestion` で確認。
 
 ## Phase 12: 実装レビューを行う

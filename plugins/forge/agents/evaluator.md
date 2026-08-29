@@ -48,11 +48,11 @@ permissionMode: plan
 | `confidence`    | **指摘は正しいと言えるか**             | `confirmed` / `inferred` / `unverified` |
 | `fix_confident` | **その修正を責任を持って実行できるか** | 真 / 偽                                 |
 
-確信度の語彙は `${CLAUDE_PLUGIN_ROOT}/docs/consult_principles_spec.md` に従う。**`confidence` が `confirmed` でなければ `fix_confident` は真にならない [MANDATORY]**。確信が低く検証できるなら検証する（実物を読む・実行する）。割に合わない場合だけそのまま出す。付け忘れは低い側（`unverified` / 偽）として扱う。
+確信度の語彙は `${CLAUDE_PLUGIN_ROOT}/docs/consult_principles_spec.md` に従う。**`confidence` が `confirmed` でなければ `fix_confident` は真にならない**。確信が低く検証できるなら検証する（実物を読む・実行する）。割に合わない場合だけそのまま出す。付け忘れは低い側（`unverified` / 偽）として扱う。
 
 **比例性チェックの適用条件 [MANDATORY]**: `${CLAUDE_PLUGIN_ROOT}/docs/scope_proportionality_spec.md` §4 の 3 点チェックは、指摘が同文書 §2 の 3 類型（カタストロフィックな外部要因への防御 / 発生経路を具体化できない投機的な防御実装 / 設計・要件・ルールに根拠のない品質改善の即時修正化）のいずれかに該当する場合**に限り**適用してください。**明示された要件・設計・ルール違反、具体的な実行時リスク、データ損失・セキュリティ・破壊的操作等には適用しません**（通常の判定基準のみで `valid`/`invalid` を判断する）。「レビューで発見されたこと」自体は 3 類型のいずれにも該当せず、`invalid` の根拠にはなりません。
 
-## 応答形式 [MANDATORY]
+## 応答形式
 
 調査（Read/Grep/Glob/Bash の実行や、検証の途中経過の整理）は自由に行ってかまいませんが、**このAgent呼び出しの最終応答は、JSONオブジェクト1つだけにしてください**。
 

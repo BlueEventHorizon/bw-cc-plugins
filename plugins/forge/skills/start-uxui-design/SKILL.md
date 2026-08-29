@@ -24,7 +24,7 @@ argument-hint: "[feature-name] [--platform ios|macos]"
 
 ASCII アートの画面仕様からデザイントークン・UI コンポーネント視覚仕様の作成・UX評価・文書化まで完走すること。
 
-## フロー継続 [MANDATORY]
+## フロー継続
 
 Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点がある場合のみ AskUserQuestion で確認する。
 
@@ -41,7 +41,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ---
 
-## 前提確認 [MANDATORY]
+## 前提確認
 
 ### Step 1: プラットフォーム選択
 
@@ -67,7 +67,7 @@ doc_type `requirement`、feature `{feature}` で出力先ディレクトリを�
 
 ---
 
-## 知識ベースの読み込み [MANDATORY]
+## 知識ベースの読み込み
 
 **常駐知識**として以下を **必ず** Read する。この文書は全 Phase を通じてコンテキスト内に保持する:
 
@@ -78,7 +78,7 @@ doc_type `requirement`、feature `{feature}` で出力先ディレクトリを�
 
 ---
 
-## ワークフローの実行 [MANDATORY]
+## ワークフローの実行
 
 知識ベースの読み込み後、ワークフローファイルを **Read** し、そのファイルの指示に従って作業を実行する:
 
