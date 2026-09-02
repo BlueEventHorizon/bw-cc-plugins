@@ -116,8 +116,9 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 ## 6. テスト
 
 - `tests/forge/doc_structure/test_resolve_doc_structure.py` — `.doc_structure.yaml` のパス解決を検証する。
-- `tests/common/test_query_skill_isolation.py` — 継承型 read-only 検索 SKILL（`query-forge-rules`）の
-  Role 制約・引数解釈ガード・`Required documents:` 出力契約を機械検証する。
+- `tests/common/test_query_skill_isolation.py` — forge 内蔵ドキュメント検索（`query-forge-rules` 継承型 dispatcher
+  SKILL と、実検索を隔離する read-only カスタム Agent `forge:rules-query-worker`）の Role 制約・引数解釈ガード・
+  `Required documents:` 出力契約を機械検証する。
 - `tests/forge/doc_backend/` — backend 選択（順序リスト・settings_invalid）、doc-db 経路の低レベル CLI、
   doc-advisor 契約（`test_advisor_contract.py`）を検証する。
 - `tests/forge/{query,update}-db-{rules,specs}/` — SKILL 固有 wrapper の透過性を検証する。
