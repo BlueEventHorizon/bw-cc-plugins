@@ -162,7 +162,7 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 
 ### 6.2 fork 型からカスタム Agent への移行（歴史的記録）
 
-過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンド（ADR-071）の導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
+過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンド（ADR-071）の導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。その後、`forge:query-forge-rules` の実検索を隔離するため rules-query-worker を新設した（§6.3）。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md / rules-query-worker.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
 
 この移行で確立したカスタム Agent の system prompt 共通設計は、将来カスタム Agent を新設する際の規約として維持する:
 
@@ -174,6 +174,7 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 ### 6.3 継承型に再分類された SKILL（歴史的記録）
 
 - **`forge:query-forge-rules`**（2026-05-18 継承型に変更）— このスキルは主に `forge:start-*` 系ワークフローの内部から呼ばれる。当時は fork 型から継承型へ移行する判断だったが、本書改訂 (2026-06) で全 fork 型 SKILL が廃止されたため、結果として継承型移行の流れに合流した。read-only 制約・引数解釈ガード・自己再帰禁止 (B 層 Role 制約) は SKILL.md 本文で引き続き維持する。
+  - **2026-09 dispatcher + worker へ分離**: 継承型のままでは内蔵 ToC（`rules_toc.yaml`、約 70KB）の全文と候補文書の本文が呼び出し元の context に毎回載り、`start-*` 系の調査 Phase や review の複数ラウンドで積み上がる問題があった。`doc-advisor:query-docs` / `query-worker` と同じ構成に揃え、SKILL は継承型 dispatcher（検索依頼の正規化と Agent 起動のみ）に縮め、ToC 読解・候補確認・パスリスト返却はカスタム Agent `forge:rules-query-worker`（read-only、`tools: [Read, Grep, Glob]`）へ隔離した。呼び出し元の契約（`Skill` ツールで `/forge:query-forge-rules <query>` を呼び `Required documents:` を受け取る）は不変。代償は Agent 起動のレイテンシであり、context 削減を優先して受け入れた
 
 ### 6.4 新規隔離 context が必要になった場合の手順
 
@@ -240,7 +241,8 @@ doc-advisor:ADR-002_query_skill_subagent_isolation で採択した多重防御�
 SKILL / Agent の静的検証を以下のテストで実装している:
 
 - `tests/common/test_no_fork_skill.py`: すべての SKILL.md frontmatter に `context: fork` が **含まれない** ことを検証 (§6 不採用方針の担保)
-- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。ディレクトリ不在時は skip する設計になっている（§6.2 の通り、現在は reviewer.md / evaluator.md が存在するため実際に検証が走る）
+- `tests/forge/agents/test_agent_frontmatter.py`: `plugins/forge/agents/*.md` の frontmatter (`name` / `description` / `tools` / `model`) の妥当性を検証する。ディレクトリ不在時は skip する設計になっている（§6.2 の通り、現在は reviewer.md / evaluator.md / rules-query-worker.md が存在するため実際に検証が走る）
+- `tests/common/test_query_skill_isolation.py`: `query-forge-rules` の dispatcher SKILL.md と worker Agent（`rules-query-worker.md`）の両方に、read-only 制約・引数解釈ガード・`Required documents:` 出力契約（B 層 Role 制約）が明記されていることを検証する
 
 新規にカスタム Agent を追加した場合は同等の静的検証 (frontmatter + Role 制約) を追加する。fork 型 SKILL を新規追加する経路は閉じている (§6)。
 

@@ -14,6 +14,7 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
 3. `tools` 値が既知 Agent の期待 allowlist と一致すること
    - reviewer: Read, Grep, Glob, Bash（read-only、対象を自分で探索するため Grep/Glob を持つ）
    - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
+   - rules-query-worker: Read, Grep, Glob（read-only、内蔵 ToC と文書の Read だけで完結するため Bash を持たない）
    - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
@@ -38,6 +39,7 @@ AGENTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'agents'
 EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'evaluator': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
+    'rules-query-worker': frozenset({'Read', 'Grep', 'Glob'}),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
@@ -177,6 +179,16 @@ class TestAgentFrontmatter(unittest.TestCase):
         tools = _parse_tools(fm['tools'])
         self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob', 'Bash'}))
         self.assertTrue({'Edit', 'Write', 'Agent'}.isdisjoint(tools))
+        self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
+        self.assertEqual(fm.get('permissionMode'), 'plan')
+
+    def test_rules_query_worker_is_read_only_and_inherits_model(self):
+        worker = AGENTS_DIR / 'rules-query-worker.md'
+        self.assertTrue(worker.is_file())
+        fm = _parse_frontmatter_keys(_extract_frontmatter(worker))
+        tools = _parse_tools(fm['tools'])
+        self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob'}))
+        self.assertTrue({'Edit', 'Write', 'Agent', 'Bash'}.isdisjoint(tools))
         self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
         self.assertEqual(fm.get('permissionMode'), 'plan')
 
