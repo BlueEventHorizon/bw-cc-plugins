@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-08-29T03:35:35Z
+  generated_at: 2026-09-03T06:36:03Z
   file_count: 7
 
 docs:
@@ -38,63 +38,66 @@ docs:
       - PASS FAIL
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Defines writing standards for documentation across the project, including heading conventions, terminology, structure, formatting, and document classification rules
+    purpose: Establishes document writing rules for consistency across rules, specs, skills, and plugin documentation; covers heading conventions, terminology, structure, and formatting standards.
     content_details:
-      - Heading and tag conventions with placement, spacing, and level hierarchy
-      - Terminology standardization including old vs. new terms and English phrases for AI effectiveness
-      - Long-vowel abbreviation rules following JIS Z 8301 standard
-      - "Document structure requirements by type: workflow, rules, and notes"
-      - Frontmatter metadata format with required fields (name, description, user-invocable, allowed-tools)
-      - Text formatting conventions for bold, inline code, lists, and tables
-      - Document reference notation rules with markdown link format and necessity evaluation
-      - "Document type classification: rules, workflow, notes, and their directory mapping"
-      - Current-state-only requirement with history in CHANGELOG rather than document body
-      - Placeholder naming conventions and abstract examples for generic rules documents
+      - Heading and tag conventions with MANDATORY/CRITICAL/IMPORTANT tags
+      - Terminology unification and standardized English phrases
+      - Document structure requirements by type (workflow, rules, notes)
+      - Metadata frontmatter format (name, description, applicable_when)
+      - Formatting conventions (bold, backticks, lists, tables)
+      - Document reference notation and markdown links
+      - Document properties and role separation (rules vs specs vs plugins)
+      - Current state documentation principle without migration narratives
+      - Abstract examples and placeholder naming instead of project-specific terms
+      - Scope applicability across rules, specs, and skills directories
     applicable_tasks:
-      - Writing project rules and guidelines
-      - Creating requirement specifications
-      - Writing design specifications
-      - Authoring SKILL documentation
-      - Creating project metadata and frontmatter
-      - Document review for consistency
-      - Establishing project writing standards
+      - Document authoring and editing
+      - Document review and consistency checking
+      - Metadata frontmatter creation
+      - Writing SKILL documentation
+      - Project rules and specifications development
     keywords:
-      - document writing rules
-      - heading tags
-      - frontmatter metadata
-      - document structure
-      - formatting conventions
-      - terminology standardization
-      - reference notation
-      - changelog
-      - YAML format
+      - document-writing-rules
+      - frontmatter
+      - heading-levels
+      - terminology-unification
+      - markdown-formatting
+      - document-structure
+      - MANDATORY
+      - reference-links
+      - tag-placement
+      - scope-applicability
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
-    purpose: "Defines how forge internal components (SKILL/agent/scripts) access documentation through two designated routes: direct reference for built-in docs and semantic query for project-specific specs/rules"
+    purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."
     content_details:
-      - "Route A (Direct Reference): Built-in forge docs at plugins/forge/docs/ and skill-specific docs at plugins/forge/skills/{skill}/docs/"
-      - "Route B (Query): Project specs/rules via /forge:query-db-specs and /forge:query-db-rules SKILL calls"
-      - "Route A scope constraint: Skills cannot directly reference other skills' docs/ directories; shared documents must be promoted to plugins/forge/docs/"
-      - Anti-patterns including redundant querying of built-in docs, project doc references in distribution materials, and file-based result passing via session_dir
-      - "Design rationale: Built-in docs have stable fixed paths, project specs/rules change frequently requiring dynamic discovery"
-      - "Document access boundary: Internal logic should remain declarative in docs, not procedural in SKILL/scripts"
-      - "External access: Project users access built-in docs via /forge:query-forge-rules SKILL"
+      - "Two access routes: Route A (direct reference to built-in docs), Route B (query-based discovery of project specs/rules)"
+      - "Route A scope and restrictions (same skill can reference own docs, cross-reference of other skills' docs prohibited)"
+      - Direct reference mechanism using ${CLAUDE_PLUGIN_ROOT} and ${CLAUDE_SKILL_DIR} paths
+      - Query mechanism using /forge:query-db-specs and /forge:query-db-rules
+      - Rationale for two routes (built-in docs stable with fixed paths, project docs need dynamic discovery)
+      - "Anti-patterns: querying built-in docs, referencing project docs from distributed code, hard-coding project paths"
+      - Document escalation rule (shared documents move to plugins/forge/docs)
+      - Prohibition of session_dir/refs.yaml-based file passing
+      - External usage via /forge:query-forge-rules (user-facing)
+      - Related implementation in query-db-specs, query-db-rules, rules-query-worker agents
     applicable_tasks:
-      - forge plugin development and SKILL maintenance
-      - Documentation architecture design in plugins
-      - SKILL creation and document placement decisions
-      - Project document indexing and query implementation
-      - forge internal documentation review and validation
-      - Preventing documentation access anti-patterns
+      - Writing forge SKILL documentation
+      - Implementation of forge agents and scripts
+      - Document architecture and access pattern design
+      - Code review of forge internal components
+      - Plugin documentation organization and maintenance
     keywords:
-      - forge
+      - forge-document-access
+      - direct-reference
+      - query-based-discovery
+      - CLAUDE_PLUGIN_ROOT
       - query-db-specs
       - query-db-rules
-      - query-forge-rules
-      - CLAUDE_PLUGIN_ROOT
-      - CLAUDE_SKILL_DIR
-      - direct reference
-      - plugins/forge/docs/
+      - built-in-docs
+      - anti-patterns
+      - document-escalation
+      - session_dir
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
     purpose: Defines rules for plugin script language selection, testing, SKILL.md structure, asset placement, distribution boundaries, and prohibiting reflexive fallbacks or unauthorized version file edits

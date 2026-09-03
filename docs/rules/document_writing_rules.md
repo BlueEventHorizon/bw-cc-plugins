@@ -291,6 +291,18 @@ docs/
 判断根拠は [ADR-055_distribution_boundary_for_doc_references.md](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md) に記録している。
 ```
 
+reference-style link（本文中は `[表示名][ラベル]`、文書末尾に `[ラベル]: 相対パス` を 1 回だけ定義する形）を推奨する。単発の参照でも用いてよい。
+
+```markdown
+判断根拠は [ADR-055][adr-055] に記録している。
+
+[adr-055]: ../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md
+```
+
+reference-style link はインライン形式と同じくレンダリング結果が実リンクになり、参照先の移動・
+削除はリンク切れとして機械検出できる。本文に相対パスが混入しないため、単発・反復を問わず可読性を
+損なわない。インライン形式 `[表示名](相対パス)` も禁止しないが、書く場合はまず reference-style を検討する。
+
 使わない記法:
 
 - 地の文でのパス直書き（`docs/rules/xxx.md` を参照）
