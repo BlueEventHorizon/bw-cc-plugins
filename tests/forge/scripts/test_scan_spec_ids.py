@@ -31,6 +31,7 @@ from scan_spec_ids import (
     get_scan_branches,
     get_specs_root_dirs,
     scan_ids_in_branch,
+    scan_ids_in_worktree,
     scan_spec_ids,
 )
 
@@ -379,6 +380,66 @@ class TestScanIdsInBranch(unittest.TestCase):
         self.assertEqual(len(result), 3)
         ids = sorted([r[0] for r in result])
         self.assertEqual(ids, ['SCR-001', 'SCR-015', 'SCR-100'])
+
+
+class TestScanIdsInWorktree(unittest.TestCase):
+    """scan_ids_in_worktree のテスト"""
+
+    def test_extracts_tracked_and_untracked_spec_ids(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            subprocess.run(
+                ['git', 'init', '-b', 'main'],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            specs = root / 'specs'
+            specs.mkdir()
+            tracked = specs / 'FNC-001_tracked.md'
+            untracked = specs / 'FNC-002_untracked.md'
+            tracked.write_text('# tracked\n', encoding='utf-8')
+            untracked.write_text('# untracked\n', encoding='utf-8')
+            subprocess.run(
+                ['git', 'add', str(tracked.relative_to(root))],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+
+            result = scan_ids_in_worktree(
+                'FNC', ['specs/'], cwd=str(root)
+            )
+
+        self.assertEqual(
+            {(entry[0], entry[1]) for entry in result},
+            {('FNC-001', 'WORKTREE'), ('FNC-002', 'WORKTREE')},
+        )
+
+    def test_extracts_task_ids_from_uncommitted_plan_body(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            subprocess.run(
+                ['git', 'init', '-b', 'main'],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            specs = root / 'specs'
+            specs.mkdir()
+            (specs / 'feature_plan.json').write_text(
+                '{"tasks": [{"task_id": "TASK-004"}]}',
+                encoding='utf-8',
+            )
+
+            result = scan_ids_in_worktree(
+                'TASK', ['specs/'], cwd=str(root)
+            )
+
+        self.assertEqual(
+            [(entry[0], entry[1]) for entry in result],
+            [('TASK-004', 'WORKTREE')],
+        )
 
 
 class TestScanSpecIds(unittest.TestCase):
@@ -770,6 +831,26 @@ class TestCLISharePrefixes(unittest.TestCase):
         data = json.loads(result.stdout)
         self.assertEqual(data['next_id'], 'DES-032')
         self.assertNotIn('shared_with', data)
+
+    def test_cli_includes_untracked_spec_in_next_id(self):
+        (self.tmpdir / 'specs' / 'DES-033_untracked.md').write_text(
+            '# DES-033\n',
+            encoding='utf-8',
+        )
+        script = str(Path(__file__).resolve().parents[3]
+                     / 'plugins' / 'forge' / 'skills'
+                     / 'next-spec-id' / 'scripts' / 'scan_spec_ids.py')
+
+        result = subprocess.run(
+            [sys.executable, script, 'DES',
+             '--project-root', str(self.tmpdir),
+             '--share-prefixes', 'ADR,DES'],
+            cwd=self.tmpdir, capture_output=True, text=True, timeout=30,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data['next_id'], 'DES-034')
 
 
 if __name__ == '__main__':
