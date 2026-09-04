@@ -48,7 +48,7 @@
 - `{{PLUGIN_ROOT}}/docs/design_principles_spec.md` — 設計原則
 - `{{PLUGIN_ROOT}}/docs/spec_design_boundary_spec.md` — What / How の境界。設計書が要件を再定義していないか
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md` — 文書スタイル。特に §5 文書参照記法と参照先の実在性
-- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`feature_type: temporary-feature` 文書の判定基準・旧仕様優先度・ファイル分離規則
+- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`feature_type: temporary-feature` 文書の判定基準・旧仕様優先度・実装期間中に書き換えないもの
 - `{{PLUGIN_ROOT}}/docs/spec_priorities_spec.md` — 構造品質の直接数値化禁止・倒錯パターン
 - `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）。fix 採用前の3点チェック対象
 

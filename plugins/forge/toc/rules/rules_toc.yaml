@@ -5,38 +5,38 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-08-29T14:13:50Z
+  generated_at: 2026-09-04T12:31:59Z
   file_count: 40
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines the criteria and procedures for additive development workflows when adding features to existing projects
+    purpose: Defines criteria and procedures for managing parallel feature development when adding functionality to existing projects, covering applicability conditions, document constraints, and merge procedures.
     content_details:
-      - Feature namespace concept and naming conventions
-      - Application criteria for using additive development when existing specs exist
-      - "Priority rules: new specs take precedence over old specs"
-      - File separation principles during implementation phase
-      - Merge definition as meaning integration, not physical document combining
-      - Scope-based decision rules for content consolidation
-      - Five-step merge procedure with validation and review
-      - Frontmatter configuration for temporary feature documents
+      - Feature namespace concept - distinguishing between namespace identifier and feature name
+      - Applicability conditions - when to use differential development based on document changes
+      - Specification conflict resolution - priority rules giving new requirements precedence over old specs
+      - Implementation constraints - guidelines for not rewriting old spec documents during feature implementation
+      - Merge definition - process for synchronizing new and old specifications after implementation completion
+      - Scope judgment for merge - rules for moving content vs. keeping separate based on semantic scope
+      - Merge procedures - step-by-step process for conflict resolution, content sorting, and cleanup
     applicable_tasks:
-      - Planning feature namespace for new development
-      - Determining when to use additive development vs. direct modification
-      - Managing parallel feature requirements
-      - Resolving specification conflicts between versions
-      - Validating additive development documentation before merge
-      - Executing specification merge and consolidation
-      - Determining scope equivalence for document content
+      - Feature namespace design and initialization
+      - Differential development workflow planning
+      - Specification conflict resolution during parallel development
+      - Merge planning for additive and base specifications
+      - Document management during implementation phase
+      - Additive development lifecycle governance
     keywords:
-      - additive development
       - feature namespace
-      - temporary feature
-      - spec merge
-      - requirements conflict
-      - scope matching
+      - additive development
+      - differential development
+      - specification merge
+      - conflict resolution
+      - scope judgment
+      - applicability conditions
       - frontmatter
+      - parallel feature management
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format
     purpose: Defines the default generic format for Architecture Decision Records used when project-specific ADR format is not found
@@ -933,37 +933,33 @@ docs:
       - design validation
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
     title: Interactive Requirements Definition Workflow
-    purpose: Describes the dialogue-based workflow for creating requirement specifications when Figma or screen designs are unavailable, covering both new application creation and feature additions with multi-phase structured approach.
+    purpose: Defines a phase-based interactive workflow for creating requirements definitions through dialogue with users when UI designs or specifications do not exist
     content_details:
-      - Phase 0 pre-check and scope definition
-      - Phase 0.5 development rules and existing specifications acquisition
-      - Phase 1 vision and value clarification with APP-001 draft
-      - Phase 2 user experience flow and screen/interface structure
-      - Phase 3 detailed specifications including glossary, terminology, architecture, state model, data model
-      - Phase 4 integration and quality verification with ID numbering and AI review
-      - Dialogue basic principles including choice-first, visual confirmation, TBD tolerance
-      - "Critical principle 11 for system features: term → architecture → state → data model → requirements order"
-      - Anti-patterns and their remedies for common workflow pitfalls
-      - Special rules for ambiguous expressions management via TBD tracking
+      - "Phase 0: Pre-check and new/addition determination"
+      - "Phase 0.5: Development rules and existing specification retrieval via Skills"
+      - "Phase 1: Vision and value clarification with APP-001 draft"
+      - "Phase 2: Experience flow and screen interface definition"
+      - "Phase 3: Detailed specifications including glossary, architecture, state models, and requirement types"
+      - "Phase 4: Integration, quality confirmation, ID assignment, and AI review"
+      - "Dialogue principles: choice-first, visual confirmation, scope management"
+      - Bottom-up exploration order for system features
+      - Anti-patterns and critical rules for quality
     applicable_tasks:
-      - Interactive requirements definition workflow execution
-      - Requirement clarification during feature planning
-      - New application specification creation
-      - Feature addition scope and impact analysis
-      - Requirements documentation quality verification
-      - Glossary and terminology definition
-      - Phase completion confirmation and user sign-off
+      - Creating new application requirements
+      - Adding features to existing applications
+      - Interactive dialogue-based scope definition
+      - Requirements document creation
+      - Vision and value clarification
+      - Experience flow and interface design
     keywords:
-      - requirements definition
-      - interactive workflow
-      - phase management
+      - Interactive workflow
+      - Requirements definition
+      - Phase-based process
+      - Scope management
       - APP-001
-      - glossary
-      - scenario
-      - TBD
-      - scope management
-      - feature addition
-      - dialogue principles
+      - Dialogue principles
+      - Vision clarification
+      - Specification creation
   plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
     title: Requirements Definition Document Creation Workflow (Reverse-Engineering Edition)
     purpose: Describes the workflow for extracting requirements from existing application source code when performing ground-up rebuild or legacy redesign, preserving functionality while optionally refreshing design through systematic code analysis.
