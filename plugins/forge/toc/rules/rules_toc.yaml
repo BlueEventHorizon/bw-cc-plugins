@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-04T12:31:59Z
+  generated_at: 2026-09-05T05:53:35Z
   file_count: 40
 
 docs:
@@ -67,35 +67,33 @@ docs:
       - scope block
       - impact analysis
   plugins/forge/docs/adr_principles_spec.md:
-    title: ADR (Architecture Decision Record) Operating Principles
-    purpose: Defines the operating principles and norms for creating, modifying, and using Architecture Decision Records to record decision rationale and prevent redundant proposals
+    title: ADR Operational Principles
+    purpose: Defines principles for ADR creation, modification, and usage including scope definition, decision reasoning documentation, and obsolescence handling
     content_details:
-      - "Purpose and beneficiary: ADR records alternative options and rejection reasons for future proposers"
-      - "Content scope: decision rationale and alternatives, not specifications or rules which have separate documentation"
-      - "Creation criteria: two simultaneous conditions - future proposal likely and decision not inferable from code/rules/specs"
-      - Optional scope block for clarifying decision boundaries when multiple ADRs address same target
-      - "Mutability with tracked reversions: update content and record reversions (A → B → A) but never change section numbers"
-      - "Decision reversal: create new ADR if satisfying criteria; otherwise append revision to existing section"
-      - "Expiration handling: mark only when superseded by another ADR, retaining original section as context"
-      - "Rejection rationale methodology: use future proposal terminology and explicit dependent premises for change detection"
+      - ADR purpose and recipient
+      - Scope definition rules
+      - Scope field writing requirements
+      - Non-binding nature and reader obligations
+      - Mutable document rules
+      - Rejection reasoning principles
+      - Obsolescence handling
+      - Placement and ID numbering
+      - Gray zone tolerance table
+      - Severity catalog of violations
     applicable_tasks:
-      - Creating new ADRs for architectural decisions
-      - Documenting alternative options and specifying rejection rationale
-      - Evaluating ADRs for compliance with creation and content criteria
-      - Reviewing ADRs for missing premises or outdated rationale
-      - Updating ADR sections with decision changes and reversions
-      - Marking decisions superseded by other ADRs with expiration indicators
-      - Migrating old-format ADRs to current standard format
-      - Validating that external ADR references in code remain valid
+      - ADR creation and documentation
+      - Design decision review
+      - Proposal evaluation and rejection
+      - Precedent establishment for architecture decisions
     keywords:
       - ADR
-      - architecture decision record
-      - rejection rationale
-      - alternative options
-      - decision reversal
-      - scope block
-      - expiration
-      - premise validation
+      - decision reasoning
+      - principle
+      - scope field
+      - rejection reason
+      - obsolescence
+      - design precedent
+      - ID numbering
   plugins/forge/docs/consult_principles_spec.md:
     title: Consult Presentation Principles
     purpose: Specifies principles for AI to follow when requesting judgment or discussion from humans, ensuring clear, structured, and context-aware presentation in console-based interactions
@@ -371,38 +369,33 @@ docs:
       - test design
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
-    purpose: Defines principles and rules for creating design specifications, including required components, judgment criteria, and maintenance guidelines to ensure design documents are complete and executable by implementers.
+    purpose: Defines principles for design document creation including required structure, content guidelines, component responsibility rules, and maintenance procedures
     content_details:
-      - "Required composition: module list with dependencies, component/class diagrams, use case lists, sequence diagrams in Mermaid"
-      - "Design vs requirements boundary: design specifies How; requirements specify What; implementer executability criterion"
-      - "Content guidelines: describe implementation methods (class/method names), technical details with rationale, data flow, test cases (normal/abnormal)"
-      - "Prohibited content: raw source code (except 5-10 line examples), framework choice without rationale, out-of-scope features, quantitative achievement guarantees"
-      - "Architecture dependency rules: explicit direction per pattern (layered/clean architecture); no circular dependencies; dependency inversion patterns with interface definitions"
-      - "Responsibility division rules: single responsibility per component; no tight coupling; Rule of Three for utility patterns (3+ usage locations)"
-      - "File naming convention: {DesignID}_{target_name}_design.md in snake_case"
-      - "Optional sections: data flow design, state management, error handling, performance, security considerations"
-      - "Diagram syntax: Mermaid (flowchart TB, classDiagram, sequenceDiagram); specific style rules (no lowercase 'end')"
-      - "Maintenance rule: update design when implementation diverges; record design judgment changes in ADR"
+      - Basic design principles
+      - Required structural elements
+      - Content to include in design documents
+      - Content to exclude from design documents
+      - Quantitative target handling
+      - Judgment criteria for sufficiency
+      - Hierarchical structure guidelines
+      - File naming conventions and optional sections
+      - Mermaid diagram usage guidelines
+      - Design maintenance procedures
     applicable_tasks:
-      - Design specification creation
-      - Design document review and validation
-      - Architecture review and dependency direction validation
-      - Implementation planning from design
-      - Design-implementation divergence detection and fix
-      - Design judgment documentation in ADR
-      - Responsibility division and cohesion review
-      - Severity assessment for design violations
+      - Design document creation and structure planning
+      - Architecture pattern review and validation
+      - Component responsibility definition
+      - Design decision documentation
+      - Design document maintenance and updates
     keywords:
       - design principles
-      - architecture patterns
+      - How vs What
       - module structure
-      - sequence diagram
-      - Mermaid
-      - data flow
       - single responsibility
+      - component diagram
+      - Mermaid
+      - architecture pattern
       - dependency direction
-      - design boundary
-      - YAGNI
   plugins/forge/docs/design_taxonomy.md:
     title: Document Taxonomy
     purpose: Defines a classification system for development documents organized by content type, authority source, and scope to guide document analysis and responsibility division between forge and projects
@@ -678,39 +671,34 @@ docs:
       - secret scanning
       - severity
   plugins/forge/docs/spec_design_boundary_spec.md:
-    title: Specification and Design Boundary Guide
-    purpose: Clarifies the boundary between requirements (What) and design (How) through judgment criteria, category-specific guidelines, and severity catalog to ensure correct document classification.
+    title: Specification and Design Document Boundary Guide
+    purpose: Defines the boundary between requirements documents (What) and design documents (How) providing judgment criteria, flowcharts, and category-specific guidelines for content placement
     content_details:
-      - "Core principles: requirements specify What from user perspective; design specifies How from developer perspective"
-      - "Primary criterion: Would this appear in user manual? Yes → requirements; No → design"
-      - "Supplementary criteria: implementation-independence, technology specificity, class/method names, How-question answers"
-      - "Judgment flowchart: user manual → technology specificity → implementation-independence decision path"
-      - "Data categories: data types and content in requirements; Service→DataStore→ViewModel flow and stream implementation in design"
-      - "State categories: visible states like loading/error in requirements; ViewState enum and state management implementation in design"
-      - "Business rules: rule content and conditions in requirements; validation implementation algorithm in design"
-      - "Quantitative targets: confirmed business or contract targets in requirements; achievement strategy and structure in design; never guarantee outcomes at design stage"
-      - "Gray zone allowances: conceptual and implementation types acceptable in requirements; user diagrams in requirements; internal sequence/data flow/class diagrams in design"
-      - "Traceability norm: design references requirement IDs in metadata; no design-only feature additions; no isolated references"
+      - Basic principles of What vs How
+      - ADR relationship to specification and design
+      - Primary judgment criteria
+      - Supplementary judgment criteria table
+      - Decision flowchart for content placement
+      - Category-specific guides with examples
+      - Good and bad examples for data flow
+      - Gray zone handling for types and diagrams
+      - Quantitative target rules and placement
+      - Traceability norms and requirement links
     applicable_tasks:
-      - Specification and requirements document authoring
-      - Design document authoring
-      - What/How boundary validation in reviews
-      - Spec/design traceability verification
-      - Scope creep detection and prevention
-      - Quantitative target handling and placement
-      - Diagram classification and placement
-      - Gray zone judgment for data types and diagrams
+      - Requirements definition document writing
+      - Design document writing and structure planning
+      - What/How boundary validation
+      - Design review and approval
+      - Spec and design maintenance
     keywords:
-      - What versus How
-      - requirements specification
-      - design specification
-      - boundary criteria
-      - user manual test
-      - traceability verification
-      - data flow design
-      - quantitative targets
-      - scope creep detection
-      - acceptance criteria
+      - specification design boundary
+      - What vs How
+      - requirements
+      - design document
+      - judgment criteria
+      - traceability
+      - gray zone
+      - quantitative target
   plugins/forge/docs/spec_format.md:
     title: ID Classification Catalog
     purpose: Defines specification format, ID catalogs, naming conventions, and reference principles for requirements, design, and task documents

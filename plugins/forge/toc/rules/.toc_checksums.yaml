@@ -5,7 +5,7 @@ file_count: 40
 checksums:
   plugins/forge/docs/additive_development_spec.md: 145347617565114de918c6a9e4a82d9f5e023aefa5e0d7529c97320103fbca59
   plugins/forge/docs/adr_format.md: d72858a6731126e47399200e776b468b735963a151a89f171ae887591f3b3fc1
-  plugins/forge/docs/adr_principles_spec.md: 26bd3f6c8233d21f1681af0c8c72b83815d8d4823d149408eea11e737bf650c2
+  plugins/forge/docs/adr_principles_spec.md: 290862b18b95e269f9259c733b9f52f36cf0526b5dced90fea2f2217d4720b89
   plugins/forge/docs/consult_principles_spec.md: 12de03cd96073e62f57782697ddfa49501bd6c318c443327b27cf68c41f4c387
   plugins/forge/docs/criteria/review_criteria_code.md: 2ba8167d6f0b7396990c808b6e7bcc9946a49d9e8b54745a3ca34821a2d9459f
   plugins/forge/docs/criteria/review_criteria_design.md: 5aca7f0f3554a533e696e03ffd76f51694de20e1de74875acffc532b5cdf0d94
@@ -15,7 +15,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_secrets.md: 0f248f092c9ebbbdc44a6f8d3a267cf4d76a282b009c27950055f3ef76059365
   plugins/forge/docs/criteria/review_criteria_uxui.md: a236b55548f4558a0db4bdea1e180913fe97893c4380e9b343f4538da6b028de
   plugins/forge/docs/design_format.md: b6b3176c4ebcdf7b429d2dd0edda1e0a2be5715a74fd89f15c3ef24bd0145842
-  plugins/forge/docs/design_principles_spec.md: 668a6244a9dad5f4deb8f3d1aa36fa4ed7d6ac000d7dda84e9eece82d4743af2
+  plugins/forge/docs/design_principles_spec.md: 298711c669ab2b44d68a2c7a22194464866ab5369b84279d12256ec980cdecd3
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e
   plugins/forge/docs/document_style_guide.md: 1ebd707d605941f3d4ddb4ac0fae46d1a91f35cac742f75a626f81fb85d91858
@@ -26,7 +26,7 @@ checksums:
   plugins/forge/docs/review_priorities_spec.md: be332fad20d4a1dc965eba7b200fbe2b2d6c95357664ca69f426bd458af033a0
   plugins/forge/docs/scope_proportionality_spec.md: 9bfe8f9adfe02fea4c68eba7eca645f63bde73dc6fad57595976b7a67b6aa637
   plugins/forge/docs/sensitive_information_spec.md: 382f1e4517ff5ff533b7d3963b34dfc040b13b5172ee2c9597dd6114d1694139
-  plugins/forge/docs/spec_design_boundary_spec.md: bc9b0438d754d25ac37f120bd60ac32ba1ffd7052a1168f6ab3dc25774bd16ba
+  plugins/forge/docs/spec_design_boundary_spec.md: 1b530b649d8b762d8519254cfad3c4ecc5d9dfc4de47992e3bae3c52de3b5735
   plugins/forge/docs/spec_format.md: 5ee0443782476bb1ad73d4ea4310365017c22d20896b57085a4a35d2f0859a3c
   plugins/forge/docs/spec_priorities_spec.md: c55317426de1b494548c7f3a64f10f83baed159b892bfb208bd47535ae55ac08
   plugins/forge/docs/strategy_formulation_spec.md: dfa05da1eef38990ca78dc991ab5a5ed7444fc2c96552ae9ee5c05342bf5b042
