@@ -17,6 +17,17 @@
 
 **上記以外のキーは追加しないこと。** 計画書の目的は「優先度の高いタスクを検出し実行する」ことであり、タスク実行に不要な情報（依存関係図、概要説明等）は記載しない。必要な情報はすべてタスクの各フィールドに含める。計画書には追加 feature 用の frontmatter も付与しない（[frontmatter_format.md](frontmatter_format.md) §1.3）。
 
+### トレーサビリティの 2 つの配列
+
+| 配列                        | 要素が持つ必須フィールド                           | 用途                                             |
+| --------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| `requirements_traceability` | `requirement_id` / `title` / `task_ids` / `status` | 要件ごとの充足状況を人が読む                     |
+| `design_traceability`       | `design_id` / `requirement_ids` / `task_ids`       | **要件のステータス更新が辿る唯一の経路**（下記） |
+
+**`design_traceability[].requirement_ids` を省略してはならない [MANDATORY]。** 要件の `status` は、設計 → `requirement_ids` → `task_ids` の順に辿り、紐づく全タスクが `completed` になった時点で更新される。このフィールドが無いと辿る経路が途切れ、**全タスクを完了しても要件は `pending` のまま残る**。エラーにはならず、更新件数も正常値を返すため気づけない。
+
+`requirements_traceability[].task_ids` は人が読むための情報であり、ステータス更新の判定には使われない。
+
 ファイル名: `{feature}_plan.json`（拡張子は `.json`）
 
 ---
@@ -235,6 +246,7 @@
 | `requirements_traceability` / `design_traceability` / `tasks` 以外のキー追加 | 🟡 major       | 計画書の目的逸脱 (タスク実行に不要な情報の追加) |
 | JSON 形式以外で記述                                                          | 🔴 critical    | ツールチェーンが解釈不能                        |
 | ファイル名が `{feature}_plan.json` 規約から逸脱                              | 🟡 major       | 自動解決経路が機能しない                        |
+| `design_traceability[]` に `requirement_ids` が無い                          | 🟡 major       | 要件のステータスが更新されず、静かに残る        |
 
 ### タスクの粒度 (本文書既存)
 

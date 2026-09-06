@@ -95,6 +95,26 @@ class ValidatePlanSchemaTest(unittest.TestCase):
         errors = plan_contract.validate_plan_schema(plan)
         self.assertTrue(any("design_traceability" in e for e in errors))
 
+    def test_design_traceability_without_requirement_ids_is_reported(self):
+        """requirement_ids が無いと要件のステータス更新が辿る経路が途切れる。"""
+        plan = _valid_plan(
+            design_traceability=[{"design_id": "DES-001", "task_ids": ["TASK-001"]}]
+        )
+        errors = plan_contract.validate_plan_schema(plan)
+        self.assertTrue(any("requirement_ids" in e for e in errors))
+
+    def test_design_traceability_with_required_fields_is_accepted(self):
+        plan = _valid_plan(
+            design_traceability=[
+                {
+                    "design_id": "DES-001",
+                    "requirement_ids": ["FNC-001"],
+                    "task_ids": ["TASK-001"],
+                }
+            ]
+        )
+        self.assertEqual(plan_contract.validate_plan_schema(plan), [])
+
     def test_unknown_top_level_key_is_reported(self):
         plan = _valid_plan(extra_key="not allowed")
         errors = plan_contract.validate_plan_schema(plan)

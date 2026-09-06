@@ -16,23 +16,28 @@ forge スキルの使い方をガイドし、そのまま実行できる。
 
 ## Step 1: スキル選択
 
-以下のリストをテキストで出力してから AskUserQuestion を呼ぶ:
+以下のリストをテキストで出力してから AskUserQuestion を呼ぶ。**載せるのは利用者が起動できるスキル（frontmatter が `user-invocable: true`）だけである**——起動できないものを選択肢に出すと、選んだ先で止まる:
 
 ```
 利用可能な forge スキル:
 
-  review              : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
-  start-requirements  : 要件定義書の作成。3モード対応
-  start-design        : 設計書の作成。レビュー+自動修正→commit
-  start-plan          : 計画書の作成。レビュー+自動修正→commit
-  start-implement     : 計画書から実装・レビュー・計画更新
-  start-uxui-design    : デザイントークン・UI 視覚仕様を創造
+  review                           : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+  start-requirements               : 要件定義書の作成。3モード対応
+  start-design                     : 設計書の作成。レビュー+自動修正→commit
+  start-plan                       : 計画書の作成。レビュー+自動修正→commit
+  start-implement                  : 計画書から実装・レビュー・計画更新
+  start-uxui-design                : デザイントークン・UI 視覚仕様を創造
   create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
-  merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
-  setup-doc-structure : .doc_structure.yaml を対話的に生成
-  setup-version-config: .version-config.yaml を対話的に生成
-  update-version      : バージョンを一括更新。CHANGELOG 自動反映
-  query-forge-rules   : forge 内蔵知識ベースを ToC 検索
+  merge-specs                      : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
+  onboarding                       : プロジェクトを調査し CLAUDE.md へ規範ブロックを生成
+  query-db-rules                   : プロジェクトのルール文書を検索
+  query-db-specs                   : プロジェクトの仕様文書を検索
+  update-db-rules                  : ルール文書の索引を更新
+  update-db-specs                  : 仕様文書の索引を更新
+  talk-to-codex                    : 常駐 Codex セッションと往復して相談する
+  setup-doc-structure              : .doc_structure.yaml を対話的に生成
+  setup-version-config             : .version-config.yaml を対話的に生成
+  update-version                   : バージョンを一括更新。CHANGELOG 自動反映
 ```
 
 AskUserQuestion:
@@ -51,7 +56,7 @@ AskUserQuestion:
 
 #### 2-1. 種別
 
-以下のリストをテキストで出力してから AskUserQuestion を呼ぶ:
+以下のリストをテキストで出力してから AskUserQuestion を呼ぶ。**載せるのは利用者が起動できるスキル（frontmatter が `user-invocable: true`）だけである**——起動できないものを選択肢に出すと、選んだ先で止まる:
 
 ```
 レビュー種別:
@@ -238,9 +243,27 @@ AskUserQuestion:
 
 ---
 
-### query-forge-rules
+### onboarding
 
-引数: 検索クエリ。省略時は対話で決定。
+引数なし。
+
+---
+
+### query-db-rules / query-db-specs
+
+引数: 検索したいタスクの記述。省略時は対話で決定。
+
+---
+
+### update-db-rules / update-db-specs
+
+引数なし。
+
+---
+
+### talk-to-codex
+
+引数: 相談したい内容。省略時は対話で決定。
 
 ---
 

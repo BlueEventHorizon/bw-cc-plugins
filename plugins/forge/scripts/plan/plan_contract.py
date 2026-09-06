@@ -18,6 +18,15 @@ TOP_LEVEL_KEYS = {
     "tasks",
 }
 
+#: `design_traceability[]` の必須フィールド。`requirement_ids` は
+#: `update_plan_status.py` が要件のステータスを判定する唯一の経路であり、
+#: 欠けると全タスクを completed にしても要件が pending のまま静かに残る。
+DESIGN_TRACEABILITY_REQUIRED_FIELDS = {
+    "design_id",
+    "requirement_ids",
+    "task_ids",
+}
+
 TASK_REQUIRED_FIELDS = {
     "task_id",
     "title",
@@ -82,6 +91,20 @@ def validate_plan_schema(data):
     else:
         for index, task in enumerate(tasks):
             errors.extend(_validate_task(index, task))
+
+    designs = data.get("design_traceability")
+    if designs is not None and not isinstance(designs, list):
+        errors.append("design_traceability は配列である必要があります")
+    elif isinstance(designs, list):
+        for index, entry in enumerate(designs):
+            if not isinstance(entry, dict):
+                errors.append(f"design_traceability[{index}] は object である必要があります")
+                continue
+            missing_fields = sorted(DESIGN_TRACEABILITY_REQUIRED_FIELDS - set(entry))
+            if missing_fields:
+                errors.append(
+                    f"design_traceability[{index}] に必須フィールドがありません: {missing_fields}"
+                )
 
     requirements = data.get("requirements_traceability")
     if requirements is not None and not isinstance(requirements, list):
