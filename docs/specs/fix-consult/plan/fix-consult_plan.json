@@ -8,7 +8,7 @@
         "TASK-004",
         "TASK-006"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-002",
@@ -18,7 +18,7 @@
         "TASK-004",
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-003",
@@ -28,7 +28,7 @@
         "TASK-004",
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-004",
@@ -38,7 +38,7 @@
         "TASK-004",
         "TASK-006"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-005",
@@ -46,7 +46,7 @@
       "task_ids": [
         "TASK-004"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-006",
@@ -57,7 +57,7 @@
         "TASK-005",
         "TASK-006"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "FNC-007",
@@ -67,7 +67,7 @@
         "TASK-006",
         "TASK-007"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "NFR-001",
@@ -79,7 +79,7 @@
         "TASK-004",
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     }
   ],
   "design_traceability": [
@@ -95,6 +95,16 @@
         "TASK-005",
         "TASK-006",
         "TASK-007"
+      ],
+      "requirement_ids": [
+        "FNC-001",
+        "FNC-002",
+        "FNC-003",
+        "FNC-004",
+        "FNC-005",
+        "FNC-006",
+        "FNC-007",
+        "NFR-001"
       ]
     }
   ],
@@ -103,7 +113,7 @@
       "task_id": "TASK-001",
       "title": "agenda_schema: 受理条件を DES-080 §2.6 の表へ改める",
       "priority": 95,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [],
       "group_id": "GROUP-001 (1/5)",
@@ -126,7 +136,7 @@
       "task_id": "TASK-002",
       "title": "agenda_render: 重大度の探索・title 空の表示・決着判定を改める",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [],
       "group_id": "GROUP-001 (2/5)",
@@ -152,7 +162,7 @@
       "task_id": "TASK-003",
       "title": "agenda_store: 形式検査の撤廃・採番・record の 3 形・CLI からの start / record 除去",
       "priority": 85,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [
         "TASK-001"
@@ -187,7 +197,7 @@
       "task_id": "TASK-004",
       "title": "agenda_wrapper: scripts/agenda/ へ移動し、標準入力・review 起点限定・絶対パス解決へ改める",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [
         "TASK-003"
@@ -217,7 +227,7 @@
       "task_id": "TASK-005",
       "title": "統合テスト: 結合 script 出力 → wrapper → 記録 → 提示の一貫性",
       "priority": 75,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [
         "TASK-002",
@@ -243,7 +253,7 @@
       "task_id": "TASK-006",
       "title": "consult SKILL.md: 直接起動の停止と新しい wrapper 呼び出しへの追随、テンプレート削除",
       "priority": 70,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [
         "TASK-005"
@@ -272,7 +282,7 @@
       "task_id": "TASK-007",
       "title": "利用者への consult 案内導線を外し、README のスキル一覧を追随させる",
       "priority": 65,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-080",
       "depends_on": [
         "TASK-006"

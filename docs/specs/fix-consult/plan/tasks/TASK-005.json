@@ -1,0 +1,56 @@
+{
+  "task_id": "TASK-005",
+  "title": "統合テスト: 結合 script 出力 → wrapper → 記録 → 提示の一貫性",
+  "priority": 75,
+  "status": "pending",
+  "design_id": "DES-080",
+  "depends_on": [
+    "TASK-002",
+    "TASK-004"
+  ],
+  "group_id": "GROUP-001 (5/5)",
+  "build_check": "on_group_complete",
+  "description": "`tests/forge/agenda/test_agenda_integration.py` を DES-080 §7「統合」に合わせて書き換える。結合 script（`combine_findings_and_evaluations.py`。無変更で import）の出力を wrapper の `start` の標準入力へつなぎ、構造判断 → 項目ごとに `background` / `essence` / `decision.by` / `decision.outcome` / `decision.reason` → 新規項目の追加（応答の `id` で同じく 3 値まで記録）→ `finish` を通す。各書き込み直後の `agenda.html` が記録から生成したものと一致すること、未決着が残る途中の `finish` が削除しないこと、全決着後の `finish` で記録に属するもの（`agenda.json` / `agenda.html` / `agenda_state.js`）がすべて消えることを検証する。決着判定の境界ケース（2 値のみ / 3 値そろい）で store の残件と render の表示が一致することを固定する。グループ完了時の検証としてテスト全体と dprint を通す。",
+  "acceptance_criteria": [
+    "結合 script を変更せずにその出力が `start` へ渡り、保存された記録から現行と同じ欄（問題・重大度バッジ）を持つ提示が生成される",
+    "各 `record` 直後の `agenda.html` が `render_agenda_html(load_agenda(...))` と一致する",
+    "未決着が残る途中の `finish` は削除せず、全決着後の `finish` で記録に属するものがすべて消える",
+    "`decision` が 2 値の項目は store の残件に数えられ render も未決着表示、3 値そろいで両者とも決着になる",
+    "`python3 -m unittest discover -s tests -p 'test_*.py'` が全件通り、`dprint check` が通る"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+    "design_docs": [
+      "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+      "docs/specs/forge/design/DES-066_review_body_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md"
+    ],
+    "reference_code": [],
+    "additional": []
+  },
+  "scope_in": "test_agenda_integration.py を DES-080 §7「統合」に合わせて書き換え、グループ完了時の検証として全テストと dprint を通すまで",
+  "scope_out": [
+    {
+      "item": "consult SKILL.md の直接起動停止・新しい呼び出しへの追随・討議ファイルテンプレートの削除",
+      "owner_task_id": "TASK-006",
+      "reason": "コードの契約が確定してから手順書を追随させるため分離"
+    },
+    {
+      "item": "help SKILL.md ほか利用者への consult 案内導線の除去と README の追随",
+      "owner_task_id": "TASK-007",
+      "reason": "案内文の改修でありコード変更とは独立のため分離"
+    }
+  ],
+  "implementation_instructions": "tests/forge/agenda/test_agenda_integration.py を DES-080 §7「統合」に合わせて書き換える。本タスクはグループ GROUP-001 の最終タスクであり、全体の検証点である。\n\n前提（同じグループの先行タスクが本ワークツリーで完了済み・未コミット）:\n\n- agenda_schema.py: 受理条件が DES-080 §2.6 の表。決着の 3 値そろい述語 is_settled(item) が公開されている\n- agenda_render.py: 重大度は fields 優先・項目直下フォールバック。title 空は id を表示。決着は 3 値そろい（_is_settled に集約、agenda_schema は import しない）\n- agenda_store.py: 形式検査を撤廃。公開 API は start(path, *, config, items) / record_structural_judgment(path, note) / record_item_value(path, item_id, name, value) / record_new_item(path, note) -> item_id。pending / next / finish の CLI は従来どおり\n- agenda_wrapper.py: plugins/forge/scripts/agenda/ へ移動済み。起点は review のみ。start は標準入力の combined から入れ物を組み立てる。record は 3 形で本文を標準入力から読む。record --new の応答は id\n\n現在 tests.forge.agenda.test_agenda_integration の 2 件が旧 API（handle_start / handle_record）を呼んでいるため失敗している。これを本タスクで解消する。\n\n検証する筋道:\n\n結合 script（plugins/forge/skills/review/scripts/combine_findings_and_evaluations.py。無変更で import する）の出力を wrapper の start の標準入力へつなぐところから始め、構造判断 → 項目ごとに background / essence / decision.by / decision.outcome / decision.reason → 新規項目の追加（応答の id で同じく 3 値まで記録）→ finish までを通す。\n\n固定すること:\n\n1. 結合 script を変更せずにその出力が start へ渡り、保存された記録から現行と同じ欄（問題・重大度バッジ）を持つ提示が生成されること\n2. 各 record 直後の agenda.html が render_agenda_html(load_agenda(...)) と一致すること\n3. 未決着が残る途中の finish は削除せず、全決着後の finish で記録に属するもの（agenda.json / agenda.html / agenda_state.js）がすべて消えること\n4. decision が 2 値の項目は store の残件に数えられ render も未決着表示、3 値そろいで両者とも決着になること（決着判定の境界ケースで store と render の一致を固定する。両者は別々に判定しているため、ここが唯一の一致点である）\n\nグループ完了時の検証 [必須]:\n\n- python3 -m unittest discover -s tests -p 'test_*.py' が全件通ること\n- dprint check が通ること（md / json を編集した場合は dprint fmt を先に通す）\n- git status に一時物が現れないこと\n\n全体テストが通らない場合、原因が先行タスクの実装にあるなら自分で書き換えず notes に書いて報告すること。テスト側の追随で解消できるものは本タスクの範囲として直してよい。\n\n投機的な防御実装を積まないこと [重要]:\n\n「理論上あり得る」だけを根拠にしたテストケースを積み増さないこと。上の 4 点と受け入れ基準に対応するものを書く。\n\n注意:\n\n- 標準ライブラリのみ（外部依存禁止）。Python 3.11 以上。\n- 結合 script と parse_findings.py は変更しないこと（DES-080 §6 で確定）。\n- consult SKILL.md・README は TASK-006 / TASK-007 の担当。本タスクでは触らないこと。\n- 実装で古くなる文書があれば報告すること。ただし旧仕様文書（REQ-019 / REQ-021 / DES-075 / DES-077）は差分 feature の制約により書き換えない。",
+  "verification": {
+    "build": "required",
+    "build_reason": null,
+    "tests": "required",
+    "tests_reason": null
+  }
+}

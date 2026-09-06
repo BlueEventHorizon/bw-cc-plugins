@@ -1,0 +1,65 @@
+{
+  "task_id": "TASK-003",
+  "title": "agenda_store: 形式検査の撤廃・採番・record の 3 形・CLI からの start / record 除去",
+  "priority": 85,
+  "status": "pending",
+  "design_id": "DES-080",
+  "depends_on": [
+    "TASK-001"
+  ],
+  "group_id": "GROUP-001 (3/5)",
+  "build_check": "skip",
+  "description": "DES-080 §2.2・§2.3・§2.5・§2.6・§3・§6 に従い `plugins/forge/scripts/agenda/agenda_store.py` を改修する。形式検査（許可キー集合・型検証・`title` 必須・固定キーでの組み立て直し・列挙写し）の撤廃、§2.5 の正規化、§3 の採番、`record` の 3 形（構造判断／既存項目へ 1 値／新規項目）、存在しない `item_id` の拒否、§2.6 の名前の規則、残件・`next`・`finish` の 3 値そろい判定への置き換えを行う。`last_changed_fields` には渡された名前そのまま（例: `decision.by`）を記録する。`start` / `record` を CLI（argparse）から除き関数呼び出し専用にする。`--input-file` の読み込みヘルパとその説明（モジュール docstring を含む）も同時に取り除く。`pending` / `next` / `finish` の CLI は残す。`tests/forge/agenda/test_agenda_store.py` を関数呼び出し前提に書き換え、撤廃した拒否を固定していたテストを §7 の観点へ改める。本タスク完了時点では旧 wrapper と統合テストが壊れるため、グループ完了時（TASK-005）にまとめて検証する。",
+  "acceptance_criteria": [
+    "agenda が知らないキーを含む項目が `start` / `record` で保存され、既知キーに現行なら型違反となる値を渡しても拒否・変換されず保存される",
+    "`title` の無い項目が `start` / `record` で受理され、`id` の無い項目に衝突しないゼロ埋め 2 桁の連番が採番される",
+    "`start` で渡された `id` がそのまま保たれる",
+    "新規項目を足す `record` の応答に採番した `id` が含まれ、存在しない `item_id` を渡した `record` は拒否される",
+    "`record` で 1 値ずつ加えても先に加えた値が消えず、`decision.*` を 1 つずつ積んでも入れ子が保たれる",
+    "`record` で `title` を加えられる",
+    "`id` / `last_changed_fields` / `fields` / `decision` を値の名前として渡した `record` が拒否される（§2.6 の名前の規則の拒否側）",
+    "`record` は 1 回の呼び出しで 1 つの値だけを受け取り、複数の値を同時に渡す経路を持たない",
+    "構造判断が未記録のまま項目へ値を加えると拒否され、`background` / `essence` が空のまま `decision.*` を加えると拒否される",
+    "3 値が揃うまで残件に数えられ `finish` は削除せず、3 値そろいで決着として扱われる",
+    "`agenda_store.py start` / `record` を CLI から呼ぶと argparse エラーになり、`pending` / `next` / `finish` の CLI は従来どおり動く",
+    "`grep -rn \"input-file\" plugins/forge/scripts/agenda/` が 0 件（docstring・読み込みヘルパを含めて残らない）",
+    "キーの少ない旧記録を `load_agenda` → `pending` で読める",
+    "`python3 -m unittest tests.forge.agenda.test_agenda_store` が通る"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+    "design_docs": [
+      "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+      "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md",
+      "docs/rules/document_writing_rules.md"
+    ],
+    "reference_code": [],
+    "additional": []
+  },
+  "scope_in": "agenda_store.py の形式検査撤廃・正規化・採番・record の 3 形・CLI からの start / record 除去と、test_agenda_store.py の書き換えまで",
+  "scope_out": [
+    {
+      "item": "agenda_wrapper の scripts/agenda/ への移動・標準入力化・review 起点限定・config の item_fields を空にする変更",
+      "owner_task_id": "TASK-004",
+      "reason": "store の関数契約が確定してから wrapper を書き換えるため分離"
+    },
+    {
+      "item": "結合 script 出力 → wrapper → 記録 → 提示の統合テストと、store の決着判定と render の表示が一致することの検証",
+      "owner_task_id": "TASK-005",
+      "reason": "グループ完了時の検証点として分離"
+    }
+  ],
+  "implementation_instructions": "DES-080 §2.2・§2.3・§2.5・§2.6・§3・§6 に従い agenda_store.py を改修する。\n\n前提（同じグループの先行タスクが本ワークツリーで完了済み・未コミット）:\n\n- TASK-001 が agenda_schema.py を改修済み。受理条件は DES-080 §2.6 の表に従い、patch_keys にはドット区切りの名前（decision.by など）が来る前提になっている。決着の 3 値そろい述語 is_settled(item) が公開関数として追加されている。store 側はこの新しい契約に合わせて呼ぶこと（旧来の patch_keys={\"decision\"} のまま呼ばない）。\n- TASK-002 が agenda_render.py を改修済み。store は render を現行どおり呼ぶだけでよい。\n- 現在 tests.forge.agenda.test_agenda_store の 1 件（test_decision_with_missing_by_is_rejected）が失敗している。これは store が旧来の呼び方をしているためであり、本タスクで解消する。\n\n実装の要点:\n\n1. 形式検査の撤廃（§2.2・§2.3）: _START_ITEM_ALLOWED_KEYS による拒否、新規項目の固定キーでの組み立て直し、_RECORD_ALLOWED_KEYS による拒否、項目パッチの列挙写し、record 新規項目追加時の title 必須を、すべて取り除く。agenda が知らないキーを含む項目がそのまま保存されること。既知キーに現行なら型違反となる値が来ても拒否・変換しないこと。状態遷移の必要条件（§2.6 の受理条件・存在しない item_id の拒否）は形式検査ではないので残す。\n2. 正規化（§2.5）: 渡された項目をそのまま保持し、agenda が読むキーのうち欠けているものだけを既定値で補う。既に値があるキーは上書きしない。title は必須にしない。\n3. 採番（§3）: id の無い項目に、衝突しないゼロ埋め 2 桁の連番を振る。渡された id はそのまま保つ。\n4. record の 3 形（§2.6）: 構造判断を記す／既存項目へ 1 値を加える（--item-id と値の名前）／新規項目を足す（--item-id 無し。応答に採番した id を含める）。1 回の呼び出しで受け取る値は 1 つだけとし、複数を同時に渡す経路を持たないこと。存在しない item_id は拒否する。\n5. 値の名前の規則（§2.6）: ドット区切りは入れ子へマージする（decision.by を 1 つずつ積んでも先の値が消えない）。id / last_changed_fields / fields / decision そのものは名前として受け付けず拒否する。last_changed_fields には渡された名前そのまま（例: decision.by）を記録する。\n6. 残件・next・finish の判定を 3 値そろいへ置き換える（agenda_schema の is_settled を使う）。\n7. start / record を CLI（argparse）から除き、関数呼び出し専用にする。pending / next / finish の CLI は残す。--input-file の読み込みヘルパとその説明（モジュール docstring を含む）も取り除く。grep -rn \"input-file\" plugins/forge/scripts/agenda/ が 0 件になること（agenda_wrapper.py は TASK-004 の担当だが、この grep の対象に入る。wrapper 側にヒットが残る場合は「TASK-004 の担当として残っている」旨を notes に書き、wrapper を編集しないこと）。\n8. キーの少ない旧記録を load_agenda → pending で読めること。\n\n投機的な防御実装を積まないこと [重要]:\n\n「理論上あり得る」だけを根拠にした型チェック・fail-closed 分岐・到達しない経路への備えを書かないこと（forge 実装規範）。呼び出し側は同一リポジトリ内の wrapper とテストだけである。\n\nテスト:\n\ntests/forge/agenda/test_agenda_store.py を関数呼び出し前提に書き換え、撤廃した拒否を固定していたテストを DES-080 §7 の観点へ改める。受け入れ基準の各項目を個別のテストとして持つこと。\n\n注意:\n\n- 標準ライブラリのみ（外部依存禁止）。Python 3.11 以上。\n- agenda_wrapper.py には手を触れないこと（TASK-004 の担当）。本タスク完了時点で wrapper と統合テストが壊れるのは織り込み済みである。\n- agenda_schema.py / agenda_render.py は先行タスクが完了済み。契約に不備を見つけた場合は自分で書き換えず、notes に書いて報告すること。\n- 実装で古くなる文書があれば報告すること。ただし旧仕様文書（REQ-019 / DES-075）は差分 feature の制約により書き換えない。",
+  "verification": {
+    "build": "skipped",
+    "build_reason": "グループ途中タスクのため（build_check: skip）。グループ完了時の TASK-005 でまとめて検証する",
+    "tests": "required",
+    "tests_reason": null
+  }
+}

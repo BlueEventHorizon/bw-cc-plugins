@@ -1,0 +1,67 @@
+{
+  "task_id": "TASK-002",
+  "title": "agenda_render: 重大度の探索・title 空の表示・決着判定を改める",
+  "priority": 90,
+  "status": "pending",
+  "design_id": "DES-080",
+  "depends_on": [],
+  "group_id": "GROUP-001 (2/5)",
+  "build_check": "skip",
+  "description": "DES-080 §4.1・§4.2・§4.4 に従い `plugins/forge/scripts/agenda/agenda_render.py` を改修する。表示層は `agenda.json` の契約だけに依存する現行の独立性を保ち、`agenda_schema` を import しない（決着判定は表示層で自前に行い、store 側との一致は TASK-005 の統合テストで固定する）。`structural_judgment.note` が `None` の記録でも生成が失敗しないこと。`tests/forge/agenda/test_agenda_render.py` に §7 の観点を追加する。",
+  "acceptance_criteria": [
+    "重大度が `fields` の中にある記録と項目直下にある記録の双方でバッジが出る",
+    "`fields` 側が空値のとき項目直下の値が使われる",
+    "agenda が知らないキーを持つ項目が保存された記録から HTML が生成できる",
+    "`title` が空の項目は一覧行・見出しに `id` が表示される",
+    "`decision` が 2 値までの項目は未決着として表示され、3 値そろいで決着として表示される",
+    "`structural_judgment.note` が None の記録で生成が例外を出さない",
+    "`python3 -m unittest tests.forge.agenda.test_agenda_render` が通り、全体テストも全件通る"
+  ],
+  "required_reading": {
+    "strategy_doc": "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+    "design_docs": [
+      "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+      "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md"
+    ],
+    "requirement_docs": [
+      "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md"
+    ],
+    "rule_docs": [
+      "docs/rules/implementation_guidelines.md",
+      "docs/rules/cli_output_formatting.md",
+      "docs/rules/document_writing_rules.md"
+    ],
+    "reference_code": [],
+    "additional": []
+  },
+  "scope_in": "agenda_render.py の重大度探索・title 空の表示・決着判定の改修と test_agenda_render.py への観点追加まで",
+  "scope_out": [
+    {
+      "item": "agenda_schema の受理条件（構造判断未記録時の拒否・decision.* の個別受理）",
+      "owner_task_id": "TASK-001",
+      "reason": "表示層は agenda_schema を import しない設計のため分離"
+    },
+    {
+      "item": "agenda_store の形式検査撤廃・採番・record の 3 形・CLI からの start / record 除去",
+      "owner_task_id": "TASK-003",
+      "reason": "記録層の改修であり表示層とは独立に進むため分離"
+    },
+    {
+      "item": "agenda_wrapper の scripts/agenda/ への移動・標準入力化・review 起点限定",
+      "owner_task_id": "TASK-004",
+      "reason": "入力経路の改修であり表示層とは独立のため分離"
+    },
+    {
+      "item": "store 側の決着判定と render の表示が一致することの検証",
+      "owner_task_id": "TASK-005",
+      "reason": "両者が揃ってからでないと固定できないため統合テストへ分離"
+    }
+  ],
+  "implementation_instructions": "DES-080 §4.1・§4.2・§4.4 に従い agenda_render.py を改修する。\n\n実装の要点:\n\n1. 重大度の探索（§4.1）: 重大度は config.severity_field が指すキーで引く。現行は items[].fields の中だけを見ているが、wrapper が config.item_fields を空にするため、重大度は項目の直下に置かれるようになる。fields 側と項目直下の双方を探し、fields 側が空値なら項目直下の値を使う。両方に無ければ現行どおりバッジを出さない。\n2. title 空の表示（§4.2）: title は必須ではなくなる。title が空の項目は、一覧行・見出しのいずれでも id を表示して識別できるようにする。\n3. 決着判定（§4.4）: 決着は decision.by / decision.outcome / decision.reason の 3 値がすべて非空のときとする。2 値までは未決着として表示する。判定は表示層で自前に行い、agenda_schema を import しない（agenda.json の契約だけに依存する現行の独立性を保つ。store 側の述語との一致は TASK-005 の統合テストで固定する）。\n4. structural_judgment.note が None の記録でも HTML / state.js の生成が例外を出さないこと（start 直後は構造判断が未記録の状態になるため）。\n5. agenda が知らないキーを持つ項目が保存された記録からも生成できること。増えたキーを表示へ反映することは本タスクの範囲外である（REQ-022 FNC-002 の但し書き）。\n\nテスト:\n\ntests/forge/agenda/test_agenda_render.py に DES-080 §7 の観点を追加する。受け入れ基準の各項目を個別のテストとして持つこと。\n\n注意:\n\n- 標準ライブラリのみ（外部依存禁止）。Python 3.11 以上。\n- agenda_schema.py / agenda_store.py / agenda_wrapper.py には手を触れないこと（別タスクの担当）。\n- 全体テストは他タスクの途中状態で壊れている可能性があるため、本タスクでは test_agenda_render の通過を確認すれば足りる。\n- 実装で古くなる文書があれば報告すること。ただし旧仕様文書（REQ-021 / DES-077）は差分 feature の制約により書き換えない。",
+  "verification": {
+    "build": "skipped",
+    "build_reason": "グループ途中タスクのため（build_check: skip）。グループ完了時の TASK-005 でまとめて検証する",
+    "tests": "required",
+    "tests_reason": null
+  }
+}
