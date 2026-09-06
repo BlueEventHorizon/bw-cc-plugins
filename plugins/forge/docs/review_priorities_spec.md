@@ -56,7 +56,7 @@ priority と severity は **独立した二軸** であり、互いに置き換�
 
 - P1 (ルール照合) で検出した違反が必ず critical とは限らない
 - P3 (不要な複雑化) であっても critical となる場合がある (例: Goodhart の罠を誘発する数値目標化)
-- finding は priority と severity の両方を持つ。**severity は提示順の材料であり、確認なしに修正してよいかは決めない**（決めるのは本体の確信度。REQ-013 FNC-1304）
+- finding は priority と severity の両方を持つ。**severity は提示順の材料であり、確認なしに修正してよいかは決めない**（決めるのは本体の確信度）
 
 ### 2.2 severity の SoT は委譲先 principles [MANDATORY]
 
