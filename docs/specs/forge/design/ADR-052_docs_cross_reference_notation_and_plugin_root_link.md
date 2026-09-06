@@ -36,6 +36,8 @@ marketplace 経由でインストールされた環境では `${CLAUDE_PLUGIN_RO
 
 旧 §5.1 は参照元の位置（`docs/` 内部か外部か）を区別せず一律フルパスを規定していた。2.1 / 2.2 の使い分けを明文化し、SoT の矛盾を解消した。
 
+**追記（スコープ拡張）**: §5.1 に第 3 の系統「利用プロジェクトの文書から同じプロジェクトの他文書を参照する場合」を追加し、2.1 / 2.2 を系統 (1) / (2) と番号付けした。利用プロジェクト文書の参照記法は §5.1 が対象にしておらず、[spec_format.md](../../../../plugins/forge/docs/spec_format.md) と利用プロジェクトのルール文書に分かれて書かれていた。系統 (3) を §5.1 に置き、他は委譲に変えて記法の定義点を 1 つにした（[ADR-056](../../common/design/ADR-056_document_reference_necessity_and_notation.md) §4.1 追記）。
+
 ### 2.4 `SessionStart` hook による symlink 自己修復を導入する（§1.3 への対処） ⚠️失効（ADR-069 が廃止）
 
 `plugins/forge/hooks/hooks.json` の `SessionStart` に `ensure_plugin_root_link.py` を登録し、セッション開始のたびに `<project_root>/.claude/forge-docs` を現在の `${CLAUDE_PLUGIN_ROOT}/docs` 実体への symlink として作成・修復する。プラグイン全体ではなく `docs/` サブパスのみに限定する（比例性、`scope_proportionality_spec.md` §2）。symlink はマシン固有の絶対パスを含むため `.gitignore` で非追跡とする。

@@ -283,38 +283,21 @@ docs/
 
 参照を書いてよいのは、**それを書かなければ本文の主張・規定が理解・検証できない場合に限る**。
 
-#### 第 2 原則: 書く場合はマークダウンリンク方式
+#### 第 2 原則: 記法は forge の文書スタイル指針に従う
 
-必要と判断した参照は `[表示名](相対パス)` 形式で書く。
+必要と判断した参照の記法は、forge の [document_style_guide.md][style-guide] §5.1 **系統 (3)**（利用プロジェクトの文書から同じプロジェクトの他文書を参照する場合）が定める。本節では再掲しない。
 
-```markdown
-判断根拠は [ADR-055_distribution_boundary_for_doc_references.md](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md) に記録している。
-```
+記法以外の禁止:
 
-reference-style link（本文中は `[表示名][ラベル]`、文書末尾に `[ラベル]: 相対パス` を 1 回だけ定義する形）を推奨する。単発の参照でも用いてよい。
-
-```markdown
-判断根拠は [ADR-055][adr-055] に記録している。
-
-[adr-055]: ../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md
-```
-
-reference-style link はインライン形式と同じくレンダリング結果が実リンクになり、参照先の移動・
-削除はリンク切れとして機械検出できる。本文に相対パスが混入しないため、単発・反復を問わず可読性を
-損なわない。インライン形式 `[表示名](相対パス)` も禁止しないが、書く場合はまず reference-style を検討する。
-
-使わない記法:
-
-- 地の文でのパス直書き（`docs/rules/xxx.md` を参照）
-- リンクなしのファイル名のみの言及
-- ID のみで「ここを見ろ」を意味させる参照
 - `## メタデータ` セクションを設けて関連要件・関連設計の ID を列挙する（見出し行・本文中のクエリで代替する）
 
 #### 適用範囲
 
-本節は **`docs/` 配下のプロジェクト文書**に適用する。**配布物（`plugins/` 配下）は対象外**であり、記法は forge の `document_style_guide.md` §5.1 に従う。
+本節は **`docs/` 配下のプロジェクト文書**に適用する。配布物（`plugins/` 配下）の参照は同 §5.1 の系統 (1)(2) が定める。
 
 判断根拠: [ADR-056_document_reference_necessity_and_notation.md](../specs/common/design/ADR-056_document_reference_necessity_and_notation.md)
+
+[style-guide]: ../../plugins/forge/docs/document_style_guide.md
 
 ---
 
