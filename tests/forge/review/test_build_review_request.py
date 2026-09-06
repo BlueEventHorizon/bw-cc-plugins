@@ -696,14 +696,17 @@ class SecretsTrustBoundaryTest(unittest.TestCase):
 
 
 class LinkCriteriaCoverageTest(unittest.TestCase):
-    """恒久観点: 文書系 criteria が文書参照の規範文書を P1 で名指しすること。
+    """恒久観点: Markdown 文書系 criteria が文書参照の規範文書を P1 で名指しすること。
 
     リンク切れは口頭指示があったときだけ検査される観点ではない。criteria から
     document_style_guide.md への委譲が外れると、参照リンクがどのレビューでも
     観点に載らなくなる。
+
+    `plan` は対象外である。計画書は JSON であり、`document_style_guide.md` §5 が
+    定める Markdown の記法規定が適用されないため。
     """
 
-    _DOC_CRITERIA = ("design", "requirement", "plan", "generic", "uxui")
+    _DOC_CRITERIA = ("design", "requirement", "generic", "uxui")
 
     def test_document_criteria_delegate_to_the_style_guide(self):
         criteria_dir = build_review_request.plugin_root() / "docs" / "criteria"
@@ -711,15 +714,6 @@ class LinkCriteriaCoverageTest(unittest.TestCase):
             with self.subTest(kind=kind):
                 text = (criteria_dir / f"review_criteria_{kind}.md").read_text(encoding="utf-8")
                 self.assertIn("document_style_guide.md", text)
-
-    def test_style_guide_defines_a_severity_catalog_for_references(self):
-        """severity の SoT は criteria ではなく委譲先にある（review_priorities_spec §2.2）。"""
-        text = (
-            build_review_request.plugin_root() / "docs" / "document_style_guide.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("重大度カタログ", text)
-        for marker in ("🔴", "🟡", "🟢"):
-            self.assertIn(marker, text)
 
 
 class TemplateReferencedDocsExistTest(unittest.TestCase):

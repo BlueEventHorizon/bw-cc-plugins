@@ -1,6 +1,6 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-08-29T12:12:34Z
+generated_at: 2026-09-06T08:34:21Z
 file_count: 66
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 990e6dadb2f2ba40d02b7365a0580307e010444ae7d2be41a649d4751fab31ac
@@ -15,8 +15,8 @@ checksums:
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: f479d8eb5f933442aadb52656abc32ad176411d5321148babf0e50291f45d11c
   docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: 649472eac8779d770236de3150f2b84d05583bfe933fae3cef553a227c354141
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 9bad3ee2282a2ee5e3d48a643f84344bcf971466b37a166731fd1f8ecdf5d71e
-  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: 30be564f09b709b0c1b0d5471f049cbc445351d1d6eca5c1449b4701785a37a3
-  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: d5703c2902395194b3c02a6fd49e3cb49f09fe62791c2d0f821d89ddf0702b37
+  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: 58b3d4b6f811cdb7e89cab77ace4c59f4385b4ecf5976d3a5a1cd0aafd516abd
+  docs/specs/common/design/COMMON-DES-001_skill_base_design.md: 9f2bc9beb58178cb7b16ec0cba88f45df90cc31e4fe298a0631a82255a519c36
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: de0c4ceeb2078e6cd12955fb10d6a87242fa126e1cdfab89a985aa33095868e2
   docs/specs/consult/agenda/design/ADR-076_agenda_storage_format.md: 8e17afe9bca22989b6b1627525c5146442386ed043c9867e3935af287a7480f0
@@ -40,7 +40,7 @@ checksums:
   docs/specs/forge/design/ADR-071_agent_review_default_backend.md: a082ed61e0df03461ee6848566efcf55864dd855df7d19bdb6bf217d1c56ff1e
   docs/specs/forge/design/ADR-073_no_capability_based_readonly_guarantee.md: c386d58b969e9df4cc7e89610826db5f999a19ccc2dabc12d41bf44dd72c96f6
   docs/specs/forge/design/ADR-079_mandatory_tag_selection_criteria.md: 91f8f7cad813cb4ec651bba980ac499aace344cf8ae53fe28b5aed31704e0485
-  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: ebb75462e2e0df332b709dd669f94fe85f659403595c1020115626b04c7291b5
+  docs/specs/forge/design/DES-001_forge_query_abstraction_design.md: 47ec82aee7877c796bda1eeae65facc6e5a79e4cb10c03d615bde9a92c73894f
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md: f7ea2bfd29525317207f54881b97de1dcea7db24b6c5da34458624271472dd77
   docs/specs/forge/design/DES-013_context_gathering_design.md: 1e517b6ae0dbb71794b2c19a5f546a44a930c92c698a32202f30ed72832cac66
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md: 055f0b03f1620129d8cee77a37732e285d2bb1272c235cf3f01999f5ff698f5e

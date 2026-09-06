@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-29T12:12:34Z
+  generated_at: 2026-09-06T08:34:21Z
   file_count: 66
 
 docs:
@@ -355,61 +355,58 @@ docs:
       - scope
       - self-contained
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md:
-    title: ADR-056 Document Reference Necessity and Notation
-    purpose: Specifies rules for cross-document reference necessity, notation style by document scope, and resolves conflicts between prior standards
+    title: "ADR-056: Reference Necessity Determination and Notation Conventions"
+    purpose: Specifies principles for document cross-reference necessity and notation, with distinct rules for project documents and distribution artifacts
     content_details:
-      - Context of conflict between ADR-052 and CLAUDE.md
-      - "Problem: ID-based references force unnecessary query-docs searches"
-      - "Reference distinction: discovery vs. known-document navigation"
-      - "First principle: omit references unless comprehension requires them"
-      - "Notation for project documents: markdown links [display](relative-path) when necessary"
-      - Withdrawal of related-requirement and related-design metadata sections
-      - "Distribution artifacts exemption: plugins/ may use internal links per ADR-052"
-      - Impact on CLAUDE.md, document_writing_rules.md, and forge spec_format.md
+      - Necessity-first principle for project references
+      - Markdown link notation for project documents
+      - Deprecation of related-requirements and related-design metadata
+      - Distribution artifacts internal links permitted
+      - Prohibition on distribution artifacts referencing project docs
+      - Distinction between discovery (query-docs) and direct reference
+      - Contradiction resolution between CLAUDE.md and ADR-052
+      - Impact on spec_format.md affecting downstream projects
     applicable_tasks:
-      - Creating or revising project documents with cross-references
-      - Reviewing and enforcing documentation reference standards
-      - Evaluating documentation structure and dependency clarity
-      - Planning documentation style guide updates
-      - Auditing broken or unnecessary reference links
+      - Spec document authoring with cross-reference governance
+      - Design decision documentation and review
+      - Document structure and metadata field design
+      - Distribution artifact documentation standards
+      - Cross-reference notation and style enforcement
     keywords:
+      - ADR-056
       - cross-reference
-      - document-reference
-      - markdown-link
-      - reference-notation
+      - necessity determination
+      - markdown link
+      - distribution artifacts
       - ADR-052
-      - CLAUDE.md
-      - spec-format
-      - distribution-artifact
+      - query-docs
+      - metadata fields
+      - spec format
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
     title: COMMON-DES-001 SKILL Base Design
-    purpose: Defines base design, execution models, principles for SKILL vs Agent selection, formal rejection of fork-type SKILL due to 9 documented structural bugs, and multi-layer defense framework
+    purpose: Defines SKILL execution models (inheritance-only, no fork-type SKILL), decision rules for choosing between SKILL and Agent tools, and multi-layer defense principles to prevent context leakage and unintended side effects
     content_details:
-      - Inheritance-type SKILL execution model adopted, fork-type explicitly rejected with 9 documented Claude Code bugs
-      - "SKILL type decision principles: all SKILL must be inheritance type, hidden context requires custom Agent instead"
-      - "SKILL call arguments constraints: prohibited passing parent task prompts, Issue text, diffs, or file content"
-      - "SKILL launch path selection guide: decision flowchart for SKILL vs custom Agent vs general Agent vs Bash subprocess"
-      - "Multi-layer defense framework: A (Agent boundary), B (Role constraints), C (tool allowlist), D (physical deny)"
-      - "Responsibility boundaries for inheritance-type SKILL: must declare scope, minimum args, no self-recursion"
-      - "Custom Agent migration history: reviewer, evaluator, fixer moved from fork-type SKILL to custom Agent"
-      - "Static validation tests: no fork-type SKILL in frontmatter, custom Agent frontmatter validation"
+      - "Inheritance model is default for all SKILL; fork-type SKILL (context: fork) deprecated due to 9 structural Claude Code bugs"
+      - "Isolation context: use custom Agent (plugins/<plugin>/agents/<name>.md) or general Agent, not fork SKILL"
+      - "SKILL args must be minimal: never pass parent task prompt/Issue/diff/file content; only SKILL-specific parameters and short task descriptions"
+      - "Responsibility boundary stated in SKILL.md: this skill does X only; does not inherit parent work"
+      - "Decision flowchart for execution path selection: deterministic CLI → one-time agent → fixed-role agent → SKILL"
+      - "Multi-layer defense: Agent boundary + Role constraints (B layer) + Allowlist (C layer) + Physical deny (D layer)"
+      - "Deprecated: fork-type SKILL converted to custom Agent (forge:reviewer, evaluator, rules-query-worker); query-forge-rules split into dispatcher SKILL + worker Agent"
     applicable_tasks:
-      - New SKILL design and architecture review
-      - Deciding whether to implement a feature as SKILL, custom Agent, or general Agent
-      - Evaluating context isolation requirements and selecting appropriate execution model
-      - Implementing custom Agents and their multi-layer defense constraints
-      - SKILL call arguments design and parent context management
-      - Reviewing fork-type SKILL rejection basis and justifying design decisions
-      - "Adding or removing custom Agents: updating design documentation"
+      - SKILL design and architecture review for new plugins
+      - Execution path decision for new automation features (SKILL vs. Agent vs. Bash)
+      - Fork-type SKILL deprecation and conversion planning to custom Agent
+      - Multi-layer defense and isolation context verification for SKILL/Agent
     keywords:
-      - SKILL execution model
-      - fork type
-      - Custom Agent
-      - context isolation
+      - SKILL inheritance model
+      - context fork deprecated
+      - custom Agent
+      - responsibility boundary
+      - isolation context
       - multi-layer defense
-      - Role constraints
-      - inheritance-type SKILL
-      - Bash subprocess
+      - ADR-002
+      - decision flowchart
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -787,34 +784,27 @@ docs:
       - query wrapper
       - update wrapper
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
-    title: "ADR-052: Documentation Internal Cross-Reference Notation Standardization and Plugin Root Link Access Improvement"
-    purpose: Specifies how to standardize internal cross-reference notation within the docs/ directory and improve plugin root variable resolution in documentation references
+    title: "ADR-052: Unified Cross-Reference Notation in docs/ and Plugin Root Link Improvement"
+    purpose: "Specifies unified cross-reference notation for plugin documentation: internal references within docs/ use relative paths with Markdown links, while external references from SKILL/agent files use ${CLAUDE_PLUGIN_ROOT}/docs/ format"
     content_details:
-      - Context about ${CLAUDE_PLUGIN_ROOT} resolution differences across access paths (commands, SKILL.md injection, direct Read tool)
-      - Problem of unnecessary ${CLAUDE_PLUGIN_ROOT} format in docs/ internal references
-      - Downstream environment entity path confirmation costs with cache paths
-      - Decision to use relative paths with Markdown link syntax for docs/ internal references
-      - Decision to maintain ${CLAUDE_PLUGIN_ROOT}/docs/ format for SKILL.md/agents/commands references
-      - Update to document_style_guide.md §5.1 for reference method distinction
-      - Impact of converting ~15 files with ~20+ internal cross-references to relative path format
-      - SessionStart hook symlink self-repair mechanism (obsoleted by ADR-069)
-      - Symlink-related changes deleted due to ADR-069 obsolescence
+      - Internal docs/ cross-references use relative paths with Markdown link syntax
+      - External references from SKILL.md, agents/, and commands/ use ${CLAUDE_PLUGIN_ROOT}/docs/ format
+      - Document style guide section 5.1 revision to distinguish internal vs. external reference notation
+      - Plugin root link symlink self-repair mechanism (deprecated by ADR-069)
+      - Migration of ~15 docs files with 20+ cross-references to relative path format
     applicable_tasks:
-      - Documentation link standardization and migration
-      - Plugin documentation reference review
-      - Documentation style guide maintenance
-      - Cross-reference validation in multi-level documentation
-      - Plugin root variable resolution troubleshooting
+      - Plugin documentation cross-reference format implementation and migration
+      - Writing and reviewing plugin documentation in docs/ subdirectory
+      - ADR-069 deprecation impact assessment for reference mechanisms
+      - Documentation style guide maintenance and enforcement
     keywords:
-      - ADR-052
-      - documentation
       - cross-reference
+      - plugin documentation
       - relative path
-      - Markdown link
-      - plugin root
-      - documentation style guide
-      - docs internal reference
       - ${CLAUDE_PLUGIN_ROOT}
+      - SKILL.md
+      - ADR
+      - document style
   docs/specs/forge/design/ADR-060_review_backend_axis.md:
     title: "ADR-060: Review Execution Backend Axis Introduction"
     purpose: Introduces a pluggable backend system for review execution, replacing fixed single reviewer constraint with a --backend parameter to enable different review backends while maintaining a common interface
@@ -1068,34 +1058,36 @@ docs:
       - evidence criteria
       - decision record
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: DES-001 Document Search Wrapper (forge → document search backend) Design
-    purpose: "Defines forge'\\\\\\\\\\\\\\\\''s delegation to external document search backends, wrapper SKILL abstraction (query/update), and backend selection logic based on configuration and availability"
+    title: "DES-001: Document Search Wrapper Design"
+    purpose: Specifies document search wrapper design delegating search and index updates to external backends (doc-advisor and doc-db), defines SKILL abstraction with key mapping, output contracts, and backend selection strategy
     content_details:
-      - 4 wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with roles and key mapping
-      - "Query-docs execution flow: backend order resolution, availability checks, doc-advisor vs doc-db routing"
-      - "Query-docs output contract: path list in Required documents: format, backend-agnostic"
-      - "Update-docs execution flow: --backend flag handling, index preparation wrapper (prepare_advisor_index.py)"
-      - "Desired-state concept: .doc_structure.yaml as source of truth, dirs/exclude parameters"
-      - "Backend abstraction: selection between doc-advisor and doc-db based on availability and order list"
-      - "SKILL contract: inheritance-type, read-only, allowed-tools restrictions, Agent tool isolation"
-      - "resolve_backend_order.py: backend selection logic with configuration validation"
+      - "Four wrapper SKILLs: query-db-rules, query-db-specs, update-db-rules, update-db-specs with user-invocable interface"
+      - Backend selection based on .claude/.forge.yaml doc_backend.prefer with doc-advisor as default
+      - "Query flow: resolve backend order, check availability, execute first available backend"
+      - Update flow with optional backend specification and prepare index input via wrapper
+      - Opaque key unit document collection management with category (rules/specs) mapping
+      - "Output contract: path list with Required documents: format consistent across backends"
+      - Read-only query isolation via inheritance-type SKILL without context fork
+      - Desired-state synchronization with .doc_structure.yaml as truth source
+      - "Directory handling: forge resolves dirs/exclude, doc-advisor expands to file list"
     applicable_tasks:
-      - Backend selection and configuration verification
-      - Document index maintenance planning
-      - Document search wrapper SKILL implementation
-      - Architecture review of document search layer
-      - Backend availability and capability assessment
+      - Backend integration for document search functionality
+      - Query SKILL implementation and testing
+      - Update SKILL implementation and index maintenance
+      - Backend selection and availability checking
+      - SKILL contract design and isolation verification
+      - Test validation for wrapper transparency
     keywords:
-      - forge
+      - document search wrapper
+      - backend selection
       - doc-advisor
       - doc-db
-      - query-db-rules
-      - query-db-specs
-      - update-db-rules
-      - update-db-specs
-      - backend selection
-      - resolve_backend_order
-      - .doc_structure.yaml
+      - SKILL contract
+      - query flow
+      - index update
+      - desired-state
+      - opaque key
+      - category mapping
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: DES-010 create-* Skills Orchestrator Design
     purpose: Defines orchestrator pattern for start-design/start-plan/start-requirements SKILLs, common context collection framework, parallel agent coordination, and phase structure per SKILL

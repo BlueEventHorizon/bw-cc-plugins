@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-03T06:36:03Z
+  generated_at: 2026-09-06T08:34:21Z
   file_count: 7
 
 docs:
@@ -38,35 +38,36 @@ docs:
       - PASS FAIL
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Establishes document writing rules for consistency across rules, specs, skills, and plugin documentation; covers heading conventions, terminology, structure, and formatting standards.
+    purpose: Defines heading conventions, terminology standards, formatting rules, and document structure requirements to ensure consistency across all project documentation
     content_details:
-      - Heading and tag conventions with MANDATORY/CRITICAL/IMPORTANT tags
-      - Terminology unification and standardized English phrases
-      - Document structure requirements by type (workflow, rules, notes)
-      - Metadata frontmatter format (name, description, applicable_when)
-      - Formatting conventions (bold, backticks, lists, tables)
-      - Document reference notation and markdown links
-      - Document properties and role separation (rules vs specs vs plugins)
-      - Current state documentation principle without migration narratives
-      - Abstract examples and placeholder naming instead of project-specific terms
-      - Scope applicability across rules, specs, and skills directories
+      - Heading and tag conventions - Tags ([MANDATORY], [CRITICAL], [IMPORTANT]) placed at end of heading lines with single space, heading levels H1-H4 only
+      - Terminology standardization - Unified terminology mapping, English emphasis phrases (NEVER, MUST, ALWAYS, DO NOT), JIS Z 8301 long-vowel abbreviation rules
+      - Document structure conventions - Required sections for workflow and rule documents, frontmatter format for SKILL and workflow documents
+      - Formatting and emphasis rules - Bold for keywords, inline code for filenames, list nesting (max 2 levels), table columns (max 6)
+      - Document reference notation - Markdown link format, reference-style links, prohibition of direct path writing and ID-only references
+      - "Document role separation - Four categories: rules (how-to), specifications (requirements), plugin documentation, and local/distributed skills"
+      - Generic naming rules - Use of placeholder names (Foo, Bar, Hoge, Fuga) instead of project-specific names in docs/rules/
+      - Validation procedures - Grep commands for detecting spacing errors, terminology drift, and compliance violations
     applicable_tasks:
-      - Document authoring and editing
-      - Document review and consistency checking
-      - Metadata frontmatter creation
+      - Writing new project documentation
+      - Modifying existing documents
+      - Creating rule documents
+      - Creating specification documents
       - Writing SKILL documentation
-      - Project rules and specifications development
+      - Reviewing documentation compliance
+      - Standardizing terminology
+      - Validating document consistency
     keywords:
-      - document-writing-rules
-      - frontmatter
-      - heading-levels
-      - terminology-unification
-      - markdown-formatting
-      - document-structure
       - MANDATORY
-      - reference-links
-      - tag-placement
-      - scope-applicability
+      - frontmatter
+      - document reference notation
+      - markdown formatting
+      - terminology standardization
+      - docs/rules
+      - SKILL documentation
+      - JIS Z 8301
+      - placeholder naming
+      - heading levels
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."

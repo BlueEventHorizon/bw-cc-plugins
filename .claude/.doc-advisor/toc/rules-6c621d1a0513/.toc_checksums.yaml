@@ -1,10 +1,10 @@
 # ToC checksums for key: rules
 # Auto-generated - do not edit
-generated_at: 2026-09-03T06:36:03Z
+generated_at: 2026-09-06T08:34:21Z
 file_count: 7
 checksums:
   docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
-  docs/rules/document_writing_rules.md: 41bd8d5e29df901cff7972ebbf36de89e28c70c9f1cbc77536de765403f7a4ec
+  docs/rules/document_writing_rules.md: 08c9a6dac608fcdf25cfe70979494091320a3429299f89aca28f71ca7c929b40
   docs/rules/forge_doc_access_principle.md: 19548891135917407697ebe037a89886961ced9d1f9e92cdd71079ddbf9407bf
   docs/rules/implementation_guidelines.md: c5b214189dc1ffd92bbb2c9543cdb2022e82109c6e950dd45239e269e6078342
   docs/rules/skill_authoring_notes.md: 04df243b785233eed08e6fe8029042267a315e191755fd947b1719448a898aa8

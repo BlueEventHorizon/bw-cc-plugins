@@ -312,7 +312,7 @@ reference-style link はインライン形式と同じくレンダリング結�
 
 #### 適用範囲
 
-本節は **`docs/` 配下のプロジェクト文書**に適用する。**配布物（`plugins/` 配下）は対象外**であり、記法は forge の `document_style_guide.md` §5.1 に従う。
+本節は **`docs/` 配下のプロジェクト文書**に適用する。**配布物（`plugins/` 配下）は対象外**であり、記法は forge の [document_style_guide.md][style-guide] §5.1 に従う。
 
 判断根拠: [ADR-056_document_reference_necessity_and_notation.md](../specs/common/design/ADR-056_document_reference_necessity_and_notation.md)
 
@@ -520,7 +520,4 @@ grep -r "下記のドキュメントを全て読み込み" docs/rules/ docs/spec
 
 ---
 
-## 10. 参考
-
-- `docs/rules/skill_authoring_notes.md` — SKILL 作成時の留意点
-- `docs/rules/cli_output_formatting.md` — CLI 出力フォーマット規約
+[style-guide]: ../../plugins/forge/docs/document_style_guide.md
