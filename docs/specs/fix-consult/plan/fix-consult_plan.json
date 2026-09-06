@@ -1,0 +1,297 @@
+{
+  "requirements_traceability": [
+    {
+      "requirement_id": "FNC-001",
+      "title": "呼び出し側は持っている情報をそのまま渡せる",
+      "task_ids": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-002",
+      "title": "渡されたデータをそのまま保存する",
+      "task_ids": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-003",
+      "title": "現行の提示が動き続ける",
+      "task_ids": [
+        "TASK-002",
+        "TASK-004",
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-004",
+      "title": "データの書き込みは script が行う",
+      "task_ids": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-005",
+      "title": "記録は決められた場所に作られる",
+      "task_ids": [
+        "TASK-004"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-006",
+      "title": "記録に属するものが一括で削除できる",
+      "task_ids": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "FNC-007",
+      "title": "利用者からの直接起動で議題を立てる経路を停止する",
+      "task_ids": [
+        "TASK-004",
+        "TASK-006",
+        "TASK-007"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "NFR-001",
+      "title": "検証可能性",
+      "task_ids": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005"
+      ],
+      "status": "pending"
+    }
+  ],
+  "design_traceability": [
+    {
+      "design_id": "DES-080",
+      "document": "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+      "sections": "§1.3 停止する経路 / §2 入力の受け取り方 / §3 項目の識別子 / §4 表示層 / §5 置き場の解決 / §6 使用する既存コンポーネント / §7 テスト設計",
+      "task_ids": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "title": "agenda_schema: 受理条件を DES-080 §2.6 の表へ改める",
+      "priority": 95,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [],
+      "group_id": "GROUP-001 (1/5)",
+      "build_check": "skip",
+      "description": "DES-080 §2.6 の受理条件表と決着の定義（3 値そろい）を `plugins/forge/scripts/agenda/agenda_schema.py` に実装する。不足フィールド名を列挙する返り値の形式は維持する。旧形式の呼び出しを受け付ける互換分岐は設けない（要件にも設計にも無い）。本タスク完了時点では store・wrapper・統合テストが壊れるが、グループ完了時（TASK-005）にまとめて検証する。`tests/forge/agenda/test_agenda_schema.py` を DES-080 §7 の観点へ改め、縮退を固定していた既存テストを新しい受理条件へ書き換える。",
+      "acceptance_criteria": [
+        "構造判断が未記録の記録に対し、`background` のみのパッチでも不足フィールドに `structural_judgment.recorded` が含まれる",
+        "`decision.by` のみを含むパッチで `background` / `essence` が空なら不足として返り、非空なら受理される（`decision.outcome` / `decision.reason` の欠落は不足にならない）",
+        "3 値そろい述語が、3 値すべて非空のときだけ真を返す（2 値・空文字・None は偽）",
+        "`python3 -m unittest tests.forge.agenda.test_agenda_schema` が通る"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-002",
+      "title": "agenda_render: 重大度の探索・title 空の表示・決着判定を改める",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [],
+      "group_id": "GROUP-001 (2/5)",
+      "build_check": "skip",
+      "description": "DES-080 §4.1・§4.2・§4.4 に従い `plugins/forge/scripts/agenda/agenda_render.py` を改修する。表示層は `agenda.json` の契約だけに依存する現行の独立性を保ち、`agenda_schema` を import しない（決着判定は表示層で自前に行い、store 側との一致は TASK-005 の統合テストで固定する）。`structural_judgment.note` が `None` の記録でも生成が失敗しないこと。`tests/forge/agenda/test_agenda_render.py` に §7 の観点を追加する。",
+      "acceptance_criteria": [
+        "重大度が `fields` の中にある記録と項目直下にある記録の双方でバッジが出る",
+        "`fields` 側が空値のとき項目直下の値が使われる",
+        "agenda が知らないキーを持つ項目が保存された記録から HTML が生成できる",
+        "`title` が空の項目は一覧行・見出しに `id` が表示される",
+        "`decision` が 2 値までの項目は未決着として表示され、3 値そろいで決着として表示される",
+        "`structural_judgment.note` が None の記録で生成が例外を出さない",
+        "`python3 -m unittest tests.forge.agenda.test_agenda_render` が通り、全体テストも全件通る"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/specs/consult/agenda/design/DES-077_agenda_display_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-003",
+      "title": "agenda_store: 形式検査の撤廃・採番・record の 3 形・CLI からの start / record 除去",
+      "priority": 85,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [
+        "TASK-001"
+      ],
+      "group_id": "GROUP-001 (3/5)",
+      "build_check": "skip",
+      "description": "DES-080 §2.2・§2.3・§2.5・§2.6・§3・§6 に従い `plugins/forge/scripts/agenda/agenda_store.py` を改修する。形式検査（許可キー集合・型検証・`title` 必須・固定キーでの組み立て直し・列挙写し）の撤廃、§2.5 の正規化、§3 の採番、`record` の 3 形（構造判断／既存項目へ 1 値／新規項目）、存在しない `item_id` の拒否、§2.6 の名前の規則、残件・`next`・`finish` の 3 値そろい判定への置き換えを行う。`last_changed_fields` には渡された名前そのまま（例: `decision.by`）を記録する。`start` / `record` を CLI（argparse）から除き関数呼び出し専用にする。`--input-file` の読み込みヘルパとその説明（モジュール docstring を含む）も同時に取り除く。`pending` / `next` / `finish` の CLI は残す。`tests/forge/agenda/test_agenda_store.py` を関数呼び出し前提に書き換え、撤廃した拒否を固定していたテストを §7 の観点へ改める。本タスク完了時点では旧 wrapper と統合テストが壊れるため、グループ完了時（TASK-005）にまとめて検証する。",
+      "acceptance_criteria": [
+        "agenda が知らないキーを含む項目が `start` / `record` で保存され、既知キーに現行なら型違反となる値を渡しても拒否・変換されず保存される",
+        "`title` の無い項目が `start` / `record` で受理され、`id` の無い項目に衝突しないゼロ埋め 2 桁の連番が採番される",
+        "`start` で渡された `id` がそのまま保たれる",
+        "新規項目を足す `record` の応答に採番した `id` が含まれ、存在しない `item_id` を渡した `record` は拒否される",
+        "`record` で 1 値ずつ加えても先に加えた値が消えず、`decision.*` を 1 つずつ積んでも入れ子が保たれる",
+        "`record` で `title` を加えられる",
+        "`id` / `last_changed_fields` / `fields` / `decision` を値の名前として渡した `record` が拒否される（§2.6 の名前の規則の拒否側）",
+        "`record` は 1 回の呼び出しで 1 つの値だけを受け取り、複数の値を同時に渡す経路を持たない",
+        "構造判断が未記録のまま項目へ値を加えると拒否され、`background` / `essence` が空のまま `decision.*` を加えると拒否される",
+        "3 値が揃うまで残件に数えられ `finish` は削除せず、3 値そろいで決着として扱われる",
+        "`agenda_store.py start` / `record` を CLI から呼ぶと argparse エラーになり、`pending` / `next` / `finish` の CLI は従来どおり動く",
+        "`grep -rn \"input-file\" plugins/forge/scripts/agenda/` が 0 件（docstring・読み込みヘルパを含めて残らない）",
+        "キーの少ない旧記録を `load_agenda` → `pending` で読める",
+        "`python3 -m unittest tests.forge.agenda.test_agenda_store` が通る"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-004",
+      "title": "agenda_wrapper: scripts/agenda/ へ移動し、標準入力・review 起点限定・絶対パス解決へ改める",
+      "priority": 80,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [
+        "TASK-003"
+      ],
+      "group_id": "GROUP-001 (4/5)",
+      "build_check": "skip",
+      "description": "DES-080 §1.3・§2.1・§2.3・§2.6・§4.3・§5・§6 に従う。`git mv plugins/forge/skills/consult/scripts/agenda_wrapper.py plugins/forge/scripts/agenda/agenda_wrapper.py` で移動し、兄弟モジュールの参照を store と同じ形にする。起点は review のみ（§1.3）、wrapper が組み立てる `config` は形式検査の撤廃に合わせて `item_fields` を空にし `severity_field` は保つ（§2.3）、置き場は絶対パス解決（§5）、`start` は標準入力の結合出力から入れ物を組み立てて store の関数へメモリ上で渡し `text` を `problem` にも置く（§2.1・§4.3。`text` は残す）、`record` は 3 形で本文を標準入力から読む（§2.6）。`--input-file`・`--session-id`・一時ファイル・AI の文章を受け取る引数を持たない。モジュール docstring の用例からも停止した経路の引数（`--input-file` / `--origin consult` / `--session-id`）を取り除く。応答に解決済み絶対 `path`（新規では `id` も）を含める。標準入力はテストで差し替えられる形にする。`git mv tests/forge/consult/test_agenda_wrapper.py tests/forge/agenda/test_agenda_wrapper.py` で移し、`tests/forge/consult/` を削除し、§7 の観点を追加する（git 依存のテストは一時ディレクトリに `git init` し、git が無ければ skip）。",
+      "acceptance_criteria": [
+        "`plugins/forge/skills/consult/scripts/` と `tests/forge/consult/` が存在しない",
+        "呼び出し元の作業ディレクトリを変えても同じ絶対パスが返り、git 管理外からの呼び出しはエラーになる",
+        "`--origin consult` はエラーで停止し記録が作られない",
+        "wrapper が組み立てる `config` の `item_fields` が空で、`severity_field` は保たれている",
+        "`start` が標準入力の `combined` から `config` / `items` を組み立て、各項目に `text` と `problem` の両方が保存される",
+        "`start` / `record` の実行で記録ディレクトリ以外にファイルが生成されない（一時ファイルを書かない）",
+        "`record` の 3 形すべてで本文が標準入力から入り、parser の全引数に自由記述を受けるものが無い",
+        "`python3 -m unittest tests.forge.agenda.test_agenda_wrapper` が通る",
+        "移動後の `plugins/forge/scripts/agenda/agenda_wrapper.py` に `--input-file` / `--origin consult` / `--session-id` の記述が docstring を含めて残っていない"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/rules/implementation_guidelines.md"
+      ]
+    },
+    {
+      "task_id": "TASK-005",
+      "title": "統合テスト: 結合 script 出力 → wrapper → 記録 → 提示の一貫性",
+      "priority": 75,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [
+        "TASK-002",
+        "TASK-004"
+      ],
+      "group_id": "GROUP-001 (5/5)",
+      "build_check": "on_group_complete",
+      "description": "`tests/forge/agenda/test_agenda_integration.py` を DES-080 §7「統合」に合わせて書き換える。結合 script（`combine_findings_and_evaluations.py`。無変更で import）の出力を wrapper の `start` の標準入力へつなぎ、構造判断 → 項目ごとに `background` / `essence` / `decision.by` / `decision.outcome` / `decision.reason` → 新規項目の追加（応答の `id` で同じく 3 値まで記録）→ `finish` を通す。各書き込み直後の `agenda.html` が記録から生成したものと一致すること、未決着が残る途中の `finish` が削除しないこと、全決着後の `finish` で記録に属するもの（`agenda.json` / `agenda.html` / `agenda_state.js`）がすべて消えることを検証する。決着判定の境界ケース（2 値のみ / 3 値そろい）で store の残件と render の表示が一致することを固定する。グループ完了時の検証としてテスト全体と dprint を通す。",
+      "acceptance_criteria": [
+        "結合 script を変更せずにその出力が `start` へ渡り、保存された記録から現行と同じ欄（問題・重大度バッジ）を持つ提示が生成される",
+        "各 `record` 直後の `agenda.html` が `render_agenda_html(load_agenda(...))` と一致する",
+        "未決着が残る途中の `finish` は削除せず、全決着後の `finish` で記録に属するものがすべて消える",
+        "`decision` が 2 値の項目は store の残件に数えられ render も未決着表示、3 値そろいで両者とも決着になる",
+        "`python3 -m unittest discover -s tests -p 'test_*.py'` が全件通り、`dprint check` が通る"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/specs/forge/design/DES-066_review_body_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-006",
+      "title": "consult SKILL.md: 直接起動の停止と新しい wrapper 呼び出しへの追随、テンプレート削除",
+      "priority": 70,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [
+        "TASK-005"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-080 §1.3・§2.1・§2.6・§2.7・§6 に従い `plugins/forge/skills/consult/SKILL.md` を改修する。frontmatter を `user-invocable: false` にし、トリガー語を description から外す（`disable-model-invocation` は付けない。review 本体からの Skill ツール委譲を維持する）。「起点の判定」「Phase 1」「2.1 の consult 起点」「他セッション記録の直接 `--path` 再開」「候補 JSON を Write して `--input-file` で渡す手順」を削除する。Phase 2.2 を「結合 script の出力を `start` の標準入力へつなぐ → 構造判断を `record` で記す」に、Phase 4 の record 手順を 1 回 1 値（`decision.by` / `outcome` / `reason` を各 1 回）に、新規論点を新規の `record`（応答の `id` を以後使う）に書き換える。全コマンドのパスを `${CLAUDE_PLUGIN_ROOT}/scripts/agenda/agenda_wrapper.py` にする。禁止事項「自由記述文をシェル文字列へ直接埋め込む」は残す。`allowed-tools` から `Write` を外す。`git rm plugins/forge/skills/consult/assets/discussion_file_template.md`。残存確認として `grep -rn \"skills/consult/scripts\\|discussion_file_template\\|--origin consult\\|--session-id\" plugins/ tests/` と `grep -rn \"input-file\" plugins/forge/scripts/agenda/ plugins/forge/skills/consult/ tests/forge/agenda/` が 0 件であることを確かめる。変更した md に `dprint fmt` を通す。利用者への案内導線と README の追随は TASK-007 が担う。旧仕様文書（REQ-017 / DES-078 / DES-075 / DES-077 / consult_principles_spec.md）は書き換えない。",
+      "acceptance_criteria": [
+        "SKILL.md の frontmatter が `user-invocable: false` で、description にトリガー語が無く、`disable-model-invocation` が無い",
+        "SKILL.md に consult 起点の手順・`--input-file`・候補 JSON の Write・旧 wrapper パスが残っていない",
+        "SKILL.md の手順が `start`（標準入力）→ 構造判断の `record` → 1 回 1 値の `record` → 新規項目の `record`（応答の `id`）→ `finish` の順で書かれている",
+        "`allowed-tools` に `Write` が無い",
+        "`plugins/forge/skills/consult/assets/discussion_file_template.md` が存在しない",
+        "上記 2 つの grep（対象は戦略書 Phase 3 と同じ `plugins/` / `tests/` 範囲）がいずれも 0 件",
+        "`python3 -m unittest discover -s tests -p 'test_*.py'` が全件通り、`dprint check` が通り、`git status` に一時物が無い"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/rules/skill_authoring_notes.md",
+        "docs/rules/implementation_guidelines.md"
+      ]
+    },
+    {
+      "task_id": "TASK-007",
+      "title": "利用者への consult 案内導線を外し、README のスキル一覧を追随させる",
+      "priority": 65,
+      "status": "pending",
+      "design_id": "DES-080",
+      "depends_on": [
+        "TASK-006"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-080 §1.3 の「利用者へ議論スキルを案内する導線」を停止する。`plugins/forge/skills/help/SKILL.md` から consult を利用者の選択肢として提示している箇所（スキル一覧・引数の案内・起動手順）を外す。`plugins/forge/skills/review/SKILL.md` の「議論・方針検討そのものは対象外（`/forge:consult`）」の案内と、`docs/readme/forge/guide_setup_ja.md` の help 出力例の consult 行も、利用者が起動できる前提を残さない形へ改める。`README.md` / `README_en.md` のスキル一覧で consult の行を既存の凡例に合わせて改める——利用者起動可能（太字）から AI 専用（斜体）へ、トリガー欄を「※ review が呼び出し」へ、説明をレビュー所見の段階的提示を担う旨の 1 行へ。README は取扱説明であり、設計の内容は書かない。残存確認として `grep -rn \"forge:consult\\|consult \" plugins/forge/skills/help/SKILL.md docs/readme/ README.md README_en.md` の結果に利用者が起動できる前提の記述が無いことを目視で確かめる。変更した md に `dprint fmt` を通す。",
+      "acceptance_criteria": [
+        "`plugins/forge/skills/help/SKILL.md` の一覧・引数の案内・起動手順に consult が利用者の選択肢として現れない",
+        "`plugins/forge/skills/review/SKILL.md` と `docs/readme/forge/guide_setup_ja.md` に、利用者が consult を起動できる前提の案内が残っていない",
+        "`README.md` / `README_en.md` の consult 行が斜体（AI 専用）で、トリガー欄が「※ review が呼び出し」相当になり、利用者起動の記述が残っていない",
+        "`python3 -m unittest discover -s tests -p 'test_*.py'` が全件通り、`dprint check` が通る"
+      ],
+      "required_reading": [
+        "docs/specs/fix-consult/plan/fix-consult_strategy.md",
+        "docs/specs/fix-consult/requirements/REQ-022_agenda_spec.md",
+        "docs/specs/fix-consult/design/DES-080_agenda_design.md",
+        "docs/rules/document_writing_rules.md"
+      ]
+    }
+  ]
+}
