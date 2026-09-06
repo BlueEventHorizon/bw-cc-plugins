@@ -16,7 +16,6 @@ TOP_LEVEL_KEYS = {
     "requirements_traceability",
     "design_traceability",
     "tasks",
-    "revision_history",
 }
 
 TASK_REQUIRED_FIELDS = {

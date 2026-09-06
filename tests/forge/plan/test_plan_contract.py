@@ -49,7 +49,6 @@ def _valid_plan(**overrides):
         "requirements_traceability": [],
         "design_traceability": [],
         "tasks": [_valid_task()],
-        "revision_history": [],
     }
     plan.update(overrides)
     return plan
@@ -92,9 +91,9 @@ class ValidatePlanSchemaTest(unittest.TestCase):
 
     def test_missing_top_level_key_is_reported(self):
         plan = _valid_plan()
-        del plan["revision_history"]
+        del plan["design_traceability"]
         errors = plan_contract.validate_plan_schema(plan)
-        self.assertTrue(any("revision_history" in e for e in errors))
+        self.assertTrue(any("design_traceability" in e for e in errors))
 
     def test_unknown_top_level_key_is_reported(self):
         plan = _valid_plan(extra_key="not allowed")
