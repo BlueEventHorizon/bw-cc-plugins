@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-08-29T12:12:34Z
+  generated_at: 2026-09-06T14:42:29Z
   file_count: 66
 
 docs:
@@ -355,61 +355,65 @@ docs:
       - scope
       - self-contained
   docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md:
-    title: ADR-056 Document Reference Necessity and Notation
-    purpose: Specifies rules for cross-document reference necessity, notation style by document scope, and resolves conflicts between prior standards
+    title: ADR-056 Document Reference Necessity Judgment and Notation
+    purpose: Establishes when cross-document references are necessary, specifies markdown link notation for project documents, and clarifies that distributed plugin content follows different reference rules
     content_details:
-      - Context of conflict between ADR-052 and CLAUDE.md
-      - "Problem: ID-based references force unnecessary query-docs searches"
-      - "Reference distinction: discovery vs. known-document navigation"
-      - "First principle: omit references unless comprehension requires them"
-      - "Notation for project documents: markdown links [display](relative-path) when necessary"
-      - Withdrawal of related-requirement and related-design metadata sections
-      - "Distribution artifacts exemption: plugins/ may use internal links per ADR-052"
-      - Impact on CLAUDE.md, document_writing_rules.md, and forge spec_format.md
+      - Conflict between ADR-052 and CLAUDE.md regarding reference notation requirements
+      - "Two purposes of document references: discovery via query-docs versus direct access to known documents"
+      - "Project documents: necessity judgment as first principle, write references only if needed for understanding"
+      - "Project documents: use markdown link notation [display](relative_path) for necessary references"
+      - Abolition of metadata fields related_requirements and related_design in spec documents
+      - "Distributed content (plugins/): internal links allowed following document_style_guide §5.1"
+      - "Prohibited: distributed content referencing project docs from docs/ regardless of reference format"
+      - Four alternative approaches considered and their rejection rationale
     applicable_tasks:
-      - Creating or revising project documents with cross-references
-      - Reviewing and enforcing documentation reference standards
-      - Evaluating documentation structure and dependency clarity
-      - Planning documentation style guide updates
-      - Auditing broken or unnecessary reference links
+      - Reviewing documentation cross-reference rules and standards
+      - Updating spec document writing guidelines
+      - Designing reference validation for distributed plugin content
+      - Establishing documentation metadata field specifications
     keywords:
-      - cross-reference
-      - document-reference
-      - markdown-link
-      - reference-notation
+      - cross-document reference
+      - markdown link notation
+      - necessity judgment
+      - spec_format.md
+      - distributed content
+      - reference discovery
       - ADR-052
-      - CLAUDE.md
-      - spec-format
-      - distribution-artifact
+      - query-docs
+      - document_style_guide.md
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
-    title: COMMON-DES-001 SKILL Base Design
-    purpose: Defines base design, execution models, principles for SKILL vs Agent selection, formal rejection of fork-type SKILL due to 9 documented structural bugs, and multi-layer defense framework
+    title: SKILL Base Design Specification
+    purpose: Defines the base design and governance of SKILL execution models, decision principles for SKILL types, and multi-layer defense architecture for bw-cc-plugins
     content_details:
-      - Inheritance-type SKILL execution model adopted, fork-type explicitly rejected with 9 documented Claude Code bugs
-      - "SKILL type decision principles: all SKILL must be inheritance type, hidden context requires custom Agent instead"
-      - "SKILL call arguments constraints: prohibited passing parent task prompts, Issue text, diffs, or file content"
-      - "SKILL launch path selection guide: decision flowchart for SKILL vs custom Agent vs general Agent vs Bash subprocess"
-      - "Multi-layer defense framework: A (Agent boundary), B (Role constraints), C (tool allowlist), D (physical deny)"
-      - "Responsibility boundaries for inheritance-type SKILL: must declare scope, minimum args, no self-recursion"
-      - "Custom Agent migration history: reviewer, evaluator, fixer moved from fork-type SKILL to custom Agent"
-      - "Static validation tests: no fork-type SKILL in frontmatter, custom Agent frontmatter validation"
+      - SKILL design objectives emphasizing efficiency and fork type rejection
+      - SKILL execution models with inheritance type only
+      - SKILL type decision principles requiring all SKILLs to be inheritance type
+      - SKILL calling arguments never including parent task prompts or diffs
+      - Launch path selection guidance from deterministic processes to SKILL units
+      - Fork type SKILL rejection based on nine Claude Code structural bugs
+      - Fork-to-custom-agent migration history with reviewer and evaluator agents
+      - Inheritance type responsibility boundaries with minimal args and self-recursion prohibition
+      - Multi-layer defense with Agent boundary, Role constraints, allowlist, and physical deny
     applicable_tasks:
-      - New SKILL design and architecture review
-      - Deciding whether to implement a feature as SKILL, custom Agent, or general Agent
-      - Evaluating context isolation requirements and selecting appropriate execution model
-      - Implementing custom Agents and their multi-layer defense constraints
-      - SKILL call arguments design and parent context management
-      - Reviewing fork-type SKILL rejection basis and justifying design decisions
-      - "Adding or removing custom Agents: updating design documentation"
+      - Designing new SKILL or Agent implementations
+      - Choosing between inheritance and custom agent types
+      - Evaluating isolation requirements for new tasks
+      - Reviewing SKILL frontmatter and structure
+      - Implementing multi-layer defense for custom agents
+      - Managing fork type SKILL replacements
+      - Static verification test implementation
+      - SKILL argument validation
     keywords:
-      - SKILL execution model
-      - fork type
-      - Custom Agent
+      - SKILL
+      - inheritance type
+      - custom agent
       - context isolation
+      - fork type
       - multi-layer defense
-      - Role constraints
-      - inheritance-type SKILL
-      - Bash subprocess
+      - responsibility boundary
+      - role constraint
+      - allowlist
+      - agent boundary
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -787,34 +791,33 @@ docs:
       - query wrapper
       - update wrapper
   docs/specs/forge/design/ADR-052_docs_cross_reference_notation_and_plugin_root_link.md:
-    title: "ADR-052: Documentation Internal Cross-Reference Notation Standardization and Plugin Root Link Access Improvement"
-    purpose: Specifies how to standardize internal cross-reference notation within the docs/ directory and improve plugin root variable resolution in documentation references
+    title: "ADR-052: Unified Cross-Reference Notation in Plugin Documentation and Plugin Root Link Access"
+    purpose: Specifies unified notation for cross-references within docs/ (relative paths) and external references from outside docs/ (using plugin root variable), with deprecation of symlink-based access mechanism
     content_details:
-      - Context about ${CLAUDE_PLUGIN_ROOT} resolution differences across access paths (commands, SKILL.md injection, direct Read tool)
-      - Problem of unnecessary ${CLAUDE_PLUGIN_ROOT} format in docs/ internal references
-      - Downstream environment entity path confirmation costs with cache paths
-      - Decision to use relative paths with Markdown link syntax for docs/ internal references
-      - Decision to maintain ${CLAUDE_PLUGIN_ROOT}/docs/ format for SKILL.md/agents/commands references
-      - Update to document_style_guide.md §5.1 for reference method distinction
-      - Impact of converting ~15 files with ~20+ internal cross-references to relative path format
-      - SessionStart hook symlink self-repair mechanism (obsoleted by ADR-069)
-      - Symlink-related changes deleted due to ADR-069 obsolescence
+      - Resolution behavior of plugin root variable varies by execution path
+      - Problem of internal docs references using full path format creates overhead in direct file reads
+      - Downstream environment cost for discovering plugin root path in marketplace installations
+      - Decision to use relative paths with Markdown syntax for docs internal references
+      - Decision to maintain plugin root format for references from outside docs (SKILL, agents, commands)
+      - Updated document style guide section 5.1 with notation distinction and usage guidance
+      - Approximately 15 files and 20+ reference locations affected by changes
+      - Deprecated SessionStart hook self-repair symlink mechanism abandoned in ADR-069
     applicable_tasks:
-      - Documentation link standardization and migration
-      - Plugin documentation reference review
-      - Documentation style guide maintenance
-      - Cross-reference validation in multi-level documentation
-      - Plugin root variable resolution troubleshooting
+      - Documentation style and notation standardization review
+      - Plugin documentation cross-reference auditing
+      - Document style guide maintenance and updates
+      - Configuration of plugin documentation build and reference resolution
+      - Downstream plugin installation quality assurance
     keywords:
-      - ADR-052
-      - documentation
-      - cross-reference
+      - cross-reference notation
       - relative path
-      - Markdown link
-      - plugin root
-      - documentation style guide
-      - docs internal reference
-      - ${CLAUDE_PLUGIN_ROOT}
+      - plugin root variable
+      - Markdown links
+      - document style guide
+      - plugin documentation
+      - reference resolution
+      - docs subdirectory
+      - symlink mechanism
   docs/specs/forge/design/ADR-060_review_backend_axis.md:
     title: "ADR-060: Review Execution Backend Axis Introduction"
     purpose: Introduces a pluggable backend system for review execution, replacing fixed single reviewer constraint with a --backend parameter to enable different review backends while maintaining a common interface
@@ -1068,33 +1071,33 @@ docs:
       - evidence criteria
       - decision record
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: DES-001 Document Search Wrapper (forge → document search backend) Design
-    purpose: "Defines forge'\\\\\\\\\\\\\\\\''s delegation to external document search backends, wrapper SKILL abstraction (query/update), and backend selection logic based on configuration and availability"
+    title: DES-001 Document Search Wrapper Design (forge → document search backend)
+    purpose: Defines the architecture for document search and index management in forge, specifying the 4 wrapper SKILLs (query/update for rules/specs), backend selection logic, doc-advisor and doc-db integration contracts, and query output format
     content_details:
-      - 4 wrapper SKILLs (query-db-rules, query-db-specs, update-db-rules, update-db-specs) with roles and key mapping
-      - "Query-docs execution flow: backend order resolution, availability checks, doc-advisor vs doc-db routing"
-      - "Query-docs output contract: path list in Required documents: format, backend-agnostic"
-      - "Update-docs execution flow: --backend flag handling, index preparation wrapper (prepare_advisor_index.py)"
-      - "Desired-state concept: .doc_structure.yaml as source of truth, dirs/exclude parameters"
-      - "Backend abstraction: selection between doc-advisor and doc-db based on availability and order list"
-      - "SKILL contract: inheritance-type, read-only, allowed-tools restrictions, Agent tool isolation"
-      - "resolve_backend_order.py: backend selection logic with configuration validation"
+      - "Two backends: external doc-advisor plugin and local doc-db server"
+      - "4 wrapper SKILLs mapping: query-db-rules/specs call doc-advisor:query-docs; update-db-rules/specs call doc-advisor:index-docs"
+      - Backend selection via .claude/.forge.yaml doc_backend.prefer config with fallback chain
+      - "Query flow: resolve backend order, availability check, execute selected path"
+      - "Query output contract: Required documents: prefix with project-root-relative paths, common format across backends"
+      - Query SKILLs are inheritance-type (no fork), with read-only isolation via custom Agent (forge:rules-query-worker)
+      - "Update flow: --backend flag enables direct backend selection, no fallback if specified backend unavailable"
+      - prepare_advisor_index.py wrapper handles dprint formatting and .doc_structure.yaml resolution
+      - "Desired-state sourcing: .doc_structure.yaml determines target set; paths not included are deleted from indexes"
     applicable_tasks:
-      - Backend selection and configuration verification
-      - Document index maintenance planning
-      - Document search wrapper SKILL implementation
-      - Architecture review of document search layer
-      - Backend availability and capability assessment
+      - Document search implementation and backend integration in forge
+      - Index update workflow implementation for rules and specs
+      - Backend availability and fallback selection logic
+      - Document search SKILL wrapper design and transparency testing
+      - Search index maintenance and desired-state synchronization
     keywords:
-      - forge
-      - doc-advisor
-      - doc-db
+      - DES-001
       - query-db-rules
       - query-db-specs
       - update-db-rules
       - update-db-specs
+      - doc-advisor:query-docs
+      - doc-advisor:index-docs
       - backend selection
-      - resolve_backend_order
       - .doc_structure.yaml
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
     title: DES-010 create-* Skills Orchestrator Design
@@ -1434,32 +1437,36 @@ docs:
       - schema design
       - automation
   docs/specs/forge/design/DES-055_review_request_template_design.md:
-    title: DES-055 Review Request Template Design
-    purpose: Defines the design of review request templates using natural language templates for each review pattern, with scripts handling data embedding and validation without containing prose.
+    title: "DES-055: Review Request Template Design"
+    purpose: Specifies design of review request templates for different review types (diff, branch, code, requirements, design, plan, UI/UX, secrets), including placeholder token contract, validation rules, and trust boundary for security masking of sensitive information
     content_details:
-      - "Template pattern structure (8 patterns: diff, branch, code, requirement, design, plan, uxui, secrets)"
-      - Placeholder contract with {{TOKEN}} notation and token definitions (review_type, plugin_root, project_root, etc.)
-      - Placeholder validation rules and fail-closed error handling (token consumption, unknown tokens, newline injection, absolute paths)
-      - "Constraints: scripts must not contain prose, no conditional branching by target axis, no wire protocol in templates"
-      - Template selection logic mapping invocations to templates
-      - Test design covering token substitution, backend neutrality, absolute path resolution, template completeness
-      - "Design rationale: per-pattern templates avoid conditional branching; script responsibility limits; trust boundary for secrets scanning"
-      - "Target specification requirements: active enumeration procedures and negation of diff review for file-targeted templates"
+      - 8 review request template patterns (diff, branch, code, requirement, design, plan, uxui, secrets) stored in plugins/forge/skills/review/templates/
+      - "Core constraints: scripts contain no prose, no condition branching by target axis, backend-neutral without wire protocol"
+      - Template selection logic mapping SKILL invocations to appropriate template files
+      - Placeholder contract using {{TOKEN}} syntax with 12 token types (REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, TARGET_PATHS, FOCUS, SCOPE, SCAN_* for secrets)
+      - Fail-closed validation with 8 checks for undigested tokens, unknown tokens, newlines, path absoluteness, dual target axis, required items, scan results
+      - "Script responsibilities: build_review_request.py for template substitution and validation, analyze_branch_point.py for branch analysis, resolve_targets.py for target validation, scan_secrets.py for security detection"
+      - Test design with 14 verification targets including token replacement, backend neutrality, security masking, and contract tests
+      - Design rationale for template separation, trust boundary placement, directory specification, and target instruction specificity
     applicable_tasks:
-      - Designing review request system architecture
-      - Implementing review template generation scripts
-      - Adding or modifying review patterns
-      - Validating review request template structure and contracts
-      - Integrating new review criteria patterns
+      - Review request template development and maintenance
+      - Review skill feature implementation and enhancement
+      - Security masking and trust boundary design validation
+      - Review criteria and observation instruction writing
+      - Test suite creation for template generation logic
+      - Plugin documentation maintenance and updates
+      - Observation format and contract validation reconciliation
     keywords:
-      - review_request_template
-      - placeholder_substitution
-      - "{{TOKEN}}"
-      - fail_closed_validation
-      - template_pattern
-      - wire_protocol_neutrality
-      - review_criteria
-      - secrets_scanning
+      - review request template
+      - placeholder token contract
+      - template selection
+      - security masking
+      - trust boundary
+      - fail-closed validation
+      - review criteria
+      - secrets detection
+      - plugin documentation
+      - observation instruction
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: DES-061 forge Project Settings File Design
     purpose: Defines the design of a universal settings file (.claude/.forge.yaml) for adjusting forge behavior per project, establishing file placement, structure, reading, and error handling conventions.
@@ -1628,38 +1635,39 @@ docs:
       - semantic choice elimination
       - error guard placement
   docs/specs/forge/requirements/REQ-013_review_policy.md:
-    title: REQ-013 Review Policy
-    purpose: Defines forge review policy focused on documentation compliance and contradiction detection, deferring independent review perspectives to formal rules evolution
+    title: Review Policy Requirements
+    purpose: Defines requirements for restructuring forge review system to prioritize rule-based compliance checking over independent reviewer perspectives, establishing three-tier priority levels for detection
     content_details:
-      - "Document-first philosophy: review validates compliance against documentation; independent perspectives indicate missing rules"
-      - "Three-priority detection: P1 rule compliance, P2 internal contradictions/gaps, P3 unnecessary complexity"
-      - Criteria hold no independent perspectives; all judgment logic moved to principles documents
-      - "Target axes: --diff (uncommitted changes), --branch (since divergence), --files (full review), --dirs (with kind specification)"
-      - "Intervention axes: --interactive (all findings one-by-one), --auto (high-confidence auto-fix, uncertain findings presented)"
-      - "Confidence types: ✅ repair confidence (can execute fix) vs ☑️ finding confidence (observation valid but fix method unclear)"
-      - Optional focus axis for per-request emphasis and scope axis for completion target and intentional exclusions
-      - "Pluggable backend with availability checking: agent-review, msg-review with input/output contracts"
-      - Secrets review as independent parallel flow using deterministic scan plus AI analysis with value masking
-      - Self-verification of findings and independent evaluation by author-separate evaluator
+      - Three-tier priority system (P1 rule compliance, P2 contradiction detection, P3 unnecessary complexity)
+      - Elimination of criteria-specific perspectives and judgment removal from criteria documents
+      - Target scope axis (--diff, --branch, --files, --dirs) with granularity preservation requirement
+      - Interaction axis (--interactive, --auto) with confidence-based automation triggering
+      - Focus axis for request-specific emphasis observations
+      - Scope axis for evaluation criteria and intentional exclusions declaration
+      - Project rules and specs passthrough (--project-rules, --project-specs) to avoid redundant search
+      - Review backend axis enabling multiple implementation options with standard input/output contract
+      - Self-verification and independent evaluation of findings before output
     applicable_tasks:
-      - Requirements authoring for new review flows
-      - Criteria document writing and judgment removal
-      - Principles document expansion with severity catalog
-      - Backend implementation for review executors
-      - Review dependency resolution and template generation
-      - Rule discovery and Issue creation for undocumented findings
-      - Target axis resolution from user input
-      - Result evaluation and finding assessment
-      - Secrets detection and masking
+      - Design and implement forge review API restructuring
+      - Refactor review criteria documents to eliminate independent perspectives
+      - Expand principles documents with severity catalogs and grayzone tolerance ranges
+      - Design and implement review backend abstraction layer with failure/completion semantics
+      - Implement review CLI with target/interaction/focus/scope axes and mutual exclusivity rules
+      - Implement per-finding self-verification protocol (FNC-1321)
+      - Implement dual-stage secrets detection (machine scan + AI verification)
+      - Establish rules gap detection and Issue creation workflow (FNC-1306)
+      - Update existing review backend implementations to new contract
     keywords:
-      - review policy
-      - documentation-first
-      - rule compliance
+      - review_criteria
+      - principles
+      - P1/P2/P3 priority
+      - "--diff/--branch/--files/--dirs"
+      - "--interactive/--auto"
       - review backend
-      - intervention axis
-      - finding confidence
       - severity catalog
-      - secrets review
+      - self-verification
+      - secrets detection
+      - rules gap
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: ADR-061 Codex Wake-up Path Multiplexing
     purpose: Architectural decision on providing push-type wake-up for resident Codex sessions, addressing cmux limitations through app-server path addition

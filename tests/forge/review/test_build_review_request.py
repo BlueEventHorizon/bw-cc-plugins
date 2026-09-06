@@ -712,14 +712,16 @@ class LinkCriteriaCoverageTest(unittest.TestCase):
                 text = (criteria_dir / f"review_criteria_{kind}.md").read_text(encoding="utf-8")
                 self.assertIn("document_style_guide.md", text)
 
-    def test_style_guide_defines_a_severity_catalog_for_references(self):
-        """severity の SoT は criteria ではなく委譲先にある（review_priorities_spec §2.2）。"""
-        text = (
-            build_review_request.plugin_root() / "docs" / "document_style_guide.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("重大度カタログ", text)
+    def test_reference_severity_catalog_lives_in_review_priorities(self):
+        """文書参照の重大度カタログは reviewer が読む review_priorities_spec.md §2.3 にあり、
+        執筆者向けの document_style_guide.md には置かない。"""
+        docs = build_review_request.plugin_root() / "docs"
+        priorities = (docs / "review_priorities_spec.md").read_text(encoding="utf-8")
+        self.assertIn("重大度カタログ（文書参照）", priorities)
         for marker in ("🔴", "🟡", "🟢"):
-            self.assertIn(marker, text)
+            self.assertIn(marker, priorities)
+        style_guide = (docs / "document_style_guide.md").read_text(encoding="utf-8")
+        self.assertNotIn("重大度カタログ", style_guide)
 
 
 class TemplateReferencedDocsExistTest(unittest.TestCase):

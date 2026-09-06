@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-03T06:36:03Z
+  generated_at: 2026-09-06T14:42:29Z
   file_count: 7
 
 docs:
@@ -38,35 +38,40 @@ docs:
       - PASS FAIL
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Establishes document writing rules for consistency across rules, specs, skills, and plugin documentation; covers heading conventions, terminology, structure, and formatting standards.
+    purpose: Establishes consistent documentation standards for style, terminology, structure, formatting, and document type conventions across the project
     content_details:
-      - Heading and tag conventions with MANDATORY/CRITICAL/IMPORTANT tags
-      - Terminology unification and standardized English phrases
-      - Document structure requirements by type (workflow, rules, notes)
-      - Metadata frontmatter format (name, description, applicable_when)
-      - Formatting conventions (bold, backticks, lists, tables)
-      - Document reference notation and markdown links
-      - Document properties and role separation (rules vs specs vs plugins)
-      - Current state documentation principle without migration narratives
-      - Abstract examples and placeholder naming instead of project-specific terms
-      - Scope applicability across rules, specs, and skills directories
+      - Tag placement and spacing rules for [MANDATORY], [CRITICAL], [IMPORTANT] tags on heading lines, with single space before tag
+      - "Heading level standards: level 1 for title, levels 2-4 for sections (not beyond 4)"
+      - Unified terminology standards and English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS)
+      - Long vowel abbreviation rule following JIS Z 8301 (ディレクトリ not ディレクトリー)
+      - "Required sections by document type: Workflow documents, Rule documents, and frontmatter metadata (name, description, user-invocable, allowed-tools)"
+      - "Formatting conventions: bold for keywords, inline code for filenames/commands/variables, lists max 2 levels, tables max 6 columns"
+      - Document reference necessity and notation rules (write only when essential to main claim; follow forge document_style_guide.md §5.1)
+      - "Separation of document types: docs/rules/, docs/specs/, plugins/*/docs/, .claude/skills/, plugins/*/skills/ by purpose and distribution scope"
+      - Placeholder naming conventions (use Foo, Bar, Hoge, Fuga instead of project-specific names; use generic terms like アイテム, カテゴリ instead of Contact, Group)
+      - "Abstract examples requirement: docs/rules/ content uses generic business scenarios and placeholder names, never project-specific proper nouns"
     applicable_tasks:
-      - Document authoring and editing
-      - Document review and consistency checking
-      - Metadata frontmatter creation
-      - Writing SKILL documentation
-      - Project rules and specifications development
+      - Writing project rules and specifications
+      - Creating SKILL documentation
+      - Creating workflow documentation
+      - Performing document review and validation
+      - Establishing project documentation standards
+      - Reviewing terminology consistency across documents
+      - Ensuring formatting compliance
+      - Creating template documents for new rules or specs
+      - Auditing document structure compliance
+      - Training new team members on documentation standards
     keywords:
-      - document-writing-rules
-      - frontmatter
-      - heading-levels
-      - terminology-unification
-      - markdown-formatting
-      - document-structure
-      - MANDATORY
-      - reference-links
-      - tag-placement
-      - scope-applicability
+      - documentation standards
+      - YAML frontmatter
+      - heading hierarchy
+      - terminology standardization
+      - code formatting
+      - document references
+      - project rules
+      - document structure
+      - placeholder naming
+      - formatting conventions
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."
