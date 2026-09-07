@@ -19,7 +19,6 @@ allowed-tools: Agent, Read, Write, Bash
 | 可用性検査   | なし                                            | `available`、不足条件の `missing`、`retains_context: false`     |
 | ラウンド実行 | `review_id`、ラウンド番号、パターン、純粋な本文 | `approved` / `findings` / `failure` と所見、解釈時の `warnings` |
 | 終了通知     | `review_id`                                     | 受理結果                                                        |
-| 履歴復元     | `review_id`                                     | `unsupported` と非永続である旨。履歴は返さない                  |
 
 `failure` を `approved` または空の `findings` に変換してはなりません。別バックエンドへ切り替えてはなりません。
 
@@ -63,7 +62,3 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
 ## 終了通知
 
 `review_id` を受理して成功として直ちに返す no-op です。Agent の探索・停止、履歴保存、追加通信を行いません。
-
-## 履歴復元
-
-履歴復元には `{"status": "unsupported", "reason": "agent-review は非永続バックエンドのため履歴を復元できません"}` を返します。`messages: []` などの空履歴を返してはなりません。同一 `review_id` の継続を偽装せず、本体が新しいレビューとして再実行できるようにします。

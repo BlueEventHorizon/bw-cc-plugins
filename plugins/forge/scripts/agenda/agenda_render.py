@@ -39,21 +39,70 @@ def _escape(value: Any) -> str:
 
 
 def _severity_value(item: dict, severity_field: str | None) -> str:
-    """`config.severity_field` が指すキーの生の値を `item["fields"]` から取り出す。
+    """`config.severity_field` が指すキーの生の値を取り出す。
 
     DES-077 §3.1a・agenda:REQ-019 FNC-009（中立性）: ``severity`` というキー名を
     本モジュールが決め打ちしてはならない。``severity_field`` が未指定、または
     対応する値が存在しない場合は空文字列を返す。エスケープ・フォールバック
     表示（`-` 等）は呼び出し側の責務とする（表示先ごとに異なるため。
     `_severity_badge_html` はバッジ非表示、`_summary_row_html` は `-` 表示）。
+
+    探索順は ``item["fields"]`` の中が先、無ければ項目の直下（DES-080 §4.1）。
+    呼び出し側が値を作り替えずに渡すと重大度は項目の直下に来るため、``fields``
+    だけを見ていると到達できない。``fields`` を先に見るのは、変更前に保存された
+    記録が読めなくなる経路を作らないためである。値が「無い」と判定する条件
+    （空文字・``0``・``false`` を無いとみなす扱い）は両方の探索先で同じとし、
+    ``fields`` 側が「無い」なら直下を見る。
     """
     if not severity_field:
         return ""
     fields = item.get("fields")
-    if not isinstance(fields, dict):
-        return ""
-    value = fields.get(severity_field)
+    if isinstance(fields, dict):
+        value = fields.get(severity_field)
+        if value:
+            return str(value)
+    value = item.get(severity_field)
     return str(value) if value else ""
+
+
+def _display_title(item: dict) -> str:
+    """一覧行・項目見出しに出す名前を返す（DES-080 §4.2）。
+
+    ``title`` は必須ではない。空であれば ``id`` を表示に用い、項目を識別できない
+    空欄を出さない。エスケープは呼び出し側が行う（他の導出ヘルパーと契約を揃える）。
+    """
+    title = item.get("title")
+    if title:
+        return str(title)
+    item_id = item.get("id")
+    return str(item_id) if item_id else ""
+
+
+def _is_settled(item: dict) -> bool:
+    """項目が決着しているかどうかを返す（DES-080 §4.4）。
+
+    決着は ``decision.by`` / ``decision.outcome`` / ``decision.reason`` の 3 値が
+    すべて非空のときとする。3 値は 1 つずつ加えられるため、揃うまでの間は部分的な
+    ``decision`` が保存される。この状態は記録側では未決着（残件に数える）であり、
+    提示もそれに揃える（agenda:REQ-021 FNC-003「提示の内容と記録の内容が食い違わない」）。
+
+    判定は本モジュール内で自前に行い、``agenda_schema`` へ依存しない。表示層は
+    ``agenda.json`` の契約だけに依存する（DES-075 §3.1）。記録側の述語との一致は
+    統合テストが固定する。
+    """
+    decision = item.get("decision")
+    if not isinstance(decision, dict):
+        return False
+    return all(_is_non_empty(decision.get(key)) for key in ("by", "outcome", "reason"))
+
+
+def _is_non_empty(value: object) -> bool:
+    """値が非空の文字列であるかを返す。
+
+    記録側（``agenda_schema``）が受理条件で使う非空判定と同じ規則である。
+    真偽値評価で済ませると、空白のみの本文や非文字列値で記録側と判定が割れる。
+    """
+    return isinstance(value, str) and value.strip() != ""
 
 
 def _severity_badge_html(item: dict, severity_field: str | None) -> str:
@@ -75,17 +124,17 @@ def _derive_status_label(item: dict) -> str:
     ``background``・``essence`` の記入有無だけを見る（独立した状態フィールドは
     持たない）:
 
-    - ``decision`` が存在する → 「決着または棄却」。``decision.outcome`` の
-      内容をそのまま表示する（呼び出し側の自由記述。agenda 機構は意味を
-      解釈しない）
-    - ``decision`` が無く、``background``・``essence`` のいずれかが非空 →
-      「進行中」
+    - 決着している（``decision`` の 3 値が揃っている。DES-080 §4.4） →
+      「決着または棄却」。``decision.outcome`` の内容をそのまま表示する
+      （呼び出し側の自由記述。agenda 機構は意味を解釈しない）
+    - 決着しておらず、``background``・``essence`` のいずれかが非空 → 「進行中」
     - 両方空 → 「未着手」
+
+    ``decision`` が部分的に保存されているだけの項目は未決着として扱う
+    （DES-080 §4.4）。
     """
-    decision = item.get("decision")
-    if isinstance(decision, dict):
-        outcome = decision.get("outcome")
-        return outcome if outcome else "(未定)"
+    if _is_settled(item):
+        return str(item["decision"]["outcome"])
     if item.get("background") or item.get("essence"):
         return "進行中"
     return "未着手"
@@ -94,40 +143,32 @@ def _derive_status_label(item: dict) -> str:
 def _decision_text(item: dict) -> str:
     """項目節の「決着」行に表示するテキストを返す。
 
-    ``decision``（DES-075 §4 の ``items[].decision``）が記入されていれば
-    「結論（理由）」の形にまとめる。未記入（``None``）の場合は決着していない
-    ことが分かる文言を返す（軽微な表示詳細。DES-077 §3 のテンプレートは
-    「決着: ...」という記入欄であることのみを示し、未記入時の具体的な文言は
-    定めていないため、ここで推測して補う）。
+    決着している（``decision`` の 3 値が揃っている。DES-080 §4.4）場合に
+    「結論（理由）」の形にまとめる。決着していない場合は決着していないことが
+    分かる文言を返す（軽微な表示詳細。DES-077 §3 のテンプレートは「決着: ...」
+    という記入欄であることのみを示し、未決着時の具体的な文言は定めていないため、
+    ここで推測して補う）。
     """
-    decision = item.get("decision")
-    if not isinstance(decision, dict):
+    if not _is_settled(item):
         return "(未定)"
-    outcome = decision.get("outcome")
-    reason = decision.get("reason")
-    if not outcome and not reason:
-        return "(未定)"
-    parts = [p for p in (outcome, reason) if p]
-    return "（".join(parts) + "）" if len(parts) > 1 else (parts[0] if parts else "(未定)")
+    decision = item["decision"]
+    return f"{decision['outcome']}（{decision['reason']}）"
 
 
 def _result_summary(item: dict) -> str:
     """アジェンダ表の「結果・課題」列に表示する短い要約を、raw のまま返す。
 
-    ``decision`` が記入済みなら outcome を、未記入なら「未着手」を意味する
-    プレースホルダを返す（軽微な表示詳細。§3 のテンプレートは列の存在のみを
-    定め、内容の導出方法は定めていないため、DES-075 §4 の既存フィールドから
-    妥当な範囲で推測する）。**エスケープしない**——他の導出ヘルパー
-    （`_derive_status_label`/`_decision_text`）と契約を揃え、エスケープは
-    呼び出し側（`_summary_row_html`）が一律に行う。
+    決着している（``decision`` の 3 値が揃っている。DES-080 §4.4）なら
+    「結論: 理由」を、そうでなければプレースホルダを返す（軽微な表示詳細。§3 の
+    テンプレートは列の存在のみを定め、内容の導出方法は定めていないため、
+    DES-075 §4 の既存フィールドから妥当な範囲で推測する）。**エスケープしない**
+    ——他の導出ヘルパー（`_derive_status_label`/`_decision_text`）と契約を揃え、
+    エスケープは呼び出し側（`_summary_row_html`）が一律に行う。
     """
-    decision = item.get("decision")
-    if isinstance(decision, dict) and decision.get("outcome"):
-        reason = decision.get("reason")
-        if reason:
-            return f"{decision['outcome']}: {reason}"
-        return decision["outcome"]
-    return "-"
+    if not _is_settled(item):
+        return "-"
+    decision = item["decision"]
+    return f"{decision['outcome']}: {decision['reason']}"
 
 
 def _is_changed(item: dict) -> bool:
@@ -139,7 +180,7 @@ def _is_changed(item: dict) -> bool:
 def _summary_row_html(item: dict, severity_field: str | None) -> str:
     """`#agenda-summary` テーブルの 1 行分の HTML を返す（DES-077 §3 FNC-001）。"""
     item_id = _escape(item.get("id"))
-    title = _escape(item.get("title"))
+    title = _escape(_display_title(item))
     status = _escape(_derive_status_label(item))
     severity_value = _escape(_severity_value(item, severity_field))
     severity_cell = severity_value or "-"
@@ -168,10 +209,12 @@ def _item_section_html(item: dict, severity_field: str | None) -> str:
 
     問題（`problem`）と推奨（`recommendation`）は任意フィールドであり、
     記入があるときだけ行を出す（空のラベルチップを並べない。DES-077 §3）。
+
+    `title` は必須ではないため、空であれば見出しにも `id` を出す（DES-080 §4.2）。
     """
     item_id_raw = item.get("id")
     item_id = _escape(item_id_raw)
-    title = _escape(item.get("title"))
+    title = _escape(_display_title(item))
     background = _escape(item.get("background"))
     essence = _escape(item.get("essence"))
     decision_dd = _decision_dd_html(item)

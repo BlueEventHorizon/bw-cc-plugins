@@ -257,9 +257,9 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **候補 JSON の組み立てと書き込み**:
 
-1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` の 4 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` の 3 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
-3. **生成 script を 1 回実行する**。script が構造検証（4 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
+3. **生成 script を 1 回実行する**。script が構造検証（3 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
    ```bash
    python3 "${CLAUDE_SKILL_DIR}/scripts/write_plan.py" \
@@ -278,7 +278,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 ### 4.4 完全性チェック
 
-計画書のスキーマ検査（4 キー構成・`tasks[]` 必須フィールド・enum 値）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
+計画書のスキーマ検査（3 キー構成・`tasks[]` 必須フィールド・enum 値）は 4.3 の script が行うため、AI は以下の**計画品質検査**（意味的な妥当性）のみを確認する:
 
 - [ ] すべての `tasks[].required_reading` に `{output_dir}/{feature}_strategy.md` が含まれている
 - [ ] 実装戦略のフェーズ分割がタスクの優先度に反映されているか

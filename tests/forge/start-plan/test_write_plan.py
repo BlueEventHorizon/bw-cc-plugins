@@ -44,7 +44,6 @@ def valid_plan_candidate(**overrides):
                 "required_reading": [],
             }
         ],
-        "revision_history": [],
     }
     candidate.update(overrides)
     return candidate
@@ -95,7 +94,7 @@ class RunCliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             output_path = Path(tmp) / "foo_plan.json"
             broken = valid_plan_candidate()
-            del broken["revision_history"]
+            del broken["design_traceability"]
             input_path = self._write_input("test_write_plan_invalid.json", broken)
             try:
                 result = self._run(str(input_path.relative_to(REPO_ROOT)), output_path)

@@ -49,7 +49,6 @@ class UpdatePlanStatusFunctionTest(unittest.TestCase):
             "requirements_traceability": [],
             "design_traceability": [],
             "tasks": [_task("TASK-001"), _task("TASK-002")],
-            "revision_history": [],
         }
         updated, errors, count = update_plan_status_module.update_plan_status(
             plan, ["TASK-001"]
@@ -76,7 +75,6 @@ class UpdatePlanStatusFunctionTest(unittest.TestCase):
                 {"design_id": "DES-001", "title": "x", "requirement_ids": ["REQ-001"], "task_ids": ["TASK-001", "TASK-002"]}
             ],
             "tasks": [_task("TASK-001"), _task("TASK-002", status="completed")],
-            "revision_history": [],
         }
         updated, errors, count = update_plan_status_module.update_plan_status(
             plan, ["TASK-001"]
@@ -93,7 +91,6 @@ class UpdatePlanStatusFunctionTest(unittest.TestCase):
                 {"design_id": "DES-001", "title": "x", "requirement_ids": ["REQ-001"], "task_ids": ["TASK-001", "TASK-002"]}
             ],
             "tasks": [_task("TASK-001"), _task("TASK-002")],
-            "revision_history": [],
         }
         updated, errors, count = update_plan_status_module.update_plan_status(
             plan, ["TASK-001"]
@@ -106,7 +103,6 @@ class UpdatePlanStatusFunctionTest(unittest.TestCase):
             "requirements_traceability": [],
             "design_traceability": [],
             "tasks": [_task("TASK-001", status="completed")],
-            "revision_history": [],
         }
         updated, errors, count = update_plan_status_module.update_plan_status(
             plan, ["TASK-001"]
@@ -139,7 +135,6 @@ class RunCliTest(unittest.TestCase):
                         "requirements_traceability": [],
                         "design_traceability": [],
                         "tasks": [_task("TASK-001")],
-                        "revision_history": [],
                     }
                 ),
                 encoding="utf-8",

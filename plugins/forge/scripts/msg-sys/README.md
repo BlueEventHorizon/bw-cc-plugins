@@ -4,7 +4,7 @@ Claude / Codex 間のメッセージング用スクリプト群（`send.py` / `i
 
 ## フック登録
 
-`.claude/settings.json` / `.codex/hooks.json` に、`git rev-parse --show-toplevel` でリポジトリルートを動的解決する形で登録する（session cwd がプロジェクトルートと一致する保証はなく、サブディレクトリから起動した場合は相対パス・cwd依存の解決が失敗するため。DES-034 §7）:
+`.claude/settings.json` / `.codex/hooks.json` に、`git rev-parse --show-toplevel` でリポジトリルートを動的解決する形で登録する（session cwd がプロジェクトルートと一致する保証はなく、サブディレクトリから起動した場合は相対パス・cwd依存の解決が失敗するため）:
 
 ```
 FORGE_MSG_PROJECT_ROOT="$(git rev-parse --show-toplevel)" bash "$(git rev-parse --show-toplevel)/plugins/forge/scripts/msg-sys/hooks/codex-check-inbox.sh"
@@ -24,4 +24,4 @@ Codex 内でフック定義を確認し、`codex-check-inbox.sh` の Stop hook �
 
 ## 注意: `FORGE_MSG_MAX_ROUND_TRIPS` 未設定時の挙動
 
-`FORGE_MSG_MAX_ROUND_TRIPS` を設定しないままフックを登録すると、登録直後から**常に**人間通知モードへ降格し、自動継続（往復チェーンの自動継続）は一切発生しない（未設定＝往復0回時点で即座に上限到達扱いになるフェイルセーフ）。自動継続を有効にするには、登録前後で本環境変数に業務上適切な往復回数を設定すること（詳細は DES-034 §8 参照）。
+`FORGE_MSG_MAX_ROUND_TRIPS` を設定しないままフックを登録すると、登録直後から**常に**人間通知モードへ降格し、自動継続（往復チェーンの自動継続）は一切発生しない（未設定＝往復0回時点で即座に上限到達扱いになるフェイルセーフ）。自動継続を有効にするには、登録前後で本環境変数に業務上適切な往復回数を設定すること。

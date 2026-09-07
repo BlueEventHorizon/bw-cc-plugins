@@ -327,6 +327,202 @@ class SeverityBadgeTest(unittest.TestCase):
         self.assertIn('data-severity="confirmed"', html_doc)
 
 
+class SeverityLookupTest(unittest.TestCase):
+    """DES-080 §4.1: 重大度は `fields` の中を先に、無ければ項目の直下を探索する。"""
+
+    def _section(self, html_doc: str, item_id: str) -> str:
+        return html_doc.split(f'<section id="item-{item_id}"')[1].split("<section")[0]
+
+    def test_badge_rendered_when_severity_is_inside_fields(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-09-05T00:00:00"
+        )
+        self.assertIn('data-severity="critical"', self._section(html_doc, "01"))
+
+    def test_badge_rendered_when_severity_is_directly_on_item(self):
+        # wrapper が config.item_fields を空にするため、重大度は項目の直下に来る
+        agenda = _fixture_agenda()
+        agenda["config"]["item_fields"] = []
+        agenda["items"][0]["fields"] = {}
+        agenda["items"][0]["severity"] = "major"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn('data-severity="major"', self._section(html_doc, "01"))
+
+    def test_item_level_value_is_used_when_fields_value_is_empty(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["fields"] = {"severity": ""}
+        agenda["items"][0]["severity"] = "minor"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn('data-severity="minor"', self._section(html_doc, "01"))
+
+    def test_fields_value_wins_over_item_level_value(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["severity"] = "minor"
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        section = self._section(html_doc, "01")
+        self.assertIn('data-severity="critical"', section)
+        self.assertNotIn('data-severity="minor"', section)
+
+    def test_no_badge_when_neither_fields_nor_item_has_the_value(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["fields"] = {}
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertNotIn("severity-badge", self._section(html_doc, "01"))
+
+    def test_item_level_value_is_escaped(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["fields"] = {}
+        agenda["items"][0]["severity"] = '"><img src=x>'
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertNotIn('"><img src=x>', html_doc)
+
+
+class TitleFallbackTest(unittest.TestCase):
+    """DES-080 §4.2: `title` は必須ではなく、空なら一覧行・見出しに `id` を出す。"""
+
+    def test_summary_row_shows_id_when_title_is_empty(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["title"] = ""
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        table = html_doc.split('<table id="agenda-summary">')[1].split("</table>")[0]
+        self.assertIn("<td>02</td><td>02</td>", table)
+
+    def test_summary_row_shows_id_when_title_key_is_absent(self):
+        agenda = _fixture_agenda()
+        del agenda["items"][1]["title"]
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        table = html_doc.split('<table id="agenda-summary">')[1].split("</table>")[0]
+        self.assertIn("<td>02</td><td>02</td>", table)
+
+    def test_item_heading_shows_id_when_title_is_empty(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["title"] = ""
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        section = html_doc.split('<section id="item-02"')[1].split("<section")[0]
+        self.assertIn('<span class="item-no">[02]</span>02', section)
+
+    def test_title_is_kept_when_present(self):
+        html_doc = agenda_render.render_agenda_html(
+            _fixture_agenda(), generated_at="2026-09-05T00:00:00"
+        )
+        self.assertIn('<span class="item-no">[02]</span>第二項目', html_doc)
+
+
+class SettlementJudgmentTest(unittest.TestCase):
+    """DES-080 §4.4: 決着は decision.by / outcome / reason の 3 値そろい。"""
+
+    def _summary_row(self, html_doc: str, item_id: str) -> str:
+        table = html_doc.split('<table id="agenda-summary">')[1].split("</table>")[0]
+        for row in table.split("<tr>"):
+            if f"<td>{item_id}</td>" in row:
+                return row
+        self.fail(f"item {item_id} の行が見つからない")
+
+    def _section(self, html_doc: str, item_id: str) -> str:
+        return html_doc.split(f'<section id="item-{item_id}"')[1].split("<section")[0]
+
+    def _render_with_decision(self, decision: dict | None) -> str:
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = "背景"
+        agenda["items"][1]["essence"] = "本質"
+        agenda["items"][1]["decision"] = decision
+        return agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+
+    def test_only_by_is_undecided(self):
+        html_doc = self._render_with_decision({"by": "human"})
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_by_and_outcome_is_undecided(self):
+        html_doc = self._render_with_decision({"by": "human", "outcome": "adopt"})
+        row = self._summary_row(html_doc, "02")
+        self.assertIn("進行中", row)
+        self.assertNotIn("adopt", row)
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_outcome_and_reason_without_by_is_undecided(self):
+        html_doc = self._render_with_decision({"outcome": "adopt", "reason": "妥当"})
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_three_values_are_settled(self):
+        html_doc = self._render_with_decision(
+            {"by": "human", "outcome": "adopt", "reason": "妥当"}
+        )
+        row = self._summary_row(html_doc, "02")
+        self.assertIn("adopt", row)
+        self.assertIn("adopt: 妥当", row)
+        section = self._section(html_doc, "02")
+        self.assertIn("adopt（妥当）", section)
+        self.assertNotIn("undecided", section)
+
+    def test_empty_string_in_one_of_three_values_is_undecided(self):
+        html_doc = self._render_with_decision(
+            {"by": "human", "outcome": "adopt", "reason": ""}
+        )
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_whitespace_only_value_is_undecided(self):
+        """記録側（agenda_schema）は空白のみを空として扱う。提示もそれに揃える。"""
+        html_doc = self._render_with_decision(
+            {"by": "human", "outcome": "adopt", "reason": "   \n  "}
+        )
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_non_string_value_is_undecided(self):
+        html_doc = self._render_with_decision({"by": "human", "outcome": "adopt", "reason": 1})
+        self.assertIn("進行中", self._summary_row(html_doc, "02"))
+        self.assertIn('<span class="undecided">(未定)</span>', self._section(html_doc, "02"))
+
+    def test_partial_decision_without_background_and_essence_is_not_started(self):
+        agenda = _fixture_agenda()
+        agenda["items"][1]["background"] = ""
+        agenda["items"][1]["essence"] = ""
+        agenda["items"][1]["decision"] = {"by": "human"}
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn("未着手", self._summary_row(html_doc, "02"))
+
+
+class UnknownKeysTest(unittest.TestCase):
+    """DES-080 §2.4・REQ-022 FNC-003: agenda が知らないキーが保存されていても生成できる。"""
+
+    def test_render_succeeds_with_unknown_keys_on_item(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0].update(
+            {
+                "text": "所見の本文",
+                "location": "plugins/forge/x.py:10",
+                "evaluation": {"confidence": "high", "labels": ["a", "b"]},
+                "suggested_fix": None,
+            }
+        )
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn('id="item-01"', html_doc)
+
+    def test_render_succeeds_with_unknown_keys_on_record_root(self):
+        agenda = _fixture_agenda(origin="review", extra_metadata={"round": 1})
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn('id="item-01"', html_doc)
+
+
+class StructuralJudgmentUnrecordedTest(unittest.TestCase):
+    """DES-080 §2.1: `start` 直後は構造判断が未記録。その記録でも生成が失敗しない。"""
+
+    def test_render_succeeds_when_structural_judgment_note_is_none(self):
+        agenda = _fixture_agenda()
+        agenda["structural_judgment"] = {"recorded": False, "note": None}
+        html_doc = agenda_render.render_agenda_html(agenda, generated_at="2026-09-05T00:00:00")
+        self.assertIn('id="item-01"', html_doc)
+
+    def test_state_js_generation_is_unaffected_by_unrecorded_structural_judgment(self):
+        agenda = _fixture_agenda()
+        agenda["structural_judgment"] = {"recorded": False, "note": None}
+        state_js = agenda_render.render_agenda_state_js(agenda.get("content_version"))
+        self.assertEqual(state_js, 'window.AGENDA_STATE = {"contentVersion": 3};\n')
+
+
 class TypeValidationTest(unittest.TestCase):
     """config/items の型検証（不正な型で ValueError が送出されること。agenda:REQ-019 NFR-006）。"""
 

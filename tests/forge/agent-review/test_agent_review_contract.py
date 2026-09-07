@@ -54,8 +54,8 @@ class AgentReviewContractTest(unittest.TestCase):
             self.assertIn(judgment, self.skill)
 
     def test_backend_is_stateless_and_has_no_external_transport(self):
-        self.assertIn("非永続", self.skill)
-        self.assertIn('"status": "unsupported"', self.skill)
+        self.assertIn("`retains_context` は常に `false` です", self.skill)
+        self.assertIn("前ラウンドの transcript を渡しません", self.skill)
         for forbidden in ("msg-sys", "cmux", "filter_review_history.py", "DB レコード"):
             self.assertNotIn(forbidden, self.skill)
 

@@ -5,38 +5,42 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-06T14:43:19Z
-  file_count: 40
+  generated_at: 2026-09-07T05:33:39Z
+  file_count: 41
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines criteria and procedures for managing parallel feature development when adding functionality to existing projects, covering applicability conditions, document constraints, and merge procedures.
+    purpose: Defines judgment criteria and procedures for additive development workflow when adding features to existing projects, including feature namespace requirements and merge strategies
     content_details:
-      - Feature namespace concept - distinguishing between namespace identifier and feature name
-      - Applicability conditions - when to use differential development based on document changes
-      - Specification conflict resolution - priority rules giving new requirements precedence over old specs
-      - Implementation constraints - guidelines for not rewriting old spec documents during feature implementation
-      - Merge definition - process for synchronizing new and old specifications after implementation completion
-      - Scope judgment for merge - rules for moving content vs. keeping separate based on semantic scope
-      - Merge procedures - step-by-step process for conflict resolution, content sorting, and cleanup
+      - Feature namespace concept and naming conventions
+      - Application conditions for using feature namespace
+      - Priority hierarchy of new vs existing specifications
+      - Implementation period constraints (no modification to old specs)
+      - Implementation isolation using git worktree
+      - Merge definition as meaning unification vs physical consolidation
+      - Scope-based consolidation criteria
+      - Merge procedure steps and conflict resolution
+      - Temporary feature frontmatter format definition
+      - Post-merge retention vs deletion rules
     applicable_tasks:
-      - Feature namespace design and initialization
-      - Differential development workflow planning
-      - Specification conflict resolution during parallel development
-      - Merge planning for additive and base specifications
-      - Document management during implementation phase
-      - Additive development lifecycle governance
+      - Feature planning for new requirement addition
+      - Specification merge and conflict resolution planning
+      - Implementation scope determination for additive features
+      - Workspace isolation strategy during implementation
+      - Post-merge specification restructuring
+      - Additive feature document management
     keywords:
-      - feature namespace
       - additive development
-      - differential development
-      - specification merge
-      - conflict resolution
-      - scope judgment
-      - applicability conditions
+      - feature namespace
+      - git worktree
       - frontmatter
-      - parallel feature management
+      - merge
+      - specification conflict
+      - scope consolidation
+      - feature_type
+      - temporary feature
+      - requirements_traceability
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format
     purpose: Defines the default generic format for Architecture Decision Records used when project-specific ADR format is not found
@@ -126,63 +130,61 @@ docs:
       - option presentation
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
-    purpose: Defines standards, check order, and decision rules for code reviews; delegates severity judgments to project-specific rules and principles.
+    purpose: Defines code review criteria with priority-ordered checks (P1 rule match, P2 contradiction detection, P3 complexity), SSOT references, and decision rules for fix/create_issue/skip recommendations
     content_details:
-      - SSOT reference with P1/P2/P3 priority structure and delegate documents
-      - Check order sequence for rule matching, contradiction detection, and complexity assessment
-      - "Recommendation types: fix, create_issue, skip with specific adoption conditions"
-      - "Create_issue conditions: three mandatory criteria for issue creation"
-      - Fallback mechanism to forge built-in rules when project rules incomplete
-      - Contradiction detection between design specifications and target implementation
-      - Unnecessary complexity judgment using anti-patterns reference
+      - P1 rule matching against project-specific and forge-internal rules via query-db-rules
+      - P2 contradiction detection between design specs and target code
+      - P3 unnecessary complexity judgment using anti-patterns catalog
+      - "Priority-ordered check sequence: rules → design specs → anti-patterns"
+      - "Decision rules classification: fix (limited side effects), create_issue (three conditions), skip (false positive/allowable)"
     applicable_tasks:
-      - Code review execution and assessment
-      - Code quality assessment
-      - Severity determination
-      - Anti-pattern detection
-      - Rule compliance verification
-      - Design specification consistency checking
+      - Code review recommendation classification
+      - Rule compliance verification for implementation
+      - Design specification contradiction detection
+      - Code complexity and anti-pattern assessment
+      - Review issue creation decision
     keywords:
-      - code review
-      - recommendation
-      - severity
       - SSOT
-      - priority
+      - query-db-rules
+      - P1/P2/P3 priority levels
+      - recommendation types
+      - contradiction detection
       - anti-patterns
-      - principles
+      - severity catalog
+      - rule compliance
       - design specification
+      - review criteria
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Defines the prioritized criteria and procedures for reviewing design documents, including SSOT reference hierarchy, check order by priority level, and recommendation judgment rules.
+    purpose: Defines design review criteria with priority-ordered checks (P1 rule match including frontmatter/references/ADR, P2 contradiction detection with additive feature exemptions, P3 complexity), SSOT references, and decision rules
     content_details:
-      - SSOT reference hierarchy with P1/P2/P3 priority levels
-      - Spec-Design boundary check via spec_design_boundary_spec.md
-      - Design principles verification from design_principles_spec.md
-      - Additive feature temporary-feature frontmatter validation
-      - Document reference notation and existence verification
-      - ADR format and structure conformance (Context, Decision, Alternatives)
-      - Internal contradiction detection across design, requirements, and related documents
-      - Additive feature exclusion rules for diff declaration
-      - Unnecessary complexity detection via spec_priorities_spec.md
-      - Recommendation judgment rules (fix, create_issue, skip)
+      - P1 rule matching against design principles, boundaries, formats, and project-specific architecture rules via query-db-rules
+      - "Frontmatter verification: feature_type: temporary-feature required for additive feature designs"
+      - "Document reference validation: link syntax, heading anchor existence, and broken reference detection per document_style_guide"
+      - "ADR (Architecture Decision Record) operation checks: required sections (context/decision/alternatives), section structure (§1-4), expiration markers and coverage"
+      - "P2 contradiction detection with additive feature exemption: feature_type: temporary-feature treated as intentional difference, not contradiction"
+      - "doc_status handling: not_implemented exemption for declared dependencies, draft marking for incomplete reviews"
+      - P3 unnecessary complexity judgment using spec_priorities_spec guidelines (no direct numerification, inverted patterns)
+      - "Decision rules classification: fix (limited side effects), create_issue (three conditions), skip (false positive/allowable)"
     applicable_tasks:
-      - Design review implementation
-      - Design criteria verification
-      - ADR change tracking for design decisions
-      - Document reference validation
-      - Temporary feature frontmatter verification
-      - P1/P2/P3 rule compliance checking
-      - Design-spec contradiction detection
-      - Feature complexity assessment
+      - Design document review recommendation generation
+      - Design specification rule compliance verification
+      - ADR structure and coverage validation
+      - Design specification contradiction detection
+      - Document reference and frontmatter integrity checking
+      - Additive feature design validation
+      - Design complexity assessment
     keywords:
       - design review criteria
-      - SSOT hierarchy
-      - P1 P2 P3 priority
-      - temporary-feature frontmatter
-      - ADR format
-      - design-spec boundary
-      - contradiction detection
+      - frontmatter validation
+      - "feature_type: temporary-feature"
+      - ADR operation
       - additive development
+      - design specification
+      - SSOT
+      - P1/P2/P3 priority
+      - document references
+      - contradiction detection
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
     purpose: Defines the criteria and procedures for general document reviews, covering SSOT reference hierarchy, document style verification, consistency checks, and recommendation judgment rules.
@@ -435,6 +437,39 @@ docs:
       - Reference
       - authority source
       - scope
+  plugins/forge/docs/deterministic_generation_spec.md:
+    title: Deterministic Generation Should Not Be Done by AI
+    purpose: Defines the principle that deterministically-created artifacts (data structures, file placement, identifiers) should be generated by deterministic systems rather than AI to prevent error chains from generation through silent data loss
+    content_details:
+      - "Core principle: deterministic systems generate deterministic artifacts, AI decides content only"
+      - Definition and examples of deterministic execution systems
+      - Error chain analysis (generation → validation → allowlist → silent loss)
+      - Why deterministic systems prevent error chains
+      - Unnecessary artifacts when systems handle generation (validation, allowlists, placement mistakes)
+      - Applicable scope for deterministic generation
+      - Non-applicable scenarios (natural language, progress management, content decisions)
+      - "Exception: validation at AI response reception boundary"
+      - Single validation point principle
+      - Severity catalog for violation patterns
+    applicable_tasks:
+      - Data structure and API design review
+      - File naming and path strategy design
+      - Identifier sequencing system design
+      - Validation strategy determination for workflows
+      - Data loss risk assessment
+      - Allowlist vs deterministic trade-off analysis
+      - Content vs form separation in generation
+    keywords:
+      - deterministic generation
+      - deterministic system
+      - allowlist
+      - schema validation
+      - silent data loss
+      - artifact generation
+      - file placement
+      - identifier sequencing
+      - enumeration
+      - validation boundary
   plugins/forge/docs/doc_structure_format.md:
     title: .doc_structure.yaml Format Specification
     purpose: Defines the configuration format and schema for declaring document placement, categorization, and structure that forge and doc-advisor use for document resolution and indexing
@@ -551,38 +586,38 @@ docs:
       - differential feature
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Document Creation Principles
-    purpose: Defines principles and rules for planning implementation tasks in JSON format, including task granularity criteria, dependency management, acceptance criteria norms, and traceability to requirements and design.
+    purpose: Defines structural rules and task design principles for plan documents, including composition rules, task granularity, traceability matrices, testing requirements, acceptance criteria standards, and dependency management with severity classifications
     content_details:
-      - "4-section JSON structure: requirements_traceability, design_traceability, tasks, revision_history (no other keys allowed)"
-      - "Task granularity: single Agent execution unit, 5-10 action items, build/test success at completion, single file or tightly related files"
-      - "Required reading field: project-root-relative paths in JSON array format; mandatory for design/spec references; strategy document listed for all tasks"
-      - "Task grouping rules: when build fails between tasks, group them with group_id and build_check fields (per_task / skip / on_group_complete)"
-      - "Implicit dependency patterns: frontend-to-API, integration test-to-all features, migration-to-schema, deploy-to-build/test (marked critical/major severity)"
-      - "Acceptance criteria norms: Yes/No judging possible criteria required; no subjective expressions; major features must have test tasks planned"
-      - "Test task mandatory requirements: major feature implementation requires unit or integration test task; test task grouped or placed immediately after implementation"
-      - "Traceability requirements: all requirement IDs in requirements_traceability with corresponding task IDs; exclusion reasons for missing tasks"
-      - "File naming convention: {feature}_plan.json (JSON format only)"
-      - "Minimum viable validation unit concept: early verification ensures defects detected at first-viable-point, not deferred to group completion"
+      - JSON structure with 3 required sections (requirements_traceability, design_traceability, tasks)
+      - Design_traceability requirement_ids field for requirement status propagation path
+      - Task granularity standards (5-10 items per task, 1 Agent execution unit, build/test success requirement)
+      - Content description rules (design section reference level, no implementation detail duplication)
+      - Required_reading field specification (project-root paths, no glob/ID/ambiguous references)
+      - Task grouping with group_id and build_check fields (per_task/skip/on_group_complete)
+      - Prohibition of temporal compatibility code in group task transitions
+      - Early validation conditions and minimum viable testing unit criteria
+      - "Implicit dependency detection patterns (critical: frontend/API, integration testing, migration)"
+      - Acceptance criteria standards (determinable Yes/No, rejection of subjective expressions)
     applicable_tasks:
-      - Plan document creation for features
-      - Task granularity review and refinement
-      - Dependency relationship analysis and validation
-      - Acceptance criteria definition
-      - Test plan verification
-      - Traceability matrix creation and validation
-      - Task grouping design when builds fail mid-sequence
-      - Implicit dependency detection review
+      - Plan document structure and composition design
+      - Task breakdown and granularity determination
+      - Requirement-task traceability matrix creation
+      - Design-requirement traceability matrix building
+      - Task group and build_check configuration
+      - Task dependency analysis and cycle detection
+      - Acceptance criteria and test planning
+      - Test task integration strategy
     keywords:
-      - plan principles
+      - plan document
+      - requirements_traceability
+      - design_traceability
       - task granularity
-      - dependency management
+      - build_check
+      - group_id
       - acceptance criteria
-      - traceability matrix
-      - test task mandatory
-      - required reading
-      - task grouping
-      - build check
+      - required_reading
       - implicit dependency
+      - dependency management
   plugins/forge/docs/requirement_format.md:
     title: Default Requirement Definition Format
     purpose: Specifies the standard format and structure for requirement definition documents, including frontmatter rules for additive features and body sections
@@ -606,32 +641,37 @@ docs:
       - specification-template
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
-    purpose: Defines review perspective priority system (P1/P2/P3), the relationship between priority and severity axes, SSOT delegation to principles, fixed structure for review_criteria_*.md, exclusion regulations, and conditions for create_issue recommendations.
+    purpose: Defines the priority system (P1/P2/P3) for review perspectives and establishes the relationship between priority and severity, with delegated judgment to principles documents.
     content_details:
-      - "Priority system (P1: Rule compliance, P2: Contradiction/discrepancy, P3: Unnecessary complexity)"
-      - Relationship between priority and severity as independent axes
-      - Severity SoT located in delegate principles documents, not in criteria
-      - Severity catalog for document reference violations from document_style_guide §5/§8 (7 categories)
-      - Exclusion regulations (P2 coverage limits, P3 subjective evaluation exclusions, perspective prohibition)
-      - Proportionality check for fix decisions using scope_proportionality_spec.md §4
-      - Abolished sections (fixed perspectives, severity declarations, grayzone judgments)
-      - Fixed 3-section structure for review_criteria_*.md (SSOT references, Check order, Decision rules)
-      - Three conditions for create_issue recommendation (no applicable rule, recurrence/objectivity, explicit rulification)
-      - Failed discard reason exclusion when premise no longer holds (ADR staleness detection)
+      - "Priority system: P1 (rule compliance), P2 (contradiction/inconsistency), P3 (unnecessary complexity)"
+      - Priority and severity as independent dimensions with relationship mapping
+      - Severity single source of truth delegated to principles documents
+      - Severity catalog for document reference violations
+      - "Exclusion rules: P2 excludes incompleteness, P3 excludes subjective evaluation"
+      - Prohibition of adding custom perspectives to criteria
+      - Proportionality check for fix decisions referencing scope_proportionality_spec
+      - "Criteria structure: no severity or gray zone judgment declaration"
+      - Three conditions for create_issue recommendation (no applicable rule, recurrence or objectivity, explicitly articulable granularity)
+      - Fixed 3-section structure for review_criteria files (SSOT reference, check order, decision rules)
     applicable_tasks:
-      - Implementing /forge:review SKILL with priority logic
-      - Creating and reviewing review_criteria_*.md files
-      - Evaluating review findings and assigning severity from principles
-      - Designing and updating principles documents with severity catalogs
-      - Training reviewers on priority/severity judgment and exception handling
+      - Review criteria creation and modification
+      - Finding severity determination
+      - Gray zone tolerance assessment
+      - Review result evaluation and recommendation classification
+      - Code review implementation
+      - Documentation reference validation
+      - ADR impact assessment
     keywords:
       - review priority
-      - P1 P2 P3 classification
+      - P1 P2 P3
       - severity mapping
       - principles delegation
-      - review criteria structure
-      - SSOT reference
-      - create_issue conditions
+      - SSOT
+      - create_issue
+      - review_criteria
+      - false positive
+      - ADR
+      - scope proportionality
   plugins/forge/docs/scope_proportionality_spec.md:
     title: Scope Proportionality Specification
     purpose: Defines the principle and decision gate for evaluating whether to adopt countermeasures (fixes, features, defensive implementations) for catastrophic failures or theoretical risks, preventing system bloat while maintaining practical safety

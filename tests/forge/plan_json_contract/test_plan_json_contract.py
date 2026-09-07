@@ -52,7 +52,6 @@ REQUIRED_TOP_LEVEL_KEYS = [
     "requirements_traceability",
     "design_traceability",
     "tasks",
-    "revision_history",
 ]
 
 
@@ -168,14 +167,9 @@ class TestNoMarkdownInducers(unittest.TestCase):
 
     @staticmethod
     def _find_active_match(text: str, pattern: re.Pattern[str]) -> str | None:
-        """改定履歴行は履歴的事実として除外する"""
+        """履歴的事実を述べる行は検出対象から除外する"""
         for line in text.splitlines():
-            stripped = line.lstrip("- *>|").strip()
-            # 改定履歴の JSON エントリや「revision_history」セクション内の言及はスキップ
-            if stripped.startswith(('"content":', '"date":')):
-                continue
-            # 重大度カタログ・改定履歴の本文行は履歴的説明を含むので、
-            # 履歴セクションの典型的接頭辞行はスキップ
+            # 重大度カタログ等の本文行は履歴的説明を含むのでスキップ
             if "forge-review feature 統合" in line:
                 continue
             match = pattern.search(line)
