@@ -68,7 +68,10 @@ flowchart LR
 | `anvil:resolve-figma-node` | AI-only                        | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
 | `anvil:figma-mcp-guide`    | リファレンス                   | Figma MCP の知識ベース（呼び出されず参照される）                                              |
 
-委譲のみで内部処理を持たない skill（`anvil:commit`, `anvil:create-pr`）は既存のまま流用する。
+`anvil:commit` / `anvil:create-pr` は本設計の導入時点では改修対象外とし、既存のまま流用した。両者はその後、
+判定を機械化するためにスキル固有 script を持つに至っている（commit のステージ状態検査・create-pr の CI 状態検査）。
+いずれも「SKILL.md 側で AI に外部コマンドの出力を読ませると取り違える判定」を script へ寄せたものであり、
+本設計が定める役割分担（Issue 起票・オーケストレーション・書き戻し）には関与しない。
 
 > **既知の乖離**: `anvil:impl-issue` の起動経路は `anvil:triage-issue` 経由に一本化された（上表のみ実態へ追随済み）。本文書のシーケンス図等に残る `/anvil:impl-issue #N` 直接起動の記述は旧設計であり、フロー全体の現在の SoT は `docs/specs/anvil/triage-flow/requirements/` と各 SKILL.md を参照。
 
