@@ -4,9 +4,14 @@
 
 本設計書は、consult（consult:REQ-017）が担う「対話の進行」の**全体シーケンス**を定める。review 起点（`/forge:review` からの委譲。forge:REQ-013 FNC-1318）と consult 起点（利用者による直接起動）の両方を、単一のシーケンスとして扱う——両者は別のフローではなく、**同一の思考が続く 1 つの AI**が、どちらの起点で始まったかに応じて一部の値（記録の置き場・識別名・論点の出所）だけを変える構造だからである（§3・§4）。本設計書は agenda:REQ-019 / agenda:REQ-021 が定める記録・表示機構（agenda）を前提とし、その CLI 契約は DES-075、表示層は DES-077 が持つ。review 側の設計は DES-066 が持つ。
 
+**consult 起点（利用者による直接起動）は現在停止している。** 動くのは review 起点だけである。停止であって
+廃止ではないため、図 A-2・§3 の consult 起点側・§4 の起点別の値は**停止中の経路として本書に残す**。停止の
+理由は、直接起動には記録へ渡すデータを組み立てる上流が無く、AI が組み立てたものが検査を経ずに保存される
+ためである。以降の記述で consult 起点に言及する箇所は、いずれもこの停止を前提に読むこと。
+
 **本設計書が正本として定める内容は、以下のいずれの既存文書にも欠けていた**:
 
-- review→reviewer→evaluator→結合→consult→agenda→ブラウザという端から端までの全体像（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §6.2 は consult↔agenda_store.py 間の CLI レベルのみを扱い、review・reviewer・evaluator を含まない）
+- review→reviewer→evaluator→結合→consult→agenda→ブラウザという端から端までの全体像（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §6.2 は consult↔`agenda_wrapper.py` 間の CLI と wrapper↔`agenda_store.py` 間の関数呼び出しのみを扱い、review・reviewer・evaluator を含まない）
 - review 起点で consult に渡される論点が、consult 自身が Phase 1 で立てるのではなく、reviewer 所見と evaluator 判定を結合した**出来合いの配列**であるという、論点の出所の分岐
 
 ## 2. 対話シーケンス（正本）
@@ -62,7 +67,9 @@ sequenceDiagram
     participant Data as アジェンダのデータ
     participant Browser as ブラウザ（agenda.html）
 
-    AI->>Data: アジェンダを開始する（items[]＋アジェンダ全体についての判断を、まとめて1回で）
+    AI->>Data: アジェンダを開始する（items[] を渡す）
+    Data-->>Browser: 自動再生成
+    AI->>Data: アジェンダ全体についての判断を記す（専用の record。1 値）
     Data-->>Browser: 自動再生成
     AI->>Browser: 初回のみブラウザで開く（以降はタブが自動追従する）
     AI->>Human: 全体を口頭でも提示（アジェンダのデータから読み取った一覧）
@@ -72,44 +79,45 @@ sequenceDiagram
         Data-->>AI: 次の項目（無ければループを抜ける）
 
         AI->>AI: 項目の背景・本質（・決定モードなら推奨）を考える<br/>（対象を読む・裏付けを取る等。ここで初めて内容が生まれる）
-        AI->>Data: 背景・本質（・決定モードなら推奨）を記録する（この時点で分かっている内容。結論はまだ無い）
+        AI->>Data: 背景・本質（・決定モードなら推奨）を、1 値ずつ record する（この時点で分かっている内容。結論はまだ無い）
         Data-->>Browser: 自動再生成
         AI->>Human: 背景・本質（・決定モードなら推奨）を述べる
         Human->>AI: 質問・応答（複数往復）
-        AI->>Data: 結論を記録する（決着。ここで初めて終端状態へ遷移する）
+        AI->>Data: decision.by・outcome・reason を、1 値ずつ record する（3 値が揃った時点で決着）
         Data-->>Browser: 自動再生成
     end
 
     AI->>Data: 終える（情報なし）
 ```
 
-**この図から判明する構造**: 情報を実際に渡す場面は「アジェンダを開始する」（項目群の配列＋アジェンダ全体についての判断）と「項目への判断を記録する」（根拠・結論。分かった時点でその都度、項目ごとに 2 回）の 2 種類だけである。「残りを問う」「終える」は情報を持たない。「今どの項目を話しているか」はどのアクションにも現れない（`current_item_id` に相当する概念は存在しない。[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2 の削除判断と整合）。
+**この図から判明する構造**: 情報を実際に渡す場面は「アジェンダを開始する」（項目群の配列）と「判断を記録する」（アジェンダ全体についての判断、および各項目の根拠・結論。分かった時点でその都度、1 回に 1 つの値）の 2 種類だけである。「残りを問う」「終える」は情報を持たない。「今どの項目を話しているか」はどのアクションにも現れない（`current_item_id` に相当する概念は存在しない。[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2 の削除判断と整合）。
 
 ### 2.1 `items[]` と `structural_judgment` の結合契約
 
-`start` は `items[]` と `structural_judgment.note` を**単一の呼び出しで同時に受け取る**（分割不可）。`structural_judgment.note` が対象とする範囲は、同じ呼び出しで渡された `items[]` の全体である。一部の項目だけを見た判断を `structural_judgment.note` に記録することはできない。
+`start` は `items[]` だけを受け取り、アジェンダ全体についての判断は続く `record` の 1 回で受ける。判断が対象とする範囲は、`start` で渡された `items[]` の全体である。一部の項目だけを見た判断をこの欄に記録することはできない。**判断が記録されるまで、項目へ値を加える呼び出しはすべて拒否される**（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §5.1）。
 
-`record` が新規項目を追加する場合（`--item-id` が既存項目を指さない場合）も、同じ制約を持つ。新規追加後の項目群全体を対象にした `structural_judgment.note` を、追加操作と同じ `record` 呼び出しに同時に含めなければならない（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §5.1a）。項目が追加された状態で `structural_judgment.recorded` が過去の値のまま残ることは許されない。
+`record` が新規項目を追加する場合（専用の形）も、同じ制約を持つ。新規追加後の項目群全体を対象にした判断を、追加操作と同じ呼び出しで渡さなければならない（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §5.1a）。項目が追加された状態で `structural_judgment.recorded` が過去の値のまま残ることは許されない。
 
-項目を 1 件ずつ逐次追加する CLI（旧設計の `init`→`record-structural-judgment`→`register`×N）は、この結合契約を満たせない——`structural_judgment.note` の対象範囲が、逐次追加の各時点で確定していないためである。5 コマンド CLI（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §6）はこの契約を満たすように設計されている。
+項目を 1 件ずつ逐次追加する CLI（旧設計の `init`→`record-structural-judgment`→`register`×N）は、この結合契約を満たせない——`structural_judgment.note` の対象範囲が、逐次追加の各時点で確定していないためである。`agenda_wrapper.py` の 5 コマンド CLI（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §6）はこの契約を満たすように設計されている。
 
 ### 2.2 スキーマフィールドの必要性契約
 
-本図（§2 の図 A-1・図 A-2・図 B）は、consult が扱う情報の移動をすべて列挙したものである。情報が移動する場面は次の 3 つに限られる。
+本図（§2 の図 A-1・図 A-2・図 B）は、consult が扱う情報の移動をすべて列挙したものである。情報が移動する場面は次の 4 つに限られる。
 
-1. `start`: `items[]`（各項目の `id`・`title`・`fields`・`problem`。`problem` は「何が問題か・何を決めたいのか」という論点そのもので、review 起点では結合済み所見の内容、consult 起点では consult 自身が立てた論点がここへ移る）と `structural_judgment.note`
-2. `record`（背景・本質）: `background`・`essence`・`recommendation`（推奨。決定モードで AI がコンソールへ述べる内容と同じもの。任意）
-3. `record`（決着）: `decision.by`・`decision.outcome`・`decision.reason`
+1. `start`: `items[]`。review 起点では reviewer 所見と evaluator 判定を結合した `combined` 配列を `agenda_wrapper.py` がそのまま項目にし、所見の `text` を `problem` にも置く。項目の未知のキーは保たれ、`id` は agenda が採番し、`title` は任意である。`config.item_fields` は空であり、項目に `fields` が無ければ agenda が `{}` で補う。consult 起点では consult 自身が立てた論点がここへ移る
+2. `record`（構造判断）: `structural_judgment.note`。`start` には含めず、続く専用の呼び出しで 1 値として渡す
+3. `record`（項目への値）: `background`・`essence`・`recommendation`（推奨。決定モードで AI がコンソールへ述べる内容と同じもの。任意）を、それぞれ 1 回に 1 値ずつ渡す
+4. `record`（決着）: `decision.by`・`decision.outcome`・`decision.reason` を、それぞれ 1 回に 1 値ずつ渡す
 
-**[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4 のスキーマが持つフィールドは、上記 3 つのいずれかに対応することを要件とする。** 対応するメッセージを本図に持たないフィールドをスキーマへ追加してはならない。スキーマへフィールドを追加する変更は、まず本図を更新し、対応するメッセージ（情報が移動する新しい場面）を追加することから始める。
+**[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4 のスキーマが持つフィールドは、上記 4 つのいずれかに対応することを要件とする。** 対応するメッセージを本図に持たないフィールドをスキーマへ追加してはならない。スキーマへフィールドを追加する変更は、まず本図を更新し、対応するメッセージ（情報が移動する新しい場面）を追加することから始める。
 
-| 対応するメッセージが無かったため削除されたフィールド                                                   | 出典                                                                            |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `owner`・`created_at`                                                                                  | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2             |
-| `current_item_id`（`set-current`）                                                                     | 同上                                                                            |
-| 状態語彙（`status_vocabulary`/`terminal_statuses`/`active_statuses`）                                  | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4「状態の表現」 |
-| `config.identity`（呼び出し側が組み立てて渡す旧方式。`--path` の親ディレクトリ名からの自動導出に置換） | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7               |
-| `structural_judgment.recorded_at`                                                                      | 本文書起草の契機となった TASK-008 レビュー                                      |
+| 対応するメッセージが無かったため削除されたフィールド                                                                    | 出典                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `owner`・`created_at`                                                                                                   | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §3.2             |
+| `current_item_id`（`set-current`）                                                                                      | 同上                                                                            |
+| 状態語彙（`status_vocabulary`/`terminal_statuses`/`active_statuses`）                                                   | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §4「状態の表現」 |
+| `config.identity`（呼び出し側が組み立てて渡す旧方式。wrapper が解決した `path` の親ディレクトリ名からの自動導出に置換） | [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7               |
+| `structural_judgment.recorded_at`                                                                                       | 本文書起草の契機となった TASK-008 レビュー                                      |
 
 `recommendation` はかつてこの表に載っていた（旧設計で削除）。その後、表示物に「問題そのものが書かれていないのに推奨だけ表示しても判断できない」という利用者所見を受けて、`problem` とともに図 B のメッセージへ載せたうえで復活させた（提示（コンソールの 問題 → 背景 → 本質 → 推奨 → 決着）と記録の構造を一致させる。agenda:REQ-021 FNC-003 の思想と整合）。
 
@@ -119,12 +127,12 @@ sequenceDiagram
 
 図 A-1（review 起点）と図 A-2（consult 起点）のどちらを辿るかは **review からの委譲であるかどうか**の1点だけで決まり、扱う話題の種類（一般的な議論・課題解決・たたき台のレビュー等）では変わらない——これらはいずれも review を経由しない側（consult 起点）に属する。**分岐は「AI が今どちらの起点で動いているか」で決まる。ファイル名・パスの違いは分岐の結果であって、分岐の原因ではない**——パスを変えれば区別できるようになるのではなく、区別できているからこそ違うパスを選べる。この判定に新しい仕組み（外部から渡される構造化フラグ等）は要らない——review→consult は同一会話内での継承型 SKILL の切り替えであり、AI は直前に reviewer/evaluator と往復したかどうかを、共有されたコンテキストから既に知っている（§3.1）。
 
-| 項目                                            | review 起点（図 A-1）                                                                                                                                      | consult 起点（図 A-2。議論・課題解決を問わない）                    |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 「アジェンダを開始する」に渡す `items[]` の出所 | reviewer 所見と evaluator 判定を結合した配列（図 A-1「AI->>AI: 結合」の結果）。consult 自身は論点を立てない                                                | consult 自身が Phase 1 相当（対象の把握・論点の抽出・検証）で立てる |
-| 記録の置き場・識別名                            | 固定パス・固定識別名（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7「review 起点」の行）                                               | `${CLAUDE_SESSION_ID}` ベース（同 §7「consult 起点」の行）          |
-| 構造的判断（`structural_judgment.note`）の材料  | 「同型の指摘の繰り返し・複数指摘が同一の土台に由来していないか」（reviewer 所見群を見て判断する）                                                          | consult 自身が立てた論点群を見て判断する                            |
-| 重要度（`config.severity_field` 等）            | reviewer/evaluator が確認・訂正した重要度をそのまま `item_fields`/`severity_field` へ反映する（consult:REQ-017 FNC-002「重要度はレビュー所見と同じ語彙」） | 用いない（`item_fields: []`, `severity_field: null`）               |
+| 項目                                            | review 起点（図 A-1）                                                                                                                                                                                                           | consult 起点（図 A-2。議論・課題解決を問わない）                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 「アジェンダを開始する」に渡す `items[]` の出所 | reviewer 所見と evaluator 判定を結合した配列（図 A-1「AI->>AI: 結合」の結果）。consult 自身は論点を立てない                                                                                                                     | consult 自身が Phase 1 相当（対象の把握・論点の抽出・検証）で立てる |
+| 記録の置き場・識別名                            | 固定パス・固定識別名（[DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7「review 起点」の行）                                                                                                                    | `${CLAUDE_SESSION_ID}` ベース（同 §7「consult 起点」の行）          |
+| 構造的判断（`structural_judgment.note`）の材料  | 「同型の指摘の繰り返し・複数指摘が同一の土台に由来していないか」（reviewer 所見群を見て判断する）                                                                                                                               | consult 自身が立てた論点群を見て判断する                            |
+| 重要度（`config.severity_field` 等）            | reviewer/evaluator が確認・訂正した重大度を項目の直下へそのまま保持する。`config.item_fields` は空、`config.severity_field` はその値を引くキー名 `severity` とする（consult:REQ-017 FNC-002「重要度はレビュー所見と同じ語彙」） | 用いない（`item_fields: []`, `severity_field: null`）               |
 
 **この表がどの要件・設計から来ているかを明示する**: 「記録の置き場・識別名」の行は [DES-075](../agenda/design/DES-075_agenda_mechanism_design.md) §7 が既に定めていた内容であり、本設計書はそれを覆さない。本設計書が新たに定めるのは、それ以外の 3 行（`items[]` の出所・構造的判断の材料・重要度の反映）である——これらはどの既存文書にも書かれていなかった。
 

@@ -12,7 +12,7 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 ### 2.2 初回表示のトリガー（`open` コマンド）
 
-**consult は `agenda_store.py start` 実行直後、Bash で `open {path}/agenda.html` を実行し、ブラウザで自動的に開く。**
+**consult は `agenda_wrapper.py start` 実行直後、Bash で start の応答に含まれる `path` から `agenda.html` の場所を求め、ブラウザで自動的に開く。**
 
 - **理由**: OS 標準の `open`（macOS）1 コマンドで、ローカルファイルをブラウザで開ける。専用の提示手段を追加せずに済み、既存の「サーバー不要・`file://` 前提」の設計方針を変えずに満たせる
 - **2 回目以降は `open` を呼ばない**: `record` の度に `open` を呼ぶと、ブラウザによっては重複タブが開く。初回に開いたタブは §4 の自動追従によって最新状態に追従する
@@ -34,8 +34,8 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 <section id="item-01" data-changed="{is_last_changed}"><!-- FNC-005: アンカーリンク到達点。項目カード -->
   <h2>
-    <span class="item-no">[01]</span>{title}
-    <span class="severity-badge" data-severity="{fields[severity_field]}">{fields[severity_field]}</span><!-- §3.1a。severity_field 未指定なら本要素を出力しない -->
+    <span class="item-no">[01]</span>{title}<!-- title は必須ではない。空なら id を表示して項目を識別できるようにする -->
+    <span class="severity-badge" data-severity="{severity}">{severity}</span><!-- §3.1a。severity_field 未指定、または値が無ければ本要素を出力しない -->
   </h2>
   <dl><!-- ラベル列（チップ）と本文列を分離し、複数項目を縦走査で比較できるようにする -->
     <dt>問題</dt><dd>...</dd><!-- items[].problem。空なら本行を出力しない -->
@@ -66,10 +66,12 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 - きつい原色は避ける（利用者の要望）
 - 具体的な配色の値（色コード）は本設計書で確定しない。実装後に生成された `agenda.html` を見ながら利用者と調整する（§3.2 と同じ扱い）
 
-**中立性原則との整合**: agenda 機構は `fields`（呼び出し側固有の項目属性）のキー名・値の意味を解釈しない（FNC-009）。したがって `agenda_render.py` は `severity` というキー名を決め打ちでバッジ表示するのではなく、**`config.severity_field`（[DES-075](DES-075_agenda_mechanism_design.md) §4）が指定するキー名**を参照する。`severity_field` が未指定（`null`）の場合、バッジは表示しない。
+**中立性原則との整合**: agenda 機構は呼び出し側固有の項目属性のキー名・値の意味を解釈しない（FNC-009）。したがって `agenda_render.py` は `severity` というキー名を決め打ちでバッジ表示するのではなく、**`config.severity_field`（[DES-075](DES-075_agenda_mechanism_design.md) §4）が指定するキー名**を参照する。`severity_field` が未指定（`null`）の場合、バッジは表示しない。
+
+**値は 2 箇所を探す**。`items[].fields` の中を先に見て、そこに無い（または空の）場合は項目の直下を見る。呼び出し側が属性を `fields` にまとめるか項目の直下に置くかは呼び出し側の都合であり、表示層はどちらでも同じバッジを出す。両方に無ければバッジを出さない。
 
 ```html
-<span class="severity-badge" data-severity="{fields[severity_field]}">{fields[severity_field]}</span>
+<span class="severity-badge" data-severity="{severity}">{severity}</span>
 ```
 
 - `data-severity` の値（`critical`/`major`/`minor` 等）は呼び出し側が渡した文字列そのままであり、agenda 側はこの値の意味（重大度の順序等）を解釈しない。CSS 側は `data-severity` の値ごとにパステル配色を対応させる（例: `[data-severity="critical"] { ... }`）が、これは表示層が呼び出し側の語彙に依存する数少ない箇所であり、[DES-075](DES-075_agenda_mechanism_design.md) §5.1 の状態遷移契約（`agenda_schema.py`の`required_fields_for()`/`validate()`。語彙の意味に立ち入らない）とは異なるレイヤーの話である
@@ -98,17 +100,17 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 stateDiagram-v2
     [*] --> 未着手
     未着手 --> 進行中: 背景・本質が記入される
-    進行中 --> 決着または棄却: 結論（decision）が記入される
+    進行中 --> 決着または棄却: 結論（decision）の3値がそろう
     決着または棄却 --> [*]
 ```
 
 | 状態       | 判定条件（`agenda_render.py`が`agenda.json`を読んで導出）     | 表示文言                                                                                                               |
 | ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | 未着手     | `background`・`essence`のいずれも空                           | 「未着手」                                                                                                             |
-| 進行中     | `background`・`essence`のいずれかが非空、かつ`decision`が無い | 「進行中」                                                                                                             |
-| 決着／棄却 | `decision`が存在する                                          | `decision.outcome`の内容をそのまま表示（「決着」「棄却」等、呼び出し側の自由記述。agenda機構は内容の意味を解釈しない） |
+| 進行中     | `background`・`essence`のいずれかが非空で、まだ決着していない | 「進行中」                                                                                                             |
+| 決着／棄却 | `decision`の3値（`by`・`outcome`・`reason`）がすべて空でない  | `decision.outcome`の内容をそのまま表示（「決着」「棄却」等、呼び出し側の自由記述。agenda機構は内容の意味を解釈しない） |
 
-判定は`background`→`essence`→`decision`の順に記入されるという、consultの対話進行（1項目につき2回の判断記録。[DES-075](DES-075_agenda_mechanism_design.md) §6.2）と対応しており、この順序を逆行する記入（`decision`のみ先に記入する等）は`agenda_schema.py`の状態遷移契約（[DES-075](DES-075_agenda_mechanism_design.md) §5.1。`decision`を含む差分パッチは`background`/`essence`の非空を要求する）により拒否される。
+判定は`background`→`essence`→`decision`の順に記入されるという、consultの対話進行（1 回の呼び出しで 1 つの値を加える。[DES-075](DES-075_agenda_mechanism_design.md) §6.2）と対応しており、この順序を逆行する記入（`decision`のみ先に記入する等）は`agenda_schema.py`の状態遷移契約（[DES-075](DES-075_agenda_mechanism_design.md) §5.1。`decision`を含む差分パッチは`background`/`essence`の非空を要求する）により拒否される。
 
 ## 4. 表示の更新方式（自動追従）
 
@@ -134,7 +136,7 @@ stateDiagram-v2
 
 世代番号には `agenda.json` の `content_version`（[DES-075](DES-075_agenda_mechanism_design.md) §3.2。書き込みごとに増える整数）をそのまま使う。世代番号が変わらない限り再読み込みが起きないため、「読んでいる最中に定期リロードでページ先頭へ戻される」ことはない。
 
-**部分更新（DOM の差し替え）は持たない**。`start`/`record`（agenda 機構が持つ書き込み系コマンド。§2）はいずれも本文を変える操作であり、常に全項目の再表示が要る。「本文を変えずに軽量な状態フラグだけを更新する」という書き込みが存在しないため、全体再読み込みと部分更新を使い分ける複雑さに見合う利得が無い。
+**部分更新（DOM の差し替え）は持たない**。`agenda_wrapper.py` が公開する `start` / `record` はいずれも store の書き込み系関数を呼ぶ操作であり、常に全項目の再表示が要る。「本文を変えずに軽量な状態フラグだけを更新する」という書き込みが存在しないため、全体再読み込みと部分更新を使い分ける複雑さに見合う利得が無い。
 
 ### 4.3 スクロール位置の保持
 
@@ -143,7 +145,7 @@ stateDiagram-v2
 ## 5. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_render.py`: `last_changed_fields`に応じた`data-changed`属性の付与、HTMLエスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`config.severity_field`が指定されている場合に`fields[severity_field]`の値がバッジとして出力されること・未指定の場合にバッジ要素自体が出力されないこと（§3.1a）、自動追従スクリプトが`agenda.html`に埋め込まれ生成時点の`content_version`を世代番号として持つこと・`agenda_state.js`の生成内容が`contentVersion`のみを持つこと（§4.2）、`problem`/`recommendation`が非空のときだけ対応する行が出力されること（§3）
+  - `agenda_render.py`: `last_changed_fields`に応じた`data-changed`属性の付与、HTMLエスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`config.severity_field`が指定されている場合に、その値を`fields`の中と項目の直下の順で探してバッジとして出力すること・`fields`側が空でも直下に値があればバッジが出ること・未指定または両方に値が無い場合にバッジ要素自体が出力されないこと（§3.1a）、自動追従スクリプトが`agenda.html`に埋め込まれ生成時点の`content_version`を世代番号として持つこと・`agenda_state.js`の生成内容が`contentVersion`のみを持つこと（§4.2）、`problem`/`recommendation`が非空のときだけ対応する行が出力されること（§3）
   - `agenda_store.py`: 書き込み成功後に`agenda.html`と`agenda_state.js`の両方が再生成されること、`finish`の削除が両ファイルに及ぶこと
 - **手動検証観点**（ブラウザの実際の挙動に依存し、単体テストで機械的に保証できない事項）:
   - `open` コマンドでの初回表示が実際のブラウザで動作すること
