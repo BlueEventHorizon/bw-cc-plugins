@@ -1,16 +1,16 @@
 """agenda.json の読み書き・状態遷移の検証・表示層への再描画委譲を行うモジュール。
 
-`start` / `record` は**関数呼び出し専用**であり CLI を持たない（DES-080 §6）。
+`start` / `record` は**関数呼び出し専用**であり CLI を持たない（DES-075 §6）。
 入力を受理する経路は `agenda_wrapper.py` の 1 つに保ち、AI が JSON・ファイル名・
-置き場を組み立てる経路を無くす（DES-080 §1.1・§2.1）。`pending` / `next` /
+置き場を組み立てる経路を無くす（DES-075 §6）。`pending` / `next` /
 `finish` は AI が書く文章を受け取らないため CLI を残す。
 
-agenda は受け取ったデータの形式を検査しない（DES-080 §2.3）。渡された項目は
+agenda は受け取ったデータの形式を検査しない（DES-075 §6.1）。渡された項目は
 そのまま保存し、agenda が読むキーのうち欠けているものだけを既定値で補う
-（§2.5）。残るのは状態遷移の必要条件（§2.6 の受理条件・存在しない `item_id` の
+（DES-078 §2.2）。残るのは状態遷移の必要条件（DES-075 §5.1 の受理条件・存在しない `item_id` の
 拒否）だけであり、これは形式検査ではない。
 
-`record` は 1 回の呼び出しで 1 つの値だけを受け取る（§2.6）。3 形をそれぞれ
+`record` は 1 回の呼び出しで 1 つの値だけを受け取る（DES-075 §6.1）。3 形をそれぞれ
 別の関数として持つ:
 
 - `record_structural_judgment()`: 構造判断をレコード直下へ記す
@@ -49,17 +49,17 @@ class AgendaStoreError(Exception):
     """agenda.json の読み込み・書き込みに失敗した場合に送出する（NFR-006）。"""
 
 
-# 値の名前として受け付けないキー（DES-080 §2.6）。agenda が自ら書くキー（`id` /
+# 値の名前として受け付けないキー（DES-075 §6.1）。agenda が自ら書くキー（`id` /
 # `last_changed_fields`）と、agenda が構造を持つオブジェクトとして読むキーそのもの
-# （`fields` / `decision`）。受け付けると識別子が書き換わり §3 と両立しない。
+# （`fields` / `decision`）。受け付けると識別子が書き換わり DES-075 §3.2 と両立しない。
 _RESERVED_VALUE_NAMES = frozenset({"id", "last_changed_fields", "fields", "decision"})
 
 # 上記のうち agenda が自ら書くキー。入れ子表記（`id.x` 等）でも書き換えを許さない。
 # `fields` / `decision` は agenda が構造を持つものとして読むだけなので、その配下
-# （`fields.severity` / `decision.by`）は値の名前として受け付ける（DES-080 §2.6）。
+# （`fields.severity` / `decision.by`）は値の名前として受け付ける（DES-075 §6.1）。
 _AGENDA_OWNED_KEYS = frozenset({"id", "last_changed_fields"})
 
-# DES-080 §2.5: agenda が読むキーのうち、欠けていれば補う既定値。
+# DES-078 §2.2: agenda が読むキーのうち、欠けていれば補う既定値。
 _ITEM_DEFAULTS = {
     "problem": "",
     "background": "",
@@ -133,15 +133,15 @@ def _finalize_write(path: str | Path, record: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 項目の正規化と採番（DES-080 §2.5・§3）
+# 項目の正規化と採番（DES-078 §2.2・DES-075 §3.2）
 # ---------------------------------------------------------------------------
 
 
 def _normalize_item(item: dict) -> dict:
-    """渡された項目をそのまま保持し、欠けている既定値だけを補う（DES-080 §2.5）。
+    """渡された項目をそのまま保持し、欠けている既定値だけを補う（DES-078 §2.2）。
 
     既に値があるキーは上書きしない。`title` は必須にしない（表示層は `title` が
-    空のとき `id` を用いる。§4.2）。agenda が知らないキーもそのまま残す（§2.3）。
+    空のとき `id` を用いる。DES-077 §3）。agenda が知らないキーもそのまま残す（DES-075 §6.1）。
     """
     normalized = dict(item)
     for key, default in _ITEM_DEFAULTS.items():
@@ -151,7 +151,7 @@ def _normalize_item(item: dict) -> dict:
 
 
 def _allocate_item_id(existing_ids: set) -> str:
-    """既存の `id` と衝突しないゼロ埋め 2 桁の連番を返す（DES-080 §3）。
+    """既存の `id` と衝突しないゼロ埋め 2 桁の連番を返す（DES-075 §3.2）。
 
     既存項目の `id` がこの形でない場合も、衝突しない値を選ぶ。
     """
@@ -179,7 +179,7 @@ def _find_item_index(items: list, item_id: Any) -> int | None:
 
 
 def _set_nested_value(item: dict, name: str, value: Any) -> None:
-    """ドット区切りの名前を入れ子として解釈し、入れ子のキー単位でマージする（DES-080 §2.6）。
+    """ドット区切りの名前を入れ子として解釈し、入れ子のキー単位でマージする（DES-075 §6.1）。
 
     `decision.by` は `decision` の中の `by` を指し、`decision` の他の値を消さない。
     """
@@ -195,18 +195,18 @@ def _set_nested_value(item: dict, name: str, value: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
-# start（DES-080 §2.1・§2.5・§3）
+# start（DES-075 §6・§3.2・DES-078 §2.2）
 # ---------------------------------------------------------------------------
 
 
 def start(path: str | Path, *, config: dict, items: list) -> dict:
-    """記録を新規に作る（関数呼び出し専用。DES-080 §2.1・§6）。
+    """記録を新規に作る（関数呼び出し専用。DES-075 §6）。
 
-    `config` と `items` は `agenda_wrapper.py` が組み立てて渡す。項目は §2.5 の
-    正規化のみを行い、`id` の無い項目には §3 の採番を行う。構造判断は `start` では
-    受け取らず、続く `record` の 1 回で受ける（§2.1）。そのため記録は
+    `config` と `items` は `agenda_wrapper.py` が組み立てて渡す。項目は DES-078 §2.2 の
+    正規化のみを行い、`id` の無い項目には DES-075 §3.2 の採番を行う。構造判断は `start` では
+    受け取らず、続く `record` の 1 回で受ける（DES-075 §6）。そのため記録は
     `structural_judgment.recorded: False` で始まり、構造判断が記録されるまで
-    項目へ値を加える呼び出しはすべて拒否される（§2.6）。
+    項目へ値を加える呼び出しはすべて拒否される（DES-075 §5.1）。
 
     既存ファイルの有無を問わず無条件に新規開始として上書きする。「削除して新しく
     始めるか・続きから進めるか」の判断は呼び出し側が `start` を呼ぶ前に済ませる
@@ -246,7 +246,7 @@ def start(path: str | Path, *, config: dict, items: list) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# record（3 形。DES-080 §2.6）
+# record（3 形。DES-075 §6.1）
 # ---------------------------------------------------------------------------
 
 
@@ -267,9 +267,9 @@ def _load_items(path: str | Path) -> tuple[dict | None, list | None, dict | None
 
 
 def record_structural_judgment(path: str | Path, note: str) -> dict:
-    """構造判断をレコード直下へ記す（DES-080 §2.6 の 1 形目）。
+    """構造判断をレコード直下へ記す（DES-075 §6.1 の 1 形目）。
 
-    項目へは値を加えないため、`last_changed_fields` は変わらない（§2.6）。
+    項目へは値を加えないため、`last_changed_fields` は変わらない（DES-075 §6.1）。
     """
     if not agenda_schema.is_non_empty(note):
         return {
@@ -294,18 +294,18 @@ def record_structural_judgment(path: str | Path, note: str) -> dict:
 
 
 def record_item_value(path: str | Path, item_id: Any, name: str, value: Any) -> dict:
-    """既存項目へ値を 1 つ加える（DES-080 §2.6 の 2 形目）。
+    """既存項目へ値を 1 つ加える（DES-075 §6.1 の 2 形目）。
 
     `name` はドット区切りで入れ子を指してよく、入れ子のキー単位でマージする
     （`decision.by` を 1 つずつ積んでも先の値が消えない）。`id` /
     `last_changed_fields` / `fields` / `decision` そのものは名前として受け付けない。
     存在しない `item_id` は拒否する（新規項目が生まれるのは `record_new_item()`
-    だけである。§2.6）。
+    だけである。DES-075 §6.1）。
     """
     if name in _RESERVED_VALUE_NAMES or name.split(".", 1)[0] in _AGENDA_OWNED_KEYS:
         return {
             "status": "error",
-            "message": f"{name} は値の名前として指定できません（DES-080 §2.6）",
+            "message": f"{name} は値の名前として指定できません（DES-075 §6.1）",
         }
 
     record, items, error = _load_items(path)
@@ -325,7 +325,7 @@ def record_item_value(path: str | Path, item_id: Any, name: str, value: Any) -> 
     if not validation["ok"]:
         return {"status": "error", "ok": False, "missing_fields": validation["missing_fields"]}
 
-    # 渡された名前そのまま（例: `decision.by`）を記録する（§2.6「その呼び出しで
+    # 渡された名前そのまま（例: `decision.by`）を記録する（DES-075 §6.1「その呼び出しで
     # 加えたキー」）。
     merged_item["last_changed_fields"] = [name]
     items[index] = merged_item
@@ -341,7 +341,7 @@ def record_item_value(path: str | Path, item_id: Any, name: str, value: Any) -> 
 
 
 def record_new_item(path: str | Path, note: str) -> dict:
-    """構造判断を伴って新規項目を足し、採番した `id` を応答に含める（DES-080 §2.6 の 3 形目）。
+    """構造判断を伴って新規項目を足し、採番した `id` を応答に含める（DES-075 §6.1 の 3 形目）。
 
     新規項目の追加に構造判断（追加後の再判断）を伴わせるのは DES-075 §5.1a の
     要求であり、この呼び出しが受け取る 1 値がそれに当たる。項目はここで生成・
@@ -375,7 +375,7 @@ def record_new_item(path: str | Path, note: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# next / pending（決着は `decision` の 3 値そろい。DES-080 §2.6・§4.4）
+# next / pending（決着は `decision` の 3 値そろい。DES-075 §5.1）
 # ---------------------------------------------------------------------------
 
 
@@ -460,7 +460,7 @@ def handle_finish(args: argparse.Namespace) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# CLI エントリポイント（`start` / `record` は持たない。DES-080 §6）
+# CLI エントリポイント（`start` / `record` は持たない。DES-075 §6）
 # ---------------------------------------------------------------------------
 
 

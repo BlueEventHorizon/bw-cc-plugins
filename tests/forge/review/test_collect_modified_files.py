@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""collect_modified_files.py のテスト（DES-047 §3.5 テスト設計、実 Codex レビューで発見の回帰）。
+"""collect_modified_files.py のテスト（DES-066 §6 テスト設計、実 Codex レビューで発見の回帰）。
 
 `git status --porcelain`（-z 無し）は空白・改行・非 ASCII を含むパスを C-style quote し、
 rename/copy は ` -> ` を含む1行で表現するため、行/矢印単位の手動パースでは実パスを取り違える。

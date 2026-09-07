@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""agenda_schema.py（DES-080 §2.6 の受理条件・決着の定義）のテスト。
+"""agenda_schema.py（DES-075 §5.1 の受理条件・決着の定義）のテスト。
 
-検証する観点（DES-080 §7「`agenda_schema.py`」）:
+検証する観点（DES-075 §9「`agenda_schema.py`」）:
 
 - 構造判断が未記録の間は、項目へ値を加えるすべてのパッチが拒否されること
   （決着に限らない。agenda:REQ-019 FNC-012）
@@ -169,7 +169,7 @@ class DecisionPatchAcceptanceTest(unittest.TestCase):
 
 
 class IsSettledTest(unittest.TestCase):
-    """決着（3 値そろい）の述語（DES-080 §2.6）。"""
+    """決着（3 値そろい）の述語（DES-075 §5.1）。"""
 
     def test_three_values_present_is_settled(self):
         # 受け入れ基準 3: 3 値すべて非空のときだけ真。

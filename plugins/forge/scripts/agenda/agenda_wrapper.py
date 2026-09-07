@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """agenda への唯一の入力経路。記録の置き場と `config` を解決し、呼び出し側が渡す値から
 入れ物（`config` / `items`）を組み立てて `agenda_store.py` の関数へメモリ上で渡す
-（DES-080 §2.1・§6）。
+（DES-075 §6）。
 
 呼び出し側（review 起点の SKILL を実行する AI）が渡すのは、サブコマンドと、
 標準入力に流し込む値だけである。記録の置き場（DES-075 §7）・`config` の値・
 JSON の入れ物・ファイル名は、いずれも呼び出し側の事情ではなく agenda 側の事情であり、
-本モジュールが組み立てる（DES-080 §1.1「AI が組み立てるものを無くし、script が作る」）。
+本モジュールが組み立てる（DES-075 §6「AI はファイルを書かず、JSON を組み立てない」）。
 
-- **起点は review だけ**（DES-080 §1.3）。直接起動（consult 起点）は停止した
-- **置き場は絶対パスで解決する**（同 §5）。`git rev-parse --show-toplevel` を基準に
+- **起点は review だけ**（DES-075 §7）。直接起動（consult 起点）は停止した
+- **置き場は絶対パスで解決する**（DES-075 §7）。`git rev-parse --show-toplevel` を基準に
   するため、呼び出し元の作業ディレクトリが変わっても記録は 1 箇所に定まる。
   git 管理下でない場所からの呼び出しは、既定の場所へ落とさずエラーで停止する
-- **AI が書く文章はすべて標準入力から受け取る**（同 §2.1・§2.6）。引数へ載せると
+- **AI が書く文章はすべて標準入力から受け取る**（DES-075 §6・§6.1）。引数へ載せると
   引用符・記号でシェルの構文が壊れる。値を書き込むのは agenda 側だけであり、
   呼び出し側が候補 JSON や一時ファイルを書く経路は持たない
 
 `start` は所見と評価を結合する script の標準出力（`combined` 配列）をそのまま
 標準入力から読み、各要素の `text` を `problem` にも置いてから `items` にする
-（同 §4.3。「問題」欄は `problem` から出るが、review 起点の所見本文は `text` という
+（DES-078 §2.2。「問題」欄は `problem` から出るが、review 起点の所見本文は `text` という
 名前で来る。起点の事情は本モジュールに閉じる）。
 
 `pending` はファイル不在を失敗として扱わない（`{"status": "ok", "exists": false}` を
@@ -49,13 +49,13 @@ import agenda_store  # noqa: E402
 
 _REVIEW_RELATIVE_PATH = ".claude/.temp/review/agenda.json"
 
-# DES-080 §2.3: 重大度は項目の直下に来るため `items[].fields` へ入れる属性は無い。
+# DES-075 §3.2: 重大度は項目の直下に来るため `items[].fields` へ入れる属性は無い。
 # 表示層が重大度を引くキー名（`severity_field`）は保つ。
 _REVIEW_CONFIG = {"item_fields": [], "severity_field": "severity"}
 
 
 def project_root() -> tuple[str | None, str | None]:
-    """`(プロジェクトルートの絶対パス, エラー)` を返す（DES-080 §5）。
+    """`(プロジェクトルートの絶対パス, エラー)` を返す（DES-075 §7）。
 
     `__file__` から辿る方式は採らない。plugin は利用者環境のキャッシュへ配置される
     ため、辿り着くのは plugin のディレクトリであってプロジェクトではない。
@@ -101,7 +101,7 @@ def _handle_pending(path: str) -> dict:
 def _handle_start(path: str, stdin) -> dict:
     """結合 script の出力（`combined` 配列）から入れ物を組み立てて `start` へ渡す。
 
-    中間ファイルは書かない（DES-080 §2.1・§4.3）。
+    中間ファイルは書かない（DES-075 §6・DES-078 §2.2）。
     """
     try:
         payload = json.load(stdin)
@@ -126,7 +126,7 @@ def _handle_start(path: str, stdin) -> dict:
 
 
 def _handle_record(path: str, args: argparse.Namespace, stdin) -> dict:
-    """DES-080 §2.6 の 3 形。本文はいずれも標準入力から読む。"""
+    """DES-075 §6.1 の 3 形。本文はいずれも標準入力から読む。"""
     if args.structural or args.new:
         # --field はこの 2 形では使わない。黙って捨てると、指定が効いたと誤認される。
         if args.field:
@@ -148,7 +148,7 @@ def _handle_record(path: str, args: argparse.Namespace, stdin) -> dict:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agenda_wrapper.py")
-    # DES-080 §1.3: 受け付ける起点は review だけ。停止した起点はここで拒否される。
+    # DES-075 §7: 受け付ける起点は review だけ。停止した起点はここで拒否される。
     parser.add_argument("--origin", required=True, choices=["review"])
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -184,7 +184,7 @@ def run(args: argparse.Namespace, stdin=None) -> dict:
         result = agenda_store.handle_finish(argparse.Namespace(path=path))
 
     # 呼び出し元は自分では置き場を組み立てないため、以降（表示物を開く等）で使えるよう
-    # 解決済みの絶対パスを結果へ含める（DES-080 §5）。
+    # 解決済みの絶対パスを結果へ含める（DES-075 §7）。
     result.setdefault("path", path)
     return result
 

@@ -47,7 +47,7 @@ def _severity_value(item: dict, severity_field: str | None) -> str:
     表示（`-` 等）は呼び出し側の責務とする（表示先ごとに異なるため。
     `_severity_badge_html` はバッジ非表示、`_summary_row_html` は `-` 表示）。
 
-    探索順は ``item["fields"]`` の中が先、無ければ項目の直下（DES-080 §4.1）。
+    探索順は ``item["fields"]`` の中が先、無ければ項目の直下（DES-077 §3.1a）。
     呼び出し側が値を作り替えずに渡すと重大度は項目の直下に来るため、``fields``
     だけを見ていると到達できない。``fields`` を先に見るのは、変更前に保存された
     記録が読めなくなる経路を作らないためである。値が「無い」と判定する条件
@@ -66,7 +66,7 @@ def _severity_value(item: dict, severity_field: str | None) -> str:
 
 
 def _display_title(item: dict) -> str:
-    """一覧行・項目見出しに出す名前を返す（DES-080 §4.2）。
+    """一覧行・項目見出しに出す名前を返す（DES-077 §3）。
 
     ``title`` は必須ではない。空であれば ``id`` を表示に用い、項目を識別できない
     空欄を出さない。エスケープは呼び出し側が行う（他の導出ヘルパーと契約を揃える）。
@@ -79,7 +79,7 @@ def _display_title(item: dict) -> str:
 
 
 def _is_settled(item: dict) -> bool:
-    """項目が決着しているかどうかを返す（DES-080 §4.4）。
+    """項目が決着しているかどうかを返す（DES-077 §3.3）。
 
     決着は ``decision.by`` / ``decision.outcome`` / ``decision.reason`` の 3 値が
     すべて非空のときとする。3 値は 1 つずつ加えられるため、揃うまでの間は部分的な
@@ -124,14 +124,14 @@ def _derive_status_label(item: dict) -> str:
     ``background``・``essence`` の記入有無だけを見る（独立した状態フィールドは
     持たない）:
 
-    - 決着している（``decision`` の 3 値が揃っている。DES-080 §4.4） →
+    - 決着している（``decision`` の 3 値が揃っている。DES-077 §3.3） →
       「決着または棄却」。``decision.outcome`` の内容をそのまま表示する
       （呼び出し側の自由記述。agenda 機構は意味を解釈しない）
     - 決着しておらず、``background``・``essence`` のいずれかが非空 → 「進行中」
     - 両方空 → 「未着手」
 
     ``decision`` が部分的に保存されているだけの項目は未決着として扱う
-    （DES-080 §4.4）。
+    （DES-077 §3.3）。
     """
     if _is_settled(item):
         return str(item["decision"]["outcome"])
@@ -143,7 +143,7 @@ def _derive_status_label(item: dict) -> str:
 def _decision_text(item: dict) -> str:
     """項目節の「決着」行に表示するテキストを返す。
 
-    決着している（``decision`` の 3 値が揃っている。DES-080 §4.4）場合に
+    決着している（``decision`` の 3 値が揃っている。DES-077 §3.3）場合に
     「結論（理由）」の形にまとめる。決着していない場合は決着していないことが
     分かる文言を返す（軽微な表示詳細。DES-077 §3 のテンプレートは「決着: ...」
     という記入欄であることのみを示し、未決着時の具体的な文言は定めていないため、
@@ -158,7 +158,7 @@ def _decision_text(item: dict) -> str:
 def _result_summary(item: dict) -> str:
     """アジェンダ表の「結果・課題」列に表示する短い要約を、raw のまま返す。
 
-    決着している（``decision`` の 3 値が揃っている。DES-080 §4.4）なら
+    決着している（``decision`` の 3 値が揃っている。DES-077 §3.3）なら
     「結論: 理由」を、そうでなければプレースホルダを返す（軽微な表示詳細。§3 の
     テンプレートは列の存在のみを定め、内容の導出方法は定めていないため、
     DES-075 §4 の既存フィールドから妥当な範囲で推測する）。**エスケープしない**
@@ -210,7 +210,7 @@ def _item_section_html(item: dict, severity_field: str | None) -> str:
     問題（`problem`）と推奨（`recommendation`）は任意フィールドであり、
     記入があるときだけ行を出す（空のラベルチップを並べない。DES-077 §3）。
 
-    `title` は必須ではないため、空であれば見出しにも `id` を出す（DES-080 §4.2）。
+    `title` は必須ではないため、空であれば見出しにも `id` を出す（DES-077 §3）。
     """
     item_id_raw = item.get("id")
     item_id = _escape(item_id_raw)

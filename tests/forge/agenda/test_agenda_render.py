@@ -328,7 +328,7 @@ class SeverityBadgeTest(unittest.TestCase):
 
 
 class SeverityLookupTest(unittest.TestCase):
-    """DES-080 §4.1: 重大度は `fields` の中を先に、無ければ項目の直下を探索する。"""
+    """DES-077 §3.1a: 重大度は `fields` の中を先に、無ければ項目の直下を探索する。"""
 
     def _section(self, html_doc: str, item_id: str) -> str:
         return html_doc.split(f'<section id="item-{item_id}"')[1].split("<section")[0]
@@ -378,7 +378,7 @@ class SeverityLookupTest(unittest.TestCase):
 
 
 class TitleFallbackTest(unittest.TestCase):
-    """DES-080 §4.2: `title` は必須ではなく、空なら一覧行・見出しに `id` を出す。"""
+    """DES-077 §3: `title` は必須ではなく、空なら一覧行・見出しに `id` を出す。"""
 
     def test_summary_row_shows_id_when_title_is_empty(self):
         agenda = _fixture_agenda()
@@ -409,7 +409,7 @@ class TitleFallbackTest(unittest.TestCase):
 
 
 class SettlementJudgmentTest(unittest.TestCase):
-    """DES-080 §4.4: 決着は decision.by / outcome / reason の 3 値そろい。"""
+    """DES-077 §3.3: 決着は decision.by / outcome / reason の 3 値そろい。"""
 
     def _summary_row(self, html_doc: str, item_id: str) -> str:
         table = html_doc.split('<table id="agenda-summary">')[1].split("</table>")[0]
@@ -486,7 +486,7 @@ class SettlementJudgmentTest(unittest.TestCase):
 
 
 class UnknownKeysTest(unittest.TestCase):
-    """DES-080 §2.4・REQ-022 FNC-003: agenda が知らないキーが保存されていても生成できる。"""
+    """DES-078 §2.2: agenda が知らないキーが保存されていても生成できる。"""
 
     def test_render_succeeds_with_unknown_keys_on_item(self):
         agenda = _fixture_agenda()
@@ -508,7 +508,7 @@ class UnknownKeysTest(unittest.TestCase):
 
 
 class StructuralJudgmentUnrecordedTest(unittest.TestCase):
-    """DES-080 §2.1: `start` 直後は構造判断が未記録。その記録でも生成が失敗しない。"""
+    """DES-075 §6: `start` 直後は構造判断が未記録。その記録でも生成が失敗しない。"""
 
     def test_render_succeeds_when_structural_judgment_note_is_none(self):
         agenda = _fixture_agenda()
