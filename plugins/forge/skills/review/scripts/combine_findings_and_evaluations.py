@@ -9,7 +9,7 @@ reviewer の所見配列（`parse_findings.py` が生成した実体）と evalu
 
 検証:
     1. 両配列の長さが一致すること
-    2. evaluations 側の `index` の集合が `{0, ..., len(findings) - 1}` と完全一致すること
+    2. evaluations 側の `index` の集合が `{1, ..., len(findings)}` と完全一致すること
        （欠落・重複の検出）
 いずれか不成立なら結合せずエラーを返す（呼び出し元はそのラウンドを
 `halted_with_open_findings` として終端処理へ回す）。
@@ -41,7 +41,7 @@ def combine_findings_and_evaluations(findings: list[dict], evaluations: list[dic
             ),
         }
 
-    expected_indices = set(range(len(findings)))
+    expected_indices = set(range(1, len(findings) + 1))
     actual_indices = [entry.get("index") for entry in evaluations]
     if set(actual_indices) != expected_indices or len(actual_indices) != len(
         set(actual_indices)
@@ -49,16 +49,16 @@ def combine_findings_and_evaluations(findings: list[dict], evaluations: list[dic
         return {
             "status": "error",
             "message": (
-                "evaluations の index 集合が {0, ..., "
-                f"{len(findings) - 1}}} と一致しません（欠落または重複があります）: "
+                "evaluations の index 集合が {1, ..., "
+                f"{len(findings)}}} と一致しません（欠落または重複があります）: "
                 f"{actual_indices!r}"
             ),
         }
 
     evaluations_by_index = {entry["index"]: entry for entry in evaluations}
     combined = [
-        {**findings[index], **evaluations_by_index[index]}
-        for index in range(len(findings))
+        {**findings[index - 1], **evaluations_by_index[index]}
+        for index in range(1, len(findings) + 1)
     ]
     return {"status": "ok", "combined": combined}
 

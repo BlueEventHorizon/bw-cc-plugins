@@ -43,11 +43,11 @@ _COMBINED = {
         {
             "text": "所見1の本文",
             "severity": "major",
-            "index": 0,
+            "index": 1,
             "disposition": "fix",
             "confidence": "high",
         },
-        {"text": "所見2の本文", "severity": "minor", "index": 1, "disposition": "fix"},
+        {"text": "所見2の本文", "severity": "minor", "index": 2, "disposition": "fix"},
     ],
 }
 

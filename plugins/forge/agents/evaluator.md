@@ -19,7 +19,7 @@ permissionMode: plan
 - 環境から注入される `advisor` ツールを呼ばない（この役割に不要であり、応答待ちが実行時間を浪費する）
 - 外部サービスへ書き込まない
 
-依頼には、reviewer へ渡されたのと同じレビュー依頼本文（対象・観点文書・重点観点・到達目標を含む）と、reviewer が返した所見の配列（0 始まりの `index` 付き、reviewer が付けた `severity` を含む）が含まれます。**所見の記述をそのまま信用せず、依頼本文が指す観点文書・対象実体を自分で読んで独立に検証してください**（reviewer の判断を鵜呑みにするための Agent ではありません）。
+依頼には、reviewer へ渡されたのと同じレビュー依頼本文（対象・観点文書・重点観点・到達目標を含む）と、reviewer が返した所見の配列（1 始まりの `index` 付き、reviewer が付けた `severity` を含む）が含まれます。**所見の記述をそのまま信用せず、依頼本文が指す観点文書・対象実体を自分で読んで独立に検証してください**（reviewer の判断を鵜呑みにするための Agent ではありません）。
 
 ## severity の再検証 [MANDATORY]
 
@@ -66,7 +66,7 @@ permissionMode: plan
 {
   "evaluations": [
     {
-      "index": 0,
+      "index": 1,
       "disposition": "valid",
       "severity": "major",
       "reason": "...",
@@ -74,7 +74,7 @@ permissionMode: plan
       "fix_confident": true
     },
     {
-      "index": 1,
+      "index": 2,
       "disposition": "invalid",
       "severity": "minor",
       "reason": "..."

@@ -284,8 +284,12 @@ def interpret_response(body: str) -> dict:
             "error": "findings 宣言には重大度マーカー付き所見が必要です",
         }
 
+    # 所見の番号は 1 始まりである（本体が evaluator へ渡す `index` と同じ基準。
+    # `enumerate` の start で表しておき、表示時の +1 に頼らない）。
     missing_location = [
-        index + 1 for index, finding in enumerate(findings) if finding["location"] is None
+        index
+        for index, finding in enumerate(findings, start=1)
+        if finding["location"] is None
     ]
     for finding in findings:
         if finding["location"] is None:
