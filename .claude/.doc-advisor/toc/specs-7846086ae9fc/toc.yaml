@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-06T14:42:29Z
+  generated_at: 2026-09-07T05:36:52Z
   file_count: 66
 
 docs:
@@ -498,65 +498,68 @@ docs:
       - data integrity
       - serialization
   docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md:
-    title: DES-075 Agenda Mechanism Design
-    purpose: Defines architecture, modules, data schema, state transitions, CLI interface, and display generation for the agenda mechanism that manages discussion topics and their lifecycle in review and consult workflows
+    title: Agenda Mechanism Design
+    purpose: Defines the design of the agenda mechanism for recording discussion topics, managing state transitions, and generating displays shared by review and consult SKILL
     content_details:
-      - "Architecture overview with three components: data storage layer (agenda_store.py), display layer (agenda_render.py), and JSON data contract (agenda.json)"
-      - "Module design: agenda_store.py for CRUD and state transitions, agenda_render.py for display generation, agenda_schema.py for schema definitions"
-      - Data schema structure with content_version, config (identity, item_fields, severity_field), structural_judgment, and items with problem, background, essence, recommendation, decision fields
-      - State transition design using decision field to determine completion; structural_judgment required before item transitions
-      - "CLI interface with 5 subcommands: start (begin agenda), record (log item decision), next (get next item), pending (list remaining), finish (end agenda)"
-      - "Storage locations: review mode uses .claude/.temp/review/agenda.json; consult mode uses .claude/.temp/consult/${CLAUDE_SESSION_ID}/agenda.json"
-      - Automatic display regeneration triggered by agenda_store.py after successful writes via agenda_render.py
-      - "Lifecycle management: records deleted when all items have decisions recorded"
+      - Architecture overview with dependencies and module interactions
+      - Module design (agenda_wrapper.py, agenda_store.py, agenda_render.py, agenda_schema.py)
+      - Class diagram with AgendaRecord, Config, Item, Decision, StructuralJudgment structures
+      - JSON schema with content_version, config.identity, items, structural_judgment fields
+      - State transition validation requiring structural_judgment.recorded for item updates
+      - State representation using decision.by/outcome/reason without independent status vocabulary
+      - CLI input interface (start, record --structural/--item-id/--new, next, pending, finish)
+      - Automatic display regeneration after store write operations
+      - Record placement and lifecycle management based on all decision fields non-empty
     applicable_tasks:
-      - Implementing the agenda mechanism for consult skill
-      - Designing data persistence for discussion records
-      - Implementing state transition validation for decision workflow
-      - Building CLI interfaces for agenda operations
-      - Creating HTML display generation system
+      - Agenda mechanism implementation and integration with review/consult SKILL
+      - Record storage layer design review and JSON schema validation
+      - State transition logic testing and validation
+      - Display layer integration testing with DES-077
+      - CLI input interface design and error handling
     keywords:
+      - agenda_wrapper.py
       - agenda_store.py
       - agenda_render.py
-      - agenda_schema.py
-      - content_version
+      - AgendaRecord
       - structural_judgment
-      - decision workflow
-      - state transitions
-      - JSON persistence
-      - consult SKILL
-      - review mechanism
+      - decision
+      - content_version
+      - state transition
+      - FNC-008
+      - FNC-012
   docs/specs/consult/agenda/design/DES-077_agenda_display_design.md:
-    title: DES-077 Agenda Display Layer Design
-    purpose: Defines the design of the display layer (agenda_render.py) that generates HTML output for agenda items, including template structure, styling, state display, and auto-refresh mechanism without server dependency
+    title: Agenda Display Design
+    purpose: Defines the design of the agenda display layer for rendering HTML output from agenda.json records, implementing auto-following display updates, and ensuring display content remains synchronized with stored records
     content_details:
-      - HTML generation format using local file:// with anchor links (#item-01) for direct item access, enabling number-specified jumps and console noise separation
-      - "Initial display trigger: consult calls Bash open command to automatically launch agenda.html in browser after agenda_store.py start"
-      - Template structure with header (identity and generated-notice), summary table (ID/item/severity/status/result), and item sections with problem/background/essence/recommendation/decision fields rendered as definition lists
-      - State display using single dot in gutter area for change indicators (FNC-002) instead of full background coloring to avoid visual clutter
-      - "Severity badge styling: pastel colors (low saturation, high brightness) with text labels (not emoji only) to comply with WCAG 2.2 criterion 1.4.1 on color usage"
-      - CSS styling specification with selectors for body/h1/h2, generated-notice, agenda-summary table, status-pill, state-dot, severity-badge, section cards, and label chips
-      - "State derivation: four states (未着手/進行中/決着/棄却) determined by background/essence/decision field contents rather than explicit status field"
-      - "Auto-refresh mechanism: embedded script periodically checks agenda_state.js for content_version changes via script tag src parameter, reloads page if version differs"
-      - "Regeneration process: agenda_render.py recreates agenda.html and agenda_state.js files on every write operation from agenda_store.py"
-      - "Scroll position preservation: sessionStorage saves and restores scroll position across page reloads using pagehide/load events"
+      - HTML generation format with agenda summary table and item sections
+      - Initial display trigger using OS open command and anchor link navigation
+      - State derivation algorithm based on background/essence/decision fields
+      - Change tracking with state dot in gutter instead of full card background
+      - Severity badge with pastel colors and text labels for WCAG 2.2 compliance
+      - CSS styling targets for body/main/h1/h2/.generated-notice/#agenda-summary/.severity-badge
+      - Auto-following mechanism using content_version comparison and periodic polling
+      - agenda_state.js lightweight state file with contentVersion value only
+      - Scroll position preservation using sessionStorage during auto-reload
+      - HTML escaping for safe output of confidential and special characters
     applicable_tasks:
-      - Implementing the display and rendering layer for agenda mechanism
-      - Designing HTML generation from JSON data schema
-      - Building browser-based UI for discussion records without server dependency
-      - Implementing auto-refresh mechanism using file:// protocol and script tag techniques
-      - Ensuring web accessibility compliance for severity badges and state indicators
+      - agenda_render.py implementation and HTML generation
+      - Status state machine implementation for display logic
+      - Auto-following script testing with content_version polling
+      - Severity badge rendering based on config.severity_field
+      - Browser file:// protocol compatibility with auto-reload mechanism
+      - Accessibility compliance validation for WCAG 2.2 color usage
+      - Display synchronization with record changes
     keywords:
       - agenda_render.py
       - HTML generation
-      - anchor links
       - content_version
-      - state derivation
+      - agenda_state.js
       - severity badge
-      - WCAG accessibility
-      - sessionStorage
-      - auto-refresh
-      - template rendering
+      - auto-following
+      - state derivation
+      - WCAG 2.2
+      - FNC-002
+      - FNC-005
   docs/specs/consult/agenda/design/NOTES_open_design_questions.md:
     title: Design Questions for agenda Mechanism
     purpose: Collects unresolved design questions and technical decisions required for the agenda mechanism, extracted from requirements for resolution during formal design phase
@@ -586,31 +589,35 @@ docs:
       - PyYAML
   docs/specs/consult/agenda/requirements/REQ-019_agenda_record.md:
     title: Agenda Record Mechanism Requirements
-    purpose: Defines requirements for an agenda record mechanism that manages multiple agenda items with minimal AI involvement while ensuring consistency between record and presentation
+    purpose: Defines requirements for maintaining agenda item records so humans can grasp the whole and respond individually, reducing AI effort on record maintenance to focus on substantive work
     content_details:
-      - Agenda item state tracking and state transition validation
-      - Aggregate-level structure validation performed once before individual item processing
-      - Minimal AI generation scope (content only; formatting, ordering, summaries excluded)
-      - Single structured input transfer per item update
-      - Explicit change tracking mechanism for record updates
-      - YAML-based storage with inherent value boundaries (no custom parser required)
-      - Caller-provided configuration for record count, lifecycle, field schema, and state vocabulary
-      - Existing record cleanup (review triage files and consult discussion files)
+      - Definition of agenda items and record structure
+      - Functional requirements for record generation and update (FNC-004 through FNC-013)
+      - Non-functional requirements for storage format and validation (NFR-001 through NFR-006)
+      - Caller-specific configuration for record lifecycle and vocabulary
+      - Structural validation of agenda collections before individual item handling
+      - State transition predicates as machine-readable definitions
+      - Change information tracking in records
+      - Migration from existing review and consult record formats
+      - Integration points with caller SKILLs
+      - Confidentiality preservation for sensitive content
     applicable_tasks:
-      - Agenda record mechanism implementation (requirements to design)
-      - Agenda record storage and validation
-      - State transition rule definition and validation
-      - Agenda record integration with forge:consult and forge:review
-      - Change tracking system implementation
+      - Designing agenda record mechanism for consult and review workflows
+      - Implementing record lifecycle and state transition validation
+      - Defining caller interface and configuration contract
+      - Specifying record storage format and parsing requirements
+      - Integrating with agenda display and rendering layer
     keywords:
-      - FNC-004
-      - FNC-012
-      - NFR-001
-      - agenda record
-      - state transition
+      - agenda record mechanism
+      - structural validation
+      - state transitions
+      - caller-specific configuration
       - change tracking
-      - YAML storage
-      - structure validation
+      - NFR (Non-Functional Requirements)
+      - FNC (Functional Requirements)
+      - record lifecycle
+      - confidentiality
+      - schema requirements
   docs/specs/consult/agenda/requirements/REQ-021_agenda_display.md:
     title: Agenda Display Layer Requirements
     purpose: Defines the agenda display layer that generates human-readable presentations from agenda records while maintaining clear separation between storage responsibility and presentation responsibility
@@ -638,66 +645,62 @@ docs:
       - change tracking
       - HTML output
   docs/specs/consult/design/DES-078_consult_dialogue_flow_design.md:
-    title: DES-078 consult Dialogue Flow Design
-    purpose: Defines dialogue progression for consult covering review-origin and consult-origin flows, including merger of reviewer findings with evaluator judgments and agenda-based iteration
+    title: consult Dialogue Progression Flow Design (DES-078)
+    purpose: Defines the complete sequence of consult dialogue progression, including review-originated and direct consult paths, with specification of how reviewer findings and evaluator judgments flow into agenda items and structural validation.
     content_details:
-      - "Figure A-1: Review-origin flow with reviewer Agent findings and evaluator Agent judgments"
-      - "Figure A-2: Consult-origin flow with direct user consultation"
-      - "Figure B: Unified agenda iteration (start, item loop, decision recording)"
-      - Merge contract for items[] and structural_judgment (atomic single-call binding)
-      - Schema field necessity contract (fields correspond to diagram messages)
-      - Origin detection in consult SKILL.md (context-based, without external flags)
-      - Structural judgment assessment (duplicate pattern detection, root-cause analysis)
-      - Recommendation field lifecycle (deletion and restoration after user feedback)
+      - End-to-end sequence from review delegation to agenda display
+      - Reviewer findings and evaluator judgment consolidation contract
+      - Common dialogue body iterating through items with discussion and decision
+      - Structural judgment validation across all items
+      - Context-based origin detection for review-delegated vs direct paths
+      - Items array and structural judgment consolidation preconditions
+      - Schema field necessity mapping to information transfer points
+      - Deleted fields justification (current_item_id, status vocabulary, owner, created_at)
     applicable_tasks:
-      - Implementation of consult dialogue flow logic
-      - Review-to-consult delegation mechanism
-      - Reviewer and evaluator findings merger algorithm
-      - Consult SKILL.md Phase 0/1/2.2 branching implementation
-      - Agenda mechanism integration design
-      - Schema validation for merger contract
-      - Origin detection algorithm implementation
-      - Structural judgment assessment logic
+      - Implementation of consult dialogue progression flow
+      - Design validation and review of dialogue sequence
+      - Integration of reviewer findings and evaluator judgments in workflow
+      - consult SKILL.md phase implementation and branching logic
+      - Debugging dialogue sequence issues
+      - Schema validation for agenda mechanism
     keywords:
       - consult
       - dialogue flow
-      - review-origin
-      - consult-origin
-      - items[] merge
-      - structural_judgment
       - reviewer findings
-      - evaluator judgments
-      - recommendation field
-      - origin detection
+      - evaluator judgment
+      - agenda mechanism
+      - structural judgment
+      - context-based branching
+      - items consolidation
   docs/specs/consult/requirements/REQ-017_consult_skill.md:
-    title: REQ-017 Consult dialogue progression skill requirements definition
-    purpose: Defines functional and non-functional requirements for the consult skill, which facilitates discussions, consultations, and collaborative decision-making by progressing dialogue through background analysis, recommendation, and decision capture without performing implementation
+    title: Consult Skill - Discussion Facilitation Requirements
+    purpose: Specifies requirements for the consult skill, which facilitates discussions and consultations by framing topics, presenting background and essence, conducting questioning, and recording decisions through integration with the agenda mechanism.
     content_details:
-      - Three-layer system architecture (dialogue layer, data storage layer, display layer)
-      - Point extraction with confidence verification before presentation
-      - Multi-point progression management with dialogue leadership
-      - Item presentation sequence (background/essence, recommendation, options)
-      - Three-level confidence levels (confirmed, inferred, unverified)
-      - Volume separation between console and generated presentation
-      - Q&A handling distinguishing understanding from judgment requests
-      - Decision capture with reasoning for reject and defer states
-      - State centralization in agenda record mechanism
+      - Three-layer architecture (discussion, data storage, presentation layers)
+      - "Dialogue flow sequence: background/essence → recommendation → options with source citations"
+      - Topic verification with three-level confidence marking (unverified, confirmed, inferred)
+      - Multi-topic progression with importance-ordered management and state tracking (unstarted, in-progress, decided, rejected)
+      - Functional requirements FNC-001 to FNC-011 covering topic extraction, presentation, confidence marking, context re-statement, Q&A handling, judgement recording, interruption handling, discussion mode
+      - Non-functional requirements including state centralization in agenda, use-case agnostic design, and confidential information handling
+      - Boundary rules prohibiting consult execution of file modification, issue creation, or commits
+      - TBD items for namespace, batch presentation threshold, judgement categories, and display layer necessity
     applicable_tasks:
-      - Implementation of consult skill dialogue progression logic
-      - Integration with review skill decision workflow
-      - Design of discussion management and dialogue structures
-      - Creation of agenda record mechanism
-      - Specification of dialogue requirements and patterns
+      - Consult skill implementation and behavior specification
+      - Review workflow design and feedback dialogue management
+      - Discussion progression system design
+      - Agenda mechanism integration and state synchronization
+      - Multi-topic dialogue and decision workflow development
     keywords:
       - consult
-      - dialogue progression
-      - decision-making
       - agenda
+      - discussion facilitation
+      - topic extraction and verification
       - confidence level
-      - multi-point management
-      - discussion
-      - review integration
-      - judgment capture
+      - dialogue progression
+      - judgement recording
+      - discussion mode
+      - presentation layer
+      - state centralization
   docs/specs/doc-db/design/ADR-058_docdb_error_discrimination_contract.md:
     title: ADR-058 doc-db error discrimination contract
     purpose: Establishes contract for distinguishing missing keys from trashed keys in doc-db integration using error identifiers rather than message text

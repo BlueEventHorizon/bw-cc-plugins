@@ -1,14 +1,14 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-09-06T14:43:19Z
-file_count: 40
+generated_at: 2026-09-07T05:33:39Z
+file_count: 41
 checksums:
-  plugins/forge/docs/additive_development_spec.md: 145347617565114de918c6a9e4a82d9f5e023aefa5e0d7529c97320103fbca59
+  plugins/forge/docs/additive_development_spec.md: 4c56257ec786795ab3e6215ac8c4c261e581be1cf1598c400cb719ec39cf0926
   plugins/forge/docs/adr_format.md: d72858a6731126e47399200e776b468b735963a151a89f171ae887591f3b3fc1
   plugins/forge/docs/adr_principles_spec.md: a499e5fe29504e8d481061b8f377f29297af2beb67499a4932e1db8a1a8f98e9
   plugins/forge/docs/consult_principles_spec.md: 12de03cd96073e62f57782697ddfa49501bd6c318c443327b27cf68c41f4c387
-  plugins/forge/docs/criteria/review_criteria_code.md: 2ba8167d6f0b7396990c808b6e7bcc9946a49d9e8b54745a3ca34821a2d9459f
-  plugins/forge/docs/criteria/review_criteria_design.md: 94477edbcb01c28f4bf61debc10d2b7953685e9222410830579943e662ce6f97
+  plugins/forge/docs/criteria/review_criteria_code.md: db0142cb94dff160544afdcb79e15ddd7ba3c1165caa0677294e100fbb1ed471
+  plugins/forge/docs/criteria/review_criteria_design.md: ab4a140f60c9546f99745d0d45909706194a3e3038d068867fc7ec9b537dead3
   plugins/forge/docs/criteria/review_criteria_generic.md: 028ff3919b848210b29142a8797d959fd7f65b685e3b2ef475c39c91524af401
   plugins/forge/docs/criteria/review_criteria_plan.md: 07e980a66ba926e8ebb2e6aa52effe30e31e88f5a71b3fa73ce97cc93226cf49
   plugins/forge/docs/criteria/review_criteria_requirement.md: 8a627daf9d9e490e38587cf96d7626f17ee6c50db3bdcfd8907dd33d4fa47297
@@ -17,13 +17,14 @@ checksums:
   plugins/forge/docs/design_format.md: b6b3176c4ebcdf7b429d2dd0edda1e0a2be5715a74fd89f15c3ef24bd0145842
   plugins/forge/docs/design_principles_spec.md: 298711c669ab2b44d68a2c7a22194464866ab5369b84279d12256ec980cdecd3
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
+  plugins/forge/docs/deterministic_generation_spec.md: b0eacd7205bb92c652345f5a7f44997c813307d88c450a1e4c0a64823c16718e
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e
   plugins/forge/docs/document_style_guide.md: 86054afc9e6fd2f9f78da81e929d1039272e10a9a577b50950802b841c9c2545
   plugins/forge/docs/forge_anti_patterns.md: c12e23d4fb124122226d893c60d1e702c9ce2d08fe43828c5d1dddf3c765b892
   plugins/forge/docs/frontmatter_format.md: 86ef4900f3bfc15bbdd4b038b9cf85ea357fb6b58b0bca8180716e6749e8914c
-  plugins/forge/docs/plan_principles_spec.md: f4d2f175f027dced7fe6dc94df48f9357626ef59b12606ac686da567c1a2fc33
+  plugins/forge/docs/plan_principles_spec.md: 5e1546619b8c9711f400cc1c5c5bba943d7cd305e2066ea523816b73cef4c170
   plugins/forge/docs/requirement_format.md: 6427829570830dc9f1d057f5d996ca00ff5c675af67924f5bdeb937cb79a44cc
-  plugins/forge/docs/review_priorities_spec.md: c82fd92e9eda90eb7ca0ba127ccde001d057d5ee3b187529c1f532cac9d3ddff
+  plugins/forge/docs/review_priorities_spec.md: 7fbaf70ae39d646655b9e983fe1534736747cb17e6ce743c48187a6a3cf2c074
   plugins/forge/docs/scope_proportionality_spec.md: 9bfe8f9adfe02fea4c68eba7eca645f63bde73dc6fad57595976b7a67b6aa637
   plugins/forge/docs/sensitive_information_spec.md: 382f1e4517ff5ff533b7d3963b34dfc040b13b5172ee2c9597dd6114d1694139
   plugins/forge/docs/spec_design_boundary_spec.md: 1b530b649d8b762d8519254cfad3c4ecc5d9dfc4de47992e3bae3c52de3b5735
