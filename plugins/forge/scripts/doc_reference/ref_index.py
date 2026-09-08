@@ -10,12 +10,13 @@ git 履歴・他ブランチ・削除済みファイル・未追跡ファイル�
 （DES-081 §3.3c。大文字小文字を区別しないファイルシステムで、表記が実体と
 異なる参照を検出できる）。
 
-**符号表は永続化しない**（DES-081 §3.3b）。検査のたびに構築する。
+**索引は永続化しない。** 検査のたびに、その時点の文書集合から構築する。保存した索引と
+現在の文書集合がずれた状態は、本機構が検出しようとしている「記述と実体の乖離」と同じ形を
+しており、検査機構自身がその欠陥を持つことになる。
 
-未実装:
-
-- **語頭符号による解決**（DES-081 §3.3a）。現状は文書 ID の完全一致のみを持つ。
-  文書名の一意な接頭辞による一致・trie による曖昧化の検出は未実装
+パスを伴わない参照（文書 ID の表記）の解決は**完全一致**で行う（DES-081 §3.3a）。
+名前の一部を符号として解決する機構は持たない——検査対象の 4 形（REQ-023 FNC-002）のうち
+パスを伴わないのは文書 ID の表記だけであり、地の文の裸のファイル名は検査対象ではない。
 """
 
 from __future__ import annotations
@@ -50,26 +51,39 @@ def build_file_index(paths) -> set:
     return set(paths)
 
 
-def build_code_index(paths, include_pattern: str) -> dict:
+def build_name_index(paths) -> dict:
+    """ファイル名から実在するパスの一覧への対応を作る（DES-081 §3.3）。
+
+    ファイル索引（パスの集合）とは別に持つ。「パスとして解決しなかった参照が、
+    名前としては実在するか」を答えるためであり、FNC-011 が要求する 2 状態
+    （名前の不在 / 配置の不一致）の区別にはこの向きが必要である。
+
+    Returns:
+        dict: ファイル名 → パスの一覧（昇順）。同名が複数あればすべて保持する
+        （どれが正しいかは参照元の意図に依存し、決定論的に決まらない）
+    """
+    index: dict = {}
+    for path in paths:
+        index.setdefault(PurePosixPath(path).name, []).append(path)
+    return {name: sorted(v) for name, v in index.items()}
+
+
+def build_code_index(paths) -> dict:
     """文書 ID から実ファイルへの対応を作る。
 
     Args:
-        paths: 追跡下のパス一覧
-        include_pattern: 索引へ入れる文書を選ぶ正規表現（呼び出し側が渡す。
-            何を文書集合とみなすかは用途ごとに異なるため機構は決めない。
-            DES-081 §2「検査対象パスの決定は本機構の外にある」）
+        paths: 索引へ入れる文書のパス一覧。**どれを文書集合とみなすかは呼び出し側が
+            絞り込んで渡す**（DES-081 §2「検査対象パスの決定は本機構の外にある」）。
+            ここで重ねて絞り込む引数は持たない——絞り込みの責務が 2 箇所に分かれる
 
     Returns:
         dict: 文書 ID → パス。同じ ID が複数のパスに現れた場合は
         `ambiguous` 側へ入れ、実在として扱わない（NFR-001: 一意に決まらない
         ものを決まったことにしない）
     """
-    include = re.compile(include_pattern)
     found: dict = {}
     ambiguous: dict = {}
     for path in paths:
-        if not include.search(path):
-            continue
         m = _CODE.match(PurePosixPath(path).name)
         if not m:
             continue

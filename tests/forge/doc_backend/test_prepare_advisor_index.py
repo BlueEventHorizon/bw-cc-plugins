@@ -177,6 +177,21 @@ class DprintFailurePropagationTest(_TempProject):
         self.assertTrue(prepare_advisor_index.DPRINT_SCRIPT.is_file())
         self.assertEqual(prepare_advisor_index.DPRINT_SCRIPT.name, "run_dprint_fmt.sh")
 
+    def test_no_format_skips_dprint_but_still_resolves(self):
+        """`format_first=False` は dprint を実行せず、設定解決だけを行う。
+
+        整形は索引作成の前提であって設定解決の前提ではない。成果物を変更しない
+        呼び出し元（`skills/check-doc-refs`）がこの経路を使う。
+        """
+        self.write_config()
+        runner = _RecordingRunner(result=_DPRINT_OK)
+        payload = prepare_advisor_index.prepare(
+            "rules", self.root, runner=runner, format_first=False
+        )
+        self.assertEqual(runner.calls, [])
+        self.assertEqual(payload["root_dirs"], ["docs/rules/"])
+        self.assertEqual(payload["status"], prepare_advisor_index.STATUS_SUCCESS)
+
 
 # --- dirs / exclude 出力 ---------------------------------------------------------
 

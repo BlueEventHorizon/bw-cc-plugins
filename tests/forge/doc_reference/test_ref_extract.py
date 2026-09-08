@@ -62,16 +62,112 @@ class TestInlineLinks(unittest.TestCase):
         self.assertEqual(got, ["i.png", "d.md"])
 
     def test_html_comment_excluded(self):
+        """1 行に閉じた HTML コメント（CommonMark §4.6）。"""
         text = "<!-- [x](commented.md) -->\n[y](real.md)\n"
         got = [d for _, d in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
-    def test_angle_bracket_destination_is_reported_as_out_of_scope(self):
-        """宣言外の形は黙って落とさず skipped で返す（NFR-001）。"""
+    def test_multiline_html_comment_excluded(self):
+        """複数行にまたがる HTML コメントも終端まで 1 ブロック（CommonMark §4.6）。
+
+        1 行の形だけを固定した試験は通るため、この形が欠けると覆いになる（DES-081 §6.1）。
+        """
+        text = "<!--\n[x](commented.md)\n-->\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+    def test_indented_code_block_is_not_a_link(self):
+        """行頭 4 スペースはコードであり、中のリンクは解析しない（CommonMark §4.4）。"""
+        text = "段落\n\n    [x](indented.md)\n\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+    def test_raw_html_anchor_is_not_a_link(self):
+        """生の HTML は Markdown のリンクではない（CommonMark §6.6）。skipped にも入れない。"""
+        res = ref_extract.extract_links('<a href="gone.md">x</a>\n[y](real.md)\n')
+        self.assertEqual([d for _, d in res["inline"]], ["real.md"])
+        self.assertEqual(res["skipped"], [])
+
+    def test_angle_bracket_destination_is_a_link(self):
+        """山括弧囲みは CommonMark §6.3 の正当な destination である。
+
+        解決規則を持つかどうかは層 2 の事情であり、抽出段階で落とさない（DES-081 §1.3）。
+        """
         res = ref_extract.extract_links("[x](<p with space.md>)")
-        self.assertEqual(res["inline"], [])
-        self.assertEqual(len(res["skipped"]), 1)
-        self.assertIn("山括弧囲み", res["skipped"][0][1])
+        self.assertEqual([d for _, d in res["inline"]], ["p with space.md"])
+        self.assertEqual(res["skipped"], [])
+
+    def test_destination_with_title(self):
+        """title 付き destination（CommonMark §6.3）。title は destination に含めない。"""
+        got = [d for _, d in ref_extract.extract_links('[x](a.md "題")')["inline"]]
+        self.assertEqual(got, ["a.md"])
+
+    def test_destination_with_balanced_parens(self):
+        """括弧を含む destination は釣り合っていれば destination の一部（CommonMark §6.3）。"""
+        got = [d for _, d in ref_extract.extract_links("[x](a(b).md)")["inline"]]
+        self.assertEqual(got, ["a(b).md"])
+
+    def test_link_text_with_nested_brackets(self):
+        """リンクテキストは釣り合った角括弧を含みうる（CommonMark §6.3）。"""
+        got = [d for _, d in ref_extract.extract_links("[a [b] c](d.md)")["inline"]]
+        self.assertEqual(got, ["d.md"])
+
+    def test_autolink_is_extracted(self):
+        """autolink は参照である（CommonMark §6.5）。層 2 で対象外になるのは別の話。"""
+        got = [d for _, d in ref_extract.extract_links("<https://example.test/a>")["inline"]]
+        self.assertEqual(got, ["https://example.test/a"])
+
+
+class TestHtmlBlocks(unittest.TestCase):
+    """CommonMark §4.6 は 7 type ある。コメント（type 2）だけでは足りない。"""
+
+    def test_type6_block_tag_excluded(self):
+        text = "<div>\n[x](gone.md)\n</div>\n\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+    def test_type1_pre_excluded(self):
+        text = "<pre>\n[x](gone.md)\n</pre>\n\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+    def test_html_block_ends_at_blank_line(self):
+        """type 6 は空行で閉じる。閉じた後のリンクは抽出する。"""
+        text = "<div>\n[x](gone.md)\n\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+
+class TestIndentedCodeAndContainers(unittest.TestCase):
+    """§4.4 の判定はコンテナ相対のインデントで決まる（§5）。除外し過ぎは見逃しになる。"""
+
+    def test_list_continuation_paragraph_is_not_code(self):
+        """リスト項目の継続段落はコードではない。抽出する。"""
+        text = "- 項目\n\n    継続の [x](a.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["a.md"])
+
+    def test_nested_list_item_is_not_code(self):
+        text = "- 項目\n    - 入れ子の [x](a.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["a.md"])
+
+    def test_code_block_inside_list_item_is_excluded(self):
+        """コンテナ相対で 4 スペース以上ならコードである。"""
+        text = "- 項目\n\n      [x](gone.md)\n\n[y](real.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["real.md"])
+
+    def test_indented_line_cannot_interrupt_a_paragraph(self):
+        """段落の直後の 4 スペース行はコードにならない（CommonMark §4.4）。"""
+        text = "段落\n    継続の [x](a.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["a.md"])
+
+    def test_block_quote_content_is_scanned(self):
+        text = "> 引用の [x](a.md)\n"
+        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        self.assertEqual(got, ["a.md"])
 
 
 class TestReferenceLinks(unittest.TestCase):
@@ -107,6 +203,61 @@ class TestSpecRefs(unittest.TestCase):
 
     def test_fence_excluded(self):
         self.assertEqual(ref_extract.find_spec_refs("```\nDES-075 §1\n```\n"), [])
+
+
+class TestSlugifyHeading(unittest.TestCase):
+    """アンカーの変換規則。正本は外部機構が持つ（DES-081 §5.2.1）。"""
+
+    def test_number_and_japanese(self):
+        self.assertEqual(ref_extract.slugify_heading("1. 全体方針"), "1-全体方針")
+
+    def test_fullwidth_punctuation_is_removed(self):
+        self.assertEqual(
+            ref_extract.slugify_heading("Step 1: 対象ノードの特定（resolve）"),
+            "step-1-対象ノードの特定resolve",
+        )
+
+    def test_consecutive_hyphens_are_not_collapsed(self):
+        self.assertEqual(ref_extract.slugify_heading("A & B"), "a--b")
+
+    def test_duplicates_get_a_counter(self):
+        seen: dict = {}
+        self.assertEqual(ref_extract.slugify_heading("概要", seen), "概要")
+        self.assertEqual(ref_extract.slugify_heading("概要", seen), "概要-1")
+        self.assertEqual(ref_extract.slugify_heading("概要", seen), "概要-2")
+
+    def test_link_in_heading_uses_display_text(self):
+        """slugify の入力は Markdown 原文ではなく plain text である（§5.2.1）。"""
+        self.assertEqual(ref_extract.slugify_heading(
+            ref_extract.heading_plain_text("[Alpha](docs/a.md)")), "alpha")
+
+    def test_code_span_in_heading_keeps_content(self):
+        self.assertEqual(ref_extract.slugify_heading(
+            ref_extract.heading_plain_text("`type` の扱い")), "type-の扱い")
+
+    def test_entity_reference_is_decoded(self):
+        self.assertEqual(ref_extract.slugify_heading(
+            ref_extract.heading_plain_text("A &amp; B")), "a--b")
+
+    def test_heading_slugs_collects_atx_headings(self):
+        text = "# T\n## 概要\n### 詳細な話\n"
+        self.assertEqual(ref_extract.heading_slugs(text), {"t", "概要", "詳細な話"})
+
+
+class TestUnenumeratedHeadingForms(unittest.TestCase):
+    """列挙範囲が未決なので、範囲外の形が在るかだけを見る（DES-081 §3.3c.1）。"""
+
+    def test_atx_only_document_has_none(self):
+        self.assertFalse(ref_extract.has_unenumerated_heading_forms("# T\n## 概要\n本文\n"))
+
+    def test_setext_heading_is_detected(self):
+        self.assertTrue(ref_extract.has_unenumerated_heading_forms("見出し\n=====\n本文\n"))
+
+    def test_heading_inside_list_is_detected(self):
+        self.assertTrue(ref_extract.has_unenumerated_heading_forms("- 項目\n  ## 入れ子の見出し\n"))
+
+    def test_setext_inside_fence_is_not_detected(self):
+        self.assertFalse(ref_extract.has_unenumerated_heading_forms("```\n見出し\n=====\n```\n"))
 
 
 class TestHeadingSectionNumbers(unittest.TestCase):
