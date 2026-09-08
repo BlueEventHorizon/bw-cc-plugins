@@ -30,14 +30,17 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 </header>
 
 <table id="agenda-summary"><!-- ID/項目/重要度/状態/結果・課題 の一覧。FNC-001。
-  状態セルは <span class="status-pill" data-status="{状態表示文言}"> で包む（§3.3） --></table>
+  状態セルは <span class="status-pill" data-status="{状態表示文言}"> で包む（§3.3）。
+  直前に変わった項目の行は <tr data-changed="true"> とする（§3.1b） --></table>
 
 <section id="item-01" data-changed="{is_last_changed}"><!-- FNC-005: アンカーリンク到達点。項目カード -->
+  <div class="gutter"><span class="state-dot changed"></span></div><!-- §3.1: 状態表示はガターのドット 1 点に集約する -->
   <h2>
     <span class="item-no">[01]</span>{title}<!-- title は必須ではない。空なら id を表示して項目を識別できるようにする -->
     <span class="severity-badge" data-severity="{severity}">{severity}</span><!-- §3.1a。severity_field 未指定、または値が無ければ本要素を出力しない -->
   </h2>
-  <dl><!-- ラベル列（チップ）と本文列を分離し、複数項目を縦走査で比較できるようにする -->
+  <dl><!-- ラベル列（チップ）と本文列を分離し、複数項目を縦走査で比較できるようにする。
+    直前に変わった欄は <dt>/<dd> の双方へ data-changed="true" を付ける（§3.1b） -->
     <dt>問題</dt><dd>...</dd><!-- items[].problem。空なら本行を出力しない -->
     <dt>背景</dt><dd>...</dd>
     <dt>本質</dt><dd>...</dd>
@@ -76,6 +79,18 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 
 - `data-severity` の値（`critical`/`major`/`minor` 等）は呼び出し側が渡した文字列そのままであり、agenda 側はこの値の意味（重大度の順序等）を解釈しない。CSS 側は `data-severity` の値ごとにパステル配色を対応させる（例: `[data-severity="critical"] { ... }`）が、これは表示層が呼び出し側の語彙に依存する数少ない箇所であり、[DES-075](DES-075_agenda_mechanism_design.md) §5.1 の状態遷移契約（`agenda_schema.py`の`required_fields_for()`/`validate()`。語彙の意味に立ち入らない）とは異なるレイヤーの話である
 
+### 3.1b 変更箇所は欄の粒度まで示す
+
+§3.1 のドットは「**どの項目**が変わったか」を示す。加えて、その項目の「**どの欄**が変わったか」を欄そのものの見た目で示す（FNC-002「直前の更新で変わった箇所が、提示上で他と区別できること」）。
+
+- 記録側が持つ `last_changed_fields`（[DES-075](DES-075_agenda_mechanism_design.md) §4「直前の更新の一意性」）の**フィールド名**を使う。表示層はこの配列が空かどうかだけでなく、中身の名前を見る
+- 名前は入れ子表記に対応させる。`decision.by` が変わったなら「決着」欄（`decision`）が変わったものとして扱う。表示上の 1 欄が記録上の複数フィールドに対応するのは決着欄だけである
+- 変わった欄は `<dt>` と `<dd>` の双方へ `data-changed="true"` を付ける。付かない側（変化が無い欄）を既定とする
+- アジェンダ表（`#agenda-summary`）の該当項目の行にも `<tr data-changed="true">` を付ける。項目カードまで下りなくても、俯瞰の段階でどの行が動いたかが分かる
+- **色だけに意味を依存させない**（[WCAG 2.2 達成基準 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color)）。背景の淡い色に加え、左端の帯（`border-left` / `box-shadow`）という形の手がかりを併用する
+
+記録側が「直前の 1 回」だけを保持することが前提である。項目ごとに印が積み上がる記録の下では、本節の表示は「全部が変更済み」に飽和して機能しない。
+
 ### 3.2 CSS の適用対象（値は実装時に決定）
 
 どのセレクタが何をスタイリングするかは設計事項として以下に固定する。**具体的な値（色コード・px サイズ等）は本設計書で確定しない**——実装後に生成された `agenda.html` を実際に見て、利用者と調整しながら決める（[design_principles_spec.md](../../../../../plugins/forge/docs/design_principles_spec.md)「実行後に人間が体感して決める値」と同じ扱い）。
@@ -88,6 +103,8 @@ HTML を採用する（識別子からの直接到達（FNC-005）をアンカ�
 | `#agenda-summary`                                | アジェンダ表（ID/項目/重要度/状態/結果・課題）        | 罫線・余白で表として読みやすくする                                                                                                                                                                                  |
 | `.status-pill[data-status]`                      | アジェンダ表の「状態」欄（§3.3）                      | パステル配色のピル + テキストラベル。値は状態表示文言そのままで、未知の値は既定の配色にフォールバックする（severity バッジと同じ扱い）                                                                              |
 | `.state-dot.changed`（`section` 内のガター要素） | 変更箇所の状態表示（§3.1）                            | ガターに置く小さいドットのみに色を使う。カード背景・ボーダーは塗らない                                                                                                                                              |
+| `dt[data-changed]`, `dd[data-changed]`           | 直前に変わった欄（§3.1b）                             | 淡い背景色 + 左端の帯（`border-left`）。帯の分だけ本文が動かないよう負のマージンで位置を戻す。ラベルチップは濃い色へ振る                                                                                            |
+| `#agenda-summary tbody tr[data-changed]`         | 直前に変わった項目の一覧行（§3.1b）                   | 淡い背景色 + 先頭セルの帯（`box-shadow: inset`）。hover の配色を上書きしない                                                                                                                                        |
 | `.severity-badge[data-severity]`                 | 重大度バッジ（§3.1a）                                 | パステル配色（低彩度・高明度）+ テキストラベルを併用する。色だけに意味を依存させない（[WCAG 2.2 達成基準 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color)）                                                       |
 | `section`                                        | 項目ごとの区切り（アンカーリンク到達点）              | 項目を独立したカード（面）として区切る。状態によらず常にニュートラル                                                                                                                                                |
 | `dt`, `dt.label-recommend`, `dt.label-decision`  | 問題/背景/本質/推奨/決着のラベルチップ                | 背景色 + 白抜き文字のチップ。均等割付で引き伸ばさない（利用者の要望）。ラベル列と本文列は分離し、縦走査で欄を比較できるようにする。問題・推奨（任意フィールド）は記入があるときだけ行を出す（空のチップを並べない） |
@@ -145,7 +162,7 @@ stateDiagram-v2
 ## 5. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_render.py`: `last_changed_fields`に応じた`data-changed`属性の付与、HTMLエスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`config.severity_field`が指定されている場合に、その値を`fields`の中と項目の直下の順で探してバッジとして出力すること・`fields`側が空でも直下に値があればバッジが出ること・未指定または両方に値が無い場合にバッジ要素自体が出力されないこと（§3.1a）、自動追従スクリプトが`agenda.html`に埋め込まれ生成時点の`content_version`を世代番号として持つこと・`agenda_state.js`の生成内容が`contentVersion`のみを持つこと（§4.2）、`problem`/`recommendation`が非空のときだけ対応する行が出力されること（§3）
+  - `agenda_render.py`: `last_changed_fields`に応じた`data-changed`属性の付与（項目カード・一覧行に加え、変わった**欄**の`<dt>`/`<dd>`にも付くこと・変化の無い欄には付かないこと・`decision.by`のような入れ子表記が「決着」欄に対応すること。§3.1b）、HTMLエスケープ（機密情報・特殊文字を含む本文の安全な出力）、生成物注記の出力、`config.severity_field`が指定されている場合に、その値を`fields`の中と項目の直下の順で探してバッジとして出力すること・`fields`側が空でも直下に値があればバッジが出ること・未指定または両方に値が無い場合にバッジ要素自体が出力されないこと（§3.1a）、自動追従スクリプトが`agenda.html`に埋め込まれ生成時点の`content_version`を世代番号として持つこと・`agenda_state.js`の生成内容が`contentVersion`のみを持つこと（§4.2）、`problem`/`recommendation`が非空のときだけ対応する行が出力されること（§3）
   - `agenda_store.py`: 書き込み成功後に`agenda.html`と`agenda_state.js`の両方が再生成されること、`finish`の削除が両ファイルに及ぶこと
 - **手動検証観点**（ブラウザの実際の挙動に依存し、単体テストで機械的に保証できない事項）:
   - `open` コマンドでの初回表示が実際のブラウザで動作すること

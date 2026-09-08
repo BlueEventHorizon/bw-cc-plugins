@@ -275,7 +275,9 @@ class SettlementBoundaryTest(AgendaIntegrationTestCase):
         # 提示側: 決着として出す
         html = self._html()
         self.assertIn('<span class="status-pill" data-status="adopt">adopt</span>', html)
-        self.assertIn("<dd>adopt（妥当と判断）</dd>", html)
+        # 直前に変わった欄には印が付く（DES-077 §3.1b）。本テストが固定するのは決着内容の
+        # 表示であり、印の有無ではないため属性を含めた形で確認する。
+        self.assertIn('<dd data-changed="true">adopt（妥当と判断）</dd>', html)
 
 
 if __name__ == "__main__":

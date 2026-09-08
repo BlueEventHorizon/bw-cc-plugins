@@ -171,6 +171,23 @@ def _existing_item_ids(items: list) -> set:
     }
 
 
+def _clear_changed_marks(items: list) -> None:
+    """全項目の `last_changed_fields` を空にする（DES-075 §4・agenda:REQ-021 FNC-002）。
+
+    `last_changed_fields` が表すのは「**直前の**書き込みで変わった箇所」であり、
+    記録全体で 1 回分しか存在しない。したがって書き込みのたびに全項目をいったん
+    消し、その書き込みで実際に値を変えた項目にだけ立て直す。
+
+    消さずに項目ごとへ積むと、一度でも値を書かれた項目が点灯したまま残り、
+    進行するほど全項目が「変更あり」に見える。これは agenda:REQ-021 FNC-002 が
+    防ごうとしている状態（項目数が増えると今回何が変わったか読み取れなくなる）
+    そのものである。
+    """
+    for item in items:
+        if isinstance(item, dict):
+            item["last_changed_fields"] = []
+
+
 def _find_item_index(items: list, item_id: Any) -> int | None:
     for index, item in enumerate(items):
         if isinstance(item, dict) and item.get("id") == item_id:
@@ -283,6 +300,10 @@ def record_structural_judgment(path: str | Path, note: str) -> dict:
         return {"status": "error", "message": str(exc)}
 
     record["structural_judgment"] = {"recorded": True, "note": note}
+    # この書き込みは項目の値を 1 つも変えないため、直前の変更箇所は「無し」になる。
+    items = record.get("items")
+    if isinstance(items, list):
+        _clear_changed_marks(items)
     record["content_version"] = record.get("content_version", 0) + 1
 
     try:
@@ -325,8 +346,10 @@ def record_item_value(path: str | Path, item_id: Any, name: str, value: Any) -> 
     if not validation["ok"]:
         return {"status": "error", "ok": False, "missing_fields": validation["missing_fields"]}
 
-    # 渡された名前そのまま（例: `decision.by`）を記録する（DES-075 §6.1「その呼び出しで
+    # 直前の変更箇所は記録全体で 1 回分しかない。他項目の印を消してから、渡された
+    # 名前そのまま（例: `decision.by`）をこの項目へ立てる（DES-075 §6.1「その呼び出しで
     # 加えたキー」）。
+    _clear_changed_marks(items)
     merged_item["last_changed_fields"] = [name]
     items[index] = merged_item
     record["items"] = items
@@ -359,6 +382,9 @@ def record_new_item(path: str | Path, note: str) -> dict:
 
     new_item = _normalize_item({})
     new_item["id"] = _allocate_item_id(_existing_item_ids(items))
+    # 追加は既存項目の値を変えないため、直前の変更箇所は「無し」になる（新規項目自身も
+    # まだ値を持たないため `last_changed_fields` は空のままである）。
+    _clear_changed_marks(items)
     items.append(new_item)
     record["items"] = items
     record["structural_judgment"] = {"recorded": True, "note": note}

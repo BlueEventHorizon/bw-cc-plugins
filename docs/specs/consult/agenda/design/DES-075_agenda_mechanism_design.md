@@ -147,7 +147,22 @@ classDiagram
 | `items[].problem`             | 何が問題か・何を決めたいのか（論点そのもの）。任意の自由記述。`agenda_wrapper.py` が上流 script の出力から `items[]` を組み立てる際、review 起点では結合済み所見の `text` を `problem` にも置く。consult 起点では consult 自身が立てた論点がここへ移る（[consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2.2）。`record` での追記・修正も可。状態遷移の判定（§5.1）には関与しない                                                                                                                                                                                                                          | agenda:REQ-021 FNC-001  |
 | `items[].recommendation`      | 選択肢と帰結を踏まえた推奨 + 確信度。任意の自由記述。決定モードで AI がコンソールへ述べる内容と同じもの（提示と記録の構造を一致させる。[consult:DES-078](../../design/DES-078_consult_dialogue_flow_design.md) §2.2）。`record` の差分パッチで渡す。状態遷移の判定（§5.1）には関与しない                                                                                                                                                                                                                                                                                                                                           | agenda:REQ-021 FNC-003  |
 | `items[].decision`            | 項目の最終判断記録（§3.2）。**`by`・`outcome`・`reason` の 3 値がすべて非空であることが「決着済み」を表す**（下記「状態の表現」参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | consult:REQ-017 FNC-008 |
-| `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | FNC-013                 |
+| `items[].last_changed_fields` | 直前の更新で変わったフィールド名の配列（表示層 FNC-002 が使う）。**「直前の更新」は記録全体で 1 回分しか存在しない**——書き込みのたびに全項目の値を空にしてから、その書き込みで実際に値を変えた項目にだけ立て直す（下記「直前の更新の一意性」）                                                                                                                                                                                                                                                                                                                                                                                     | FNC-013                 |
+
+### 直前の更新の一意性（`last_changed_fields`）
+
+`items[].last_changed_fields` が表すのは「**直前の**書き込みで変わった箇所」であり、記録全体で 1 回分しか存在しない。したがって書き込み系の操作はいずれも、全項目の `last_changed_fields` を空にしてから、その書き込みで実際に値を変えた項目にだけ立て直す。
+
+| 書き込み                              | 立つ項目                                           |
+| ------------------------------------- | -------------------------------------------------- |
+| `start`                               | どれも立たない（全項目が空で始まる）               |
+| `record`（既存項目へ値を 1 つ加える） | その項目にだけ、渡された名前 1 つが立つ            |
+| `record`（構造判断）                  | どれも立たない（項目の値を 1 つも変えないため）    |
+| `record`（新規項目の追加）            | どれも立たない（追加された項目もまだ値を持たない） |
+
+拒否された呼び出し（§5.1 の受理条件を満たさない `record` 等）は記録を保存しないため、直前の印もそのまま残る。
+
+**項目ごとに積み上げてはならない**。一度でも値を書かれた項目が印を持ったまま残ると、進行するほど全項目が「変更あり」として提示され、今回どこが変わったかが読み取れなくなる。これは agenda:REQ-021 FNC-002 が防ごうとしている状態そのものであり、項目数が増えるほど確実に起きる。
 
 ### 状態の表現（独立した状態語彙を持たない）
 
@@ -329,7 +344,7 @@ sequenceDiagram
 ## 9. テスト設計
 
 - **単体テスト対象**:
-  - `agenda_store.py`: `structural_judgment` 未記録時は種類を問わず項目への値追加が拒否されること（FNC-012）、`decision.*` の各値は `background` / `essence` が非空なら 1 つずつ受理され、残りの `decision` 値を同じ呼び出しの必須条件にしないこと（§5.1）、JSON 読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item_id()` / `pending_item_ids()` が `decision.by`・`decision.outcome`・`decision.reason` の 3 値すべてが非空かという決着述語に基づき次項目・残件（`pending_item_ids()` の呼び出し元が `len()` で導出する）を正しく返すこと（FNC-006）、`start` / 3 形の `record` の書き込み成功後に `agenda_render.py` が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.1）、各書き込みで `content_version` が 1 増えること、`items[].last_changed_fields` がその呼び出しで加えた 1 つの名前と一致すること（FNC-013）、`finish` が 3 値の揃わない項目を残したまま呼ばれても記録を削除せず、全項目で 3 値が揃った場合に削除すること
+  - `agenda_store.py`: `structural_judgment` 未記録時は種類を問わず項目への値追加が拒否されること（FNC-012）、`decision.*` の各値は `background` / `essence` が非空なら 1 つずつ受理され、残りの `decision` 値を同じ呼び出しの必須条件にしないこと（§5.1）、JSON 読み書き失敗時に既定値で補わず明示エラーを返すこと（NFR-006）、`next_item_id()` / `pending_item_ids()` が `decision.by`・`decision.outcome`・`decision.reason` の 3 値すべてが非空かという決着述語に基づき次項目・残件（`pending_item_ids()` の呼び出し元が `len()` で導出する）を正しく返すこと（FNC-006）、`start` / 3 形の `record` の書き込み成功後に `agenda_render.py` が自動的に呼ばれること・呼び出しが失敗しても記録側の状態遷移は成立したままであること（§8.1）、各書き込みで `content_version` が 1 増えること、`items[].last_changed_fields` がその呼び出しで加えた 1 つの名前と一致し、**同時に他の項目の `last_changed_fields` が空になること**（FNC-013・上記「直前の更新の一意性」。別項目を続けて更新しても印が累積しないこと、構造判断・新規追加ではどの項目にも印が立たないこと、拒否された呼び出しでは印が変わらないこと）、`finish` が 3 値の揃わない項目を残したまま呼ばれても記録を削除せず、全項目で 3 値が揃った場合に削除すること
   - `agenda_schema.py`: 受理条件の判定（§5.1 の表と決着の述語。入力の形式検査は持たない）
   - `agenda_render.py` の単体テストは [DES-077](DES-077_agenda_display_design.md) §5 が持つ
 - **統合テスト対象**: `start`（項目群を渡す） → 構造判断を記す `record` → 項目へ値を 1 つずつ加える `record` × N（背景・本質・決着の 3 値） → `next`/`pending` → `finish`の一連の呼び出しで、記録が意図通り遷移すること。あわせて、各書き込み操作の直後に表示が再生成され、内容が最新の`agenda.json`と一致すること（§8.1・[DES-077](DES-077_agenda_display_design.md)）
