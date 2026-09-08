@@ -10,6 +10,22 @@ query / update wrapper が doc-advisor 経路へ切り替えるとき、`index-d
 2. `.doc_structure.yaml` から当該 category の `root_dirs` / `patterns.exclude` を
    解決し、`index-docs` へ渡す入力として JSON で返す。
 
+## `--no-format`: 責務 2 だけを使う呼び出し元のために整形を省く
+
+`root_dirs` / `patterns.exclude` を得たいだけで、整形を必要としない呼び出し元がある。
+`.doc_structure.yaml` の展開前の値を返す CLI は本 CLI だけであり（上記「設定の解釈」の
+理由 1）、そのために本 CLI を呼ぶと責務 1 の整形が付いてくる。
+
+`--no-format` は責務 1 を省き、責務 2 だけを実行する。**整形は索引作成の前提であって、
+設定解決の前提ではない**——`index-docs` が整形後の本文で `body_hash` を打つために責務 1
+が要るのであり、設定を読むことは整形の有無に依存しない。
+
+想定する呼び出し元は、文書参照の実在性検査（`skills/check-doc-refs`）である。同スキルは
+検出のみを行い成果物を変更しないと宣言しており、検査のたびに作業ツリーが整形されると
+その宣言に反する。整形自体は commit 時（`anvil:commit` の Phase 0）と索引更新時
+（`update-db-rules` / `update-db-specs` 経由の本 CLI 既定動作）に走るため、
+検査側で行う必要がない。
+
 ファイル一覧への展開は行わない。展開は doc-advisor 側に委ね、doc-db sync 用の
 `project_documents.py` は使用しない。索引母集団の決定経路が backend ごとに異なる
 ことは設計上の許容事項である。
@@ -258,12 +274,18 @@ def prepare(
     runner=run_command,
     dprint_script: Path = DPRINT_SCRIPT,
     resolver_script: Path = RESOLVER_SCRIPT,
+    format_first: bool = True,
 ) -> dict:
     """dprint 適用と dirs / exclude 解決をこの順で行い、成功 payload を返す。
 
     順序は設計上の規定（dprint → 設定解決）に従う。失敗は
     `PrepareAdvisorIndexError` として伝播し、呼び出し側（`main()`）が
     exit 20 / `status=operation_error` へ変換する。
+
+    Args:
+        format_first: 偽なら dprint を実行せず設定解決だけを行う（`--no-format`）。
+            整形は索引作成の前提であって設定解決の前提ではないため、dirs / exclude
+            だけを必要とする呼び出し元は偽を渡す（モジュール docstring 参照）。
     """
     _validate_category(category)
     project_root = Path(project_root).resolve()
@@ -273,7 +295,8 @@ def prepare(
             f"project root がディレクトリではありません: {project_root}",
         )
 
-    run_dprint(project_root, runner=runner, dprint_script=dprint_script)
+    if format_first:
+        run_dprint(project_root, runner=runner, dprint_script=dprint_script)
     inputs = resolve_index_inputs(
         category, project_root, resolver_script=resolver_script
     )
@@ -320,6 +343,14 @@ def parse_args(argv=None):
         default=None,
         help="プロジェクトルートのパス（省略時: カレントディレクトリ）",
     )
+    parser.add_argument(
+        "--no-format",
+        action="store_true",
+        help=(
+            "dprint を実行せず dirs / exclude の解決だけを行う"
+            "（成果物を変更しない呼び出し元のため）"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -328,7 +359,7 @@ def main(argv=None) -> int:
     project_root = Path(args.project_root) if args.project_root else Path.cwd()
 
     try:
-        payload = prepare(args.category, project_root)
+        payload = prepare(args.category, project_root, format_first=not args.no_format)
     except PrepareAdvisorIndexError as exc:
         print(
             json.dumps(
