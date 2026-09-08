@@ -9,9 +9,9 @@ evaluator（`forge:evaluator` カスタム Agent）は、reviewer が返した�
 期待する応答形状:
     {
       "evaluations": [
-        {"index": 0, "disposition": "valid", "severity": "major", "reason": "...",
+        {"index": 1, "disposition": "valid", "severity": "major", "reason": "...",
          "confidence": "confirmed", "fix_confident": true},
-        {"index": 1, "disposition": "invalid", "severity": "minor", "reason": "..."}
+        {"index": 2, "disposition": "invalid", "severity": "minor", "reason": "..."}
       ]
     }
 
@@ -120,7 +120,7 @@ def interpret_evaluation(raw: str, findings_count: int) -> dict:
             not isinstance(index, int)
             or isinstance(index, bool)
             or index in seen_indices
-            or not (0 <= index < findings_count)
+            or not (1 <= index <= findings_count)
         ):
             return {"status": "error", "error": f"index が不正または重複しています: {index!r}"}
         seen_indices.add(index)

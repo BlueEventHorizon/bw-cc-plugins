@@ -316,7 +316,7 @@ Step 1.5 で解決したバックエンド SKILL を `Skill` ツールで起動�
    `secrets` 以外のパターンでは、Agent ツールで `forge:evaluator` を起動し、次の 2 つだけを渡す。
 
    - Step 4 で組み立てた依頼本文（`body`）。reviewer へ渡したものと同一（観点文書・重点観点・到達目標を含む）
-   - Step 5/6 で得た所見配列（各所見に 0 始まりの `index` を付けたもの）
+   - Step 5/6 で得た所見配列（各所見に 1 始まりの `index` を付けたもの）
 
    evaluator の最終応答を一時ファイルへ保存し、次を実行する。
 
@@ -336,7 +336,7 @@ Step 1.5 で解決したバックエンド SKILL を `Skill` ツールで起動�
      --evaluations-json '<evaluations配列のJSON>'
    ```
 
-   `status: "error"`（両配列の長さ不一致、または `evaluations` の `index` 集合が `{0, ..., len-1}` と不一致）の場合、結合せず、手順 3〜5 と Step 7.5 を実行せず Step 8 へ進む（終端経路 `halted_with_open_findings`）——対応付けが検証できないまま修正を進めることはできない。
+   `status: "error"`（両配列の長さ不一致、または `evaluations` の `index` 集合が `{1, ..., len}` と不一致）の場合、結合せず、手順 3〜5 と Step 7.5 を実行せず Step 8 へ進む（終端経路 `halted_with_open_findings`）——対応付けが検証できないまま修正を進めることはできない。
 
    `status: "ok"` の場合、標準出力の `combined` 配列（所見と評価が `index` で 1 件ずつ結合されたもの）を以後の手順で使う。`combined` の各要素が持つ `disposition` の意味は次の通り（判定基準の詳細は `evaluator.md` を参照）。
 

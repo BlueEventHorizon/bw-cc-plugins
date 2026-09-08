@@ -192,7 +192,7 @@ def _scan_bullet_list(records: list[dict], empty_marker: str) -> str:
         return empty_marker
 
     lines = []
-    for index, record in enumerate(records):
+    for index, record in enumerate(records, start=1):
         # 拒否理由に値を含めない（`masked` は検出値の先頭を含み、`path` も混入箇所の
         # 手がかりになる）。位置だけを示す。`sensitive_information_spec.md` §5.3。
         for key in ("path", "rule", "masked"):

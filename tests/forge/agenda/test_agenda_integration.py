@@ -73,8 +73,8 @@ _FINDINGS = [
     {"text": "所見2の本文", "file": "b.py", "line": 20},
 ]
 _EVALUATIONS = [
-    {"index": 0, "disposition": "fix", "severity": "major", "confidence": "high"},
-    {"index": 1, "disposition": "fix", "severity": "critical", "confidence": "medium"},
+    {"index": 1, "disposition": "fix", "severity": "major", "confidence": "high"},
+    {"index": 2, "disposition": "fix", "severity": "critical", "confidence": "medium"},
 ]
 
 
