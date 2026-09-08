@@ -254,6 +254,7 @@ Phase 2.1 の `selected_tasks` から該当タスクの `required_reading` 配�
    - `required_reading`: Phase 3.2 で統合した文書パスを `design_docs` / `requirement_docs` / `strategy_doc` / `rule_docs` / `reference_code` / `additional` へ分類する
    - `implementation_instructions`: タスク固有の実装方針（必読文書を踏まえて AI がその場で書く。従来の「実装指示」と同じ内容）
    - `verification`: 4.1 の判定結果（`build` は `required`/`skipped`、`tests` は `required`/`optional`/`skipped`。スキップ時のみ `_reason` を添える）
+   - **`spec_authority` は候補 JSON に含めない**。必読の要件定義書・設計書のうちどれが並行状態にあるかは script が frontmatter から機械的に判定して付与する（AI が判定・転記しない）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json` へ書く（シェルコマンドへ直接埋め込まない。自由記述をシェル文字列に乗せると注入リスクを生むため）
 3. **生成 script を 1 回実行する**。`plan.json` の該当タスクエントリと候補 JSON をマージして `tasks/{タスクID}.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 

@@ -16,7 +16,7 @@
 `feature_type: temporary-feature` を付与し、feature_note に①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。frontmatter の正式な文言は [frontmatter_format.md](frontmatter_format.md) §1.1 を参照。
 
 全文書種別（要件・設計・計画）の frontmatter 集約 SoT: [frontmatter_format.md](frontmatter_format.md)
-判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](additive_development_spec.md) §1
+判定基準・現在の仕様の所在・merge 手順: [additive_development_spec.md](additive_development_spec.md) §1
 
 ---
 
@@ -69,6 +69,6 @@
 
 判定（追加 feature か否か）は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。
 
-| 違反パターン                                                                 | 違反時の重大度 | 理由                                                                       |
-| ---------------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------- |
-| 追加 feature 要件定義書に `feature_type: temporary-feature` frontmatter 欠如 | 🟡 major       | 旧仕様との優先関係・merge 予定が宣言されず、生成経路を問わず取りこぼされる |
+| 違反パターン                                                                 | 違反時の重大度 | 理由                                                                                    |
+| ---------------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------------- |
+| 追加 feature 要件定義書に `feature_type: temporary-feature` frontmatter 欠如 | 🟡 major       | 当該範囲の現在の仕様であることと merge 予定が宣言されず、生成経路を問わず取りこぼされる |

@@ -27,8 +27,8 @@
 
 トップレベルキーは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` のみ許容する（それ以外の追加は 🟡 major 違反）。
 
-frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.2
-判定基準・矛盾時の優先度・merge 手順: [additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §1 適用条件
+frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.3
+判定基準・現在の仕様の所在・merge 手順: [additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §1 適用条件
 
 ---
 
@@ -148,17 +148,34 @@ pending → in_progress → completed
 
 ### 対象文書
 
-候補 JSON（`task_context_input.json` テンプレート）の `required_reading.requirement_docs` に列挙された各文書を対象とする。実装者が読む文書がそのまま対象であり、この一覧の外にある文書を分類しない。
+候補 JSON（`task_context_input.json` テンプレート）の `required_reading.requirement_docs` と `required_reading.design_docs` に列挙された各文書を対象とする。実装者が読む文書がそのまま対象であり、この一覧の外にある文書を分類しない。
 
-読めない文書は分類対象から除く。同じパスは実装者が必読文書として Read するため、到達できないことは実装時に検出される。
+**設計書を対象に含めるのは、設計書も並行状態の識別子を持つためである**（[frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.2）。実装者は設計書をタスクの直接根拠として最優先で読む（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）。要件定義書だけを分類すると、旧設計書が現在の設計として読まれる経路が残る。
+
+`required_reading` の他のフィールド（`strategy_doc` / `rule_docs` / `reference_code` / `additional`）は対象にしない。並行状態は要件定義書・設計書に付与される識別子であり（REQ-025 FNC-001）、他の種別の文書は識別子を持たない。
+
+対象文書を読めない場合は解析失敗として扱う（後述）。読めないことを「並行状態にない」と同一視しない（REQ-025 FNC-005）。
 
 ### frontmatter の解析
 
 文書先頭の YAML frontmatter（`---` で囲まれたブロック）から `feature_type` の値を取り出す。標準ライブラリのみで実装する（PyYAML 禁止）。
 
-- `feature_type: <value>` を抽出する
-- frontmatter を持たない文書は分類対象外とする（並行状態にない）
-- `---` で閉じられていない・`feature_type` が複数回現れる等、値を一意に決められない構文は解析失敗として扱う
+判定は次の 3 値のいずれかになる。
+
+| 判定           | 条件                                                                           |
+| -------------- | ------------------------------------------------------------------------------ |
+| 並行状態にある | frontmatter に `feature_type` が 1 回だけ現れ、値が `temporary-feature` である |
+| 並行状態にない | frontmatter を持たない、または frontmatter に `feature_type` が現れない        |
+| 解析失敗       | 上記のいずれにも当てはまらない（下記の列挙）                                   |
+
+解析失敗として扱うもの:
+
+- 対象文書を読めない
+- 先頭の `---` に対応する終端の `---` が無い
+- `feature_type` が複数回現れ、値を一意に決められない
+- `feature_type` の値が `temporary-feature` 以外である（[frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1 は他の値を定義していない）
+
+**キーの順序で判定結果が変わってはならない [MANDATORY]**。`frontmatter_format.md` §2.3 は `feature_type` と `doc_status` の併記を許可し、キーの順序を制約していない。`feature_note` はリスト値を持つため後続行がインデントされるが、これも `feature_type` の抽出に影響してはならない。規約が許可している書式のいずれかで解析が失敗する実装は、この契約に違反する。
 
 解析失敗は「並行状態にない」と区別する（REQ-025 FNC-005）。失敗した場合はタスクコンテキストの生成を失敗させ、対象パスと理由を `errors` に載せる。並行状態にあるかを判定できないまま実装へ進むと、実装者は旧仕様に従って実装しうる。
 

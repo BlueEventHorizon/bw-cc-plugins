@@ -4,6 +4,9 @@
 `/forge:start-implement` Phase 4.3 のローカル操作入口。単一 SKILL が所有する決定論的な
 実体ロジック（DES-024 §6.1「SKILL ローカル実体」）であり、他 SKILL へ再利用される共有
 低レベル script ではない。
+
+必読文書のうちどれが並行状態（差分 feature）にあるかを frontmatter から判定し、
+`spec_authority` として実装者へ渡す（REQ-025 FNC-003 / DES-074）。
 """
 
 import argparse
@@ -35,6 +38,74 @@ TESTS_STATES = {"required", "optional", "skipped"}
 # 見出し行・コードフェンス開始行を fail-fast で拒否する（構造侵入対策）。
 # group_review_batch.py の _STRUCTURE_LINE_RE と同じ考え方。
 _STRUCTURE_LINE_RE = re.compile(r"^ {0,3}(?:#{1,6}(?:\s|$)|```|~~~)")
+
+# 並行状態（差分 feature）にある文書の識別。契約は DES-074
+# 「build_task_context.py の並行状態文書の分類契約」が定める。
+_FRONTMATTER_DELIMITER = "---"
+# インデントの無いトップレベルキーだけを拾う（`feature_note` 配下の行は拾わない）。
+# キーの順序で結果が変わらないよう、frontmatter ブロック全体を走査してから判定する。
+_FEATURE_TYPE_RE = re.compile(r"^feature_type:(.*)$")
+_PARALLEL_FEATURE_TYPE = "temporary-feature"
+# 並行状態の識別対象は要件定義書・設計書のみ（他の種別は識別子を持たない）。
+_SPEC_AUTHORITY_SOURCES = ("requirement_docs", "design_docs")
+
+
+def _classify_parallel_state(path):
+    """`(並行状態にあるか, 解析失敗の理由)` を返す。理由が None でなければ判定不能。"""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, f"{path}: 並行状態を判定できません（読み取りに失敗: {exc.strerror or exc}）"
+
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
+        return False, None
+
+    values = []
+    closed = False
+    for line in lines[1:]:
+        if line.strip() == _FRONTMATTER_DELIMITER:
+            closed = True
+            break
+        match = _FEATURE_TYPE_RE.match(line)
+        if match:
+            values.append(match.group(1).strip())
+
+    if not closed:
+        return None, f"{path}: 並行状態を判定できません（frontmatter の終端 '---' がありません）"
+    if not values:
+        return False, None
+    if len(values) > 1:
+        return None, (
+            f"{path}: 並行状態を判定できません"
+            f"（feature_type が {len(values)} 回現れ、値を一意に決められません）"
+        )
+    if values[0] != _PARALLEL_FEATURE_TYPE:
+        return None, (
+            f"{path}: 並行状態を判定できません"
+            f"（feature_type の値 {values[0]!r} は未定義です。"
+            f"定義されている値は {_PARALLEL_FEATURE_TYPE!r} のみ）"
+        )
+    return True, None
+
+
+def _resolve_spec_authority(required_reading):
+    """`(並行状態にある文書のパス配列, 解析失敗の理由配列)` を返す。"""
+    targets = []
+    for name in _SPEC_AUTHORITY_SOURCES:
+        for path in required_reading.get(name) or []:
+            if path not in targets:
+                targets.append(path)
+
+    authority = []
+    errors = []
+    for path in targets:
+        is_parallel, error = _classify_parallel_state(path)
+        if error is not None:
+            errors.append(error)
+        elif is_parallel:
+            authority.append(path)
+    return authority, errors
 
 
 def _field_set_errors(label, value, expected):
@@ -215,8 +286,15 @@ def build_task_context(plan_path, task_id, candidate_raw):
     errors.extend(candidate_errors)
     if task is None or normalized_candidate is None:
         return None, errors
+    spec_authority, authority_errors = _resolve_spec_authority(
+        normalized_candidate["required_reading"]
+    )
+    if authority_errors:
+        errors.extend(authority_errors)
+        return None, errors
     merged = dict(task)
     merged.update(normalized_candidate)
+    merged["spec_authority"] = spec_authority
     return merged, errors
 
 
