@@ -2,7 +2,7 @@
 
 プロジェクト固有の `plan_format.md` が見つからない場合に使用する汎用フォーマット。
 
-作成原則: [plan_principles_spec.md](plan_principles_spec.md)
+作成原則: [plan_principles_spec.md](../../../../../plugins/forge/docs/plan_principles_spec.md)
 
 本文書は script（`write_plan.py` / `select_tasks.py` / `update_plan_status.py` / `build_task_context.py`）の実装契約を定義する開発文書である（配布物ではない）。AI はランタイムでこの文書を読まない（REQ-020 FNC-007）。
 

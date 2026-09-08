@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""capture_syntax_baseline.py のテスト（DES-047 §3.2 テスト設計）。
+"""capture_syntax_baseline.py のテスト（DES-066 §6 テスト設計）。
 
 実行:
   python3 -m unittest tests.forge.review.test_capture_syntax_baseline -v

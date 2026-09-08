@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-07T05:36:52Z
-  file_count: 66
+  generated_at: 2026-09-07T14:34:54Z
+  file_count: 68
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -91,34 +91,36 @@ docs:
       - conflict resolution
       - feature promotion
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
-    title: GitHub Issue-driven SDD pipeline design orchestration
-    purpose: Defines architecture and implementation for orchestrating requirements, design, planning, and implementation workflows from GitHub Issues through PR creation with machine-written metadata sections
+    title: DES-025 issue-driven-flow design specification for GitHub Issue-driven SDD pipeline orchestration
+    purpose: Defines the orchestration architecture for GitHub Issue-driven SDD pipeline integration in anvil plugin, including skill boundaries, module design, use cases, data flow, error handling, state management, and implementation strategy
     content_details:
-      - Plugin architecture with anvil→forge dependency and Skill tool-based delegation model
-      - Issue body structure using HTML comment markers to separate user-content from machine-written sections (artifacts, status, errors)
-      - Skill responsibility distribution across create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node
-      - State management for Phase progression and RuntimeKind determination (UI vs non-UI Issue)
-      - Figma integration flow with frame identifier resolution and design specification generation
-      - Error handling strategies including prerequisite validation, forge skill failure recovery, and push verification
-      - Issue writing atomicity with parallel update detection via three-point hash comparison
-      - Machine-assisted Issue editing with user-content immutability verification
-      - Prerequisite checks (gh auth, write permissions, FIGMA_PAT, Figma metadata)
-      - Audit logging with correlation IDs for start/end pairing
+      - Architecture overview with plugin dependency hierarchy (anvil to forge one-way dependency)
+      - Skill responsibility allocation (create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node, figma-mcp-guide)
+      - Common script modules (check_prereqs.py, audit_log.py, verify_pushed.py, validate_sections.py, render_section.py, verify_user_content.py)
+      - Issue body structure using HTML comment markers for user-content/artifacts/status/errors sections
+      - Use cases (UC-01 Issue creation, UC-02 SDD pipeline execution, UC-03 progress rewriting, UC-04 Figma design retrieval)
+      - State management with Phase progression (pending to in_progress to completed) and RuntimeKind determination
+      - Error handling patterns including prerequisite verification (ERR-01), forge skill failure, push failure, Figma resolution failure
+      - Rate limit retry with exponential backoff (maximum 3 retries, 30 second initial delay)
+      - Local audit logging with TSV format, 90 day retention policy, 10MiB file rotation
+      - Implementation order defined by 7 sequential steps including skill migration, script implementation, and testing
     applicable_tasks:
-      - Designing GitHub Issue-driven development workflow orchestration
-      - Implementing Phase-based state machine for SDD pipeline
-      - Integrating Figma design system with development workflow
-      - Designing machine-written metadata sections with user-content protection
-      - Error recovery workflow planning and failure re-entry paths
+      - Design specification review for plugin orchestration architecture
+      - Implementation of anvil skill orchestration (create-issue, impl-issue, update-issue)
+      - Error handling and failure recovery path implementation
+      - Figma integration design validation
+      - Skill testing strategy implementation (unit, integration, golden samples)
+      - Pre-condition verification and secret masking implementation
     keywords:
-      - GitHub Issue orchestration
+      - issue-driven-flow
+      - orchestration
       - anvil plugin
-      - forge skill delegation
-      - Phase progression
-      - Figma API integration
-      - RuntimeKind
-      - UI Issue workflow
-      - artifact tracking
+      - SDD pipeline
+      - state management
+      - error handling
+      - HTML comment markers
+      - Figma integration
+      - audit logging
   docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
     title: GitHub Issue-Driven SDD Pipeline Requirements
     purpose: Defines workflow for integrating GitHub Issues as development entry point with SDD pipeline orchestration, deliverable linkage, and progress tracking
@@ -498,35 +500,33 @@ docs:
       - data integrity
       - serialization
   docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md:
-    title: Agenda Mechanism Design
-    purpose: Defines the design of the agenda mechanism for recording discussion topics, managing state transitions, and generating displays shared by review and consult SKILL
+    title: DES-075 Agenda Mechanism Design
+    purpose: Specifies the design of the agenda mechanism for recording and managing discussion items, state transitions, and display generation in review and consult contexts.
     content_details:
-      - Architecture overview with dependencies and module interactions
-      - Module design (agenda_wrapper.py, agenda_store.py, agenda_render.py, agenda_schema.py)
-      - Class diagram with AgendaRecord, Config, Item, Decision, StructuralJudgment structures
-      - JSON schema with content_version, config.identity, items, structural_judgment fields
-      - State transition validation requiring structural_judgment.recorded for item updates
-      - State representation using decision.by/outcome/reason without independent status vocabulary
-      - CLI input interface (start, record --structural/--item-id/--new, next, pending, finish)
-      - Automatic display regeneration after store write operations
-      - Record placement and lifecycle management based on all decision fields non-empty
+      - Unidirectional dependency architecture (consult → agenda_wrapper → agenda_store → agenda_render)
+      - Module composition with agenda_wrapper, agenda_store, agenda_render, and agenda_schema modules
+      - Data schema with content_version, config identity, structural_judgment, and items array
+      - State transition conditions requiring structural_judgment and background/essence fields
+      - Input interface with CLI commands (start, record three forms, next, pending, finish)
+      - Storage locations per origin (.claude/.temp/review/agenda.json or .claude/.temp/consult/{SESSION_ID}/agenda.json)
+      - Automatic re-rendering of display after successful write operations
+      - Test design for state transitions, JSON error handling, and display consistency
     applicable_tasks:
-      - Agenda mechanism implementation and integration with review/consult SKILL
-      - Record storage layer design review and JSON schema validation
-      - State transition logic testing and validation
-      - Display layer integration testing with DES-077
-      - CLI input interface design and error handling
+      - Designing or implementing agenda mechanism infrastructure
+      - Implementing agenda_store and record management functions
+      - Integrating review SKILL with agenda mechanism
+      - Implementing display layer for agenda items (agenda_render)
+      - Debugging state transition logic and decision tracking
+      - Planning consult SKILL dialog flow design
     keywords:
-      - agenda_wrapper.py
-      - agenda_store.py
-      - agenda_render.py
       - AgendaRecord
+      - agenda_store
+      - agenda_wrapper
+      - Decision
       - structural_judgment
-      - decision
       - content_version
       - state transition
-      - FNC-008
-      - FNC-012
+      - decision.outcome
   docs/specs/consult/agenda/design/DES-077_agenda_display_design.md:
     title: Agenda Display Design
     purpose: Defines the design of the agenda display layer for rendering HTML output from agenda.json records, implementing auto-following display updates, and ensuring display content remains synchronized with stored records
@@ -1526,36 +1526,90 @@ docs:
       - staged_presentation
       - fail_closed
       - review_orchestration
-  docs/specs/forge/executer/design/DES-074_plan_format_design.md:
-    title: Plan Default Format
-    purpose: Specifies default JSON schema and field definitions for plan documents, including requirement-design-task traceability structure and task field constraints
+  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
+    title: Document Reference Integrity Verification Design (DES-081)
+    purpose: "Defines three-stage architecture for validating document references: indexing existing files/headings/IDs, extracting references from source documents, and verifying integrity by matching extracted references against the index"
     content_details:
-      - JSON schema with requirements_traceability, design_traceability, tasks, revision_history keys
-      - requirements_traceability mapping requirements to designs with status tracking
-      - design_traceability linking designs to requirements and tasks
-      - tasks field structure with 11 fields including task_id, priority, status, dependencies, acceptance criteria
-      - status state transitions pending to in_progress to completed
-      - priority ranges with semantic categories high medium low
-      - plan format rationale using JSON for machine parsing over Markdown
-      - no frontmatter for additive feature plans, traceability via referenced requirements
-      - field definitions and constraints for each top-level schema key
+      - Three-stage architecture pattern with indexing, extraction, and matching phases
+      - "Modules: ref_index.py for building file/heading/ID indexes, ref_extract.py for extracting and filtering references, check_refs.py for matching"
+      - Scope limited to git-tracked files in working tree at check time
+      - File index, heading index, and document ID index types
+      - Prefix-based reference resolution where each document gets unique prefix
+      - Trie data structure for prefix construction and ambiguity detection
+      - "Reference resolution priority: relative paths, then same-document anchors, then external URLs"
+      - Use cases for pre-commit validation, on-demand checks, and post-deletion verification
+      - Golden test set using 72 real-world reference examples
     applicable_tasks:
-      - Implementing plan document creation and serialization scripts
-      - Implementing task selection and status update logic
-      - Implementing plan context building for task execution
-      - Validating plan JSON structure and field constraints
-      - Defining requirement-design-task traceability mappings
+      - Implementing document reference verification system
+      - Designing reference resolution mechanisms
+      - Validating reference integrity
+      - Planning documentation CI infrastructure
     keywords:
-      - requirements_traceability
-      - design_traceability
-      - task_id
+      - ref_index.py
+      - ref_extract.py
+      - check_refs.py
+      - document_id
+      - reference_resolution
+      - integrity_verification
+      - prefix_trie
+      - git_tracking
+      - heading_index
+  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
+    title: Document Reference Integrity Validation Requirements
+    purpose: Defines requirements for a deterministic mechanism to detect broken references (references pointing to non-existent targets) in documents and report them with specific position and reason
+    content_details:
+      - Reference types including link notation, positional links, definition links, and document ID notation
+      - Deterministic validation requirement without LLM inference or confidence concepts
+      - Document collection scope limited to current state, excluding git history and branches
+      - Distinction between missing reference and ambiguous reference requiring separate reporting
+      - Accuracy requirement accepting neither false positives nor false negatives
+      - Error reporting format specifying position in source file, extracted reference text, and reason for absence
+      - Pre-commit checking capability enabling correction while change context is fresh
+      - Multi-source support for Markdown documents and code comment references
+    applicable_tasks:
+      - Designing deterministic reference validation mechanism
+      - Implementing reference target detection in documents
+      - Setting up pre-commit reference integrity checking
+      - Establishing CI gates for broken reference detection
+      - Document consolidation and migration with reference integrity verification
+    keywords:
+      - reference integrity
+      - broken reference detection
+      - document validation
+      - pre-commit check
+      - reference resolution
+      - deterministic validation
+      - false positive prevention
+  docs/specs/forge/executer/design/DES-074_plan_format_design.md:
+    title: Plan Default Format Design
+    purpose: Defines the default JSON format and schema for project plan files, including requirements and design traceability, task definitions, and revision history structure for implementation scripts
+    content_details:
+      - JSON schema structure with top-level keys
+      - requirements_traceability with requirement_id, title, design_id, status fields
+      - design_traceability with design_id, title, requirement_ids, task_ids fields
+      - tasks section with task_id, title, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading
+      - revision_history tracking with date and content
+      - Task status transitions (pending → in_progress → completed)
+      - Priority ranges (70-99 high, 40-69 medium, 1-39 low)
+      - File naming convention (feature_plan.json)
+      - Top-level key restrictions for additional features
+    applicable_tasks:
+      - Planning feature implementation
+      - Creating task definitions and dependencies
+      - Implementing plan format parsers and generators
+      - Reviewing plan structure and traceability
+      - Task prioritization and sequencing
+    keywords:
+      - JSON schema
+      - plan format
+      - requirements traceability
+      - design traceability
+      - task management
+      - task dependencies
+      - build check
       - priority
-      - depends_on
-      - status
-      - acceptance_criteria
-      - build_check
-      - revision_history
-      - JSON
+      - acceptance criteria
+      - revision history
   docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md:
     title: REQ-020 Plan JSON Script-Driven Architecture Requirements
     purpose: Specifies requirements for converting plan file from YAML to JSON format and transitioning plan generation, reading, task selection, and status updates to script-driven architecture

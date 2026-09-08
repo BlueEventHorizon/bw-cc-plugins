@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agenda 機構の統合テスト（DES-080 §7「統合」）。
+"""agenda 機構の統合テスト（DES-075 §9「統合テスト対象」）。
 
 結合 script（`combine_findings_and_evaluations.py`。無変更で import する）の出力を
 `agenda_wrapper.py start` の標準入力へつなぎ、構造判断 → 項目ごとの値（背景・本質・
@@ -10,13 +10,13 @@
 固定すること:
 
 1. 結合 script を変更せずにその出力が `start` へ渡り、保存された記録から現行と同じ欄
-   （問題・重大度バッジ）を持つ提示が生成されること（DES-080 §2.1・§4.1・§4.3）
+   （問題・重大度バッジ）を持つ提示が生成されること（DES-075 §6・DES-077 §3.1a・DES-078 §2.2）
 2. 各 `record` 直後の `agenda.html` が記録から生成したものと一致すること
    （agenda:REQ-021 FNC-003）
 3. 未決着が残る途中の `finish` は削除せず、全決着後の `finish` で記録に属するもの
-   （`agenda.json` / `agenda.html` / `agenda_state.js`）がすべて消えること（REQ-022 FNC-006）
+   （`agenda.json` / `agenda.html` / `agenda_state.js`）がすべて消えること（DES-077 §5）
 4. `decision` が 2 値の項目は store の残件に数えられ render も未決着表示、3 値そろいで
-   両者とも決着になること（DES-080 §2.6・§4.4）。記録側と提示側は別々に決着を判定して
+   両者とも決着になること（DES-075 §5.1・DES-077 §3.3）。記録側と提示側は別々に決着を判定して
    おり、両者の一致点はここだけである
 
 ヘルパーは他のテストファイルから import せず本ファイル内で用意する
@@ -62,7 +62,7 @@ def _load_module(name, path):
 agenda_store = _load_module("agenda_store", _AGENDA_DIR / "agenda_store.py")
 agenda_render = _load_module("agenda_render", _AGENDA_DIR / "agenda_render.py")
 agenda_wrapper = _load_module("agenda_wrapper", _AGENDA_DIR / "agenda_wrapper.py")
-# 結合 script は無変更のまま import する（DES-080 §2.1・§6）。
+# 結合 script は無変更のまま import する（DES-075 §6）。
 combine = _load_module("combine_findings_and_evaluations", _COMBINE_PATH)
 
 # reviewer 応答（parse_findings.py が生成する実体）と evaluator 判定
@@ -174,7 +174,7 @@ class CombinedOutputToPresentationTest(AgendaIntegrationTestCase):
         self.assertEqual(self._start()["status"], "ok")
         record = self._assert_render_matches_record()
 
-        # 作り替えずに渡された値がそのまま保存されている（REQ-022 FNC-002）
+        # 作り替えずに渡された値がそのまま保存されている（agenda:REQ-019 FNC-009）
         self.assertEqual([item["id"] for item in record["items"]], ["01", "02"])
         self.assertEqual(record["items"][0]["text"], "所見1の本文")
         self.assertEqual(record["items"][0]["severity"], "major")
@@ -210,7 +210,7 @@ class FullSequenceTest(AgendaIntegrationTestCase):
 
         self._settle("02", reason="重大なため対応する")
 
-        # 新規項目は応答の id で以後の値を加える（DES-080 §2.6・§3）
+        # 新規項目は応答の id で以後の値を加える（DES-075 §6.1・§3.2）
         new_result = self._record_new()
         self.assertEqual(new_result["status"], "ok")
         new_id = new_result["id"]
@@ -224,7 +224,7 @@ class FullSequenceTest(AgendaIntegrationTestCase):
         self._settle(new_id, outcome="drop", reason="議論の結果として見送る")
         self.assertEqual(self._pending_ids(), [])
 
-        # 全決着後の finish で、記録に属するものがすべて消える（REQ-022 FNC-006）
+        # 全決着後の finish で、記録に属するものがすべて消える（DES-077 §5）
         finish = self._run(["--origin", "review", "finish"])
         self.assertTrue(finish["deleted"])
         self.assertFalse(self.agenda_path.exists())
@@ -233,7 +233,7 @@ class FullSequenceTest(AgendaIntegrationTestCase):
 
 
 class SettlementBoundaryTest(AgendaIntegrationTestCase):
-    """決着判定の境界で store の残件と render の表示が一致すること（DES-080 §4.4）。
+    """決着判定の境界で store の残件と render の表示が一致すること（DES-077 §3.3）。
 
     記録側（`agenda_schema.is_settled`）と表示側（`agenda_render._is_settled`）は
     別々に判定しており、両者の一致を固定する点はここだけである。

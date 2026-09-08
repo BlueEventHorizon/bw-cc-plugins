@@ -2,7 +2,7 @@
 """agenda_store.py のテスト。
 
 `start` / `record`（3 形）は関数呼び出し専用であり、`next` / `pending` / `finish`
-だけが CLI を持つ（DES-080 §6）。検証の観点は DES-080 §7 が列挙する。
+だけが CLI を持つ（DES-075 §6）。検証の観点は DES-075 §9 が列挙する。
 
 実行:
   python3 -m unittest tests.forge.agenda.test_agenda_store -v
@@ -71,7 +71,7 @@ class AgendaStoreTestCase(unittest.TestCase):
 
 
 class UnknownKeyPreservationTest(AgendaStoreTestCase):
-    """DES-080 §2.2・§2.3: agenda が知らないキーが落ちない・型で拒否しない。"""
+    """DES-078 §2.2・DES-075 §6.1: agenda が知らないキーが落ちない・型で拒否しない。"""
 
     def test_start_preserves_unknown_item_keys(self):
         self._start(items=[{"id": "01", "title": "項目1", "text": "所見の本文", "rule_id": "R-3"}])
@@ -103,7 +103,7 @@ class UnknownKeyPreservationTest(AgendaStoreTestCase):
 
 
 class TitleAndNumberingTest(AgendaStoreTestCase):
-    """DES-080 §2.5・§3: title を必須にせず、id を採番する。"""
+    """DES-078 §2.2・DES-075 §3.2: title を必須にせず、id を採番する。"""
 
     def test_start_accepts_item_without_title(self):
         result = self._start(items=[{"id": "01"}])
@@ -157,7 +157,7 @@ class TitleAndNumberingTest(AgendaStoreTestCase):
 
 
 class RecordNewItemTest(AgendaStoreTestCase):
-    """DES-080 §2.6 の 3 形目: 新規項目を足す record。"""
+    """DES-075 §6.1 の 3 形目: 新規項目を足す record。"""
 
     def setUp(self):
         super().setUp()
@@ -193,7 +193,7 @@ class RecordNewItemTest(AgendaStoreTestCase):
 
 
 class RecordSingleValueTest(AgendaStoreTestCase):
-    """DES-080 §2.6: 1 回の呼び出しで 1 つの値だけを受け取る。"""
+    """DES-075 §6.1: 1 回の呼び出しで 1 つの値だけを受け取る。"""
 
     def setUp(self):
         super().setUp()
@@ -248,7 +248,7 @@ class RecordSingleValueTest(AgendaStoreTestCase):
 
 
 class ReservedValueNameTest(AgendaStoreTestCase):
-    """DES-080 §2.6: agenda が自ら書くキー・構造を持つキーは名前として拒否する。"""
+    """DES-075 §6.1: agenda が自ら書くキー・構造を持つキーは名前として拒否する。"""
 
     def setUp(self):
         super().setUp()
@@ -312,7 +312,7 @@ class StructuralJudgmentNoteTest(AgendaStoreTestCase):
 
 
 class AcceptanceConditionTest(AgendaStoreTestCase):
-    """DES-080 §2.6 の受理条件（agenda:REQ-019 FNC-008・FNC-012）。"""
+    """DES-075 §5.1 の受理条件（agenda:REQ-019 FNC-008・FNC-012）。"""
 
     def test_any_value_is_rejected_before_structural_judgment(self):
         self._start(items=[{"id": "01"}])
@@ -344,7 +344,7 @@ class AcceptanceConditionTest(AgendaStoreTestCase):
 
 
 class SettlementTest(AgendaStoreTestCase):
-    """DES-080 §2.6・§4.4: 決着は decision の 3 値そろい。"""
+    """DES-075 §5.1: 決着は decision の 3 値そろい。"""
 
     def setUp(self):
         super().setUp()
@@ -398,7 +398,7 @@ class SettlementTest(AgendaStoreTestCase):
 
 
 class OlderRecordTest(AgendaStoreTestCase):
-    """DES-080 §8: 変更前に保存された記録（キーがより少ない）をそのまま読める。"""
+    """DES-078 §2.2: 変更前に保存された記録（キーがより少ない）をそのまま読める。"""
 
     def test_pending_reads_record_with_fewer_keys(self):
         legacy = {
@@ -424,7 +424,7 @@ class OlderRecordTest(AgendaStoreTestCase):
 
 
 class CliSurfaceTest(unittest.TestCase):
-    """DES-080 §6: start / record は CLI を持たず、pending / next / finish は残る。"""
+    """DES-075 §6: start / record は CLI を持たず、pending / next / finish は残る。"""
 
     def test_start_subcommand_is_rejected(self):
         parser = agenda_store.build_parser()

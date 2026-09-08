@@ -3,7 +3,7 @@
 
 `plan_contract.py` と同型の「関数＋契約」構成（DES-075 §3.2 の注記どおり、
 UML クラス（`TransitionRule`）をそのまま class 化しない）。項目へ値を加える
-呼び出しの受理条件（DES-080 §2.6 の表。agenda:REQ-019 FNC-008/FNC-012）と
+呼び出しの受理条件（DES-075 §5.1 の表。agenda:REQ-019 FNC-008/FNC-012）と
 決着（`decision` の 3 値そろい）の定義を機械可読な形で持ち、不足フィールド名を
 列挙する判定結果を返す。
 
@@ -11,7 +11,7 @@ UML クラス（`TransitionRule`）をそのまま class 化しない）。項�
 `terminal_statuses`/`active_statuses`/`target_status`/`is_terminal` 判定は
 本モジュールに存在しない。
 
-受理条件（DES-080 §2.6）:
+受理条件（DES-075 §5.1）:
 
 | 呼び出し                            | 受理の条件                                                      |
 | ----------------------------------- | --------------------------------------------------------------- |
@@ -25,7 +25,7 @@ UML クラス（`TransitionRule`）をそのまま class 化しない）。項�
 
 `patch_keys` 引数について: 呼び出し側（`agenda_store.py`）が渡すのは、今回の
 `record` 呼び出しで実際に渡された**項目パッチ側**の名前の集合である。名前は
-ドット区切りの入れ子表記（`decision.by` 等）で渡る（DES-080 §2.6）。
+ドット区切りの入れ子表記（`decision.by` 等）で渡る（DES-075 §6.1）。
 `structural_judgment` はレコード直下へのパッチでありこの集合に含まれない
 （DES-075 §6.1）。集合が空の呼び出し（構造判断だけを記す `record`）は項目へ
 値を加えないため、いずれの条件も課さない。
@@ -79,7 +79,7 @@ def _is_decision_key(name: str) -> bool:
 
     入れ子表記（`decision.by` 等）に加え、`decision` そのものも decision を
     加える呼び出しとして扱う（fail-closed。`decision` を名前として受け付けない
-    のは `agenda_store.py` 側の規則（DES-080 §2.6）であり、仮に届いた場合に
+    のは `agenda_store.py` 側の規則（DES-075 §6.1）であり、仮に届いた場合に
     FNC-008 の検証を素通りさせない）。
     """
     return name == "decision" or name.startswith("decision.")
@@ -88,7 +88,7 @@ def _is_decision_key(name: str) -> bool:
 def is_settled(item) -> bool:
     """項目が決着しているか（`decision` の 3 値がすべて非空か）を判定する。
 
-    DES-080 §2.6「決着として扱う（残件の計算・終了）」の定義。`decision.by`/
+    DES-075 §5.1 が定める決着の述語（`is_settled()`）。`decision.by`/
     `decision.outcome`/`decision.reason` の 3 つがすべて非空の文字列のときだけ
     真を返す。2 値までしか揃っていない・空文字・`None`・`decision` が dict で
     ない場合はいずれも偽である（部分的な `decision` は未決着として扱う）。
@@ -107,7 +107,7 @@ def is_settled(item) -> bool:
 def required_fields_for(item, patch_keys, config) -> list:
     """今回の `record` 呼び出しに必要なフィールドのうち、不足しているものを返す。
 
-    DES-080 §2.6 の受理条件（agenda:REQ-019 FNC-008/FNC-012）を判定する。
+    DES-075 §5.1 の受理条件（agenda:REQ-019 FNC-008/FNC-012）を判定する。
 
     1. 項目へ値を加える呼び出し（`patch_keys` が空でない）では、
        `structural_judgment.recorded` が `True` であることを要求する（FNC-012）。

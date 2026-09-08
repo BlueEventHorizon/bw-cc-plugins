@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-resolve_targets.py のテスト（DES-045 §3.3 / §7 テスト設計）
+resolve_targets.py のテスト（DES-066 §3.1.1 / §6 テスト設計）
 
 一時 git リポジトリを実際に作成し、staged / unstaged / untracked / commit 済みの
 ケースを作り分けて実挙動を検証する（`tests/forge/msg-sys/test_check_setup.py` の
@@ -60,7 +60,7 @@ def _write(project_root: Path, rel_path: str, content: str = "content\n"):
 
 
 class DiffModeTest(unittest.TestCase):
-    """diff モード: 未 commit 変更（staged + unstaged）+ 未追跡ファイルの列挙（DES-045 §3.3）。"""
+    """diff モード: 未 commit 変更（staged + unstaged）+ 未追跡ファイルの列挙（REQ-013 FNC-1312）。"""
 
     def test_staged_unstaged_untracked_are_all_listed(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -104,7 +104,7 @@ class DiffModeTest(unittest.TestCase):
         self.assertIn("日本語.txt", result["files"])
 
     def test_gitignored_untracked_file_is_excluded(self):
-        """`.gitignore` 対象の未追跡ファイルは無視され、通常の未追跡ファイルのみ返る（DES-045 §3.3）。"""
+        """`.gitignore` 対象の未追跡ファイルは無視され、通常の未追跡ファイルのみ返る（REQ-013 FNC-1312）。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _init_repo(project_root)
@@ -822,7 +822,7 @@ def _run_main_capture(argv):
 
 
 class MainTest(unittest.TestCase):
-    """公開インターフェース main() の引数処理・単一 JSON 出力・終了コードを検証する（DES-045 §3.3）。"""
+    """公開インターフェース main() の引数処理・単一 JSON 出力・終了コードを検証する（REQ-013 FNC-1312）。"""
 
     def test_diff_mode_outputs_single_json_line_with_exit_code_0(self):
         with tempfile.TemporaryDirectory() as tmpdir:

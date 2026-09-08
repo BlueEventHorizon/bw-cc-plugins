@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """agenda_wrapper.py（agenda への唯一の入力経路）のテスト。
 
-DES-080 §7 の観点: 呼び出し元の作業ディレクトリを変えても同じ絶対パスが返ること /
+DES-075 §9 の観点: 呼び出し元の作業ディレクトリを変えても同じ絶対パスが返ること /
 git 管理下でない場所からの呼び出しがエラーになること / 停止した起点を渡すと
 エラーで停止し記録が作られないこと / `start` が標準入力の結合出力（`combined`）から
 入れ物を組み立てること / `text` が `problem` にも置かれること / 一時ファイルを
@@ -297,7 +297,7 @@ class NextPendingFinishTest(WrapperTestCase):
 
 
 class ParserSurfaceTest(WrapperTestCase):
-    """AI が書く文章を受け取る引数を持たないこと（DES-080 §2.1・§2.6・§7）。"""
+    """AI が書く文章を受け取る引数を持たないこと（DES-075 §6・§6.1・§9）。"""
 
     def _option_strings(self):
         parser = agenda_wrapper.build_parser()
