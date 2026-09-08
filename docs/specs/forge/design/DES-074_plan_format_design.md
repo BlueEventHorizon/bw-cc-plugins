@@ -28,7 +28,7 @@
 トップレベルキーは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` のみ許容する（それ以外の追加は 🟡 major 違反）。
 
 frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.3
-判定基準・現在の仕様の所在・merge 手順: [additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §1 適用条件
+判定基準・旧仕様の置き換え・merge 手順: [additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §1 適用条件
 
 ---
 

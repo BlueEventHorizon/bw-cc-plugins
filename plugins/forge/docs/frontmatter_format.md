@@ -1,6 +1,6 @@
 # 追加 feature frontmatter 定義
 
-本文書は、差分 feature 運用で要件定義書・設計書に付与する frontmatter キーの集約 SoT（単一の真実源）である。判定基準（いつ feature を使うか）・現在の仕様の所在・merge 手順は [additive_development_spec.md](additive_development_spec.md) を参照。本文書は frontmatter のキー定義そのものに専念する。
+本文書は、差分 feature 運用で要件定義書・設計書に付与する frontmatter キーの集約 SoT（単一の真実源）である。判定基準（いつ feature を使うか）・旧仕様の置き換え・merge 手順は [additive_development_spec.md](additive_development_spec.md) を参照。本文書は frontmatter のキー定義そのものに専念する。
 
 ---
 

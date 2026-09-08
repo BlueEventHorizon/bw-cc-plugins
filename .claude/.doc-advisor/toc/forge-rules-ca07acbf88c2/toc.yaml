@@ -5,39 +5,42 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-08T14:39:14Z
+  generated_at: 2026-09-08T14:56:03Z
   file_count: 41
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines criteria and procedures for additive development workflows, feature type classification, implementation period rules, and merge procedures when adding features to existing projects
+    purpose: Defines criteria and procedures for additive development workflow when adding features to existing projects, distinguishing pure-additive from differential development types and their temporal characteristics
     content_details:
-      - Feature as namespace for distinguishing requirement groups
-      - Pure addition vs. differential development type distinction
-      - Conditions for applying differential development
-      - Prohibition on modifying old specifications during implementation
-      - Merge definition as semantic integration not physical file combination
-      - Scope-based determination for content move vs. separation
-      - Work tree isolation requirement during implementation
-      - Frontmatter markers for temporary feature documents
+      - Feature concept definition distinguishing pure-additive vs. differential development types
+      - Differentiation development application criteria based on specification document changes
+      - Specification replacement principle during implementation phase
+      - Implementation constraints prohibiting old specification document rewrites
+      - Merge definition as specification reconciliation not physical file consolidation
+      - Scope-based merge strategy for content allocation decisions
+      - Implementation isolation requirement using git worktree
+      - Frontmatter definitions for temporary differential development documents
     applicable_tasks:
-      - Adding features to existing projects
-      - Determining feature type classification
-      - Planning additive development workflows
-      - Writing differential feature specifications
-      - Implementing differential features in isolated worktrees
-      - Reviewing additive development changes
-      - Merging differential features into base specifications
+      - Feature type determination for new development initiatives
+      - Specification planning and requirements document preparation
+      - Implementation phase coordination and specification scope guidance
+      - Merge specification execution and old/new specification consolidation
+      - Differential development workflow governance setup
+      - Scope-based content allocation in specification merge procedures
+      - Temporary feature document management and frontmatter generation
+      - ToC database update after specification merge completion
     keywords:
-      - additive development
-      - feature namespace
-      - differential development
-      - pure addition feature
-      - specification merge
-      - scope reconciliation
-      - feature frontmatter
-      - worktree isolation
+      - additive-development
+      - differential-development
+      - feature-namespace
+      - specification-replacement
+      - merge-reconciliation
+      - git-worktree
+      - frontmatter
+      - scope-based-merge
+      - feature_type
+      - temporal-transaction
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format
     purpose: Defines the default generic format for Architecture Decision Records used when project-specific ADR format is not found
@@ -153,35 +156,36 @@ docs:
       - review criteria
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Defines standards and reference points for reviewing design documents, including SoT references, check priority order, and judgment rules
+    purpose: Defines design document review criteria, including required SoT reference documents, check ordering (P1/P2/P3), judgment rules for recommendations, and specific requirements for temporary-feature frontmatter, ADR validation, and contradiction detection
     content_details:
-      - SSOT reference document list (P1/P2/P3)
-      - Check order by document type (P1 rule compliance, P2 contradiction detection, P3 complexity)
-      - Judgment rule conditions (fix, create_issue, skip recommendations)
-      - Conditions for create_issue recommendations
-      - "Additional feature frontmatter validation (feature_type: temporary-feature)"
-      - Document reference validation (links, anchors, existing targets)
-      - ADR operation and lifecycle (required structure, obsolescence markers)
-      - Additive feature exemption rules for P2 contradiction detection
-      - doc_status exemption rules (not_implemented and draft handling)
-      - Severity determination delegation to principles documents
+      - SSOT reference documents prioritized by P1/P2/P3 levels
+      - Check ordering by type (P1 rule matching, P2 contradiction, P3 unnecessary complexity)
+      - P1 requirements for temporary-feature frontmatter validation
+      - Document reference checking (links, anchors, moved/deleted files)
+      - ADR format and operations validation (context, decision, alternatives)
+      - P2 contradiction detection within target files and related specs
+      - P2 exclusion rules for additive feature and doc_status markers
+      - P3 unnecessary complexity evaluation criteria
+      - Judgment rule recommendations (fix, create_issue, skip)
+      - Three conditions for create_issue determination
     applicable_tasks:
       - Design document review
-      - ADR lifecycle validation
-      - Cross-document reference verification
-      - Feature type frontmatter validation
-      - Design principles compliance checking
-      - Documentation standards checking
-      - Additive feature design review
+      - Design rule compliance checking
+      - ADR validation
+      - Additive feature design verification
+      - Document reference validation
+      - Contradiction detection in specifications
     keywords:
       - design review
       - review criteria
+      - specification design boundary
+      - temporary-feature
       - ADR
-      - frontmatter
       - design principles
-      - temporary feature
-      - SSOT
-      - feature_type
+      - frontmatter validation
+      - document reference
+      - contradiction detection
+      - additive development
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
     purpose: Defines the criteria and procedures for general document reviews, covering SSOT reference hierarchy, document style verification, consistency checks, and recommendation judgment rules.
@@ -215,65 +219,68 @@ docs:
       - recommendation judgment
   plugins/forge/docs/criteria/review_criteria_plan.md:
     title: Plan Review Criteria
-    purpose: Defines standards and reference points for reviewing plan documents (JSON), including SoT references, check priority order, and judgment rules for plan review
+    purpose: Defines plan document review criteria, including required SSOT reference documents, check ordering (P1/P2/P3), judgment rules for recommendations, and specific requirements for additive feature identification via requirements_traceability, reference validation, and contradiction detection
     content_details:
-      - SSOT reference document list for plan review (P1/P2/P3)
-      - Check order by document type (P1 rule compliance, P2 contradiction detection, P3 complexity)
-      - Plan principles (task granularity, acceptance criteria, traceability field, task groups, parallelizable tasks)
-      - Additive feature detection via requirements_traceability and temporary-feature frontmatter
-      - Reference path validation (required_reading, design_id fields must exist)
-      - Task contradiction detection within target plan and against related specs
-      - Judgment rule conditions (fix, create_issue, skip recommendations)
-      - Conditions for create_issue recommendations
-      - Additive feature exemption rules for P2 contradiction detection
-      - Anti-pattern and excessive task splitting detection
+      - SSOT reference documents (P1/P2/P3) including plan principles, additive development, document style guide
+      - Check ordering by type (P1 rule matching, P2 contradiction, P3 unnecessary complexity)
+      - P1 additive feature identification via requirements_traceability frontmatter
+      - Reference path validation (required_reading, design_id fields)
+      - JSON structure validation and required fields management
+      - P2 contradiction detection between plan.json and related design/requirement specs
+      - P2 exclusion rules for additive feature plans with temporary-feature marker
+      - P3 unnecessary complexity evaluation (task granularity, dependencies, phases)
+      - Judgment rule recommendations (fix, create_issue, skip)
+      - Three conditions for create_issue determination
     applicable_tasks:
       - Plan document review
-      - Task structure and dependency validation
-      - Traceability verification
-      - Cross-document reference verification
-      - Additive feature plan review
-      - Task granularity and complexity assessment
+      - Plan rule compliance checking
+      - Task dependency validation
+      - Additive feature plan verification
+      - Reference path validation
+      - Contradiction detection in plans and specifications
     keywords:
       - plan review
-      - plan criteria
-      - task granularity
-      - traceability
-      - requirements_traceability
-      - temporary feature
-      - SSOT
+      - review criteria
+      - task grain
       - acceptance criteria
+      - requirements traceability
+      - temporary-feature
+      - dependency validation
+      - contradiction detection
+      - additive development
+      - plan.json
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: Requirement Review Criteria
-    purpose: Defines standards and reference points for reviewing requirement documents, including SoT references, check priority order, and judgment rules for requirement review
+    purpose: Defines requirement document review criteria, including required SSOT reference documents, check ordering (P1/P2/P3), judgment rules for recommendations, and specific requirements for additive feature identification, reference validation, and contradiction detection
     content_details:
-      - SSOT reference document list for requirement review (P1/P2/P3)
-      - Check order by document type (P1 rule compliance, P2 contradiction detection, P3 complexity)
-      - Requirement format validation (metadata, TBD table, required items)
-      - Non-functional requirements category coverage verification
-      - "Additive feature detection and frontmatter validation (feature_type: temporary-feature)"
-      - Document reference validation (document links, anchor existence)
-      - Requirement contradiction detection (FNC cross-references, term definitions, priority conflicts)
-      - Design document consistency checking (machine definitions, data models, business goal mapping)
-      - Judgment rule conditions (fix, create_issue, skip recommendations)
-      - Conditions for create_issue recommendations
+      - SSOT reference documents (P1/P2/P3) including requirement format, specification priorities, additive development, frontmatter format
+      - Check ordering by type (P1 rule matching, P2 contradiction, P3 unnecessary complexity)
+      - P1 requirement format validation (metadata, undefined items table, required fields)
+      - P1 non-functional requirement category completeness validation
+      - P1 additive feature identification via frontmatter temporary-feature marker
+      - Document reference validation (links, anchors, moved/deleted files; metadata references excluded)
+      - P2 contradiction detection between requirements (FNC cross-references, terminology, priority) and design specs
+      - P2 exclusion rules for additive feature requirements and doc_status markers
+      - P3 unnecessary complexity evaluation (anti-patterns, direct quantification prohibition)
+      - Judgment rule recommendations (fix, create_issue, skip)
     applicable_tasks:
       - Requirement document review
-      - Requirement format validation
-      - Non-functional requirements verification
-      - Cross-document reference verification
-      - Additive feature requirement review
-      - Requirement consistency and contradiction detection
-      - Document style compliance checking
+      - Requirement rule compliance checking
+      - Non-functional requirement validation
+      - Additive feature requirement verification
+      - Document reference validation
+      - Contradiction detection in requirements and specifications
     keywords:
       - requirement review
-      - requirement criteria
+      - review criteria
+      - requirement format
       - non-functional requirements
-      - feature_type
-      - temporary feature
-      - frontmatter
-      - FNC
-      - SSOT
+      - specification priorities
+      - temporary-feature
+      - contradiction detection
+      - additive development
+      - doc_status
+      - FNC identifiers
   plugins/forge/docs/criteria/review_criteria_secrets.md:
     title: Secrets Review Criteria
     purpose: Defines review criteria for secrets and sensitive information detection, validation against standards, and machine detection result verification
@@ -338,34 +345,37 @@ docs:
       - severity judgment
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
-    purpose: Specifies the default format template for design documents, including frontmatter requirements for additive features, file naming conventions, and standard structure sections
+    purpose: Defines the generic design document format specification used when project-specific format guidelines are unavailable, including frontmatter requirements for differential features, file naming conventions, and template structure for comprehensive design documentation
     content_details:
-      - Frontmatter with feature_type and feature_note for additive features
-      - File naming convention DES-xxx_name_design.md format
-      - Overview section with design rationale and approach
-      - Architecture overview with components and layer structure
-      - Module design with list and class diagrams
-      - Use case design with scenarios and sequence diagrams
-      - Existing component reuse documentation
-      - Test design sections for unit and integration testing
+      - Frontmatter specification for temporary differential development design documents
+      - Feature note documentation requirements with 4 key points about spec alignment and merge strategy
+      - File naming convention using design ID prefix DES-{ID}_{name}_design.md
+      - Template structure with 6 main sections for comprehensive design definition
+      - Architecture overview and module design with component diagrams and dependencies
+      - Class diagram and module responsibility matrix specification
+      - Use case design with preconditions, normal flow, and error flow definitions
+      - Test design scope definition for unit and integration testing
+      - References to related specification and principles documents
     applicable_tasks:
-      - Creating design documents
-      - Designing additive features
-      - Documenting system architecture
-      - Defining module responsibilities and dependencies
-      - Designing use cases and interaction flows
-      - Planning unit and integration tests
-      - Reviewing design document completeness
+      - Design document creation following default format template
+      - Differential feature design documentation and frontmatter generation
+      - Design document scope definition against requirements
+      - Architecture and module design specification for new components
+      - Use case and test design documentation preparation
+      - Design document file naming and organization standards
+      - Feature note configuration for temporary development feature designs
+      - Design principles validation and consistency checking
     keywords:
-      - design format
+      - design-format
       - frontmatter
-      - temporary feature
-      - module design
-      - class diagram
-      - use case
-      - sequence diagram
-      - architecture
-      - component dependency
+      - temporary-feature
+      - feature_type
+      - module-design
+      - use-case-design
+      - sequence-diagram
+      - DES-ID
+      - architecture-overview
+      - test-design
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Specifies universal principles for creating design documents, including the What/How boundary, required structural elements, content guidelines, architecture rules, responsibility division norms, and maintenance practices
@@ -555,32 +565,40 @@ docs:
       - code review
       - design patterns
   plugins/forge/docs/frontmatter_format.md:
-    title: Additional Feature Frontmatter Definition
-    purpose: Defines frontmatter keys for differential feature operations, specifying feature_type temporary-feature marker and doc_status lifecycle indicators for requirements and design documents
+    title: Additive Feature Frontmatter Definition
+    purpose: Defines the Single Source of Truth for frontmatter key specifications (feature_type, feature_note, doc_status) that must be added to differential feature requirements and design documents, serving as the authoritative reference separate from application criteria
     content_details:
-      - "feature_type: temporary-feature marker for requirements and design documents"
-      - feature_note array with requirements binding current specification over legacy files
-      - "doc_status: draft indicator for incomplete document content"
-      - "doc_status: not_implemented indicator for unimplemented dependencies"
-      - Planning documents specification (no frontmatter required)
-      - "Merge semantics: meaning integration versus physical file combination"
-      - doc_status resolution conditions for draft and implementation completion
+      - "feature_type: temporary-feature key marking differential development documents with specification replacement principles"
+      - Requirements document frontmatter specification with feature_type and 4-point feature_note requirements
+      - Design document frontmatter specification with requirement-design relationship rules
+      - Plan documents exclusion from frontmatter and tracking via requirements_traceability
+      - doc_status key for document lifecycle states (draft for unreviewed, not_implemented for unmet dependencies)
+      - doc_status value definitions distinguishing review completion from implementation readiness
+      - doc_status removal conditions triggered by review completion or dependency implementation
+      - Frontmatter formatting rules requiring order independence and supporting key co-occurrence patterns
       - doc-advisor reserved key collision avoidance strategy
+      - Independence of feature_type and doc_status axes in interpretation
     applicable_tasks:
-      - Frontmatter creation for differential features
-      - Differential feature workflow execution
-      - Document lifecycle state management
-      - Feature type determination and application
-      - Requirements and design document frontmatter validation
+      - Requirements document frontmatter generation for differential feature development
+      - Design document frontmatter generation with merge scope metadata
+      - Plan document configuration and exclusion from frontmatter marking
+      - Document lifecycle state marking and status assignment
+      - Frontmatter validation and reserved key collision detection
+      - Document review completion and draft status removal workflow
+      - Dependency implementation verification and status lifecycle management
+      - Merge preparation with feature_type and doc_status coordination
+      - Frontmatter consistency checking across feature requirement and design pairs
     keywords:
+      - frontmatter
       - feature_type
       - temporary-feature
+      - feature_note
       - doc_status
-      - frontmatter
-      - additive development
-      - differential feature
-      - draft
-      - not_implemented
+      - differential-feature
+      - requirements-traceability
+      - lifecycle-state
+      - draft-status
+      - not_implemented-status
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Document Creation Principles
     purpose: Defines structural rules and task design principles for plan documents, including composition rules, task granularity, traceability matrices, testing requirements, acceptance criteria standards, and dependency management with severity classifications
@@ -616,34 +634,33 @@ docs:
       - implicit dependency
       - dependency management
   plugins/forge/docs/requirement_format.md:
-    title: Requirement Definition Document Default Format
-    purpose: Specifies the default template format for requirement definition documents, including frontmatter requirements for differential features and violation severity guidelines
+    title: Default Format for Requirement Specifications
+    purpose: Provides a standard template and structure for requirement specification documents, including frontmatter requirements for temporary features and severity criteria for format validation.
     content_details:
-      - Default requirement definition document template structure
-      - "Frontmatter feature_type: temporary-feature for differential features"
-      - "Document sections: overview, prerequisites, requirement list"
-      - Display requirements section with screen elements
-      - Operation requirements section with user actions, inputs, outputs
-      - Error case handling with condition and error message table
-      - Undecided items section with TBD tracking table
-      - Violation severity catalog for frontmatter compliance
-      - "Major severity violation: missing feature_type frontmatter on differential features"
-      - Creation principles and requirement design boundary references
+      - "Frontmatter format with feature_type: temporary-feature for additive features"
+      - Requirement document structure with Overview, Prerequisites, and Requirements List sections
+      - "Requirement categories: Display requirements, Operation requirements, Error cases"
+      - "Frontmatter four-point requirements: current document status, file separation rules, merge procedure, scope management"
+      - Severity catalog mapping format violations to severity levels
+      - TBD items tracking table for undefined requirements
+      - "References to related specifications: additive_development_spec, design_boundary_spec, frontmatter_format"
     applicable_tasks:
-      - Requirement definition document creation
-      - Differential feature requirement specification
-      - Frontmatter application for new requirements
-      - Requirement review and violation severity assessment
-      - Requirement format compliance validation
+      - Creating requirement specification documents
+      - Validating requirement format compliance
+      - Reviewing temporary feature requirements
+      - Merging temporary features with base specifications
+      - Distinguishing additive features from incremental changes
+      - Identifying and tracking undefined items (TBD)
+      - Determining format violation severity levels
     keywords:
-      - requirement definition
+      - requirement specification
+      - temporary feature
+      - format template
       - frontmatter
-      - feature_type
-      - temporary-feature
-      - violation severity
-      - differential feature
-      - template
-      - specification
+      - additive development
+      - feature merge
+      - TBD items
+      - severity criteria
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
     purpose: Defines the priority system (P1/P2/P3) for review perspectives and establishes the relationship between priority and severity, with delegated judgment to principles documents.

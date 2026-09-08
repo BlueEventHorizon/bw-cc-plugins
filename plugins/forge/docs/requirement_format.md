@@ -16,7 +16,7 @@
 `feature_type: temporary-feature` を付与し、feature_note に①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。frontmatter の正式な文言は [frontmatter_format.md](frontmatter_format.md) §1.1 を参照。
 
 全文書種別（要件・設計・計画）の frontmatter 集約 SoT: [frontmatter_format.md](frontmatter_format.md)
-判定基準・現在の仕様の所在・merge 手順: [additive_development_spec.md](additive_development_spec.md) §1
+判定基準・旧仕様の置き換え・merge 手順: [additive_development_spec.md](additive_development_spec.md) §1
 
 ---
 
