@@ -10,7 +10,7 @@ allowed-tools: Read, Edit, Bash, AskUserQuestion
 
 # update-onboarding-copy
 
-`plugins/forge/skills/onboarding/SKILL.md` の COPY 範囲（`FORGE_ONBOARDING_COPY_START` / `_END` マーカー内）を保守する。このスキルは COPY 範囲の内容更新と再転記のみを行う。**供給源文書そのものは編集しない**（供給源の改編は本スキルの起動契機であって作業対象ではない）。転記の仕組み（`onboarding_block.py`・マーカー方式・テスト）にも手を入れない。
+`plugins/forge/skills/onboarding/copy_block.md`（COPY 範囲の専用ファイル。全文が転記範囲）を保守する。このスキルは COPY 範囲の内容更新と再転記のみを行う。**供給源文書そのものは編集しない**（供給源の改編は本スキルの起動契機であって作業対象ではない）。転記の仕組み（`onboarding_block.py`・テスト）にも手を入れない。
 
 ## When To Use
 
@@ -24,10 +24,14 @@ allowed-tools: Read, Edit, Bash, AskUserQuestion
 
 ### 載せるもの
 
-**会話直の作業（スキルを起動しない通常会話での実装・文書編集・調査）で AI の行動を変える規範だけ**を載せる。
+**次の両方を満たす規範だけ**を載せる。三層の設計とその理由は [onboarding の README](../../../plugins/forge/skills/onboarding/README.md) が持つ。
 
-- 「〜を書かない」「〜したら同じ変更で〜する」のような、会話直の編集・実装でも守るべき禁止・義務は対象
-- スキル経由の作業でしか使わない内容は対象外。スキルは自分の調査 Phase・必須参照文書で規範を読むため、CLAUDE.md に無くても届く。COPY 範囲が塞ぐ穴は「スキル非経由の作業で規範が 0 になる」ことだけである
+1. **守られないと forge が破綻する**（例: 文書 ID を手で採番すると並行ブランチで衝突する。frontmatter を手書きすると索引が信頼されない）。プロジェクトが自由に決めてよいことを forge は強制しない
+2. **会話直の作業（スキルを起動しない通常会話での実装・文書編集・調査）で AI の行動を変える**。「〜を書かない」「〜したら同じ変更で〜する」のような禁止・義務が対象
+
+スキル経由の作業でしか使わない内容は対象外。スキルは自分の調査 Phase・必須参照文書で規範を読むため、CLAUDE.md に無くても届く。COPY 範囲が塞ぐ穴は「スキル非経由の作業で規範が 0 になる」ことだけである。
+
+条件 1 が必要なのは、CLAUDE.md へ載せた規範はプロジェクト側が別ルールで上書きできなくなるためである。内蔵 docs に置けば、プロジェクトが違う流儀を定めたときにそちらが優先される。
 
 ### 載せないもの
 
@@ -37,6 +41,7 @@ allowed-tools: Read, Edit, Bash, AskUserQuestion
 - 特定作業でのみ効く技術リファレンス（例: バージョンマイグレーション実装パターン）
 - 特定分野の数値カタログ（例: UX/UI のタッチターゲット 44pt・コントラスト比。UI 作業が無いプロジェクトにはノイズ［利用者決定 2026-08-15］）
 - 本リポジトリ固有の名称・パス・事情（COPY 範囲は配布物であるため）
+- プロジェクトが自由に決めてよいもの（文書スタイルの好み・議論の作法。内蔵 docs 側に置く［利用者決定 2026-09-09］）
 
 ### 粒度
 
@@ -53,7 +58,6 @@ COPY 範囲の各節と蒸留元の対応。供給源側で規範の追加・削
 | forge 文書規範         | `plugins/forge/docs/` の document_style_guide / spec_format / spec_design_boundary_spec / spec_priorities_spec / design_principles_spec / adr_principles_spec / frontmatter_format（frontmatter）                                                          |
 | forge 実装規範         | `plugins/forge/docs/` の additive_development_spec §1–§3 / scope_proportionality_spec、`plugins/forge/skills/start-implement/docs/task_execution_spec.md`、`plugins/anvil/skills/impl-issue/references/`（既存資産優先・推測禁止・共用部品・検証の裏取り） |
 | forge 機密情報         | `plugins/forge/docs/sensitive_information_spec.md`                                                                                                                                                                                                         |
-| forge 提示・議論の作法 | `plugins/forge/docs/consult_principles_spec.md`、`plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md` 対話の基本原則 8（議論モードと決定モードの区別）                                                                      |
 | forge プロジェクト文書 | COPY 範囲が正本（供給源からの蒸留ではない）                                                                                                                                                                                                                |
 | forge 重要規約         | 同上（COPY 範囲が正本）                                                                                                                                                                                                                                    |
 
@@ -72,16 +76,16 @@ anvil 由来の規範を forge の COPY 範囲に載せることは利用者決�
 
 ### 2. COPY 範囲を編集する
 
-`plugins/forge/skills/onboarding/SKILL.md` のマーカー内だけを編集する。制約:
+`plugins/forge/skills/onboarding/copy_block.md` だけを編集する。制約:
 
 - `##` 見出しは必ず `forge` で始める（`tests/forge/onboarding/` が検証する）
 - 蒸留要旨方式・分量の目安を維持する
-- マーカーの外（必読文書リスト・実行フロー）は本スキルの対象外
+- `SKILL.md`（必読文書リスト・実行フロー）は本スキルの対象外。転記範囲を SKILL.md へ戻してはならない（起動時に全文注入されるため、転記済みのとき必ず二重読みになる）
 
 ### 3. 整形と検証
 
 ```bash
-dprint fmt plugins/forge/skills/onboarding/SKILL.md
+dprint fmt plugins/forge/skills/onboarding/copy_block.md
 python3 -m unittest tests.forge.onboarding.test_onboarding_block -v
 ```
 
@@ -91,7 +95,7 @@ python3 -m unittest tests.forge.onboarding.test_onboarding_block -v
 python3 plugins/forge/skills/onboarding/scripts/onboarding_block.py --check
 ```
 
-`stale` なら AskUserQuestion で転記の承認を一行で求め、承認されたら `--write` を実行し、再度 `--check` が `fresh` を返すことを確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
+`--check` が返す JSON に従う。`action: "propose"` なら `notice` をそのまま出力し、`ask` と `options` で AskUserQuestion を出す。承認されたら `on_approve` のコマンドを実行し、返る `verify` で `fresh` を確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
 
 ## Validation
 

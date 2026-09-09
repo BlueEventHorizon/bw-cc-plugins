@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """onboarding が利用プロジェクトの CLAUDE.md へ転記する規範ブロックを生成・更新する。
 
-転記元は onboarding 自身の SKILL.md で、`FORGE_ONBOARDING_COPY_START` / `_END` で
-囲まれた範囲をコピーする。見出し名には依存しない（見出しに依存すると、節の改名や
-タグ追加で転記範囲が黙って変わる）。
+転記元は copy_block.md 専用ファイルで、その全文をコピーする。SKILL.md に置かない理由は、
+SKILL.md が起動時に全文コンテキストへ注入されるためである。転記済み（fresh）のとき、
+転記範囲は CLAUDE.md に一字一句同じ形で既にあるため、SKILL.md 側の複製は必ず二重読みになる。
+専用ファイルなら script だけが読む。
 
 コピーは原文のままで、書き換えは一切行わない。転記先での見出し重複を避けるための `forge`
-接頭辞は転記元の SKILL.md 側で付けておく規約とし、その遵守はテストで検証する（script 側で
+接頭辞は copy_block.md 側で付けておく規約とし、その遵守はテストで検証する（script 側で
 変換すると、変換が効かなかったときに衝突が黙って戻る）。
-抽出・ハッシュ計算・差し込みは決定論的処理なので全てこのスクリプトが行い、
-AI は起動と承認提示だけを担う（内容の取捨をここで行うと冪等性が壊れる）。
+
+status の判定、次に取る行動、承認を求める文言は、いずれも status から一意に決まる。
+決定論的な写像を AI に解釈させないため、--check の出力に載せる（AI は承認を求めることと、
+返された command を実行することだけを担う）。
 
 使い方:
-    onboarding_block.py --check [--target CLAUDE.md]
-    onboarding_block.py --write [--target CLAUDE.md]
+    onboarding_block.py --check [--target CLAUDE.md] [--source copy_block.md]
+    onboarding_block.py --write [--target CLAUDE.md] [--source copy_block.md]
 
 --check は JSON を返すだけでファイルを変更しない。status は次のいずれか:
     absent  マーカーが無い（初回。転記元の内容はまだ CLAUDE.md 経由で文脈に入らない）
-    stale   マーカーはあるがハッシュ不一致（転記元が更新された）
-    fresh   マーカーがありハッシュ一致（転記済みで最新）
+    stale   マーカーはあるがブロックが期待値と一致しない（転記元が更新された）
+    fresh   転記済みで最新
 """
 
 from __future__ import annotations
@@ -27,16 +30,14 @@ import argparse
 import hashlib
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
 
 # 転記元。このスクリプトは skills/onboarding/scripts/ に置かれる
-SKILL_MD = Path(__file__).resolve().parent.parent / "SKILL.md"
+SOURCE = Path(__file__).resolve().parent.parent / "copy_block.md"
 
-# 転記元（SKILL.md）側のマーカー。転記先（CLAUDE.md）側とは別名にする
-COPY_START = "<!-- FORGE_ONBOARDING_COPY_START -->"
-COPY_END = "<!-- FORGE_ONBOARDING_COPY_END -->"
-
+# 転記先（CLAUDE.md）側のマーカー
 MARKER_START_RE = re.compile(
     r"^<!--\s*FORGE_ONBOARDING_START(?:\s+hash=([0-9a-f]+))?\s*-->[ \t]*$",
     re.MULTILINE,
@@ -52,27 +53,72 @@ CHROME = (
     "所有物。"
 )
 
+# 承認の提示。ハッシュ・マーカー名・引数といった内部の詳細を含めない
+# （毎セッション読まされる文章になり、承認の判断にも必要でない）。
+# 一行だけの問いでは「誰が・何を・なぜ・断ってよいのか」が伝わらず、利用者が
+# 唐突な書き込み要求と受け取るため、名乗り・利得・起きることを 3 行で添える。
+#
+# 引用（`> `）で出すのは、通知の境界を示すためである。コンソールでは引用符号が
+# 付き、どこまでがプラグインの発言かが一目で分かる。`=` の罫線は使わない
+# （直前の行に続く `=` の連続が markdown の setext 見出しとして解釈され、
+# 罫線が消えて見出しに化ける）。GFM アラート（`> [!IMPORTANT]`）も使わない
+# （コンソールでは色が付かず、タグ文字がそのまま出るだけで雑音になる）。
+PLUGIN_NAME = "forge"
+MARKETPLACE_NAME = "bw-cc-plugins"
+PLUGIN_LABEL = f"{MARKETPLACE_NAME} {PLUGIN_NAME}"
+BENEFIT = f"ルールがあれば開発プロジェクトで {PLUGIN_NAME} を効果的にお使いいただけます。"
+
+DECLINE_OPTION = {"label": "書き込まない", "description": "書き込まずに作業を続けます"}
+
+PROPOSALS: dict[str, dict[str, object]] = {
+    "append": {
+        "lines": [
+            f"{PLUGIN_LABEL} を使う場合、推奨のルールを CLAUDE.md に書き込むことをお勧めします。",
+            BENEFIT,
+            "CLAUDE.md の末尾に専用ブロックを追記します。既存の記述は変更しません。",
+        ],
+        "ask": "CLAUDE.md に書き込みますか",
+        "options": [
+            {"label": "書き込む", "description": "末尾に専用ブロックを追記します。既存の記述は変えません"},
+            DECLINE_OPTION,
+        ],
+    },
+    "create": {
+        "lines": [
+            f"{PLUGIN_LABEL} を使う場合、推奨のルールを CLAUDE.md に書き込むことをお勧めします。",
+            BENEFIT,
+            "このプロジェクトには CLAUDE.md がないため、新規に作成して書き込みます。",
+        ],
+        "ask": "CLAUDE.md を作成して書き込みますか",
+        "options": [
+            {"label": "作成して書き込む", "description": "CLAUDE.md を新規作成し、専用ブロックを書き込みます"},
+            DECLINE_OPTION,
+        ],
+    },
+    "update": {
+        "lines": [
+            f"{PLUGIN_LABEL} の推奨ルールが更新されました。",
+            "CLAUDE.md の前回書き込んだブロックが古くなっています。該当箇所だけを差し替えます。",
+            "ブロックの外側（プロジェクト自身の記述）は変更しません。",
+        ],
+        "ask": "CLAUDE.md の該当箇所を更新しますか",
+        "options": [
+            {"label": "更新する", "description": "専用ブロックの中だけを差し替えます。外側は変えません"},
+            {"label": "更新しない", "description": "更新せずに作業を続けます"},
+        ],
+    },
+}
+
 
 class BlockError(RuntimeError):
     """マーカーが壊れている等、書き込みを中止すべき状態。"""
 
 
-def extract_copy_region(skill_md_text: str) -> str:
-    """転記元マーカーで囲まれた範囲を原文のまま返す。見出し名には依存しない。"""
-    n_start = skill_md_text.count(COPY_START)
-    n_end = skill_md_text.count(COPY_END)
-    if n_start != 1 or n_end != 1:
-        raise BlockError(
-            f"転記元マーカーが対になっていない（COPY_START={n_start} 個 / COPY_END={n_end} 個）。"
-            "SKILL.md を修復してから再実行する"
-        )
-    i = skill_md_text.index(COPY_START) + len(COPY_START)
-    j = skill_md_text.index(COPY_END)
-    if j < i:
-        raise BlockError("COPY_END が COPY_START より前にある。SKILL.md を修復してから再実行する")
-    region = skill_md_text[i:j].strip("\n")
+def read_region(source_text: str) -> str:
+    """転記元の全文を原文のまま返す。"""
+    region = source_text.strip("\n")
     if not region.strip():
-        raise BlockError("転記範囲が空である。SKILL.md を確認する")
+        raise BlockError("転記元が空である。copy_block.md を確認する")
     return region
 
 
@@ -110,8 +156,8 @@ def evaluate(target_text: str, expected_block: str) -> str:
     """`fresh` は「ブロックが今生成するものと完全一致」を意味する。
 
     マーカーに記録されたハッシュ値だけを比べると、本文を手で書き換えても数字が残って
-    いる限り最新と誤判定する（最も起こりやすいドリフトを見逃す）。ブロック全体を
-    期待値と突き合わせる。
+    いる限り最新と誤判定する（最も起こりやすいドリフト）。ブロック全体を期待値と
+    突き合わせる。
     """
     found = locate_block(target_text)
     if found is None:
@@ -133,24 +179,83 @@ def new_file_text(block: str) -> str:
     return f"# CLAUDE.md\n\n{block}\n"
 
 
+def mode_for(status: str, target_exists: bool) -> str:
+    """status と対象の有無から、提示の型を一意に決める。"""
+    if status == "stale":
+        return "update"
+    return "append" if target_exists else "create"
+
+
+def proposal_for(status: str, target_exists: bool) -> dict[str, object] | None:
+    """承認の提示（枠付き通知・問い・選択肢）を返す。fresh は承認を要さない。"""
+    if status == "fresh":
+        return None
+    p = PROPOSALS[mode_for(status, target_exists)]
+    return {
+        "notice": "\n".join(f"> {line}" for line in p["lines"]),
+        "ask": p["ask"],
+        "options": p["options"],
+    }
+
+
+def unsubstituted_placeholder(path: str) -> bool:
+    """`${CLAUDE_PROJECT_DIR}` 等が実パスへ置換されずに渡されたか。
+
+    置換されないまま通すと、実在しないパスを対象と判定し「CLAUDE.md がありません。
+    作成してよいですか」と尋ねてしまう。承認する側からは正常な初回セットアップと
+    区別できないため、黙って別の場所へ作る経路になる。中止に変える。
+    """
+    return "${" in path
+
+
+def build_command(mode: str, target: str, source: str, defaults: dict[str, str]) -> str:
+    """既定値と異なる引数だけを載せた実行コマンドを組む。
+
+    返した文字列は呼び出し側がそのまま実行する。**argv 由来の値だけで組むこと**
+    （ファイル内容由来の値を混ぜると、返り値をそのまま実行する前提が壊れる）。
+    """
+    argv = ["python3", str(Path(__file__).resolve()), mode]
+    if target != defaults["target"]:
+        argv += ["--target", target]
+    if source != defaults["source"]:
+        argv += ["--source", source]
+    return shlex.join(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     mode = ap.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--check", action="store_true", help="状態を返すだけ。書き込まない")
+    mode.add_argument("--check", action="store_true", help="状態と次の行動を返すだけ。書き込まない")
     mode.add_argument("--write", action="store_true", help="ブロックを生成・更新する")
     ap.add_argument("--target", default="CLAUDE.md", help="対象 CLAUDE.md（既定: カレントの CLAUDE.md）")
-    ap.add_argument("--skill-md", default=str(SKILL_MD), help="転記元 SKILL.md（試験用）")
+    ap.add_argument("--source", default=str(SOURCE), help="転記元 copy_block.md（試験用）")
     args = ap.parse_args(argv)
+    defaults = {"target": "CLAUDE.md", "source": str(SOURCE)}
 
-    skill_path = Path(args.skill_md)
-    if not skill_path.is_file():
-        print(json.dumps({"error": f"転記元が見つからない: {skill_path}"}, ensure_ascii=False))
+    if unsubstituted_placeholder(args.target):
+        print(
+            json.dumps(
+                {
+                    "error": (
+                        f"対象パスに未置換のプレースホルダが残っている: {args.target}"
+                        "（SKILL.md の ${CLAUDE_PROJECT_DIR} が実パスへ置換されていない）。"
+                        "置換される文脈から実行する"
+                    )
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 3
+
+    source_path = Path(args.source)
+    if not source_path.is_file():
+        print(json.dumps({"error": f"転記元が見つからない: {source_path}"}, ensure_ascii=False))
         return 2
 
     try:
-        region = extract_copy_region(skill_path.read_text(encoding="utf-8"))
+        region = read_region(source_path.read_text(encoding="utf-8"))
     except BlockError as exc:
-        print(json.dumps({"error": str(exc), "skill_md": str(skill_path)}, ensure_ascii=False))
+        print(json.dumps({"error": str(exc), "source": str(source_path)}, ensure_ascii=False))
         return 3
 
     body = render_body(region)
@@ -167,17 +272,33 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"error": str(exc), "target": str(target)}, ensure_ascii=False))
         return 3
 
-    result = {
+    result: dict[str, object] = {
         "status": status,
         "hash": digest,
         "target": str(target),
         "target_exists": exists,
-        # 参考情報。転記範囲の判定には使わない
-        "headings": [ln for ln in region.splitlines() if ln.startswith("## ")],
     }
 
     if args.check:
-        result["block"] = block
+        proposal = proposal_for(status, exists)
+        if proposal is None:
+            result["action"] = "none"
+            result["next"] = "転記済みで最新。ここで終了する"
+        else:
+            # 規範本文を返すのは、転記がそれを実行したセッションには効かないため。
+            # CLAUDE.md は起動時に instruction として注入され、途中の書き換えは反映されない。
+            # absent なら開始時にブロックが無く、stale なら古いブロックのまま走り切る。
+            # 読むことに承認は要らない（書き込むことに要る）ので、ask の可否と無関係に返す。
+            result["action"] = "propose"
+            result["block_body"] = region
+            result.update(proposal)
+            result["next"] = (
+                "block_body が forge の規範の正本。セッション開始時に読んだ転記ブロックは失効している"
+                "ので、以後は block_body に従う（承認の可否とは無関係に適用する）。"
+                "そのうえで notice をそのまま提示し、ask と options で承認を求め、"
+                "承認されたら on_approve を実行する"
+            )
+            result["on_approve"] = build_command("--write", args.target, args.source, defaults)
         print(json.dumps(result, ensure_ascii=False))
         return 0
 
@@ -189,6 +310,17 @@ def main(argv: list[str] | None = None) -> int:
     text = new_file_text(block) if not exists else splice(current, block)
     target.write_text(text, encoding="utf-8")
     result["action"] = "created" if not exists else ("updated" if status == "stale" else "appended")
+    # 書き込み直後の一致確認は script 内で完結させる（AI に再実行させる手順を 1 つ減らす）。
+    # verify を回すのは、フォーマッタがブロックを書き換えうる場合だけ
+    result["written_status"] = evaluate(target.read_text(encoding="utf-8"), block)
+    if result["written_status"] != "fresh":
+        result["next"] = "書き込み直後に一致しなかった。報告して中止する"
+    else:
+        result["next"] = (
+            "書き込みは完了し、一致を確認済み。プロジェクトがフォーマッタを使っている場合は適用し、"
+            "verify が fresh を返すことを確認する。使っていなければここで終了する"
+        )
+        result["verify"] = build_command("--check", args.target, args.source, defaults)
     print(json.dumps(result, ensure_ascii=False))
     return 0
 
