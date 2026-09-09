@@ -95,7 +95,7 @@ python3 -m unittest tests.forge.onboarding.test_onboarding_block -v
 python3 plugins/forge/skills/onboarding/scripts/onboarding_block.py --check
 ```
 
-`--check` が返す JSON に従う。`ask` があればその文言をそのまま一行で尋ね、承認されたら `on_approve` のコマンドを実行し、返る `verify` で `fresh` を確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
+`--check` が返す JSON に従う。`action: "propose"` なら `notice` をそのまま出力し、`ask` と `options` で AskUserQuestion を出す。承認されたら `on_approve` のコマンドを実行し、返る `verify` で `fresh` を確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
 
 ## Validation
 

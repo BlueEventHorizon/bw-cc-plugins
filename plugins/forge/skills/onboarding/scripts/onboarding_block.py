@@ -53,11 +53,61 @@ CHROME = (
     "所有物。"
 )
 
-# 承認を求める文言。ハッシュ・マーカー名・引数といった内部の詳細を含めない
-# （毎セッション読まされる文章になり、承認の判断にも必要でない）
-ASK_ABSENT_EXISTING = "forge の規範を CLAUDE.md に追記してよいですか（既存の記述は変えません）"
-ASK_ABSENT_MISSING = "このプロジェクトには CLAUDE.md がありません。作成してよいですか"
-ASK_STALE = "forge の規範が更新されました。CLAUDE.md の該当箇所を更新してよいですか"
+# 承認の提示。ハッシュ・マーカー名・引数といった内部の詳細を含めない
+# （毎セッション読まされる文章になり、承認の判断にも必要でない）。
+# 一行だけの問いでは「誰が・何を・なぜ・断ってよいのか」が伝わらず、利用者が
+# 唐突な書き込み要求と受け取るため、名乗り・利得・起きることを 3 行で添える。
+#
+# 引用（`> `）で出すのは、通知の境界を示すためである。コンソールでは引用符号が
+# 付き、どこまでがプラグインの発言かが一目で分かる。`=` の罫線は使わない
+# （直前の行に続く `=` の連続が markdown の setext 見出しとして解釈され、
+# 罫線が消えて見出しに化ける）。GFM アラート（`> [!IMPORTANT]`）も使わない
+# （コンソールでは色が付かず、タグ文字がそのまま出るだけで雑音になる）。
+PLUGIN_NAME = "forge"
+MARKETPLACE_NAME = "bw-cc-plugins"
+PLUGIN_LABEL = f"{MARKETPLACE_NAME} {PLUGIN_NAME}"
+BENEFIT = f"ルールがあれば開発プロジェクトで {PLUGIN_NAME} を効果的にお使いいただけます。"
+
+DECLINE_OPTION = {"label": "書き込まない", "description": "書き込まずに作業を続けます"}
+
+PROPOSALS: dict[str, dict[str, object]] = {
+    "append": {
+        "lines": [
+            f"{PLUGIN_LABEL} を使う場合、推奨のルールを CLAUDE.md に書き込むことをお勧めします。",
+            BENEFIT,
+            "CLAUDE.md の末尾に専用ブロックを追記します。既存の記述は変更しません。",
+        ],
+        "ask": "CLAUDE.md に書き込みますか",
+        "options": [
+            {"label": "書き込む", "description": "末尾に専用ブロックを追記します。既存の記述は変えません"},
+            DECLINE_OPTION,
+        ],
+    },
+    "create": {
+        "lines": [
+            f"{PLUGIN_LABEL} を使う場合、推奨のルールを CLAUDE.md に書き込むことをお勧めします。",
+            BENEFIT,
+            "このプロジェクトには CLAUDE.md がないため、新規に作成して書き込みます。",
+        ],
+        "ask": "CLAUDE.md を作成して書き込みますか",
+        "options": [
+            {"label": "作成して書き込む", "description": "CLAUDE.md を新規作成し、専用ブロックを書き込みます"},
+            DECLINE_OPTION,
+        ],
+    },
+    "update": {
+        "lines": [
+            f"{PLUGIN_LABEL} の推奨ルールが更新されました。",
+            "CLAUDE.md の前回書き込んだブロックが古くなっています。該当箇所だけを差し替えます。",
+            "ブロックの外側（プロジェクト自身の記述）は変更しません。",
+        ],
+        "ask": "CLAUDE.md の該当箇所を更新しますか",
+        "options": [
+            {"label": "更新する", "description": "専用ブロックの中だけを差し替えます。外側は変えません"},
+            {"label": "更新しない", "description": "更新せずに作業を続けます"},
+        ],
+    },
+}
 
 
 class BlockError(RuntimeError):
@@ -129,13 +179,23 @@ def new_file_text(block: str) -> str:
     return f"# CLAUDE.md\n\n{block}\n"
 
 
-def ask_for(status: str, target_exists: bool) -> str | None:
-    """status から承認文言を一意に決める。fresh は承認を要さない。"""
+def mode_for(status: str, target_exists: bool) -> str:
+    """status と対象の有無から、提示の型を一意に決める。"""
+    if status == "stale":
+        return "update"
+    return "append" if target_exists else "create"
+
+
+def proposal_for(status: str, target_exists: bool) -> dict[str, object] | None:
+    """承認の提示（枠付き通知・問い・選択肢）を返す。fresh は承認を要さない。"""
     if status == "fresh":
         return None
-    if status == "stale":
-        return ASK_STALE
-    return ASK_ABSENT_EXISTING if target_exists else ASK_ABSENT_MISSING
+    p = PROPOSALS[mode_for(status, target_exists)]
+    return {
+        "notice": "\n".join(f"> {line}" for line in p["lines"]),
+        "ask": p["ask"],
+        "options": p["options"],
+    }
 
 
 def unsubstituted_placeholder(path: str) -> bool:
@@ -220,8 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     if args.check:
-        ask = ask_for(status, exists)
-        if ask is None:
+        proposal = proposal_for(status, exists)
+        if proposal is None:
             result["action"] = "none"
             result["next"] = "転記済みで最新。ここで終了する"
         else:
@@ -231,11 +291,12 @@ def main(argv: list[str] | None = None) -> int:
             # 読むことに承認は要らない（書き込むことに要る）ので、ask の可否と無関係に返す。
             result["action"] = "propose"
             result["block_body"] = region
-            result["ask"] = ask
+            result.update(proposal)
             result["next"] = (
                 "block_body が forge の規範の正本。セッション開始時に読んだ転記ブロックは失効している"
                 "ので、以後は block_body に従う（承認の可否とは無関係に適用する）。"
-                "そのうえで ask をそのまま一行で尋ね、承認されたら on_approve を実行する"
+                "そのうえで notice をそのまま提示し、ask と options で承認を求め、"
+                "承認されたら on_approve を実行する"
             )
             result["on_approve"] = build_command("--write", args.target, args.source, defaults)
         print(json.dumps(result, ensure_ascii=False))

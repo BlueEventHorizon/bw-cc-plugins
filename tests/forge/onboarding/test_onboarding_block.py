@@ -133,26 +133,61 @@ class TestEvaluate(unittest.TestCase):
             ob.evaluate(broken, self.block)
 
 
-class TestAskFor(unittest.TestCase):
-    """承認文言は status から一意に決まる（AI に表を解釈させない）。"""
+class TestProposal(unittest.TestCase):
+    """承認の提示は status から一意に決まる（AI に表を解釈させない）。"""
 
     def test_fresh_needs_no_approval(self):
-        self.assertIsNone(ob.ask_for("fresh", True))
-        self.assertIsNone(ob.ask_for("fresh", False))
+        self.assertIsNone(ob.proposal_for("fresh", True))
+        self.assertIsNone(ob.proposal_for("fresh", False))
 
-    def test_absent_distinguishes_missing_target(self):
-        self.assertEqual(ob.ask_for("absent", True), ob.ASK_ABSENT_EXISTING)
-        self.assertEqual(ob.ask_for("absent", False), ob.ASK_ABSENT_MISSING)
-        self.assertNotEqual(ob.ASK_ABSENT_EXISTING, ob.ASK_ABSENT_MISSING)
+    def test_mode_distinguishes_three_cases(self):
+        self.assertEqual(ob.mode_for("absent", True), "append")
+        self.assertEqual(ob.mode_for("absent", False), "create")
+        self.assertEqual(ob.mode_for("stale", True), "update")
 
-    def test_stale_has_its_own_wording(self):
-        self.assertEqual(ob.ask_for("stale", True), ob.ASK_STALE)
+    def test_each_mode_has_distinct_wording(self):
+        asks = {ob.proposal_for(s, e)["ask"] for s, e in (("absent", True), ("absent", False), ("stale", True))}
+        self.assertEqual(len(asks), 3, "3 つの型で問いが重複している")
+
+    def test_notice_is_quoted_and_names_the_plugin(self):
+        """一行だけの問いでは唐突な書き込み要求に見えるため、引用符号と名乗りを持たせる。"""
+        for status, exists in (("absent", True), ("absent", False), ("stale", True)):
+            notice = ob.proposal_for(status, exists)["notice"]
+            lines = notice.splitlines()
+            self.assertTrue(lines, "notice が空である")
+            for line in lines:
+                self.assertTrue(line.startswith("> "), f"引用符号が無い行がある: {line!r}")
+            self.assertIn(ob.PLUGIN_LABEL, notice)
+            self.assertIn(ob.MARKETPLACE_NAME, notice)
+
+    def test_notice_avoids_markdown_hazards(self):
+        """`=` の罫線は直前の行を setext 見出しに化けさせる。GFM アラートは色が付かず雑音になる。"""
+        for status, exists in (("absent", True), ("absent", False), ("stale", True)):
+            notice = ob.proposal_for(status, exists)["notice"]
+            self.assertNotIn("===", notice)
+            self.assertNotIn("[!", notice)
+
+    def test_notice_states_the_benefit_when_proposing_a_new_block(self):
+        """「なんだこれは」に答えるのは、内部事情ではなく利用者の利得である。"""
+        for status, exists in (("absent", True), ("absent", False)):
+            self.assertIn(ob.BENEFIT, ob.proposal_for(status, exists)["notice"])
+
+    def test_options_offer_accept_and_decline(self):
+        for status, exists in (("absent", True), ("absent", False), ("stale", True)):
+            options = ob.proposal_for(status, exists)["options"]
+            self.assertEqual(len(options), 2)
+            for opt in options:
+                self.assertTrue(opt["label"])
+                self.assertTrue(opt["description"])
 
     def test_wording_hides_internal_details(self):
-        """ハッシュ・マーカー名・引数を承認文言に出さない。"""
-        for ask in (ob.ASK_ABSENT_EXISTING, ob.ASK_ABSENT_MISSING, ob.ASK_STALE):
-            for leak in ("hash", "FORGE_ONBOARDING", "--write", "copy_block"):
-                self.assertNotIn(leak, ask)
+        """ハッシュ・マーカー名・引数を提示に出さない。"""
+        for status, exists in (("absent", True), ("absent", False), ("stale", True)):
+            p = ob.proposal_for(status, exists)
+            texts = [p["ask"], p["notice"]] + [o["description"] for o in p["options"]]
+            for text in texts:
+                for leak in ("hash", "FORGE_ONBOARDING", "--write", "copy_block"):
+                    self.assertNotIn(leak, text)
 
 
 class TestUnsubstitutedPlaceholder(unittest.TestCase):
@@ -206,12 +241,15 @@ class TestCli(unittest.TestCase):
             self.assertFalse(out["target_exists"])
             self.assertFalse(target.exists())
 
-    def test_check_emits_ask_and_runnable_command_when_absent(self):
+    def test_check_emits_proposal_and_runnable_command_when_absent(self):
         with tempfile.TemporaryDirectory() as d:
             tmp = Path(d)
             target = tmp / "CLAUDE.md"
             _, out = self._run(tmp, "--check", "--target", str(target))
-            self.assertEqual(out["ask"], ob.ASK_ABSENT_MISSING)
+            expected = ob.proposal_for("absent", False)
+            self.assertEqual(out["ask"], expected["ask"])
+            self.assertEqual(out["notice"], expected["notice"])
+            self.assertEqual(out["options"], expected["options"])
             self.assertIn("--write", out["on_approve"])
             self.assertIn(str(target), out["on_approve"])
 
@@ -223,8 +261,8 @@ class TestCli(unittest.TestCase):
             _, out = self._run(tmp, "--check", "--target", str(target))
             self.assertEqual(out["status"], "fresh")
             self.assertEqual(out["action"], "none")
-            self.assertNotIn("ask", out)
-            self.assertNotIn("on_approve", out)
+            for key in ("ask", "notice", "options", "on_approve"):
+                self.assertNotIn(key, out)
 
     def test_check_returns_block_body_when_proposing(self):
         """転記はそれを実行したセッションには効かないため、規範本文を返す。"""
@@ -269,7 +307,8 @@ class TestCli(unittest.TestCase):
             changed = SAMPLE_SOURCE.replace("Hoge しない", "Fuga しない")
             _, out = self._run(tmp, "--check", "--target", str(target), text=changed)
             self.assertEqual(out["status"], "stale")
-            self.assertEqual(out["ask"], ob.ASK_STALE)
+            self.assertEqual(out["ask"], ob.proposal_for("stale", True)["ask"])
+            self.assertIn("更新", out["notice"])
 
     def test_write_creates_file_when_missing(self):
         with tempfile.TemporaryDirectory() as d:
