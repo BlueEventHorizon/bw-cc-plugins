@@ -1,7 +1,9 @@
 """onboarding_block.py のテスト。
 
-転記範囲はマーカーで宣言され、見出し名には依存しない（見出し依存だと節の改名やタグ追加で
-転記範囲が黙って変わる）。抽出・ハッシュ・差し込みが決定論的で冪等であることを検証する。
+転記元は copy_block.md 専用ファイルで、その全文が転記範囲である（SKILL.md に置くと、
+SKILL.md が全文コンテキストへ注入されるため転記済みのときに必ず二重読みになる）。
+抽出・ハッシュ・差し込みが決定論的で冪等であること、および status から承認文言・次の
+行動が一意に決まることを検証する。
 """
 
 import importlib.util
@@ -13,27 +15,15 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-_SCRIPT_PATH = REPO_ROOT / "plugins" / "forge" / "skills" / "onboarding" / "scripts" / "onboarding_block.py"
+_SKILL_DIR = REPO_ROOT / "plugins" / "forge" / "skills" / "onboarding"
+_SCRIPT_PATH = _SKILL_DIR / "scripts" / "onboarding_block.py"
 
 _spec = importlib.util.spec_from_file_location("onboarding_block", _SCRIPT_PATH)
 ob = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ob)
 
 
-SAMPLE_SKILL = """---
-name: onboarding
-description: |
-  ダミー
-allowed-tools: Read, Bash
----
-
-# onboarding
-
-マーカーより前は転記されない。
-
-<!-- FORGE_ONBOARDING_COPY_START -->
-
-## forge 必読文書 [MANDATORY]
+SAMPLE_SOURCE = """## forge 必読文書 [MANDATORY]
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/foo.md` — フー
 
@@ -41,97 +31,70 @@ allowed-tools: Read, Bash
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/bar.md` — バー
 
-## プロジェクト文書
+## forge プロジェクト文書
 
 - ルールの参照には `query-db-rules` SKILL を使う
 
-## 重要規約 [MANDATORY]
+## forge 重要規約 [MANDATORY]
 
 - **Hoge しない**
-
-<!-- FORGE_ONBOARDING_COPY_END -->
-
-## 実行フロー
-
-ここは転記対象ではない。
 """
 
 
-def _write_skill(tmp: Path, text: str = SAMPLE_SKILL) -> Path:
-    p = tmp / "SKILL.md"
+def _write_source(tmp: Path, text: str = SAMPLE_SOURCE) -> Path:
+    p = tmp / "copy_block.md"
     p.write_text(text, encoding="utf-8")
     return p
 
 
-class TestExtract(unittest.TestCase):
-    def test_extracts_marked_region_verbatim(self):
-        region = ob.extract_copy_region(SAMPLE_SKILL)
+class TestReadRegion(unittest.TestCase):
+    def test_returns_whole_file_verbatim(self):
+        region = ob.read_region(SAMPLE_SOURCE)
         self.assertTrue(region.startswith("## forge 必読文書 [MANDATORY]"))
         self.assertTrue(region.rstrip().endswith("- **Hoge しない**"))
         self.assertIn("### forge 内蔵文書", region)
         # プレースホルダを解決しない
         self.assertIn("${CLAUDE_PLUGIN_ROOT}/docs/bar.md", region)
 
-    def test_excludes_everything_outside_markers(self):
-        region = ob.extract_copy_region(SAMPLE_SKILL)
-        self.assertNotIn("実行フロー", region)
-        self.assertNotIn("ここは転記対象ではない", region)
-        self.assertNotIn("マーカーより前は転記されない", region)
-        self.assertNotIn("FORGE_ONBOARDING_COPY", region)
+    def test_strips_only_surrounding_newlines(self):
+        self.assertEqual(ob.read_region("\n\n本文\n\n"), "本文")
 
-    def test_does_not_depend_on_heading_names(self):
-        """囲みの内側は見出しを自由に改名・追加できる。"""
-        text = SAMPLE_SKILL.replace("## forge 必読文書 [MANDATORY]", "## 全然違う名前").replace(
-            "- **Hoge しない**", "- **Hoge しない**\n\n## 追加した節\n\n- 追加"
-        )
-        region = ob.extract_copy_region(text)
-        self.assertIn("## 全然違う名前", region)
-        self.assertIn("## 追加した節", region)
-
-    def test_raises_when_markers_missing(self):
+    def test_raises_when_source_is_empty(self):
         with self.assertRaises(ob.BlockError):
-            ob.extract_copy_region("# x\n\n## 必読文書\n\n本文\n")
+            ob.read_region("")
 
-    def test_raises_when_markers_unpaired(self):
+    def test_raises_when_source_is_whitespace_only(self):
         with self.assertRaises(ob.BlockError):
-            ob.extract_copy_region(f"# x\n\n{ob.COPY_START}\n\n本文\n")
-
-    def test_raises_when_markers_reversed(self):
-        with self.assertRaises(ob.BlockError):
-            ob.extract_copy_region(f"# x\n\n{ob.COPY_END}\n\n本文\n\n{ob.COPY_START}\n")
-
-    def test_raises_when_region_is_empty(self):
-        with self.assertRaises(ob.BlockError):
-            ob.extract_copy_region(f"# x\n\n{ob.COPY_START}\n\n\n{ob.COPY_END}\n")
+            ob.read_region("\n  \n\t\n")
 
 
 class TestBodyIsVerbatim(unittest.TestCase):
     def test_body_does_not_rewrite_headings(self):
         """script は書き換えない。接頭辞は転記元が持つ。"""
-        body = ob.render_body(ob.extract_copy_region(SAMPLE_SKILL))
+        body = ob.render_body(ob.read_region(SAMPLE_SOURCE))
         self.assertIn("## forge 必読文書 [MANDATORY]", body)
         self.assertNotIn("## forge forge", body)
 
     def test_body_keeps_unprefixed_heading_as_is(self):
-        text = SAMPLE_SKILL.replace("## forge 必読文書 [MANDATORY]", "## 素の見出し")
-        body = ob.render_body(ob.extract_copy_region(text))
+        text = SAMPLE_SOURCE.replace("## forge 必読文書 [MANDATORY]", "## 素の見出し")
+        body = ob.render_body(ob.read_region(text))
         self.assertIn("## 素の見出し", body)
 
 
 class TestHash(unittest.TestCase):
     def test_hash_is_stable(self):
-        body = ob.render_body(ob.extract_copy_region(SAMPLE_SKILL))
+        body = ob.render_body(ob.read_region(SAMPLE_SOURCE))
         self.assertEqual(ob.compute_hash(body), ob.compute_hash(body))
 
     def test_hash_changes_when_source_changes(self):
-        a = ob.render_body(ob.extract_copy_region(SAMPLE_SKILL))
-        b = ob.render_body(ob.extract_copy_region(SAMPLE_SKILL.replace("Hoge しない", "Fuga しない")))
+        a = ob.render_body(ob.read_region(SAMPLE_SOURCE))
+        b = ob.render_body(ob.read_region(SAMPLE_SOURCE.replace("Hoge しない", "Fuga しない")))
         self.assertNotEqual(ob.compute_hash(a), ob.compute_hash(b))
 
 
 class TestEvaluate(unittest.TestCase):
     def setUp(self):
-        self.body = ob.render_body(ob.extract_copy_region(SAMPLE_SKILL))
+        self.body = ob.render_body(ob.read_region(SAMPLE_SOURCE))
         self.digest = ob.compute_hash(self.body)
         self.block = ob.render_block(self.body)
 
@@ -170,26 +133,42 @@ class TestEvaluate(unittest.TestCase):
             ob.evaluate(broken, self.block)
 
 
-class TestHashScope(unittest.TestCase):
-    """ハッシュは転記範囲（+ chrome）だけに依存する。"""
+class TestAskFor(unittest.TestCase):
+    """承認文言は status から一意に決まる（AI に表を解釈させない）。"""
 
-    def test_hash_ignores_changes_outside_copy_markers(self):
-        outside = SAMPLE_SKILL.replace("## 実行フロー", "## 実行フロー（書き換えた）")
-        self.assertNotEqual(outside, SAMPLE_SKILL)
-        a = ob.compute_hash(ob.render_body(ob.extract_copy_region(SAMPLE_SKILL)))
-        b = ob.compute_hash(ob.render_body(ob.extract_copy_region(outside)))
-        self.assertEqual(a, b)
+    def test_fresh_needs_no_approval(self):
+        self.assertIsNone(ob.ask_for("fresh", True))
+        self.assertIsNone(ob.ask_for("fresh", False))
 
-    def test_hash_reflects_changes_inside_copy_markers(self):
-        inside = SAMPLE_SKILL.replace("- **Hoge しない**", "- **Fuga しない**")
-        a = ob.compute_hash(ob.render_body(ob.extract_copy_region(SAMPLE_SKILL)))
-        b = ob.compute_hash(ob.render_body(ob.extract_copy_region(inside)))
-        self.assertNotEqual(a, b)
+    def test_absent_distinguishes_missing_target(self):
+        self.assertEqual(ob.ask_for("absent", True), ob.ASK_ABSENT_EXISTING)
+        self.assertEqual(ob.ask_for("absent", False), ob.ASK_ABSENT_MISSING)
+        self.assertNotEqual(ob.ASK_ABSENT_EXISTING, ob.ASK_ABSENT_MISSING)
+
+    def test_stale_has_its_own_wording(self):
+        self.assertEqual(ob.ask_for("stale", True), ob.ASK_STALE)
+
+    def test_wording_hides_internal_details(self):
+        """ハッシュ・マーカー名・引数を承認文言に出さない。"""
+        for ask in (ob.ASK_ABSENT_EXISTING, ob.ASK_ABSENT_MISSING, ob.ASK_STALE):
+            for leak in ("hash", "FORGE_ONBOARDING", "--write", "copy_block"):
+                self.assertNotIn(leak, ask)
+
+
+class TestUnsubstitutedPlaceholder(unittest.TestCase):
+    """置換されなかったプレースホルダを、黙って別の場所へ書く経路にしない。"""
+
+    def test_detects_unsubstituted(self):
+        self.assertTrue(ob.unsubstituted_placeholder("${CLAUDE_PROJECT_DIR}/CLAUDE.md"))
+
+    def test_accepts_real_paths(self):
+        self.assertFalse(ob.unsubstituted_placeholder("/tmp/foo/CLAUDE.md"))
+        self.assertFalse(ob.unsubstituted_placeholder("CLAUDE.md"))
 
 
 class TestSplice(unittest.TestCase):
     def setUp(self):
-        self.block = ob.render_block(ob.render_body(ob.extract_copy_region(SAMPLE_SKILL)))
+        self.block = ob.render_block(ob.render_body(ob.read_region(SAMPLE_SOURCE)))
 
     def test_appends_when_absent_and_keeps_existing_content(self):
         out = ob.splice("# CLAUDE.md\n\n## 既存節\n\n本文\n", self.block)
@@ -204,14 +183,14 @@ class TestSplice(unittest.TestCase):
         self.assertIn("前の本文", out)
         self.assertIn("後の本文", out)
         self.assertNotIn("古い chrome", out)
-        self.assertIn("プロジェクト文書", out)
+        self.assertIn("forge プロジェクト文書", out)
 
 
 class TestCli(unittest.TestCase):
-    def _run(self, tmp: Path, *args: str):
-        skill = _write_skill(tmp)
+    def _run(self, tmp: Path, *args: str, text: str = SAMPLE_SOURCE):
+        source = _write_source(tmp, text)
         proc = subprocess.run(
-            [sys.executable, str(_SCRIPT_PATH), "--skill-md", str(skill), *args],
+            [sys.executable, str(_SCRIPT_PATH), "--source", str(source), *args],
             capture_output=True,
             text=True,
         )
@@ -227,6 +206,71 @@ class TestCli(unittest.TestCase):
             self.assertFalse(out["target_exists"])
             self.assertFalse(target.exists())
 
+    def test_check_emits_ask_and_runnable_command_when_absent(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            _, out = self._run(tmp, "--check", "--target", str(target))
+            self.assertEqual(out["ask"], ob.ASK_ABSENT_MISSING)
+            self.assertIn("--write", out["on_approve"])
+            self.assertIn(str(target), out["on_approve"])
+
+    def test_check_emits_no_ask_when_fresh(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            self._run(tmp, "--write", "--target", str(target))
+            _, out = self._run(tmp, "--check", "--target", str(target))
+            self.assertEqual(out["status"], "fresh")
+            self.assertEqual(out["action"], "none")
+            self.assertNotIn("ask", out)
+            self.assertNotIn("on_approve", out)
+
+    def test_check_returns_block_body_when_proposing(self):
+        """転記はそれを実行したセッションには効かないため、規範本文を返す。"""
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            _, out = self._run(tmp, "--check", "--target", str(target))
+            self.assertEqual(out["action"], "propose")
+            self.assertIn("- **Hoge しない**", out["block_body"])
+            self.assertIn("## forge 必読文書 [MANDATORY]", out["block_body"])
+            # chrome（ブロックの定型注記）は規範ではないので載せない
+            self.assertNotIn("手で編集しない", out["block_body"])
+
+    def test_check_omits_block_body_when_fresh(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            self._run(tmp, "--write", "--target", str(target))
+            _, out = self._run(tmp, "--check", "--target", str(target))
+            self.assertNotIn("block_body", out)
+
+    def test_write_self_verifies(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            _, out = self._run(tmp, "--write", "--target", str(target))
+            self.assertEqual(out["written_status"], "fresh")
+
+    def test_unsubstituted_target_aborts_without_writing(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            proc, out = self._run(tmp, "--write", "--target", "${CLAUDE_PROJECT_DIR}/CLAUDE.md")
+            self.assertEqual(proc.returncode, 3)
+            self.assertIn("error", out)
+            self.assertFalse(any(tmp.glob("**/CLAUDE.md")))
+
+    def test_check_emits_stale_ask(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            target = tmp / "CLAUDE.md"
+            self._run(tmp, "--write", "--target", str(target))
+            changed = SAMPLE_SOURCE.replace("Hoge しない", "Fuga しない")
+            _, out = self._run(tmp, "--check", "--target", str(target), text=changed)
+            self.assertEqual(out["status"], "stale")
+            self.assertEqual(out["ask"], ob.ASK_STALE)
+
     def test_write_creates_file_when_missing(self):
         with tempfile.TemporaryDirectory() as d:
             tmp = Path(d)
@@ -234,9 +278,10 @@ class TestCli(unittest.TestCase):
             proc, out = self._run(tmp, "--write", "--target", str(target))
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertEqual(out["action"], "created")
+            self.assertIn("--check", out["verify"])
             text = target.read_text(encoding="utf-8")
             self.assertIn("FORGE_ONBOARDING_START", text)
-            self.assertIn("## 重要規約 [MANDATORY]", text)
+            self.assertIn("## forge 重要規約 [MANDATORY]", text)
 
     def test_write_is_idempotent(self):
         with tempfile.TemporaryDirectory() as d:
@@ -255,15 +300,8 @@ class TestCli(unittest.TestCase):
             tmp = Path(d)
             target = tmp / "CLAUDE.md"
             self._run(tmp, "--write", "--target", str(target))
-            # 転記元を変更してから再実行すると stale と判定され更新される
-            changed = SAMPLE_SKILL.replace("Hoge しない", "Fuga しない")
-            skill = _write_skill(tmp, changed)
-            proc = subprocess.run(
-                [sys.executable, str(_SCRIPT_PATH), "--skill-md", str(skill), "--write", "--target", str(target)],
-                capture_output=True,
-                text=True,
-            )
-            out = json.loads(proc.stdout)
+            changed = SAMPLE_SOURCE.replace("Hoge しない", "Fuga しない")
+            _, out = self._run(tmp, "--write", "--target", str(target), text=changed)
             self.assertEqual(out["status"], "stale")
             self.assertEqual(out["action"], "updated")
             text = target.read_text(encoding="utf-8")
@@ -281,26 +319,34 @@ class TestCli(unittest.TestCase):
             self.assertIn("error", out)
             self.assertEqual(target.read_text(encoding="utf-8"), broken)
 
+    def test_missing_source_is_reported(self):
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            proc = subprocess.run(
+                [sys.executable, str(_SCRIPT_PATH), "--source", str(tmp / "nope.md"), "--check"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 2)
+            self.assertIn("error", json.loads(proc.stdout))
 
-class TestRealSkillMd(unittest.TestCase):
+
+class TestRealCopyBlock(unittest.TestCase):
     """配布物の実体が転記可能な状態であることを検証する。"""
 
     def setUp(self):
-        self.text = ob.SKILL_MD.read_text(encoding="utf-8")
+        self.region = ob.read_region(ob.SOURCE.read_text(encoding="utf-8"))
 
-    def test_real_skill_md_has_paired_copy_markers(self):
-        self.assertEqual(self.text.count(ob.COPY_START), 1)
-        self.assertEqual(self.text.count(ob.COPY_END), 1)
+    def test_source_file_is_the_dedicated_copy_block(self):
+        self.assertEqual(ob.SOURCE.name, "copy_block.md")
+        self.assertTrue(ob.SOURCE.is_file())
 
-    def test_real_copy_region_is_not_empty_and_excludes_flow(self):
-        region = ob.extract_copy_region(self.text)
-        self.assertTrue(region.strip())
-        self.assertNotIn("## 実行フロー", region)
+    def test_real_copy_region_is_not_empty(self):
+        self.assertTrue(self.region.strip())
 
     def test_real_copy_region_headings_are_forge_prefixed(self):
         """転記先での見出し重複を防ぐ規約。script は接頭辞を付けないので、ここで強制する。"""
-        region = ob.extract_copy_region(self.text)
-        h2 = [ln for ln in region.splitlines() if ln.startswith("## ")]
+        h2 = [ln for ln in self.region.splitlines() if ln.startswith("## ")]
         self.assertTrue(h2, "転記範囲に ## 見出しが無い")
         for line in h2:
             self.assertTrue(
@@ -308,11 +354,19 @@ class TestRealSkillMd(unittest.TestCase):
                 f"転記範囲の ## 見出しは 'forge ' で始めること: {line!r}",
             )
 
-    def test_real_copy_region_has_no_nested_destination_markers(self):
+    def test_real_copy_region_has_no_destination_markers(self):
         """転記先マーカーが混入するとブロック検出が壊れる。"""
-        region = ob.extract_copy_region(self.text)
-        self.assertNotIn("FORGE_ONBOARDING_START", region)
-        self.assertNotIn(ob.MARKER_END, region)
+        self.assertNotIn("FORGE_ONBOARDING_START", self.region)
+        self.assertNotIn(ob.MARKER_END, self.region)
+
+    def test_skill_md_does_not_duplicate_the_copy_block(self):
+        """SKILL.md は起動時に全文注入される。転記範囲を持たせると必ず二重読みになる。"""
+        skill = (_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        for line in self.region.splitlines():
+            body = line.strip()
+            if len(body) < 20:
+                continue
+            self.assertNotIn(body, skill, f"転記範囲の記述が SKILL.md に複製されている: {body[:40]!r}")
 
 
 if __name__ == "__main__":

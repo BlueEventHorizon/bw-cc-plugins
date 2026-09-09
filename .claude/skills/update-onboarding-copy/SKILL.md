@@ -10,7 +10,7 @@ allowed-tools: Read, Edit, Bash, AskUserQuestion
 
 # update-onboarding-copy
 
-`plugins/forge/skills/onboarding/SKILL.md` の COPY 範囲（`FORGE_ONBOARDING_COPY_START` / `_END` マーカー内）を保守する。このスキルは COPY 範囲の内容更新と再転記のみを行う。**供給源文書そのものは編集しない**（供給源の改編は本スキルの起動契機であって作業対象ではない）。転記の仕組み（`onboarding_block.py`・マーカー方式・テスト）にも手を入れない。
+`plugins/forge/skills/onboarding/copy_block.md`（COPY 範囲の専用ファイル。全文が転記範囲）を保守する。このスキルは COPY 範囲の内容更新と再転記のみを行う。**供給源文書そのものは編集しない**（供給源の改編は本スキルの起動契機であって作業対象ではない）。転記の仕組み（`onboarding_block.py`・テスト）にも手を入れない。
 
 ## When To Use
 
@@ -76,16 +76,16 @@ anvil 由来の規範を forge の COPY 範囲に載せることは利用者決�
 
 ### 2. COPY 範囲を編集する
 
-`plugins/forge/skills/onboarding/SKILL.md` のマーカー内だけを編集する。制約:
+`plugins/forge/skills/onboarding/copy_block.md` だけを編集する。制約:
 
 - `##` 見出しは必ず `forge` で始める（`tests/forge/onboarding/` が検証する）
 - 蒸留要旨方式・分量の目安を維持する
-- マーカーの外（必読文書リスト・実行フロー）は本スキルの対象外
+- `SKILL.md`（必読文書リスト・実行フロー）は本スキルの対象外。転記範囲を SKILL.md へ戻してはならない（起動時に全文注入されるため、転記済みのとき必ず二重読みになる）
 
 ### 3. 整形と検証
 
 ```bash
-dprint fmt plugins/forge/skills/onboarding/SKILL.md
+dprint fmt plugins/forge/skills/onboarding/copy_block.md
 python3 -m unittest tests.forge.onboarding.test_onboarding_block -v
 ```
 
@@ -95,7 +95,7 @@ python3 -m unittest tests.forge.onboarding.test_onboarding_block -v
 python3 plugins/forge/skills/onboarding/scripts/onboarding_block.py --check
 ```
 
-`stale` なら AskUserQuestion で転記の承認を一行で求め、承認されたら `--write` を実行し、再度 `--check` が `fresh` を返すことを確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
+`--check` が返す JSON に従う。`ask` があればその文言をそのまま一行で尋ね、承認されたら `on_approve` のコマンドを実行し、返る `verify` で `fresh` を確認する。断られたら書き込まず終了する（次回 onboarding 実行時に再提案される）。
 
 ## Validation
 
