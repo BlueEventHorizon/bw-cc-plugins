@@ -17,11 +17,53 @@ Claude Code プラグインのマーケットプレイスリポジトリ。2 プ
 
 forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どちらも本リポジトリの外にある**。doc-advisor の原本は別リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)、doc-db はローカル稼働の文書検索サーバである。backend 側の不具合を本リポジトリで回避してはならない（下記 SoT 項）。
 
+## Claude Code プラグインとは何か
+
+本リポジトリを扱う前に、**プラグインという仕組みそのもの**を知っている必要がある。ここを知らないまま作業すると、機構が担っていることを自分で実装しようとしたり、機構が置換する記述をシェルの記法だと誤解したりする（実際に起きた。下記のプレースホルダ項）。
+
+正本は **Claude Code 公式ドキュメント**である。**推測で埋めずにこれを読む**。
+
+- Plugins reference: `https://code.claude.com/docs/en/plugins-reference`
+- Plugins guide: `https://code.claude.com/docs/en/plugins`
+- Plugin marketplaces: `https://code.claude.com/docs/en/plugin-marketplaces`
+- Skills: `https://code.claude.com/docs/en/skills`
+
+**要約ツール越しに読んだものを一次情報と呼ばない。** WebFetch は取得したページを別モデルに要約させて返すため、その出力を根拠に断定してはならない（実際に、それを「正本を読んだ」として報告した事故がある）。とくに「ドキュメントに記載が無い」という否定の主張は、要約側の見落としと区別がつかない。
+
+公式ドキュメントで確かめきれない挙動は、**本リポジトリ自身の実装**（`scripts/plugin-installer/install_copy*.sh`）が実際に何をしているかで裏を取る。
+
+### 3 層構造
+
+| 層          | ファイル                                      | 本リポジトリでの実体                                 |
+| ----------- | --------------------------------------------- | ---------------------------------------------------- |
+| marketplace | `.claude-plugin/marketplace.json`             | リポジトリルート。配布する plugin の catalog         |
+| plugin      | `plugins/<plugin>/.claude-plugin/plugin.json` | `forge` / `anvil`。slash command の namespace になる |
+| skill       | `plugins/<plugin>/skills/<skill>/SKILL.md`    | 各スキル本体。`/<plugin>:<skill>` で起動される       |
+
+### プレースホルダ [MANDATORY]
+
+`${CLAUDE_PLUGIN_ROOT}` と `${CLAUDE_SKILL_DIR}` は**シェル変数ではない**。プラグイン／スキルの機構が置換する。したがってシェルの引用符（`'` か `"` か）は置換の可否に影響しない。
+
+**両者は非対称である**。下表は本リポジトリの copy install 実装（`scripts/plugin-installer/install_copy.sh` / `install_copy_codex.sh`）が実際にそう扱っていることで裏が取れる。
+
+|                             | `${CLAUDE_PLUGIN_ROOT}`                                                      | `${CLAUDE_SKILL_DIR}`                               |
+| --------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| 何を指すか                  | プラグインの配置先                                                           | その SKILL.md が置かれたディレクトリ                |
+| 性格                        | plugin コンテキスト変数                                                      | スキルレベル変数（`plugin.json` 不要）              |
+| copy 配置でのランタイム解決 | **効かない**（`.claude-plugin/` を除外するため正式な plugin と認識されない） | `.claude/skills/<skill>/` 配下なら効く              |
+| copy install での静的置換   | 種別 A / B ともに**必須**                                                    | 種別 B（Codex）のみ。種別 A では literal のまま残す |
+
+- 展開されるのは**直後に `/` がある場合のみ**。bare トークン（`${CLAUDE_SKILL_DIR}` 単体）は説明文として保持される。SKILL.md に書くときは `/` の有無で意図を区別する（installer の正規表現が `(?=/)` の lookahead を持つ）
+- 本リポジトリは copy install（`make {forge,anvil}-install-{claude,codex}-project-copy`）を提供するため、この規則は他人事ではない
+- **プレースホルダの挙動を、素のシェルでの実験で確かめない。** 実際の経路はプラグイン機構であり、シェルではない（引用符の違いで展開されないと誤診した事故がある）
+
 ## ドッグフーディング
 
 本リポジトリは forge / anvil の原本であると同時に、**その 2 プラグインに管理される利用プロジェクトでもある**。
 
 この二重性は、**自分の設定を製品の仕様と取り違える**という固有の罠を生む。プラグインが規定しているのは仕組み（`.doc_structure.yaml` による rules / specs のパス解決）だけで、**パスそのものは各プロジェクトの設定値**である。本リポジトリが `docs/rules/` / `docs/specs/**/` を使うのは設定の結果に過ぎず、他プロジェクトは `rules/` / `specs/*/` 等の別の配置を取る。
+
+**この取り違えを避けるには、仕組みと設定値の境界がどこにあるかを知っている必要がある。その境界を決めているのは上記のプラグインの仕様である。** 仕様を知らないまま境界を引こうとすると、知らない部分を推測で埋めることになり、警告を読んだうえで罠に落ちる。境界が判然としない箇所に出会ったら、推測せず正本を読む。
 
 ## 用語と境界
 
