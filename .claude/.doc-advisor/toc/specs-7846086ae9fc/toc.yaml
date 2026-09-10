@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-07T14:34:54Z
+  generated_at: 2026-09-10T01:02:31Z
   file_count: 68
 
 docs:
@@ -1498,88 +1498,91 @@ docs:
       - parse_error_handling
       - feature_area_section
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: DES-066 /forge:review Body (Backend-Independent) Design
-    purpose: Defines the architecture and module design of the /forge:review review body layer that assembles review requests and delegates to backends, processing judgments and findings without dependency on reviewer identity.
+    title: DES-066 /forge:review Body Design (Backend-Independent)
+    purpose: Defines the architecture and design of the /forge:review skill body, which orchestrates review requests, evaluations, and fixes independently of backend implementations. Specifies module responsibilities, terminal path routing, and evaluator integration.
     content_details:
-      - Architecture overview with backend resolution, finding evaluation via evaluator Agent, findings-evaluation combination, safety verification, and terminal endpoint consolidation
-      - "Backend resolution strategy: fail-closed, explicit specification overrides settings, settings override default order (agent-review, msg-review)"
-      - "Module responsibilities: SKILL.md orchestration, resolve_targets.py, analyze_branch_point.py, build_review_request.py, evaluator Agent, parse_evaluation.py, combine_findings_and_evaluations.py"
-      - "Three-value judgment handling: approved (terminal), findings (with confirmed_fix logic for next round), failure (no auto-fallback)"
-      - "Dual confirmation axes: fix_confident (modification execution capability) and confidence (finding validity), with ordering dependency"
-      - "Finding split by location: located (position confirmed) vs. unlocated (position not confirmed), without capability judgment"
-      - "Terminal endpoint consolidation: all 4 terminal paths (approved, halted_with_open_findings, failure, interrupted) route through single Step with backend notification"
-      - Staged finding presentation via consult SKILL delegation within same context, preserving all findings in record
+      - Backend resolution mechanism with candidate ordering (agent-review first, msg-review second)
+      - Module responsibilities for SKILL.md, resolve_review_backend.py, analyze_branch_point.py, resolve_targets.py, build_review_request.py
+      - Evaluator Agent integration for finding assessment (disposition, severity, confidence, fix_confident)
+      - Single exit point design for terminal paths (approved, halted_with_open_findings, failure, interrupted)
+      - Finding-to-evaluation combination via combine_findings_and_evaluations.py with validation
+      - "Two-type confidence distinction: correctness of findings (☑️) vs fix execution capability (✅)"
+      - Position-based splitting of findings (located vs unlocated) and safety verification
+      - Staged presentation delegation to consult SKILL for interactive resolution
     applicable_tasks:
-      - Designing backend-independent review orchestration architecture
-      - Implementing review body SKILL and associated Python scripts
-      - Adding new review backends while preserving architecture neutrality
-      - Integrating evaluator Agent and findings-evaluation combination logic
-      - Validating review endpoint routing and terminal path completeness
+      - Backend integration and architecture design
+      - Review skill orchestration implementation
+      - Evaluator Agent mechanism implementation
+      - Finding evaluation and disposition logic development
+      - Fix safety verification design
     keywords:
-      - backend_resolution
-      - evaluator_agent
-      - findings_evaluation_combination
-      - fix_confident
+      - resolve_review_backend.py
+      - parse_evaluation.py
+      - combine_findings_and_evaluations.py
+      - split_by_location.py
+      - evaluator
+      - disposition
       - confidence
-      - located_unlocated
-      - terminal_endpoint
-      - staged_presentation
-      - fail_closed
-      - review_orchestration
+      - staged presentation
   docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
-    title: Document Reference Integrity Verification Design (DES-081)
-    purpose: "Defines three-stage architecture for validating document references: indexing existing files/headings/IDs, extracting references from source documents, and verifying integrity by matching extracted references against the index"
+    title: Document Reference Integrity Checking Design
+    purpose: "Specifies design for checking document reference integrity via 3-stage architecture: indexing existing documents, extracting references, and verifying against index with decision rules for resolution."
     content_details:
-      - Three-stage architecture pattern with indexing, extraction, and matching phases
-      - "Modules: ref_index.py for building file/heading/ID indexes, ref_extract.py for extracting and filtering references, check_refs.py for matching"
-      - Scope limited to git-tracked files in working tree at check time
-      - File index, heading index, and document ID index types
-      - Prefix-based reference resolution where each document gets unique prefix
-      - Trie data structure for prefix construction and ambiguity detection
-      - "Reference resolution priority: relative paths, then same-document anchors, then external URLs"
-      - Use cases for pre-commit validation, on-demand checks, and post-deletion verification
-      - Golden test set using 72 real-world reference examples
+      - "3-stage verification process: indexing existing documents, extracting references, reconciling to find broken links"
+      - "Module design with separated concerns: ref_index.py, ref_extract.py, check_refs.py, fix_refs.py"
+      - "Four index types: file index, name index, heading index, document ID index"
+      - Resolution rules for relative paths, same-document anchors, cross-document anchors, external URLs, and unresolvable forms
+      - "Core constraint: all resolution uses unique keys with exact matching, never heuristics or partial matching"
+      - "Two-layer judgment structure: whether text is a reference vs. whether reference can be resolved"
+      - Index constructed per-check without persistence to prevent divergence from actual document state
+      - Test design derived from CommonMark specification covering both valid and invalid forms
     applicable_tasks:
-      - Implementing document reference verification system
-      - Designing reference resolution mechanisms
-      - Validating reference integrity
-      - Planning documentation CI infrastructure
+      - Implementing document reference integrity checking
+      - Designing reference extraction and validation architecture
+      - Writing tests for reference resolution and extraction rules
+      - Defining resolution rules for different link types
+      - Troubleshooting and fixing broken document references
     keywords:
-      - ref_index.py
-      - ref_extract.py
-      - check_refs.py
-      - document_id
-      - reference_resolution
-      - integrity_verification
-      - prefix_trie
-      - git_tracking
-      - heading_index
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
-    title: Document Reference Integrity Validation Requirements
-    purpose: Defines requirements for a deterministic mechanism to detect broken references (references pointing to non-existent targets) in documents and report them with specific position and reason
-    content_details:
-      - Reference types including link notation, positional links, definition links, and document ID notation
-      - Deterministic validation requirement without LLM inference or confidence concepts
-      - Document collection scope limited to current state, excluding git history and branches
-      - Distinction between missing reference and ambiguous reference requiring separate reporting
-      - Accuracy requirement accepting neither false positives nor false negatives
-      - Error reporting format specifying position in source file, extracted reference text, and reason for absence
-      - Pre-commit checking capability enabling correction while change context is fresh
-      - Multi-source support for Markdown documents and code comment references
-    applicable_tasks:
-      - Designing deterministic reference validation mechanism
-      - Implementing reference target detection in documents
-      - Setting up pre-commit reference integrity checking
-      - Establishing CI gates for broken reference detection
-      - Document consolidation and migration with reference integrity verification
-    keywords:
+      - document reference
       - reference integrity
-      - broken reference detection
-      - document validation
-      - pre-commit check
+      - CommonMark
+      - anchor resolution
+      - document ID
+      - heading index
+      - path normalization
+      - link validation
+      - ref_extract
+      - check_refs
+  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
+    title: Document Reference Integrity Requirement Definition
+    purpose: Defines requirements for a deterministic mechanism to identify broken document references, distinguishing non-existence from ambiguity and path issues, specifying repair strategies based on answer location.
+    content_details:
+      - Requirement for deterministic checking to move from review-based process
+      - 72 undetected broken reference case study from document deletion
+      - "Terminology: reference, referent, broken reference, document set, existence (current-time only)"
+      - "Scope: extraction, existence judgment, reporting; excludes format validation, rewriting, accuracy checking, change tracking"
+      - "Functional requirements FNC-001-006: deterministic judgment, comprehensive reference types including document IDs, current-time existence, false positive exclusion, non-Markdown sources, position-specific reporting"
+      - "Functional requirements FNC-007-013: dual checking positions with unified logic, workflow timing, distinguishing non-existence from ambiguity/path issues, out-of-scope visibility, three-tier repair logic"
+      - "Non-functional requirements NFR-001-004: false negative/positive balance, algorithm consistency, no new dependencies, failure visibility"
+      - "Undecided items TBD-001-005: disambiguation rules, external sync, performance limits, CI scope"
+    applicable_tasks:
+      - Designing document reference checking mechanism
+      - Implementing deterministic reference validation logic
+      - Integrating reference checking into pre-commit workflow
+      - Designing reference repair strategies
+      - Specifying reference extraction from code comments
+      - Reviewing algorithm consistency with other reference mechanisms
+      - Defining false positive exclusion rules
+      - Specifying resolution for undecided design points
+    keywords:
+      - broken reference
+      - reference integrity
+      - document ID
+      - reference extraction
+      - existence validation
       - reference resolution
-      - deterministic validation
-      - false positive prevention
+      - FNC-002
+      - FNC-013
   docs/specs/forge/executer/design/DES-074_plan_format_design.md:
     title: Plan Default Format Design
     purpose: Defines the default JSON format and schema for project plan files, including requirements and design traceability, task definitions, and revision history structure for implementation scripts
