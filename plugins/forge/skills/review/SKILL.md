@@ -263,6 +263,23 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/resolve_targets.py" --mode <diff|branch|fil
 
 forge 内蔵の観点文書（criteria / principles / format）はクエリしない。**どの観点文書を渡すかはテンプレートに静的に書かれている**ため、SKILL 側で組み立てる必要がない。
 
+### Step 3.5: 参照の実在性検査（検出のみ）
+
+規範文書は criteria から参照で辿って読む。**参照が解決しなければ規範へ到達できず、その観点は落ちる。落ちたことは結果に現れない。** 依頼を組み立てる前に検査する。
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_backend/prepare_advisor_index.py" specs --no-format
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_backend/prepare_advisor_index.py" rules --no-format
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_reference/check_refs.py" \
+  --index-dirs-json '<2 つの応答の root_dirs を連結>' \
+  --index-exclude-json '<2 つの応答の exclude を連結>' \
+  --scan-dirs-json '<連結した root_dirs 全件 + プラグインのディレクトリ>'
+```
+
+**走査対象を絞らない。** レビュー対象のファイルだけを見ても意味がない——参照切れは参照先を動かしたときに、触っていない参照元へ生じる。**テストは含めない**（書式例の架空 ID が誤検出になる）。
+
+所見があれば件数と位置を報告へ添える。**ここでは置換しない**——直前に文書を変更したのは自分ではなく、置換すればレビュー対象の差分に検査由来の変更が混ざる。**レビューは止めない。**
+
 ### Step 4: 依頼本文の組み立て
 
 ```bash
@@ -476,6 +493,14 @@ Step 1.5 で解決したバックエンド SKILL を `Skill` ツールで起動�
 **手順 4 と Step 8 が参照する `unlocated` は consult の記録から取る**。`--interactive` では手順 2（`split_by_location.py` の直接実行）を通らないため、`unlocated` 配列が手元に無い。位置未確定の所見は consult の記録にしか残っておらず、取り損ねると対応表と要約報告の両方から落ちる。
 
 `confirmed_fix` が空の場合（全件が採用しない、または 1 件も判断しないまま中断した場合）、Step 7 手順 2 の終了判定と同じく **Step 8 へ進む**（終端経路 `halted_with_open_findings`）。
+
+### Step 7.9: 参照の実在性検査（修正を行った場合）
+
+**このレビューで 1 件でもファイルを書き換えた場合に実行する。** 書き換えていなければ飛ばす。
+
+Skill ツールで `/forge:fix-doc-refs` を起動する。
+
+置換されなかった所見について、**このセッションで自分が動かした節・見出し・パス**があればその記憶で直す。心当たりが無いものは報告に留め、フローは止めない。
 
 ### Step 8: 終端処理 [MANDATORY]
 
