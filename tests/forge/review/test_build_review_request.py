@@ -696,14 +696,14 @@ class SecretsTrustBoundaryTest(unittest.TestCase):
 
 
 class LinkCriteriaCoverageTest(unittest.TestCase):
-    """恒久観点: 文書系 criteria が文書参照の規範文書を P1 で名指しすること。
+    """恒久観点: Markdown の文書系 criteria が文書スタイル規範を P1 で名指しすること。
 
-    リンク切れは口頭指示があったときだけ検査される観点ではない。criteria から
-    document_style_guide.md への委譲が外れると、参照リンクがどのレビューでも
-    観点に載らなくなる。
+    criteria から document_style_guide.md への委譲が外れると、文書参照の記法が
+    どのレビューでも観点に載らなくなる。plan は JSON であり Markdown 記法規定が
+    適用されないため、委譲先に持つものが無く対象外。
     """
 
-    _DOC_CRITERIA = ("design", "requirement", "plan", "generic", "uxui")
+    _DOC_CRITERIA = ("design", "requirement", "generic", "uxui")
 
     def test_document_criteria_delegate_to_the_style_guide(self):
         criteria_dir = build_review_request.plugin_root() / "docs" / "criteria"
