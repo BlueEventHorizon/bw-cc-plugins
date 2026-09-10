@@ -144,15 +144,17 @@ pending → in_progress → completed
 
 ## build_task_context.py の並行状態文書の分類契約
 
-要件: [REQ-025 差分開発の仕組み 要件定義書](../requirements/REQ-025_additive_development_spec.md) FNC-003（実装者への伝達）・FNC-005（識別できない場合の扱い）
+要件: [REQ-025 差分開発の仕組み 要件定義書](../requirements/REQ-025_additive_development_spec.md) FNC-003（仕様の適用者への伝達）・FNC-005（識別できない場合の扱い）
 
 ### 対象文書
 
-候補 JSON（`task_context_input.json` テンプレート）の `required_reading.requirement_docs` と `required_reading.design_docs` に列挙された各文書を対象とする。実装者が読む文書がそのまま対象であり、この一覧の外にある文書を分類しない。
+候補 JSON（`task_context_input.json` テンプレート）の `required_reading.requirement_docs` / `required_reading.design_docs` / `required_reading.additional` に列挙された各文書を対象とする。実装者が読む文書がそのまま対象であり、この一覧の外にある文書を分類しない。
 
 **設計書を対象に含めるのは、設計書も並行状態の識別子を持つためである**（[frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.2）。実装者は設計書をタスクの直接根拠として最優先で読む（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）。要件定義書だけを分類すると、旧設計書が現在の設計として読まれる経路が残る。
 
-`required_reading` の他のフィールド（`strategy_doc` / `rule_docs` / `reference_code` / `additional`）は対象にしない。並行状態は要件定義書・設計書に付与される識別子であり（REQ-025 FNC-001）、他の種別の文書は識別子を持たない。
+**`additional` を対象に含めるのは、このフィールドが文書種別ではなく受け皿だからである。** 定義は「上記に分類されない計画書 `required_reading` フィールドの残り」であり（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）、要件定義書・設計書がここに入りうる。計画書の `required_reading` はフラットなパス配列で種別の区別を持たないため、そこに挙げられた文書は戦略書以外すべて追加必読文書として扱われる。**除外すると、計画書経由で渡された並行状態の文書が誤りなく空配列として返り、FNC-003 を満たさない。**
+
+`required_reading` の他のフィールド（`strategy_doc` / `rule_docs` / `reference_code`）は対象にしない。これらは種別が固定されており、並行状態の識別子を持つ文書種別（要件定義書・設計書）に当たらないためである（計画書が識別子を持たないことは [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.3 が定める）。**受け皿である `additional` にこの根拠は適用できない。**
 
 対象文書を読めない場合は解析失敗として扱う（後述）。読めないことを「並行状態にない」と同一視しない（REQ-025 FNC-005）。
 
@@ -175,7 +177,7 @@ pending → in_progress → completed
 - `feature_type` が複数回現れ、値を一意に決められない
 - `feature_type` の値が `temporary-feature` 以外である（[frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1 は他の値を定義していない）
 
-**キーの順序で判定結果が変わってはならない [MANDATORY]**。`frontmatter_format.md` §2.3 は `feature_type` と `doc_status` の併記を許可し、キーの順序を制約していない。`feature_note` はリスト値を持つため後続行がインデントされるが、これも `feature_type` の抽出に影響してはならない。規約が許可している書式のいずれかで解析が失敗する実装は、この契約に違反する。
+**キーの順序で判定結果が変わってはならない。** `frontmatter_format.md` §2.3 は `feature_type` と `doc_status` の併記を許可し、キーの順序を制約していない。`feature_note` はリスト値を持つため後続行がインデントされるが、これも `feature_type` の抽出に影響してはならない。規約が許可している書式のいずれかで解析が失敗する実装は、この契約に違反する。
 
 解析失敗は「並行状態にない」と区別する（REQ-025 FNC-005）。失敗した場合はタスクコンテキストの生成を失敗させ、対象パスと理由を `errors` に載せる。並行状態にあるかを判定できないまま実装へ進むと、実装者は旧仕様に従って実装しうる。
 

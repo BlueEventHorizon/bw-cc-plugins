@@ -46,8 +46,10 @@ _FRONTMATTER_DELIMITER = "---"
 # キーの順序で結果が変わらないよう、frontmatter ブロック全体を走査してから判定する。
 _FEATURE_TYPE_RE = re.compile(r"^feature_type:(.*)$")
 _PARALLEL_FEATURE_TYPE = "temporary-feature"
-# 並行状態の識別対象は要件定義書・設計書のみ（他の種別は識別子を持たない）。
-_SPEC_AUTHORITY_SOURCES = ("requirement_docs", "design_docs")
+# 並行状態の識別対象。`additional` は文書種別ではなく「上記に分類されない残り」の受け皿で
+# あり、要件定義書・設計書が入りうるため含める（契約は DES-074）。
+# `strategy_doc` / `rule_docs` / `reference_code` は種別が固定で識別子を持たないため除く。
+_SPEC_AUTHORITY_SOURCES = ("requirement_docs", "design_docs", "additional")
 
 
 def _classify_parallel_state(path):

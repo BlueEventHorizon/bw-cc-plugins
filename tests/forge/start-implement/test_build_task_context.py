@@ -324,8 +324,8 @@ class SpecAuthorityTest(unittest.TestCase):
             self.assertEqual(errors, [])
             self.assertEqual(merged["spec_authority"], [])
 
-    def test_only_requirement_and_design_docs_are_classified(self):
-        """他の必読種別は識別子を持たないため分類しない。"""
+    def test_fields_with_a_fixed_document_kind_are_not_classified(self):
+        """種別が固定のフィールドは識別子を持つ種別に当たらないため分類しない。"""
         with tempfile.TemporaryDirectory() as tmp:
             plan_path = Path(tmp) / "foo_plan.json"
             write_plan(plan_path, [valid_plan_task()])
@@ -335,6 +335,36 @@ class SpecAuthorityTest(unittest.TestCase):
             )
             candidate["required_reading"] = dict(
                 candidate["required_reading"], rule_docs=[str(rule_doc)]
+            )
+            merged, errors = build_task_context(str(plan_path), "TASK-001", candidate)
+            self.assertEqual(errors, [])
+            self.assertEqual(merged["spec_authority"], [])
+
+    def test_additional_is_classified_because_it_is_a_catch_all(self):
+        """`additional` は受け皿であり、要件定義書・設計書が入りうるため分類する。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "foo_plan.json"
+            write_plan(plan_path, [valid_plan_task()])
+            candidate, _, _ = candidate_with_docs(tmp)
+            extra = write_doc(
+                Path(tmp) / "docs" / "specs" / "extra_req.md", PARALLEL_FRONTMATTER
+            )
+            candidate["required_reading"] = dict(
+                candidate["required_reading"], additional=[str(extra)]
+            )
+            merged, errors = build_task_context(str(plan_path), "TASK-001", candidate)
+            self.assertEqual(errors, [])
+            self.assertEqual(merged["spec_authority"], [str(extra)])
+
+    def test_additional_without_marker_is_not_parallel(self):
+        """`additional` の非仕様文書は識別子を持たないため誤検出しない。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "foo_plan.json"
+            write_plan(plan_path, [valid_plan_task()])
+            candidate, _, _ = candidate_with_docs(tmp)
+            extra = write_doc(Path(tmp) / "docs" / "rules" / "extra_context.md")
+            candidate["required_reading"] = dict(
+                candidate["required_reading"], additional=[str(extra)]
             )
             merged, errors = build_task_context(str(plan_path), "TASK-001", candidate)
             self.assertEqual(errors, [])

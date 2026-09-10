@@ -178,11 +178,11 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                     | 説明                                         |
-| ------------------------------------------------------------ | -------------------------------------------- |
-| `plugins/forge/skills/start-plan/SKILL.md`                   | スキル仕様                                   |
-| `plugins/forge/docs/strategy_formulation_spec.md`            | 実装戦略 Agent 作業指示書                    |
-| `docs/specs/forge/design/DES-074_plan_format_design.md`      | 計画書 script 実装契約（`write_plan.py` 等） |
-| `plugins/forge/docs/plan_principles_spec.md`                 | 計画書作成原則ガイド                         |
-| `plugins/forge/docs/spec_format.md`                          | ID分類カタログ                               |
-| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md` | ADR: 実装戦略フェーズ導入                    |
+| ファイル                                                                                    | 説明                                         |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                 | スキル仕様                                   |
+| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略 Agent 作業指示書                    |
+| [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
+| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |
+| [spec_format.md](../../../../plugins/forge/docs/spec_format.md)                             | ID分類カタログ                               |
+| [DES-027](DES-027_plan_strategy_phase_adr.md)                                               | ADR: 実装戦略フェーズ導入                    |

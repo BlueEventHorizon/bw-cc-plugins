@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-10T03:52:03Z
+  generated_at: 2026-09-10T07:01:36Z
   file_count: 41
 
 docs:
@@ -556,40 +556,31 @@ docs:
       - code review
       - design patterns
   plugins/forge/docs/frontmatter_format.md:
-    title: Additive Feature Frontmatter Definition
-    purpose: Defines the Single Source of Truth for frontmatter key specifications (feature_type, feature_note, doc_status) that must be added to differential feature requirements and design documents, serving as the authoritative reference separate from application criteria
+    title: Temporary Feature Frontmatter Definition
+    purpose: Defines frontmatter key specifications for differential feature requirement and design documents; serves as single source of truth for feature_type and doc_status markers
     content_details:
-      - "feature_type: temporary-feature key marking differential development documents with specification replacement principles"
-      - Requirements document frontmatter specification with feature_type and 4-point feature_note requirements
-      - Design document frontmatter specification with requirement-design relationship rules
-      - Plan documents exclusion from frontmatter and tracking via requirements_traceability
-      - doc_status key for document lifecycle states (draft for unreviewed, not_implemented for unmet dependencies)
-      - doc_status value definitions distinguishing review completion from implementation readiness
-      - doc_status removal conditions triggered by review completion or dependency implementation
-      - Frontmatter formatting rules requiring order independence and supporting key co-occurrence patterns
-      - doc-advisor reserved key collision avoidance strategy
-      - Independence of feature_type and doc_status axes in interpretation
+      - "feature_type: temporary-feature marker for requirement and design documents"
+      - feature_note array specification for feature lifecycle guidance
+      - doc_status lifecycle marker with draft and not_implemented values
+      - Removal conditions for doc_status markers based on review completion or dependency implementation
+      - doc-advisor reserved key collision avoidance strategy using feature_type and feature_note
+      - Feature applicability criteria to prevent false-positive marker usage
+      - Plan document treatment and why frontmatter is not required for plans
+      - Merge procedures for resolving conflicts between new and legacy specifications
     applicable_tasks:
-      - Requirements document frontmatter generation for differential feature development
-      - Design document frontmatter generation with merge scope metadata
-      - Plan document configuration and exclusion from frontmatter marking
-      - Document lifecycle state marking and status assignment
-      - Frontmatter validation and reserved key collision detection
-      - Document review completion and draft status removal workflow
-      - Dependency implementation verification and status lifecycle management
-      - Merge preparation with feature_type and doc_status coordination
-      - Frontmatter consistency checking across feature requirement and design pairs
+      - Creating requirement definitions for differential features
+      - Creating design documents for differential features
+      - Updating document lifecycle status markers
+      - Validating differential feature frontmatter compliance
+      - Planning feature implementation with proper documentation structure
     keywords:
-      - frontmatter
       - feature_type
+      - frontmatter
       - temporary-feature
-      - feature_note
       - doc_status
       - differential-feature
-      - requirements-traceability
-      - lifecycle-state
-      - draft-status
-      - not_implemented-status
+      - body_hash
+      - feature_note
   plugins/forge/docs/plan_principles_spec.md:
     title: Plan Document Creation Principles
     purpose: Defines structural rules and task design principles for plan documents, including composition rules, task granularity, traceability matrices, testing requirements, acceptance criteria standards, and dependency management with severity classifications
@@ -886,36 +877,40 @@ docs:
       - rollback
       - schema evolution
   plugins/forge/skills/start-implement/docs/task_execution_spec.md:
-    title: Task Execution Guide for Executor Agent
-    purpose: Specifies task execution procedures for executor agents, including prerequisites, implementation workflow, verification steps, and completion reporting
+    title: Executor Agent Task Execution Guide
+    purpose: Defines the 5-step execution workflow for implementing a single task, from preparation through verification to result reporting, for the task-executor agent
     content_details:
-      - Task context loading with scope boundary definition
-      - Required document reading hierarchy (design, requirement, strategy, rules, reference)
-      - Pre-Mortem risk analysis methodology with concrete cause identification and mitigation
-      - Spec authority handling for parallel-state document prioritization
-      - Implementation workflow with step-by-step framework and TDD guidance
-      - Verification workflow including build, tests, and acceptance criteria checking
-      - Result template JSON structure and producer validator integration
-      - Retry mechanism with maximum two attempts for verification failures
+      - Task context file structure containing task_id, title, priority, description, acceptance_criteria, scope_in/out, required_reading, spec_authority, implementation_instructions, verification
+      - "Mandatory reading order: design docs, requirement docs, strategy doc, rule docs, reference code, additional docs"
+      - "Pre-Mortem analysis: identifying up to 5 failure causes with evidence and mitigation strategies before implementation"
+      - Handling parallel-state documents through spec_authority field when newer versions exist
+      - "Implementation sequence: file creation, basic structure, content items, error handling, comments"
+      - "Verification stages: build checks (required/skipped), test execution (required/optional/skipped), acceptance criteria validation"
+      - Verification failure recovery with maximum 1 retry (2 total attempts before reporting FAILURE)
+      - "Result template JSON with fields: task_id, status, files_modified, summary, verification results, pre_mortem tracking, notes, error"
+      - Return value validation using producer validator script with heredoc prohibition and exit code handling
+      - Scope boundary enforcement preventing implementation of out-of-scope items declared in scope_out
     applicable_tasks:
-      - Task implementation planning for executor agents
-      - Task execution verification and validation
-      - Pre-mortem risk assessment and mitigation design
-      - Implementation workflow definition
-      - Build and test configuration setup
-      - Acceptance criteria validation
-      - Completion reporting and status tracking
-      - Error handling during implementation execution
+      - Task implementation execution
+      - Pre-mortem risk analysis and mitigation planning
+      - Task preparation and document reading
+      - Implementation verification and testing
+      - Build validation and error recovery
+      - Acceptance criteria verification
+      - Scope boundary management
+      - Result reporting and JSON validation
+      - Handling parallel document versions
+      - Failure diagnosis and troubleshooting
     keywords:
-      - executor
       - task-executor
-      - task_id
-      - scope_in
-      - scope_out
       - spec_authority
       - Pre-Mortem
-      - acceptance_criteria
       - verification
+      - acceptance_criteria
+      - scope_boundary
+      - required_reading
+      - implementation
+      - result_template
       - producer_validator
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md:
     title: APP Overview Requirements Definition Document Writing Standard
