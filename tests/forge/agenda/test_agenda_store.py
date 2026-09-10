@@ -247,6 +247,47 @@ class RecordSingleValueTest(AgendaStoreTestCase):
         )
 
 
+class ChangedMarkTest(AgendaStoreTestCase):
+    """DES-075 §4・agenda:REQ-021 FNC-002: 直前の変更箇所は記録全体で 1 回分しかない。
+
+    項目ごとに積み上げると、一度でも値を書かれた項目が印を持ったまま残り、進行するほど
+    全項目が「変更あり」に見える。今回どこが変わったかを提示から読み取れなくする状態で
+    あり、FNC-002 が防ごうとしているものそのものである。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._start_with_judgment(items=[{"id": "01"}, {"id": "02"}])
+
+    def test_recording_another_item_clears_the_previous_item_mark(self):
+        self._record("01", "background", "背景1")
+        self._record("02", "background", "背景2")
+        self.assertEqual(self._item("01")["last_changed_fields"], [])
+        self.assertEqual(self._item("02")["last_changed_fields"], ["background"])
+
+    def test_second_value_on_same_item_replaces_the_mark(self):
+        self._record("01", "background", "背景")
+        self._record("01", "essence", "本質")
+        self.assertEqual(self._item("01")["last_changed_fields"], ["essence"])
+
+    def test_structural_judgment_record_clears_all_marks(self):
+        # 項目の値を 1 つも変えない書き込みなので、直前の変更箇所は「無し」になる。
+        self._record("01", "background", "背景")
+        agenda_store.record_structural_judgment(self.agenda_path, "再判断")
+        self.assertEqual(self._item("01")["last_changed_fields"], [])
+
+    def test_new_item_record_clears_existing_marks(self):
+        self._record("01", "background", "背景")
+        agenda_store.record_new_item(self.agenda_path, "追加後もなお構造的な誤りは無い")
+        self.assertEqual(self._item("01")["last_changed_fields"], [])
+
+    def test_rejected_record_leaves_marks_untouched(self):
+        """拒否された呼び出しは保存されないため、直前の印も消えない。"""
+        self._record("01", "background", "背景")
+        self.assertEqual(self._record("02", "decision.by", "human")["status"], "error")
+        self.assertEqual(self._item("01")["last_changed_fields"], ["background"])
+
+
 class ReservedValueNameTest(AgendaStoreTestCase):
     """DES-075 §6.1: agenda が自ら書くキー・構造を持つキーは名前として拒否する。"""
 

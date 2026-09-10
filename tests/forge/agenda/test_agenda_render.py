@@ -179,6 +179,60 @@ class DataChangedAttributeTest(unittest.TestCase):
         self.assertIn('id="item-02" data-changed="false"', html_doc)
 
 
+class ChangedRowHighlightTest(unittest.TestCase):
+    """DES-077 §3.1b: 直前の書き込みで変わった欄だけに印を付ける。
+
+    項目単位の点（§3.1）が「どの項目か」を示すのに対し、本節の印は「その項目のどの欄か」
+    まで絞る。`last_changed_fields` に入っているフィールド名を使う。
+    """
+
+    def _render(self, item_overrides: dict) -> str:
+        agenda = _fixture_agenda()
+        agenda["items"][0].update(item_overrides)
+        return agenda_render.render_agenda_html(agenda, generated_at="2026-09-08T00:00:00")
+
+    def test_changed_field_row_is_marked(self):
+        html_doc = self._render({"last_changed_fields": ["background"]})
+        self.assertIn('<dt data-changed="true">背景</dt><dd data-changed="true">', html_doc)
+
+    def test_unchanged_field_row_is_not_marked(self):
+        html_doc = self._render({"last_changed_fields": ["background"]})
+        self.assertIn("<dt>本質</dt><dd>本質の記述</dd>", html_doc)
+
+    def test_nested_decision_name_marks_the_decision_row(self):
+        """`decision.by` が変わったなら「決着」欄が変わったものとして扱う。"""
+        html_doc = self._render({"last_changed_fields": ["decision.by"]})
+        self.assertIn(
+            '<dt class="label-decision" data-changed="true">決着</dt><dd data-changed="true">',
+            html_doc,
+        )
+
+    def test_recommendation_row_can_be_marked(self):
+        html_doc = self._render(
+            {"recommendation": "案Aを推奨", "last_changed_fields": ["recommendation"]}
+        )
+        self.assertIn(
+            '<dt class="label-recommend" data-changed="true">推奨</dt>'
+            '<dd data-changed="true">案Aを推奨</dd>',
+            html_doc,
+        )
+
+    def test_no_row_is_marked_when_nothing_changed(self):
+        html_doc = self._render({"last_changed_fields": []})
+        self.assertNotIn('<dd data-changed="true">', html_doc)
+
+    def test_changed_item_row_is_marked_in_summary_table(self):
+        html_doc = self._render({"last_changed_fields": ["background"]})
+        self.assertIn('<tr data-changed="true"><td>01</td>', html_doc)
+        self.assertIn("<tr><td>02</td>", html_doc)
+
+    def test_style_defines_changed_row_appearance(self):
+        """色だけに頼らないよう、帯（border/box-shadow）も併せて定義する。"""
+        html_doc = self._render({"last_changed_fields": ["background"]})
+        self.assertIn('dd[data-changed="true"]', html_doc)
+        self.assertIn("border-left: 3px solid var(--changed)", html_doc)
+
+
 class ThreeStateDerivationTest(unittest.TestCase):
     """DES-077 §3.3: background/essence/decision の記入有無から3状態を導出する。
 

@@ -171,10 +171,41 @@ def _result_summary(item: dict) -> str:
     return f"{decision['outcome']}: {decision['reason']}"
 
 
+def _changed_field_names(item: dict) -> list:
+    """`last_changed_fields` に入っているフィールド名だけを取り出す（DES-077 §3.1）。
+
+    記録側（`agenda_store.py`）は書き込みのたびに全項目の印を消してから、その
+    書き込みで変えた項目にだけ名前 1 つを立てる。したがってここに名前があるのは、
+    **直前の書き込みで変わった項目**だけである。
+    """
+    last_changed_fields = item.get("last_changed_fields")
+    if not isinstance(last_changed_fields, list):
+        return []
+    return [name for name in last_changed_fields if isinstance(name, str)]
+
+
 def _is_changed(item: dict) -> bool:
     """`last_changed_fields` が空でない項目かどうかを返す（DES-077 §3.1）。"""
-    last_changed_fields = item.get("last_changed_fields")
-    return isinstance(last_changed_fields, list) and len(last_changed_fields) > 0
+    return len(_changed_field_names(item)) > 0
+
+
+def _is_row_changed(changed_names: list, field: str) -> bool:
+    """その欄が直前の書き込みで変わったかどうかを返す（DES-077 §3.1b）。
+
+    入れ子表記に対応する——`decision.by` が変わったなら「決着」欄（`decision`）が
+    変わったものとして扱う。項目単位の点（`_is_changed`）が「どの項目か」を示すのに
+    対し、本判定は「その項目のどの欄か」まで絞る。
+    """
+    return any(name == field or name.startswith(field + ".") for name in changed_names)
+
+
+def _changed_mark(changed_names: list, field: str) -> str:
+    """変わった欄へ付ける属性（`data-changed="true"`）を返す。変化が無ければ空文字列。
+
+    CSS の付け外しに使う印であり、値そのものは表示に出ない。属性を出さない側を
+    既定にするのは、既存の出力（変化が無い欄）を変えないためである。
+    """
+    return ' data-changed="true"' if _is_row_changed(changed_names, field) else ""
 
 
 def _summary_row_html(item: dict, severity_field: str | None) -> str:
@@ -185,8 +216,11 @@ def _summary_row_html(item: dict, severity_field: str | None) -> str:
     severity_value = _escape(_severity_value(item, severity_field))
     severity_cell = severity_value or "-"
     result_cell = _escape(_result_summary(item))
+    # 直前に変わった項目は一覧側でも見つけられるようにする（agenda:REQ-021 FNC-002。
+    # 項目カードまで下りなくても、どの行が動いたかが俯瞰で分かる）。
+    changed_mark = ' data-changed="true"' if _is_changed(item) else ""
     return (
-        "<tr>"
+        f"<tr{changed_mark}>"
         f"<td>{item_id}</td>"
         f"<td>{title}</td>"
         f"<td>{severity_cell}</td>"
@@ -221,18 +255,26 @@ def _item_section_html(item: dict, severity_field: str | None) -> str:
     changed = _is_changed(item)
     severity_badge = _severity_badge_html(item, severity_field)
 
+    changed_names = _changed_field_names(item)
+
+    def row(label: str, body: str, field: str, label_class: str = "") -> str:
+        """1 欄分の `<dt>`/`<dd>` を返す。直前に変わった欄には印を付ける（§3.1b）。"""
+        mark = _changed_mark(changed_names, field)
+        cls = f' class="{label_class}"' if label_class else ""
+        return f"    <dt{cls}{mark}>{label}</dt><dd{mark}>{body}</dd>"
+
     rows: list = []
     problem = item.get("problem")
     if problem:
-        rows.append(f"    <dt>問題</dt><dd>{_escape(problem)}</dd>")
-    rows.append(f"    <dt>背景</dt><dd>{background}</dd>")
-    rows.append(f"    <dt>本質</dt><dd>{essence}</dd>")
+        rows.append(row("問題", _escape(problem), "problem"))
+    rows.append(row("背景", background, "background"))
+    rows.append(row("本質", essence, "essence"))
     recommendation = item.get("recommendation")
     if recommendation:
         rows.append(
-            f'    <dt class="label-recommend">推奨</dt><dd>{_escape(recommendation)}</dd>'
+            row("推奨", _escape(recommendation), "recommendation", "label-recommend")
         )
-    rows.append(f'    <dt class="label-decision">決着</dt><dd>{decision_dd}</dd>')
+    rows.append(row("決着", decision_dd, "decision", "label-decision"))
     rows_html = "\n".join(rows)
 
     return (
@@ -257,6 +299,8 @@ _STYLE = """
     --line: #e5e8ee;
     --accent: #4a6fa5;
     --changed: #f0c36d;
+    --changed-soft: #fdf5e4;
+    --changed-ink: #8a6410;
   }
   body {
     margin: 0;
@@ -315,6 +359,11 @@ _STYLE = """
     border-bottom: 1px solid var(--line);
   }
   #agenda-summary tr:last-child td { border-bottom: none; }
+  /* 直前の書き込みで変わった項目の行（DES-077 §3.1b）。色に加えて左端の帯でも示す。 */
+  #agenda-summary tbody tr[data-changed="true"] { background: var(--changed-soft); }
+  #agenda-summary tbody tr[data-changed="true"] td:first-child {
+    box-shadow: inset 3px 0 0 var(--changed);
+  }
   #agenda-summary tbody tr:hover { background: #f6f9fd; }
   #agenda-summary td:first-child, #agenda-summary th:first-child {
     text-align: center; width: 3em; color: var(--ink-muted);
@@ -383,6 +432,17 @@ _STYLE = """
   dt.label-decision { background: #5d7a5f; }
   dd { margin: 0; }
   dd .undecided { color: var(--ink-muted); }
+
+  /* 直前の書き込みで変わった欄（DES-077 §3.1b）。色に加えて左端の帯と濃いラベルで示し、
+     色以外の手がかりを残す（WCAG 2.2 達成基準 1.4.1）。 */
+  dt[data-changed="true"] { background: var(--changed-ink); }
+  dd[data-changed="true"] {
+    background: var(--changed-soft);
+    border-left: 3px solid var(--changed);
+    border-radius: 3px;
+    padding: 2px 8px;
+    margin-left: -11px;
+  }
 
   .severity-badge {
     display: inline-block;
