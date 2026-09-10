@@ -48,49 +48,41 @@ def determine_moved_link(referrer: str, ref: str, candidates) -> str | None:
     return new_path + sep + anchor
 
 
-def determine_anchor(anchor: str, slugs) -> None:
-    """アンカーの置換先は決めない。常に `None` を返す。
-
-    見出し索引は完全一致で引く（DES-081 §3.3.1）。`missing_anchor` は**その完全一致が
-    外れた**という所見であり、書かれた文字列はその時点でキーではない。キーでないものを
-    起点に別のキーを探すことは推定であり、当たっても正しさの根拠を持たない。
-
-    本関数が存在するのは、「決めない」ことを呼び出し側から明示的に参照できるようにする
-    ためである。`slugs` は利用者へ候補を示すための材料であり、置換の根拠ではない。
-    """
-    return None
-
-
-def determine_section(ref: str, sections) -> None:
-    """節参照の置換先は決めない。常に `None` を返す。
-
-    索引は現在の節番号しか持たず、旧番号から現番号への対応を保持しない。対応を知って
-    いるのは節を動かした当人だけである（REQ-023 FNC-008）。
-    """
-    return None
-
-
 def determine_rewrite(finding: dict, *, slugs=None) -> dict | None:
     """所見 1 件に対する書き換えを返す。決まらなければ `None`。
 
-    置換先を返すのは `moved_link` だけである。`missing_anchor` の `slugs` と
-    `missing_section` の節番号は、**利用者へ候補を示すための材料**であって置換の
-    根拠ではない（`determine_anchor` / `determine_section`）。`slugs` 引数は
-    呼び出し側が材料を渡せるようにする口であり、渡されても置換先は返さない。
+    置換先を返すのは `moved_link` だけである。`slugs` 引数は呼び出し側が材料を
+    渡せるようにする口であり、渡されても置換先は返さない。
+
+    `missing_anchor` を決めないのは、見出し索引を完全一致で引くためである
+    （DES-081 §3.3.1）。`missing_anchor` は**その完全一致が外れた**という所見であり、
+    書かれた文字列はその時点でキーではない。キーでないものを起点に別のキーを探すことは
+    推定であり、当たっても正しさの根拠を持たない。所見が運ぶ `slugs` は利用者へ候補を
+    示すための材料であって、置換の根拠ではない。
+
+    `missing_section` を決めないのは、索引が現在の節番号しか持たず、旧番号から現番号への
+    対応を保持しないためである。対応を知っているのは節を動かした当人だけである
+    （REQ-023 FNC-008）。
+
+    **置換対象は `ref` ではなく `dest` である。** `ref` は利用者へ見せる表示であり、
+    参照定義行（`[label]: dest`）ではラベルを含む行全体になる。これを置換対象に
+    すると定義行からラベルが消え、その文書の `[表示][label]` がすべて参照先を失う。
+    `dest` を持たない所見（手書き・旧形式）では `ref` へ退避する。
 
     Returns:
-        dict: `file` / `line` / `old`（書かれた参照）/ `new`（置換後）
+        dict: `file` / `line` / `old`（書かれた参照先）/ `new`（置換後）
     """
     if finding.get("kind") != "moved_link":
         return None
+    old = finding.get("dest", finding["ref"])
     new = determine_moved_link(
-        finding["file"], finding["ref"], finding.get("candidates") or []
+        finding["file"], old, finding.get("candidates") or []
     )
-    if new is None or new == finding["ref"]:
+    if new is None or new == old:
         return None
     return {
         "file": finding["file"],
         "line": finding["line"],
-        "old": finding["ref"],
+        "old": old,
         "new": new,
     }

@@ -5,16 +5,21 @@
 
 対象は「索引が答えを持っている」修復に限る。
 
-| 種別              | 索引が持つもの                     | 決まるか               |
-| ----------------- | ---------------------------------- | ---------------------- |
-| `moved_link`      | `names`（basename → 実在パス一覧） | 候補 1 件なら決まる    |
-| `missing_anchor`  | 参照先の見出し slug 集合           | 候補 1 件なら決まる    |
-| `missing_section` | **持っていない**（現在の節だけ）   | **決まらない**         |
+| 種別              | 索引が完全一致で答えるもの             | 決まるか            |
+| ----------------- | -------------------------------------- | ------------------- |
+| `moved_link`      | `names`（basename → 実在パス一覧）     | 候補 1 件なら決まる |
+| `missing_anchor`  | 見出し集合（完全一致は既に外れている） | **決まらない**      |
+| `missing_section` | **持っていない**（現在の節だけ）       | **決まらない**      |
+
+`missing_anchor` が決まらないのは、見出し索引を完全一致で引くためである（DES-081 §3.3.1）。
+完全一致が外れたという所見なので、書かれた文字列はその時点でキーではない。そこから別のキーを
+探すのは探索であり、候補が 1 件に絞れても指し先が正しいことを意味しない。
 
 `missing_section` が決まらないのは、旧節番号から現節番号への対応をどの索引も保持しないためで
 ある。対応を知っているのは節を動かした当人だけであり、後から呼ばれた主体は推測しかできない。
-推測で張り替えると、参照は解決するのに指し先が誤っている状態（検査が「正しい」と保証する嘘）
-になるため、**決まらないものを決めない**ことを試験で固定する。
+
+いずれも、推測で張り替えると参照は解決するのに指し先が誤っている状態（検査が「正しい」と
+保証する嘘）になるため、**決まらないものを決めない**ことを試験で固定する。
 """
 
 import sys
@@ -79,44 +84,56 @@ class TestAnchorIsNeverDetermined(unittest.TestCase):
     見出し索引は完全一致で引く。`missing_anchor` はその完全一致が外れた所見であり、
     そこから先へ進むには探索が要る。探索は候補が 1 件に絞れても指し先が正しいことを
     意味しないため、決めてはならない。
+
+    **判定は `determine_rewrite` 越しに行う。** 「決めない」ことを専用の関数として
+    置くと、その関数のためだけの試験ができて本番経路を通らない。
     """
+
+    def _anchor_finding(self, ref, slugs):
+        return {"kind": "missing_anchor", "file": "docs/a/b.md", "line": 3,
+                "ref": ref, "target": "docs/c/y.md", "slugs": sorted(slugs),
+                "reason": ""}
 
     def test_prefix_match_is_not_used(self):
         """前方一致で 1 件に絞れても決めない。"""
-        self.assertIsNone(
-            fix_refs.determine_anchor(
-                "共用コンポーネントの変更禁止",
-                {"実装ポリシー", "共用コンポーネントの変更禁止-最重要"},
-            )
-        )
+        self.assertIsNone(fix_refs.determine_rewrite(self._anchor_finding(
+            "../c/y.md#共用コンポーネントの変更禁止",
+            {"実装ポリシー", "共用コンポーネントの変更禁止-最重要"},
+        )))
 
     def test_deleted_heading_with_a_similar_sibling_is_not_rewritten(self):
         """`## 実装` を削除した文書で `#実装` を `実装-手順` へ繋がない。
 
         候補が一意に決まっても、参照先は削除されており指し先が別の節になる。
-        探索を持ち込むと生じる誤接続の回帰。
+        探索を持ち込むと生じる誤接続の回帰（DES-081 §6.2 が名指しする素材）。
         """
-        self.assertIsNone(fix_refs.determine_anchor("実装", {"実装-手順"}))
+        self.assertIsNone(
+            fix_refs.determine_rewrite(self._anchor_finding("../c/y.md#実装", {"実装-手順"}))
+        )
 
     def test_no_candidate_is_not_determined(self):
-        self.assertIsNone(
-            fix_refs.determine_anchor("存在しない見出し", {"実装ポリシー"})
-        )
+        self.assertIsNone(fix_refs.determine_rewrite(
+            self._anchor_finding("../c/y.md#存在しない見出し", {"実装ポリシー"})
+        ))
 
 
 class TestSectionIsNeverDetermined(unittest.TestCase):
     """節番号は索引が対応を持たないため、決めてはならない。"""
 
+    def _section_finding(self, ref):
+        return {"kind": "missing_section", "file": "docs/a/b.md", "line": 3,
+                "ref": ref, "reason": ""}
+
     def test_missing_section_is_not_determined_even_with_one_section_left(self):
         """現在の節が 1 つしか無くても、そこへ張り替えてよい根拠にはならない。"""
         self.assertIsNone(
-            fix_refs.determine_section("DES-045 §3.5", {"3.1"})
+            fix_refs.determine_rewrite(self._section_finding("DES-045 §3.5"))
         )
 
     def test_missing_section_is_not_determined_for_adjacent_number(self):
         """番号の近さを対応の根拠にしない（§3.5 が消えた先は §3.4 とは限らない）。"""
         self.assertIsNone(
-            fix_refs.determine_section("DES-081 §3.5", {"3.1", "3.2", "3.3", "3.4"})
+            fix_refs.determine_rewrite(self._section_finding("DES-081 §3.5"))
         )
 
 
@@ -202,6 +219,24 @@ class TestSeamWithCheckRefs(unittest.TestCase):
         rewrite = fix_refs.determine_rewrite(findings[0])
         self.assertIsNotNone(rewrite, "check_refs の所見から置換先が導けていない")
         self.assertEqual(rewrite["new"], "moved/target.md")
+
+    def test_reference_definition_line_is_rewritten_without_losing_the_label(self):
+        """参照定義行（`[label]: パス`）の置換でラベルが消えないこと。
+
+        定義行の所見の `ref` はラベルを含む行全体である（利用者へ見せる表示）。
+        これを置換対象にすると、置換後の行が `パス` だけになり、その文書の
+        `[表示][label]` がすべて参照先を失う。置換の対象は `dest` である。
+        """
+        text = "本文で [x][lbl] を使う。\n\n[lbl]: old/target.md\n"
+        findings = self._findings("docs/b.md", text)
+        self.assertEqual([f["kind"] for f in findings], ["moved_link"])
+        rewrite = fix_refs.determine_rewrite(findings[0])
+        self.assertIsNotNone(rewrite, "check_refs の所見から置換先が導けていない")
+        self.assertEqual(rewrite["old"], "old/target.md")
+        self.assertEqual(rewrite["new"], "moved/target.md")
+        # 置換を適用してもラベル定義が残ること（この試験の本体）
+        self.assertIn("[lbl]: moved/target.md",
+                      text.replace(rewrite["old"], rewrite["new"]))
 
     def test_missing_anchor_finding_carries_candidates_but_is_not_rewritten(self):
         """所見は候補（`slugs`）を運ぶが、置換先は返らない。

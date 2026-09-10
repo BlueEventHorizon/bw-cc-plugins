@@ -135,8 +135,11 @@ def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, ou
         name = PurePosixPath(resolved).name
         candidates = indexes["names"].get(name)
         if candidates:
+            # `ref` は利用者へ見せる表示（定義行なら `[label]: dest` の行全体）であり、
+            # `dest` は置換の対象そのものである。2 つを 1 つのフィールドで兼ねると、
+            # 定義行の置換でラベルごと消える（`fix_refs.determine_rewrite` が使うのは `dest`）。
             findings.append({"kind": "moved_link", "file": path, "line": lineno, "ref": ref,
-                             "candidates": candidates,
+                             "dest": dest, "candidates": candidates,
                              "reason": f"{resolved} は実在しないが、{name} は他の位置に実在する"})
         else:
             findings.append({"kind": "broken_link", "file": path, "line": lineno, "ref": ref,

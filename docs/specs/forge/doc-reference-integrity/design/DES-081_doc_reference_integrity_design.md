@@ -231,6 +231,7 @@ UC-03 は UC-01 / UC-02 と別の検査を行うのではなく、**同じ検査
 | `start-requirements`     | —            | ○            |
 | `start-design`           | —            | ○            |
 | `start-implement`        | —            | ○            |
+| `start-uxui-design`      | —            | ○            |
 | `review`（レビューのみ） | ○            | —            |
 | `review --fix`           | ○            | ○            |
 
