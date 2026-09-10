@@ -23,6 +23,7 @@
 """
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -142,17 +143,17 @@ class TestFindingDispatch(unittest.TestCase):
 
     def _finding(self, **kw):
         base = {"kind": "moved_link", "file": "docs/a/b.md", "line": 3,
-                "ref": "../old/y.md", "reason": ""}
+                "ref": "../old/y.md", "dest": "../old/y.md",
+                "col_start": 10, "col_end": 21, "reason": ""}
         base.update(kw)
         return base
 
     def test_moved_link_with_one_candidate_yields_rewrite(self):
-        rewrite = fix_refs.determine_rewrite(
-            self._finding(candidates=["docs/c/y.md"]), slugs=None
-        )
+        rewrite = fix_refs.determine_rewrite(self._finding(candidates=["docs/c/y.md"]))
         self.assertEqual(
             rewrite,
-            {"file": "docs/a/b.md", "line": 3, "old": "../old/y.md", "new": "../c/y.md"},
+            {"file": "docs/a/b.md", "line": 3, "col_start": 10, "col_end": 21,
+             "old": "../old/y.md", "new": "../c/y.md"},
         )
 
     def test_undetermined_kinds_yield_none(self):
@@ -160,9 +161,7 @@ class TestFindingDispatch(unittest.TestCase):
         for kind in ("broken_link", "missing_doc", "ambiguous", "undecidable",
                      "missing_label", "missing_section", "missing_anchor"):
             with self.subTest(kind=kind):
-                self.assertIsNone(
-                    fix_refs.determine_rewrite(self._finding(kind=kind), slugs=None)
-                )
+                self.assertIsNone(fix_refs.determine_rewrite(self._finding(kind=kind)))
 
     def test_missing_anchor_is_not_rewritten_even_with_slugs(self):
         """所見が `slugs` を持っていても決めない。
@@ -177,11 +176,17 @@ class TestFindingDispatch(unittest.TestCase):
             slugs=["見出し-最重要", "別の見出し"],
         )))
 
-    def test_explicit_slugs_argument_does_not_enable_rewriting(self):
-        self.assertIsNone(fix_refs.determine_rewrite(
-            self._finding(kind="missing_anchor", ref="#見出し"),
-            slugs=["見出し-最重要"],
-        ))
+    def test_finding_without_a_position_is_not_rewritten(self):
+        """位置を持たない所見は置換しない。
+
+        位置が無ければ差し替える範囲が決まらず、文字列を探すことになる。探索は
+        禁じられているため（DES-081 §3.3.1）、置換せず報告に残す。
+        """
+        for missing in ("col_start", "col_end", "dest"):
+            with self.subTest(missing=missing):
+                finding = self._finding(candidates=["docs/c/y.md"])
+                finding[missing] = None
+                self.assertIsNone(fix_refs.determine_rewrite(finding))
 
 
 class TestSeamWithCheckRefs(unittest.TestCase):
@@ -189,8 +194,9 @@ class TestSeamWithCheckRefs(unittest.TestCase):
 
     **手書きの所見を経由させない。** 両モジュールを別々に試験すると、片方が出さない
     情報をもう片方が要求していても双方の試験が通る。実際にそれが起き、`check_refs` が
-    見出し集合を報告に載せていなかったために `missing_anchor` が一度も置換されなかった。
-    この試験は 2 つの出力契約が噛み合っていることだけを見る。
+    置換対象そのもの（`dest` と位置）を報告に載せていなかったために、参照定義行の置換で
+    ラベル定義が消える欠陥が両者の試験をすり抜けた。この試験は 2 つの出力契約が噛み合って
+    いることだけを見る。
     """
 
     def setUp(self):
@@ -248,6 +254,90 @@ class TestSeamWithCheckRefs(unittest.TestCase):
         self.assertEqual([f["kind"] for f in findings], ["missing_anchor"])
         self.assertEqual(findings[0]["slugs"], ["見出し-最重要"])
         self.assertIsNone(fix_refs.determine_rewrite(findings[0]))
+
+
+class TestApplyRewrites(unittest.TestCase):
+    """記録された範囲だけを差し替えて書き戻すこと（DES-081 §4.3.2）。"""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _write(self, rel, text):
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def _rewrite(self, line, col_start, old, new, rel="docs/b.md"):
+        return {"file": rel, "line": line, "col_start": col_start,
+                "col_end": col_start + len(old), "old": old, "new": new}
+
+    def test_only_the_recorded_range_changes(self):
+        """同一行で接尾辞が一致する別の参照を巻き込まないこと。
+
+        文字列一致に退行すると、`old/t.md` の置換が `../old/t.md` にも当たって
+        指し先を変える（参照切れより有害な誤接続）。
+        """
+        path = self._write("docs/b.md", "[a](old/t.md) と [b](../old/t.md)\n")
+        got = fix_refs.apply_rewrites(
+            [self._rewrite(1, 4, "old/t.md", "moved/t.md")], project_root=str(self.root))
+        self.assertEqual(got["errors"], [])
+        self.assertEqual(path.read_text(encoding="utf-8"),
+                         "[a](moved/t.md) と [b](../old/t.md)\n")
+
+    def test_two_rewrites_on_the_same_line_both_land(self):
+        """同一行に 2 件決まったとき、両方が正しく当たること。
+
+        前から当てる実装では、1 件目で長さが変わった分だけ 2 件目の桁がずれて落ちる。
+        """
+        path = self._write("docs/b.md", "[a](x/t.md) と [b](y/t.md)\n")
+        got = fix_refs.apply_rewrites([
+            self._rewrite(1, 4, "x/t.md", "moved/one/t.md"),
+            self._rewrite(1, 18, "y/t.md", "moved/two/t.md"),
+        ], project_root=str(self.root))
+        self.assertEqual(got["errors"], [])
+        self.assertEqual(len(got["applied"]), 2)
+        self.assertEqual(path.read_text(encoding="utf-8"),
+                         "[a](moved/one/t.md) と [b](moved/two/t.md)\n")
+
+    def test_multiple_lines_in_one_file(self):
+        path = self._write("docs/b.md", "[a](x/t.md)\n\n[lbl]: y/t.md\n")
+        got = fix_refs.apply_rewrites([
+            self._rewrite(1, 4, "x/t.md", "moved/t.md"),
+            self._rewrite(3, 7, "y/t.md", "moved/t.md"),
+        ], project_root=str(self.root))
+        self.assertEqual(got["errors"], [])
+        self.assertEqual(path.read_text(encoding="utf-8"),
+                         "[a](moved/t.md)\n\n[lbl]: moved/t.md\n")
+
+    def test_content_changed_since_the_check_is_not_guessed(self):
+        """記録された位置の内容が変わっていたら、探し直さずに報告する。
+
+        探し直すことは走査であり、走査のたびに結果が変わりうる操作を書き込みの途中へ
+        挟むことになる（DES-081 §4.3.2）。
+        """
+        path = self._write("docs/b.md", "[a](別の内容.md)\n")
+        got = fix_refs.apply_rewrites(
+            [self._rewrite(1, 4, "x/t.md", "moved/t.md")], project_root=str(self.root))
+        self.assertEqual(got["applied"], [])
+        self.assertEqual(len(got["errors"]), 1)
+        self.assertEqual(path.read_text(encoding="utf-8"), "[a](別の内容.md)\n")
+
+    def test_no_rewrite_leaves_the_file_untouched(self):
+        path = self._write("docs/b.md", "[a](x/t.md)\n")
+        before = path.stat().st_mtime_ns
+        got = fix_refs.apply_rewrites([], project_root=str(self.root))
+        self.assertEqual(got, {"applied": [], "errors": []})
+        self.assertEqual(path.stat().st_mtime_ns, before)
+
+    def test_trailing_newline_is_preserved(self):
+        """末尾改行の有無を変えないこと（無関係な差分を作らない）。"""
+        path = self._write("docs/b.md", "[a](x/t.md)")
+        fix_refs.apply_rewrites(
+            [self._rewrite(1, 4, "x/t.md", "moved/t.md")], project_root=str(self.root))
+        self.assertEqual(path.read_text(encoding="utf-8"), "[a](moved/t.md)")
 
 
 if __name__ == "__main__":

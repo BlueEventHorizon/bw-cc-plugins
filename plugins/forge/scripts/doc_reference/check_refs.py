@@ -107,16 +107,22 @@ def _check_anchor(path, lineno, ref, anchor, target, own_text, caches, findings)
         findings.append({"kind": "undecidable", "file": path, "line": lineno, "ref": ref,
                          "reason": f"{target} に列挙範囲外の見出しの形があり、アンカーの不在を断定できない"})
         return
-    # 参照先の見出し集合を所見へ載せる。`moved_link` の `candidates` と同じ役割で、
-    # 置換先を導く材料を報告の側に持たせる（FNC-011 / FNC-013）。報告を受けた側が
-    # 参照先をもう一度読み直さずに済み、判定と同じ入力から置換先が導ける。
+    # 参照先の見出し集合を所見へ載せる。**これは利用者へ候補を示す材料であり、置換の根拠
+    # ではない**（DES-081 §3.3.1: 索引に無いキーは「無い」で終端する）。報告を受けた側が
+    # 参照先をもう一度読み直さずに済むために持たせる。`missing_anchor` の置換先は導けない。
     findings.append({"kind": "missing_anchor", "file": path, "line": lineno, "ref": ref,
                      "target": target, "slugs": sorted(slugs),
                      "reason": f"{target} に #{anchor} は無い"})
 
 
-def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, out_of_scope):
-    """1 つの destination を分類し、解決できるものは解決する（DES-081 §1.2）。"""
+def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, out_of_scope,
+                col_start=None, col_end=None):
+    """1 つの destination を分類し、解決できるものは解決する（DES-081 §1.2）。
+
+    `col_start` / `col_end` は原本の行内範囲であり、**置換が差し替える範囲そのもの**である
+    （DES-081 §4.3.1）。`ref` は利用者へ見せる表示（定義行なら `[label]: dest` の行全体）で
+    あって置換の対象ではない。2 つを兼ねると、定義行の置換でラベルごと消える。
+    """
     kind, info = _classify(dest)
     if kind == "out_of_scope":
         out_of_scope.append({"file": path, "line": lineno, "ref": dest, "reason": info})
@@ -135,11 +141,9 @@ def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, ou
         name = PurePosixPath(resolved).name
         candidates = indexes["names"].get(name)
         if candidates:
-            # `ref` は利用者へ見せる表示（定義行なら `[label]: dest` の行全体）であり、
-            # `dest` は置換の対象そのものである。2 つを 1 つのフィールドで兼ねると、
-            # 定義行の置換でラベルごと消える（`fix_refs.determine_rewrite` が使うのは `dest`）。
             findings.append({"kind": "moved_link", "file": path, "line": lineno, "ref": ref,
-                             "dest": dest, "candidates": candidates,
+                             "dest": dest, "col_start": col_start, "col_end": col_end,
+                             "candidates": candidates,
                              "reason": f"{resolved} は実在しないが、{name} は他の位置に実在する"})
         else:
             findings.append({"kind": "broken_link", "file": path, "line": lineno, "ref": ref,
@@ -178,13 +182,14 @@ def check_file(path: str, text: str, indexes: dict, caches: dict,
         findings.append({"kind": "undecidable", "file": path, "line": lineno,
                          "ref": raw, "reason": kind})
 
-    for lineno, dest in res["inline"]:
-        _check_dest(path, lineno, dest, dest, text, indexes, caches, findings, out_of_scope)
+    for lineno, dest, col_start, col_end in res["inline"]:
+        _check_dest(path, lineno, dest, dest, text, indexes, caches, findings, out_of_scope,
+                    col_start, col_end)
 
-    labels = {label for _, label, _ in res["ref_defs"]}
-    for lineno, label, dest in res["ref_defs"]:
+    labels = {label for _, label, _, _, _ in res["ref_defs"]}
+    for lineno, label, dest, col_start, col_end in res["ref_defs"]:
         _check_dest(path, lineno, dest, f"[{label}]: {dest}", text,
-                    indexes, caches, findings, out_of_scope)
+                    indexes, caches, findings, out_of_scope, col_start, col_end)
     for lineno, label in res["ref_uses"]:
         if label not in labels:
             findings.append({"kind": "missing_label", "file": path, "line": lineno,

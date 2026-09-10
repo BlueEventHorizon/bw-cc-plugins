@@ -1,50 +1,46 @@
 #!/usr/bin/env python3
-"""文書・コードから参照を抽出する（REQ-023 FNC-002 / FNC-004 / FNC-005・DES-081 §3.1）。
+"""正規化テキストから参照を、原本の位置つきで抽出する（REQ-023 FNC-002 / FNC-005）。
 
 本モジュールの責務は**抽出だけ**である。参照先が実在するかの判定（索引の構築と突合）は
-持たない（DES-081 §3.1 の責務分離）。
+持たず、**参照として読まない範囲の除去も持たない**——それは前処理（`ref_normalize`）が
+1 段で済ませている（DES-081 §3.1a）。ブロック構造の状態機械を本モジュールへ戻してはならない。
+戻すと位置の対応を答えられるモジュールが無くなり、置換が文字列一致に落ちる。
 
-扱うのは層 1（この記述は参照か）だけである。何が参照かの正本は CommonMark であり、
-準拠する規定は DES-081 §3.4 が列挙する。**解決規則を持つかどうかは層 2 の事情であり、
-抽出段階で落とさない**（DES-081 §1.3）。
+扱うのは層 1（この記述は参照か）だけである。何が参照かの正本は CommonMark である。
+**解決規則を持つかどうかは層 2 の事情であり、抽出段階で落とさない**（DES-081 §1.3）。
 
 参照として抽出する形:
 
-- インラインリンク `[表示名](destination)` / 画像 `![alt](destination)`（§6.3 / §6.4）。
+- インラインリンク `[表示名](destination)` / 画像 `![alt](destination)`（CommonMark §6.3 / §6.4）。
   destination は素の形・山括弧囲み・title 付き・釣り合った括弧を含む形のいずれでもよい
-- autolink `<https://...>`（§6.5）
-- 参照リンクの定義行 `[ラベル]: パス` と使用 `[表示名][ラベル]`（§4.7）
-- 文書 ID の節参照 `DES-001 §3.4`（`find_spec_refs()`。CommonMark の範囲外）
+- autolink `<https://...>`（同 §6.5）
+- 参照リンクの定義行 `[ラベル]: パス` と使用 `[表示名][ラベル]`（同 §4.7）
+- 文書 ID の節参照（`find_spec_refs()`。CommonMark の範囲外）
 
-参照として解析しない範囲（いずれも CommonMark が定める）:
+**抽出した destination には原本の行内範囲を添える。** 置換はこの範囲だけを差し替える
+（DES-081 §4.3.2）。範囲を持たずに文字列だけを渡すと、同一ファイル内で別の参照の部分
+文字列に当たり、参照切れより有害な誤接続を作る。
 
-- フェンスコードブロック（§4.5）・インデントコードブロック（§4.4）・コードスパン（§6.1）
-- HTML ブロック（§4.6）。**7 type すべて**を終端まで 1 ブロックとして扱う
-- 生の HTML（§6.6）。`<a href="...">` は Markdown のリンクではない
-
-**インデントコードブロックの判定はコンテナ相対である**（§5）。リスト項目の継続段落を
-コードと見なすと本物の参照を落とす（見逃し）ため、コンテナの内容インデントを追う。
-
-規則を近似で実装すると、取りこぼしと誤検出の両方が出る（4 連フェンスの中の 3 連で誤って
-閉じる／二重バッククォート内の例示を本物の参照として拾う／リストの継続段落をコードと
-見なす）。規則どおりに実装することが、そのまま NFR-001 の両方向を守ることになる。
-
-`honor_fences=False` は参照元が Markdown でない場合（実装コード・テスト）に渡す。
-このときブロック構造の解釈をすべて行わない——コードのインデントをインデント
-コードブロックと解釈すると、コメント中の節参照が丸ごと落ちる（FNC-005 の見逃し）。
+`honor_fences=False` は参照元が Markdown でない場合（実装コード・テスト）に渡す。前処理へ
+そのまま渡され、ブロック構造の解釈が行われない——コードのインデントをインデントコード
+ブロックと解釈すると、コメント中の節参照が丸ごと落ちる（FNC-005 の見逃し）。
 """
 
 from __future__ import annotations
 
 import html
 import re
+import sys
 import unicodedata
+from pathlib import Path
 
-# 行頭 0〜3 スペース + 3 個以上の同一フェンス文字 + info string
-FENCE = re.compile(r"^( {0,3})(`{3,}|~{3,})(.*)$")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import ref_normalize  # noqa: E402
+
+# 参照リンクの定義行と使用（CommonMark §4.7）
 REF_DEF = re.compile(r"^ {0,3}\[((?:[^\[\]]|\\.)+)\]:\s*(<[^>]*>|\S+)")
 REF_USE = re.compile(r"!?\[((?:[^\[\]]|\\.)*)\]\[((?:[^\[\]]|\\.)*)\]")
-HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 SPEC_REF = re.compile(
     r"(?<![A-Za-z0-9-])((?:[A-Z]+-)*[A-Z]+-\d+)\s*§\s*(\d+(?:\.\d+)*[a-z]?)"
 )
@@ -54,202 +50,6 @@ _NOT_A_LABEL = re.compile(r"[|]|^-")
 
 # §6.5 Autolinks: scheme は英字始まり 2〜32 文字、内側に空白と山括弧を含まない
 AUTOLINK = re.compile(r"<[A-Za-z][A-Za-z0-9+.\-]{1,31}:[^<>\x00-\x20]*>")
-
-_LIST_MARKER = re.compile(r"^([-*+]|\d{1,9}[.)])([ \t]+|$)")
-_BLOCKQUOTE = re.compile(r"^ {0,3}> ?")
-_THEMATIC_BREAK = re.compile(r"^(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$")
-
-# §4.6 HTML blocks type 6 のタグ名（CommonMark が列挙する集合）
-_BLOCK_TAGS = (
-    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|"
-    "details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|"
-    "h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|"
-    "noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|"
-    "thead|title|tr|track|ul"
-)
-_T1_START = re.compile(r"^<(?:script|pre|style|textarea)(?:[ \t>]|$)", re.I)
-_T1_END = re.compile(r"</(?:script|pre|style|textarea)>", re.I)
-_T2_END = re.compile(r"-->")
-_T3_END = re.compile(r"\?>")
-_T4_START = re.compile(r"^<![A-Za-z]")
-_T4_END = re.compile(r">")
-_T5_END = re.compile(r"\]\]>")
-_T6_START = re.compile(r"^</?(?:" + _BLOCK_TAGS + r")(?:[ \t]|/?>|$)", re.I)
-_ATTR = r"[^\s\"'=<>`]+(?:\s*=\s*(?:[^\s\"'=<>`]+|'[^']*'|\"[^\"]*\"))?"
-_T7_START = re.compile(
-    r"^(?:<[A-Za-z][A-Za-z0-9-]*(?:\s+" + _ATTR + r")*\s*/?>|</[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$"
-)
-
-# HTML ブロックが空行で閉じることを表す番兵（終端が正規表現で表せない type 6 / 7 用）
-_ENDS_AT_BLANK = "blank"
-
-
-def strip_code_spans(line: str) -> str:
-    """コードスパンを除去する。開始の連続バッククォート数と同数の並びで閉じる。
-
-    二重バッククォート（`` `code` `` の形）も同じ規則で扱える。閉じが見つからない
-    並びはそのまま残す（CommonMark §6.1 と同じ扱い）。
-    """
-    out: list[str] = []
-    i, n = 0, len(line)
-    while i < n:
-        if line[i] == "`":
-            j = i
-            while j < n and line[j] == "`":
-                j += 1
-            run = j - i
-            k, closed = j, -1
-            while k < n:
-                if line[k] == "`":
-                    m = k
-                    while m < n and line[m] == "`":
-                        m += 1
-                    if m - k == run:
-                        closed = m
-                        break
-                    k = m
-                else:
-                    k += 1
-            if closed > 0:
-                i = closed
-                continue
-            out.append(line[i:j])
-            i = j
-            continue
-        out.append(line[i])
-        i += 1
-    return "".join(out)
-
-
-def _html_block_end(stripped: str, in_paragraph: bool):
-    """HTML ブロックの開始条件に当たれば、その終端条件を返す（§4.6 の 7 type）。"""
-    if _T1_START.match(stripped):
-        return _T1_END
-    if stripped.startswith("<!--"):
-        return _T2_END
-    if stripped.startswith("<?"):
-        return _T3_END
-    if stripped.startswith("<![CDATA["):
-        return _T5_END
-    if _T4_START.match(stripped):
-        return _T4_END
-    if _T6_START.match(stripped):
-        return _ENDS_AT_BLANK
-    # type 7 だけは段落を中断できない
-    if not in_paragraph and _T7_START.match(stripped):
-        return _ENDS_AT_BLANK
-    return None
-
-
-def _iter_body_lines(text: str, honor_fences: bool):
-    """参照として解析される行だけを (行番号, コードスパン除去後の行) で返す。
-
-    `honor_fences` が偽のときはブロック構造を解釈せず、全行をそのまま返す。
-    """
-    open_fence = None
-    html_end = None
-    in_inline_comment = False
-    in_indented_code = False
-    container_indent = 0
-    prev_blank = True
-    in_paragraph = False
-
-    for lineno, raw in enumerate(text.splitlines(), 1):
-        if not honor_fences:
-            yield lineno, strip_code_spans(raw)
-            continue
-
-        line = raw.expandtabs(4)
-        while True:
-            m = _BLOCKQUOTE.match(line)
-            if not m:
-                break
-            line = line[m.end():]
-        blank = not line.strip()
-
-        # 継続中の HTML ブロック（§4.6）
-        if html_end is not None:
-            if html_end is _ENDS_AT_BLANK:
-                if blank:
-                    html_end = None
-                    prev_blank, in_paragraph = True, False
-            elif html_end.search(line):
-                html_end = None
-            continue
-
-        # 継続中のフェンス（§4.5）
-        if open_fence is not None:
-            m = FENCE.match(line)
-            if m:
-                char, run, info = m.group(2)[0], len(m.group(2)), m.group(3).strip()
-                if char == open_fence[0] and run >= open_fence[1] and not info:
-                    open_fence = None
-            prev_blank = False
-            continue
-
-        # 行をまたぐインラインコメント（行頭で始まらないため HTML ブロックにならない）
-        if in_inline_comment:
-            end = line.find("-->")
-            if end < 0:
-                continue
-            line = line[end + 3:]
-            in_inline_comment = False
-            blank = not line.strip()
-
-        if blank:
-            # インデントコードブロックは空行では閉じない（§4.4）
-            prev_blank, in_paragraph = True, False
-            continue
-
-        indent = len(line) - len(line.lstrip(" "))
-        if indent < container_indent:
-            container_indent = indent
-        stripped = line[indent:]
-        rel = indent - container_indent
-
-        if in_indented_code:
-            if rel >= 4:
-                prev_blank = False
-                continue
-            in_indented_code = False
-
-        m = FENCE.match(line)
-        if m and rel < 4:
-            open_fence = (m.group(2)[0], len(m.group(2)))
-            prev_blank, in_paragraph = False, False
-            continue
-
-        # インデントコードブロックは段落を中断できない（§4.4）
-        if rel >= 4 and prev_blank and not in_paragraph:
-            in_indented_code = True
-            prev_blank = False
-            continue
-
-        if rel < 4:
-            end = _html_block_end(stripped, in_paragraph)
-            if end is not None:
-                html_end = None if (end is not _ENDS_AT_BLANK and end.search(stripped)) else end
-                prev_blank, in_paragraph = False, False
-                continue
-
-        # コンテナの内容インデントを更新する（§5）
-        lm = _LIST_MARKER.match(stripped)
-        if lm and rel < 4:
-            container_indent = indent + len(lm.group(0))
-            line = " " * container_indent + stripped[lm.end():]
-
-        # 1 行で閉じないインラインコメントを検出し、以降を持ち越す
-        line = HTML_COMMENT.sub("", line)
-        start = line.find("<!--")
-        if start >= 0:
-            line = line[:start]
-            in_inline_comment = True
-
-        prev_blank = False
-        in_paragraph = not (
-            stripped.startswith("#") or bool(lm) or bool(_THEMATIC_BREAK.match(stripped))
-        )
-        yield lineno, strip_code_spans(line)
 
 
 def _closing_bracket(s: str, start: int) -> int:
@@ -274,13 +74,16 @@ def _parse_destination(s: str, i: int):
     """`s[i]` の `(` から destination と title を読む（§6.3）。
 
     Returns:
-        `(destination, 閉じ括弧の次の位置)`。リンクとして成立しない場合は `None`。
+        `(destination, 閉じ括弧の次の位置, destination の開始位置, destination の終了位置)`。
+        リンクとして成立しない場合は `None`。位置は山括弧・エスケープを含む**原文上の範囲**
+        であり、`destination` はエスケープを解いた値である。置換はこの範囲を差し替える。
     """
     n, j = len(s), i + 1
     while j < n and s[j] in " \t":
         j += 1
     if j < n and s[j] == "<":
         buf, k = [], j + 1
+        span_start = j + 1
         while k < n and s[k] not in "><":
             if s[k] == "\\" and k + 1 < n:
                 buf.append(s[k + 1])
@@ -290,9 +93,10 @@ def _parse_destination(s: str, i: int):
             k += 1
         if k >= n or s[k] != ">":
             return None
-        dest, j = "".join(buf), k + 1
+        dest, span_end, j = "".join(buf), k, k + 1
     else:
         buf, depth, k = [], 0, j
+        span_start = j
         while k < n:
             c = s[k]
             if c == "\\" and k + 1 < n:
@@ -311,7 +115,7 @@ def _parse_destination(s: str, i: int):
             k += 1
         if depth != 0:
             return None
-        dest, j = "".join(buf), k
+        dest, span_end, j = "".join(buf), k, k
     while j < n and s[j] in " \t":
         j += 1
     if j < n and s[j] in "\"'(":
@@ -325,12 +129,18 @@ def _parse_destination(s: str, i: int):
         while j < n and s[j] in " \t":
             j += 1
     if j < n and s[j] == ")":
-        return dest, j + 1
+        return dest, j + 1, span_start, span_end
     return None
 
 
 def _scan_inline(line: str) -> list:
-    """インラインリンク・画像・autolink の destination を出現順に返す。"""
+    """インラインリンク・画像・autolink の destination を出現順に返す。
+
+    Returns:
+        list: `(destination, 行内の開始位置, 行内の終了位置)`。位置は destination 自身の
+        範囲であり、囲みの記号（`(` `)` や山括弧）を含まない。**置換はこの範囲だけを
+        差し替える**（DES-081 §4.3.2）。
+    """
     out: list = []
     i, n = 0, len(line)
     while i < n:
@@ -341,7 +151,7 @@ def _scan_inline(line: str) -> list:
         if c == "<":
             m = AUTOLINK.match(line, i)
             if m:
-                out.append(m.group(0)[1:-1])
+                out.append((m.group(0)[1:-1], m.start() + 1, m.end() - 1))
                 i = m.end()
                 continue
             i += 1
@@ -355,8 +165,8 @@ def _scan_inline(line: str) -> list:
             if close + 1 < n and line[close + 1] == "(":
                 parsed = _parse_destination(line, close + 1)
                 if parsed is not None:
-                    dest, end = parsed
-                    out.append(dest)
+                    dest, end, dest_start, dest_end = parsed
+                    out.append((dest, dest_start, dest_end))
                     i = end
                     continue
             i = b + 1
@@ -366,31 +176,56 @@ def _scan_inline(line: str) -> list:
 
 
 def extract_links(text: str, *, honor_fences: bool = True) -> dict:
-    """リンク参照を抽出する。
+    """リンク参照を、**原本の位置つきで**抽出する（DES-081 §4.3.1）。
+
+    参照として読まない範囲の除去は前処理（`ref_normalize`）が済ませている。本関数は
+    正規化テキストだけを見て、抽出した範囲を前処理の位置写像で原本の桁へ戻す。**変換は
+    ここで 1 度だけ行う**——2 か所で変換すると二重変換か変換漏れが必ず起きる。
 
     Returns:
-        dict: `inline`（`(行番号, destination)`）/ `ref_defs`（`(行番号, ラベル, destination)`）
-        / `ref_uses`（`(行番号, ラベル)`）/ `skipped`（`(行番号, 宣言外の形, 原文)`）
+        dict: `inline`（`(行番号, destination, 原本の開始桁, 原本の終了桁)`）/
+        `ref_defs`（`(行番号, ラベル, destination, 原本の開始桁, 原本の終了桁)`）/
+        `ref_uses`（`(行番号, ラベル)`）/ `skipped`（`(行番号, 宣言外の形, 原文)`）
 
-    `skipped` は層 1 で参照として成立しなかった形のために残す枠である。§3.4 が列挙した
-    規定に到達している限り空になる。**解決規則を持たない形をここへ入れない**——それは
-    層 2 の判定不能であり、`check_refs` が報告する（DES-081 §1.2）。
+    位置は destination 自身の範囲であり、囲みの記号やラベルを含まない。**参照定義行でも
+    パスの範囲だけを返す**（行全体を返すと、置換でラベル定義が消える）。
+
+    `skipped` は層 1 で参照として成立しなかった形のために残す枠である。準拠する規定に
+    到達している限り空になる。**解決規則を持たない形をここへ入れない**——それは層 2 の
+    判定不能であり、`check_refs` が報告する（DES-081 §1.2）。
     """
     inline: list = []
     ref_defs: list = []
     ref_uses: list = []
     skipped: list = []
-    for lineno, line in _iter_body_lines(text, honor_fences):
-        for dest in _scan_inline(line):
-            inline.append((lineno, dest))
+    for nline in ref_normalize.normalize(text, honor_fences=honor_fences).lines:
+        line = nline.text
+        for dest, start, end in _scan_inline(line):
+            if start >= end:
+                # 空の destination は位置を持たない（層 2 が判定不能として報告する）
+                inline.append((nline.lineno, dest, None, None))
+                continue
+            raw_start, raw_end = nline.raw_span(start, end)
+            inline.append((nline.lineno, dest, raw_start, raw_end))
         md = REF_DEF.match(line)
         if md:
-            ref_defs.append((lineno, md.group(1).strip().lower(), md.group(2).strip("<>")))
+            start, end = md.span(2)
+            dest = md.group(2)
+            # 山括弧囲みは中身が destination である。位置も中身に合わせる
+            if dest.startswith("<") and dest.endswith(">"):
+                start, end, dest = start + 1, end - 1, dest[1:-1]
+            if start < end:
+                raw_start, raw_end = nline.raw_span(start, end)
+            else:
+                raw_start, raw_end = None, None
+            ref_defs.append(
+                (nline.lineno, md.group(1).strip().lower(), dest, raw_start, raw_end)
+            )
         for mu in REF_USE.finditer(line):
             label = (mu.group(2) or mu.group(1)).strip()
             if not label or _NOT_A_LABEL.search(label):
                 continue
-            ref_uses.append((lineno, label.lower()))
+            ref_uses.append((nline.lineno, label.lower()))
     return {"inline": inline, "ref_defs": ref_defs, "ref_uses": ref_uses, "skipped": skipped}
 
 
@@ -401,7 +236,7 @@ def find_spec_refs(text: str, *, honor_fences: bool = True) -> list:
         list: `(行番号, 文書 ID, 節番号)`
     """
     found: list = []
-    for lineno, line in _iter_body_lines(text, honor_fences):
+    for lineno, line in ref_normalize.normalize(text, honor_fences=honor_fences):
         for m in SPEC_REF.finditer(line):
             found.append((lineno, m.group(1), m.group(2)))
     return found
@@ -464,7 +299,7 @@ def heading_slugs(text: str) -> set:
     heading = re.compile(r"^#{1,6}\s+(.*?)(?:\s+#+)?\s*$")
     seen: dict = {}
     out = set()
-    for _, line in _iter_body_lines(text, True):
+    for _, line in ref_normalize.normalize(text):
         h = heading.match(line)
         if h:
             out.add(slugify_heading(heading_plain_text(h.group(1)), seen))
@@ -482,7 +317,7 @@ def has_unenumerated_heading_forms(text: str) -> bool:
     container = False
     for raw in text.splitlines():
         line = raw.expandtabs(4)
-        m = FENCE.match(line)
+        m = ref_normalize.FENCE.match(line)
         if m:
             char, run, info = m.group(2)[0], len(m.group(2)), m.group(3).strip()
             if open_fence is None:
@@ -503,7 +338,8 @@ def has_unenumerated_heading_forms(text: str) -> bool:
         if prev_content and re.fullmatch(r"(?:=+|-+)", stripped):
             return True
         # コンテナ（リスト・引用）の中の ATX 見出し
-        if _LIST_MARKER.match(stripped) or _BLOCKQUOTE.match(line):
+        if ref_normalize._LIST_MARKER.match(stripped) \
+                or ref_normalize._BLOCKQUOTE.match(line):
             container = True
         elif indent == 0:
             container = False
@@ -521,7 +357,7 @@ def heading_section_numbers(text: str) -> set:
     heading = re.compile(r"^#{1,6}\s+(.*)$")
     secnum = re.compile(r"^(\d+(?:\.\d+)*[a-z]?)[.\s]")
     out = set()
-    for _, line in _iter_body_lines(text, True):
+    for _, line in ref_normalize.normalize(text):
         h = heading.match(line)
         if h:
             s = secnum.match(h.group(1).strip())

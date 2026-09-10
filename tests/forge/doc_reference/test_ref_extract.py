@@ -15,56 +15,39 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "plugins" / "forge"
 import ref_extract  # noqa: E402
 
 
-class TestStripCodeSpans(unittest.TestCase):
-    def test_single_backtick(self):
-        self.assertEqual(ref_extract.strip_code_spans("a `x` b"), "a  b")
-
-    def test_double_backtick_span_is_removed(self):
-        """二重バッククォートも開始と同数で閉じる（近似実装が失敗した形）。"""
-        line = "前 `` [x](nope.md) `` 後"
-        self.assertNotIn("nope.md", ref_extract.strip_code_spans(line))
-
-    def test_unclosed_run_is_kept(self):
-        self.assertIn("`", ref_extract.strip_code_spans("a ` b"))
-
-    def test_inner_shorter_run_does_not_close(self):
-        """二重で開いた span は単一では閉じない。"""
-        self.assertNotIn("keep", ref_extract.strip_code_spans("`` a ` keep `` z"))
-
-
 class TestFences(unittest.TestCase):
     def test_four_backtick_fence_not_closed_by_three(self):
         """4 連で開いたフェンスは 3 連では閉じない（近似実装が失敗した形）。"""
         text = "````markdown\n```\n[x](inside.md)\n```\n````\n[y](outside.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["outside.md"])
 
     def test_tilde_fence(self):
         text = "~~~\n[x](inside.md)\n~~~\n[y](outside.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["outside.md"])
 
     def test_closing_fence_must_not_have_info_string(self):
         """info string を持つ行は閉じフェンスにならない。"""
         text = "```\n[x](a.md)\n```python\n[y](b.md)\n```\n[z](c.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["c.md"])
 
     def test_honor_fences_false_scans_everything(self):
         text = "```\n[x](inside.md)\n```\n"
-        got = [d for _, d in ref_extract.extract_links(text, honor_fences=False)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text, honor_fences=False)["inline"]]
         self.assertEqual(got, ["inside.md"])
 
 
 class TestInlineLinks(unittest.TestCase):
     def test_image_and_link(self):
-        got = [d for _, d in ref_extract.extract_links("![a](i.png) と [b](d.md)")["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links("![a](i.png) と [b](d.md)")["inline"]]
         self.assertEqual(got, ["i.png", "d.md"])
 
     def test_html_comment_excluded(self):
         """1 行に閉じた HTML コメント（CommonMark §4.6）。"""
         text = "<!-- [x](commented.md) -->\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_multiline_html_comment_excluded(self):
@@ -73,19 +56,19 @@ class TestInlineLinks(unittest.TestCase):
         1 行の形だけを固定した試験は通るため、この形が欠けると覆いになる（DES-081 §6.1）。
         """
         text = "<!--\n[x](commented.md)\n-->\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_indented_code_block_is_not_a_link(self):
         """行頭 4 スペースはコードであり、中のリンクは解析しない（CommonMark §4.4）。"""
         text = "段落\n\n    [x](indented.md)\n\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_raw_html_anchor_is_not_a_link(self):
         """生の HTML は Markdown のリンクではない（CommonMark §6.6）。skipped にも入れない。"""
         res = ref_extract.extract_links('<a href="gone.md">x</a>\n[y](real.md)\n')
-        self.assertEqual([d for _, d in res["inline"]], ["real.md"])
+        self.assertEqual([d for _, d, *_rest in res["inline"]], ["real.md"])
         self.assertEqual(res["skipped"], [])
 
     def test_angle_bracket_destination_is_a_link(self):
@@ -94,27 +77,27 @@ class TestInlineLinks(unittest.TestCase):
         解決規則を持つかどうかは層 2 の事情であり、抽出段階で落とさない（DES-081 §1.3）。
         """
         res = ref_extract.extract_links("[x](<p with space.md>)")
-        self.assertEqual([d for _, d in res["inline"]], ["p with space.md"])
+        self.assertEqual([d for _, d, *_rest in res["inline"]], ["p with space.md"])
         self.assertEqual(res["skipped"], [])
 
     def test_destination_with_title(self):
         """title 付き destination（CommonMark §6.3）。title は destination に含めない。"""
-        got = [d for _, d in ref_extract.extract_links('[x](a.md "題")')["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links('[x](a.md "題")')["inline"]]
         self.assertEqual(got, ["a.md"])
 
     def test_destination_with_balanced_parens(self):
         """括弧を含む destination は釣り合っていれば destination の一部（CommonMark §6.3）。"""
-        got = [d for _, d in ref_extract.extract_links("[x](a(b).md)")["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links("[x](a(b).md)")["inline"]]
         self.assertEqual(got, ["a(b).md"])
 
     def test_link_text_with_nested_brackets(self):
         """リンクテキストは釣り合った角括弧を含みうる（CommonMark §6.3）。"""
-        got = [d for _, d in ref_extract.extract_links("[a [b] c](d.md)")["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links("[a [b] c](d.md)")["inline"]]
         self.assertEqual(got, ["d.md"])
 
     def test_autolink_is_extracted(self):
         """autolink は参照である（CommonMark §6.5）。層 2 で対象外になるのは別の話。"""
-        got = [d for _, d in ref_extract.extract_links("<https://example.test/a>")["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links("<https://example.test/a>")["inline"]]
         self.assertEqual(got, ["https://example.test/a"])
 
 
@@ -123,18 +106,18 @@ class TestHtmlBlocks(unittest.TestCase):
 
     def test_type6_block_tag_excluded(self):
         text = "<div>\n[x](gone.md)\n</div>\n\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_type1_pre_excluded(self):
         text = "<pre>\n[x](gone.md)\n</pre>\n\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_html_block_ends_at_blank_line(self):
         """type 6 は空行で閉じる。閉じた後のリンクは抽出する。"""
         text = "<div>\n[x](gone.md)\n\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
 
@@ -144,29 +127,29 @@ class TestIndentedCodeAndContainers(unittest.TestCase):
     def test_list_continuation_paragraph_is_not_code(self):
         """リスト項目の継続段落はコードではない。抽出する。"""
         text = "- 項目\n\n    継続の [x](a.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["a.md"])
 
     def test_nested_list_item_is_not_code(self):
         text = "- 項目\n    - 入れ子の [x](a.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["a.md"])
 
     def test_code_block_inside_list_item_is_excluded(self):
         """コンテナ相対で 4 スペース以上ならコードである。"""
         text = "- 項目\n\n      [x](gone.md)\n\n[y](real.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["real.md"])
 
     def test_indented_line_cannot_interrupt_a_paragraph(self):
         """段落の直後の 4 スペース行はコードにならない（CommonMark §4.4）。"""
         text = "段落\n    継続の [x](a.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["a.md"])
 
     def test_block_quote_content_is_scanned(self):
         text = "> 引用の [x](a.md)\n"
-        got = [d for _, d in ref_extract.extract_links(text)["inline"]]
+        got = [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
         self.assertEqual(got, ["a.md"])
 
 
@@ -175,7 +158,7 @@ class TestReferenceLinks(unittest.TestCase):
         text = "本文は [表示][lbl] を使う。\n\n[lbl]: ./target.md\n"
         res = ref_extract.extract_links(text)
         self.assertEqual([l for _, l in res["ref_uses"]], ["lbl"])
-        self.assertEqual([(l, d) for _, l, d in res["ref_defs"]], [("lbl", "./target.md")])
+        self.assertEqual([(l, d) for _, l, d, *_rest in res["ref_defs"]], [("lbl", "./target.md")])
 
     def test_cli_argument_list_is_not_a_reference_link(self):
         """`[feature] [--mode a|b]` を参照リンクと誤認しない（実データで出た誤検出）。"""
