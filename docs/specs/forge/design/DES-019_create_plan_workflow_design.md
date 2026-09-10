@@ -11,7 +11,7 @@
 以下の工程を汎用 Agent (general-purpose) に委譲している:
 
 - 要件定義書・設計書・ルールの収集（コンテキスト収集 Agent）
-- 実装戦略の策定（実装戦略 Agent — `strategy_formulation_spec.md`）
+- 実装戦略の策定（実装戦略 Agent — [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md)）
 - AIレビュー（`/forge:review plan`）
 
 ---
@@ -75,8 +75,8 @@ flowchart TD
 
 **読み込む defaults:**
 
-- `spec_format.md` — ID 分類カタログ
-- `plan_principles_spec.md` — 計画書作成原則ガイド
+- [spec_format.md](../../../../plugins/forge/docs/spec_format.md) — ID 分類カタログ
+- [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md) — 計画書作成原則ガイド
 
 ### Phase 1: コンテキスト収集 [MANDATORY]
 
@@ -96,11 +96,11 @@ flowchart TD
 
 ### Phase 3: 実装戦略の策定 [MANDATORY]
 
-| Step | 内容                                                                     | 実行者       |
-| ---- | ------------------------------------------------------------------------ | ------------ |
-| 3.1  | strategy Agent 起動（`strategy_formulation_spec.md` を渡す）             | 汎用 Agent   |
-| 3.2  | Agent の return value（戦略書 markdown）を全文提示し、ユーザー承認を取得 | orchestrator |
-| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置               | orchestrator |
+| Step | 内容                                                                                                                      | 実行者       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 3.1  | strategy Agent 起動（[strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) を渡す） | 汎用 Agent   |
+| 3.2  | Agent の return value（戦略書 markdown）を全文提示し、ユーザー承認を取得                                                  | orchestrator |
+| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置                                                                | orchestrator |
 
 **入力**: Phase 1 の仕様書 return value から抽出した設計書パス + 計画書ルール return value のルール文書パス
 **出力**: strategy Agent の return value（戦略書 markdown）→ 承認後に `{output_dir}/{feature}_strategy.md` へ Write
@@ -178,11 +178,11 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                         | 説明                                         |
-| ---------------------------------------------------------------- | -------------------------------------------- |
-| `plugins/forge/skills/start-plan/SKILL.md`                       | スキル仕様                                   |
-| `plugins/forge/docs/strategy_formulation_spec.md`                | 実装戦略 Agent 作業指示書                    |
-| `docs/specs/forge/executer/design/DES-074_plan_format_design.md` | 計画書 script 実装契約（`write_plan.py` 等） |
-| `plugins/forge/docs/plan_principles_spec.md`                     | 計画書作成原則ガイド                         |
-| `plugins/forge/docs/spec_format.md`                              | ID分類カタログ                               |
-| `docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md`     | ADR: 実装戦略フェーズ導入                    |
+| ファイル                                                                                    | 説明                                         |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                 | スキル仕様                                   |
+| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略 Agent 作業指示書                    |
+| [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
+| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |
+| [spec_format.md](../../../../plugins/forge/docs/spec_format.md)                             | ID分類カタログ                               |
+| [DES-027](DES-027_plan_strategy_phase_adr.md)                                               | ADR: 実装戦略フェーズ導入                    |

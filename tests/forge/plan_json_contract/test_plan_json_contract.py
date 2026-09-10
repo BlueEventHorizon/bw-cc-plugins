@@ -24,7 +24,6 @@ PLAN_FORMAT = (
     / "docs"
     / "specs"
     / "forge"
-    / "executer"
     / "design"
     / "DES-074_plan_format_design.md"
 )

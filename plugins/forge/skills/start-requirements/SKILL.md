@@ -77,7 +77,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
    - `--add` 指定 → 既存アプリへの機能追加として処理
    - 未指定 → AskUserQuestion を使用して確認する
 
-   **`--add`（追加開発）の場合**: 以下を Read し、判定基準・矛盾時の優先度・merge 手順を把握したうえで後続 Phase に進む。
+   **`--add`（追加開発）の場合**: 以下を Read し、判定基準・旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。
    - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外
    - `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.1 — `feature_type: temporary-feature` 定義
 

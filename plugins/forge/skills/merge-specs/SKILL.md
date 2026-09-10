@@ -151,7 +151,7 @@ git rev-parse --abbrev-ref HEAD
 grep -rlE '^feature_type:[[:space:]]*temporary-feature$' "$additional_dir" 2>/dev/null
 ```
 
-- **検出された場合（追加開発モード）**: 追加 DIR は差分開発の文書である可能性が高い。`additive_development_spec.md` §2 の優先度（追加開発の要件定義書が最優先＝正）と本 skill の「追加側が正」原則は一致する。Phase 8 の後始末も §4.3 と整合する。安心して進めてよい。
+- **検出された場合（追加開発モード）**: 追加 DIR は差分開発の文書である可能性が高い。`additive_development_spec.md` §2（差分開発側の文書がその対象範囲における現在の仕様である）と本 skill の「追加側が正」原則は一致する。Phase 8 の後始末も §4.3 と整合する。安心して進めてよい。
 - **検出されない場合（汎用マージモード）**: frontmatter による裏付けは無いが、これは異常ではない。汎用的な仕様間の齟齬解消として、ユーザー指定の「追加側を正」の前提でそのまま進める。
 
 > この判定は**安全確認のための任意検証**であり、`temporary-feature` frontmatter を必須とはしない。検出有無にかかわらず処理フロー自体は変わらない。検出されない場合に「追加側を正」という前提でよいか不安があれば、Phase 8 の後始末の確認（8.2）で改めてユーザーに確認する。
@@ -549,6 +549,6 @@ git status --short
 
 ## 関連文書
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `feature_type: temporary-feature` を持つ一時文書である場合、§2 の優先度（追加開発の要件定義書が正）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様。本 skill はその §4「merge タイミングと手順」の実装にあたる。追加 DIR (B) が `feature_type: temporary-feature` を持つ一時文書である場合、§2（差分開発側の文書が当該範囲における現在の仕様である）と本 skill の「追加側が正」原則が一致する。Phase 0.3 で frontmatter を任意検証する
 
 > What/How 境界・要件/設計/計画のフォーマット・文書品質の規範（`spec_design_boundary_spec` / `*_format` / `*_principles_spec` など）は、**特定の文書名をハードコードせず Phase 0.5 で検索して取得**する。本 skill は汎用ツールであり、ターゲットプロジェクトごとに規約の所在・内容が異なるため、固定リンクは持たない。

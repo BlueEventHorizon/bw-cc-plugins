@@ -75,7 +75,7 @@ AI が SKILL.md 内のスクリプトを解釈して実行する際、コード�
 以下の Python コードを実行してデータを集計する:
 
     import json
-    data = json.load(open('plan.yaml'))
+    data = json.load(open('plan.json'))
     # ... 50行のロジック ...
 
 # ✅ OK — 外部スクリプトを呼び出す
@@ -130,7 +130,7 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 **ID 体系・書式の抽象例は許容する。** プレースホルダ番号（`DES-001` / `REQ-001` / `TASK-001` 等）や、対象プロジェクト側の構造を示すプレースホルダパス（`docs/specs/<feature>/design/*.md`、`docs/specs/**/design/` 等）は、実在文書を指していないため対象外である。format 文書・設定例・出力例がこれらを使えないと成立しないため、禁止してはならない。
 
 ```text
-⭕ - requirement_id: REQ-001          （plan.yaml の書式例）
+⭕ - requirement_id: REQ-001          （plan.json の書式例）
 ⭕ docs/specs/<feature>/design/*.md    （対象プロジェクトの構造を示すプレースホルダ）
 ⭕ "docs/specs/**/design/": design     （.doc_structure.yaml の設定例）
 ```
