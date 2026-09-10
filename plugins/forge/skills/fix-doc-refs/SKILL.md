@@ -76,8 +76,18 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_backend/prepare_advisor_index.py" spe
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_backend/prepare_advisor_index.py" rules --no-format
 ```
 
-応答の `root_dirs` と `exclude` を Phase 3 の引数へそのまま渡す。`status` が `success` でない場合は、
-`.doc_structure.yaml` の不備として利用者へ報告し、既定値で補って進めない。
+`status` が `success` でない場合は、`.doc_structure.yaml` の不備として利用者へ報告し、既定値で
+補って進めない。
+
+**2 つの応答を連結して Phase 3 へ渡す [MANDATORY]**。`root_dirs` は 1 category につき複数返る
+（`specs` は `design/` / `plan/` / `requirements/` の 3 つを返す）。索引対象は specs と rules の
+両方であり、**片方の応答だけを渡すと、もう一方の category の文書が母集団から落ちる**。
+
+- `--index-dirs-json`: 2 つの応答の `root_dirs` を連結した列
+- `--index-exclude-json`: 2 つの応答の `exclude` を連結した列（重複は除いてよい）
+
+連結の結果を Phase 3 のコマンドへそのまま書く。件数を自分で数え直したり、代表 1 つに畳んだり
+しない。
 
 **`--no-format` を必ず付ける。** 同 CLI は既定で dprint を実行して索引対象の Markdown を整形する
 （doc-advisor の `index-docs` が整形後の本文で `body_hash` を打つため）。本スキルが書き換えるのは
@@ -94,7 +104,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_backend/prepare_advisor_index.py" rul
 
 引数 `--scan` が指定されていればそれを使う。指定が無い場合の既定は次のとおり。
 
-- Phase 1 で得た `root_dirs`（プロジェクトが文書と認めている範囲）
+- Phase 1 で連結した `root_dirs` の全件（プロジェクトが文書と認めている範囲）
 - 配布物の置き場（プラグインのディレクトリ）
 
 **テストは既定に含めない。** テストは書式そのものを素材として持つため、参照でない文字列
@@ -136,9 +146,13 @@ print(json.dumps(out, ensure_ascii=False, indent=2))
 返るのは `{file, line, old, new}` の配列である。各件について、`file` の該当箇所の `old` を `new` へ
 `Edit` で置換する。`old` が空配列で返った場合は置換対象が無い（すべて決まらないもの）。
 
-`fix_refs.determine_rewrite` が置換先を返すのは、参照先の basename を持つ実在パスが 1 件だけの
-場合（`moved_link`）である。`missing_section` は常に `None` を返す——旧節番号から現節番号への
-対応をどの索引も持たないため。
+**置換先が返るのは `moved_link` だけである**（同じ名前の実在パスが 1 件のとき）。
+
+`missing_anchor` と `missing_section` には返りません。索引は**完全一致で引く**のが本機構の解決
+方式であり（DES-081 §3.3.1）、この 2 つは**その完全一致が外れたという所見**です。ここから先へ
+進むには前方一致や番号の近さといった探索が要り、探索は候補が 1 件に絞れても指し先が正しいことを
+意味しません。所見が運ぶ `slugs`（見出し集合）は**利用者へ候補を示すための材料**であって、
+置換の根拠ではありません。
 
 ## Phase 5: 報告
 
@@ -148,7 +162,7 @@ print(json.dumps(out, ensure_ascii=False, indent=2))
 | ----------------- | ---------------------------------------------------- | ------------------------- |
 | `broken_link`     | パスとして解決せず、その名前を持つ文書も実在しない   | 参照の削除・差し替え      |
 | `moved_link`      | パスとして解決しないが、その名前を持つ文書は実在する | **候補 1 件なら置換済み** |
-| `missing_anchor`  | 参照先の文書は実在するが、そのアンカーが実在しない   | アンカーの修正            |
+| `missing_anchor`  | 参照先の文書は実在するが、そのアンカーが実在しない   | 自分が変えたなら直す      |
 | `missing_label`   | 参照リンクのラベルに定義行が無い                     | 定義行の追加              |
 | `missing_doc`     | その文書 ID を持つ文書が実在しない                   | 参照の削除・差し替え      |
 | `missing_section` | 文書は実在するが、その節番号が実在しない             | 自分が動かしたなら直す    |

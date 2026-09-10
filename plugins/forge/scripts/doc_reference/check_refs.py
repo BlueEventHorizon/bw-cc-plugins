@@ -107,7 +107,11 @@ def _check_anchor(path, lineno, ref, anchor, target, own_text, caches, findings)
         findings.append({"kind": "undecidable", "file": path, "line": lineno, "ref": ref,
                          "reason": f"{target} に列挙範囲外の見出しの形があり、アンカーの不在を断定できない"})
         return
+    # 参照先の見出し集合を所見へ載せる。`moved_link` の `candidates` と同じ役割で、
+    # 置換先を導く材料を報告の側に持たせる（FNC-011 / FNC-013）。報告を受けた側が
+    # 参照先をもう一度読み直さずに済み、判定と同じ入力から置換先が導ける。
     findings.append({"kind": "missing_anchor", "file": path, "line": lineno, "ref": ref,
+                     "target": target, "slugs": sorted(slugs),
                      "reason": f"{target} に #{anchor} は無い"})
 
 
