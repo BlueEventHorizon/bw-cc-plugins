@@ -14,7 +14,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_requirement.md: 8da5846c6ffa11686007086cbd203c7cb036bfcaafbd51418f2efb3c5c7c85fb
   plugins/forge/docs/criteria/review_criteria_secrets.md: 0f248f092c9ebbbdc44a6f8d3a267cf4d76a282b009c27950055f3ef76059365
   plugins/forge/docs/criteria/review_criteria_uxui.md: a236b55548f4558a0db4bdea1e180913fe97893c4380e9b343f4538da6b028de
-  plugins/forge/docs/design_format.md: 30cd64b12c39b3376b4ab048883c63ab0e4dd955f7d8b1d04805b5f99a9d96d7
+  plugins/forge/docs/design_format.md: c11113b24e1fb6f167b24f9bfb20db0a1b18b485469ccfe710c44712adfed727
   plugins/forge/docs/design_principles_spec.md: 1583b27fc6adc4559a14511367ce6d7b0f882d1baee7c02dee0a4a60d064b13e
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/deterministic_generation_spec.md: b0eacd7205bb92c652345f5a7f44997c813307d88c450a1e4c0a64823c16718e
@@ -23,7 +23,7 @@ checksums:
   plugins/forge/docs/forge_anti_patterns.md: c12e23d4fb124122226d893c60d1e702c9ce2d08fe43828c5d1dddf3c765b892
   plugins/forge/docs/frontmatter_format.md: 4cc801e62c696c5bac1513a675210aa807687c561387feda2a068870a34177a2
   plugins/forge/docs/plan_principles_spec.md: 5e1546619b8c9711f400cc1c5c5bba943d7cd305e2066ea523816b73cef4c170
-  plugins/forge/docs/requirement_format.md: 17965a6582b8e901ec3949fc41f29d6f4cbe05176338df09565b27c69770a655
+  plugins/forge/docs/requirement_format.md: 85ccc5a713552df1cafa5b91d2ef86a2c3d775d4ea75c666e1e4903e8c963842
   plugins/forge/docs/review_priorities_spec.md: 7fbaf70ae39d646655b9e983fe1534736747cb17e6ce743c48187a6a3cf2c074
   plugins/forge/docs/scope_proportionality_spec.md: 9bfe8f9adfe02fea4c68eba7eca645f63bde73dc6fad57595976b7a67b6aa637
   plugins/forge/docs/sensitive_information_spec.md: 382f1e4517ff5ff533b7d3963b34dfc040b13b5172ee2c9597dd6114d1694139

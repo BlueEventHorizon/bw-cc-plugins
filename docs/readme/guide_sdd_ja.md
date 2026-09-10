@@ -165,11 +165,11 @@ feature を使うかどうかは **変更の実質** で判定する — 実装�
 
 ### 6-2. `feature_type: temporary-feature` frontmatter
 
-追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が正本であること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [frontmatter_format.md](../../plugins/forge/docs/frontmatter_format.md) §1.1 を参照。
+追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が対象範囲における現在の仕様であり旧仕様の記述は置き換わっていること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [frontmatter_format.md](../../plugins/forge/docs/frontmatter_format.md) §1.1 を参照。
 
 このうち①〜③はそれぞれ次の意味を持つ。
 
-#### (1) この文書が正
+#### (1) この文書が旧仕様を置き換える
 
 実装期間中は、追加開発の要件定義書が**その対象範囲における現在の仕様**である。既存コード・既存設計書・既存計画書の記述は現在の仕様ではなく、まだ更新されていないだけである。矛盾を見つけたときだけの話ではない——矛盾の有無に関わらず、当該範囲の現在の仕様はこの文書である。
 

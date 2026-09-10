@@ -241,7 +241,7 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
-- **追加開発（`--add`）の場合**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note の正本は対応する追加 feature 要件定義書（REQ-xxx）を指す。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
+- **追加開発（`--add`）の場合**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note は本設計書が対象範囲における現在の設計であることを述べ、対応する追加 feature 要件定義書（REQ-xxx）と食い違う場合は要件定義書に従うと添える。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
 - **ユーザーレビューは AI レビュー（Phase 4）の後に実施する** — AI レビューで品質問題を修正してからユーザー確認を行う方が効率的
 
 **禁止事項・よくある失敗パターン**: `design_principles_spec.md`「記載してはいけない内容」「よくある失敗パターン」節に従う（事前準備で読み込み済み）。

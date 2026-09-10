@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-08T14:56:03Z
+  generated_at: 2026-09-10T03:52:03Z
   file_count: 41
 
 docs:
@@ -345,37 +345,28 @@ docs:
       - severity judgment
   plugins/forge/docs/design_format.md:
     title: Design Document Default Format
-    purpose: Defines the generic design document format specification used when project-specific format guidelines are unavailable, including frontmatter requirements for differential features, file naming conventions, and template structure for comprehensive design documentation
+    purpose: Provides a generic template and guidelines for creating design documents, including rules for additive feature documentation and file naming conventions.
     content_details:
-      - Frontmatter specification for temporary differential development design documents
-      - Feature note documentation requirements with 4 key points about spec alignment and merge strategy
-      - File naming convention using design ID prefix DES-{ID}_{name}_design.md
-      - Template structure with 6 main sections for comprehensive design definition
-      - Architecture overview and module design with component diagrams and dependencies
-      - Class diagram and module responsibility matrix specification
-      - Use case design with preconditions, normal flow, and error flow definitions
-      - Test design scope definition for unit and integration testing
-      - References to related specification and principles documents
+      - "Additive feature frontmatter (feature_type: temporary-feature) declaring design status and merge requirements"
+      - "File naming convention: {設計ID}_{対象名}_design.md"
+      - "Design document template structure: Overview, Architecture Overview, Module Design, Use Case Design, Existing Components, Test Design"
+      - Rules for separating additive feature designs from old specifications without modifying original files
+      - Scope management principles for design document updates and merging after feature implementation
+      - Design principles and requirements-design boundary references
     applicable_tasks:
-      - Design document creation following default format template
-      - Differential feature design documentation and frontmatter generation
-      - Design document scope definition against requirements
-      - Architecture and module design specification for new components
-      - Use case and test design documentation preparation
-      - Design document file naming and organization standards
-      - Feature note configuration for temporary development feature designs
-      - Design principles validation and consistency checking
+      - Creating design documents for new or modified features
+      - Defining design for additive features with scope separation
+      - Design document review and format compliance
+      - Managing design document replacement and merging procedures
+      - Planning design template structure
     keywords:
-      - design-format
+      - design format
+      - additive feature
       - frontmatter
-      - temporary-feature
-      - feature_type
-      - module-design
-      - use-case-design
-      - sequence-diagram
-      - DES-ID
-      - architecture-overview
-      - test-design
+      - design document
+      - design naming convention
+      - scope separation
+      - design template
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Specifies universal principles for creating design documents, including the What/How boundary, required structural elements, content guidelines, architecture rules, responsibility division norms, and maintenance practices
@@ -634,33 +625,29 @@ docs:
       - implicit dependency
       - dependency management
   plugins/forge/docs/requirement_format.md:
-    title: Default Format for Requirement Specifications
-    purpose: Provides a standard template and structure for requirement specification documents, including frontmatter requirements for temporary features and severity criteria for format validation.
+    title: Requirement Definition Default Format
+    purpose: Provides a generic template and guidelines for creating requirement definitions, including rules for additive feature requirements and format violation severity assessment.
     content_details:
-      - "Frontmatter format with feature_type: temporary-feature for additive features"
-      - Requirement document structure with Overview, Prerequisites, and Requirements List sections
-      - "Requirement categories: Display requirements, Operation requirements, Error cases"
-      - "Frontmatter four-point requirements: current document status, file separation rules, merge procedure, scope management"
-      - Severity catalog mapping format violations to severity levels
-      - TBD items tracking table for undefined requirements
-      - "References to related specifications: additive_development_spec, design_boundary_spec, frontmatter_format"
+      - "Additive feature frontmatter (feature_type: temporary-feature) declaring current specification status and merge requirements"
+      - "Requirement definition template structure: Overview, Prerequisites, Requirements List (Display, Operation, Error Cases), Undecided Items"
+      - "File naming convention: {要件ID}_{機能名} for requirement definition documents"
+      - Severity catalog mapping format violations to major severity level for missing frontmatter
+      - Rules for managing requirement documents in additive development with scope separation and merge procedures
+      - Specification priorities principles and scope-design boundary guidance
     applicable_tasks:
-      - Creating requirement specification documents
-      - Validating requirement format compliance
-      - Reviewing temporary feature requirements
-      - Merging temporary features with base specifications
-      - Distinguishing additive features from incremental changes
-      - Identifying and tracking undefined items (TBD)
-      - Determining format violation severity levels
+      - Creating requirement definition documents for new features
+      - Defining requirements for additive features with specification scope management
+      - Requirement document format review and compliance severity assessment
+      - Managing specification scope and merge procedures after feature implementation
+      - Assessing format compliance violations in requirement documents
     keywords:
-      - requirement specification
-      - temporary feature
-      - format template
+      - requirement format
+      - additive feature
       - frontmatter
-      - additive development
-      - feature merge
-      - TBD items
-      - severity criteria
+      - requirement definition
+      - specification merging
+      - severity catalog
+      - scope separation
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
     purpose: Defines the priority system (P1/P2/P3) for review perspectives and establishes the relationship between priority and severity, with delegated judgment to principles documents.
