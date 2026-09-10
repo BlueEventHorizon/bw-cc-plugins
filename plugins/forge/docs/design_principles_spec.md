@@ -315,7 +315,7 @@ Mermaid 構文リファレンス:
 
 ### 追加 feature 用 frontmatter
 
-判定（追加 feature か否か）は [`additive_development_spec.md`](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。frontmatter の定義は [`design_format.md`](design_format.md)「追加 feature 用 frontmatter」節を参照。
+判定（追加 feature か否か）は [`additive_development_spec.md`](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、既存仕様が存在しない初回立ち上げ、および分離して管理する価値のない軽微な追記・修正は対象外（false positive 防止）。frontmatter の定義は [`design_format.md`](design_format.md)「追加 feature 用 frontmatter」節を参照。
 
 | 違反パターン                                                             | 違反時の重大度 | 理由                                                                                    |
 | ------------------------------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------- |

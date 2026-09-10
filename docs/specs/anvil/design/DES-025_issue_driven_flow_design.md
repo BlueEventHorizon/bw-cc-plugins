@@ -429,7 +429,7 @@ sequenceDiagram
 
 - 要件定義書: <REQ-* の GitHub blob URL>
 - 設計書: <DES-* の GitHub blob URL>
-- 計画書: <plan.yaml の GitHub blob URL>
+- 計画書: <plan.json の GitHub blob URL>
 - 実装コード: <branch / PR diff の GitHub URL>
 
 <!-- issue-driven-flow:artifacts:end -->

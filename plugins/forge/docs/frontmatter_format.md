@@ -6,7 +6,7 @@
 
 ## 1. feature_type（差分 feature の一時マーカー）
 
-**判定**: 「追加 feature か」の判定は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、main 初期立ち上げ、および分離して管理する価値のない軽微な追記・修正には付与しない（false positive 防止）。
+**判定**: 「追加 feature か」の判定は [additive_development_spec.md](additive_development_spec.md) §1（適用条件 / 対象外）に従う。判定は変更の実質（分離管理価値・旧仕様との衝突リスク）で行い、既存仕様が存在しない初回立ち上げ、および分離して管理する価値のない軽微な追記・修正には付与しない（false positive 防止）。
 
 ### 1.1 要件定義書（Markdown）
 
