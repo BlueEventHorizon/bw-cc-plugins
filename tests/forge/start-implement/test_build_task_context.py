@@ -290,7 +290,7 @@ class SpecAuthorityTest(unittest.TestCase):
         """frontmatter_format.md §2.3 はキーの順序を制約していない（順序で判定が変わってはならない）。"""
         feature_note = [
             "feature_note:",
-            "  - この文書が正。旧仕様と矛盾する場合はこの文書に従う。",
+            "  - この文書が、この文書の対象範囲における現在の仕様である。",
             "  - 旧仕様ファイルは実装完了まで書き換えない。",
         ]
         orderings = [

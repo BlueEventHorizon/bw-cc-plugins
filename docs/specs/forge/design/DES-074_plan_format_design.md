@@ -152,7 +152,7 @@ pending → in_progress → completed
 
 **設計書を対象に含めるのは、設計書も並行状態の識別子を持つためである**（[frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.2）。実装者は設計書をタスクの直接根拠として最優先で読む（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）。要件定義書だけを分類すると、旧設計書が現在の設計として読まれる経路が残る。
 
-**`additional` を対象に含めるのは、このフィールドが文書種別ではなく受け皿だからである。** 定義は「上記に分類されない計画書 `required_reading` フィールドの残り」であり（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）、要件定義書・設計書がここに入りうる。計画書の `required_reading` はフラットなパス配列で種別の区別を持たないため、そこに挙げられた文書は戦略書以外すべて追加必読文書として扱われる。**除外すると、計画書経由で渡された並行状態の文書が誤りなく空配列として返り、FNC-003 を満たさない。**
+**`additional` を対象に含めるのは、このフィールドが文書種別ではなく受け皿だからである。** 定義は「上記に分類されない計画書 `required_reading` フィールドの残り」であり（[task_execution_spec.md](../../../../plugins/forge/skills/start-implement/docs/task_execution_spec.md) Step 2.1）、要件定義書・設計書がここに入りうる。計画書の `required_reading` はフラットなパス配列で種別の区別を持たないため、そこに挙げられた文書は戦略書以外すべて追加必読文書として扱われる。**除外すると、計画書経由で渡された並行状態の文書がエラーを出さずに空配列として返り、FNC-003 を満たさない。**
 
 `required_reading` の他のフィールド（`strategy_doc` / `rule_docs` / `reference_code`）は対象にしない。これらは種別が固定されており、並行状態の識別子を持つ文書種別（要件定義書・設計書）に当たらないためである（計画書が識別子を持たないことは [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.3 が定める）。**受け皿である `additional` にこの根拠は適用できない。**
 

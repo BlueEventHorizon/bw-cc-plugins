@@ -165,7 +165,7 @@ feature を使うかどうかは **変更の実質** で判定する — 実装�
 
 ### 6-2. `feature_type: temporary-feature` frontmatter
 
-追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。feature_note には①この文書が対象範囲における現在の仕様であり旧仕様の記述は置き換わっていること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [frontmatter_format.md](../../plugins/forge/docs/frontmatter_format.md) §1.1 を参照。
+追加開発の要件定義書には、文書先頭に `feature_type: temporary-feature` の frontmatter を付ける。ただし既存仕様と一切重複・矛盾しない純粋追加型の feature には付けない。feature_note には①この文書が対象範囲における現在の仕様であり旧仕様の記述は置き換わっていること②旧仕様ファイルは書き換えず新規ファイル・新規ディレクトリへ切り出すこと③実装完了後に旧仕様との齟齬を解消する（merge）こと④同一スコープの内容は旧仕様側へ移しスコープが異なる内容は分離維持すること、の4点を記載する。正式な文言は [`requirement_format.md`](../../plugins/forge/docs/requirement_format.md)「追加 feature 用 frontmatter」節、または [frontmatter_format.md](../../plugins/forge/docs/frontmatter_format.md) §1.1 を参照。
 
 このうち①〜③はそれぞれ次の意味を持つ。
 
