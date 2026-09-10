@@ -203,5 +203,37 @@ class TestRunIntegration(unittest.TestCase):
         self.assertEqual(result["status"], "error")
 
 
+class TestMultipleDirs(unittest.TestCase):
+    """`prepare_advisor_index.py` は category ごとに複数の root_dirs を返す。
+
+    2 つの category（specs / rules）の応答を連結して渡すため、**受け取る側は
+    ディレクトリの列を扱えなければならない**（1 つ目だけを見る実装では、
+    もう一方の category の文書が母集団から落ちる）。
+    """
+
+    def test_select_covers_every_given_dir(self):
+        paths = ["docs/a/x.md", "docs/b/y.md", "docs/c/z.md"]
+        got = check_refs._select(paths, ["docs/a/", "docs/b/"], [], ".")
+        self.assertEqual(got, ["docs/a/x.md", "docs/b/y.md"])
+
+    def test_select_expands_globs_alongside_plain_dirs(self):
+        """glob と素のディレクトリが混在しても両方効くこと。"""
+        got = check_refs._select(
+            ["docs/rules/r.md", "docs/specs/forge/design/DES-001_x.md"],
+            ["docs/rules/", "docs/specs/**/design/"],
+            [],
+            ".",
+        )
+        self.assertEqual(
+            got, ["docs/rules/r.md", "docs/specs/forge/design/DES-001_x.md"])
+
+    def test_run_accepts_index_dirs_from_two_categories(self):
+        """specs と rules の root_dirs を連結して渡せること。"""
+        result = check_refs.run(
+            ["docs/rules/"], _INDEX_DIRS + ["docs/rules/"], index_exclude=["plan"])
+        self.assertEqual(result["status"], "ok")
+        self.assertGreater(result["indexed"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

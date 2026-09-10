@@ -180,8 +180,8 @@ class DprintFailurePropagationTest(_TempProject):
     def test_no_format_skips_dprint_but_still_resolves(self):
         """`format_first=False` は dprint を実行せず、設定解決だけを行う。
 
-        整形は索引作成の前提であって設定解決の前提ではない。成果物を変更しない
-        呼び出し元（`skills/check-doc-refs`）がこの経路を使う。
+        整形は索引作成の前提であって設定解決の前提ではない。修復の差分に整形を
+        混ぜない呼び出し元（`skills/fix-doc-refs`）がこの経路を使う。
         """
         self.write_config()
         runner = _RecordingRunner(result=_DPRINT_OK)
