@@ -430,7 +430,9 @@ _STYLE = """
   }
   dt.label-recommend { background: var(--accent); }
   dt.label-decision { background: #5d7a5f; }
-  dd { margin: 0; }
+  /* 本文の改行・空行は書き手が付けた構造である。HTML の既定（改行を空白へ畳む）に
+     任せると段落が 1 行に潰れて読めなくなるため、そのまま保つ。 */
+  dd { margin: 0; white-space: pre-wrap; }
   dd .undecided { color: var(--ink-muted); }
 
   /* 直前の書き込みで変わった欄（DES-077 §3.1b）。色に加えて左端の帯と濃いラベルで示し、

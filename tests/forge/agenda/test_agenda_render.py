@@ -316,6 +316,29 @@ class HtmlEscapeTest(unittest.TestCase):
         self.assertNotIn('"><img src=x>', html_doc)
 
 
+class BodyLineBreakTest(unittest.TestCase):
+    """本文の改行・空行は書き手が付けた構造であり、1 行に潰さない。
+
+    HTML は既定で改行を空白へ畳むため、`<dd>` へ `white-space: pre-wrap` が
+    当たっていないと段落が全部つながって読めなくなる。
+    """
+
+    def test_dd_preserves_line_breaks(self):
+        agenda = _fixture_agenda()
+        html_doc = agenda_render.render_agenda_html(
+            agenda, generated_at="2026-08-22T00:00:00"
+        )
+        self.assertIn("white-space: pre-wrap", html_doc)
+
+    def test_newlines_in_background_reach_the_output(self):
+        agenda = _fixture_agenda()
+        agenda["items"][0]["background"] = "1 段落目。\n\n2 段落目。"
+        html_doc = agenda_render.render_agenda_html(
+            agenda, generated_at="2026-08-22T00:00:00"
+        )
+        self.assertIn("1 段落目。\n\n2 段落目。", html_doc)
+
+
 class GeneratedNoticeTest(unittest.TestCase):
     """DES-077 §2.1/§3 NFR-001: 生成物であることを示す注記の出力。"""
 
