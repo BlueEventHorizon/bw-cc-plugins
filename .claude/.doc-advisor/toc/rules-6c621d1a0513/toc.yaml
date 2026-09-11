@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-06T14:42:29Z
-  file_count: 7
+  generated_at: 2026-09-11T11:37:31Z
+  file_count: 8
 
 docs:
   docs/rules/cli_output_formatting.md:
@@ -105,38 +105,54 @@ docs:
       - session_dir
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for plugin script language selection, testing, SKILL.md structure, asset placement, distribution boundaries, and prohibiting reflexive fallbacks or unauthorized version file edits
+    purpose: Defines rules for script implementation (Python/Bash) and SKILL.md development for plugins
     content_details:
-      - Python vs Bash script language selection criteria table, with PyYAML as the sole allowed external dependency
-      - "Test requirement matrix by asset type: plugins/*.py mandatory, plugins/*.sh recommended, SKILL.md exempt, .claude/ excluded"
-      - Prohibition on inline scripts in SKILL.md; logic must live in external script files invoked via ${CLAUDE_PLUGIN_ROOT}
-      - "Asset placement rule: skills/{skill}/scripts vs plugins/{plugin}/scripts, skills/{skill}/docs vs plugins/{plugin}/docs"
-      - "Prohibition on referencing another skill's skills/{skill}/ directory directly; promote shared assets to plugin-common location instead"
-      - "ADR placement rule: docs/specs/**/design/ADR-{NNN}_{topic}.md alongside the design doc"
-      - "Distribution boundary rule: user-facing plugins/ files (SKILL.md, agents, commands, bundled docs) must not reference docs/ project documents by path or spec ID"
-      - "Two allowed placements for norms referenced from distribution artifacts: inline in the referencing source, or a separate doc under plugins/<plugin>/docs/"
-      - Prohibition on script parsers for AI-interpreted input (command arguments); AI must interpret directly with AskUserQuestion for ambiguity
-      - Reflexive fallback prohibition and version-related file edit restriction (plugin.json, marketplace.json, README version table, CHANGELOG, git tags) with /forge:update-version as sole legitimate route
+      - Script language selection criteria (Python for data transformation/parsing, Bash for command execution)
+      - Python standard library only requirement with PyYAML exception
+      - Mandatory testing for plugins/ Python scripts with test directory structure
+      - SKILL.md inline scripts prohibition and external script calling pattern
+      - Script/document placement hierarchy (per-skill vs plugin-common)
+      - "Distribution boundary: plugins/ cannot reference project docs/"
+      - Fallback implementation restrictions (must be justified recovery)
+      - Version file editing prohibition (exclusive to /forge:update-version)
     applicable_tasks:
-      - Plugin script language selection between Python and Bash
-      - Writing unit tests for plugins/ Python scripts
-      - Refactoring SKILL.md to extract inline scripts
-      - Deciding script or doc placement between skill-specific and plugin-common locations
-      - Reviewing cross-skill asset references for improper coupling
-      - Reviewing distribution artifacts for prohibited docs/ references
-      - Reviewing edits to version-related files (plugin.json, CHANGELOG, README)
-      - Designing error handling and avoiding reflexive fallback logic
+      - Plugin script implementation review
+      - Plugin development architecture planning
+      - Test coverage assessment
+      - SKILL.md design review
     keywords:
+      - Python
+      - Bash
       - PyYAML
+      - unittest
       - SKILL.md
-      - CLAUDE_PLUGIN_ROOT
-      - ADR-055
-      - update-version
-      - reflexive fallback
-      - AskUserQuestion
-      - distribution boundary
-      - version-related files
-      - plugin.json
+      - Distribution boundary
+      - Version management
+      - Fallback
+  docs/rules/script_error_output_rules.md:
+    title: Script Error Output Rules
+    purpose: Defines the contract for exit codes and error output format across all scripts, establishing shared meanings for codes 0 and 1, and requiring scripts to declare code meanings in docstrings
+    content_details:
+      - "Exit code 0 meaning: operation completed successfully"
+      - "Exit code 1 meaning: generic failure without distinction of cause"
+      - "Exit codes 2+ meanings: script-specific, not centrally defined"
+      - "Module docstring requirement: scripts returning 2+ must declare all exit codes"
+      - "Error output format: JSON with errors field as array of natural language messages"
+      - No duplicate success/failure status in JSON output (exit code is the single truth)
+      - "Caller contract: branch on exit codes only if script docstring declares them"
+      - Stderr diagnostic output allowed but error details must be in stdout JSON
+      - Exception for harness-defined contracts that override this document
+    applicable_tasks:
+      - Python script development in plugins/
+      - Error handling and exit code design
+      - API contract documentation for scripts
+      - Error output format specification
+    keywords:
+      - exit code
+      - error output
+      - JSON format
+      - script contract
+      - docstring
   docs/rules/skill_authoring_notes.md:
     title: SKILL.md Authoring Notes
     purpose: Defines rules for authoring/editing SKILL.md frontmatter, the inheritance-only execution model, defense-in-depth layers, argument handling, and mandatory AskUserQuestion usage for user confirmations

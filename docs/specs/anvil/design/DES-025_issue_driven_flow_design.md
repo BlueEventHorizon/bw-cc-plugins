@@ -511,9 +511,9 @@ sequenceDiagram
 
 未充足時:
 
-- 終了コード **`2`**（標準的な「コマンド誤用 / 環境不備」を示す慣例値）。
-- stderr に「未充足項目名 + 充足手順 / 参照ドキュメント URL」を **赤色** で出力（`docs/rules/cli_output_formatting.md` 準拠）。
-- 標準出力には何も書かない（ERR-01 受け入れ条件）。
+- 非 0 の終了コードで終了する。値域と意味の宣言は[script のエラー出力][script-error-output]に従う。
+- 標準出力のエラー JSON に「未充足項目名 + 充足手順 / 参照ドキュメント URL」を載せる。
+- stderr へ同じ内容を **赤色** で出力してよい（[CLI 出力フォーマット指針][cli-output]準拠）。人が直接実行した場合に読めるようにするための付加であり、標準出力の JSON を省く理由にはならない。
 - ローカルログ（NFR-03）に検査結果を記録。
 
 ### 8.2 TBD-003 解決: 工程失敗時の振る舞い
@@ -698,3 +698,6 @@ NFR-02 は成果物 → Issue 方向の複製を禁止する。逆方向（Issue
 - 別 feature で粒度拡張する場合も `RuntimeKind` enum の追加で吸収可能。
 - **拡張時のガイドライン**: 拡張時は `RuntimeKind` への列挙追加 + 各 forge skill 経路へのマッピング更新で済むよう、UI Issue 経路の Figma 取得は `runtime_kind == ui_issue` の単一条件分岐に閉じ込める。Phase 番号運用と対話分岐の双方を改修しなくて済むよう、種別判定ロジックは §3.4 で示した Phase 進行制御の外（references/* または別 skill）に切り出す。
 - **後方互換**: 既存 Issue（既に作成済みの非 UI / UI Issue）の後方互換は `RuntimeKind` の既存値（`ui_issue` / `non_ui_issue`）を変更しないことで担保する。新たな種別は新規列挙値の追加のみで導入する。
+
+[cli-output]: ../../../rules/cli_output_formatting.md
+[script-error-output]: ../../../rules/script_error_output_rules.md
