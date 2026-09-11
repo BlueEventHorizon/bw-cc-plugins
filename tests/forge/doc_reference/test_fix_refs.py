@@ -144,7 +144,7 @@ class TestFindingDispatch(unittest.TestCase):
     def _finding(self, **kw):
         base = {"kind": "moved_link", "file": "docs/a/b.md", "line": 3,
                 "ref": "../old/y.md", "dest": "../old/y.md",
-                "col_start": 10, "col_end": 21, "reason": ""}
+                "col_start": 10, "col_end": 21, "replaceable": True, "reason": ""}
         base.update(kw)
         return base
 
@@ -232,6 +232,9 @@ class TestSeamWithCheckRefs(unittest.TestCase):
         定義行の所見の `ref` はラベルを含む行全体である（利用者へ見せる表示）。
         これを置換対象にすると、置換後の行が `パス` だけになり、その文書の
         `[表示][label]` がすべて参照先を失う。置換の対象は `dest` である。
+
+        **本番経路（`apply_rewrites`）を通す。** 文字列一致で検証すると、桁の記録が
+        壊れていても通る（設計が禁じた手段で確かめることになる。DES-081 §3.3.1）。
         """
         text = "本文で [x][lbl] を使う。\n\n[lbl]: old/target.md\n"
         findings = self._findings("docs/b.md", text)
@@ -240,9 +243,35 @@ class TestSeamWithCheckRefs(unittest.TestCase):
         self.assertIsNotNone(rewrite, "check_refs の所見から置換先が導けていない")
         self.assertEqual(rewrite["old"], "old/target.md")
         self.assertEqual(rewrite["new"], "moved/target.md")
-        # 置換を適用してもラベル定義が残ること（この試験の本体）
-        self.assertIn("[lbl]: moved/target.md",
-                      text.replace(rewrite["old"], rewrite["new"]))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "docs" / "b.md").write_text(text, encoding="utf-8")
+            got = fix_refs.apply_rewrites([rewrite], project_root=str(root))
+            self.assertEqual(got["errors"], [])
+            self.assertEqual((root / "docs" / "b.md").read_text(encoding="utf-8"),
+                             "本文で [x][lbl] を使う。\n\n[lbl]: moved/target.md\n")
+
+    def test_escaped_destination_is_not_rewritten(self):
+        """エスケープを含む destination は置換しない（表記の付け直しを要するため）。
+
+        置換するのは、原本のその範囲の文字列が `dest` と一致する所見だけである
+        （REQ-023 §3.2: 表記の決定は本機構が判定しない）。判定は抽出側が行うため、
+        書き戻し側の照合が外れることは「検査後にファイルが変わった」だけを意味する。
+        """
+        findings = self._findings("docs/b.md", r"[x](old/target\(1\).md)")
+        self.assertEqual([f["kind"] for f in findings], ["broken_link"])
+
+        # 同名が実在する形（moved_link）でも、エスケープがあれば置換先を返さない
+        finding = {"kind": "moved_link", "file": "docs/b.md", "line": 1,
+                   "ref": r"old/t\(1\).md", "dest": "old/t(1).md",
+                   "col_start": 4, "col_end": 21, "replaceable": False,
+                   "candidates": ["docs/moved/t(1).md"], "reason": ""}
+        self.assertIsNone(fix_refs.determine_rewrite(finding))
+        finding["replaceable"] = True
+        self.assertIsNotNone(fix_refs.determine_rewrite(finding),
+                             "一致する形では置換先が返ること（対照）")
 
     def test_missing_anchor_finding_carries_candidates_but_is_not_rewritten(self):
         """所見は候補（`slugs`）を運ぶが、置換先は返らない。
@@ -338,6 +367,48 @@ class TestApplyRewrites(unittest.TestCase):
         fix_refs.apply_rewrites(
             [self._rewrite(1, 4, "x/t.md", "moved/t.md")], project_root=str(self.root))
         self.assertEqual(path.read_text(encoding="utf-8"), "[a](moved/t.md)")
+
+    def test_crlf_is_preserved_including_untouched_lines(self):
+        """CRLF を変えないこと。**触っていない行の行末も変えない。**
+
+        既定の universal newlines で読むと、読み込み時に CRLF が LF へ落ち、書き戻しで
+        確定する。置換範囲と無関係な全行の行末が変わり、置換は「記録された範囲だけの
+        差し替え」でなくなる（DES-081 §4.3.2）。本機構は配布物であり、CRLF の作業ツリーを
+        持つ利用プロジェクトで起きる。
+        """
+        path = self.root / "docs" / "b.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"- item\r\n[a](x/t.md)\r\n")
+        got = fix_refs.apply_rewrites(
+            [self._rewrite(2, 4, "x/t.md", "moved/t.md")], project_root=str(self.root))
+        self.assertEqual(got["errors"], [])
+        self.assertEqual(path.read_bytes(), b"- item\r\n[a](moved/t.md)\r\n")
+
+    def test_mixed_line_endings_are_preserved(self):
+        """行末が混在していても、それぞれの行の行末を保つこと。"""
+        path = self.root / "docs" / "b.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"crlf\r\n[a](x/t.md)\nlf\r\n")
+        fix_refs.apply_rewrites(
+            [self._rewrite(2, 4, "x/t.md", "moved/t.md")], project_root=str(self.root))
+        self.assertEqual(path.read_bytes(), b"crlf\r\n[a](moved/t.md)\nlf\r\n")
+
+    def test_overlapping_ranges_are_not_applied(self):
+        """範囲が重なる書き換えは当てない（テキスト編集の不変条件）。
+
+        重なったまま当てると 1 件目の差し替えが 2 件目の範囲を壊す。順序（後ろから
+        当てる）はこの不変条件を満たす手段であって、不変条件そのものではない。
+        """
+        path = self._write("docs/b.md", "[a](x/t.md)\n")
+        got = fix_refs.apply_rewrites([
+            self._rewrite(1, 4, "x/t.md", "moved/t.md"),
+            {"file": "docs/b.md", "line": 1, "col_start": 6, "col_end": 10,
+             "old": "t.md", "new": "u.md"},
+        ], project_root=str(self.root))
+        self.assertEqual(got["applied"], [])
+        self.assertEqual(len(got["errors"]), 1)
+        self.assertIn("重なって", got["errors"][0]["reason"])
+        self.assertEqual(path.read_text(encoding="utf-8"), "[a](x/t.md)\n")
 
 
 if __name__ == "__main__":

@@ -116,12 +116,15 @@ def _check_anchor(path, lineno, ref, anchor, target, own_text, caches, findings)
 
 
 def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, out_of_scope,
-                col_start=None, col_end=None):
+                col_start=None, col_end=None, replaceable=False):
     """1 つの destination を分類し、解決できるものは解決する（DES-081 §1.2）。
 
     `col_start` / `col_end` は原本の行内範囲であり、**置換が差し替える範囲そのもの**である
     （DES-081 §4.3.1）。`ref` は利用者へ見せる表示（定義行なら `[label]: dest` の行全体）で
     あって置換の対象ではない。2 つを兼ねると、定義行の置換でラベルごと消える。
+
+    `replaceable` は、その範囲の原文が `dest` と一致するか（抽出側の判定）。偽のものは
+    表記の付け直しを要するため置換しない（REQ-023 §3.2）。
     """
     kind, info = _classify(dest)
     if kind == "out_of_scope":
@@ -143,7 +146,7 @@ def _check_dest(path, lineno, dest, ref, own_text, indexes, caches, findings, ou
         if candidates:
             findings.append({"kind": "moved_link", "file": path, "line": lineno, "ref": ref,
                              "dest": dest, "col_start": col_start, "col_end": col_end,
-                             "candidates": candidates,
+                             "replaceable": replaceable, "candidates": candidates,
                              "reason": f"{resolved} は実在しないが、{name} は他の位置に実在する"})
         else:
             findings.append({"kind": "broken_link", "file": path, "line": lineno, "ref": ref,
@@ -182,14 +185,14 @@ def check_file(path: str, text: str, indexes: dict, caches: dict,
         findings.append({"kind": "undecidable", "file": path, "line": lineno,
                          "ref": raw, "reason": kind})
 
-    for lineno, dest, col_start, col_end in res["inline"]:
+    for lineno, dest, col_start, col_end, replaceable in res["inline"]:
         _check_dest(path, lineno, dest, dest, text, indexes, caches, findings, out_of_scope,
-                    col_start, col_end)
+                    col_start, col_end, replaceable)
 
-    labels = {label for _, label, _, _, _ in res["ref_defs"]}
-    for lineno, label, dest, col_start, col_end in res["ref_defs"]:
+    labels = {d[1] for d in res["ref_defs"]}
+    for lineno, label, dest, col_start, col_end, replaceable in res["ref_defs"]:
         _check_dest(path, lineno, dest, f"[{label}]: {dest}", text,
-                    indexes, caches, findings, out_of_scope, col_start, col_end)
+                    indexes, caches, findings, out_of_scope, col_start, col_end, replaceable)
     for lineno, label in res["ref_uses"]:
         if label not in labels:
             findings.append({"kind": "missing_label", "file": path, "line": lineno,

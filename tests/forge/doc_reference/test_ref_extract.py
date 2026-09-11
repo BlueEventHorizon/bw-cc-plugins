@@ -101,6 +101,40 @@ class TestInlineLinks(unittest.TestCase):
         self.assertEqual(got, ["https://example.test/a"])
 
 
+class TestNestingInsideLinkTextAndAltText(unittest.TestCase):
+    """入れ子の扱いはリンクと画像で逆である（CommonMark §6.4）。
+
+    | 外側 | 内側 | 期待 |
+    | ---- | ---- | ---- |
+    | リンク | 画像 | 両方（`[![alt](src)](href)`。`README.md:3` に実在） |
+    | リンク | リンク | 内側だけ。**外側はリンクにならない** |
+    | 画像 | 何でも | 外側だけ。alt は平文へ潰れる |
+
+    素朴に再帰すると 2 行目と 3 行目で誤検出になる（実装時に用例 518 / 519 / 520 /
+    574 / 575 を退行させた）。
+    """
+
+    def _dests(self, text):
+        return [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
+
+    def test_image_inside_link_text_yields_both(self):
+        """`README.md:3` のバッジと同じ形。内側の `src` を取りこぼしていた。"""
+        self.assertEqual(self._dests("[![moon](moon.jpg)](/uri)"), ["/uri", "moon.jpg"])
+
+    def test_link_inside_link_text_invalidates_the_outer_link(self):
+        self.assertEqual(self._dests("[foo [bar](/uri)](/other)"), ["/uri"])
+
+    def test_link_nested_deeper_still_invalidates_the_outer_link(self):
+        self.assertEqual(
+            self._dests("[foo *[bar [baz](/uri)](/mid)*](/outer)"), ["/uri"])
+
+    def test_image_alt_is_flattened_so_inner_links_do_not_appear(self):
+        self.assertEqual(self._dests("![foo [bar](/url)](/url2)"), ["/url2"])
+
+    def test_image_alt_is_flattened_for_nested_images_too(self):
+        self.assertEqual(self._dests("![foo ![bar](/url)](/url2)"), ["/url2"])
+
+
 class TestHtmlBlocks(unittest.TestCase):
     """CommonMark §4.6 は 7 type ある。コメント（type 2）だけでは足りない。"""
 
@@ -225,6 +259,116 @@ class TestSlugifyHeading(unittest.TestCase):
     def test_heading_slugs_collects_atx_headings(self):
         text = "# T\n## 概要\n### 詳細な話\n"
         self.assertEqual(ref_extract.heading_slugs(text), {"t", "概要", "詳細な話"})
+
+
+class TestReferenceDefinitionValidity(unittest.TestCase):
+    """定義の形をしていても定義でない行がある（CommonMark §4.7）。
+
+    拾うと**誤検出**になる。地の文の一部を参照切れとして報告し、`fix_refs` が
+    書き換える経路まで届くため、見逃しより害が大きい。
+    """
+
+    def _defs(self, text):
+        return [d for _lineno, _label, d, *_rest in ref_extract.extract_links(text)["ref_defs"]]
+
+    def test_trailing_junk_after_the_title_is_not_a_definition(self):
+        self.assertEqual(self._defs('[foo]: /url "title" ok\n'), [])
+
+    def test_title_must_be_separated_by_whitespace(self):
+        self.assertEqual(self._defs("[foo]: <bar>(baz)\n"), [])
+
+    def test_a_definition_cannot_interrupt_a_paragraph(self):
+        self.assertEqual(self._defs("Foo\n[bar]: /baz\n"), [])
+
+    def test_a_definition_may_follow_a_heading(self):
+        """見出しは段落ではないので、直後の定義は成立する。"""
+        self.assertEqual(self._defs("# H\n[bar]: /baz\n"), ["/baz"])
+
+    def test_definitions_may_follow_each_other(self):
+        self.assertEqual(self._defs("[a]: /1\n[b]: /2\n"), ["/1", "/2"])
+
+    def test_a_title_on_its_own_line_does_not_block_the_next_definition(self):
+        """回帰: title の行を段落とみなす実装はここで落ちた（用例 217）。"""
+        self.assertEqual(
+            self._defs('[foo]: /foo-url "foo"\n[bar]: /bar-url\n  "bar"\n[baz]: /baz-url\n'),
+            ["/foo-url", "/bar-url", "/baz-url"])
+
+    def test_an_unterminated_title_is_still_a_definition(self):
+        """回帰: 閉じない title を不正とする実装はここで落ちた（用例 196）。"""
+        self.assertEqual(self._defs("[foo]: /url '\ntitle\n'\n"), ["/url"])
+
+    def test_an_escaped_quote_inside_a_title_is_allowed(self):
+        self.assertEqual(self._defs('[foo]: /url "foo\\"bar"\n'), ["/url"])
+
+
+class TestRawHtmlBindsTighterThanLinks(unittest.TestCase):
+    """生 HTML と autolink はリンクより強く結び付く（CommonMark §6.6）。
+
+    タグの属性値には `]` を書ける。リンクテキストの走査がタグを読み飛ばさないと、
+    属性値の一部を destination として拾う（用例 524 / 526 / 536）。
+
+    **前処理で潰す形では直せない。** 一律にマスクすると `[a](<b>c)` `![foo](<url>)`
+    の山括弧 destination まで消える（実測で用例 494 / 580 が退行した）。
+    """
+
+    def _dests(self, text):
+        return [d for _, d, *_rest in ref_extract.extract_links(text)["inline"]]
+
+    def test_bracket_inside_an_html_attribute_does_not_close_the_link(self):
+        self.assertEqual(self._dests('[foo <bar attr="](baz)">'), [])
+
+    def test_reference_bracket_inside_an_html_attribute_is_not_a_link(self):
+        self.assertEqual(self._dests('[foo <bar attr="][ref]">'), [])
+
+    def test_angle_bracket_destination_survives(self):
+        """回帰: 生 HTML を前処理でマスクした実装はここで落ちた。"""
+        self.assertEqual(self._dests("![foo](<url>)"), ["url"])
+
+    def test_html_inside_link_text_does_not_break_a_real_link(self):
+        self.assertEqual(self._dests("[a <b>bold</b> c](y.md)"), ["y.md"])
+
+    def test_autolink_is_not_mistaken_for_an_html_tag(self):
+        self.assertEqual(self._dests("<https://example.com/x.md>"), ["https://example.com/x.md"])
+
+
+class TestHeadingSlugsUseTheOriginalText(unittest.TestCase):
+    """見出し文はマスク前の原本から取る（外部機構との一致。DES-081 §5.2.1）。
+
+    `heading_slugs` は見出しかどうかを正規化後の行で判定するが、**材料は原本**である。
+    正規化はコードスパンを同じ長さのマスクへ潰すため、正規化後の行を渡すと中身が
+    消える。実測では、この取り違えで 218 ファイル中 41 ファイルの slug が外部機構と
+    食い違っていた（`` `subagent_type` `` を含む見出しなど）。
+
+    コードスパンの中身は literal であり、取り出した後に HTML タグの除去・実体参照・
+    バックスラッシュの規則を掛けてはならない。掛けると `` `<script src>` `` が
+    タグとみなされて消える。
+    """
+
+    def test_code_span_content_is_kept(self):
+        self.assertEqual(
+            ref_extract.heading_slugs("## 3. `subagent_type` の値域 [MANDATORY]\n"),
+            {"3-subagent_type-の値域-mandatory"})
+
+    def test_html_like_code_span_is_not_stripped_as_a_tag(self):
+        self.assertEqual(
+            ref_extract.heading_slugs("### 4.1 技術的根拠: `<script src>` タグの動的差し替え\n"),
+            {"41-技術的根拠-script-src-タグの動的差し替え"})
+
+    def test_two_code_spans_in_one_heading(self):
+        self.assertEqual(
+            ref_extract.heading_slugs("### `hug` を使えばいいのに `<N>` で固定する\n"),
+            {"hug-を使えばいいのに-n-で固定する"})
+
+    def test_real_html_tag_outside_a_code_span_is_still_stripped(self):
+        self.assertEqual(ref_extract.heading_slugs("## <b>Foo</b> bar\n"), {"foo-bar"})
+
+    def test_heading_inside_an_unclosed_html_comment_is_not_a_heading(self):
+        """HTML コメントは空行では終わらず `-->` の行まで続く（CommonMark §4.6 type 2）。
+
+        `.github/PULL_REQUEST_TEMPLATE.md` に実在した形。
+        """
+        text = "<!--\n\n| a |\n\n## 備考\n\n-->\n\n## 実在\n"
+        self.assertEqual(ref_extract.heading_slugs(text), {"実在"})
 
 
 class TestUnenumeratedHeadingForms(unittest.TestCase):

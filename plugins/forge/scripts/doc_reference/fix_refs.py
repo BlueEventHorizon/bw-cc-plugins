@@ -69,8 +69,11 @@ def determine_rewrite(finding: dict) -> dict | None:
     `missing_section` の節番号は、**利用者へ候補を示すための材料**であって置換の根拠では
     ない（本モジュールの冒頭）。
 
-    **位置を持たない所見は置換しない。** 位置が無ければ差し替える範囲が決まらず、文字列を
-    探すことになる。探索は禁じられているため、置換せず報告に残す。
+    **置換するのは、原本のその範囲の文字列が `dest` と一致する所見だけである。** 一致は
+    抽出側が `replaceable` として判定している。一致しない形（バックスラッシュエスケープを
+    含む destination 等）を置換するには表記の付け直しが要り、何を正しい表記とするかは文書
+    規約の問題であって本機構は判定しない（REQ-023 §3.2）。位置を持たない所見も同様に置換
+    しない——範囲が決まらなければ文字列を探すことになり、探索は禁じられている。
 
     Returns:
         dict: `file` / `line` / `col_start` / `col_end` / `old` / `new`
@@ -80,6 +83,8 @@ def determine_rewrite(finding: dict) -> dict | None:
     old = finding.get("dest")
     col_start, col_end = finding.get("col_start"), finding.get("col_end")
     if old is None or col_start is None or col_end is None:
+        return None
+    if not finding.get("replaceable"):
         return None
     new = determine_moved_link(finding["file"], old, finding.get("candidates") or [])
     if new is None or new == old:
@@ -92,6 +97,19 @@ def determine_rewrite(finding: dict) -> dict | None:
         "old": old,
         "new": new,
     }
+
+
+def _find_overlap(items):
+    """同一行で範囲が重なる 2 件を返す。重なりが無ければ `None`。"""
+    by_line: dict = {}
+    for rw in items:
+        by_line.setdefault(rw["line"], []).append(rw)
+    for line_items in by_line.values():
+        ordered = sorted(line_items, key=lambda r: r["col_start"])
+        for a, b in zip(ordered, ordered[1:]):
+            if b["col_start"] < a["col_end"]:
+                return a, b
+    return None
 
 
 def apply_rewrites(rewrites, *, project_root: str = ".") -> dict:
@@ -116,13 +134,31 @@ def apply_rewrites(rewrites, *, project_root: str = ".") -> dict:
     applied: list = []
     errors: list = []
     for rel, items in sorted(by_file.items()):
+        # **範囲が重なる書き換えは当てない。** これがテキスト編集の不変条件であり、
+        # 順序（後ろから当てる）はそれを満たす手段にすぎない。重なったまま当てると、
+        # 1 件目の差し替えが 2 件目の範囲を壊す。1 つの destination から 1 件の書き換えが
+        # 出る限り重ならないが、検査していないことが穴である。
+        overlap = _find_overlap(items)
+        if overlap is not None:
+            a, b = overlap
+            errors.append({"file": rel, "line": a["line"],
+                           "reason": f"書き換えの範囲が重なっています"
+                                     f"（{a['line']}:{a['col_start']}-{a['col_end']} と "
+                                     f"{b['line']}:{b['col_start']}-{b['col_end']}）"})
+            continue
         target = root / rel
         try:
-            original = target.read_text(encoding="utf-8")
+            # `newline=""` で読む。既定の universal newlines は読み込み時に CRLF を LF へ
+            # 落とすため、書き戻しで**置換範囲と無関係な全行の行末が変わる**（実測で確認した）。
+            # 置換は記録された範囲だけを差し替えるものであり、行末は範囲の外である。
+            with target.open(encoding="utf-8", newline="") as fp:
+                original = fp.read()
         except OSError as exc:
             errors.append({"file": rel, "reason": f"読めません: {exc}"})
             continue
-        # 行の区切りを保存する（末尾改行の有無・CRLF を変えない）
+        # 行の区切りをそのまま保つ（末尾改行の有無・CRLF・CR・混在を変えない）。
+        # 行番号は `check_refs` 側（universal newlines + splitlines）と一致する
+        # ——LF / CRLF / CR / 混在 / 末尾改行なしの 5 通りで確認済み。
         lines = original.splitlines(keepends=True)
         done: list = []
         failed = False
@@ -135,8 +171,14 @@ def apply_rewrites(rewrites, *, project_root: str = ".") -> dict:
             line = lines[idx]
             s, e = rw["col_start"], rw["col_end"]
             if e > len(line) or line[s:e] != rw["old"]:
-                # 記録された範囲に記録された文字列が無い。検査後にファイルが変わった状態で
-                # あり、位置を探し直さない（探索は禁じられている）。当てずに報告する
+                # 記録された範囲に記録された文字列が無い。表記の判定は抽出側が済ませて
+                # いるため（`replaceable`）、ここで外れるのは検査後にファイルが変わった
+                # 場合だけである。位置を探し直さない（探索は禁じられている）。
+                #
+                # **この照合は文書の同一性の証明ではない。** 変更後に偶然同じ位置へ同じ
+                # 文字列が来れば通る。検査と置換は `run()` が一続きに行うため実経路では
+                # 窓が無く、版や内容 hash を持ち回る必要は生じていない。外から報告を渡す
+                # 経路を作るなら、そのとき同一性を運ばせる。
                 errors.append({"file": rel, "line": rw["line"],
                                "reason": f"記録された位置の内容が変わっています"
                                          f"（期待 {rw['old']!r}、実際 {line[s:e]!r}）"})
@@ -147,7 +189,9 @@ def apply_rewrites(rewrites, *, project_root: str = ".") -> dict:
         if failed or not done:
             continue
         try:
-            target.write_text("".join(lines), encoding="utf-8")
+            # 読みと同じく `newline=""`。既定では行末の LF が環境の改行へ変換される
+            with target.open("w", encoding="utf-8", newline="") as fp:
+                fp.write("".join(lines))
         except OSError as exc:
             errors.append({"file": rel, "reason": f"書き戻せません: {exc}"})
             continue
