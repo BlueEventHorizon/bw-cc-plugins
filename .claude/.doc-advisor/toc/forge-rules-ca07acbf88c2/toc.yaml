@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-10T11:13:20Z
+  generated_at: 2026-09-13T17:36:43Z
   file_count: 41
 
 docs:
@@ -93,32 +93,37 @@ docs:
       - design principles
       - ADR format
   plugins/forge/docs/consult_principles_spec.md:
-    title: Consult Presentation Principles
-    purpose: Specifies principles for AI to follow when requesting judgment or discussion from humans, ensuring clear, structured, and context-aware presentation in console-based interactions
+    title: Principles for Presenting Consultations
+    purpose: Establishes principles for how AI should present judgment requests and guide discussions with users in console environments, emphasizing structured presentation, background, and user-centric interaction patterns.
     content_details:
-      - State background and essence before presenting choices
-      - Use agenda tables to track multi-item decisions with progress and outcomes
-      - Present single recommendation with reasoning; avoid hiding conclusions
-      - Use confidence marking symbols to distinguish confirmed facts from assumptions
-      - Restate key points when referencing previous discussions to avoid reader search
-      - Keep console output concise, combining background, essence, recommendation in 10 lines
-      - Avoid forcing judgments in discussion contexts; stop at explanation only
-      - Present options clearly with what each does, what changes, and single recommendation
+      - "Principle 1: Present background and essence before offering choices"
+      - "Principle 2: Use agenda tables with progress tracking for multiple consultations"
+      - "Principle 3: State recommendation and rationale upfront"
+      - "Principle 4: Mark certainty levels (confirmed via observation, reasoned, unverified)"
+      - "Principle 5: Reiterate key points when referencing prior discussion instead of using forward references"
+      - "Principle 6: Limit console output to essential information without sacrificing understanding"
+      - "Principle 7: Do not force decisions during ideation or discussion contexts"
+      - "Principle 8: Present choice options only when necessary, limited to 2-3 alternatives"
+      - Agenda table structure with priority, status, and resolution tracking
+      - "Anti-patterns: 12 specific mistakes to avoid in consultation presentation"
     applicable_tasks:
-      - Structuring consultation and judgment requests
-      - Multi-item decision management with progress tracking
-      - Preparing review findings presentation
-      - Discussion and brainstorming context handling
-      - Presenting decision options to users
+      - Designing consultation request flows for agents
+      - Reviewing user interaction patterns in plugins
+      - Implementing structured dialogue in AI interfaces
+      - Testing console output and presentation quality
+      - Developing discussion and decision-support features
+      - Agent prompt engineering
+      - Designing feedback and review workflows
     keywords:
-      - consultation principles
-      - presentation structure
-      - agenda management
-      - confidence marking
-      - decision handling
-      - context preservation
-      - progress tracking
-      - option presentation
+      - consultation
+      - agenda table
+      - background-first
+      - certainty marking
+      - console presentation
+      - structured dialogue
+      - decision flow
+      - principles
+      - user interaction
   plugins/forge/docs/criteria/review_criteria_code.md:
     title: Code Review Criteria
     purpose: Defines code review criteria with priority-ordered checks (P1 rule match, P2 contradiction detection, P3 complexity), SSOT references, and decision rules for fix/create_issue/skip recommendations

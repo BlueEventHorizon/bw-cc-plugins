@@ -220,7 +220,7 @@ sequenceDiagram
     CI ->> Pre: 前提条件確認 (gh / git / remote)
     Pre -->> CI: ok / 未充足
     alt 未充足
-        CI -->> User: stderr に未充足項目 + 充足手順を出力, exit != 0
+        CI -->> User: 標準出力のエラー JSON に未充足項目 + 充足手順を載せ, exit != 0
     end
     CI ->> User: 種別選択 (Bug / Feature) を AskUserQuestion
     CI ->> User: 種別別必須セクションを対話で収集
@@ -245,7 +245,7 @@ sequenceDiagram
 
 **前提条件**: gh CLI 認証済み、カレントディレクトリが git リポジトリ、remote 設定済み（ERR-01）。
 **正常フロー**: 種別選択 → 必須セクション収集 → 検証 → ユーザー承認 → 起票。
-**エラーフロー**: 前提条件未充足 → stderr 出力 + 非ゼロ終了。中核セクション不足 → 再入力。
+**エラーフロー**: 前提条件未充足 → 標準出力のエラー JSON + 非ゼロ終了。中核セクション不足 → 再入力。
 
 #### UC-02 Issue 起点 SDD 実行（FNC-02）
 
@@ -511,9 +511,9 @@ sequenceDiagram
 
 未充足時:
 
-- 終了コード **`2`**（標準的な「コマンド誤用 / 環境不備」を示す慣例値）。
-- stderr に「未充足項目名 + 充足手順 / 参照ドキュメント URL」を **赤色** で出力（`docs/rules/cli_output_formatting.md` 準拠）。
-- 標準出力には何も書かない（ERR-01 受け入れ条件）。
+- 非 0 の終了コードで終了する。値域と意味の宣言は[script のエラー出力][script-error-output]に従う。
+- 標準出力のエラー JSON に「未充足項目名 + 充足手順 / 参照ドキュメント URL」を載せる。
+- stderr へ同じ内容を **赤色** で出力してよい（[CLI 出力フォーマット指針][cli-output]準拠）。人が直接実行した場合に読めるようにするための付加であり、標準出力の JSON を省く理由にはならない。
 - ローカルログ（NFR-03）に検査結果を記録。
 
 ### 8.2 TBD-003 解決: 工程失敗時の振る舞い
@@ -525,9 +525,9 @@ sequenceDiagram
 | frame 識別子確定失敗 (REST: resolve-figma-node)                           | 識別子（URL / 画面名 / nodeId）が解決できない場合は再試行 → 別識別子の入力依頼。複数候補時は AskUserQuestion で選択。最終的に解決不能なら UI Issue 経路を中断し、`errors` マーカーに失敗詳細を書き戻す                                                                                                                                                                                                 |
 | デザイン詳細 / トークン / スクリーンショット取得失敗 (MCP: prepare-figma) | MCP 接続失敗・トークン取得失敗時はユーザーに 3 択を提示: (a) 別フレームの再指定, (b) 非 UI Issue へ切り替え, (c) 中断。MCP のみの一時障害で REST 側は健在な場合は frame 識別子のみ確定済みとして session に残し、後続再開で MCP 取得のみ再試行可能とする                                                                                                                                               |
 | PR 作成失敗                                                               | impl-issue は `errors` に「失敗詳細・Issue 番号・artifacts URL リスト」を書き戻して終了。再実行は **`/anvil:impl-issue #N --resume pr`** で行い、impl-issue 側のレジューム経路を通す。impl-issue は session に記録された `issue_number` を anvil:create-pr に渡し、`Closes #<issue-number>` 必須化（§9.1 TBD-006）を維持する。`/anvil:create-pr` を直接呼ぶ運用は Issue 番号引き継ぎ経路がないため禁止 |
-| レート制限再試行尽き (GitHub / Figma)                                     | §8.4 の指数バックオフ上限到達後は forge skill 非ゼロ終了と同じ経路で扱う。errors 書き戻し自体が再度 429 / 403 を踏んだ場合はローカル監査ログ（NFR-03）のみに記録し stderr 出力で終了（無限再帰を防ぐ）                                                                                                                                                                                                 |
+| レート制限再試行尽き (GitHub / Figma)                                     | §8.4 の指数バックオフ上限到達後は forge skill 非ゼロ終了と同じ経路で扱う。errors 書き戻し自体が再度 429 / 403 を踏んだ場合はローカル監査ログ（NFR-03）へ記録し、Issue への再書き戻しを行わず標準出力のエラー JSON を出して終了（無限再帰を防ぐ）                                                                                                                                                       |
 
-サイレントフォールバックは行わず、失敗は必ず Issue の `errors` セクションと stderr の両方に残す（COMMON-REQ-002）。Issue 本文（公開）に書き戻すメッセージは §8.5 の機密情報マスクを通過させる。
+サイレントフォールバックは行わず（COMMON-REQ-002 FR-01）、失敗は必ず Issue の `errors` セクションと、script のエラー出力（[script のエラー出力][script-error-output]が定める標準出力のエラー JSON）の両方に残す。Issue 本文（公開）に書き戻すメッセージは §8.5 の機密情報マスクを通過させる。
 
 ### 8.3 NFR-03 ローカル監査ログ
 
@@ -571,7 +571,7 @@ sequenceDiagram
 
 GitHub / Figma の HTTP レスポンス `429` または `X-RateLimit-Remaining: 0` を含む 4xx を検出した場合、COMMON-REQ-002 の方針に従って指数バックオフで再試行する（最大 3 回 / 初期 30s）。Figma API のレート制限ヘッダ表記揺れ（`X-Rate-Limit-Remaining`）にも対応する。再試行を尽くしてもなお失敗する場合は §8.2 「レート制限再試行尽き」行に従う。
 
-> 上限値（最大 3 回 / 初期 30s）は GitHub secondary rate limit（短期スパイク）の回復を想定する。primary rate limit（1 時間枠）はバックオフ単独では回復しないため、上限到達時は §8.2 のサイレント停止経路（errors 書き戻しの再 429 を抑止しつつ stderr / audit_log のみに記録）に帰着させる。
+> 上限値（最大 3 回 / 初期 30s）は GitHub secondary rate limit（短期スパイク）の回復を想定する。primary rate limit（1 時間枠）はバックオフ単独では回復しないため、上限到達時は §8.2 のサイレント停止経路（errors 書き戻しの再 429 を抑止しつつ、標準出力のエラー JSON と audit_log に記録）に帰着させる。
 
 ### 8.5 機密情報マスク
 
@@ -611,7 +611,7 @@ NFR-02 は成果物 → Issue 方向の複製を禁止する。逆方向（Issue
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TBD-001 種別の粒度            | 2 種固定（UI Issue / 非 UI Issue）。3 種以上は本 feature では追加しない。粒度拡張は別 feature                                                                                                                         |
 | TBD-002 書き戻し本文構造      | §6.1 の HTML コメントマーカー対による「user-content / artifacts / status / errors」の 4 セクション分離                                                                                                                |
-| TBD-003 失敗時の振る舞い      | §8.2 の表に従う。サイレント継続禁止、必ず errors マーカーと stderr に痕跡を残し、後続工程は自動起動しない                                                                                                             |
+| TBD-003 失敗時の振る舞い      | §8.2 の表に従う。サイレント継続禁止、必ず errors マーカーと script のエラー出力（標準出力の JSON）に痕跡を残し、後続工程は自動起動しない                                                                              |
 | TBD-004 PR 作成完了判定       | **PR 作成成功時**（`gh pr create` の正常終了 + PR URL 返却）を完了とする。マージは責務外                                                                                                                              |
 | TBD-005 SDD → PR 遷移トリガー | **実装工程の push 完了後にユーザーに PR 作成可否を AskUserQuestion** で確認。自動遷移しない                                                                                                                           |
 | TBD-006 PR-Issue 紐づけ       | PR 本文に `Closes #<issue-number>` を **必須** で含める。マージ時に Issue が自動クローズされる                                                                                                                        |
@@ -698,3 +698,6 @@ NFR-02 は成果物 → Issue 方向の複製を禁止する。逆方向（Issue
 - 別 feature で粒度拡張する場合も `RuntimeKind` enum の追加で吸収可能。
 - **拡張時のガイドライン**: 拡張時は `RuntimeKind` への列挙追加 + 各 forge skill 経路へのマッピング更新で済むよう、UI Issue 経路の Figma 取得は `runtime_kind == ui_issue` の単一条件分岐に閉じ込める。Phase 番号運用と対話分岐の双方を改修しなくて済むよう、種別判定ロジックは §3.4 で示した Phase 進行制御の外（references/* または別 skill）に切り出す。
 - **後方互換**: 既存 Issue（既に作成済みの非 UI / UI Issue）の後方互換は `RuntimeKind` の既存値（`ui_issue` / `non_ui_issue`）を変更しないことで担保する。新たな種別は新規列挙値の追加のみで導入する。
+
+[cli-output]: ../../../rules/cli_output_formatting.md
+[script-error-output]: ../../../rules/script_error_output_rules.md

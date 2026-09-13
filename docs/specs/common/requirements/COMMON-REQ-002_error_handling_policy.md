@@ -45,11 +45,10 @@
 
 ### FR-03: エラー報告
 
-| ID      | 要件                                                                                                     |
-| ------- | -------------------------------------------------------------------------------------------------------- |
-| FR-03-1 | 例外をキャッチした場合、エラー情報を呼び出し元に返すか stderr に出力する。握りつぶして無視してはならない |
-| FR-03-2 | JSON 出力スクリプトでは `{"status": "error", "message": "..."}` 形式でエラーを返す                       |
-| FR-03-3 | 警告・エラーメッセージは `sys.stderr` に出力する（`print()` のデフォルト stdout と混在させない）         |
+| ID      | 要件                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------- |
+| FR-03-1 | 例外をキャッチした場合、エラー情報を呼び出し元へ届ける。握りつぶして無視してはならない                     |
+| FR-03-2 | 届ける先（終了コード・標準出力・標準エラー出力）と形式は[script のエラー出力][script-error-output]が定める |
 
 ### FR-04: 純粋関数の例外
 
@@ -68,13 +67,13 @@ def load_config(path):
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
     except FileNotFoundError as e:
-        return {'status': 'error', 'message': str(e)}
+        return {'errors': [str(e)]}
     except (IOError, OSError, UnicodeDecodeError) as e:
-        return {'status': 'error', 'message': f"読み込み失敗: {e}"}
+        return {'errors': [f"読み込み失敗: {e}"]}
 
     # パース処理 — ここでの例外はバグなので try で囲まない
     config = parse_config(content)
-    return {'status': 'ok', 'config': config}
+    return {'config': config}
 ```
 
 ### ❌ 禁止パターン: サイレントフォールバック
@@ -85,9 +84,9 @@ def load_config(path):
     try:
         content = open(path).read()
         config = parse_config(content)
-        return {'status': 'ok', 'config': config}
+        return {'config': config}
     except Exception as e:
-        return {'status': 'error', 'message': str(e)}  # parse_config のバグも隠蔽
+        return {'errors': [str(e)]}  # parse_config のバグも隠蔽
 ```
 
 ### ✅ 正しいパターン: 純粋関数は例外を伝播
@@ -141,3 +140,5 @@ def apply_migrations(content, detected_version):
 | v0.0.26    | COMMON-REQ-001 FR-04-1    | 純粋関数のロールバック禁止に要件文を修正                        |
 | v0.0.26    | toc_utils.py              | `except Exception` → `except (IOError, OSError)` に限定         |
 | v0.0.26    | resolve_doc_references.py | `except Exception` → 具体的な例外型に限定                       |
+
+[script-error-output]: ../../../rules/script_error_output_rules.md

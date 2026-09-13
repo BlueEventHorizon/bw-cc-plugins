@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-10T01:02:31Z
-  file_count: 68
+  generated_at: 2026-09-13T00:37:46Z
+  file_count: 69
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -91,69 +91,69 @@ docs:
       - conflict resolution
       - feature promotion
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
-    title: DES-025 issue-driven-flow design specification for GitHub Issue-driven SDD pipeline orchestration
-    purpose: Defines the orchestration architecture for GitHub Issue-driven SDD pipeline integration in anvil plugin, including skill boundaries, module design, use cases, data flow, error handling, state management, and implementation strategy
+    title: "DES-025 Issue-Driven Flow Design: SDD Pipeline Orchestration from GitHub Issues"
+    purpose: Defines the architecture and module design for orchestrating SDD pipeline workflows (requirements, design, plan, implement) initiated from GitHub Issues, including error handling, state management, and data flow
     content_details:
-      - Architecture overview with plugin dependency hierarchy (anvil to forge one-way dependency)
-      - Skill responsibility allocation (create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node, figma-mcp-guide)
-      - Common script modules (check_prereqs.py, audit_log.py, verify_pushed.py, validate_sections.py, render_section.py, verify_user_content.py)
-      - Issue body structure using HTML comment markers for user-content/artifacts/status/errors sections
-      - Use cases (UC-01 Issue creation, UC-02 SDD pipeline execution, UC-03 progress rewriting, UC-04 Figma design retrieval)
-      - State management with Phase progression (pending to in_progress to completed) and RuntimeKind determination
-      - Error handling patterns including prerequisite verification (ERR-01), forge skill failure, push failure, Figma resolution failure
-      - Rate limit retry with exponential backoff (maximum 3 retries, 30 second initial delay)
-      - Local audit logging with TSV format, 90 day retention policy, 10MiB file rotation
-      - Implementation order defined by 7 sequential steps including skill migration, script implementation, and testing
+      - "Module architecture: anvil:create-issue, anvil:impl-issue, anvil:update-issue with separated responsibilities"
+      - "Issue body structure: HTML comment markers (user-content, artifacts, status, errors) for idempotent section rewriting"
+      - "State management: Phase progression (pending → in_progress → completed), RuntimeKind (UI/non-UI), error states"
+      - "Error handling: ERR-01 prerequisites check, forge skill failures, push verification, Figma fetch failure modes"
+      - "Script modules: check_prereqs.py, validate_sections.py, render_section.py, verify_user_content.py, verify_pushed.py"
+      - "Forge integration: forge:start-requirements, start-design, start-plan, start-implement with Skill tool boundary"
+      - "Use cases: UC-01 Issue creation (Bug/Feature), UC-02 SDD pipeline, UC-03 Issue rewriting, UC-04 Figma data retrieval"
+      - "Secret masking: FIGMA_PAT, Authorization headers, gh tokens, basic auth URL redaction"
+      - "Concurrent update detection: three-point hash verification for user-content preservation"
+      - File locking for update-issue to prevent parallel execution conflicts
     applicable_tasks:
-      - Design specification review for plugin orchestration architecture
-      - Implementation of anvil skill orchestration (create-issue, impl-issue, update-issue)
-      - Error handling and failure recovery path implementation
-      - Figma integration design validation
-      - Skill testing strategy implementation (unit, integration, golden samples)
-      - Pre-condition verification and secret masking implementation
+      - Designing GitHub Issue-driven workflow systems
+      - Implementing multi-stage SDD pipeline orchestration
+      - State machine design for Issue processing flows
+      - Error recovery and retry strategy design
+      - Testing orchestration workflows with golden samples
+      - Implementing Issue-to-PR linking with Closes directive
+      - Secret management in GitHub automation
+      - Concurrent operation detection and prevention
     keywords:
-      - issue-driven-flow
-      - orchestration
-      - anvil plugin
-      - SDD pipeline
-      - state management
-      - error handling
-      - HTML comment markers
-      - Figma integration
-      - audit logging
-  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
-    title: GitHub Issue-Driven SDD Pipeline Requirements
-    purpose: Defines workflow for integrating GitHub Issues as development entry point with SDD pipeline orchestration, deliverable linkage, and progress tracking
-    content_details:
-      - Issue creation with Bug Report and Feature Request templates
-      - SDD orchestration phases triggered by GitHub Issue
-      - Issue write-back mechanism for deliverable links and progress status
-      - Runtime issue type selection (UI vs non-UI Issue) with phase branching
-      - Figma design integration for UI Issues including design details and tokens
-      - Prerequisite validation including gh CLI and Figma API credentials
-      - Error handling for missing information and external API failures
-      - Issue section immutability to protect user-recorded information
-      - Bug Report template with environment, reproduction steps, and severity
-      - Feature Request schema with user story and acceptance criteria
-    applicable_tasks:
-      - GitHub Issue-driven workflow implementation
-      - SDD pipeline integration and orchestration design
-      - Issue template and section validation rule definition
-      - Bug Report and Feature Request schema specification
-      - Figma API integration for design extraction
-      - Issue write-back automation and progress tracking
-      - Error handling and recovery procedure specification
-    keywords:
+      - create-issue
+      - impl-issue
+      - update-issue
+      - render_section
+      - verify_user_content
+      - check_prereqs
+      - FNC-02
+      - RuntimeKind
+      - FIGMA_PAT
       - GitHub Issue
+  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
+    title: "REQ-005: Issue-Driven SDD Pipeline Integration Requirements"
+    purpose: Defines requirements for GitHub Issue-driven SDD workflow, including issue creation templates, phase orchestration (spec/design/plan/implementation), status tracking, UI/non-UI variant selection, and Figma integration for design-based issues.
+    content_details:
+      - "Issue creation with type-specific sections: Bug Report (context, phenomenon, expected behavior, reproduction, environment, severity, evidence, root cause) and Feature Request (context, user story, acceptance criteria, alternatives)"
+      - "Phase orchestration: sequential execution of spec → design → plan → implementation triggered by issue number"
+      - "Artifact linking and status tracking: writing spec/design/plan/implementation document and code references to issue body"
+      - "Type selection interface: UI Issue vs non-UI Issue runtime selection"
+      - "Figma integration for UI issues: frame ID extraction, design details, design tokens, screenshot generation"
+      - "Error handling framework: prerequisite validation (gh CLI, git repo, FIGMA_PAT), API rate limits, phase failure handling"
+      - "Issue indexing requirement: artifact references only, no content duplication in issue body"
+      - "Dependency constraints: anvil-only implementation, no forge modification, one-directional anvil→forge dependency"
+    applicable_tasks:
+      - Requirements analysis for issue-driven development workflows
+      - SDD pipeline orchestration design and implementation
+      - GitHub Issue template and section structure design
+      - Figma API integration implementation for design extraction
+      - Error handling and prerequisite validation implementation
+      - Issue status tracking and progress update implementation
+      - Integration testing of multi-phase SDD workflows
+      - Validation of artifact linking and cross-referencing
+    keywords:
+      - Issue-driven workflow
       - SDD pipeline
-      - issue-driven-flow
+      - GitHub Issue
       - Figma integration
-      - orchestration
-      - Bug Report
-      - Feature Request
-      - write-back
-      - anvil plugin
-      - requirement specification
+      - Artifact linking
+      - UI Issue
+      - Phase orchestration
+      - Status tracking
   docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md:
     title: "ADR-039 Triage Phase Reordering: From Batch Investigation to Early Decision with Parallel Checks"
     purpose: Proposes reorganizing triage workflow phases to enable early termination decisions based on issue description alone, avoiding redundant investigations for obvious cases
@@ -444,34 +444,35 @@ docs:
       - data format evolution
       - doc_structure
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md:
-    title: "COMMON-REQ-002: Error Handling Policy Requirements Specification"
-    purpose: Defines error handling policy to prevent bug concealment through silent fallbacks and ensure early detection by distinguishing external factors from internal bugs
+    title: "COMMON-REQ-002: Error Handling Policy Requirements"
+    purpose: Defines error handling policy to prevent internal bug concealment by distinguishing external-cause errors from code bugs, specifying allowed exception types and design patterns
     content_details:
-      - External factor errors vs internal bugs vs silent fallbacks definitions
-      - Exception catching principles (specific types only, no broad catches)
-      - Permitted exception types (file I/O, network, type conversion, HTTP frameworks)
-      - Error reporting requirements (return error info or stderr output)
-      - Pure function exception handling (no rollback, errors propagate as bugs)
-      - Design patterns with correct and prohibited examples
-      - Decision flowchart for exception handling
-      - Applied locations and version history
+      - "Functional requirement FR-01: Exception catch principles and prohibition of broad catch blocks"
+      - "Functional requirement FR-02: Permitted exception catches for file I/O, network, type conversion, and HTTP frameworks"
+      - "Functional requirement FR-03: Error reporting requirement to propagate errors to caller"
+      - "Functional requirement FR-04: Pure function exception handling (propagate as code bugs, no defensive rollback)"
+      - Silent fallback definition and prohibition pattern
+      - "Terminology: external-cause error vs. internal bug vs. silent fallback"
+      - Design pattern examples showing correct and forbidden approaches
+      - Exception handling judgment flowchart for decision logic
+      - Applied version history (v0.0.25 and v0.0.26 refactoring)
     applicable_tasks:
       - Error handling implementation
-      - Exception handling code review
-      - Pure function design validation
-      - Bug hiding prevention verification
-      - Error reporting mechanism implementation
-      - External vs internal error classification
-      - Code quality validation for exception patterns
+      - Exception handling pattern review
+      - Code review for silent fallback violations
+      - Python script error handling validation
+      - Pure function exception propagation verification
     keywords:
-      - error handling
-      - exception catching
+      - exception handling
+      - error handling policy
       - silent fallback
-      - pure functions
       - bug concealment
-      - external errors
-      - internal bugs
-      - try/except
+      - pure functions
+      - external-cause error
+      - internal bug
+      - try/except patterns
+      - FileNotFoundError
+      - propagation
   docs/specs/consult/agenda/design/ADR-076_agenda_storage_format.md:
     title: ADR-076 Agenda Storage Format
     purpose: Architectural decision justifying JSON adoption (standard library only) for agenda storage, rejecting YAML, TOML, and custom formats due to data integrity and external dependency requirements
@@ -500,66 +501,73 @@ docs:
       - data integrity
       - serialization
   docs/specs/consult/agenda/design/DES-075_agenda_mechanism_design.md:
-    title: DES-075 Agenda Mechanism Design
-    purpose: Specifies the design of the agenda mechanism for recording and managing discussion items, state transitions, and display generation in review and consult contexts.
+    title: Agenda Mechanism Design
+    purpose: Specifies the design of the agenda mechanism that manages discussion and review agenda items through separate data storage and display layers, including state transition logic
     content_details:
-      - Unidirectional dependency architecture (consult → agenda_wrapper → agenda_store → agenda_render)
-      - Module composition with agenda_wrapper, agenda_store, agenda_render, and agenda_schema modules
-      - Data schema with content_version, config identity, structural_judgment, and items array
-      - State transition conditions requiring structural_judgment and background/essence fields
-      - Input interface with CLI commands (start, record three forms, next, pending, finish)
-      - Storage locations per origin (.claude/.temp/review/agenda.json or .claude/.temp/consult/{SESSION_ID}/agenda.json)
-      - Automatic re-rendering of display after successful write operations
-      - Test design for state transitions, JSON error handling, and display consistency
+      - Module architecture with agenda_wrapper (input), agenda_store (persistence), agenda_render (display), agenda_schema (contracts)
+      - Data schema with AgendaRecord, Config, Item, Decision, StructuralJudgment classes
+      - State representation using decision tuple (by, outcome, reason) as sole status indicator
+      - Structural judgment requirement FNC-012 enforced before item value assignments
+      - "Record operations: start, record (structural/update/new), pending, next, finish"
+      - CLI input interface with standard input only to prevent AI JSON assembly
+      - Auto-triggered display regeneration on successful write operations
+      - Storage locations fixed per origin (review or consult direct)
+      - Content version tracking for change detection
+      - Last-changed fields tracking with per-update mutual exclusivity
     applicable_tasks:
-      - Designing or implementing agenda mechanism infrastructure
-      - Implementing agenda_store and record management functions
-      - Integrating review SKILL with agenda mechanism
-      - Implementing display layer for agenda items (agenda_render)
-      - Debugging state transition logic and decision tracking
-      - Planning consult SKILL dialog flow design
+      - Implementation of agenda storage and state transition layer
+      - Implementation of agenda input validation and CLI wrapper
+      - Design review of state transition logic and structural judgment
+      - Testing agenda state transitions and acceptance conditions
+      - Testing auto-triggered display regeneration
+      - Integration with consult and review skills
+      - Implementation of display generation layer
+      - Validation of CLI input interface and error handling
     keywords:
-      - AgendaRecord
       - agenda_store
       - agenda_wrapper
-      - Decision
+      - agenda_render
+      - agenda_schema
       - structural_judgment
+      - decision
       - content_version
-      - state transition
-      - decision.outcome
+      - last_changed_fields
+      - FNC-012
+      - state_transition
   docs/specs/consult/agenda/design/DES-077_agenda_display_design.md:
-    title: Agenda Display Design
-    purpose: Defines the design of the agenda display layer for rendering HTML output from agenda.json records, implementing auto-following display updates, and ensuring display content remains synchronized with stored records
+    title: Agenda Display Layer Design
+    purpose: Specifies the design of the display layer that generates HTML presentation of agenda items, including template structure, state derivation, change tracking, and automatic browser tab refresh
     content_details:
-      - HTML generation format with agenda summary table and item sections
-      - Initial display trigger using OS open command and anchor link navigation
-      - State derivation algorithm based on background/essence/decision fields
-      - Change tracking with state dot in gutter instead of full card background
-      - Severity badge with pastel colors and text labels for WCAG 2.2 compliance
-      - CSS styling targets for body/main/h1/h2/.generated-notice/#agenda-summary/.severity-badge
-      - Auto-following mechanism using content_version comparison and periodic polling
-      - agenda_state.js lightweight state file with contentVersion value only
-      - Scroll position preservation using sessionStorage during auto-reload
-      - HTML escaping for safe output of confidential and special characters
+      - HTML format with anchor links (#item-01) for direct navigation to agenda items
+      - Initial display trigger via Bash open command after agenda_wrapper.py start
+      - Summary table and item cards with state indicators displayed as gutter dot only (not full background)
+      - "Status derivation without independent field: four states from background/essence/decision content"
+      - Change tracking with data-changed attributes on dt/dd elements showing field-level granularity
+      - Severity badge display using config.severity_field, searched in fields dictionary first then item root
+      - "Two-file generation pattern: agenda.html (content) and agenda_state.js (version metadata)"
+      - Auto-refresh via dynamic script src loading with content_version comparison for change detection
+      - Scroll position preservation using sessionStorage during full-page reload
+      - CSS selectors and styling patterns defined with concrete values determined post-implementation
     applicable_tasks:
-      - agenda_render.py implementation and HTML generation
-      - Status state machine implementation for display logic
-      - Auto-following script testing with content_version polling
-      - Severity badge rendering based on config.severity_field
-      - Browser file:// protocol compatibility with auto-reload mechanism
-      - Accessibility compliance validation for WCAG 2.2 color usage
-      - Display synchronization with record changes
+      - Implementation of display layer (agenda_render.py)
+      - Design review of state presentation logic and status field derivation
+      - Testing HTML generation and field-level change attribute placement
+      - Testing auto-refresh mechanism with content_version comparison
+      - Testing scroll position preservation via sessionStorage
+      - Testing severity badge discovery from config.severity_field in multiple locations
+      - Testing WCAG 2.2 color usage compliance and accessibility
+      - Integration testing with consult SKILL and agenda mechanism
     keywords:
-      - agenda_render.py
-      - HTML generation
-      - content_version
+      - agenda_render
+      - agenda.html
       - agenda_state.js
-      - severity badge
-      - auto-following
-      - state derivation
-      - WCAG 2.2
+      - content_version
+      - data_changed
+      - severity_field
+      - state_derivation
+      - sessionStorage
+      - WCAG
       - FNC-002
-      - FNC-005
   docs/specs/consult/agenda/design/NOTES_open_design_questions.md:
     title: Design Questions for agenda Mechanism
     purpose: Collects unresolved design questions and technical decisions required for the agenda mechanism, extracted from requirements for resolution during formal design phase
@@ -645,33 +653,34 @@ docs:
       - change tracking
       - HTML output
   docs/specs/consult/design/DES-078_consult_dialogue_flow_design.md:
-    title: consult Dialogue Progression Flow Design (DES-078)
-    purpose: Defines the complete sequence of consult dialogue progression, including review-originated and direct consult paths, with specification of how reviewer findings and evaluator judgments flow into agenda items and structural validation.
+    title: DES-078 Consult Dialogue Flow Design
+    purpose: Defines the complete dialogue progression sequence for consult, including review-initiated and direct-initiated flows, with structural judgment contracts and schema field requirements
     content_details:
-      - End-to-end sequence from review delegation to agenda display
-      - Reviewer findings and evaluator judgment consolidation contract
-      - Common dialogue body iterating through items with discussion and decision
-      - Structural judgment validation across all items
-      - Context-based origin detection for review-delegated vs direct paths
-      - Items array and structural judgment consolidation preconditions
-      - Schema field necessity mapping to information transfer points
-      - Deleted fields justification (current_item_id, status vocabulary, owner, created_at)
+      - Review-initiated flow with reviewer findings and evaluator judgment integration
+      - Direct consult-initiated flow for discussion and problem-solving
+      - Common dialogue body sequence shared across both entry points
+      - Agenda start contract requiring items[] array and structural judgment
+      - Schema field requirement contract linking sequence messages to stored fields
+      - Entry point detection by consult SKILL.md using context rather than external flags
+      - Integration of reviewer findings and evaluator judgments by review body
+      - Suspension of consult-initiated path due to lack of upstream validation
     applicable_tasks:
-      - Implementation of consult dialogue progression flow
-      - Design validation and review of dialogue sequence
-      - Integration of reviewer findings and evaluator judgments in workflow
-      - consult SKILL.md phase implementation and branching logic
-      - Debugging dialogue sequence issues
-      - Schema validation for agenda mechanism
+      - Dialogue progression implementation for consult
+      - Review-consult handoff integration within SKILL delegation
+      - Reviewer finding and evaluator judgment combination logic
+      - Agenda mechanism verification against dialogue flow
+      - Entry point detection implementation
+      - Schema design validation against message flow
     keywords:
       - consult
       - dialogue flow
+      - sequence diagram
+      - review-initiated
+      - structural judgment
+      - agenda mechanism
       - reviewer findings
       - evaluator judgment
-      - agenda mechanism
-      - structural judgment
-      - context-based branching
-      - items consolidation
+      - entry point detection
   docs/specs/consult/requirements/REQ-017_consult_skill.md:
     title: Consult Skill - Discussion Facilitation Requirements
     purpose: Specifies requirements for the consult skill, which facilitates discussions and consultations by framing topics, presenting background and essence, conducting questioning, and recording decisions through integration with the agenda mechanism.
@@ -1262,33 +1271,32 @@ docs:
       - AI review
       - spec_design_boundary_spec.md
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: DES-019 Forge Create Plan Workflow Design
-    purpose: Defines the orchestrator workflow for creating implementation plans from design specifications, including phases for context collection, strategy formulation, plan creation, AI review, and completion
+    title: Plan Creation Workflow Design
+    purpose: Defines the end-to-end workflow for forge plan creation, including context collection, strategy formulation, task extraction, planning phases, and review procedures
     content_details:
-      - Five-phase orchestrator workflow (context collection → strategy formulation → plan creation → AI review → commit)
-      - Context collection through specs and rules agents (query-db-specs, query-db-rules)
-      - Strategy formulation with user approval cycle and output to feature_strategy.md
-      - Task extraction by Agent execution units with 5-10 tasks and build success completion criteria
-      - Traceability matrix requirement mapping requirements to design to tasks
-      - Plan completeness validation including phase prioritization and task uniqueness
-      - Update mode flow for existing plans with requirement and design reflection confirmation
-      - Integration with AI review (review plan --auto) and specs database update
+      - "Context collection phase: gathering specs and planning rules from agents"
+      - "Strategy formulation phase: drafting implementation strategy with user approval"
+      - "Planning phase: task extraction and work breakdown based on strategy"
+      - "Completeness validation: traceability matrix, task uniqueness, dependency coherence"
+      - AI review execution for created plans
+      - "Task granularity principles: single-agent executable units with build-success criteria"
+      - "Mode detection and handling: new plan creation versus existing plan update"
+      - "Prerequisites validation: doc_structure.yaml, feature name confirmation, defaults loading"
     applicable_tasks:
-      - Planning new feature implementation
-      - Creating implementation strategies from requirements
-      - Extracting and decomposing features into Agent-executable tasks
-      - Validating plan completeness and task traceability
-      - Feature update planning for existing features
-      - Architecture and strategy review during planning
+      - Planning creation from design specifications
+      - Strategy formulation for feature implementation
+      - Task extraction and work breakdown structure
+      - Plan update with existing resource review
+      - Traceability matrix verification and creation
+      - AI review setup for plans
     keywords:
-      - start-plan
       - orchestrator
-      - strategy formulation
-      - task decomposition
-      - traceability matrix
-      - phase workflow
-      - Agent execution
-      - feature planning
+      - strategy_formulation_spec
+      - start-plan
+      - write_plan.py
+      - traceability
+      - task extraction
+      - phase division
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: DES-022 Parallel Agent Output Contract Pattern Design
     purpose: Defines the output contract pattern for parallel Agent execution, preventing race conditions by requiring agents to return results via return values rather than writing to shared resources
@@ -1357,9 +1365,9 @@ docs:
       - Competing operations versus ordered resource phases
       - I/O and deterministic composite adapters
       - Skill-local and shared script placement rules
-      - Public CLI contract stability requirements
+      - Public CLI contract stability, with exit code range and error output format delegated to the script error output rules
       - One-way dependency direction
-      - Templates for zero or one runtime argument and ordered phases
+      - Templates whose module docstring declares the passthrough exit range and returns 1 for usage errors, with the composite adapter stderr stage identifier carried beside the stdout error JSON
       - Contract tests and change-triggered semantic conformance review
     applicable_tasks:
       - Wrapper creation and removal
@@ -1367,10 +1375,11 @@ docs:
       - Script placement review
       - CLI compatibility review
       - Wrapper contract test design
+      - Exit code and error output contract review
     keywords:
       - DES-024
       - ADR-070
-      - SKILL.md
+      - exit code
       - wrapper
       - semantic choice
       - ordered phases
@@ -1379,35 +1388,32 @@ docs:
       - dependency direction
       - script placement
   docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md:
-    title: Implementation Strategy Phase for start-plan Design
-    purpose: Introduces a strategy phase to start-plan workflow to define implementation approach before task extraction, bridging the gap between design specification and implementation planning.
+    title: "ADR: Implementation Strategy Phase Introduction to start-plan"
+    purpose: Records the decision to introduce a strategy formulation phase between design reading and task extraction, addressing the gap between design intent and tactical task breakdown with strategic approach selection
     content_details:
-      - "Problem: absence of implementation strategy between design and task generation"
-      - "Four strategy approaches: bottom-up, skeleton-first, risk-driven, feature-slice"
-      - Strategy phase insertion point in start-plan workflow
-      - "Implementation strategy file format and naming: {feature}_strategy.md"
-      - "Required strategy content sections: approach selection, phase division, verification points, risk mitigation, existing asset integration"
-      - "Strategy file lifecycle: ephemeral document deleted after implementation"
-      - Rationale for separate strategy file versus design document
-      - Impact on SKILL.md and workflow design documents
-      - Relationship to start-implement executor and required reading
+      - "Four implementation strategy types: bottom-up, skeleton-first, risk-driven, and feature-slice"
+      - "Problem definition: lack of strategic approach between design and task list results in handover costs"
+      - "Decision: introduce strategy formulation phase as Phase 3 in start-plan workflow"
+      - "Strategy outputs: feature_strategy.md with approach selection, phase breakdown, validation points, risk mitigation, existing asset integration"
+      - "Rationale: ephemeral nature of strategy documents after implementation completion reduces maintenance burden"
+      - "Exclusion criteria: what strategy documents should NOT contain (individual task details, design transcription, schedule estimation)"
+      - "Impact analysis: affected files (SKILL.md, plan_principles_spec.md, workflow design updates) and no-change assertions"
     applicable_tasks:
-      - Planning workflow design review
-      - Implementation phase strategy definition
-      - Start-plan SKILL.md modification
-      - Executor workflow documentation updates
-      - Feature planning approach selection
+      - Architecture Decision Record validation and review
+      - Strategy selection for feature implementation approaches
+      - Workflow design for plan creation with strategic elements
+      - Risk assessment and mitigation planning
+      - Phase planning and verification point definition
+      - Task extraction based on implementation strategy
     keywords:
-      - implementation strategy
-      - start-plan
-      - phase planning
+      - ADR
+      - strategy formulation
+      - implementation approach
+      - phase breakdown
+      - risk-driven
       - bottom-up
       - skeleton-first
-      - risk-driven
       - feature-slice
-      - task extraction
-      - ephemeral document
-      - workflow phase
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md:
     title: Skill Launch Path Terminology TOML Design
     purpose: Defines design for extracting official skill launch path terminology into machine-readable TOML format to reduce duplication between documentation and automated test validation.
@@ -1524,149 +1530,123 @@ docs:
       - disposition
       - confidence
       - staged presentation
-  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
-    title: Document Reference Integrity Checking Design
-    purpose: "Specifies design for checking document reference integrity via 3-stage architecture: indexing existing documents, extracting references, and verifying against index with decision rules for resolution."
+  docs/specs/forge/design/DES-074_plan_format_design.md:
+    title: Default Format for Implementation Plans
+    purpose: Defines the JSON schema and field specifications for implementation plan files, including traceability matrices, task structures, validation rules, and script implementation contracts for plan creation and update operations
     content_details:
-      - "3-stage verification process: indexing existing documents, extracting references, reconciling to find broken links"
-      - "Module design with separated concerns: ref_index.py, ref_extract.py, check_refs.py, fix_refs.py"
-      - "Four index types: file index, name index, heading index, document ID index"
-      - Resolution rules for relative paths, same-document anchors, cross-document anchors, external URLs, and unresolvable forms
-      - "Core constraint: all resolution uses unique keys with exact matching, never heuristics or partial matching"
-      - "Two-layer judgment structure: whether text is a reference vs. whether reference can be resolved"
-      - Index constructed per-check without persistence to prevent divergence from actual document state
-      - Test design derived from CommonMark specification covering both valid and invalid forms
+      - "JSON schema with four top-level keys: requirements_traceability, design_traceability, tasks, revision_history"
+      - "Requirements traceability fields: requirement_id, title, design_id, status for REQ-DES mapping"
+      - "Design traceability fields: design_id, title, requirement_ids array, task_ids array for complete trace"
+      - "Task fields: task_id, title, priority, status, design_id, depends_on, group_id, build_check, description array, acceptance_criteria, required_reading"
+      - "Status transitions: pending to in_progress to completed with machine update semantics"
+      - "Priority ranges: 70-99 high (core logic, blockers), 40-69 medium (main features), 1-39 low (UI, helpers)"
+      - "JSON format rationale: structured parsing for task selection, dependency validation, status updates versus Markdown uncertainty"
+      - "Script implementation contracts: write_plan.py, select_tasks.py, update_plan_status.py, build_task_context.py dependencies and validations"
+      - "Frontmatter exclusion: plans do not carry feature_type markers, instead feature tracking via requirements documents"
+      - "Parallel state specification: spec_authority field classification for additive features with temporary-feature documents"
     applicable_tasks:
-      - Implementing document reference integrity checking
-      - Designing reference extraction and validation architecture
-      - Writing tests for reference resolution and extraction rules
-      - Defining resolution rules for different link types
-      - Troubleshooting and fixing broken document references
-    keywords:
-      - document reference
-      - reference integrity
-      - CommonMark
-      - anchor resolution
-      - document ID
-      - heading index
-      - path normalization
-      - link validation
-      - ref_extract
-      - check_refs
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
-    title: Document Reference Integrity Requirement Definition
-    purpose: Defines requirements for a deterministic mechanism to identify broken document references, distinguishing non-existence from ambiguity and path issues, specifying repair strategies based on answer location.
-    content_details:
-      - Requirement for deterministic checking to move from review-based process
-      - 72 undetected broken reference case study from document deletion
-      - "Terminology: reference, referent, broken reference, document set, existence (current-time only)"
-      - "Scope: extraction, existence judgment, reporting; excludes format validation, rewriting, accuracy checking, change tracking"
-      - "Functional requirements FNC-001-006: deterministic judgment, comprehensive reference types including document IDs, current-time existence, false positive exclusion, non-Markdown sources, position-specific reporting"
-      - "Functional requirements FNC-007-013: dual checking positions with unified logic, workflow timing, distinguishing non-existence from ambiguity/path issues, out-of-scope visibility, three-tier repair logic"
-      - "Non-functional requirements NFR-001-004: false negative/positive balance, algorithm consistency, no new dependencies, failure visibility"
-      - "Undecided items TBD-001-005: disambiguation rules, external sync, performance limits, CI scope"
-    applicable_tasks:
-      - Designing document reference checking mechanism
-      - Implementing deterministic reference validation logic
-      - Integrating reference checking into pre-commit workflow
-      - Designing reference repair strategies
-      - Specifying reference extraction from code comments
-      - Reviewing algorithm consistency with other reference mechanisms
-      - Defining false positive exclusion rules
-      - Specifying resolution for undecided design points
-    keywords:
-      - broken reference
-      - reference integrity
-      - document ID
-      - reference extraction
-      - existence validation
-      - reference resolution
-      - FNC-002
-      - FNC-013
-  docs/specs/forge/executer/design/DES-074_plan_format_design.md:
-    title: Plan Default Format Design
-    purpose: Defines the default JSON format and schema for project plan files, including requirements and design traceability, task definitions, and revision history structure for implementation scripts
-    content_details:
-      - JSON schema structure with top-level keys
-      - requirements_traceability with requirement_id, title, design_id, status fields
-      - design_traceability with design_id, title, requirement_ids, task_ids fields
-      - tasks section with task_id, title, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading
-      - revision_history tracking with date and content
-      - Task status transitions (pending → in_progress → completed)
-      - Priority ranges (70-99 high, 40-69 medium, 1-39 low)
-      - File naming convention (feature_plan.json)
-      - Top-level key restrictions for additional features
-    applicable_tasks:
-      - Planning feature implementation
-      - Creating task definitions and dependencies
-      - Implementing plan format parsers and generators
-      - Reviewing plan structure and traceability
-      - Task prioritization and sequencing
-    keywords:
-      - JSON schema
-      - plan format
-      - requirements traceability
-      - design traceability
-      - task management
-      - task dependencies
-      - build check
-      - priority
-      - acceptance criteria
-      - revision history
-  docs/specs/forge/executer/requirements/REQ-020_plan_json_script_driven_spec.md:
-    title: REQ-020 Plan JSON Script-Driven Architecture Requirements
-    purpose: Specifies requirements for converting plan file from YAML to JSON format and transitioning plan generation, reading, task selection, and status updates to script-driven architecture
-    content_details:
-      - "Plan JSON format specification with fields: requirements_traceability, design_traceability, tasks, revision_history"
-      - Script-driven plan generation (AI defines semantics, script handles file writes)
-      - Script-driven task selection and dependency judgment (pending status and completed dependencies)
-      - Script-driven task status updates and traceability updates
-      - Task context file JSON format (tasks/{task_id}.json, PyYAML-independent)
-      - Plan frontmatter handling (no feature_type marker on plan itself)
-      - AI schema independence for plan operations
-    applicable_tasks:
-      - Plan file JSON format implementation
-      - Script-driven architecture migration for plan operations
-      - Task dependency resolution and selection logic implementation
-      - Executor contract refactoring for JSON format
-      - Task status update mechanism implementation
-      - PyYAML dependency elimination
+      - Implementation plan creation from requirements and design specifications
+      - Plan update with existing task status and traceability tracking
+      - Traceability matrix definition, creation, and maintenance
+      - JSON schema validation for plan file consistency
+      - Script implementation contracts (write_plan.py, select_tasks.py, build_task_context.py)
+      - Task dependency resolution and build-check rule application
+      - Additive feature planning with parallel state identification
+      - Frontmatter analysis for feature_type detection
     keywords:
       - plan.json
-      - script-driven
-      - task selection
-      - dependency resolution
-      - task_context_contract.py
       - requirements_traceability
       - design_traceability
-      - PyYAML
-      - status update
-  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
-    title: REQ-001 Orchestrator Pattern Requirements
-    purpose: Defines orchestrator pattern requirements for forge skills to structure work delegation between orchestrators and agents
+      - task_id
+      - JSON schema
+      - build_check
+      - spec_authority
+      - feature_type
+      - temporary-feature
+      - priority
+  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
+    title: Document Reference Integrity Check Design
+    purpose: Specifies the design for checking document reference integrity through three stages (indexing, extraction, reconciliation) and defines resolution algorithms to detect broken references using deterministic key-based lookups
     content_details:
-      - "God-Skill problem: context consumption, precision degradation, inability for parallel processing"
-      - "Orchestrator design: delegation to agents via Agent tools, managing progression and branching"
-      - Self-contained reference documents for agents with minimal external dependencies
-      - Parallel execution structure with return value-based data passing
-      - "Document format selection: YAML for structured data, Markdown for human-readable content"
-      - Common completion flow with review execution, ToC update, and commit
-      - User input interpretation by AI rather than script parser
-      - "Application to skills: review, start-design, start-plan, start-requirements, start-implement"
+      - Three-stage architecture (indexing real documents, extracting references, reconciling against index)
+      - Four index types (file paths, document names, headings, document IDs) for reference resolution
+      - Five reference forms (relative paths, same-document anchors, cross-document anchors, external URLs, unexpandable forms)
+      - Uniqueness constraint and complete-match resolution (no partial matching or heuristics)
+      - Module design (ref_index.py, ref_extract.py, check_refs.py, fix_refs.py)
+      - Reference resolution rules by reference type with deterministic algorithms
+      - Use cases (pre-commit checks, on-demand validation, post-deletion verification)
+      - Test design driven by CommonMark specification with positive and negative cases
     applicable_tasks:
-      - Architecture design for orchestrator-based skill structure
-      - SKILL.md authoring for orchestrator skills
-      - Agent delegation planning and return value contract definition
-      - Document format decision for generated artifacts
-      - Work distribution between orchestrators and agents
+      - Document reference integrity check implementation
+      - Broken reference detection and reporting
+      - Reference extraction from Markdown and code
+      - Document ID indexing and lookup
+      - Cross-document anchor resolution
     keywords:
-      - orchestrator pattern
+      - ref_extract.py
+      - ref_index.py
+      - check_refs.py
+      - fix_refs.py
+      - CommonMark
+      - document ID
+      - broken reference
+      - deterministic resolution
+  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
+    title: Document Reference Integrity Verification Requirements
+    purpose: Defines requirements for automated, deterministic verification of document reference existence and integrity, detecting broken references through mechanical means rather than unstable review processes.
+    content_details:
+      - Reference types to be validated (link notation, heading references, document IDs)
+      - Scope and scope exclusions (all file types including code comments, excluding format validation)
+      - Deterministic judgment requirement (consistent results without LLM inference)
+      - Reference categorization (false positives vs negatives, ambiguous references, name absence vs position mismatch)
+      - Position identification requirements (source file, location, extracted text, invalidity reason)
+      - Three-level resolution strategy (machine replacement, manual correction by executor, no-action cases)
+      - Thirteen functional requirements defining validation scope and precision
+      - Four non-functional requirements (quality guarantees, external alignment, single implementation, failure visibility)
+      - Five TBD items requiring design and external coordination decisions
+    applicable_tasks:
+      - Documentation integrity review and validation
+      - Broken reference detection tool implementation
+      - Document reference validation mechanism design
+      - Code-to-document reference verification
+      - Documentation refactoring with reference tracking
+      - CI/CD integration planning for reference checking
+    keywords:
+      - reference integrity
+      - broken references
+      - document resolution
+      - deterministic verification
+      - path resolution
+      - heading references
+      - document IDs
+      - reference extraction
+      - FNC requirements
+      - automated validation
+  docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
+    title: Orchestrator Pattern Requirements
+    purpose: Defines requirements for the orchestrator pattern architecture in forge skills, addressing context consumption, scalability, and parallel execution needs
+    content_details:
+      - "God-Skill problems: context consumption, tracking precision loss, and lack of parallelization"
+      - "Orchestrator design pattern: delegation to agents, no monolithic code blocks, composition of results"
+      - "Self-contained reference documents: agent autonomy without external context dependency"
+      - "Parallel execution structure: independent research phases, return value passing, shared resource contention prevention"
+      - "Document format selection: JSON for deterministic parsing, Markdown for rich content and diagrams"
+      - "Common completion flow: review, database update, and commit stages"
+      - "User input interpretation: AI-driven parsing without rigid token parser scripts"
+    applicable_tasks:
+      - Architecture design of forge orchestration
+      - Skill refactoring from monolithic to delegation pattern
+      - Agent design and delegation structure planning
+      - Parallel workflow design
+      - Documentation format strategy selection
+    keywords:
+      - orchestrator
       - agent delegation
-      - SKILL orchestration
-      - return value contract
-      - God-Skill problem
       - context consumption
-      - parallel processing
+      - parallel execution
+      - return value passing
+      - God-Skill
+      - skill refactoring
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md:
     title: REQ-003 SKILL.md and Script Responsibility Separation
     purpose: Defines responsibility separation between SKILL.md for user intent and decision branching, and script for fixed values and deterministic processing to maintain cognitive clarity
@@ -1728,6 +1708,56 @@ docs:
       - self-verification
       - secrets detection
       - rules gap
+  docs/specs/forge/requirements/REQ-024_implementation_plan_spec.md:
+    title: Implementation Plan Specification Requirements
+    purpose: Defines requirements for implementation plan documents that capture design-derived tasks and manage execution order and progress in forge
+    content_details:
+      - "Task identification and ordering: unique identifiers, priorities, and predecessor dependencies"
+      - "Executable task determination: progress states (not started, in progress, completed) with deterministic decision logic"
+      - "Traceability preservation: requirement-design-task correspondence and detection of missing corresponding tasks"
+      - "Task granularity: single implementation subject scope, no inter-task waiting within one task"
+      - "Required documentation specification: document paths for each task, mandatory reading by implementer"
+      - "Plan temporality: work file for implementation period, discardable after completion"
+      - "Differential feature independence: no feature identifiers in plan itself, determined via traceability"
+    applicable_tasks:
+      - Implementation plan creation and design task extraction
+      - Implementation workflow design
+      - Task dependency and priority structure definition
+      - Traceability mapping design
+      - Implementation execution coordination
+    keywords:
+      - implementation plan
+      - task dependency
+      - task priority
+      - traceability
+      - progress state
+      - task granularity
+      - differential feature
+  docs/specs/forge/requirements/REQ-025_additive_development_spec.md:
+    title: Additive Development Specification Requirements
+    purpose: Defines requirements for identifying and communicating differential development state, ensuring old and new specifications do not cause erroneous implementation decisions
+    content_details:
+      - "Specification applicants and their roles: implementer, reviewer, upstream generator, parallel state termination"
+      - "Mechanical identification of parallel state: content-interpretation-free identification with unique determination"
+      - "Identification results carry state information only: no action guidance, no split normative definitions"
+      - "Communication to specification applicants: dependency-free discovery, distinct presence/absence signals"
+      - "Old specification record handling: replacement relationship independent of contradiction detection"
+      - "Identification failure handling: distinction between failure and non-parallel state, mandatory notification"
+      - "Terminology definitions: parallel state, old specification, specification applicant, implementer"
+    applicable_tasks:
+      - Differential feature identification and status tracking
+      - Implementation workflow design with specification versioning
+      - Specification applicant communication strategy planning
+      - Merge workflow design for parallel state termination
+      - Specification consistency management
+    keywords:
+      - differential development
+      - parallel state
+      - specification applicant
+      - identification
+      - feature identifier
+      - merge
+      - additive development
   docs/specs/msg-review/design/ADR-061_msg_review_codex_wake_appserver_path.md:
     title: ADR-061 Codex Wake-up Path Multiplexing
     purpose: Architectural decision on providing push-type wake-up for resident Codex sessions, addressing cmux limitations through app-server path addition

@@ -9,9 +9,9 @@ content_details:
   - Competing operations versus ordered resource phases
   - I/O and deterministic composite adapters
   - Skill-local and shared script placement rules
-  - Public CLI contract stability requirements
+  - Public CLI contract stability, with exit code range and error output format delegated to the script error output rules
   - One-way dependency direction
-  - Templates for zero or one runtime argument and ordered phases
+  - Templates whose module docstring declares the passthrough exit range and returns 1 for usage errors, with the composite adapter stderr stage identifier carried beside the stdout error JSON
   - Contract tests and change-triggered semantic conformance review
 applicable_tasks:
   - Wrapper creation and removal
@@ -19,10 +19,11 @@ applicable_tasks:
   - Script placement review
   - CLI compatibility review
   - Wrapper contract test design
+  - Exit code and error output contract review
 keywords:
   - DES-024
   - ADR-070
-  - SKILL.md
+  - exit code
   - wrapper
   - semantic choice
   - ordered phases
@@ -30,14 +31,14 @@ keywords:
   - CLI contract
   - dependency direction
   - script placement
-body_hash: sha256:18966854f94110225f8b5ff9309a60ba6e66d3603828bdf8b0c87191064079d3
+body_hash: sha256:7073c3a7de91686bdf8843880da15cb6901ca5a43fcfa7f705d3d61562e53b15
 ---
 
 # DES-024 SKILL.md と script の配置・契約設計
 
 ## 1. 概要
 
-本設計は REQ-003「SKILL.md と script の責務分離」の How を定める。
+本設計は[REQ-003 SKILL.md と script の責務分離要件][req-003]の How を定める。
 
 **SKILL.md → SKILL ローカル操作入口 → 共有低レベル script → 外部ファイル** の一方向依存を確立し、操作入口の判断基準・命名規則・配置原則を明文化する。
 
@@ -134,6 +135,8 @@ SKILL.md はユーザー意図の解釈、進行管理、現在状態に基づ�
 
 SKILL.md が呼ぶローカル操作入口の path / 引数仕様 / stdout / stderr / exit code は公開契約であり、互換性を維持する。
 
+本節が定めるのは契約の安定性であり、exit code の値域・stdout のエラー形式・値の意味をどこに書くかは[script のエラー出力][script-error-output]が定める。
+
 共有低レベル script を SKILL.md が直接呼ぶ場合、その CLI も公開契約である。ローカルラッパーだけが呼ぶ低レベル CLI は内部契約であり、全 consumer とテストを同時に更新できる。ただし、低レベルへの機能追加をローカルラッパーが無条件に公開してはならない。
 
 例:
@@ -205,6 +208,14 @@ flowchart LR
 
 ```python
 #!/usr/bin/env python3
+"""{operation} を実行する（{skill} 固有の固定文脈を束縛する）。
+
+## 終了コード
+
+低レベル `{low_level}.py` の終了コードをそのまま透過する。値域と意味は
+その script の docstring を参照する。引数を受理できない場合は `1` を返す。
+"""
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -216,8 +227,13 @@ FIXED_ARGS = ["--{flag}", "{値}"]
 
 def main() -> int:
     if len(sys.argv) != 1:
-        print("usage: {operation}.py", file=sys.stderr)
-        return 20
+        print(
+            json.dumps(
+                {"errors": ["引数を受け取らない (usage: {operation}.py)"]},
+                ensure_ascii=False,
+            )
+        )
+        return 1
     r = subprocess.run(
         [sys.executable, str(LOW_LEVEL), *FIXED_ARGS],
         check=False,
@@ -233,12 +249,19 @@ if __name__ == "__main__":
 ```python
 args = sys.argv[1:]
 if len(args) != 1 or not args[0].strip():
-    print("usage: {operation}.py <runtime-value>", file=sys.stderr)
-    return 20
+    print(
+        json.dumps(
+            {"errors": ["実行時データを 1 件受け取る (usage: {operation}.py <runtime-value>)"]},
+            ensure_ascii=False,
+        )
+    )
+    return 1
 command = [sys.executable, str(LOW_LEVEL), *FIXED_ARGS, args[0]]
 ```
 
-固定文脈は配置 SKILL ごとにラッパー内へ hardcode する。0 引数・1 引数のどちらでも受理形式を明示し、`sys.argv[1:]` を無条件に低レベルへ透過しない。usage error は domain の operation error 契約へ写像する。`parents[3]` はラッパーが `plugins/{plugin}/skills/{skill}/scripts/` に置かれることを前提とした相対解決である。
+固定文脈は配置 SKILL ごとにラッパー内へ hardcode する。0 引数・1 引数のどちらでも受理形式を明示し、`sys.argv[1:]` を無条件に低レベルへ透過しない。`parents[3]` はラッパーが `plugins/{plugin}/skills/{skill}/scripts/` に置かれることを前提とした相対解決である。
+
+上のテンプレートは低レベルの終了コードを透過する。透過する値域は、このラッパー自身の docstring に宣言する（[script のエラー出力][script-error-output]）。宣言しない場合、透過せず `0` と `1` に畳む。
 
 ### 7.2 順序付き位相を持つ操作入口
 
@@ -296,6 +319,8 @@ stderr 契約 (失敗時のみ stderr 先頭行に付与):
 
 正常時は stderr に追記せず、子 process の stderr だけを透過する。
 
+この stderr は障害切り分けのための付加情報であり、失敗の内容そのものは stdout のエラー JSON に含める（[script のエラー出力][script-error-output]）。stage 識別子を stderr だけに置き、stdout を空にしてはならない。
+
 ## 8. テスト原則
 
 CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う。
@@ -305,7 +330,7 @@ CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う�
 - 不正な operation・欠落値・余分な引数を拒否すること
 - 低レベル CLI に追加された引数を自動公開しないこと
 - subprocess 引数検証 (モック / fake で低レベルを差し替え、固定値を含む引数を確認)
-- exit code 透過 (低レベルが返す code をラッパーが同じ code で終了)
+- exit code 透過 (低レベルが返す code をラッパーが同じ code で終了)。透過する値域をラッパー自身の docstring が宣言していること
 - 配置: `tests/forge/{skill}/test_{operation}.py`
 - wrapper テストの assert ロジックは共通 helper へ寄せてよい
 - 固定文脈以外が同一のラッパーでも、SKILL ごとの束縛契約を別々に検証する
@@ -333,7 +358,5 @@ CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う�
 | 低レベル引数を `*sys.argv[1:]` で無条件に透過する                 | 低レベルの将来追加がローカル公開契約へ自動的に漏れる                                  |
 | 単一 wrapper に判断を伴う複合操作を畳み込む                       | §2.4 の決定論的連鎖という制約を侵す                                                   |
 
-## 10. 関連文書
-
-- [REQ-003 SKILL.md と script の責務分離要件](../requirements/REQ-003_skill_script_separation.md) — 本設計の要件源
-- [DES-022 並列 agent 出力契約パターン設計](DES-022_parallel_agent_output_contract_design.md) — 並列 agent の結果受け渡し契約（return value。中間ファイルを作らない）。本設計の依存方向と整合
+[req-003]: ../requirements/REQ-003_skill_script_separation.md
+[script-error-output]: ../../../rules/script_error_output_rules.md
