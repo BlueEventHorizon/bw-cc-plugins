@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-11T11:37:31Z
+  generated_at: 2026-09-13T11:34:01Z
   file_count: 8
 
 docs:
@@ -130,29 +130,37 @@ docs:
       - Version management
       - Fallback
   docs/rules/script_error_output_rules.md:
-    title: Script Error Output Rules
-    purpose: Defines the contract for exit codes and error output format across all scripts, establishing shared meanings for codes 0 and 1, and requiring scripts to declare code meanings in docstrings
+    title: Script Error Output
+    purpose: Defines exit code conventions and output format requirements for Python scripts in the plugins directory, establishing how scripts declare exit codes and callers interpret results.
     content_details:
-      - "Exit code 0 meaning: operation completed successfully"
-      - "Exit code 1 meaning: generic failure without distinction of cause"
-      - "Exit codes 2+ meanings: script-specific, not centrally defined"
-      - "Module docstring requirement: scripts returning 2+ must declare all exit codes"
-      - "Error output format: JSON with errors field as array of natural language messages"
-      - No duplicate success/failure status in JSON output (exit code is the single truth)
-      - "Caller contract: branch on exit codes only if script docstring declares them"
-      - Stderr diagnostic output allowed but error details must be in stdout JSON
-      - Exception for harness-defined contracts that override this document
+      - Exit code conventions (0 for success, 1 for generic failure, 2 for argparse errors, 3+ for script-specific)
+      - Mandatory docstring declaration tables for exit codes 3 and above
+      - Decentralized exit code meanings owned by each script, not a central registry
+      - Caller behavior rules based on exit code declarations from producer
+      - JSON output format for both success results and error responses
+      - Error JSON always uses array format for errors field
+      - Natural language Japanese error messages, not machine-readable codes
+      - Standard error output as diagnostic only; critical info must be in stdout JSON
+      - Exception handling for harness-defined contracts (Claude Code hooks, etc.)
     applicable_tasks:
-      - Python script development in plugins/
-      - Error handling and exit code design
-      - API contract documentation for scripts
-      - Error output format specification
+      - Python script development and exit code design
+      - Script caller implementation
+      - Exit code declaration and review
+      - Error handling specification for scripts
+      - Script interface testing and validation
+      - SKILL caller implementation using exit codes
+      - Script error standardization
     keywords:
-      - exit code
-      - error output
-      - JSON format
-      - script contract
-      - docstring
+      - exit_code
+      - sys.exit
+      - ArgumentParser.error
+      - argparse
+      - module_docstring
+      - caller_contract
+      - error_declaration
+      - JSON_errors
+      - script_interface
+      - exit_code_table
   docs/rules/skill_authoring_notes.md:
     title: SKILL.md Authoring Notes
     purpose: Defines rules for authoring/editing SKILL.md frontmatter, the inheritance-only execution model, defense-in-depth layers, argument handling, and mandatory AskUserQuestion usage for user confirmations
