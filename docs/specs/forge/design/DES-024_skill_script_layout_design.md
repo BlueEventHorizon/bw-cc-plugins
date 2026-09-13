@@ -11,7 +11,8 @@ content_details:
   - Skill-local and shared script placement rules
   - Public CLI contract stability, with exit code range and error output format delegated to the script error output rules
   - One-way dependency direction
-  - Templates returning 0 or 1 for usage errors, passthrough exit ranges declared in the wrapper docstring, and composite adapter stderr stage identifiers beside the stdout error JSON
+  - Templates whose module docstring declares the passthrough exit range and returns 1 for usage errors, with the composite adapter stderr stage identifier carried beside the stdout error JSON
+  - Contract tests and change-triggered semantic conformance review
 applicable_tasks:
   - Wrapper creation and removal
   - SKILL.md script invocation changes
@@ -30,14 +31,14 @@ keywords:
   - CLI contract
   - dependency direction
   - script placement
-body_hash: sha256:9dfaef1e1c4ef8f679c433a0838749b80262d765316a1dd1f144a854e0d9cd96
+body_hash: sha256:7073c3a7de91686bdf8843880da15cb6901ca5a43fcfa7f705d3d61562e53b15
 ---
 
 # DES-024 SKILL.md と script の配置・契約設計
 
 ## 1. 概要
 
-本設計は REQ-003「SKILL.md と script の責務分離」の How を定める。
+本設計は[REQ-003 SKILL.md と script の責務分離要件][req-003]の How を定める。
 
 **SKILL.md → SKILL ローカル操作入口 → 共有低レベル script → 外部ファイル** の一方向依存を確立し、操作入口の判断基準・命名規則・配置原則を明文化する。
 
@@ -207,6 +208,13 @@ flowchart LR
 
 ```python
 #!/usr/bin/env python3
+"""{operation} を実行する（{skill} 固有の固定文脈を束縛する）。
+
+## 終了コード
+
+低レベル `{low_level}.py` の終了コードをそのまま透過する。値域と意味は
+その script の docstring を参照する。引数を受理できない場合は `1` を返す。
+"""
 import json
 import subprocess
 import sys
@@ -350,9 +358,5 @@ CLAUDE.md の `plugins/forge/skills/*/scripts/` テスト必須要件に従う�
 | 低レベル引数を `*sys.argv[1:]` で無条件に透過する                 | 低レベルの将来追加がローカル公開契約へ自動的に漏れる                                  |
 | 単一 wrapper に判断を伴う複合操作を畳み込む                       | §2.4 の決定論的連鎖という制約を侵す                                                   |
 
-## 10. 関連文書
-
-- [REQ-003 SKILL.md と script の責務分離要件](../requirements/REQ-003_skill_script_separation.md) — 本設計の要件源
-- [DES-022 並列 agent 出力契約パターン設計](DES-022_parallel_agent_output_contract_design.md) — 並列 agent の結果受け渡し契約（return value。中間ファイルを作らない）。本設計の依存方向と整合
-
+[req-003]: ../requirements/REQ-003_skill_script_separation.md
 [script-error-output]: ../../../rules/script_error_output_rules.md

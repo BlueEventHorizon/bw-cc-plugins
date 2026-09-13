@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-11T11:38:02Z
+  generated_at: 2026-09-13T00:37:46Z
   file_count: 69
 
 docs:
@@ -91,36 +91,39 @@ docs:
       - conflict resolution
       - feature promotion
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
-    title: "DES-025 Issue-driven flow design: SDD pipeline orchestration from GitHub Issues"
-    purpose: Defines architecture, module responsibilities, data flow, error handling, and state management for orchestrating SDD pipeline stages from GitHub Issue creation through PR submission, including Figma integration for UI-related issues
+    title: "DES-025 Issue-Driven Flow Design: SDD Pipeline Orchestration from GitHub Issues"
+    purpose: Defines the architecture and module design for orchestrating SDD pipeline workflows (requirements, design, plan, implement) initiated from GitHub Issues, including error handling, state management, and data flow
     content_details:
-      - Architecture with plugin boundaries and anvil->forge one-way dependency
-      - "Module roles: create-issue, impl-issue, update-issue, prepare-figma, resolve-figma-node, figma-mcp-guide"
-      - Common scripts for prerequisites, audit logging, push verification, and Issue marker rendering
-      - Use cases with sequence diagrams for Issue creation, SDD execution, Issue rewriting, and Figma integration
-      - Issue text structure with HTML comment markers separating user-content, artifacts, status, and errors sections
-      - State management for Phase progression, RuntimeKind determination, Figma retrieval, and error states
-      - "Error handling patterns: ERR-01 prerequisite checks, failure recovery, rate limiting with exponential backoff, and secret masking"
-      - forge skill coordination contract with async return values and push verification via verify_pushed.py
-      - "PR creation boundary rules including Closes #N requirement and Issue user-content non-transfer policy"
-      - Testing strategy with unit tests, integration scenarios, and golden sample issues
+      - "Module architecture: anvil:create-issue, anvil:impl-issue, anvil:update-issue with separated responsibilities"
+      - "Issue body structure: HTML comment markers (user-content, artifacts, status, errors) for idempotent section rewriting"
+      - "State management: Phase progression (pending → in_progress → completed), RuntimeKind (UI/non-UI), error states"
+      - "Error handling: ERR-01 prerequisites check, forge skill failures, push verification, Figma fetch failure modes"
+      - "Script modules: check_prereqs.py, validate_sections.py, render_section.py, verify_user_content.py, verify_pushed.py"
+      - "Forge integration: forge:start-requirements, start-design, start-plan, start-implement with Skill tool boundary"
+      - "Use cases: UC-01 Issue creation (Bug/Feature), UC-02 SDD pipeline, UC-03 Issue rewriting, UC-04 Figma data retrieval"
+      - "Secret masking: FIGMA_PAT, Authorization headers, gh tokens, basic auth URL redaction"
+      - "Concurrent update detection: three-point hash verification for user-content preservation"
+      - File locking for update-issue to prevent parallel execution conflicts
     applicable_tasks:
-      - Implementation of issue-driven workflow orchestration skill
-      - Integration of forge skill coordination and session management
-      - Error handling and recovery path implementation
-      - GitHub Issue marker-based rewriting system design
-      - Figma API integration for UI design workflows
+      - Designing GitHub Issue-driven workflow systems
+      - Implementing multi-stage SDD pipeline orchestration
+      - State machine design for Issue processing flows
+      - Error recovery and retry strategy design
+      - Testing orchestration workflows with golden samples
+      - Implementing Issue-to-PR linking with Closes directive
+      - Secret management in GitHub automation
+      - Concurrent operation detection and prevention
     keywords:
-      - issue-driven-flow
-      - SDD
-      - GitHub Issue
-      - Figma integration
-      - HTML markers
-      - anvil
-      - forge coordination
+      - create-issue
+      - impl-issue
+      - update-issue
+      - render_section
+      - verify_user_content
+      - check_prereqs
+      - FNC-02
       - RuntimeKind
-      - verify_pushed.py
-      - orchestration
+      - FIGMA_PAT
+      - GitHub Issue
   docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
     title: "REQ-005: Issue-Driven SDD Pipeline Integration Requirements"
     purpose: Defines requirements for GitHub Issue-driven SDD workflow, including issue creation templates, phase orchestration (spec/design/plan/implementation), status tracking, UI/non-UI variant selection, and Figma integration for design-based issues.
@@ -1364,7 +1367,8 @@ docs:
       - Skill-local and shared script placement rules
       - Public CLI contract stability, with exit code range and error output format delegated to the script error output rules
       - One-way dependency direction
-      - Templates returning 0 or 1 for usage errors, passthrough exit ranges declared in the wrapper docstring, and composite adapter stderr stage identifiers beside the stdout error JSON
+      - Templates whose module docstring declares the passthrough exit range and returns 1 for usage errors, with the composite adapter stderr stage identifier carried beside the stdout error JSON
+      - Contract tests and change-triggered semantic conformance review
     applicable_tasks:
       - Wrapper creation and removal
       - SKILL.md script invocation changes
