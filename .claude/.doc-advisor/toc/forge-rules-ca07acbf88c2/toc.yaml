@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-13T17:36:43Z
+  generated_at: 2026-09-15T07:15:32Z
   file_count: 41
 
 docs:
@@ -566,39 +566,35 @@ docs:
       - merge
       - doc-advisor
   plugins/forge/docs/plan_principles_spec.md:
-    title: Plan Document Creation Principles
-    purpose: Defines structural rules and task design principles for plan documents, including composition rules, task granularity, traceability matrices, testing requirements, acceptance criteria standards, and dependency management with severity classifications
+    title: Planning Document Creation Principles
+    purpose: Defines principles and rules for creating JSON-based planning documents, including task structuring, traceability matrices, and acceptance criteria specifications.
     content_details:
-      - JSON structure with 3 required sections (requirements_traceability, design_traceability, tasks)
-      - Design_traceability requirement_ids field for requirement status propagation path
-      - Task granularity standards (5-10 items per task, 1 Agent execution unit, build/test success requirement)
-      - Content description rules (design section reference level, no implementation detail duplication)
-      - Required_reading field specification (project-root paths, no glob/ID/ambiguous references)
-      - Task grouping with group_id and build_check fields (per_task/skip/on_group_complete)
-      - Prohibition of temporal compatibility code in group task transitions
-      - Early validation conditions and minimum viable testing unit criteria
-      - "Implicit dependency detection patterns (critical: frontend/API, integration testing, migration)"
-      - Acceptance criteria standards (determinable Yes/No, rejection of subjective expressions)
+      - Requirements and design traceability matrices
+      - Task granularity standards (Agent execution unit, 5-10 items per task)
+      - "Task grouping criteria (build_check field values: per_task, skip, on_group_complete)"
+      - Acceptance criteria specification with Yes/No judgment requirement
+      - Test task mandatory rule for major feature tasks
+      - Implicit dependency detection patterns (typical patterns catalog)
+      - required_reading field specification for task documentation
+      - Severity catalog for plan spec violations (critical, major, minor levels)
     applicable_tasks:
-      - Plan document structure and composition design
-      - Task breakdown and granularity determination
-      - Requirement-task traceability matrix creation
-      - Design-requirement traceability matrix building
-      - Task group and build_check configuration
-      - Task dependency analysis and cycle detection
-      - Acceptance criteria and test planning
-      - Test task integration strategy
+      - Planning document creation
+      - Task structure validation
+      - Traceability matrix review
+      - Test task planning
+      - Dependency relationship analysis
+      - Acceptance criteria definition
+      - Plan compliance checking
     keywords:
-      - plan document
+      - plan_principles
+      - task_grouping
+      - build_check
       - requirements_traceability
       - design_traceability
-      - task granularity
-      - build_check
-      - group_id
-      - acceptance criteria
-      - required_reading
-      - implicit dependency
-      - dependency management
+      - acceptance_criteria
+      - JSON planning
+      - task_granularity
+      - test_task_mandatory
   plugins/forge/docs/requirement_format.md:
     title: Requirement Definition Document Format
     purpose: Provides default template and format for requirement definition documents when no project-specific format exists. Includes frontmatter rules for additive features and severity ratings for format compliance.
@@ -770,41 +766,38 @@ docs:
       - cross-reference
       - SKILL boundary
   plugins/forge/docs/spec_priorities_spec.md:
-    title: Specification and Design Document Priorities
-    purpose: Defines structural design principles that must be prioritized, prohibited main goals, typical anti-patterns, and judgment criteria for requirement and design document creation and review
+    title: Priorities for Requirements and Design Documents
+    purpose: Establishes priority principles for requirements and design documents, defining structural design principles, prohibited quantifications, and guidance on document interdependencies within the forge generation framework.
     content_details:
-      - Structural design principles (responsibility division, boundary setting, dependency direction) are Yes/No checkable and must be prioritized
-      - Quality characteristics (maintainability, operability, testability) are results of structural principles, not direct targets (Goodhart law)
-      - "Prohibited: quantization of structural quality (baseline → re-measure pipelines, flag counts, class line limits)"
-      - "Prohibited: direct quantization of quality characteristics (change ease, operability, testability)"
-      - "Prohibited: progress management KPI, achievement rates, evaluation table aesthetics as design goals"
-      - "Prohibited: AI invention of undefined quantitative values from examples"
-      - "Typical anti-patterns: structure improvement translated to quantized targets, evaluation table aesthetics, post-review value fabrication"
-      - "Typical anti-patterns: direct quantization of changeability, AI completion of post-execution sensory values"
-      - Four self-check questions for design judgment (Yes/No decidability, quality characteristics mapping, measurement motivation, stakeholder confirmation)
-      - Severity catalog (critical, major) for 15 violation types across structural principles and anti-patterns
-      - Gray zone tolerance ranges for quantization (functional vs structural metrics, confirmed vs unconfirmed values, evaluation axes, measurement description, coverage targets)
-      - Non-functional requirement categories (performance, availability, security, operability) with severity scoping by system type
+      - Structural design principles (responsibility division, boundary setting, dependency direction)
+      - "Document interdependency rules: back documents must not instruct front documents"
+      - Prohibition on direct quantification of structure quality and metrics
+      - Quality characteristics as byproducts, not direct targets (changeability, operability, testability)
+      - Prohibition on fabricating unconfirmed quantitative values; TBD handling instead
+      - "Typical inversion patterns and Goodhart's law effects"
+      - Judgment criteria for design decisions (Yes/No testability, essential characteristics, motivation validation)
+      - Severity catalog for violations (critical and major levels)
+      - Gray zone tolerance ranges for quantization types
+      - Non-functional requirement categories (performance, availability, security, operability) with coverage assessment
     applicable_tasks:
-      - Requirement specification document creation
-      - Design document creation and authoring
-      - Specification review for structural design principles
-      - Design review for anti-pattern detection
-      - Quality characteristic verification
-      - Non-functional requirement coverage validation
-      - Severity assessment for documentation violations
-      - Gray zone judgment in design review
+      - Requirements document creation
+      - Design document creation
+      - Requirements and design document review
+      - Structural quality assessment
+      - Quantification appropriateness validation
+      - Document interdependency checking
+      - Non-functional requirements specification
+      - Priority principle compliance validation
     keywords:
-      - priorities
-      - structural principles
-      - responsibility division
-      - boundary setting
-      - dependency direction
-      - Goodhart law
-      - quantization prohibition
-      - anti-patterns
-      - non-functional requirements
-      - gray zones
+      - spec_priorities
+      - responsibility_division
+      - boundary_setting
+      - dependency_direction
+      - structural_quality
+      - quantification_prohibition
+      - "Goodhart's_law"
+      - TBD_handling
+      - non_functional_requirements
   plugins/forge/docs/strategy_formulation_spec.md:
     title: Implementation Strategy Formulation Specification
     purpose: Defines the workflow and methodology for analyzing design documents and formulating implementation strategies with risk analysis and phase planning
