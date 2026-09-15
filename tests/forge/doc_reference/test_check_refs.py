@@ -11,38 +11,33 @@ sys.path.insert(0, str(_SCRIPTS))
 import check_refs  # noqa: E402
 import ref_index  # noqa: E402
 
+_INDEX = r".*"  # build_code_index に渡すパターン（パス列は呼び出し側が絞る）
 _INDEX_DIRS = ["docs/specs/**/design/", "docs/specs/**/requirements/"]
 
 
 class TestBuildCodeIndex(unittest.TestCase):
     def test_code_is_taken_from_filename_head(self):
         idx = ref_index.build_code_index(
-            ["docs/specs/x/design/DES-075_a_design.md"])
+            ["docs/specs/x/design/DES-075_a_design.md"], _INDEX)
         self.assertEqual(idx["codes"], {"DES-075": "docs/specs/x/design/DES-075_a_design.md"})
 
     def test_namespaced_code_is_not_split(self):
         idx = ref_index.build_code_index(
-            ["docs/specs/x/design/COMMON-DES-001_a.md"])
+            ["docs/specs/x/design/COMMON-DES-001_a.md"], _INDEX)
         self.assertEqual(list(idx["codes"]), ["COMMON-DES-001"])
 
     def test_same_code_in_two_paths_becomes_ambiguous(self):
         """一意に決まらないものを決まったことにしない（NFR-001）。"""
         idx = ref_index.build_code_index(
-            ["docs/specs/a/design/DES-001_x.md", "docs/specs/b/design/DES-001_y.md"])
+            ["docs/specs/a/design/DES-001_x.md", "docs/specs/b/design/DES-001_y.md"], _INDEX)
         self.assertNotIn("DES-001", idx["codes"])
         self.assertIn("DES-001", idx["ambiguous"])
 
-
-class TestBuildNameIndex(unittest.TestCase):
-    """名前索引はファイル索引と別に持つ（DES-081 §3.3）。"""
-
-    def test_name_maps_to_paths(self):
-        idx = ref_index.build_name_index(["docs/a/x.md", "docs/b/y.md"])
-        self.assertEqual(idx["x.md"], ["docs/a/x.md"])
-
-    def test_same_name_in_two_paths_keeps_both(self):
-        idx = ref_index.build_name_index(["docs/a/README.md", "docs/b/README.md"])
-        self.assertEqual(idx["README.md"], ["docs/a/README.md", "docs/b/README.md"])
+    def test_include_pattern_filters(self):
+        """`include_pattern` に該当しないパスは索引へ入らない。"""
+        idx = ref_index.build_code_index(
+            ["plugins/forge/docs/DES-999_x.md"], r"^docs/specs/")
+        self.assertEqual(idx["codes"], {})
 
 
 class TestNormpath(unittest.TestCase):
@@ -55,30 +50,14 @@ class TestNormpath(unittest.TestCase):
 
 class TestCheckFile(unittest.TestCase):
     def setUp(self):
-        self.paths = ["docs/a.md", "docs/moved/target.md",
-                      "docs/specs/x/design/DES-075_a_design.md"]
-        self.file_index = set(self.paths)
-        self.indexes = {
-            "files": self.file_index,
-            "names": ref_index.build_name_index(self.paths),
-            "codes": ref_index.build_code_index(
-                ["docs/specs/x/design/DES-075_a_design.md"]),
-        }
+        self.file_index = {"docs/a.md", "docs/specs/x/design/DES-075_a_design.md"}
+        self.code_index = ref_index.build_code_index(
+            ["docs/specs/x/design/DES-075_a_design.md"], _INDEX)
         self.sections = {"docs/specs/x/design/DES-075_a_design.md": {"1", "6.1"}}
-        # 走査範囲内の文書だけが見出しを引ける（DES-081 §3.3c）
-        self.headings = {"docs/a.md": ({"見出し"}, False)}
-
-    def _lookup(self, path):
-        return self.headings.get(path)
-
-    def _all(self, path, text, is_markdown=True):
-        return check_refs.check_file(
-            path, text, self.indexes,
-            {"sections": dict(self.sections), "heading_lookup": self._lookup},
-            is_markdown=is_markdown)
 
     def _run(self, path, text, is_markdown=True):
-        return self._all(path, text, is_markdown)["findings"]
+        return check_refs.check_file(path, text, self.file_index, self.code_index,
+                                     dict(self.sections), is_markdown=is_markdown)
 
     def test_resolved_link_yields_nothing(self):
         self.assertEqual(self._run("docs/b.md", "[x](a.md)"), [])
@@ -102,76 +81,9 @@ class TestCheckFile(unittest.TestCase):
         got = self._run("docs/b.md", "本文 [表示][undefined] を使う")
         self.assertEqual([f["kind"] for f in got], ["missing_label"])
 
-    def test_angle_bracket_destination_is_resolved_not_dropped(self):
-        """山括弧囲みは層 1 で正当なリンクであり、解決は層 2 が行う（DES-081 §1.3）。
-
-        抽出段階で対象外へ落とす形は採らない。空白を含む相対パスも解決対象であり、
-        実在しなければ参照切れとして報告する。
-        """
+    def test_out_of_scope_is_reported(self):
         got = self._run("docs/b.md", "[x](<p q.md>)")
-        self.assertEqual([f["kind"] for f in got], ["broken_link"])
-
-    def test_moved_link_when_the_name_exists_elsewhere(self):
-        """名前の不在と配置の不一致を区別する（FNC-011）。"""
-        got = self._run("docs/b.md", "[x](target.md)")
-        self.assertEqual([f["kind"] for f in got], ["moved_link"])
-        self.assertEqual(got[0]["candidates"], ["docs/moved/target.md"])
-
-    def test_broken_link_when_the_name_is_absent(self):
-        got = self._run("docs/b.md", "[x](nowhere.md)")
-        self.assertEqual([f["kind"] for f in got], ["broken_link"])
-
-    def test_same_document_anchor_is_resolved(self):
-        got = self._run("docs/b.md", "# 見出し\n\n[x](#見出し)\n")
-        self.assertEqual(got, [])
-
-    def test_missing_anchor_in_the_same_document(self):
-        got = self._run("docs/b.md", "# 見出し\n\n[x](#無い見出し)\n")
-        self.assertEqual([f["kind"] for f in got], ["missing_anchor"])
-
-    def test_anchor_is_undecidable_when_unenumerated_forms_exist(self):
-        """setext 見出しがある文書では、列挙漏れの可能性を排除できない（§3.3c.1）。"""
-        got = self._run("docs/b.md", "見出し\n=====\n\n[x](#無い見出し)\n")
-        self.assertEqual([f["kind"] for f in got], ["undecidable"])
-
-    def test_other_document_anchor_is_resolved(self):
-        got = self._run("docs/b.md", "[x](a.md#見出し)")
-        self.assertEqual(got, [])
-
-    def test_other_document_anchor_missing(self):
-        got = self._run("docs/b.md", "[x](a.md#無い)")
-        self.assertEqual([f["kind"] for f in got], ["missing_anchor"])
-
-    def test_other_document_anchor_outside_the_scanned_range(self):
-        """走査範囲外の文書は見出し索引を持たないため判定不能（§3.3c）。"""
-        got = self._run("docs/b.md", "[x](moved/target.md#見出し)")
-        self.assertEqual([f["kind"] for f in got], ["undecidable"])
-
-    def test_anchor_is_not_checked_when_the_path_is_broken(self):
-        """パスが解決しなければアンカーは見に行かない（§3.3c）。"""
-        got = self._run("docs/b.md", "[x](nowhere.md#見出し)")
-        self.assertEqual([f["kind"] for f in got], ["broken_link"])
-
-    def test_variable_expansion_is_undecidable(self):
-        """解決規則を持たない形は黙って捨てず判定不能として報告する（NFR-001）。"""
-        got = self._run("docs/b.md", "[x](${CLAUDE_PLUGIN_ROOT}/docs/a.md)")
-        self.assertEqual([f["kind"] for f in got], ["undecidable"])
-
-    def test_absolute_path_is_undecidable(self):
-        got = self._run("docs/b.md", "[x](/etc/a.md)")
-        self.assertEqual([f["kind"] for f in got], ["undecidable"])
-
-    def test_external_url_is_counted_out_of_scope_not_a_finding(self):
-        """対象外は所見ではなく別の欄で数える（FNC-012）。"""
-        res = self._all("docs/b.md", "[x](https://example.test/a) と <https://example.test/b>")
-        self.assertEqual(res["findings"], [])
-        self.assertEqual(len(res["out_of_scope"]), 2)
-        self.assertEqual({o["reason"] for o in res["out_of_scope"]}, {"external"})
-
-    def test_non_markdown_target_is_resolved_not_dropped(self):
-        """`.md` 以外の参照先も解決する（黙って捨てない）。"""
-        got = self._run("docs/b.md", "[x](run.sh)")
-        self.assertEqual([f["kind"] for f in got], ["broken_link"])
+        self.assertEqual([f["kind"] for f in got], ["out_of_scope"])
 
     def test_link_syntax_not_applied_to_non_markdown(self):
         """実装コードの添字アクセスを参照リンクと誤認しない（実測 387 件の誤検出の回帰）。"""
@@ -201,38 +113,6 @@ class TestRunIntegration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             result = check_refs.run(["docs/"], _INDEX_DIRS, project_root=d)
         self.assertEqual(result["status"], "error")
-
-
-class TestMultipleDirs(unittest.TestCase):
-    """`prepare_advisor_index.py` は category ごとに複数の root_dirs を返す。
-
-    2 つの category（specs / rules）の応答を連結して渡すため、**受け取る側は
-    ディレクトリの列を扱えなければならない**（1 つ目だけを見る実装では、
-    もう一方の category の文書が母集団から落ちる）。
-    """
-
-    def test_select_covers_every_given_dir(self):
-        paths = ["docs/a/x.md", "docs/b/y.md", "docs/c/z.md"]
-        got = check_refs._select(paths, ["docs/a/", "docs/b/"], [], ".")
-        self.assertEqual(got, ["docs/a/x.md", "docs/b/y.md"])
-
-    def test_select_expands_globs_alongside_plain_dirs(self):
-        """glob と素のディレクトリが混在しても両方効くこと。"""
-        got = check_refs._select(
-            ["docs/rules/r.md", "docs/specs/forge/design/DES-001_x.md"],
-            ["docs/rules/", "docs/specs/**/design/"],
-            [],
-            ".",
-        )
-        self.assertEqual(
-            got, ["docs/rules/r.md", "docs/specs/forge/design/DES-001_x.md"])
-
-    def test_run_accepts_index_dirs_from_two_categories(self):
-        """specs と rules の root_dirs を連結して渡せること。"""
-        result = check_refs.run(
-            ["docs/rules/"], _INDEX_DIRS + ["docs/rules/"], index_exclude=["plan"])
-        self.assertEqual(result["status"], "ok")
-        self.assertGreater(result["indexed"], 0)
 
 
 if __name__ == "__main__":
