@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-15T12:32:42Z
+  generated_at: 2026-09-15T14:21:07Z
   file_count: 41
 
 docs:
@@ -152,33 +152,36 @@ docs:
       - review criteria
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Defines review criteria for design documents, specifying which reference documents to consult, check order by P1/P2/P3 severity, and judgment rules
+    purpose: Establishes design review criteria including priority checks against SSOT documents, internal contradiction detection, and recommendation decision rules
     content_details:
-      - SSOT reference documents list
-      - Check order (P1/P2/P3)
-      - Frontmatter requirements for temporary features
-      - Document reference verification
-      - ADR structural requirements
-      - Contradiction detection rules
-      - Feature design exclusion rules
-      - Unnecessary complexity judgment criteria
-      - Judgment rules (fix/create_issue/skip)
-      - Three conditions for create_issue recommendation
+      - P1 SSOT reference list with priority mapping
+      - Check order for P1 rule matching, P2 contradictions, P3 complexity
+      - "Additive feature frontmatter requirement (feature_type: temporary-feature)"
+      - Document reference verification rules
+      - ADR operation and format checks
+      - Internal contradiction detection procedures
+      - Additive feature exclusion rule
+      - doc_status exclusion conditions
+      - Unnecessary complexity detection
+      - Recommendation judgment rules (fix, create_issue, skip)
     applicable_tasks:
-      - Design document review execution
-      - ADR format verification
-      - Feature design specification validation
+      - Design document review
+      - SSOT reference validation
       - Design principle compliance checking
-      - Design document reference validation
+      - ADR completeness verification
+      - Additive feature frontmatter validation
+      - Design contradiction detection
     keywords:
-      - design review
+      - design-review
       - SSOT
+      - P1-priority
+      - P2-priority
+      - P3-priority
+      - feature_type
+      - additive-feature
       - ADR
-      - temporary-feature
-      - review criteria
-      - P1/P2/P3 priority
-      - design principles
-      - contradiction detection
+      - recommendation
+      - doc_status
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
     purpose: Defines the criteria and procedures for general document reviews, covering SSOT reference hierarchy, document style verification, consistency checks, and recommendation judgment rules.
@@ -212,33 +215,36 @@ docs:
       - recommendation judgment
   plugins/forge/docs/criteria/review_criteria_plan.md:
     title: Plan Review Criteria
-    purpose: Defines review criteria for plan documents, specifying reference documents to consult, check order by P1/P2/P3 severity, and judgment rules
+    purpose: Establishes plan document review criteria covering task principles, traceability validation, internal task contradiction detection, and complexity assessment
     content_details:
-      - SSOT reference documents list
-      - Check order (P1/P2/P3)
-      - Additional feature determination via requirements_traceability
-      - Plan principles (task granularity, acceptance criteria, required_reading)
-      - Implicit dependencies and traceability
-      - Contradiction detection rules
-      - Task content contradictions and dependency order inconsistencies
-      - Additional feature exclusion rules
-      - Unnecessary complexity judgment criteria
-      - Judgment rules table
+      - P1 SSOT reference list for plan review
+      - Task granularity and acceptance criteria rules
+      - Required reading field specification
+      - Task grouping and parallel execution principles
+      - Implicit dependency detection procedures
+      - Traceability and requirements mapping rules
+      - Additive feature identification via requirements_traceability
+      - Task-level contradiction detection between plan and requirements/design
+      - Additive feature exclusion rule for P2 checks
+      - Unnecessary complexity and antipattern detection
     applicable_tasks:
-      - Plan document review execution
-      - Task structure and dependency validation
-      - Additional feature plan validation
-      - Plan principle compliance checking
-      - Requirement and design alignment verification
+      - Plan document review
+      - Task principle compliance checking
+      - Traceability validation
+      - Plan-design-requirements alignment checking
+      - Task dependency contradiction detection
+      - Plan complexity assessment
     keywords:
-      - plan review
-      - SSOT
-      - task granularity
-      - acceptance criteria
-      - requirements traceability
-      - temporary-feature
-      - task dependencies
-      - contradiction detection
+      - plan-review
+      - task-principles
+      - required-reading
+      - traceability
+      - additive-feature
+      - dependency
+      - acceptance-criteria
+      - task-granularity
+      - contradiction
+      - complexity
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: Requirement Review Criteria
     purpose: Defines review criteria for requirement documents, specifying reference documents to consult, check order by P1/P2/P3 severity, and judgment rules
