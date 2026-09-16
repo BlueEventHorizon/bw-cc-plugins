@@ -166,6 +166,6 @@ fileKey: "{fileKey}"
 
 ## 再利用先
 
-- `prepare-figma`: デザイン仕様書作成時に nodeId を確定（impl-issue Phase 6）
-- `impl-issue` Phase 11: UI 実装時に nodeId を再検証
-- `impl-issue` Phase 12: 実装レビュー時に nodeId を再検証
+- `prepare-figma`: デザイン仕様書作成時に nodeId を確定（impl-ui の design 段階）
+- `impl-ui` Phase 4: UI 実装時に nodeId を再検証
+- `impl-ui` Phase 5: 実装レビュー時に nodeId を再検証

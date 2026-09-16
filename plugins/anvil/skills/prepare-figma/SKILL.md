@@ -1,6 +1,6 @@
 ---
 name: prepare-figma
-description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-issue の Phase 6 から呼び出される。
+description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-ui（design 段階）から呼び出される。
 user-invocable: false
 allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(uv *), Bash(bash *), Bash(mkdir *), Bash(command *), Bash(which *), Bash(brew *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill(resolve-figma-node), Skill(figma-mcp-guide), mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---
@@ -14,10 +14,10 @@ Figma デザインからデザイン仕様書（What: 何を作るか）を作�
 
 ## 入力
 
-オーケストレータ（impl-issue Phase 6）から以下を受け取る：
+オーケストレータ（impl-ui の design 段階）から以下を受け取る：
 
 - **画面 ID**（例: `{画面ID}_{画面名}_{バリエーション}`）
-- **画面設計書パス** — オーケストレータが Phase 2 で特定・読み込み済みのファイルパス
+- **画面設計書パス** — impl-issue の仕様書調査で特定・読み込み済みのファイルパス
 - **確認・調整事項パス**（任意）— 存在する場合のファイルパス
 - **Figma URL** — 画面設計書に記載されていた Figma URL
 
@@ -392,7 +392,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 - すべての差異が **🟡 データなし** または **🟢 ダミーデータ** に分類された
 - すなわち **🔴 構造誤りがゼロ** になった
 
-この時点で初めて、ユーザーレビュー（impl-issue Phase 7）に進む資格を得る。
+この時点で初めて、ユーザーレビュー（impl-ui Phase 2）に進む資格を得る。
 
 #### 進めない場合
 

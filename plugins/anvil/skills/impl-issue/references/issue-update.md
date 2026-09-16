@@ -1,4 +1,4 @@
-# Phase 9: Issue 更新ルール
+# Phase 8: Issue 更新ルール
 
 ## Issue 参照ルール
 

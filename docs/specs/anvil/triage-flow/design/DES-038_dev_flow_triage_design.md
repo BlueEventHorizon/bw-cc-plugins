@@ -1,5 +1,8 @@
 # DES-038 開発フロー分岐（トリアージ）設計: Phase 構造・SoT の分析と anvil 内での改善
 
+> [!WARNING]
+> 本文書が定める Phase 構成・判定 A / 判定 B・plan モード提案・`start-design` エントリ・調査結果の引き継ぎは [ADR-082](ADR-082_triage_task_based_routing.md) により覆された。現在の設計は `anvil` の `triage-issue` / `impl-issue` / `impl-ui` 各 SKILL.md が正であり、本文書は改訂されるまで旧設計として据え置く。
+
 ## 1. 概要
 
 `anvil:triage-issue` の Phase 構成（0〜8）を分析し、判定ロジックの一次情報（SoT）の所在、各 Phase の判定への依存関係を明らかにする。分析結果に基づき、REQ-005 NFR-01 ／ REQ-007 NFR-01（いずれも anvil → forge 一方向依存、forge 改修禁止を定める）の制約内で実施可能な設計（フローの責務定義に基づくルート判定・Phase 構成）を定める。

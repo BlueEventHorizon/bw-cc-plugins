@@ -59,21 +59,21 @@ flowchart LR
 
 ### 2.2 役割分担（Skill 単位）
 
-| Skill                      | 種別                           | 責務                                                                                          |
-| -------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |
-| `anvil:create-issue`       | user-invocable                 | FNC-01。Issue 種別（Bug Report / Feature Request）を確認し、必須セクションを満たす Issue 起票 |
-| `anvil:impl-issue`         | AI-only（`triage-issue` 経由） | FNC-02。Issue 番号を入口に SDD パイプライン → PR 作成までをオーケストレーション               |
-| `anvil:update-issue`       | AI-only                        | FNC-03。Issue 本文の機械追記セクション（成果物リンク・進捗）を冪等に書き戻し                  |
-| `anvil:prepare-figma`      | AI-only                        | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（汎用 Agent として呼ばれる）               |
-| `anvil:resolve-figma-node` | AI-only                        | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
-| `anvil:figma-mcp-guide`    | リファレンス                   | Figma MCP の知識ベース（呼び出されず参照される）                                              |
+| Skill                      | 種別           | 責務                                                                                          |
+| -------------------------- | -------------- | --------------------------------------------------------------------------------------------- |
+| `anvil:create-issue`       | user-invocable | FNC-01。Issue 種別（Bug Report / Feature Request）を確認し、必須セクションを満たす Issue 起票 |
+| `anvil:impl-issue`         | user-invocable | FNC-02。Issue 番号を入口に SDD パイプライン → PR 作成までをオーケストレーション               |
+| `anvil:update-issue`       | AI-only        | FNC-03。Issue 本文の機械追記セクション（成果物リンク・進捗）を冪等に書き戻し                  |
+| `anvil:prepare-figma`      | AI-only        | FNC-05。Figma 由来情報を取得しデザイン仕様書を作成（汎用 Agent として呼ばれる）               |
+| `anvil:resolve-figma-node` | AI-only        | FNC-05 補助。Figma URL/画面名/識別子から正しい frame ID を確定                                |
+| `anvil:figma-mcp-guide`    | リファレンス   | Figma MCP の知識ベース（呼び出されず参照される）                                              |
 
 `anvil:commit` / `anvil:create-pr` は本設計の導入時点では改修対象外とし、既存のまま流用した。両者はその後、
 判定を機械化するためにスキル固有 script を持つに至っている（commit のステージ状態検査・create-pr の CI 状態検査）。
 いずれも「SKILL.md 側で AI に外部コマンドの出力を読ませると取り違える判定」を script へ寄せたものであり、
 本設計が定める役割分担（Issue 起票・オーケストレーション・書き戻し）には関与しない。
 
-> **既知の乖離**: `anvil:impl-issue` の起動経路は `anvil:triage-issue` 経由に一本化された（上表のみ実態へ追随済み）。本文書のシーケンス図等に残る `/anvil:impl-issue #N` 直接起動の記述は旧設計であり、フロー全体の現在の SoT は `docs/specs/anvil/triage-flow/requirements/` と各 SKILL.md を参照。
+> **既知の乖離**: `anvil:impl-issue` は `anvil:triage-issue` からの起動と `/anvil:impl-issue #N` の直接起動の両方を受け付ける（判断の経緯は [ADR-082](../triage-flow/design/ADR-082_triage_task_based_routing.md)）。本文書の UC-02 が描く「impl-issue が forge start-\* 4 工程を順次起動する」構成は現在の実装と一致しておらず、impl-issue は実装計画・実装・レビュー・PR 作成を自ら行い、UI Issue の設計・実装は `anvil:impl-ui` に委譲する。フロー全体の現在の SoT は各 SKILL.md を参照。
 
 ---
 

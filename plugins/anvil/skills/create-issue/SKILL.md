@@ -3,7 +3,7 @@ name: create-issue
 description: |
   問題・背景・原因（Bug Report）または背景・ユーザーストーリー・受け入れ基準（Feature Request）を整理し、
   GitHub Issue として記録する。Issue 種別をユーザーが選択し、種別別の必須セクションを対話で収集して起票する。
-  解決内容（対策・実装計画）は anvil:impl-issue（triage-issue 経由で起動）が担当する。
+  解決内容（対策・実装計画）は anvil:impl-issue が担当する。
   トリガー: "issue を作りたい", "問題を記録したい", "バグを issue にして", "課題を起票", "要望を issue にして"
 user-invocable: true
 argument-hint: "[issue-title]"
@@ -14,7 +14,7 @@ allowed-tools: Bash, AskUserQuestion, Read
 
 問題・背景・原因または要望・ユーザーストーリー・受け入れ基準を整理し、
 GitHub Issue として記録するスキル。
-解決内容の分析・実装計画・ブランチ作成・PR 作成は `anvil:impl-issue`（`/anvil:triage-issue` 経由で起動）が担当する。
+解決内容の分析・実装計画・ブランチ作成・PR 作成は `anvil:impl-issue` が担当する。
 
 > **このスキルが書き込む内容**: 課題の内容（Issue 種別ごとの必須セクション）のみ。
 > 対策・実装計画・成果物リンク・進捗ステータスは `anvil:impl-issue` が後から追記する。
@@ -288,7 +288,7 @@ Issue を作成しました:
   /anvil:triage-issue #<N>
 ```
 
-> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（ワンショット実装と判定されれば triage が impl-issue を起動する）。
+> `/anvil:triage-issue` は Issue の内容を既存仕様書・ルール・コードで検証し（誤りがあれば書き直し）、やるべきことを TASK 化できればそのまま `impl-issue` を起動する。判定を省いて直接実装する場合は `/anvil:impl-issue #<N>` も使える。
 
 ---
 
@@ -310,6 +310,6 @@ Issue を作成しました:
 
 ## 関連スキル
 
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge `start-*` を提案、決め事が残るなら plan モードでの検討を提案）
+- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（Issue の正誤を検証して是正し、TASK 化できればワンショット実装として `impl-issue` を起動、できなければ forge `start-requirements` を提案）
 - [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
 - [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push

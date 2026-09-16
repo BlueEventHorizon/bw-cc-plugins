@@ -71,4 +71,4 @@
 
 ## gh コマンド例
 
-`gh issue edit --body-file` は本文の**完全置換**であり追記ではない。既存本文の取得・検証・結合・更新の具体手順とエンコード規約は [`references/phase-09-issue-update.md`](../references/phase-09-issue-update.md) を参照（本ファイルにコマンド例は重複させない）。
+`gh issue edit --body-file` は本文の**完全置換**であり追記ではない。既存本文の取得・検証・結合・更新の具体手順とエンコード規約は [`references/issue-update.md`](../references/issue-update.md) を参照（本ファイルにコマンド例は重複させない）。
