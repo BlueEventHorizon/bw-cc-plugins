@@ -1,13 +1,13 @@
 ---
 name: prepare-figma
-description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-ui（design 段階）から呼び出される。
+description: Figma デザインからデザイン仕様書を作成する AI 専用スキル（impl-ui が立てる汎用 Agent の中で Skill ツールから起動される）。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-ui（design 段階）から呼び出される。
 user-invocable: false
 allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(uv *), Bash(bash *), Bash(mkdir *), Bash(command *), Bash(which *), Bash(brew *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill(resolve-figma-node), Skill(figma-mcp-guide), mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---
 
 # prepare-figma
 
-Figma デザインからデザイン仕様書（What: 何を作るか）を作成する subagent スキル。
+Figma デザインからデザイン仕様書（What: 何を作るか）を作成する AI 専用スキル（impl-ui が立てる汎用 Agent の中で Skill ツールから起動される）。
 
 **作成するもの**: デザイン仕様書（`specs/design/{id}/デザイン仕様書.md`）
 **作成しないもの**: 実装設計書（How: どう作るか）— ルール文書・類似PR・既存コードの調査後に作成するため

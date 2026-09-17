@@ -69,12 +69,14 @@ claude mcp add --transport http figma-desktop http://127.0.0.1:3845/mcp
 
 ### 関連 UI ワークフロー（impl-ui スキル）
 
-| Phase   | 役割                       | リファレンス                                                       |
-| ------- | -------------------------- | ------------------------------------------------------------------ |
-| Phase 1 | Figma → デザイン仕様書作成 | `prepare-figma` スキル                                             |
-| Phase 3 | 仕様書 → 実装設計書作成    | [impl-design.md](../impl-ui/references/impl-design.md)             |
-| Phase 4 | 実装設計書 → UI 実装       | [ui-implementation.md](../impl-ui/references/ui-implementation.md) |
-| Phase 5 | 実装後の三点突合検証       | [ui-review.md](../impl-ui/references/ui-review.md)                 |
+| Phase   | 役割                       | 手順の所在                                         |
+| ------- | -------------------------- | -------------------------------------------------- |
+| Phase 1 | Figma → デザイン仕様書作成 | `prepare-figma` スキル                             |
+| Phase 3 | 仕様書 → 実装設計書作成    | `impl-ui` スキルの references（実装設計書ルール）  |
+| Phase 4 | 実装設計書 → UI 実装       | `impl-ui` スキルの references（UI 実装ルール）     |
+| Phase 5 | 実装後の三点突合検証       | `impl-ui` スキルの references（UI レビュールール） |
+
+各ルールの本文は `impl-ui` スキルが所有する（他スキルの配下を直接リンクしない）。
 
 ### MCP ツール呼び出し時の引数
 
@@ -167,7 +169,7 @@ Figma の `get_design_context` レスポンス末尾に `Star-Dark: #DFB300` が
 
 このルールはアイコン色・テキスト色・ボーダー色・背景色など、**すべての色変更**に適用する。
 
-> **関連（実装側のルール）**: Figma 値を Flutter 実装に落とし込む際のルール（既存デザイントークンを再発明しない／フォントサイズが異なるテキストの baseline 揃え 等）は Figma MCP ツールの話ではなく **実装規約**のため、`impl-ui` スキルの [typography-mapping.md](../impl-ui/references/typography-mapping.md) と [ui-implementation.md](../impl-ui/references/ui-implementation.md) に記載している。
+> **関連（実装側のルール）**: Figma 値を Flutter 実装に落とし込む際のルール（既存デザイントークンを再発明しない／フォントサイズが異なるテキストの baseline 揃え 等）は Figma MCP ツールの話ではなく **実装規約**のため、`impl-ui` スキルの references（Typography 照合ルール・UI 実装ルール）に記載している。
 
 ### プロンプトのコツ
 

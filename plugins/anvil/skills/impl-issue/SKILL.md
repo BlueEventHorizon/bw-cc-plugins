@@ -11,7 +11,7 @@ allowed-tools: Bash(git *), Bash(gh issue view *), Bash(gh issue edit *), Bash(g
 
 # /anvil:impl-issue
 
-GitHub Issue の実装を準備から完了まで一貫して行うオーケストレータ。
+GitHub Issue の実装を準備から完了まで一貫して行うオーケストレータ。このスキルは指定された Issue の実装のみを行う。親が依頼している他の作業を引き継いではならない。
 
 **このスキルが Issue に書き込む内容**: 解決の内容（対策・実装計画・TODO）のみ。課題の内容（背景 / 現象 / 原因）は `/anvil:create-issue` または `/anvil:triage-issue` が書いたものであり、上書きしない。
 
@@ -46,6 +46,8 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 UI Issue の実装レビューは Phase 10 の `impl-ui --stage implement` に含まれるため、Phase 11 は非 UI Issue のみが通る。
 
+Phase を追加・改番するときは、この表・本文の見出し・`references/` 内の Phase 番号を同時に更新する。
+
 ---
 
 ## Phase 0: 前処理（リポジトリ解決・再開判定・ブランチ準備）
@@ -71,7 +73,7 @@ github:
 - 現在のリポジトリと**一致** → 続行。以降は `<N>` を Issue 番号として扱う
 - **不一致** → `AskUserQuestion` で次の 3 択を提示する:
   - **中断（推奨）**: 対象リポジトリに移動して再実行するよう案内し終了
-  - **読み取り専用で続行**: `gh issue view --repo <url-owner>/<url-repo>` で Issue 内容のみ取得し、ブランチ作成 / PR 作成は現在のリポジトリで行う。`Closes #<N>` ではなく `Closes <url-owner>/<url-repo>#<N>` を使用する（Phase 12 にも反映）
+  - **読み取り専用で続行**: `gh issue view --repo <url-owner>/<url-repo>` で Issue 内容のみ取得し、ブランチ作成 / PR 作成は現在のリポジトリで行う。`Closes #<N>` ではなく `Closes https://github.com/<url-owner>/<url-repo>/issues/<N>` を使用する（Phase 12 にも反映。`/anvil:create-pr` が別リポジトリ Issue に付与する形式と同じ）
   - **中止**: 終了
 
 Issue 番号のみで渡された場合はこのチェックは不要。
@@ -277,9 +279,9 @@ Issue へ記載する形式は [`assets/TEMPLATE.md`](assets/TEMPLATE.md) に従
 - **UI Issue** → `Skill` ツールで `anvil:impl-ui` を起動する（args: `<issue番号> --stage implement`）。`impl-ui` はデザイン仕様書・実装設計書に従って UI を実装し、三点突合レビューまで行い、実装ファイル一覧とレビュー結果（差異件数・対応有無・実機キャプチャ有無）を返す。Phase 11 はスキップして Phase 12 へ
 - **非 UI Issue** → Issue に記載した実装計画の TODO に沿って順番に実装する。Phase 2〜5 で読んだ仕様書・ルール・参考 PR・既存資産に従い、推測で値を埋めない。実装完了後 Phase 11 へ
 
-## Phase 11: 実装レビューを行う（非 UI Issue のみ）
+## Phase 11: 実装レビューを行う（非 UI Issue のみ） [MANDATORY]
 
-サイレントスキップ禁止 [MANDATORY]。`Skill` ツールで `/forge:review code --auto` を起動する（対象は既定の差分。エンジン軸フラグは `/forge:review` が持たないため付けない）。
+サイレントスキップ禁止。`Skill` ツールで `/forge:review code --auto` を起動する（対象は既定の差分。エンジン軸フラグは `/forge:review` が持たないため付けない）。
 
 - 指摘発生時: 確信のある所見は自動で修正される。確信の無い所見は 1 件ずつ提示されるので採否を判断する
 - 指摘なし: そのまま Phase 12 へ
@@ -294,7 +296,7 @@ Issue へ記載する形式は [`assets/TEMPLATE.md`](assets/TEMPLATE.md) に従
 
 `Skill` ツールで `/anvil:commit` を起動する。自動 commit はしない。
 
-commit メッセージには Issue 参照を含める。同一リポジトリなら `Closes #<N>`、別リポジトリ（0-1 の整合チェック参照）なら `Closes <url-owner>/<url-repo>#<N>`。
+commit メッセージには Issue 参照を含める。同一リポジトリなら `Closes #<N>`、別リポジトリ（0-1 の整合チェック参照）なら `Closes https://github.com/<url-owner>/<url-repo>/issues/<N>`。
 
 ### 12-2: PR 作成
 
@@ -321,11 +323,3 @@ PR 本文には以下を含める:
 - PR review comment に対応する場合は **1 review comment / 1 修正 / 1 commit / 1 reply** で進める。複数コメントをまとめて修正・コミットしない。関連が強く不可分な場合でも先にユーザーへ確認する
 - 各コミット後、その review comment に「どのコミットで何を直したか」を個別に返信できる状態にする
 - ビルドエラー・解析エラー・ユーザーが未解決と言及した問題がある場合は、コミットを作成せず、先に再現確認と修正を行う
-
-## 参照
-
-> Phase 追加・改番時はワークフロー表・本文見出し・references 内の Phase 番号・本参照一覧を同時に更新する
-
-- [Issue 更新テンプレート](assets/TEMPLATE.md)
-- [Phase 5 / 7: 既存資産の再利用原則](references/reuse-principles.md)
-- [Phase 8: Issue 更新ルール](references/issue-update.md)

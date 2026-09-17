@@ -17,7 +17,7 @@ GitHub Issue として記録するスキル。
 解決内容の分析・実装計画・ブランチ作成・PR 作成は `anvil:impl-issue` が担当する。
 
 > **このスキルが書き込む内容**: 課題の内容（Issue 種別ごとの必須セクション）のみ。
-> 対策・実装計画・成果物リンク・進捗ステータスは `anvil:impl-issue` が後から追記する。
+> 対策・実装計画は `anvil:impl-issue` が後から追記する。
 
 ## コマンド構文
 
@@ -204,7 +204,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 ### 4.1 本文の組み立て
 
 以下の HTML コメントマーカー構造で本文を組み立てる。
-これにより `anvil:impl-issue` 後段の `update-issue` が機械追記セクションのみを冪等に書き戻せるようにする。
+後続の実装工程（`anvil:impl-issue`）が実装計画を本文末尾に追記する際、マーカー対の内側（利用者の記述）を上書きしないための区切りである。
 
 ```markdown
 <!-- issue-driven-flow:user-content:start -->
@@ -222,7 +222,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 <!-- issue-driven-flow:user-content:end -->
 ```
 
-> **必須**: `<!-- issue-driven-flow:user-content:start -->` と `<!-- issue-driven-flow:user-content:end -->` のマーカー対は省略しない。`anvil:impl-issue` 後段の `update-issue` がこのマーカー間を保護対象として識別する。
+> **必須**: `<!-- issue-driven-flow:user-content:start -->` と `<!-- issue-driven-flow:user-content:end -->` のマーカー対は省略しない。後続の実装工程はこのマーカー間を上書きしない範囲として識別する。
 
 > **必須**: 必須セクションの見出し名は Phase 2 の種別別の表に定めた正規名（「背景 / コンテキスト」「現象（実際の動作）」等）で固定する。`Background` / `背景` 単独などの別名・英訳・略称は使用しない。
 
@@ -275,13 +275,13 @@ Issue を作成しました:
 
 `AskUserQuestion` で次の操作を確認する:
 
-| 選択肢           | 動作                                             |
-| ---------------- | ------------------------------------------------ |
-| `ブラウザで開く` | `gh issue view <#N> --repo <owner>/<repo> --web` |
-| `すぐ実装に進む` | `/anvil:triage-issue #<N>` の起動を案内          |
-| `終了`           | このまま終了                                     |
+| 選択肢             | 動作                                             |
+| ------------------ | ------------------------------------------------ |
+| `ブラウザで開く`   | `gh issue view <#N> --repo <owner>/<repo> --web` |
+| `トリアージへ進む` | `/anvil:triage-issue #<N>` の起動を案内          |
+| `終了`             | このまま終了                                     |
 
-`すぐ実装に進む` が選択された場合は、ユーザーに以下を提示して終了する（自動起動はしない）:
+`トリアージへ進む` が選択された場合は、ユーザーに以下を提示して終了する（自動起動はしない）:
 
 ```
 次のコマンドで進め方の判定から開始できます:
@@ -310,6 +310,6 @@ Issue を作成しました:
 
 ## 関連スキル
 
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（Issue の正誤を検証して是正し、TASK 化できればワンショット実装として `impl-issue` を起動、できなければ forge `start-requirements` を提案）
+- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（Issue の正誤を検証して是正し、TASK 化できればワンショット実装として `impl-issue` を、できなければ forge `start-requirements` を起動）
 - [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
 - [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push

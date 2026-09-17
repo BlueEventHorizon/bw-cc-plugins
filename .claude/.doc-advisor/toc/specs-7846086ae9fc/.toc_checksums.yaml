@@ -1,21 +1,20 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-09-13T00:37:46Z
-file_count: 69
+generated_at: 2026-09-16T23:40:09Z
+file_count: 68
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 990e6dadb2f2ba40d02b7365a0580307e010444ae7d2be41a649d4751fab31ac
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md: 8779e2e2e95bf2fbc0c32e68410f56086fe043b7a278fa704ab0e0bfc72f6e7f
-  docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: ab25ea1fa5f167e9fee33ce5589870f9fffe98324186418fcdb70c2aec1867bc
-  docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: b244a21ac9d408a9ea7f45c0ad146acfba5dfaa1a14e64846845132eac28cbc0
-  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md: a874f2cabdeb34682dbddccdd6d74bac8f0e6edb2e8d3d0e7f4efba61779ef45
-  docs/specs/anvil/triage-flow/design/ADR-039_triage_phase_reordering.md: 5c178e38e7ccd3b969ddae72005888a19046e765074523d7715f098a426575d8
-  docs/specs/anvil/triage-flow/design/DES-038_dev_flow_triage_design.md: 1bb89bb5000c03318ba19c2a48acfa95932309ee6b055eff5d97beb0cd784c84
-  docs/specs/anvil/triage-flow/requirements/REQ-007_dev_flow_triage.md: 6fd771e5ad6d1f7ff9a591f215e204b00ff88a07233711024e56a51cca0f5c5c
+  docs/specs/anvil/design/ADR-039_triage_phase_reordering.md: 054704b1c340d41434db0ba3c55093ab392bda55284a641c125c7fc6c038debf
+  docs/specs/anvil/design/ADR-059_issue_driven_flow_promotion.md: 5430a8e029d5e514056158c1fd71e9d15defad98e2cadc7f0e181efc6eb038c2
+  docs/specs/anvil/design/ADR-082_triage_task_based_routing.md: 7caab6265cf57313f45319a18f1a40ef1683bae601602d481f211da26c746ba1
+  docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: 3570d4efb089c2d6465f6b7ff4e2b58ce0545c22d6e4ed26d2d139ccd8ef6830
+  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md: c479117cc3fa868d02400c5f435abbe84f40b84db62103a4b894b07fe4ad9774
   docs/specs/codex-appserver/design/ADR-063_codex_appserver_as_review_backend.md: 87a3eac6c5f093c71dedf46ae8e2435331d305f0e8db38f4fbd554e5f35c1493
   docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: f479d8eb5f933442aadb52656abc32ad176411d5321148babf0e50291f45d11c
   docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: 649472eac8779d770236de3150f2b84d05583bfe933fae3cef553a227c354141
   docs/specs/common/design/ADR-055_distribution_boundary_for_doc_references.md: 9bad3ee2282a2ee5e3d48a643f84344bcf971466b37a166731fd1f8ecdf5d71e
-  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: cbf1f4046224e8172ae4f7278153f514722435413573584a2847193cb3379677
+  docs/specs/common/design/ADR-056_document_reference_necessity_and_notation.md: 878f85a28d02c057f69d76566d05926d9e6be81276c455e79a999ad8cb66446a
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: 9f2bc9beb58178cb7b16ec0cba88f45df90cc31e4fe298a0631a82255a519c36
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: dbf9ad01aaf10f5993b26bbcc0fda2d8a24ac002c34b260c6cc21f08be77d6bb
@@ -52,12 +51,12 @@ checksums:
   docs/specs/forge/design/DES-024_skill_script_layout_design.md: 9922fbd9aeaf48307f5e9eee99a41f395c6d9ae34fbe137779634190de4c514c
   docs/specs/forge/design/DES-027_plan_strategy_phase_adr.md: 8e207cfd47e280690fdf5ae521a4f2e9a1880daf1df53d7d5d90894f85b8972b
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md: e45b57c2bdf146cb565eda58dc239118b69bcb312dc32769c7284253738069cd
-  docs/specs/forge/design/DES-055_review_request_template_design.md: 29c883cea367305195b8b2d39d954138d32566605061df4ddcf6973075064bdc
+  docs/specs/forge/design/DES-055_review_request_template_design.md: 37d808699e83cb589fd3e288f89bde253201a3d7c49c3911a6dedb98d79c254e
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: a943a04970ffe3c9335d338aa004d5b77554b032ffe484ad1ab6c92d38b438b5
   docs/specs/forge/design/DES-066_review_body_design.md: 5d0c1efd75d520a0937c34b08a24d083ff2e62c4682af50bd5efc3a79baa4228
   docs/specs/forge/design/DES-074_plan_format_design.md: 0c8025cfb63fca54fdaed3b67b24352f7238f4c940aaa46b037db0e0a7cc33ba
   docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md: 80f198eddb3de658fd3efc5f19a06489db13e3b89ae1c64c505396835b4eadd6
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md: 1e59e27ddaaa32154ce46d76486d7ec479e42356204d4b8beab8ba55fd39b4f3
+  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md: 2ca57fc2e7987c82ef4c184445de133a106cfe410a3c9fbe1d14d2c2eadfb5ea
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 99039e16412df5e6706b114cfdec42065822f43e1a9a5177c18eec01deee8294
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 9b289e8d8178b8d39615379d75e69dd1eae0035ae7a42bd0f28727438afbe0a6
   docs/specs/forge/requirements/REQ-013_review_policy.md: f9ba14b480ec333d00ca6ccddd3b03c3e5c94ff3d08282ba07f5deb5ad379001
