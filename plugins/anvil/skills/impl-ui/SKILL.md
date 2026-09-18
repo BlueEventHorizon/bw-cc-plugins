@@ -5,7 +5,7 @@ description: |
   `anvil:impl-issue` が UI Issue と判定した Issue に対して Skill ツール経由で起動する（ユーザーからの直接起動は不可）。
 user-invocable: false
 argument-hint: "<issue番号> --stage design|implement"
-allowed-tools: Bash(git *), Bash(gh issue view *), Bash(gh api *), Bash(python3 *), Bash(curl -s -H *api.figma.com*), AskUserQuestion, Agent, Skill, Read, Write, Edit, Grep, Glob
+allowed-tools: Bash(git *), Bash(gh issue view *), Bash(gh api *), Bash(python3 *), Bash(curl -s -H *api.figma.com*), AskUserQuestion, Agent, Skill, Read, Write, Edit, Grep, Glob, mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---
 
 # anvil:impl-ui

@@ -71,10 +71,7 @@ github:
 引数が **Issue URL**（`https://github.com/<owner>/<repo>/issues/<N>`）の場合、URL から `<url-owner>/<url-repo>` と `<N>` を抽出する。
 
 - 現在のリポジトリと**一致** → 続行。以降は `<N>` を Issue 番号として扱う
-- **不一致** → `AskUserQuestion` で次の 3 択を提示する:
-  - **中断（推奨）**: 対象リポジトリに移動して再実行するよう案内し終了
-  - **読み取り専用で続行**: `gh issue view --repo <url-owner>/<url-repo>` で Issue 内容のみ取得し、ブランチ作成 / PR 作成は現在のリポジトリで行う。`Closes #<N>` ではなく `Closes https://github.com/<url-owner>/<url-repo>/issues/<N>` を使用する（Phase 12 にも反映。`/anvil:create-pr` が別リポジトリ Issue に付与する形式と同じ）
-  - **中止**: 終了
+- **不一致** → 警告して**中断する**。`<url-owner>/<url-repo>` と現在のリポジトリを示し、対象リポジトリで再実行するよう案内して終了する。別リポジトリの Issue を現在のリポジトリで実装する経路は持たない（Issue 本文への実装計画の追記先と、ブランチ・PR の作成先が食い違うため）
 
 Issue 番号のみで渡された場合はこのチェックは不要。
 
@@ -183,7 +180,7 @@ Issue 番号のみで渡された場合はこのチェックは不要。
 - 精読中に未特定の関連仕様書が判明したら追加で読む
 - 該当が無ければ「該当なし」と記録する
 
-**外部リポジトリ・symlink**: 仕様書ディレクトリが symlink で別 Git リポジトリを指している場合、ローカルに実体が無くても仕様書が無いと判断しない。実体の GitHub リポジトリを `gh api "repos/<url-owner>/<url-repo>/contents/<path>?ref=<ref>"` で取得し（レスポンスの `content` は base64）、Issue に記載するときは実体の GitHub URL を使う（`/forge:query-db-rules` で「外部仕様書リポジトリ」「symlink」等を検索し、リポジトリ名・URL 形式の規約を得る）。取得に失敗した場合は黙って読み飛ばさず `AskUserQuestion` で確認方法を確認する。
+**外部リポジトリ・symlink**: 仕様書ディレクトリが symlink で別 Git リポジトリを指している場合、ローカルに実体が無くても仕様書が無いと判断しない。実体の GitHub リポジトリを `gh api "repos/<spec-owner>/<spec-repo>/contents/<path>?ref=<ref>"` で取得し（レスポンスの `content` は base64）、Issue に記載するときは実体の GitHub URL を使う（`/forge:query-db-rules` で「外部仕様書リポジトリ」「symlink」等を検索し、リポジトリ名・URL 形式の規約を得る）。取得に失敗した場合は黙って読み飛ばさず `AskUserQuestion` で確認方法を確認する。
 
 **UI Issue の場合の追加記録**: 画面設計書・確認/調整事項ドキュメントを読み、以下を記録する（Phase 6 で `anvil:impl-ui` に渡す）:
 
@@ -296,7 +293,7 @@ Issue へ記載する形式は [`assets/TEMPLATE.md`](assets/TEMPLATE.md) に従
 
 `Skill` ツールで `/anvil:commit` を起動する。自動 commit はしない。
 
-commit メッセージには Issue 参照を含める。同一リポジトリなら `Closes #<N>`、別リポジトリ（0-1 の整合チェック参照）なら `Closes https://github.com/<url-owner>/<url-repo>/issues/<N>`。
+commit メッセージには Issue 参照 `Closes #<N>` を含める。
 
 ### 12-2: PR 作成
 

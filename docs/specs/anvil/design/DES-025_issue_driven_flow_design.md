@@ -2,7 +2,7 @@
 
 ## 1. 概要
 
-REQ-005 が定める Issue 起点開発フローを、anvil プラグイン配下の 4 つの継承型 SKILL（`create-issue` / `triage-issue` / `impl-issue` / `impl-ui`）と、UI 補助 skill（`prepare-figma` / `resolve-figma-node` / `figma-mcp-guide`）、既存の `commit` / `create-pr` で構成する。forge の検索・レビュー・要件定義 skill は Skill ツール経由で呼び出し、forge は改変しない。判定と手順はすべて SKILL.md に置き、Issue 本文のマーカー対と監査コメントで工程間の状態を受け渡す。
+REQ-005 が定める Issue 起点開発フローを、anvil プラグイン配下の 4 つの継承型 SKILL（`create-issue` / `triage-issue` / `impl-issue` / `impl-ui`）と、UI 補助 skill（`prepare-figma` / `resolve-figma-node`）、既存の `commit` / `create-pr` で構成する。forge の検索・レビュー・要件定義 skill は Skill ツール経由で呼び出し、forge は改変しない。判定と手順はすべて SKILL.md に置き、Issue 本文のマーカー対と監査コメントで工程間の状態を受け渡す。
 
 ---
 
@@ -19,7 +19,6 @@ flowchart LR
         IU[anvil:impl-ui]
         PF[anvil:prepare-figma]
         RF[anvil:resolve-figma-node]
-        FG[anvil:figma-mcp-guide]
     end
     subgraph forge
         SR[forge:start-requirements]
@@ -38,8 +37,6 @@ flowchart LR
     PF --> RF
     PF --> FM
     RF --> FM
-    PF -.参照.-> FG
-    RF -.参照.-> FG
 ```
 
 図はフローを構成する skill と外部システムの依存だけを示す。各 skill が利用する横断的なユーティリティ（forge の検索・レビュー、anvil の commit / create-pr）は §2.2・§3.1・§7 に記す。
@@ -57,7 +54,6 @@ flowchart LR
 | `anvil:impl-ui`            | false            | `impl-issue` から Skill ツール（`--stage design` / `--stage implement` の 2 回） | Figma ベースの設計・実装・三点突合レビュー                                                                       |
 | `anvil:prepare-figma`      | false            | `impl-ui` が立てる汎用 Agent の中で Skill ツール                                 | デザイン仕様書の作成（nodeId 検証、MCP / REST 取得、AI 理解プレビューの生成と自己検証）                          |
 | `anvil:resolve-figma-node` | false            | `prepare-figma` から Skill ツール                                                | Figma REST API による対象フレームの識別子確定                                                                    |
-| `anvil:figma-mcp-guide`    | false            | 参照のみ（起動されない）                                                         | Figma MCP の知識ベース                                                                                           |
 | `anvil:commit`             | true             | `impl-issue` から Skill ツール                                                   | commit（ステージ状態検査を script で行う）                                                                       |
 | `anvil:create-pr`          | true             | `impl-issue` から Skill ツール                                                   | ドラフト PR 作成（CI 状態検査を script で行う）                                                                  |
 
@@ -181,21 +177,27 @@ sequenceDiagram
     TI ->> QR: Skill ツールで検索（キーワード）
     TI ->> TI: 仕様書・ルール全件 Read、Grep / git log
     TI ->> TI: 正誤判定（5 分類）
-    alt 誤り・不足・過剰あり
+    alt 誤り・不足・過剰あり、かつ書き直しを承認しない
         TI ->> User: 新本文・削除コメント一覧を AskUserQuestion
-        User -->> TI: 書き直す
-        TI ->> GH: gh issue edit --body-file / gh api -X DELETE comments
-    end
-    TI ->> TI: 影響範囲深掘り、TASK 列挙、ルート判定
-    TI ->> GH: gh issue comment（監査コメント）
-    alt ワンショット実装
-        TI ->> User: impl-issue を起動するか AskUserQuestion
-        User -->> TI: はい
-        TI ->> II: Skill ツールで起動（args: N）
-    else 要件定義から開始
-        TI ->> User: TASK 化できない論点を提示し、start-requirements を起動するか AskUserQuestion
-        User -->> TI: はい
-        TI ->> SR: Skill ツールで起動（引数なし）
+        User -->> TI: 承認しない
+        TI ->> User: 書き直さず終了（指示を待つ）
+    else 是正して続行する
+        opt 誤り・不足・過剰あり
+            TI ->> User: 新本文・削除コメント一覧を AskUserQuestion
+            User -->> TI: 承認する
+            TI ->> GH: gh issue edit --body-file / gh api -X DELETE comments
+        end
+        TI ->> TI: 影響範囲深掘り、TASK 列挙、ルート判定
+        TI ->> GH: gh issue comment（監査コメント）
+        alt ワンショット実装
+            TI ->> User: impl-issue を起動するか AskUserQuestion
+            User -->> TI: はい
+            TI ->> II: Skill ツールで起動（args: N）
+        else 要件定義から開始
+            TI ->> User: TASK 化できない論点を提示し、start-requirements を起動するか AskUserQuestion
+            User -->> TI: はい
+            TI ->> SR: Skill ツールで起動（引数なし）
+        end
     end
 ```
 
@@ -306,7 +308,7 @@ sequenceDiagram
 
 ### 5.2 監査コメント
 
-`triage-issue` Phase 8-2 が `gh issue comment` で残す。内容は Issue の正誤（判定・是正の要旨）、TASK 一覧または TASK 化できない項目、結論と根拠、調査結果（関連仕様書 `kind: local_path` / `kind: github_url`、ルール文書、既存コード。該当なしも明記）。機械可読マーカーは持たない。
+`triage-issue` Phase 8-2 が `gh issue comment` で残す。内容は Issue の正誤（判定・是正の要旨）、TASK 一覧または TASK 化できない項目、結論と根拠、調査結果（関連仕様書はローカルパスまたは GitHub URL、ルール文書、既存コード。該当なしも明記）。機械可読マーカーは持たない。
 
 ### 5.3 UI 工程の成果物
 
@@ -320,20 +322,20 @@ sequenceDiagram
 
 ## 6. エラーハンドリング設計
 
-| 状況                                                        | 振る舞い                                                                                                                                                                                     |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| gh 未インストール / 未認証、git リポジトリ外、remote 未設定 | エラー終了し、充足手順を案内する（create-issue Phase 0、create-pr Phase 1）                                                                                                                  |
-| Issue URL のリポジトリが現在のリポジトリと不一致            | AskUserQuestion。triage-issue: 中断（推奨）/ URL 側のリポジトリを対象として続行。impl-issue: 中断（推奨）/ 読み取り専用で続行（`Closes https://github.com/<owner>/<repo>/issues/<N>`）/ 中止 |
-| トリアージの調査を完了できない（認証・権限・参照先消失）    | 調査ブロッカーとして終了。確認できなかった事項と再開条件を報告                                                                                                                               |
-| 非構造化 Issue で必須情報が読み取れない                     | AskUserQuestion で 1 回にまとめて確認                                                                                                                                                        |
-| 既存本文の取得失敗 / 空 / `null`                            | Issue 更新を中断して報告（`gh issue edit` を実行しない）                                                                                                                                     |
-| Figma PAT 疎通失敗                                          | AskUserQuestion: 再試行 / 中断                                                                                                                                                               |
-| プレビュー生成の依存ツール不足                              | AskUserQuestion: AI がインストール / 手動インストール待機 / プレビュー生成スキップ / 中断                                                                                                    |
-| Figma MCP 失敗                                              | 報告し、REST を試す。検証が不十分なら中断（推測で進めない）                                                                                                                                  |
-| 実機キャプチャ取得不能                                      | AskUserQuestion: 利用者が取得 / 未実施を明示して進行 / 中断                                                                                                                                  |
-| `/forge:review` の所見                                      | 確信のある所見は自動修正、確信の無い所見は提示して採否を得る                                                                                                                                 |
-| PR 作成失敗                                                 | `/anvil:create-pr` を直接再実行せず、`/anvil:impl-issue #N` を再実行して Phase 12 から再開                                                                                                   |
-| `git fetch origin <base>` 失敗                              | AskUserQuestion で対応確認（中止推奨）                                                                                                                                                       |
+| 状況                                                        | 振る舞い                                                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| gh 未インストール / 未認証、git リポジトリ外、remote 未設定 | エラー終了し、充足手順を案内する（create-issue Phase 0、create-pr Phase 1）                |
+| Issue URL のリポジトリが現在のリポジトリと不一致            | triage-issue / impl-issue とも警告して中断し、対象リポジトリでの再実行を案内する           |
+| トリアージの調査を完了できない（認証・権限・参照先消失）    | 調査ブロッカーとして終了。確認できなかった事項と再開条件を報告                             |
+| 非構造化 Issue で必須情報が読み取れない                     | AskUserQuestion で 1 回にまとめて確認                                                      |
+| 既存本文の取得失敗 / 空 / `null`                            | Issue 更新を中断して報告（`gh issue edit` を実行しない）                                   |
+| Figma PAT 疎通失敗                                          | AskUserQuestion: 再試行 / 中断                                                             |
+| プレビュー生成の依存ツール不足                              | AskUserQuestion: AI がインストール / 手動インストール待機 / プレビュー生成スキップ / 中断  |
+| Figma MCP 失敗                                              | 報告し、REST を試す。検証が不十分なら中断（推測で進めない）                                |
+| 実機キャプチャ取得不能                                      | AskUserQuestion: 利用者が取得 / 未実施を明示して進行 / 中断                                |
+| `/forge:review` の所見                                      | 確信のある所見は自動修正、確信の無い所見は提示して採否を得る                               |
+| PR 作成失敗                                                 | `/anvil:create-pr` を直接再実行せず、`/anvil:impl-issue #N` を再実行して Phase 12 から再開 |
+| `git fetch origin <base>` 失敗                              | AskUserQuestion で対応確認（中止推奨）                                                     |
 
 ---
 
@@ -349,7 +351,6 @@ sequenceDiagram
 | anvil:create-pr                 | `plugins/anvil/skills/create-pr/`                         | PR 作成（impl-issue Phase 12-2）                                       |
 | anvil:prepare-figma             | `plugins/anvil/skills/prepare-figma/`                     | デザイン仕様書（impl-ui Phase 1）                                      |
 | anvil:resolve-figma-node        | `plugins/anvil/skills/resolve-figma-node/`                | nodeId 検証（prepare-figma から）                                      |
-| anvil:figma-mcp-guide           | `plugins/anvil/skills/figma-mcp-guide/`                   | Figma MCP の知識ベース（参照のみ）                                     |
 | dprint                          | `dprint.jsonc`                                            | Markdown / JSON の整形（commit Phase 0）                               |
 
 ---

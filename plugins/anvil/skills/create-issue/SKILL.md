@@ -305,11 +305,3 @@ Issue を作成しました:
 | タイトルが 256 文字を超える                                    | `AskUserQuestion` で短縮版の再入力を依頼                          |
 | `gh issue create` 失敗                                         | `AskUserQuestion` でエラー内容を提示し、再試行 / 中断を確認       |
 | ラベルがリポジトリに存在しない（`bug` / `enhancement` 未作成） | エラーを表示し、ラベルなしで再試行するか `AskUserQuestion` で確認 |
-
----
-
-## 関連スキル
-
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（Issue の正誤を検証して是正し、TASK 化できればワンショット実装として `impl-issue` を、できなければ forge `start-requirements` を起動）
-- [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
-- [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push
