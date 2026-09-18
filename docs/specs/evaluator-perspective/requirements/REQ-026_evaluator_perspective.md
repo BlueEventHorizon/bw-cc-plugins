@@ -31,7 +31,7 @@ feature_note:
 | ----------- | ----------------------------------------------------------- |
 | finding     | reviewer が返す所見 1 件                                    |
 | finding_id  | finding 1 件を指す一意な識別子                              |
-| evaluation  | evaluator が返す評価 1 件。0 個以上の finding_id を参照する |
+| evaluation  | evaluator が返す評価 1 件。1 個以上の finding_id を参照する |
 | disposition | evaluator が下す判定の分類（値の意味は直下の表）            |
 
 | disposition の値   | 意味                                                                                                                                                          |
@@ -69,12 +69,12 @@ evaluator は自身の判断を見た目だけ整えるために、成立しな�
 reviewer は所見を JSON 配列として返す（構成は DM-202）。所見が無い場合は空配列とする（既存の `approved` 相当）。
 
 - reviewer は交換可能な実行主体（`agent-review`/`msg-review`/`codex-appserver` 等）であり、バックエンドごとに依頼テンプレートを分岐させない既存方針（`forge:REQ-013`）は維持する。JSON 化は全バックエンド共通の契約として行うため、この方針と衝突しない
-- finding_id は reviewer 自身が 1 始まりの通し番号として付与する
+- finding_id は reviewer 自身が 1 始まりの連番として付与する
 - 自由記述 markdown へ正規表現で戻す解析（旧方式）は行わない。JSON のパースに置き換える理由は、自由記述からの抽出が実際に誤動作した実績があるため（本文中の文字列を位置情報と誤抽出する等）
 
 #### FNC-203: 全 finding_id はいずれかの evaluation に紐づく
 
-全 finding_id が、いずれかの evaluation から参照されていることを機械的に検証する（`forge:REQ-013` FNC-1322 の継承）。検証手段の具体的な実装方式は設計の責務。
+reviewer が返した全 finding_id が、いずれかの evaluation から参照されていることを機械的に検証する（`forge:REQ-013` FNC-1322 の継承）。検証手段の具体的な実装方式は設計の責務。
 
 参照されていない finding_id を検出した場合、evaluator へ当該 finding_id を含む評価の追加を 1 回だけ再依頼する（reviewer のバックエンドが往復の文脈を保持するかどうかとは無関係——evaluator は review 本体が直接起動する独立した実行系であるため）。再依頼後もなお紐づかない finding_id は、未回答のまま残す。これへの追加対応（記録・強制終了・人間への通知）は課さない。
 
@@ -84,7 +84,10 @@ reviewer は所見を JSON 配列として返す（構成は DM-202）。所見�
 
 #### FNC-206: evaluator は reviewer の見落としを新規に指摘できる
 
-evaluator は、reviewer が返した finding のどれとも対応しない問題を発見した場合、finding_ids を空にした evaluation として新規に指摘してよい。この場合、対応する finding が無いため `location`（DM-201）を自ら明示する。
+evaluator は、reviewer が返した finding のどれとも対応しない問題を発見した場合、その問題に自ら finding_id を採番し、それを参照する evaluation として新規に指摘してよい。
+
+- 採番は reviewer の連番の続きから行う（reviewer が N 件返したなら N+1 以降）。したがって **reviewer の採番範囲を超える finding_id は、evaluator が新規に指摘したものである**——出自を示す別の印は持たない
+- この場合、参照先の finding が存在しないため `location`（DM-201）を自ら明示する
 
 ### データモデル
 
@@ -94,7 +97,7 @@ reviewer が返す finding は次のフィールドを持つ。
 
 | フィールド | 型     | 必須 | 内容                                                          |
 | ---------- | ------ | ---- | ------------------------------------------------------------- |
-| finding_id | 文字列 | 必須 | reviewer が付与する一意な識別子（1 始まりの通し番号）         |
+| finding_id | 整数   | 必須 | reviewer が付与する一意な識別子（1 始まりの連番）             |
 | severity   | enum   | 必須 | critical / major / minor                                      |
 | location   | 文字列 | 必須 | `ファイルパス:行`。特定できない場合は `位置未確定` と明示する |
 | body       | 文字列 | 必須 | 所見本文                                                      |
@@ -103,15 +106,15 @@ reviewer が返す finding は次のフィールドを持つ。
 
 evaluation は次のフィールドを持つ。
 
-| フィールド    | 型                               | 必須                         | 内容                                                                                                                      |
-| ------------- | -------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| finding_ids   | 文字列配列、または特別値「全部」 | 必須（0 個以上、空配列も可） | 参照する finding の ID。一部なら列挙、全件なら「全部」、evaluator が新規に指摘する場合は空配列                            |
-| disposition   | enum                             | 必須                         | `invalid` / `misunderstanding` / `flawed_premise` / `out_of_scope` / `valid`                                              |
-| severity      | enum                             | 必須                         | 重大度カタログから決まる値（`forge:REQ-013` 継承）                                                                        |
-| reason        | 文字列                           | 必須                         | 判定根拠。`flawed_premise` の場合は、どの文書のどこが誤りかをここに書く                                                   |
-| confidence    | enum                             | `valid` のとき必須           | `confirmed` / `inferred` / `unverified`                                                                                   |
-| fix_confident | 真偽値                           | `valid` のとき必須           | `confidence: confirmed` でなければ真になれない                                                                            |
-| location      | 文字列                           | `finding_ids` が空のとき必須 | `ファイルパス:行`。特定できない場合は `位置未確定`。finding_ids が空でない場合、位置は参照先の finding が持つため持たない |
+| フィールド    | 型         | 必須                                                  | 内容                                                                                                                                          |
+| ------------- | ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| finding_ids   | 整数の配列 | 必須（1 個以上。空配列は不正）                        | 参照する finding の ID を列挙する。全件を対象とする場合も省略記法を用いず列挙する。evaluator が新規に指摘する場合は自ら採番した ID（FNC-206） |
+| disposition   | enum       | 必須                                                  | `invalid` / `misunderstanding` / `flawed_premise` / `out_of_scope` / `valid`                                                                  |
+| severity      | enum       | 必須                                                  | 重大度カタログから決まる値（`forge:REQ-013` 継承）                                                                                            |
+| reason        | 文字列     | 必須                                                  | 判定根拠。`flawed_premise` の場合は、どの文書のどこが誤りかをここに書く                                                                       |
+| confidence    | enum       | `valid` のとき必須                                    | `confirmed` / `inferred` / `unverified`                                                                                                       |
+| fix_confident | 真偽値     | `valid` のとき必須                                    | `confidence: confirmed` でなければ真になれない                                                                                                |
+| location      | 文字列     | reviewer の採番範囲を超える finding_id を含むとき必須 | `ファイルパス:行`。特定できない場合は `位置未確定`。reviewer 由来の finding_id だけを参照する場合、位置は参照先の finding が持つため持たない  |
 
 **severity は必須フィールドとして定義するが、値そのものに他の判断（disposition の当否・修正するかどうか等）を振り回されてはいけない。** 判断の実質を持つのは reason であり、severity を取り違えても人間が reason を読めば重大さは伝わる。`flawed_premise` を含むすべての disposition について、severity の特定不能時の扱いを新たに規則化しない（既存の運用を継承する）。
 
