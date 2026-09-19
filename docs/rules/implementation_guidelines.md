@@ -102,6 +102,23 @@ SKILL.md からの参照には `${CLAUDE_SKILL_DIR}` または `${CLAUDE_PLUGIN_
 
 ---
 
+## 一時ファイルは実行ごとに一意な場所へ作り、確実に削除する [MANDATORY]
+
+シェルコマンドが一時ファイルを作るときは、`mktemp -d` で実行ごとに一意なディレクトリを作り、`trap` で終了時に削除する。
+
+```bash
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+```
+
+- **固定パスを使わない**。並行実行（複数セッション・複数対象の同時作業）や前回異常終了時の残骸と衝突し、別の対象の内容を誤って結合・上書きする
+- **後始末を末尾の `rm` で書かない**。途中の失敗で到達せず残骸が残る。`trap ... EXIT` は失敗経路でも走る
+- **配布物では、プロジェクト内のディレクトリを一時ファイルの置き場にしない**。利用者環境で `.gitignore` されている保証がなく、一時ファイルが `git status` に現れ commit される
+
+例外は、AI が `Write` ツールで書き script が読む受け渡しファイルである。`Write` はプロジェクト外へ書けないため `.claude/.temp/` 配下を使い、読み取り側の script が処理後に削除する。
+
+---
+
 ## 設計書の保守 [MANDATORY]
 
 forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.md`「設計書の保守」）に従う。
