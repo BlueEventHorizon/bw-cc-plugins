@@ -15,7 +15,7 @@ feature_note:
 
 `forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator に、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見る観点と、その評価を表現するデータ構造を定める。
 
-対象は evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）と、それを起動する review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。reviewer への依頼と応答の契約は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定める。evaluator への入力も同じ形で渡す。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
+対象は evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）と、それを起動する review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。受け渡しの方式は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定め、evaluator もこれに従う（FNC-207）。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
 
 ## 前提条件
 
@@ -30,7 +30,7 @@ feature_note:
 | 用語        | 定義                                                                                                 |
 | ----------- | ---------------------------------------------------------------------------------------------------- |
 | finding     | reviewer が返す所見 1 件（構成は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-302） |
-| finding_id  | finding 1 件を指す一意な識別子。reviewer が 1 始まりの連番で付与する（同 FNC-307）                   |
+| finding_id  | finding 1 件を指す一意な識別子。reviewer が 1 始まりの連番で付与する（同 FNC-309）                   |
 | evaluation  | evaluator が返す評価 1 件。1 個以上の finding_id を参照する                                          |
 | disposition | evaluator が下す判定の分類（値の意味は直下の表）                                                     |
 
@@ -44,7 +44,33 @@ feature_note:
 
 ## 要件一覧
 
-### evaluator の観点
+evaluator の仕事は 3 段からなる。**入力を得る → 評価する → 評価を返す。** 加えて、本体が評価をどう扱うかを定める。
+
+### 0. evaluator の定義が持つもの
+
+#### FNC-208: 評価の形式と扱いは evaluator の定義が持つ [MANDATORY]
+
+入力の各項目をどう扱うか、script をどう呼ぶか、評価として何を述べるかは、evaluator 自身の定義が持つ。**JSON の構造は持たない**——evaluator は JSON を組み立てないため、知る必要がない（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-301 と同じ）。
+
+### 1. 入力
+
+#### FNC-207: evaluator との受け渡しは reviewer と同じ方式による [MANDATORY]
+
+evaluator への入力と、evaluator が返す評価は、[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が reviewer について定める方式に従う。
+
+| 従う要件 | 内容                                                                       |
+| -------- | -------------------------------------------------------------------------- |
+| FNC-302  | キーで受け渡す。AI が運ぶ値はキー 1 つに限る                               |
+| FNC-303  | script が組み立てる。AI は組み立てない。**形式の検証を置かない**           |
+| FNC-304  | 値は変形せずに受け渡される。`reason` には改行・引用符・非 ASCII が含まれる |
+
+evaluator に固有なのは入力の中身だけである。**依頼に加えて、reviewer が返した所見が渡る。**
+
+reviewer と evaluator で方式を分けない。分ければ、同じ問題への答えが 2 つになり、片方だけが直される。
+
+### 2. 作業
+
+本節が定めるのは、本書が変える部分である。ここに無い事柄は現行のまま有効である。
 
 #### FNC-201: evaluator は指摘の奥にある本質・対象情報を疑う
 
@@ -62,24 +88,35 @@ evaluator は `disposition` を判定する際、次を手がかりとして考�
 
 evaluator は自身の判断を見た目だけ整えるために、成立しないと分かっている根拠を作り出してはならない。
 
-### evaluation の仕組み
-
-#### FNC-203: 全 finding_id はいずれかの evaluation に紐づく
-
-reviewer が返した全 finding_id が、いずれかの evaluation から参照されていることを機械的に検証する（`forge:REQ-013` FNC-1322 の継承）。検証手段の具体的な実装方式は設計の責務。
-
-参照されていない finding_id を検出した場合、evaluator へ当該 finding_id を含む評価の追加を 1 回だけ再依頼する（reviewer のバックエンドが往復の文脈を保持するかどうかとは無関係——evaluator は review 本体が直接起動する独立した実行系であるため）。再依頼後もなお紐づかない finding_id は、未回答のまま残す。これへの追加対応（記録・強制終了・人間への通知）は課さない。
-
-#### FNC-204: flawed_premise は自動修正の対象にしない
-
-`disposition: flawed_premise` は、`confidence`・`fix_confident` の値に関わらず、`--auto` モードでも自動修正の対象にしない。修正対象が今回のレビュー対象の外（規範文書等）にあるため、常に提示して採否を得る。
-
 #### FNC-206: evaluator は reviewer の見落としを新規に指摘できる
 
 evaluator は、reviewer が返した finding のどれとも対応しない問題を発見した場合、その問題に自ら finding_id を採番し、それを参照する evaluation として新規に指摘してよい。
 
 - 採番は reviewer の連番の続きから行う（reviewer が N 件返したなら N+1 以降）。したがって **reviewer の採番範囲を超える finding_id は、evaluator が新規に指摘したものである**——出自を示す別の印は持たない
 - この場合、参照先の finding が存在しないため `location`（DM-201）を自ら明示する
+
+### 3. 出力
+
+#### FNC-209: 評価は script を通して返す
+
+evaluator は評価の値を script へ渡し、script がキーの下へ評価を保持する（構成は DM-201）。本体はキーを script へ渡して評価を得る。
+
+- **evaluator は JSON を自ら組み立てない。** 値を渡すだけであり、形は script が持つ（FNC-207）
+- 所見が 0 件なら評価も 0 件とする。評価すべき対象が無い
+
+### 本体による評価の扱い
+
+#### FNC-203: 全 finding_id はいずれかの evaluation に紐づく
+
+reviewer が返した全 finding_id が、いずれかの evaluation から参照されていることを機械的に検証する（`forge:REQ-013` FNC-1322 の継承）。検証手段の具体的な実装方式は設計の責務。
+
+**これは形式の検証ではない。** FNC-207 が置かないとしたのは、値が契約の形を満たすかの検査である。本要件が課すのは、**所見と評価という 2 つの集合の関係**が成立しているかの検証であり、script が組み立てても自動的には満たされない。
+
+参照されていない finding_id を検出した場合、evaluator へ当該 finding_id を含む評価の追加を 1 回だけ再依頼する（reviewer のバックエンドが往復の文脈を保持するかどうかとは無関係——evaluator は review 本体が直接起動する独立した実行系であるため）。再依頼後もなお紐づかない finding_id は、未回答のまま残す。これへの追加対応（記録・強制終了・人間への通知）は課さない。
+
+#### FNC-204: flawed_premise は自動修正の対象にしない
+
+`disposition: flawed_premise` は、`confidence`・`fix_confident` の値に関わらず、`--auto` モードでも自動修正の対象にしない。修正対象が今回のレビュー対象の外（規範文書等）にあるため、常に提示して採否を得る。
 
 ### データモデル
 
@@ -113,7 +150,6 @@ consult は本 feature の実装期間中、agenda への記録を行わない�
 - **影響範囲の確認**: consult は agenda の唯一の呼び出し元であり、agenda に依存する他の主体は無い。ただし review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）の一部の手順（段階的提示の中断報告・前回記録の破棄確認）は、consult が保持する状態を前提にしている。これらは consult の新しい保持方式に合わせて読み替える——記録が存在しない・永続化されない前提で、報告内容・破棄判定を行う
 - **提示状態の保持方式**（保持の実装方式・形式・置き場は実装の責務）: consult は所見の一覧・残件・採否の記録を、agenda を介さず自ら保持し、1 件ずつの提示・次項目の判断・残件の報告を行える状態を保つ
 - agenda への永続化（ファイルに残す・後で見返す・表示の改訂）は、agenda 全面刷新の feature が扱う。本 feature の期間中、提示状態は永続化されない（会話が終われば失われる）
-- **設計の手がかり**: 実装方式の候補（既存 consult SKILL の rename・提示専用スタブへの置き換え）は [NOTES_evaluator_perspective.md](NOTES_evaluator_perspective.md) に記録済み。設計はここから再検討してよい（拘束はしない）
 
 ## 未確定事項
 
