@@ -6,11 +6,11 @@
 - **Figma = ビジュアル詳細の正**（アイコン形状、デザイン仕様書に無い情報の補完）
 - **既存パターンよりデザイン仕様書優先**（仕様書と整合しない既存構造は流用しない）
 - **フォントファミリーのみ例外**（システムフォント等、プロジェクト規約に従う）
-- **トークン使用 ≠ デザイン準拠** — トークン**名**まで仕様書と照合する（[Typography 照合ルール](phase-11-typography-mapping.md)）
+- **トークン使用 ≠ デザイン準拠** — トークン**名**まで仕様書と照合する（[Typography 照合ルール](typography-mapping.md)）
 
 ## Typography 照合
 
-**詳細手順・変換ルール**: [phase-11-typography-mapping.md](phase-11-typography-mapping.md)
+**詳細手順・変換ルール**: [typography-mapping.md](typography-mapping.md)
 
 最低限:
 
@@ -176,18 +176,18 @@
 - **既存画面パターンに引きずられて仕様書構造を曲げる** → 仕様書を優先
 - **実装難易度で仕様書構造を省略** → 妥協時は `AskUserQuestion`
 - **lint 回避で仕様書を妥協** → 必要なら `// ignore` 等で設計を貫く
-- **トークン名を推測で選んだ** → [Typography 照合ルール](phase-11-typography-mapping.md) で対応表を作る
+- **トークン名を推測で選んだ** → [Typography 照合ルール](typography-mapping.md) で対応表を作る
 - **共用コンポーネントを 1 画面用に変更** → revert、画面専用コンポーネントを作る
 - **アクション一覧を後回し** → 見た目と同時にハンドラ・遷移を実装
 - **区切り線・装飾要素の欠落** → 類似コンポーネントを Grep してパターン流用
 
 ## 実装後セルフチェック
 
-Phase 12 へ進む前に確認。不合格があれば修正してから次へ。
+Phase 5（実装レビュー）へ進む前に確認。不合格があれば修正してから次へ。
 妥協する場合は `AskUserQuestion` で確認を取る。
 
 - [ ] 子要素の順序がデザイン仕様書のレイアウト定義と一致
-- [ ] **Typography 対応表**の行数 = デザイン仕様書のテキストノード数（[phase-11-typography-mapping.md](phase-11-typography-mapping.md)）
+- [ ] **Typography 対応表**の行数 = デザイン仕様書のテキストノード数（[typography-mapping.md](typography-mapping.md)）
 - [ ] font / color / size / padding / gap が仕様書と一致（推測トークン禁止。トークン定義ファイルで検証済み）
 - [ ] **アクション一覧**の全項目が実装済み（空ハンドラ / TODO なし）
 - [ ] **共用コンポーネント**を 1 画面の typography に書き換えていない

@@ -122,13 +122,14 @@ flowchart LR
 
 > [Detailed Guide](docs/readme/guide_anvil.md) — Usage and examples
 
-| Skill                                                 | Description                                                                                                                                                | Trigger                  |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| [**commit**](docs/readme/guide_anvil.md#commit)       | Generate commit message from changes, commit & push                                                                                                        | `"commit"`               |
-| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body                                                                                                    | `"create-pr"`            |
-| **create-issue**                                      | Organize problem, background, and root cause into a GitHub Issue (resolution handled by impl-issue)                                                        | `"create issue"`         |
-| **triage-issue** (prototype)                          | Dev-flow branching point: launches impl-issue for one-shot work, proposes a forge SDD entry point, or suggests plan-mode exploration when decisions remain | `"triage this issue"`    |
-| _impl-issue_                                          | Run end-to-end from a GitHub Issue: plan, branch, implement, PR (UI Issue supported)                                                                       | ※ called by triage-issue |
+| Skill                                                 | Description                                                                                                                                                                              | Trigger                  |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| [**commit**](docs/readme/guide_anvil.md#commit)       | Generate commit message from changes, commit & push                                                                                                                                      | `"commit"`               |
+| [**create-pr**](docs/readme/guide_anvil.md#create-pr) | Create a GitHub draft PR with auto-generated title/body                                                                                                                                  | `"create-pr"`            |
+| **create-issue**                                      | Organize problem, background, and root cause into a GitHub Issue (resolution handled by impl-issue)                                                                                      | `"create issue"`         |
+| **triage-issue** (prototype)                          | Verify the Issue against existing specs, rules and code, rewrite it if wrong, then launch impl-issue when the work can be enumerated as tasks, otherwise launch forge start-requirements | `"triage this issue"`    |
+| **impl-issue**                                        | Run end-to-end from a GitHub Issue: investigate for the fix, plan, branch, implement, review, PR (UI Issues delegated to impl-ui)                                                        | `"implement this issue"` |
+| _impl-ui_                                             | Figma-based UI design, implementation and three-way review for UI Issues (design / implement stages)                                                                                     | ※ called by impl-issue   |
 
 > **Bold** = user-invocable, _Italic_ = AI-only (called internally by other skills)
 

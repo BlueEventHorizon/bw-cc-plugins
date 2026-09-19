@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-13T11:34:01Z
+  generated_at: 2026-09-19T11:26:02Z
   file_count: 8
 
 docs:
@@ -105,30 +105,37 @@ docs:
       - session_dir
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for script implementation (Python/Bash) and SKILL.md development for plugins
+    purpose: Defines rules for implementing scripts and SKILL.md in plugins, covering language selection, testing requirements, and distribution boundaries.
     content_details:
-      - Script language selection criteria (Python for data transformation/parsing, Bash for command execution)
-      - Python standard library only requirement with PyYAML exception
-      - Mandatory testing for plugins/ Python scripts with test directory structure
-      - SKILL.md inline scripts prohibition and external script calling pattern
-      - Script/document placement hierarchy (per-skill vs plugin-common)
-      - "Distribution boundary: plugins/ cannot reference project docs/"
-      - Fallback implementation restrictions (must be justified recovery)
-      - Version file editing prohibition (exclusive to /forge:update-version)
+      - "Language selection criteria: Python for data transformation/YAML/JSON, Bash for external commands/file operations"
+      - Python standard library only requirement (PyYAML exception for YAML parsing)
+      - "Test requirements: plugins/ Python scripts must have tests in tests/ directory with naming test_{module}.py"
+      - SKILL.md prohibition on inline scripts; use external script files instead
+      - "Script placement structure: skill-specific under plugins/{plugin}/skills/{skill}/scripts/, plugin-shared under plugins/{plugin}/scripts/"
+      - Temporary file handling with mktemp -d and trap cleanup for parallel safety
+      - Cross-skill reference prohibition to avoid silent breakage when internal structures change
+      - "Distribution boundary rule: published materials cannot reference project docs/ files"
+      - "Design document maintenance: ADR placement in docs/specs/**/design/ADR-{NNN}_{topic}.md"
+      - Version file editing prohibition for feature/fix PRs; /forge:update-version single responsibility
     applicable_tasks:
-      - Plugin script implementation review
-      - Plugin development architecture planning
-      - Test coverage assessment
-      - SKILL.md design review
+      - Implementing plugin scripts in Python or Bash
+      - Creating and maintaining unit tests for plugin Python scripts
+      - Authoring SKILL.md files and reviewing inline script usage
+      - Creating Architectural Decision Records (ADR)
+      - Reviewing plugin distribution materials for documentation boundaries
+      - Designing plugin internal structure and script placement
+      - Setting up version management and release workflows
     keywords:
       - Python
       - Bash
-      - PyYAML
-      - unittest
       - SKILL.md
-      - Distribution boundary
-      - Version management
-      - Fallback
+      - tests
+      - ADR
+      - CLAUDE_PLUGIN_ROOT
+      - distribution boundary
+      - mktemp
+      - PyYAML
+      - update-version
   docs/rules/script_error_output_rules.md:
     title: Script Error Output
     purpose: Defines exit code conventions and output format requirements for Python scripts in the plugins directory, establishing how scripts declare exit codes and callers interpret results.

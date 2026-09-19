@@ -3,7 +3,7 @@ name: create-issue
 description: |
   問題・背景・原因（Bug Report）または背景・ユーザーストーリー・受け入れ基準（Feature Request）を整理し、
   GitHub Issue として記録する。Issue 種別をユーザーが選択し、種別別の必須セクションを対話で収集して起票する。
-  解決内容（対策・実装計画）は anvil:impl-issue（triage-issue 経由で起動）が担当する。
+  解決内容（対策・実装計画）は anvil:impl-issue が担当する。
   トリガー: "issue を作りたい", "問題を記録したい", "バグを issue にして", "課題を起票", "要望を issue にして"
 user-invocable: true
 argument-hint: "[issue-title]"
@@ -14,10 +14,10 @@ allowed-tools: Bash, AskUserQuestion, Read
 
 問題・背景・原因または要望・ユーザーストーリー・受け入れ基準を整理し、
 GitHub Issue として記録するスキル。
-解決内容の分析・実装計画・ブランチ作成・PR 作成は `anvil:impl-issue`（`/anvil:triage-issue` 経由で起動）が担当する。
+解決内容の分析・実装計画・ブランチ作成・PR 作成は `anvil:impl-issue` が担当する。
 
 > **このスキルが書き込む内容**: 課題の内容（Issue 種別ごとの必須セクション）のみ。
-> 対策・実装計画・成果物リンク・進捗ステータスは `anvil:impl-issue` が後から追記する。
+> 対策・実装計画は `anvil:impl-issue` が後から追記する。
 
 ## コマンド構文
 
@@ -204,7 +204,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 ### 4.1 本文の組み立て
 
 以下の HTML コメントマーカー構造で本文を組み立てる。
-これにより `anvil:impl-issue` 後段の `update-issue` が機械追記セクションのみを冪等に書き戻せるようにする。
+後続の実装工程（`anvil:impl-issue`）が実装計画を本文末尾に追記する際、マーカー対の内側（利用者の記述）を上書きしないための区切りである。
 
 ```markdown
 <!-- issue-driven-flow:user-content:start -->
@@ -222,7 +222,7 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 <!-- issue-driven-flow:user-content:end -->
 ```
 
-> **必須**: `<!-- issue-driven-flow:user-content:start -->` と `<!-- issue-driven-flow:user-content:end -->` のマーカー対は省略しない。`anvil:impl-issue` 後段の `update-issue` がこのマーカー間を保護対象として識別する。
+> **必須**: `<!-- issue-driven-flow:user-content:start -->` と `<!-- issue-driven-flow:user-content:end -->` のマーカー対は省略しない。後続の実装工程はこのマーカー間を上書きしない範囲として識別する。
 
 > **必須**: 必須セクションの見出し名は Phase 2 の種別別の表に定めた正規名（「背景 / コンテキスト」「現象（実際の動作）」等）で固定する。`Background` / `背景` 単独などの別名・英訳・略称は使用しない。
 
@@ -245,11 +245,12 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 
 ### 4.3 Issue 作成
 
-特殊文字（バッククォート・ドル記号等）が含まれても安全に渡すため、本文を一時ファイルに書き出してから `--body-file` で渡す:
+特殊文字（バッククォート・ドル記号等）が含まれても安全に渡すため、本文を一時ファイルに書き出してから `--body-file` で渡す。一時ファイルは `mktemp -d` で実行ごとに一意なディレクトリを作って置き、`trap` で確実に削除する（固定パスは並行実行時に別 Issue の本文と衝突する）:
 
 ```bash
-mkdir -p .claude/.temp
-tee .claude/.temp/issue_body.md <<'BODY'
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+tee "$workdir/issue_body.md" <<'BODY'
 <本文>
 BODY
 
@@ -257,7 +258,7 @@ gh issue create \
   --repo <owner>/<repo> \
   --title "<title>" \
   --label "<bug または enhancement>" \
-  --body-file .claude/.temp/issue_body.md
+  --body-file "$workdir/issue_body.md"
 ```
 
 作成された Issue 番号（`#N`）と Issue URL を記録する。
@@ -275,20 +276,20 @@ Issue を作成しました:
 
 `AskUserQuestion` で次の操作を確認する:
 
-| 選択肢           | 動作                                             |
-| ---------------- | ------------------------------------------------ |
-| `ブラウザで開く` | `gh issue view <#N> --repo <owner>/<repo> --web` |
-| `すぐ実装に進む` | `/anvil:triage-issue #<N>` の起動を案内          |
-| `終了`           | このまま終了                                     |
+| 選択肢             | 動作                                             |
+| ------------------ | ------------------------------------------------ |
+| `ブラウザで開く`   | `gh issue view <#N> --repo <owner>/<repo> --web` |
+| `トリアージへ進む` | `/anvil:triage-issue #<N>` の起動を案内          |
+| `終了`             | このまま終了                                     |
 
-`すぐ実装に進む` が選択された場合は、ユーザーに以下を提示して終了する（自動起動はしない）:
+`トリアージへ進む` が選択された場合は、ユーザーに以下を提示して終了する（自動起動はしない）:
 
 ```
 次のコマンドで進め方の判定から開始できます:
   /anvil:triage-issue #<N>
 ```
 
-> `/anvil:impl-issue` は `user-invocable: false` のため直接起動できない。`/anvil:triage-issue` の判定を経由する（ワンショット実装と判定されれば triage が impl-issue を起動する）。
+> `/anvil:triage-issue` は Issue の内容を既存仕様書・ルール・コードで検証し（誤りがあれば書き直し）、やるべきことを TASK 化できればそのまま `impl-issue` を起動する。判定を省いて直接実装する場合は `/anvil:impl-issue #<N>` も使える。
 
 ---
 
@@ -305,11 +306,3 @@ Issue を作成しました:
 | タイトルが 256 文字を超える                                    | `AskUserQuestion` で短縮版の再入力を依頼                          |
 | `gh issue create` 失敗                                         | `AskUserQuestion` でエラー内容を提示し、再試行 / 中断を確認       |
 | ラベルがリポジトリに存在しない（`bug` / `enhancement` 未作成） | エラーを表示し、ラベルなしで再試行するか `AskUserQuestion` で確認 |
-
----
-
-## 関連スキル
-
-- [`/anvil:triage-issue`](../triage-issue/SKILL.md) — 起票後の進め方判定（ワンショット実装なら内部で `impl-issue` を起動、SDD なら forge `start-*` を提案、決め事が残るなら plan モードでの検討を提案）
-- [`/anvil:create-pr`](../create-pr/SKILL.md) — PR 作成（同一プラグイン内の参照実装）
-- [`/anvil:commit`](../commit/SKILL.md) — コミットメッセージ生成・push

@@ -24,7 +24,7 @@ Android Emulator / iOS Simulator 上で、実装済みアプリの画面を最�
 - Figma / 実装 / コードの差分判定
 - コード修正
 
-差分判定や修正は、呼び出し元の `impl-issue` や `sync-screen-design` が担当する。
+差分判定や修正は、呼び出し元の `impl-ui` や `sync-screen-design` が担当する。
 
 ## 現対応
 
