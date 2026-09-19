@@ -11,137 +11,262 @@ feature_note:
 
 ## 1. 概要
 
-[REQ-026](../requirements/REQ-026_evaluator_perspective.md) が定める要件を実現する。要点は 2 つ。
+[REQ-026](../requirements/REQ-026_evaluator_perspective.md) が解く問題は 1 つである。reviewer と evaluator が同じ観点文書を同じ向きで読むため、独立評価が独立になっていない。
 
-1. reviewer の応答契約を自由記述 markdown から JSON へ移行し（FNC-202/DM-202）、evaluator の判定を finding と 1 対 1 対応から解放する（FNC-203/DM-201）
-2. evaluator に、指摘の奥にある本質・対象情報を疑う態度（FNC-201）と、reviewer の見落としを新規に指摘する経路（FNC-206）を持たせる
+本設計は、evaluator に reviewer とは異なる層を見せる（FNC-201・FNC-206）ための、シーケンスと責務を定める。所見・評価の構造（FNC-202・DM-202・DM-201）と紐づけの検証（FNC-203）は、その観点が働いた結果を運ぶための器である。
 
-対象は [DES-066](../../forge/design/DES-066_review_body_design.md) が定める review 本体の一部（reviewer との書式契約・evaluator との入出力・結合ロジック）。DES-066 自体は書き換えず、本設計書が置き換える箇所を「6. 既存設計の置き換え」に列挙する。
+**器が観点を制約する**——評価が所見と 1 対 1 に固定されている限り、複数の指摘が 1 つの原因から出ていると気づいても、それを表現する場所が無い。
 
-consult の一時的な振る舞い（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-205）も対象に含む。[DES-078](../../consult/design/DES-078_consult_dialogue_flow_design.md) が定める agenda 連携部分は本 feature の実装期間中スコープ外であり、本設計書はその期間の consult の代替動作のみを定める。
-
-## 2. アーキテクチャ概要
-
-```mermaid
-flowchart TB
-    Reviewer["reviewer（Agent）<br/>JSON 配列で応答（DM-202）"]
-    ParseReview["scripts/parse_review_response.py<br/>（JSON 契約の検証。旧 parse_findings.py の正規表現解析を置換）"]
-    Body["review 本体 SKILL.md<br/>（DES-066 Step 7 の該当手順を更新）"]
-    Evaluator["evaluator（Agent）<br/>FNC-201 の観点 + finding_ids（DM-201）"]
-    ParseEval["scripts/parse_evaluation.py<br/>（finding_ids 契約の検証に更新）"]
-    LinkCheck["scripts/check_finding_coverage.py<br/>（新規。全 finding_id が evaluation に紐づくかを検証。FNC-203）"]
-    ConsultStub["consult（スタブ。FNC-205）<br/>agenda を呼ばず状態を自ら保持"]
-    ConsultLegacy["consult-legacy（rename 後の既存実装）"]
-
-    Reviewer --> ParseReview --> Body
-    Body -->|"依頼本文・所見配列（Agent ツール）"| Evaluator
-    Evaluator --> ParseEval --> LinkCheck --> Body
-    Body -->|"提示へ回る所見"| ConsultStub
-```
-
-reviewer→evaluator→本体という主経路は [DES-066](../../forge/design/DES-066_review_body_design.md) §2 のアーキテクチャを維持する。変わるのは各矢印が運ぶデータの契約と、それを検証するスクリプトである。
-
-## 3. モジュール設計
-
-### 3.1 モジュール一覧
-
-| モジュール                                                    | 責務                                                                                                                                                                                                                                                                                                                                                                                         | 依存                                                     |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `plugins/forge/agents/reviewer.md`                            | 所見を JSON 配列で返す（DM-202）。禁止事項・read-only 制約は現行のまま変更しない                                                                                                                                                                                                                                                                                                             | なし                                                     |
-| `scripts/review/parse_review_response.py`                     | reviewer の JSON 応答を検証し、`findings` 配列を返す（新規。旧 `parse_findings.py` の正規表現解析を置換）                                                                                                                                                                                                                                                                                    | なし                                                     |
-| `plugins/forge/agents/evaluator.md`                           | FNC-201 の観点を判定手順に追加。`disposition` に `flawed_premise` を追加。`evaluation` を `finding_ids`（DM-201）で返す                                                                                                                                                                                                                                                                      | `parse_review_response.py` の出力形式                    |
-| `scripts/review/parse_evaluation.py`                          | evaluator の JSON 応答を検証（`finding_ids` の型・`disposition`/`severity`/`confidence`/`fix_confident` の値域）。件数一致検証を撤去                                                                                                                                                                                                                                                         | なし                                                     |
-| `scripts/review/check_finding_coverage.py`                    | 全 `finding_id` がいずれかの `evaluation.finding_ids` に含まれる（または「全部」で覆われる）ことを検証する（新規。FNC-203）。あわせて `finding_ids: []` の evaluation（FNC-206 の新規指摘）を、DM-201 の `location` を使って finding 相当の合成レコード（DM-202 と同じ形。`finding_id` は合成であることが分かる採番とする）へ変換し、以降の finding ベースのパイプラインへ載せられる形にする | `parse_review_response.py`・`parse_evaluation.py` の出力 |
-| `plugins/forge/skills/review/SKILL.md`                        | Step 7 の該当手順（evaluator への依頼組み立て・結合ロジックの呼び出し先）を更新                                                                                                                                                                                                                                                                                                              | 上記スクリプト群                                         |
-| `plugins/forge/skills/consult/`（rename 後 `consult-legacy`） | 既存の agenda 連携実装。本 feature 期間中は呼び出されない                                                                                                                                                                                                                                                                                                                                    | agenda（呼ばない）                                       |
-| `plugins/forge/skills/consult/`（新規スタブ）                 | 所見の一覧・残件・採否を自ら保持し、1 件ずつ提示する。agenda を呼ばない（FNC-205）                                                                                                                                                                                                                                                                                                           | なし（永続化しない）                                     |
-
-`combine_findings_and_evaluations.py`（[DES-066](../../forge/design/DES-066_review_body_design.md) §3.10a）は `index` の 1 対 1 対応を前提にしており、`finding_ids`（一部/全部/空）を扱えない。本設計はこれを `check_finding_coverage.py` へ置き換える（「6. 既存設計の置き換え」参照）。
-
-### 3.2 finding_ids の解釈フロー
-
-```mermaid
-flowchart TB
-    A["evaluation.finding_ids を読む"] --> B{値の種別}
-    B -->|文字列配列（1件以上）| C["列挙された finding_id を対象とする"]
-    B -->|"全部"| D["reviewer が返した finding 全件を対象とする"]
-    B -->|空配列| E["対応する finding なし（evaluator の新規指摘。FNC-206）"]
-    E --> F["evaluation.location（DM-201）を使い、finding 相当の合成レコードへ変換する"]
-```
-
-`check_finding_coverage.py` は、全 reviewer finding の `finding_id` が、いずれかの evaluation で（C または D の形で）参照されているかを検証する。参照されていない `finding_id` があれば、evaluator へ 1 回だけ再依頼する（FNC-203）。再依頼の宛先が evaluator である理由: 未紐づけは evaluator 側の評価漏れの兆候であり、reviewer は `disposition` を判定する立場にない。evaluator は review 本体が直接 Agent ツールで起動する独立した実行系であるため、reviewer バックエンドの `retains_context`（[DES-066](../../forge/design/DES-066_review_body_design.md) §3.9）とは無関係に、常に再依頼できる。
-
-**E（空配列＝新規指摘）の扱い**: この evaluation は対応する finding 実体を持たないため、そのままでは `split_by_location.py` 以降の finding ベースのパイプライン（位置による振り分け §3.7・consult への `items[]` 引き渡し）に載らない。`check_finding_coverage.py` は、この evaluation を DM-201 の `location`（FNC-206 により必須）を使って finding 相当の合成レコード（DM-202 と同じ形）へ変換してから後段へ渡す。合成であることは `finding_id` の採番規則（reviewer 由来の番号と衝突しない接頭辞等）で判別できるようにする（具体的な採番方式は実装の責務）。
-
-## 4. ユースケース設計
-
-### 4.1 ユースケース一覧
-
-| ユースケース                             | 説明                                                                                                                      |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| reviewer が JSON で所見を返す            | DM-202 の形で `findings` 配列（空配列可）を返す                                                                           |
-| evaluator が観点を働かせて判定する       | FNC-201 の手がかりを考慮しつつ `disposition`／`finding_ids` を返す                                                        |
-| evaluator が見落としを新規に指摘する     | `finding_ids: []` の evaluation を追加する（FNC-206）                                                                     |
-| 全 finding_id の紐づけを検証する         | `check_finding_coverage.py` が未紐づけを検出し、evaluator へ 1 回だけ再依頼する。再依頼後もなお紐づかなければそのまま残す |
-| flawed_premise を自動修正しない          | `--auto` でも常に提示して採否を得る（FNC-204）                                                                            |
-| consult が agenda を呼ばず状態を保持する | 本 feature 期間中、consult スタブが所見の一覧・残件・採否を自ら保持する（FNC-205）                                        |
-
-### 4.2 シーケンス図（reviewer 応答から evaluation 結合まで）
+## 2. シーケンス
 
 ```mermaid
 sequenceDiagram
-    participant B as review 本体
+    actor Human as 利用者
+    participant Body as review 本体
     participant R as reviewer
-    participant PR as parse_review_response.py
     participant E as evaluator
-    participant PE as parse_evaluation.py
-    participant CC as check_finding_coverage.py
+    participant C as consult
 
-    B->>R: 依頼本文
-    R-->>B: JSON（findings 配列）
-    B->>PR: 応答本文
-    PR-->>B: 検証済み findings 配列（finding_id 付き）
-    B->>E: 依頼本文・findings 配列
-    E-->>B: JSON（evaluations 配列。finding_ids/disposition/severity/reason/confidence/fix_confident）
-    B->>PE: 応答本文
-    PE-->>B: 検証済み evaluations 配列
-    B->>CC: findings・evaluations
-    CC-->>B: 未紐づけの finding_id（あれば）
-    alt 未紐づけあり
-        B->>E: 未紐づけの finding_id を含む評価の追加を再依頼（1 回のみ）
-        E-->>B: 追加の evaluation
+    Body->>R: レビューを依頼する
+    R-->>Body: 所見（JSON）
+    Body->>Body: validate_findings.py で DM-202 を検証し、所見の配列を得る
+    Body->>E: 依頼内容と所見の配列
+    E-->>Body: 評価（JSON）
+    Body->>Body: validate_evaluations.py で DM-201 を検証し、評価の配列を得る
+    Body->>Body: link_evaluations_to_findings.py で紐づけを検証し、所見単位へ結び付ける
+    alt 未参照の finding_id がある
+        Body->>E: 当該 finding_id の評価の追加を依頼する（1 回だけ）
+        E-->>Body: 追加の評価
+        Body->>Body: validate_evaluations.py で検証する
+        Body->>Body: link_evaluations_to_findings.py で結び付ける
     end
+    Body->>Body: flawed_premise を自動修正の対象から外す
+    Body->>C: 提示へ回る所見
+    C->>Human: 1 件ずつ提示する
+    Human-->>C: 採否
 ```
 
-**前提条件**: reviewer が JSON 契約に従って応答していること。
-**正常フロー**: 上記シーケンスのとおり。
-**エラーフロー**: JSON 契約違反（`parse_review_response.py`/`parse_evaluation.py` の検証失敗）は既存の `failure`/`halted_with_open_findings` 終端経路（[DES-066](../../forge/design/DES-066_review_body_design.md) §3.2・§3.3）へ合流する。本設計はこの終端処理自体を変更しない。
+**前提条件**: reviewer が所見を返し、evaluator が独立に評価する枠組みが有効であること（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) 前提条件）。
 
-## 5. 使用する既存コンポーネント
+**エラーフロー**: `validate_findings.py` / `validate_evaluations.py` の検証に失敗した応答は、所見・評価として扱わない。追加依頼の後もなお未参照の finding_id は、未回答のまま残す（FNC-203）。
 
-| コンポーネント                                                                    | ファイルパス                                               | 用途                                                                                                                                                                                                           |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| review 本体の終端処理・介入軸・段階的提示                                         | `plugins/forge/skills/review/SKILL.md`                     | 変更しない。本設計は Step 7 の evaluator 委譲・結合手順のみ更新する                                                                                                                                            |
-| `split_by_location.py`                                                            | `plugins/forge/skills/review/scripts/split_by_location.py` | 変更しない。FNC-206 の新規指摘は `check_finding_coverage.py` が finding 相当の合成レコードへ変換してから渡すため、`split_by_location.py` 自身は finding の location 有無だけを見る既存の入出力契約のまま扱える |
-| `verify_fix_safety.py`・`capture_syntax_baseline.py`・`collect_modified_files.py` | 同上ディレクトリ                                           | 変更しない                                                                                                                                                                                                     |
-| バックエンド SKILL（`agent-review`/`msg-review`）                                 | `plugins/forge/skills/{agent-review,msg-review}/`          | 変更しない。所見の書式契約（自由記述→JSON）は依頼テンプレートの返信形式契約セクションが変わるだけで、バックエンドの往復プロトコル自体には影響しない                                                            |
+## 3. 責務
 
-再利用しない判断: `parse_findings.py`（`plugins/forge/scripts/review/`）の正規表現ベースの抽出ロジックは、JSON 化後は不要になるため再利用しない（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-202 の採用理由: 自由記述からの抽出が実際に誤動作した実績があるため）。ただし、この旧スクリプトは本 feature の実装期間中は削除せず、`--add` の旧仕様非破棄原則（[additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §3）に従い実装完了後の merge で整理する。
+アクター（reviewer・evaluator・consult・review 本体）と、review 本体が行う処理（script）を分けて示す。
 
-## 6. 既存設計の置き換え
+| 担い手                            | 責務                                                                                                       | 要件            |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------- |
+| reviewer                          | 所見を JSON で返す。自らの所見に 1 始まりの連番を採番する                                                  | FNC-202・DM-202 |
+| `validate_findings.py`            | 応答が DM-202 を満たすかを検証し、所見の配列を返す                                                         | FNC-202・DM-202 |
+| evaluator                         | 観点を働かせて評価する。1 件の評価が複数の所見を引いてよい                                                 | FNC-201・DM-201 |
+| evaluator                         | 見落としを新規に指摘する。自ら採番し、位置を明示する                                                       | FNC-206         |
+| `validate_evaluations.py`         | 応答が DM-201 を満たすかを検証し、評価の配列を返す                                                         | DM-201          |
+| `link_evaluations_to_findings.py` | 全 finding_id がいずれかの評価に紐づくかを検証し、評価を所見単位へ結び付ける。未参照があればその一覧を返す | FNC-203         |
+| review 本体                       | 未参照があれば evaluator へ追加を依頼する（1 回だけ）                                                      | FNC-203         |
+| review 本体                       | `flawed_premise` を自動修正の対象から外し、常に提示へ回す                                                  | FNC-204         |
+| review 本体                       | 評価が食い違ったときに調停する                                                                             | DM-201          |
+| consult                           | 所見を 1 件ずつ提示して採否を得る。一覧・残件・採否を自ら保持する                                          | FNC-205         |
 
-本設計書が置き換える既存設計を明示する。ここに挙げていない既存設計は有効である。
+シーケンスと責務が決まれば、正しく動くかはこの 2 つで決まる。以降の節は、ここで挙げた主体それぞれの内側を定める。
 
-| 既存設計                                                                                                                                                                       | 置き換えの内容                                                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [DES-066](../../forge/design/DES-066_review_body_design.md) §2「所見の書式契約は全バックエンド共通」（自由記述 markdown 前提のモジュール一覧・`parse_findings.py` の位置づけ） | JSON 契約へ置き換える（3.1 節）。`parse_findings.py` は `parse_review_response.py` に置き換わる                                                                                                                                    |
-| [DES-066](../../forge/design/DES-066_review_body_design.md) §3.10a「reviewer所見とevaluator判定の結合」（`index` による 1 対 1 結合・`combine_findings_and_evaluations.py`）   | `finding_ids`（一部/全部/空）による紐づけ検証（3.2 節）へ置き換える。検証観点は「件数一致」から「全 finding_id がいずれかの evaluation に紐づくこと」（FNC-203）へ変わる。`check_finding_coverage.py` が新設の担当スクリプトになる |
-| [DES-078](../../consult/design/DES-078_consult_dialogue_flow_design.md) の agenda 連携前提（`items[]` を agenda へ渡す一連の記述）                                             | 本 feature の実装期間中は動作しない（FNC-205）。consult は自ら状態を保持し、agenda を呼ばない。DES-078 自体は書き換えず、agenda 全面刷新の feature が再設計する                                                                    |
+## 4. モジュール設計
 
-## 7. テスト設計
+### 4.1 script の分割
 
-- **単体テスト対象**:
-  - `parse_review_response.py`: JSON 契約違反（`finding_id` 欠落・`severity` 値域外・`location` 欠落）を検出して `failure` を返すこと
-  - `parse_evaluation.py`: `finding_ids` が文字列配列・特別値「全部」・空配列のいずれであっても受理すること。旧来の件数一致検証を行わないこと
-  - `check_finding_coverage.py`: 全 finding_id が紐づいている場合に空の未紐づけ集合を返すこと。「全部」を指定した evaluation が存在する場合、全 finding_id を紐づけ済みとして扱うこと。未紐づけがある場合にその一覧を返すこと。`finding_ids: []` の evaluation を、`location` を用いて finding 相当の合成レコードへ正しく変換すること。合成レコードの `finding_id` が reviewer 由来の `finding_id` と衝突しないこと
-- **統合テスト対象**: reviewer（JSON 応答）→ evaluator（`finding_ids` による判定）→ `check_finding_coverage.py` の一連の流れが、位置未確定所見・複数所見の束ね・新規指摘（FNC-206）のいずれのケースでも既存の終端経路（`approved`/`findings`/`halted_with_open_findings`）に正しく合流すること
+決定論的に決まる仕事だけを script が担う。観点を働かせること・追加依頼の判断・調停・提示はいずれも決定論に落とせず、AI が担う。
+
+| script                            | 責務                                                           | 置き場            |
+| --------------------------------- | -------------------------------------------------------------- | ----------------- |
+| `validate_findings.py`            | reviewer の応答が DM-202 を満たすかを検証し、所見の配列を返す  | 共有領域          |
+| `validate_evaluations.py`         | evaluator の応答が DM-201 を満たすかを検証し、評価の配列を返す | review スキル配下 |
+| `link_evaluations_to_findings.py` | 紐づけを検証し、評価を所見単位へ結び付ける                     | review スキル配下 |
+
+置き場は [DES-024](../../forge/design/DES-024_skill_script_layout_design.md) に従う。`validate_findings.py` を共有領域に置くのは、reviewer の応答を受け取る経路が交換可能な実行主体ごとに存在するためである（FNC-202）。他の 2 つは review 本体だけが呼ぶ。
+
+### 4.2 3 つに分ける理由
+
+| 境界                                                         | 理由                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate_findings.py` と `validate_evaluations.py` を分ける | 検証する契約が別である（DM-202 と DM-201）。2 箇所の同型処理を 1 つに畳むと契約をパラメータとして渡す汎用化になり、[design_principles_spec.md](../../../../plugins/forge/docs/design_principles_spec.md) が退ける早期の抽象化にあたる |
+| `link_evaluations_to_findings.py` を分ける                   | 検証の対象が単一の応答ではなく **2 つの配列の関係**であり、上流のどちらの責務にも属さない                                                                                                                                             |
+| 紐づけの検証と結び付けを分けない                             | 結び付けた結果を作るには紐づけの検証が要る。検証だけを行った中間物に使い道が無い                                                                                                                                                      |
+
+### 4.3 検査を置く場所
+
+AI の応答を構造化データとして受け取る境界には検査を置く。応答の中身を決めているのは AI であり、代わりに組み立てる実行系が存在しないためである（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §6.1）。
+
+検査はその境界 1 つに限る。検証を通った配列を下流で再び検査しない（同 §7）。`link_evaluations_to_findings.py` が検証するのは配列の中身ではなく、2 つの配列の**関係**である。
+
+## 5. 受け渡す構造
+
+### 5.1 reviewer の応答（DM-202）
+
+```json
+{
+  "findings": [
+    {
+      "finding_id": 1,
+      "severity": "major",
+      "location": "docs/rules/foo.md:42",
+      "body": "所見本文"
+    }
+  ]
+}
+```
+
+所見が無い場合は `"findings": []` とする（FNC-202）。
+
+### 5.2 evaluator の応答（DM-201）
+
+```json
+{
+  "evaluations": [
+    {
+      "finding_ids": [1, 3, 5],
+      "disposition": "valid",
+      "severity": "major",
+      "reason": "3 件は同じ原因から出ている。…",
+      "confidence": "confirmed",
+      "fix_confident": true
+    },
+    {
+      "finding_ids": [10],
+      "disposition": "valid",
+      "severity": "major",
+      "reason": "reviewer が見落とした問題。…",
+      "confidence": "confirmed",
+      "fix_confident": false,
+      "location": "plugins/forge/agents/evaluator.md:22"
+    }
+  ]
+}
+```
+
+`finding_ids` は整数の配列であり、省略記法を持たない。全件を対象とする評価も ID を列挙する。予約値を置けば「その値は単独でしか現れない」「他の ID と混ぜられない」という規則が契約に増え、省ける手間に見合わない。
+
+空配列は不正とする。何も参照しない評価は意味を持たないため、空配列に別の意味を与えず検証エラーとして扱う。これによりキーの書き落としも空配列も等しく弾かれ、既定が安全側に倒れる。
+
+reviewer の採番範囲を超える `finding_id` は、evaluator が新規に指摘したものである（FNC-206）。出自を示す別のフィールドは持たない——採番規則が既にそれを表しており、印を足せば同じ事実を 2 箇所で持つことになる。
+
+### 5.3 所見単位に結び付いた配列
+
+```json
+{
+  "items": [
+    {
+      "finding_id": 1,
+      "severity": "major",
+      "location": "docs/rules/foo.md:42",
+      "body": "…",
+      "evaluations": [
+        {
+          "evaluation_id": 1,
+          "disposition": "valid",
+          "severity": "major",
+          "reason": "…",
+          "confidence": "confirmed",
+          "fix_confident": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+| 決めたこと                                                      | 理由                                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `evaluations` を常に配列とする                                  | 同じ finding_id を複数の評価が引くこと（DM-201）を、要素の複製ではなく 1 要素の中の複数評価として表す。複製すると同じ所見が二重に扱われる                                                                        |
+| `evaluation_id` は `link_evaluations_to_findings.py` が採番する | 識別子の採番は決定論的な実行系の責務（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。evaluator に採番させると DM-201 が持たない値を書かせることになる |
+| 新規指摘も同じ形の要素にする                                    | 採番範囲を超える finding_id を持ち、位置と本文は評価が持つ `location` と `reason` から採る                                                                                                                       |
+
+## 6. 観点を働かせる設計（FNC-201）
+
+### 6.1 観点が働いたことは、どこに現れるか
+
+FNC-201 は 5 つの手がかりを態度として課し、出力構造を求めない。したがって本設計は、観点を働かせたことを申告させず、**働いた結果が評価そのものに現れる**形を取る。
+
+| 観点が働いた結果                              | 評価に現れる形                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| 複数の指摘が 1 つの原因から出ていると気づいた | 1 件の評価が複数の `finding_id` を引き、`reason` が共通原因を述べる       |
+| 指摘の前提となった情報が誤っていた            | `disposition: misunderstanding` と、誤りの所在を述べた `reason`           |
+| 規範文書側に欠陥があった                      | `disposition: flawed_premise` と、どの文書のどこが誤りかを述べた `reason` |
+| 見落としを見つけた                            | 自ら採番した `finding_id` を引く評価（FNC-206）                           |
+| 俯瞰したが共通原因は無かった                  | 複数を引かない評価と、無いと判断した根拠を述べた `reason`                 |
+
+最下段が要る理由は、FNC-201 が「本質・原因が無いこともある。作り出さないこと」と定めるためである。無いという判断は、束ねられていない評価として現れ、根拠は `reason` に残る。**無いことを明示する専用の欄は持たない**——欄があれば埋める圧力が生まれ、成立しない共通原因を書かせることになる。
+
+### 6.2 5 つの観点が評価へ写る形
+
+観点のうち 3 つは §6.1 に現れる。残る 2 つの写り方を定める——定めなければ、観点に反する所見を前にした evaluator が、どの分類へ落とすかを推測で決めることになる。
+
+| 観点                             | 評価への写り方                                                                                                                                                                                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 本質を疑う                       | 複数の `finding_id` を引く評価                                                                                                                                                                                                                                               |
+| 対象の情報を疑う                 | `misunderstanding` / `flawed_premise`                                                                                                                                                                                                                                        |
+| 既存の決定を外から当否判定しない | evaluator 自身への拘束であり、同時に**所見がこれを犯している場合の分類**を定める。決定そのものの当否を論じる所見は `invalid` とし、`reason` に根拠とした決定を記す。形式・論理的整合性・書き換え禁止といった手続きの違反を指摘する所見は、この分類に入れず通常どおり判定する |
+| まず最も強い解釈を試す           | 独立した分類を持たない。`flawed_premise` へ至る前に尽くすべき手順として、`flawed_premise` の判定条件に組み込む                                                                                                                                                               |
+| 逆から検証する                   | 独立した分類を持たない。`confidence` の決定に働く——判定が誤っている形を先に想定して確かめられたものだけが `confirmed` になる                                                                                                                                                 |
+
+下 2 つが独立した分類を持たないのは、**判定の分岐ではなく判定の質に働く観点だから**である。分類を新設すれば、観点の数だけ `disposition` が増え、値の意味が重なる。
+
+### 6.3 観点は工程にしない
+
+5 つの手がかりは `disposition` 判定と並列の別工程ではなく、その判定を行う際の目の付け所である。工程として立てると、判定の前に観点を消化する手順が生まれ、見たかどうかを自己申告させる形と同じ形骸化に至る。
+
+### 6.4 観点は規範文書の本数に依存しない
+
+観点文書の本数はレビューの種別ごとに異なる。したがって 5 つの手がかりは、**特定の規範文書を名指しせず、所見と対象の関係だけで立てられる問い**である必要がある。
+
+「指摘された問題は本当にそれが原因か」「元になった情報自体が誤っていないか」「まず最も合理的な読み方を試したか」「この判定が間違っているとしたらどこか」は、規範文書が何本であっても同じ形で問える。既存の決定を外から当否判定しない観点だけが特定の文書種別に触れるが、これは適用除外の指定であり本数に依存しない。
+
+観点に**規範文書を読めという指示を伴わせない**。対象と観点文書は依頼本文で既に渡っており、読む対象を二重に指定すると依頼本文と食い違う。
+
+### 6.5 具体例の置き場
+
+5 つの観点それぞれが実際の判定をどう変えるかの例は、evaluator の定義が持つ。例は観点の意味を伝える手段であって、要件でも設計でもない。加えて、例は実運用で観点が空振りした事例から補充されるべきもので、更新の頻度が要件・設計と異なる。
+
+## 7. 未参照の finding_id への追加依頼（FNC-203）
+
+`link_evaluations_to_findings.py` が未参照の `finding_id` を返したとき、review 本体は evaluator へ 1 回だけ追加の評価を依頼する。
+
+**これは追加の依頼であり、評価のやり直しではない。** 渡すのは未参照の `finding_id` とその所見に限り、既に返された評価を再送しない——同じ所見に 2 通りの評価が返れば、どちらを採るかの規則が新たに要る。
+
+依頼先が evaluator であるのは、未参照が評価の漏れであり、reviewer は `disposition` を判定する立場にないためである。
+
+追加依頼の後もなお未参照の `finding_id` は、未回答のまま残す。追加の対応は課さない。
+
+## 8. 評価の食い違いの調停（DM-201）
+
+同じ `finding_id` を複数の評価が引き、判定が食い違うことがある。調停は review 本体が行う。
+
+DM-201 は調停を実行主体の判断に委ね、要件としては規則化していない。したがって script に畳ませない——script に畳ませれば、それは規則化したことになる。`link_evaluations_to_findings.py` は複数の評価を 1 つの要素に並べるところまでを担う（§5.3）。
+
+## 9. flawed_premise の扱い（FNC-204）
+
+`disposition: flawed_premise` は、`confidence` / `fix_confident` の値に関わらず自動修正の対象にせず、常に提示へ回す。
+
+`disposition` による除外は、`confidence` と `fix_confident` による振り分けの**前段**に置く。後段に置くと、一括修正の申し出に載せた後で除外することになり、利用者へ提示済みの申し出を撤回する経路が生まれる。
+
+## 10. consult の状態（FNC-205）
+
+consult は、提示に必要な状態——所見の一覧・残件・採否——を自ら保持する。
+
+提示状態は永続化しない。本 feature の期間中、会話が終われば失われる（FNC-205）。したがって保持のために固有のファイル・作業ディレクトリ・DB を設けない。
+
+## 11. テスト設計
+
+**単体テスト対象**:
+
+- `validate_findings.py`: DM-202 の必須フィールド欠落・`severity` の値域外・`finding_id` が整数でない応答を拒否すること。空の配列を受理すること
+- `validate_evaluations.py`: `finding_ids` が整数の配列であることを要求し、空配列・キーの不在・整数以外を拒否すること。`disposition` の 5 値を受理し値域外を拒否すること。`fix_confident` が真なら `confidence` が `confirmed` であることを要求すること。採番範囲を超える `finding_id` を引く評価に `location` を要求すること
+- `link_evaluations_to_findings.py`: 全 `finding_id` が参照済みなら空の未参照集合を返すこと。未参照があればその一覧を返すこと。1 件の評価が複数の所見を引くとき、各所見に同じ評価が付くこと。1 つの所見を複数の評価が引くとき、要素が複製されず 1 要素が複数の評価を持つこと。採番範囲を超える `finding_id` を引く評価が 1 要素になること。`evaluation_id` を自ら採番すること
+
+**統合テスト対象**:
+
+- reviewer の応答から所見単位の配列までが、束ねた評価・新規指摘・未参照の追加依頼のいずれのケースでも成立すること
+
+## 12. 未確定事項
+
+| ID      | 内容                                                                                                                                                                                                    | 期限   |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| TBD-001 | FNC-201 の 5 つの観点を evaluator が実際に働かせられるかは未検証（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) TBD-001 を継承）。§6.1 の「評価に現れる形」が実際に観測できるかで検証する | 実装後 |

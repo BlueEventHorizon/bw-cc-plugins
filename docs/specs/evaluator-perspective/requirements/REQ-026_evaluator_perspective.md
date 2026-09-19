@@ -15,7 +15,7 @@ feature_note:
 
 `forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator に、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見る観点と、その評価を表現するデータ構造を定める。
 
-対象は evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）と、それを起動する review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
+対象は evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）と、それを起動する review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。reviewer への依頼と応答の契約は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定める。evaluator への入力も同じ形で渡す。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
 
 ## 前提条件
 
@@ -27,12 +27,12 @@ feature_note:
 
 ## 用語
 
-| 用語        | 定義                                                        |
-| ----------- | ----------------------------------------------------------- |
-| finding     | reviewer が返す所見 1 件                                    |
-| finding_id  | finding 1 件を指す一意な識別子                              |
-| evaluation  | evaluator が返す評価 1 件。1 個以上の finding_id を参照する |
-| disposition | evaluator が下す判定の分類（値の意味は直下の表）            |
+| 用語        | 定義                                                                                                 |
+| ----------- | ---------------------------------------------------------------------------------------------------- |
+| finding     | reviewer が返す所見 1 件（構成は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-302） |
+| finding_id  | finding 1 件を指す一意な識別子。reviewer が 1 始まりの連番で付与する（同 FNC-307）                   |
+| evaluation  | evaluator が返す評価 1 件。1 個以上の finding_id を参照する                                          |
+| disposition | evaluator が下す判定の分類（値の意味は直下の表）                                                     |
 
 | disposition の値   | 意味                                                                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -64,14 +64,6 @@ evaluator は自身の判断を見た目だけ整えるために、成立しな�
 
 ### evaluation の仕組み
 
-#### FNC-202: reviewer は所見を JSON で応答する
-
-reviewer は所見を JSON 配列として返す（構成は DM-202）。所見が無い場合は空配列とする（既存の `approved` 相当）。
-
-- reviewer は交換可能な実行主体（`agent-review`/`msg-review`/`codex-appserver` 等）であり、バックエンドごとに依頼テンプレートを分岐させない既存方針（`forge:REQ-013`）は維持する。JSON 化は全バックエンド共通の契約として行うため、この方針と衝突しない
-- finding_id は reviewer 自身が 1 始まりの連番として付与する
-- 自由記述 markdown へ正規表現で戻す解析（旧方式）は行わない。JSON のパースに置き換える理由は、自由記述からの抽出が実際に誤動作した実績があるため（本文中の文字列を位置情報と誤抽出する等）
-
 #### FNC-203: 全 finding_id はいずれかの evaluation に紐づく
 
 reviewer が返した全 finding_id が、いずれかの evaluation から参照されていることを機械的に検証する（`forge:REQ-013` FNC-1322 の継承）。検証手段の具体的な実装方式は設計の責務。
@@ -90,17 +82,6 @@ evaluator は、reviewer が返した finding のどれとも対応しない問�
 - この場合、参照先の finding が存在しないため `location`（DM-201）を自ら明示する
 
 ### データモデル
-
-#### DM-202: finding の構成
-
-reviewer が返す finding は次のフィールドを持つ。
-
-| フィールド | 型     | 必須 | 内容                                                          |
-| ---------- | ------ | ---- | ------------------------------------------------------------- |
-| finding_id | 整数   | 必須 | reviewer が付与する一意な識別子（1 始まりの連番）             |
-| severity   | enum   | 必須 | critical / major / minor                                      |
-| location   | 文字列 | 必須 | `ファイルパス:行`。特定できない場合は `位置未確定` と明示する |
-| body       | 文字列 | 必須 | 所見本文                                                      |
 
 #### DM-201: evaluation の構成
 
@@ -133,17 +114,6 @@ consult は本 feature の実装期間中、agenda への記録を行わない�
 - **提示状態の保持方式**（保持の実装方式・形式・置き場は実装の責務）: consult は所見の一覧・残件・採否の記録を、agenda を介さず自ら保持し、1 件ずつの提示・次項目の判断・残件の報告を行える状態を保つ
 - agenda への永続化（ファイルに残す・後で見返す・表示の改訂）は、agenda 全面刷新の feature が扱う。本 feature の期間中、提示状態は永続化されない（会話が終われば失われる）
 - **設計の手がかり**: 実装方式の候補（既存 consult SKILL の rename・提示専用スタブへの置き換え）は [NOTES_evaluator_perspective.md](NOTES_evaluator_perspective.md) に記録済み。設計はここから再検討してよい（拘束はしない）
-
-## 既存要件の置き換え
-
-本書が置き換える既存要件を明示する。ここに挙げていない既存要件は有効である。
-
-| 既存要件                                                                                                                                                                               | 置き換えの内容                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [forge:REQ-013](../../forge/requirements/REQ-013_review_policy.md) FNC-1322（所見評価の独立検証と機械的結合）                                                                          | 独立評価は finding と 1 対 1 の対応を持たない（FNC-201・DM-201 の finding_ids）。対応付けの機械的検証は、件数の一致ではなく「全 finding_id がいずれかの evaluation に紐づくこと」（FNC-203）へ改める。独立評価を所見を返した主体自身が行わないこと、確認済みの検証手段で対応付けを行うことは、従前どおり継承する |
-| [forge:REQ-013](../../forge/requirements/REQ-013_review_policy.md)「所見の書式契約は全バックエンド共通とする」（自由記述 markdown + 重大度マーカー + 所見ごとの位置情報 + 完了宣言行） | 所見の書式契約を JSON（DM-202）へ改める。全バックエンド共通とする方針・バックエンドごとに依頼テンプレートを分岐させない方針（FNC-202）は維持する                                                                                                                                                                 |
-| [agenda:REQ-019](../../consult/agenda/requirements/REQ-019_agenda_record.md) FNC-012（個別処理の前に構造の妥当性を判定する）                                                           | 本 feature の実装期間中、agenda はスコープ外であり動作しない（FNC-205）。判定を行い記録するという義務そのものを、この期間は停止する。判定主体・記録先の再設計は agenda 全面刷新の feature が扱う                                                                                                                 |
-| [consult:REQ-017](../../consult/requirements/REQ-017_consult_skill.md) のうち、agenda（記録・表示機構）への依存を前提とする全条項                                                      | 本 feature の実装期間中、これらの前提は成立しない（FNC-205）。consult は自ら状態を保持する。旧仕様との相反は矛盾の有無と無関係に本書が優先するため（additive_development_spec.md §2）、個別条項は列挙しない                                                                                                      |
 
 ## 未確定事項
 
