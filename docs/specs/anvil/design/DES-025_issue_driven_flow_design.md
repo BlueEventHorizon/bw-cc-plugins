@@ -54,8 +54,8 @@ flowchart LR
 | `anvil:impl-ui`            | false            | `impl-issue` から Skill ツール（`--stage design` / `--stage implement` の 2 回） | Figma ベースの設計・実装・三点突合レビュー                                                                       |
 | `anvil:prepare-figma`      | false            | `impl-ui` が立てる汎用 Agent の中で Skill ツール                                 | デザイン仕様書の作成（nodeId 検証、MCP / REST 取得、AI 理解プレビューの生成と自己検証）                          |
 | `anvil:resolve-figma-node` | false            | `prepare-figma` から Skill ツール                                                | Figma REST API による対象フレームの識別子確定                                                                    |
-| `anvil:commit`             | true             | `impl-issue` から Skill ツール                                                   | commit（ステージ状態検査を script で行う）                                                                       |
-| `anvil:create-pr`          | true             | `impl-issue` から Skill ツール                                                   | ドラフト PR 作成（CI 状態検査を script で行う）                                                                  |
+| `anvil:commit`             | true             | 利用者、または `impl-issue` から Skill ツール                                    | commit（ステージ状態検査を script で行う）                                                                       |
+| `anvil:create-pr`          | true             | 利用者、または `impl-issue` から Skill ツール                                    | ドラフト PR 作成（CI 状態検査を script で行う）                                                                  |
 
 すべて継承型 SKILL であり、`context: fork` を持たない。隔離 context が必要な処理は Agent ツールで行う（`prepare-figma` を汎用 Agent で実行、`forge:review` が `forge:reviewer` / `forge:evaluator` カスタム Agent を起動）。
 

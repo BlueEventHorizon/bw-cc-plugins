@@ -245,11 +245,12 @@ UI 関連が確定した場合、以下のいずれか **1 つ以上** を `AskU
 
 ### 4.3 Issue 作成
 
-特殊文字（バッククォート・ドル記号等）が含まれても安全に渡すため、本文を一時ファイルに書き出してから `--body-file` で渡す:
+特殊文字（バッククォート・ドル記号等）が含まれても安全に渡すため、本文を一時ファイルに書き出してから `--body-file` で渡す。一時ファイルは `mktemp -d` で実行ごとに一意なディレクトリを作って置き、`trap` で確実に削除する（固定パスは並行実行時に別 Issue の本文と衝突する）:
 
 ```bash
-mkdir -p .claude/.temp
-tee .claude/.temp/issue_body.md <<'BODY'
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+tee "$workdir/issue_body.md" <<'BODY'
 <本文>
 BODY
 
@@ -257,7 +258,7 @@ gh issue create \
   --repo <owner>/<repo> \
   --title "<title>" \
   --label "<bug または enhancement>" \
-  --body-file .claude/.temp/issue_body.md
+  --body-file "$workdir/issue_body.md"
 ```
 
 作成された Issue 番号（`#N`）と Issue URL を記録する。

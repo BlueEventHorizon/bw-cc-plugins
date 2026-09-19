@@ -114,17 +114,17 @@ Phase 1 で分離した事実主張・解決提案を、Phase 2〜4 で得た実
 1. 新しい本文を組み立てる。構造は `/anvil:create-issue` が生成する形（`<!-- issue-driven-flow:user-content:start -->` 〜 `<!-- issue-driven-flow:user-content:end -->` のマーカー対の中に、種別に応じた必須セクション）に揃える。既存本文にマーカー対があればそれを保ち、無ければ新たに付ける。タイトルも誤っていれば書き直す
 2. 新本文の中身は Phase 2〜4 で確認した**実体**だけで構成する。確認していないことを書かない。起票者の解決提案のうち妥当なものは「解決の方向性」として残してよいが、事実主張と区別して書く
 3. `AskUserQuestion` で新タイトル・新本文の全文と、削除するコメントの一覧（ID・投稿者・先頭 1 行）を提示し、承認を得る。選択肢は「承認する / 承認しない」の 2 つとする。承認前に書き込み・削除を行わない。承認されなかった場合は書き直しを実行せず、Phase 6 以降へ進まずに利用者の指示を待つ（誤りがあると判定した Issue のまま TASK 化・ルート判定・実装工程の起動へ進まない）
-4. 承認後、実行する。一時ファイルは `mktemp -d` で作り、固定パスを使わない:
+4. 承認後、実行する。一時ファイルは `mktemp -d` で作り、固定パスを使わない。後始末は `trap` で行う（途中の `gh` が失敗しても消える）:
 
    ```bash
    workdir=$(mktemp -d)
+   trap 'rm -rf "$workdir"' EXIT
    tee "$workdir/issue_body.md" <<'BODY'
    <新本文>
    BODY
    gh issue edit <N> --repo <owner>/<repo> --title "<新タイトル>" --body-file "$workdir/issue_body.md"
    # コメントの全削除（1 件ずつ。id は gh api repos/<owner>/<repo>/issues/<N>/comments --jq '.[].id' で取得済みのもの）
    gh api -X DELETE "repos/<owner>/<repo>/issues/comments/<comment_id>"
-   rm -rf "$workdir"
    ```
 
 5. `gh issue view <N> --repo <owner>/<repo> --comments` で結果を確認し、新本文が反映され、コメントが残っていないことを検証する
