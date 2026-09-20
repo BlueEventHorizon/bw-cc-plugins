@@ -1,14 +1,12 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-09-20T14:25:12Z
-file_count: 45
+generated_at: 2026-09-20T15:53:52Z
+file_count: 43
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 9de13b2edb41d2333081e7881ea09d12ba374ee09762c757af625421d6937e57
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md: 8779e2e2e95bf2fbc0c32e68410f56086fe043b7a278fa704ab0e0bfc72f6e7f
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md: 1e2b2528e1ecb37f3ace02f608cf2d01f55e4e4c463dab6f2b3c446271046e9d
   docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md: 3fdfcee0dead8cafe4e4fc67263a3a6eaa4a92a3a7fbbd0b70fe8e051a3968e8
-  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md: cc41d00c8b4513edca0a310668605affd92b0666ef2fb61e4b60dbe2999856bc
-  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md: d59351fb89038f3859e6e2df14bab719d3f6ced62782cf8f7d0ed3d56b0e5ebd
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md: e0c43f5df13990e8d02c61fffdfba7fc29e5368196cd9a3a9beaaa9f63723051
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md: 03de8a1d2ec68ce6887c912c05243063b0e4130baad355522c46c5e90ed06809
   docs/specs/common/requirements/COMMON-REQ-002_error_handling_policy.md: dbf9ad01aaf10f5993b26bbcc0fda2d8a24ac002c34b260c6cc21f08be77d6bb
