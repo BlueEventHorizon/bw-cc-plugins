@@ -20,11 +20,10 @@ query / update wrapper が doc-advisor 経路へ切り替えるとき、`index-d
 設定解決の前提ではない**——`index-docs` が整形後の本文で `body_hash` を打つために責務 1
 が要るのであり、設定を読むことは整形の有無に依存しない。
 
-想定する呼び出し元は、文書参照の実在性検査（`skills/fix-doc-refs`）である。同スキルが
-書き換えるのは参照切れとして検出された参照だけであり、検査のたびに走査範囲全体が整形
-されると、修復の差分に無関係な変更が混ざる。整形自体は commit 時（`anvil:commit` の Phase 0）と索引更新時
-（`update-db-rules` / `update-db-specs` 経由の本 CLI 既定動作）に走るため、
-検査側で行う必要がない。
+想定する呼び出し元は、自分の変更の差分に整形を混ぜたくないものである。走査範囲全体が
+整形されると、その呼び出し元が意図した差分に無関係な変更が混ざる。整形自体は commit 時
+（`anvil:commit` の Phase 0）と索引更新時（`update-db-rules` / `update-db-specs` 経由の
+本 CLI 既定動作）に走るため、設定解決だけを行う側で重ねて行う必要がない。
 
 ファイル一覧への展開は行わない。展開は doc-advisor 側に委ね、doc-db sync 用の
 `project_documents.py` は使用しない。索引母集団の決定経路が backend ごとに異なる

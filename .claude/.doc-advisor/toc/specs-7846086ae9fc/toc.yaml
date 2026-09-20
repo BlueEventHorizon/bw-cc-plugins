@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-20T14:25:12Z
-  file_count: 45
+  generated_at: 2026-09-20T16:29:36Z
+  file_count: 41
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -128,72 +128,6 @@ docs:
       - task determination
       - requirement definition
       - Issue template
-  docs/specs/codex-appserver/design/DES-064_codex_appserver_review_backend_design.md:
-    title: codex-appserver Review Backend Design Specification
-    purpose: Specifies the architecture, module design, and lifecycle management of a headless review backend for codex-appserver that executes reviews independently without TUI interaction
-    content_details:
-      - Architecture with WebSocket JSON-RPC communication over Unix socket
-      - "Module design: backend entry, WebSocket client, server lifecycle, thread management"
-      - WebSocket client implementation without TLS, compression, or non-loopback support
-      - "Server lifecycle: startup per review_id, thread continuation, version tracking, orphan handling"
-      - "Permission model: read-only operation without write or approval requests"
-      - "Response transformation: event streams to text to common findings format"
-      - "Error handling: fail-closed behavior with explicit failure states and prerequisite validation"
-      - Round-trip recording for audit purposes
-      - Use case sequences for initial round, subsequent rounds, resource release, orphan handling
-      - Test design including headless integration testing capability
-    applicable_tasks:
-      - Implementing codex-appserver review backend component
-      - Designing WebSocket communication protocol integration
-      - Validating server lifecycle and resource management
-      - Testing headless review execution
-      - Integrating with /forge:review body component
-      - Handling failure cases and error states
-      - Designing thread management for review context
-      - Implementing response transformation and format conversion
-      - Planning permission model for read-only operations
-      - Verifying protocol conformance with Codex CLI
-    keywords:
-      - codex-appserver
-      - review_id
-      - WebSocket
-      - JSON-RPC
-      - Unix socket
-      - thread management
-      - findings format
-      - response transformation
-      - headless execution
-      - fail-closed
-  docs/specs/codex-appserver/requirements/REQ-015_codex_appserver_review_backend.md:
-    title: codex-appserver review backend requirements definition
-    purpose: Specifies requirements for a Codex app-server based review backend that owns review threads, maintains context across multiple review rounds, and eliminates dependencies on terminal multiplexing, message databases, and manual wake-up mechanisms
-    content_details:
-      - "Background: msg-review thread control via msg-sys and cmux dependencies with 7-hour wait measurements"
-      - "Codex app-server architecture: JSON-RPC protocol for thread control and turn execution"
-      - FNC-001 backend contract compliance with forge:REQ-013 (input, output, finding position, backend opacity)
-      - FNC-002 thread ownership and context preservation with deterministic resource release on final turn notification
-      - FNC-003 Codex structured response conversion to common format with severity markers and position information
-      - FNC-004 pre-condition checks (Codex CLI availability, app-server provision, method existence)
-      - FNC-005 failure confirmation and reporting without fallback or approval conflation
-      - FNC-006 execution permission limiting to read-only scope
-      - BL-001 audit trail recording per review_id independent of message database
-      - NFR-001 and NFR-002 standard library only implementation with no external dependencies
-    applicable_tasks:
-      - Implementation of codex-appserver review backend
-      - Design of thread ownership and resource lifecycle management
-      - Design of response conversion from Codex structured responses to common finding format
-      - Implementation of pre-condition checking for Codex CLI and app-server availability
-      - Testing multi-round review context continuation
-    keywords:
-      - Codex app-server
-      - JSON-RPC
-      - review backend
-      - forge:REQ-013
-      - thread context continuation
-      - finding format conversion
-      - resource lifecycle
-      - app-server process management
-      - audit trail
   docs/specs/common/design/COMMON-DES-001_skill_base_design.md:
     title: SKILL Base Design
     purpose: Defines SKILL execution models, type selection principles (inheritance type default, fork type abandoned due to structural defects), custom Agent requirements for isolated contexts, call argument constraints, and defense-in-depth architectural controls.
@@ -1019,60 +953,6 @@ docs:
       - feature_type
       - temporary-feature
       - priority
-  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
-    title: Document Reference Integrity Check Design
-    purpose: Specifies the design for checking document reference integrity through three stages (indexing, extraction, reconciliation) and defines resolution algorithms to detect broken references using deterministic key-based lookups
-    content_details:
-      - Three-stage architecture (indexing real documents, extracting references, reconciling against index)
-      - Four index types (file paths, document names, headings, document IDs) for reference resolution
-      - Five reference forms (relative paths, same-document anchors, cross-document anchors, external URLs, unexpandable forms)
-      - Uniqueness constraint and complete-match resolution (no partial matching or heuristics)
-      - Module design (ref_index.py, ref_extract.py, check_refs.py, fix_refs.py)
-      - Reference resolution rules by reference type with deterministic algorithms
-      - Use cases (pre-commit checks, on-demand validation, post-deletion verification)
-      - Test design driven by CommonMark specification with positive and negative cases
-    applicable_tasks:
-      - Document reference integrity check implementation
-      - Broken reference detection and reporting
-      - Reference extraction from Markdown and code
-      - Document ID indexing and lookup
-      - Cross-document anchor resolution
-    keywords:
-      - ref_extract.py
-      - ref_index.py
-      - check_refs.py
-      - fix_refs.py
-      - CommonMark
-      - document ID
-      - broken reference
-      - deterministic resolution
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
-    title: REQ-023 Document Reference Integrity Requirements
-    purpose: Defines requirements for identifying document references in text, validating reference paths, and verifying whether referenced documents exist in git-tracked files, including handling of path errors and missing references.
-    content_details:
-      - Reference discrimination and identification (FNC-001)
-      - Four-state handling model (S1/S2/S3/S4 states for reference resolution)
-      - Unresolvable reference types (N1 namespace confusion, N2 deletion context, N3 name collision)
-      - Existence validation criteria (git-tracked files only, symlink resolution)
-      - Exclusion rules (changelog documents, code spans and blocks)
-      - Bare-name reference detection (path-less references)
-      - Project boundary enforcement (prohibit references outside project root)
-      - Mandatory status-based reporting for S1/S2/S3 states
-    applicable_tasks:
-      - Document reference validation
-      - Link correctness verification
-      - Broken reference detection
-      - Reference path error reporting
-      - Missing document detection
-      - SDD flow integration for reference checking
-    keywords:
-      - document reference
-      - reference validation
-      - path validation
-      - git-tracked files
-      - broken references
-      - reference states
-      - SDD flow
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: Orchestrator Pattern Requirements
     purpose: Defines requirements for the orchestrator pattern architecture in forge skills, addressing context consumption, scalability, and parallel execution needs

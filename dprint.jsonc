@@ -13,10 +13,7 @@
     // 機械生成の検索 Index（embedding vector を含む。pretty 化するとファイルサイズが
     // 数倍に膨らむため整形対象外にする。スクリプトが minified JSON で書き出す前提）
     ".claude/doc-advisor/index/**",
-    ".claude/doc-db/index/**",
-    // CommonMark 公式の用例集。上流と byte 一致していることが規範として引ける
-    // 根拠であるため整形しない（tests/fixtures/commonmark/README.md）
-    "tests/fixtures/commonmark/**"
+    ".claude/doc-db/index/**"
   ],
   "plugins": [
     "https://plugins.dprint.dev/json-0.20.0.wasm",
