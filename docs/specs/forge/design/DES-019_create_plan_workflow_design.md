@@ -185,4 +185,3 @@ flowchart TD
 | [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
 | [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |
 | [spec_format.md](../../../../plugins/forge/docs/spec_format.md)                             | ID分類カタログ                               |
-| [DES-027](DES-027_plan_strategy_phase_adr.md)                                               | ADR: 実装戦略フェーズ導入                    |

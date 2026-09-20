@@ -22,7 +22,6 @@ applicable_tasks:
   - Exit code and error output contract review
 keywords:
   - DES-024
-  - ADR-070
   - exit code
   - wrapper
   - semantic choice
@@ -31,7 +30,7 @@ keywords:
   - CLI contract
   - dependency direction
   - script placement
-body_hash: sha256:7073c3a7de91686bdf8843880da15cb6901ca5a43fcfa7f705d3d61562e53b15
+body_hash: sha256:a73b88239c8e08f7d9be7f1c3066390fe7fd500c8efd475c81f0be844f61efe6
 ---
 
 # DES-024 SKILL.md と script の配置・契約設計
@@ -42,7 +41,7 @@ body_hash: sha256:7073c3a7de91686bdf8843880da15cb6901ca5a43fcfa7f705d3d61562e53b
 
 **SKILL.md → SKILL ローカル操作入口 → 共有低レベル script → 外部ファイル** の一方向依存を確立し、操作入口の判断基準・命名規則・配置原則を明文化する。
 
-SKILL.md はユーザー意図の解釈、進行管理、現在状態に基づく分岐、ユーザー対話を担う。script は固定値の適用、機械的な導出・変換・検証、決定論的処理を担う。境界の合否は flag・位置引数・ファイル数ではなく、AI に未決定の意味的選択が残るかで判定する（ADR-070）。
+SKILL.md はユーザー意図の解釈、進行管理、現在状態に基づく分岐、ユーザー対話を担う。script は固定値の適用、機械的な導出・変換・検証、決定論的処理を担う。境界の合否は flag・位置引数・ファイル数ではなく、AI に未決定の意味的選択が残るかで判定する。
 
 低レベル script は複数 SKILL が再利用する汎用処理を所有し、各 SKILL 配下の操作入口は SKILL 固有値を束縛し、公開操作を必要範囲へ限定する。操作入口同士が固定値以外で同一でも、この配置は AI の選択領域を除去し、SKILL 間の依存と共有領域への固有値混入を防ぐための意図的な境界である。
 

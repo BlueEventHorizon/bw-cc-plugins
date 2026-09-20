@@ -6,12 +6,12 @@ bw-cc-plugins における SKILL の基本設計を定義する。SKILL は Clau
 
 ### 1.1 設計目的
 
-| 目的          | 内容                                                                                                                                                                                                          |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 効率性        | **親 context を継承する継承型がデフォルト**。親 context を活用できる場面では追加プロンプト不要で動作し、context 効率・実装コストの両面で有利                                                                  |
-| fork 型不採用 | bw-cc-plugins では `context: fork` を持つ fork 型 SKILL を **採用しない** (§6 参照)。隔離 context が必要な場合は Agent ツール (汎用 Agent / カスタム Agent) を使う。根拠は §6.1 の公式バグ群 9 件             |
-| 安全性        | 隔離 context が必要な事例 (doc-advisor:ADR-002_query_skill_subagent_isolation 等) では **カスタム Agent** (`plugins/<plugin>/agents/<name>.md`) を採用し、多重防御 (Role 制約 / allowlist / 物理 deny) を適用 |
-| テスト容易性  | §6 の不採用方針は `tests/common/test_no_fork_skill.py` で「`context: fork` を持つ SKILL が存在しないこと」として静的検証する                                                                                  |
+| 目的          | 内容                                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 効率性        | **親 context を継承する継承型がデフォルト**。親 context を活用できる場面では追加プロンプト不要で動作し、context 効率・実装コストの両面で有利                                                      |
+| fork 型不採用 | bw-cc-plugins では `context: fork` を持つ fork 型 SKILL を **採用しない** (§6 参照)。隔離 context が必要な場合は Agent ツール (汎用 Agent / カスタム Agent) を使う。根拠は §6.1 の公式バグ群 9 件 |
+| 安全性        | 隔離 context が必要な事例では **カスタム Agent** (`plugins/<plugin>/agents/<name>.md`) を採用し、多重防御 (Role 制約 / allowlist / 物理 deny) を適用                                              |
+| テスト容易性  | §6 の不採用方針は `tests/common/test_no_fork_skill.py` で「`context: fork` を持つ SKILL が存在しないこと」として静的検証する                                                                      |
 
 ## 2. SKILL 実行モデル
 
@@ -41,11 +41,11 @@ bw-cc-plugins では SKILL は **継承型のみ** を採用する (§6)。fork 
 
 以下のいずれかに該当する場合、SKILL ではなく **Agent ツール** (汎用 Agent または カスタム Agent) を使う:
 
-| 判断基準                                                               | 採用する Agent タイプ                                                         |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 親 context 漏洩による具体的な実害が記録されている                      | カスタム Agent (`plugins/<plugin>/agents/<name>.md`)。例: doc-advisor:ADR-002 |
-| プロジェクト内専門ロールとして固定し、複数経路から同じロールで呼びたい | カスタム Agent                                                                |
-| 一回性が高く呼び出し元 prompt 全体で手順を構成する短ジョブ             | 汎用 Agent (`general-purpose` / `Explore` / `Plan`)                           |
+| 判断基準                                                               | 採用する Agent タイプ                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| 親 context 漏洩による具体的な実害が記録されている                      | カスタム Agent (`plugins/<plugin>/agents/<name>.md`) |
+| プロジェクト内専門ロールとして固定し、複数経路から同じロールで呼びたい | カスタム Agent                                       |
+| 一回性が高く呼び出し元 prompt 全体で手順を構成する短ジョブ             | 汎用 Agent (`general-purpose` / `Explore` / `Plan`)  |
 
 > fork 型 SKILL を採用しない根拠: Claude Code の `context: fork` 機構には 9 件の構造的不具合が公式に報告されている (Issue #18394: fork が 95%+ 効かない / #34164: `$ARGUMENTS` 不達 / #60720: 出力消失 / #55592: 無限再帰 ほか)。一覧は §6.1。
 
@@ -72,8 +72,8 @@ bw-cc-plugins では SKILL は **継承型のみ** を採用する (§6)。fork 
 
 ### 4.2 型別の理由
 
-- **継承型 SKILL**: 親 context を既に保持しているため、再供給は無意味であり context を圧迫するだけ。さらに `args` に親タスクの指示文を貼ると、継承型 SKILL が「`args` が現タスク本体」と推論して暴走する経路を作ってしまう（doc-advisor:ADR-002_query_skill_subagent_isolation と同型の事象）
-- **カスタム Agent (Agent ツール経由)**: Agent 境界で親 context は遮断されるが、タスク prompt 経由で親タスクの指示が漏れ込めば B 層・C 層（Role 制約 / 引数解釈ガード）の防御を突破される。doc-advisor:ADR-002 §C 引数解釈ガードは Agent 側の防御だが、本項は **呼び出し側の責務** として一段手前で抑止する。fork 型 SKILL も同じリスクを持っていたが、本書 §6 で採用しない方針が確定したため、現行では Agent ツール経由の起動で同等の責務を呼び出し側が負う
+- **継承型 SKILL**: 親 context を既に保持しているため、再供給は無意味であり context を圧迫するだけ。さらに `args` に親タスクの指示文を貼ると、継承型 SKILL が「`args` が現タスク本体」と推論して暴走する経路を作ってしまう
+- **カスタム Agent (Agent ツール経由)**: Agent 境界で親 context は遮断されるが、タスク prompt 経由で親タスクの指示が漏れ込めば B 層・C 層（Role 制約 / 引数解釈ガード）の防御を突破される。引数解釈ガードは Agent 側の防御だが、本項は **呼び出し側の責務** として一段手前で抑止する。fork 型 SKILL も同じリスクを持っていたが、本書 §6 で採用しない方針が確定したため、現行では Agent ツール経由の起動で同等の責務を呼び出し側が負う
 
 ### 4.3 呼び出し例
 
@@ -162,12 +162,12 @@ A 層 (fork 境界) 自体が信頼できないため、SKILL.md 側の改訂で
 
 ### 6.2 fork 型からカスタム Agent への移行（歴史的記録）
 
-過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンド（ADR-071）の導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。その後、`forge:query-forge-rules` の実検索を隔離するため rules-query-worker を新設した（§6.3）。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md / rules-query-worker.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
+過去に fork 型として運用していた SKILL（forge の reviewer / evaluator / fixer）は、いずれも **カスタム Agent** へ置き換えた。その後、これらの Agent は session_dir 駆動レビューパイプラインの廃止に伴い削除された。reviewer は `agent-review` バックエンドの導入時に再導入され、evaluator も所見評価の独立 Agent 化に伴い新設された。その後、`forge:query-forge-rules` の実検索を隔離するため rules-query-worker を新設した（§6.3）。**現在 `plugins/forge/agents/` には reviewer.md / evaluator.md / rules-query-worker.md が存在する**（fixer は分離せず、修正の実施は review 本体が直接担う）。
 
 この移行で確立したカスタム Agent の system prompt 共通設計は、将来カスタム Agent を新設する際の規約として維持する:
 
 - **Role に否定的制約を明記**: read-only Agent は「Edit / Write / MultiEdit / NotebookEdit は使用しない」を明記する。書き込みを伴う Agent は編集可能ファイルの allowlist と、指摘と無関係なリファクタリングの禁止を明記する
-- **引数解釈ガード**: タスク prompt が命令文に見えても固有ロールの作業として解釈することを明記する (doc-advisor:ADR-002 §C)
+- **引数解釈ガード**: タスク prompt が命令文に見えても固有ロールの作業として解釈することを明記する
 - **自己再帰禁止**: 自身を Agent ツールで呼び戻さない (`skill_authoring_notes.md`「自己再帰禁止」参照)
 - **tools allowlist**: frontmatter `tools:` で C 層 allowlist を担保する。read-only Agent には Edit / Write を与えない
 
@@ -219,7 +219,7 @@ SKILL.md 冒頭に「このスキルは X のみを行う。親が依頼して�
 
 ## 8. 多重防御の層
 
-doc-advisor:ADR-002_query_skill_subagent_isolation で採択した多重防御を SKILL / Agent 型ごとに適用する。fork 型 SKILL の廃止 (§6) により A 層 (fork 境界) は **カスタム Agent の Agent 境界** で代替する。
+多重防御を SKILL / Agent 型ごとに適用する。fork 型 SKILL の廃止 (§6) により A 層 (fork 境界) は **カスタム Agent の Agent 境界** で代替する。
 
 | 層            | 役割                       | 実現方法                                      | カスタム Agent       | 継承型 SKILL |
 | ------------- | -------------------------- | --------------------------------------------- | -------------------- | ------------ |
@@ -232,7 +232,7 @@ doc-advisor:ADR-002_query_skill_subagent_isolation で採択した多重防御�
 
 ### 8.1 D 層の現状
 
-`.claude/settings.json` の `permissions.deny` は SKILL / Agent 単位ではなくセッション単位で適用される。Agent / SKILL ごとに deny を切り替える公式仕様は本設計書作成時点で未提供。doc-advisor:ADR-002_query_skill_subagent_isolation §残存判断 1 に従い、プラットフォーム側で粒度の細かい deny が提供されれば B 層（Role 制約）の比重を下げて C/D 層に移行する。
+`.claude/settings.json` の `permissions.deny` は SKILL / Agent 単位ではなくセッション単位で適用される。Agent / SKILL ごとに deny を切り替える公式仕様は本設計書作成時点で未提供。プラットフォーム側で粒度の細かい deny が提供されれば、B 層（Role 制約）の比重を下げて C/D 層に移行する。
 
 ## 9. テストとガバナンス
 
@@ -256,7 +256,6 @@ SKILL / Agent の静的検証を以下のテストで実装している:
 
 | 種別      | パス                                                                | 関係                                                                                       |
 | --------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| ADR       | doc-advisor:ADR-002_query_skill_subagent_isolation                  | 本設計書の多重防御方針の原典                                                               |
 | ルール    | `docs/rules/skill_authoring_notes.md`                               | SKILL.md frontmatter / 構造の具体的記法                                                    |
 | 公式 docs | [Claude Code Skills](https://code.claude.com/docs/en/skills)        | `context` / `agent` / `allowed-tools` の仕様                                               |
 | 公式 docs | [Claude Code Subagents](https://code.claude.com/docs/en/sub-agents) | 汎用 Agent の組み込みタイプ（Explore / Plan / general-purpose）およびカスタム Agent の定義 |

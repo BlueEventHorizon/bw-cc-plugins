@@ -62,7 +62,7 @@ allowed-tools: Read, Grep      # 承認なしで使えるツールの allowlist
 > **fork 型 SKILL は採用しない (廃止)** [MANDATORY]
 > bw-cc-plugins では `context: fork` を持つ SKILL を新規・既存ともに採用しない。`context: fork` 機構は anthropics/claude-code の公式リポジトリで 9 件の構造的バグが報告されている (#18394 / #34164 / #60720 / #55592 ほか)。隔離 context が必要な処理は **カスタム Agent** (`plugins/<plugin>/agents/<name>.md` + `Agent` ツール起動) で実装する。バグ一覧と不採用の根拠分析は `docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §6.1 を参照。
 
-SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分かれていたが、現在は **継承型のみ採用**。判別を誤ると親 context 漏洩や副作用暴走 (ユーザー承認なしの書き込み) の原因となる。実害事例は ADR-002 を参照。
+SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分かれていたが、現在は **継承型のみ採用**。判別を誤ると親 context 漏洩や副作用暴走 (ユーザー承認なしの書き込み) の原因となる。
 
 ### 用語
 
@@ -138,7 +138,6 @@ SKILL の実行モデルはかつて `context: fork` の有無で 2 種類に分
 
 ### 出典
 
-- **ADR-002**: `doc-advisor:ADR-002_query_skill_subagent_isolation`（外部リポジトリ [BlueEventHorizon/DocAdvisor](https://github.com/BlueEventHorizon/DocAdvisor)）— 多重防御の根拠・実害事例
 - **Claude Code 公式 docs**:
   - [Skills](https://code.claude.com/docs/en/skills) — `context: fork`、`agent`、`allowed-tools` の仕様
   - [Subagents](https://code.claude.com/docs/en/sub-agents) — 汎用 Agent の組み込みタイプ（Explore / Plan / general-purpose）およびカスタム Agent の定義

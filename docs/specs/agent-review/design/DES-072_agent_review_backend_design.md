@@ -26,7 +26,7 @@ keywords:
   - REVIEW_RESULT
   - parse_findings
 type: doc-advisor
-body_hash: sha256:fe0251ff6cabfde4dee57e0cafb6ebee041e6ee48fd8404d536ecf1deb6d03aa
+body_hash: sha256:c810b85f43f3da92e997f15ad1203cbbbb8c4473dc6c0a923200f6dec606d833
 ---
 
 # DES-072 agent-review バックエンド設計
@@ -83,7 +83,7 @@ read-only git 照会は、`status`、`diff`、`show`、`log`、`merge-base`、`r
 
 レビュアーには汎用コマンド実行を許可する。対象を自分で確定するために必要であり（REQ-013 FNC-1312）、これを外すと範囲指定のレビューが成立しない。役割定義には許可する git 操作の列挙と変更操作の禁止列挙を置く。
 
-read-only を能力の限定で保証する設計を採らない経緯は ADR-073 にある。
+上記の役割定義とツール制約は違反を防ぐ手段であり、read-only の担保ではない。許可の単位が汎用である以上「読み取りだけ」を宣言する手段が無く、能力の限定では担保できない。
 
 ## 3. バックエンドモード
 

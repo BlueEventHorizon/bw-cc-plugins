@@ -3,7 +3,7 @@
 判定は PATH 探索のみで行い、cmux を一度も起動しない（副作用を持たない）。
 本テストはその性質を `subprocess` の不使用として固定する——将来「健全性まで
 確かめる」意図で `cmux --version` 等を呼ぶ変更が入ると、可用性検査が候補ごとに
-外部プロセスを起動する高価な検査になり、forge:ADR-067 §2.1 が課した性質を破る。
+外部プロセスを起動する高価な検査になり、可用性検査が安価であるべき性質を破る。
 """
 
 import importlib.util
@@ -52,7 +52,7 @@ class CheckCmuxAvailableTest(unittest.TestCase):
 
 
 class NoSideEffectTest(unittest.TestCase):
-    """判定が読み取りのみであること（forge:ADR-067 §2.1）。"""
+    """判定が読み取りのみであること。"""
 
     def test_does_not_spawn_any_process(self):
         with mock.patch.object(subprocess, "run") as run_mock, \

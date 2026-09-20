@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-19T11:26:02Z
+  generated_at: 2026-09-20T12:13:05Z
   file_count: 8
 
 docs:
@@ -38,40 +38,33 @@ docs:
       - PASS FAIL
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Establishes consistent documentation standards for style, terminology, structure, formatting, and document type conventions across the project
+    purpose: Establishes unified conventions for document structure, formatting, terminology, and metadata across project documentation to ensure consistency and enable efficient AI processing
     content_details:
-      - Tag placement and spacing rules for [MANDATORY], [CRITICAL], [IMPORTANT] tags on heading lines, with single space before tag
-      - "Heading level standards: level 1 for title, levels 2-4 for sections (not beyond 4)"
-      - Unified terminology standards and English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS)
-      - Long vowel abbreviation rule following JIS Z 8301 (ディレクトリ not ディレクトリー)
-      - "Required sections by document type: Workflow documents, Rule documents, and frontmatter metadata (name, description, user-invocable, allowed-tools)"
-      - "Formatting conventions: bold for keywords, inline code for filenames/commands/variables, lists max 2 levels, tables max 6 columns"
-      - Document reference necessity and notation rules (write only when essential to main claim; follow forge document_style_guide.md §5.1)
-      - "Separation of document types: docs/rules/, docs/specs/, plugins/*/docs/, .claude/skills/, plugins/*/skills/ by purpose and distribution scope"
-      - Placeholder naming conventions (use Foo, Bar, Hoge, Fuga instead of project-specific names; use generic terms like アイテム, カテゴリ instead of Contact, Group)
-      - "Abstract examples requirement: docs/rules/ content uses generic business scenarios and placeholder names, never project-specific proper nouns"
+      - Tag types and placement rules ([MANDATORY], [CRITICAL], [IMPORTANT]) with spacing standards
+      - Terminology standardization including unified terms and English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS)
+      - Long vowel rule following JIS Z 8301 standard
+      - Document structure templates with frontmatter format for different document types
+      - Heading hierarchy with maximum 4 levels for organization
+      - Document reference notation principles (necessary references only, no separate metadata sections)
+      - Directory role classification distinguishing rules, specs, plugin docs, and skills
+      - Current state documentation principle - present tense only, history in CHANGELOG
+      - Abstraction requirement using generic placeholders instead of project-specific names
+      - Content formatting standards for emphasis, code, lists, and tables
     applicable_tasks:
-      - Writing project rules and specifications
-      - Creating SKILL documentation
-      - Creating workflow documentation
-      - Performing document review and validation
-      - Establishing project documentation standards
-      - Reviewing terminology consistency across documents
-      - Ensuring formatting compliance
-      - Creating template documents for new rules or specs
-      - Auditing document structure compliance
-      - Training new team members on documentation standards
+      - Document authoring and style standardization
+      - Project rule establishment and maintenance
+      - Documentation structure design
+      - Content review for consistency compliance
+      - Creating specification and requirements documents
     keywords:
-      - documentation standards
-      - YAML frontmatter
+      - document writing rules
+      - frontmatter metadata
       - heading hierarchy
+      - tag placement
       - terminology standardization
-      - code formatting
-      - document references
-      - project rules
-      - document structure
-      - placeholder naming
-      - formatting conventions
+      - SKILL document format
+      - document reference notation
+      - changelog management
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."
@@ -105,37 +98,34 @@ docs:
       - session_dir
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for implementing scripts and SKILL.md in plugins, covering language selection, testing requirements, and distribution boundaries.
+    purpose: Defines rules for plugin scripts and SKILL.md implementation including language selection, testing requirements, script placement, and code organization standards
     content_details:
-      - "Language selection criteria: Python for data transformation/YAML/JSON, Bash for external commands/file operations"
-      - Python standard library only requirement (PyYAML exception for YAML parsing)
-      - "Test requirements: plugins/ Python scripts must have tests in tests/ directory with naming test_{module}.py"
-      - SKILL.md prohibition on inline scripts; use external script files instead
-      - "Script placement structure: skill-specific under plugins/{plugin}/skills/{skill}/scripts/, plugin-shared under plugins/{plugin}/scripts/"
-      - Temporary file handling with mktemp -d and trap cleanup for parallel safety
-      - Cross-skill reference prohibition to avoid silent breakage when internal structures change
-      - "Distribution boundary rule: published materials cannot reference project docs/ files"
-      - "Design document maintenance: ADR placement in docs/specs/**/design/ADR-{NNN}_{topic}.md"
-      - Version file editing prohibition for feature/fix PRs; /forge:update-version single responsibility
+      - Language selection criteria - Python for data transformation/parsing, Bash for external command calls (PyYAML only permitted external library)
+      - Test requirement matrix - mandatory for plugins/*.py, integration tests for Bash, SKILL.md and .claude/ excluded
+      - Test directory structure under tests/ organized by plugin and skill names
+      - No inline scripts in SKILL.md - process logic must be in independent script files
+      - Script placement rules - skill-specific under skills/{skill}/, shared multi-skill under plugins/{plugin}/
+      - Cross-skill reference prohibition - no hardcoded references to other skill directories
+      - Temporary file handling with mktemp -d and trap for cleanup and deletion
+      - Design document placement - ADR files at docs/specs/**/design/ADR-{NNN}_{topic}.md
+      - Distribution content reference prohibition - no project docs paths/IDs in user-facing SKILL.md
+      - Version file editing restrictions - only /forge:update-version can modify version numbers
     applicable_tasks:
-      - Implementing plugin scripts in Python or Bash
-      - Creating and maintaining unit tests for plugin Python scripts
-      - Authoring SKILL.md files and reviewing inline script usage
-      - Creating Architectural Decision Records (ADR)
-      - Reviewing plugin distribution materials for documentation boundaries
-      - Designing plugin internal structure and script placement
-      - Setting up version management and release workflows
+      - Plugin script development for data processing and file operations
+      - Test suite creation and maintenance for Python modules
+      - SKILL.md authoring with proper script separation and organization
+      - Script placement and multi-skill asset sharing decisions
+      - Temporary file and resource cleanup implementation
+      - ADR document creation and design decision recording
     keywords:
-      - Python
-      - Bash
-      - SKILL.md
-      - tests
-      - ADR
-      - CLAUDE_PLUGIN_ROOT
-      - distribution boundary
-      - mktemp
-      - PyYAML
-      - update-version
+      - Python scripts - standard library
+      - Bash script execution
+      - test organization structure
+      - SKILL.md implementation patterns
+      - script placement hierarchy
+      - temporary file cleanup
+      - version management automation
+      - distribution reference rules
   docs/rules/script_error_output_rules.md:
     title: Script Error Output
     purpose: Defines exit code conventions and output format requirements for Python scripts in the plugins directory, establishing how scripts declare exit codes and callers interpret results.
@@ -169,39 +159,37 @@ docs:
       - script_interface
       - exit_code_table
   docs/rules/skill_authoring_notes.md:
-    title: SKILL.md Authoring Notes
-    purpose: Defines rules for authoring/editing SKILL.md frontmatter, the inheritance-only execution model, defense-in-depth layers, argument handling, and mandatory AskUserQuestion usage for user confirmations
+    title: Notes on SKILL.md Authoring
+    purpose: Provides guidelines for creating and editing Claude Code SKILL.md files including frontmatter fields, execution models, agent boundaries, tool permissions, and interaction patterns
     content_details:
-      - "Frontmatter field reference table: name, description, user-invocable, argument-hint, disable-model-invocation, allowed-tools, disallowed-tools, context, agent"
-      - "Prohibition on fork-type SKILL (context: fork is deprecated); all SKILL must be inheritance-type, with isolation handled via custom Agent"
-      - "Defense-in-depth layer table: A. Agent boundary, B. Role constraints, C. allowlist, D. physical deny via permissions.deny"
-      - "Common misconception corrections: allowed-tools/tools is an allowlist not a denylist; disallowed-tools resets once the user sends the next message"
-      - "Naming convention prefixes: query-* for search, create-*/build-* for writes, start-* for staged workflows"
-      - Self-recursion prohibition for query-db-rules/query-db-specs/query-forge-rules to avoid infinite-loop harness hangs
-      - "Agent background launch discipline requiring ScheduleWakeup(stop: true) cancellation immediately upon receiving the task-notification"
-      - Dependent skill existence check via the available-skills system reminder as a pre-detection pattern
-      - "SKILL.md split criteria table: workflow instructions stay inline, content/templates/detailed rules over 500 lines move to external files"
-      - Mandatory AskUserQuestion usage for all user confirmations, with a narrow exception for discussion-content presentation in argumentative skills
+      - Required SKILL documentation - claude-code-guide Agent for official specs, skill_launch_paths_definitions.md for naming conventions
+      - Frontmatter field specifications including name, description, user-invocable, argument-hint, disable-model-invocation, allowed-tools, disallowed-tools
+      - SKILL execution models - inheritance type (context unspecified, adopted) vs. fork type (deprecated, no longer used)
+      - Multi-defense layers - Agent boundary isolation, Role constraints in system prompt, allowlist permissions, physical deny via settings.json
+      - Custom Agent adoption criteria - multiple call sources, write boundary constraints, context efficiency, Agent tool with subagent_type launching
+      - Inheritance SKILL requirements - responsibility boundary documentation, minimal $ARGUMENTS, clear write-side effect conditions
+      - Description authoring patterns - specific what/when/trigger information for auto-invocation decision
+      - Self-recursion prohibition - query/build/start SKILL cannot re-invoke themselves to prevent infinite loops
+      - Agent background launch with ScheduleWakeup - must stop scheduled fallback when task-notification received
+      - User interaction via AskUserQuestion - mandatory for questions/selections except when discussion content itself is deliverable
     applicable_tasks:
-      - Authoring or editing SKILL.md frontmatter fields
-      - Deciding between a custom Agent and an inherited SKILL for isolation needs
-      - "Reviewing a SKILL.md for deprecated context: fork usage"
-      - Implementing defense-in-depth layers for a new skill
-      - Writing self-recursion guards for query-* skills
-      - Implementing background Agent launch with ScheduleWakeup fallback
-      - Deciding SKILL.md content placement between inline and external files
-      - Replacing plain-text user prompts with AskUserQuestion
+      - SKILL.md authoring with proper frontmatter configuration
+      - Inheritance type SKILL execution flow design
+      - Custom Agent definition with role constraints and permission boundaries
+      - Tool permission allowlist specification for SKILL and Agent
+      - User interaction design using AskUserQuestion tool
+      - Agent orchestration with background task and fallback management
     keywords:
-      - "context: fork"
-      - 継承型 SKILL
-      - カスタム Agent
-      - allowed-tools
-      - disallowed-tools
-      - ScheduleWakeup
-      - AskUserQuestion
-      - available-skills
-      - ADR-002
-      - disable-model-invocation
+      - SKILL.md frontmatter
+      - inheritance SKILL model
+      - custom Agent tool
+      - allowed-tools permissions
+      - Agent boundaries
+      - AskUserQuestion tool
+      - self-recursion prohibition
+      - ScheduleWakeup management
+      - fork type deprecated
+      - Role constraints
   docs/rules/skill_launch_paths_definitions.md:
     title: SKILL / Agent / Subagent Launch Path Definitions
     purpose: Defines the 5 delegation launch paths in Claude Code (inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess) and establishes their official short names to prevent terminology confusion
