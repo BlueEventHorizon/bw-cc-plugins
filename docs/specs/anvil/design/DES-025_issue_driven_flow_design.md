@@ -84,17 +84,17 @@ flowchart LR
 
 **triage-issue**
 
-| Phase | 内容                                                                                                    |
-| ----- | ------------------------------------------------------------------------------------------------------- |
-| 0     | `.git_information.yaml` または `gh repo view` でリポジトリ解決。URL 引数はリポジトリ整合を確認          |
-| 1     | Issue 取得。事実主張 / 解決提案の分離。非構造化なら不足項目を AskUserQuestion で 1 回にまとめて確認     |
-| 2     | `/forge:query-db-specs` で仕様書特定、全件 Read。外部リポジトリ・symlink は実体の GitHub URL で記録     |
-| 3     | `/forge:query-db-rules` でルール特定、全件 Read。CLAUDE.md と基盤ルールの一般クエリ                     |
-| 4     | Grep / Glob / `git log` で発生箇所・参照元・同種箇所・直近変更を特定                                    |
-| 5     | 5-1 判定（正しい / 誤り / 不足 / 過剰 / 判定不能）、5-2 是正（承認後に本文置換とコメント全削除、検証）  |
-| 6     | 影響範囲の再調査、TASK 列挙（対象・変更内容・確認方法）、TASK 化できない理由の分類                      |
-| 7     | ルート判定（全 TASK 列挙 → ワンショット実装 / 残余 → 要件定義から開始）と一文根拠                       |
-| 8     | 8-1 会話報告、8-2 監査コメント、8-3 起動確認 1 回のうえ `impl-issue` または `start-requirements` を起動 |
+| Phase | 内容                                                                                                                                                                                                         |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | `.git_information.yaml` または `gh repo view` でリポジトリ解決。URL 引数はリポジトリ整合を確認                                                                                                               |
+| 1     | Issue 取得。事実主張 / 解決提案の分離。非構造化なら不足項目を AskUserQuestion で 1 回にまとめて確認                                                                                                          |
+| 2     | `/forge:query-db-specs` で仕様書特定、全件 Read。外部リポジトリ・symlink は実体の GitHub URL で記録                                                                                                          |
+| 3     | `/forge:query-db-rules` でルール特定、全件 Read。CLAUDE.md と基盤ルールの一般クエリ                                                                                                                          |
+| 4     | Grep / Glob / `git log` で発生箇所・参照元・同種箇所・直近変更を特定                                                                                                                                         |
+| 5     | 5-1 判定（正しい / 誤り / 不足 / 過剰 / 判定不能）、5-2 是正（承認後に本文置換とコメント全削除、検証）                                                                                                       |
+| 6     | 影響範囲の再調査、TASK 列挙（対象・変更内容・確認方法）、TASK 化できない理由の分類                                                                                                                           |
+| 7     | ルート判定（全 TASK 列挙 → ワンショット実装 / 残余 → 要件定義から開始）と一文根拠                                                                                                                            |
+| 8     | 8-1 会話報告、8-2 監査コメント、8-3 起動確認 1 回のうえ `impl-issue`（args: Issue 番号）または `start-requirements`（args: interactive モード・新規/追加・既存 feature を特定できていれば feature 名）を起動 |
 
 **impl-issue**
 
@@ -196,7 +196,11 @@ sequenceDiagram
         else 要件定義から開始
             TI ->> User: TASK 化できない論点を提示し、start-requirements を起動するか AskUserQuestion
             User -->> TI: はい
-            TI ->> SR: Skill ツールで起動（引数なし）
+            TI ->> User: 新規/追加を AskUserQuestion で確認
+            opt Phase 2 で既存 feature を特定できた場合
+                TI ->> User: feature 名を AskUserQuestion で確認
+            end
+            TI ->> SR: Skill ツールで起動（interactive モード・新規/追加・特定できていれば feature 名）
         end
     end
 ```
