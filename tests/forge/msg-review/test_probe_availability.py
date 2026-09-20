@@ -1,4 +1,4 @@
-"""probe_availability.py の単体テスト（可用性検査の集約、DES-045 §3.5.2 / ADR-068）。
+"""probe_availability.py の単体テスト（可用性検査の集約、DES-045 §3.5.2）。
 
 3 つの判定スクリプトの呼び出しを差し替え、集約の契約を固定する。とくに次の 2 点は
 設計上の境界であり、テストで固定しないと将来の変更で静かに破れる。
@@ -6,7 +6,6 @@
 - **不足を軸ごとに個別に返す**: 「使えません」への畳み込みが起きないこと
 - **画面を読み取らない**: `capture-pane` / `read-screen` を呼ばないこと。軸 peer が
   実プロセスを直接確認する以上、画面からの推測は前提の判定材料を追加しない
-  （ADR-068 §2.1 / §2.2）
 """
 
 import importlib.util
@@ -236,7 +235,7 @@ class AvailableAndMissingAgreeTest(unittest.TestCase):
 
 
 class NoScreenReadingTest(unittest.TestCase):
-    """画面の読み取りを一切行わない（ADR-068 §2.1）。"""
+    """画面の読み取りを一切行わない。"""
 
     def test_does_not_invoke_capture_pane_or_read_screen(self):
         recorder = _Recorder()

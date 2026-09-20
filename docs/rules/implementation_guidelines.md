@@ -133,12 +133,14 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 `plugins/` 配下のうち**利用者環境で読まれるもの**（SKILL.md / `agents/*.md` / `commands/*.md` / 配布物内蔵 `docs/*.md` / templates）から、**本リポジトリに実在する** `docs/` 配下の文書（`docs/specs/` / `docs/rules/` / `docs/readme/`）を参照しない。パス直書きも spec ID による出典表記も禁止する。
 
+利用者環境に実体が無いため参照が解決できず、規範の根拠も検証できないからである。
+
 ```text
 ❌ 複数文書間の優先順位は DES-028 §3.4.1 に従う
 ❌ 詳細は docs/specs/forge/design/DES-029... を参照
 ```
 
-**script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい（判断根拠は [ADR-055](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md) §2.3）。
+**script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい。
 
 ```text
 ⭕ 本スクリプトは REQ-012 FNC-004 の実装である    （script のコメント）
@@ -164,6 +166,8 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 ### 規範の置き場は 2 通り。どちらを選んでもよい
 
+2 通りを用意するのは、本文へ畳む方式だけでは分量の大きい規範で SKILL.md が肥大するためである。
+
 | 方式                                    | 書き方                                                                       | 向いているケース                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **A. 参照元に本文を持たせる**           | 規範本文を参照元（SKILL.md / agent / 内蔵 docs）にそのまま書く               | 分量が小さい。1 箇所でしか使わない                                       |
@@ -175,8 +179,6 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 - 配布物内蔵 docs 同士 → 相対パスのマークダウンリンク
 
 方式 B で新規文書を作ったら、その配布物の ToC を再生成する（forge なら `update-forge-toc`）。再生成しないと `/forge:query-forge-rules` から発見できない。
-
-判断根拠: [ADR-055_distribution_boundary_for_doc_references.md](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md)
 
 ---
 

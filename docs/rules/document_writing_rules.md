@@ -283,6 +283,8 @@ docs/
 
 参照を書いてよいのは、**それを書かなければ本文の主張・規定が理解・検証できない場合に限る**。
 
+必要のない参照は保守対象としてのみ残り、参照先の改訂・削除で静かに腐るためである。
+
 #### 第 2 原則: 記法は forge の文書スタイル指針に従う
 
 必要と判断した参照の記法は、forge の [document_style_guide.md][style-guide] §5.1 **系統 (3)**（利用プロジェクトの文書から同じプロジェクトの他文書を参照する場合）が定める。本節では再掲しない。
@@ -294,8 +296,6 @@ docs/
 #### 適用範囲
 
 本節は **`docs/` 配下のプロジェクト文書**に適用する。配布物（`plugins/` 配下）の参照は同 §5.1 の系統 (1)(2) が定める。
-
-判断根拠: [ADR-056_document_reference_necessity_and_notation.md](../specs/common/design/ADR-056_document_reference_necessity_and_notation.md)
 
 [style-guide]: ../../plugins/forge/docs/document_style_guide.md
 

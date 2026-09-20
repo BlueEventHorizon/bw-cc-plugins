@@ -86,7 +86,7 @@ class TestQuerySkillFrontmatterFork(unittest.TestCase):
 
 
 class TestQuerySkillRoleReadonlyConstraint(unittest.TestCase):
-    """Role 章に read-only 制約が明記されていることを検証 (ADR-002 §B / 多重防御 B 層)"""
+    """Role 章に read-only 制約が明記されていることを検証 (多重防御 B 層 / COMMON-DES-001 §8)"""
 
     REQUIRED_PHRASES = [
         # read-only であることの明記
@@ -112,12 +112,12 @@ class TestQuerySkillRoleReadonlyConstraint(unittest.TestCase):
                     self.assertIn(
                         phrase, body,
                         f"{skill_path.relative_to(REPO_ROOT)} に制約文言 "
-                        f"'{phrase}' がない (ADR-002 §B 違反)"
+                        f"'{phrase}' がない (多重防御 B 層違反)"
                     )
 
 
 class TestQuerySkillArgumentGuard(unittest.TestCase):
-    """引数解釈ガードが含まれていることを検証 (ADR-002 §C)"""
+    """引数解釈ガードが含まれていることを検証 (多重防御 C 層)"""
 
     def test_argument_interpretation_section(self):
         for skill_path in CONSTRAINT_TARGET_SKILLS:
@@ -128,13 +128,13 @@ class TestQuerySkillArgumentGuard(unittest.TestCase):
                     body,
                     r'(?m)^#{2,3}\s*引数解釈',
                     f"{skill_path.relative_to(REPO_ROOT)} に "
-                    f"`引数解釈` セクションがない (ADR-002 §C 違反)"
+                    f"`引数解釈` セクションがない (引数解釈ガードの欠落)"
                 )
                 # 命令文を実装指示として解釈しない旨の明記
                 self.assertIn(
                     '実装指示として解釈してはならない', body,
                     f"{skill_path.relative_to(REPO_ROOT)} の引数解釈に "
-                    f"命令文の解釈ガードがない (ADR-002 §C 違反)"
+                    f"命令文の解釈ガードがない (引数解釈ガードの欠落)"
                 )
 
 

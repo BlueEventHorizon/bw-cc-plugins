@@ -340,8 +340,9 @@ def run(
     try:
         response = client.query(key=docs.key, series=docs.series, query=task)
     except docdb_client.ToolError as exc:
-        # 判別は error.data.code の識別子にのみ依拠する（ADR-058）。
-        # 文言・数値 code では分岐しない。識別子を読み取れない error は障害。
+        # 判別は error.data.code の識別子にのみ依拠する（契約は DES-057 §4.5）。
+        # 文言・数値 code では分岐しない（文言は公開契約でなく、数値は補助扱いの
+        # ため、いずれも静かに壊れる）。識別子を読み取れない error は障害。
         code = exc.data.get("code") if isinstance(exc.data, dict) else None
         if code == IDENTIFIER_KEY_NOT_FOUND:
             return EXIT_INDEX_MISSING, payload(

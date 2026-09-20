@@ -384,7 +384,7 @@ update は既存 `.doc_structure.yaml` の category 設定から対象 Markdown 
 
 この 2 操作は同一場面で競合する方針ではなく、同一同期ジョブの「投入→観測」という順序付き位相である。
 SKILL の各場面では呼び出し全体が一意に決まるため、1 つのローカル操作入口の明示モードとして維持する
-（ADR-070、DES-024 §2.2）。別 script へ分けても選択対象が mode からファイル名へ移るだけであり、AI の
+（DES-024 §2.2）。別 script へ分けても選択対象が mode からファイル名へ移るだけであり、AI の
 判断領域は減らない。
 
 SKILL は `--start` で `job_id` を得たあと、`--status` を間隔を空けて繰り返し呼び、**そのたびに進捗を
@@ -499,7 +499,7 @@ doc-db 側の契約でもある（`null` は「当該 KEY に現在紐づく ser
 | KEY がゴミ箱状態            | JSON-RPC error（識別子 `KEY_TRASHED`）。復活操作を促す   | 未整備ではない。復活操作の案内を伴う明示エラー  |
 | 既存 KEY の series が未登録 | **error にならず 0 件で成功する**（doc-db 側の安定契約） | 未整備。`list_indexes` で事前に検出する（§4.2） |
 
-**判別は識別子に依拠する（ADR-058）。** doc-db 0.3.3 以降、KEY 不在とゴミ箱状態は
+**判別は識別子に依拠する。** doc-db 0.3.3 以降、KEY 不在とゴミ箱状態は
 `isError` を伴う tool result ではなく **JSON-RPC error** として届き、識別子が
 `error.data.code`（判別の正本）と `message` 先頭の両方に載る。forge は `data.code` の値
 （`KEY_NOT_FOUND` / `KEY_TRASHED`）だけで分岐し、**メッセージ文言でも数値 code でも分岐しない**。

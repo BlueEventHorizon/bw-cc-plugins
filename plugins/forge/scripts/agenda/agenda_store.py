@@ -23,8 +23,8 @@ JSON 書き込み成功直後に `agenda_render.py` を呼び出し、`agenda.ht
 成立させ、`{"status": "partial", ...}` として呼び出し側へ失敗を明示する
 （記録の正しさを表示の失敗で道連れにしない。DES-075 §8.1）。
 
-保存形式は ADR-076 の決定に従い、標準ライブラリ `json` のみを使用する
-（PyYAML 等の外部依存を使わない）。
+保存形式は JSON とし、標準ライブラリ `json` のみを使用する。PyYAML は外部依存の
+ため採らず、TOML は標準ライブラリで書き込みができないため採らない。
 """
 
 from __future__ import annotations

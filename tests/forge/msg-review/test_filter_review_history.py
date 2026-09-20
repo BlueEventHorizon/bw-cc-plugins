@@ -310,7 +310,7 @@ class ProjectRootArgumentTest(unittest.TestCase):
     実運用で繰り返し忘れられて `RuntimeError: DB path could not be resolved` になった。
     本体側のスクリプト（analyze_branch_point / resolve_targets / scan_secrets /
     collect_modified_files）はいずれも `--project-root` を持つ。本スクリプトは
-    ADR-066 の分離で msg-review バックエンド側へ移ったが、引数名は揃え続ける
+    本体とバックエンドの分離で msg-review 側へ移ったが、引数名は揃え続ける
     （呼び出し側から見た作法が backend 境界をまたいで変わると同じ失敗が再発する）。
     """
 
