@@ -32,7 +32,7 @@ sequenceDiagram
     participant Body as review 本体
     participant E as evaluator
 
-    Body->>E: キー
+    Body->>E: review_id
     E->>E: 依頼と所見を取り出す
     loop 所見ごと
         E->>E: 所見が指す箇所を読み、種別を判定し、観点文書を読む
@@ -43,7 +43,7 @@ sequenceDiagram
     E-->>Body: 完了
     Body->>Body: link_evaluations.py で紐づけを検証し、所見単位へ結び付ける
     alt 未参照の finding_id がある
-        Body->>E: キー（未参照の finding_id を添える）
+        Body->>E: review_id（未参照の finding_id を添える）
         E->>E: 追加の評価を渡す
         E-->>Body: 完了
         Body->>Body: 再び結び付ける
@@ -61,7 +61,7 @@ sequenceDiagram
 | ------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | evaluator                       | 依頼と所見を取り出し、所見が指す箇所と観点文書を読み、当否を判定し、評価を渡す | FNC-201・206・209                                                           |
 | `evaluator.md`                  | script の呼び方、入力の各項目の扱い、観点、評価として何を述べるか              | FNC-208                                                                     |
-| `scripts/evaluator/exchange.py` | キーの下に評価を保持し、取り出す                                               | FNC-207（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2） |
+| `scripts/evaluator/exchange.py` | `review_id` の下に評価を保持し、取り出す                                       | FNC-207（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2） |
 | `link_evaluations.py`           | 紐づけを検証し、評価を所見単位へ結び付ける                                     | FNC-203                                                                     |
 | review 本体                     | 未参照があれば追加を依頼する                                                   | FNC-203                                                                     |
 | review 本体                     | `flawed_premise` を自動修正の対象から外す                                      | FNC-204                                                                     |
@@ -74,7 +74,7 @@ sequenceDiagram
 
 | 事柄                         | 定めている箇所                                                   |
 | ---------------------------- | ---------------------------------------------------------------- |
-| キーによる受け渡し           | [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.1 |
+| `review_id` による受け渡し   | [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.1 |
 | 値の受け渡し（標準入力）     | 同 §4.5                                                          |
 | 形式の検証を置かない         | 同 §4.6                                                          |
 | 1 件ずつ渡す                 | 同 §4.2                                                          |
@@ -100,7 +100,7 @@ sequenceDiagram
 | 依頼         | `scripts/reviewer/exchange.py` | [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §5.1 |
 | 所見         | `scripts/reviewer/exchange.py` | 同 §5.2                                                          |
 
-evaluator は reviewer 側の script の**取り出し操作だけ**を呼ぶ。書き込みは自分の側にしか持たない（同 §4.2）。これにより、同じキーを渡すだけで evaluator は依頼も所見も見つけられる。
+evaluator は reviewer 側の script の**取り出し操作だけ**を呼ぶ。書き込みは自分の側にしか持たない（同 §4.2）。これにより、同じ `review_id` を渡すだけで evaluator は依頼も所見も見つけられる。
 
 追加依頼の場合は、未参照の `finding_id` が添えて渡る（§8.4）。渡る形は初回と変わらない（FNC-305）。
 
@@ -207,7 +207,7 @@ reviewer の所見（[DES-084](../../reviewer/design/DES-084_reviewer_design.md)
 
 ### 8.1 紐づけの検証と結び付け
 
-`link_evaluations.py` が、キーから所見と評価を取り出し、次を行う。
+`link_evaluations.py` が、`review_id` から所見と評価を取り出し、次を行う。
 
 | 仕事         | 内容                                                                                       |
 | ------------ | ------------------------------------------------------------------------------------------ |

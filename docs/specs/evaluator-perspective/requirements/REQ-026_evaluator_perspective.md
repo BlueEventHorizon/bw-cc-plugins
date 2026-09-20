@@ -13,13 +13,9 @@ feature_note:
 
 本書には、通常は設計書に属する具体的な記述（JSON のフィールド名・型等）を含む。これは、既に決定済みで選択の余地が無い事項を要件定義書に具体的に書く原則（[spec_design_boundary_spec.md](../../../../plugins/forge/docs/spec_design_boundary_spec.md) §2）に基づく。
 
-`forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator に、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見る観点と、その評価を表現するデータ構造を定める。
+`forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator の定義が持つもの・入力・作業・出力を定める。中心は、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見る観点と、その評価を表現するデータ構造である。加えて、本体が評価をどう扱うかと、実装期間中の consult の振る舞いを定める。
 
 対象は evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）と、それを起動する review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。受け渡しの方式は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定め、evaluator もこれに従う（FNC-207）。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
-
-## 前提条件
-
-- reviewer が所見（finding）を返し、evaluator が独立に評価する既存の枠組み（`forge:REQ-013`）が有効であること
 
 ## 対象システムの性質
 
@@ -44,7 +40,7 @@ feature_note:
 
 ## 要件一覧
 
-evaluator の仕事は 3 段からなる。**入力を得る → 評価する → 評価を返す。** 加えて、本体が評価をどう扱うかを定める。
+evaluator の仕事は 3 段からなる。**入力を得る → 所見を起点に読んで当否を判定する → 結果を返す。** これに加えて、evaluator 自身の定義が持つもの・本体が評価をどう扱うか・実装期間中の移行措置を定める。
 
 ### 0. evaluator の定義が持つもの
 
@@ -60,7 +56,7 @@ evaluator への入力と、evaluator が返す評価は、[REQ-027](../../revie
 
 | 従う要件 | 内容                                                                       |
 | -------- | -------------------------------------------------------------------------- |
-| FNC-302  | キーで受け渡す。AI が運ぶ値はキー 1 つに限る                               |
+| FNC-302  | `review_id` で受け渡す。AI が運ぶ値は `review_id` 1 つに限る               |
 | FNC-303  | script が組み立てる。AI は組み立てない。**形式の検証を置かない**           |
 | FNC-304  | 値は変形せずに受け渡される。`reason` には改行・引用符・非 ASCII が含まれる |
 | FNC-310  | 書き出しは判断を確定させた後に行う。上書き・修正の操作を持たない           |
@@ -103,7 +99,7 @@ evaluator は、reviewer が返した finding のどれとも対応しない問�
 
 #### FNC-209: 評価は script を通して返す
 
-evaluator は評価の値を script へ渡し、script がキーの下へ評価を保持する（構成は DM-201）。本体はキーを script へ渡して評価を得る。
+evaluator は評価の値を script へ渡し、script が `review_id` の下へ評価を保持する（構成は DM-201）。本体は `review_id` を script へ渡して評価を得る。
 
 - **evaluator は JSON を自ら組み立てない。** 値を渡すだけであり、形は script が持つ（FNC-207）
 - 所見が 0 件なら評価も 0 件とする。評価すべき対象が無い。この場合も終了の値を渡す（FNC-311）
