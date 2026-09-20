@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-20T15:53:52Z
-  file_count: 43
+  generated_at: 2026-09-20T16:29:36Z
+  file_count: 41
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -953,60 +953,6 @@ docs:
       - feature_type
       - temporary-feature
       - priority
-  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md:
-    title: Document Reference Integrity Check Design
-    purpose: Specifies the design for checking document reference integrity through three stages (indexing, extraction, reconciliation) and defines resolution algorithms to detect broken references using deterministic key-based lookups
-    content_details:
-      - Three-stage architecture (indexing real documents, extracting references, reconciling against index)
-      - Four index types (file paths, document names, headings, document IDs) for reference resolution
-      - Five reference forms (relative paths, same-document anchors, cross-document anchors, external URLs, unexpandable forms)
-      - Uniqueness constraint and complete-match resolution (no partial matching or heuristics)
-      - Module design (ref_index.py, ref_extract.py, check_refs.py, fix_refs.py)
-      - Reference resolution rules by reference type with deterministic algorithms
-      - Use cases (pre-commit checks, on-demand validation, post-deletion verification)
-      - Test design driven by CommonMark specification with positive and negative cases
-    applicable_tasks:
-      - Document reference integrity check implementation
-      - Broken reference detection and reporting
-      - Reference extraction from Markdown and code
-      - Document ID indexing and lookup
-      - Cross-document anchor resolution
-    keywords:
-      - ref_extract.py
-      - ref_index.py
-      - check_refs.py
-      - fix_refs.py
-      - CommonMark
-      - document ID
-      - broken reference
-      - deterministic resolution
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md:
-    title: REQ-023 Document Reference Integrity Requirements
-    purpose: Defines requirements for identifying document references in text, validating reference paths, and verifying whether referenced documents exist in git-tracked files, including handling of path errors and missing references.
-    content_details:
-      - Reference discrimination and identification (FNC-001)
-      - Four-state handling model (S1/S2/S3/S4 states for reference resolution)
-      - Unresolvable reference types (N1 namespace confusion, N2 deletion context, N3 name collision)
-      - Existence validation criteria (git-tracked files only, symlink resolution)
-      - Exclusion rules (changelog documents, code spans and blocks)
-      - Bare-name reference detection (path-less references)
-      - Project boundary enforcement (prohibit references outside project root)
-      - Mandatory status-based reporting for S1/S2/S3 states
-    applicable_tasks:
-      - Document reference validation
-      - Link correctness verification
-      - Broken reference detection
-      - Reference path error reporting
-      - Missing document detection
-      - SDD flow integration for reference checking
-    keywords:
-      - document reference
-      - reference validation
-      - path validation
-      - git-tracked files
-      - broken references
-      - reference states
-      - SDD flow
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: Orchestrator Pattern Requirements
     purpose: Defines requirements for the orchestrator pattern architecture in forge skills, addressing context consumption, scalability, and parallel execution needs

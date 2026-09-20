@@ -1,7 +1,7 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-09-20T15:53:52Z
-file_count: 43
+generated_at: 2026-09-20T16:29:36Z
+file_count: 41
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: 9de13b2edb41d2333081e7881ea09d12ba374ee09762c757af625421d6937e57
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md: 8779e2e2e95bf2fbc0c32e68410f56086fe043b7a278fa704ab0e0bfc72f6e7f
@@ -34,8 +34,6 @@ checksums:
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: a943a04970ffe3c9335d338aa004d5b77554b032ffe484ad1ab6c92d38b438b5
   docs/specs/forge/design/DES-066_review_body_design.md: 2bcc112ec21460f6e6f40e1607d9494ef2bea5f7e16f9aca59db8a67b20ae89c
   docs/specs/forge/design/DES-074_plan_format_design.md: 0c8025cfb63fca54fdaed3b67b24352f7238f4c940aaa46b037db0e0a7cc33ba
-  docs/specs/forge/doc-reference-integrity/design/DES-081_doc_reference_integrity_design.md: 80f198eddb3de658fd3efc5f19a06489db13e3b89ae1c64c505396835b4eadd6
-  docs/specs/forge/doc-reference-integrity/requirements/REQ-023_doc_reference_integrity.md: 2ca57fc2e7987c82ef4c184445de133a106cfe410a3c9fbe1d14d2c2eadfb5ea
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 99039e16412df5e6706b114cfdec42065822f43e1a9a5177c18eec01deee8294
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 9b289e8d8178b8d39615379d75e69dd1eae0035ae7a42bd0f28727438afbe0a6
   docs/specs/forge/requirements/REQ-013_review_policy.md: 59e1c085642abff05038d39a44069b4d1f5370da58e50d2f78e01a11f2b24858

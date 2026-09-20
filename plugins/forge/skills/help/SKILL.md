@@ -34,7 +34,6 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   query-db-specs                   : プロジェクトの仕様文書を検索
   update-db-rules                  : ルール文書の索引を更新
   update-db-specs                  : 仕様文書の索引を更新
-  fix-doc-refs                     : 文書・コードの参照が実在するかを検査し参照切れを修復
   talk-to-codex                    : 常駐 Codex セッションと往復して相談する
   setup-doc-structure              : .doc_structure.yaml を対話的に生成
   setup-version-config             : .version-config.yaml を対話的に生成
@@ -259,16 +258,6 @@ AskUserQuestion:
 ### update-db-rules / update-db-specs
 
 引数なし。
-
----
-
-### fix-doc-refs
-
-引数: `[--scan <dir>,...]`（参照元として走査するディレクトリ。省略時は文書と配布物を走査する。テストは含まない）
-
-索引対象（何を実在する文書とみなすか）は `.doc_structure.yaml` から解決するため指定しない。
-
-検出した参照切れのうち、参照元が何を指していたかが一意に定まるものは修復し、定まらないものはまとめて確認する。
 
 ---
 
