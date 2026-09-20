@@ -62,7 +62,13 @@ reviewer 自身の定義が次を持つ。依頼はこれを運ばない——�
 
 #### FNC-302: 依頼は `review_id` で受け渡す [MANDATORY]
 
-依頼は JSON として保持し（構成は DM-301）、reviewer には**`review_id` だけを渡す**。reviewer は `review_id` を script へ渡して依頼を得る。
+受け渡しの仕組みは次のとおりである。
+
+- 本体が `review_id` を生成し、依頼を **JSON として保持する**（構成は DM-301）。置き場は `review_id` から script が決める
+- reviewer へは **`review_id` だけを渡す**。依頼の中身は渡さない
+- reviewer は受け取った `review_id` を script へ渡して**依頼を得る**
+- reviewer が返す所見も、evaluator が返す評価も、**同じ `review_id` の下に保持される**
+- レビューが終わったら、`review_id` の下をまとめて片付ける
 
 **AI が運ぶ値は `review_id` 1 つに限る。** JSON そのものを AI の手で受け渡すと、書き写しの誤りという経路が生まれる。置き場は script が決め、AI は組み立てない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。
 
