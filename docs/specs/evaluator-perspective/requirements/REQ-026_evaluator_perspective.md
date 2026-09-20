@@ -13,9 +13,9 @@ feature_note:
 
 本書には、通常は設計書に属する具体的な記述（JSON のフィールド名・型等）を含む。これは、既に決定済みで選択の余地が無い事項を要件定義書に具体的に書く原則（[spec_design_boundary_spec.md](../../../../plugins/forge/docs/spec_design_boundary_spec.md) §2）に基づく。
 
-`forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator の定義が持つもの・入力・作業・出力を定める。中心は、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見るメタ観点と、その評価を表現するデータ構造である。加えて、本体の仕事と、実装期間中の consult の振る舞いを定める。
+`forge:REQ-013` FNC-1322 は、所見を返した主体（reviewer）とは別の主体（evaluator）による独立評価を課している。しかし現状の evaluator は reviewer と同じ観点文書を同じ向きで読むため、reviewer と同じ誤りを繰り返すことがある。本書は evaluator の定義が持つもの・入力・作業・出力を定める。中心は、reviewer とは異なる層（指摘の奥にある本質・対象文書の情報）を見るメタ観点と、その評価を表現するデータ構造である。加えて、本体の仕事を定める。
 
-対象は review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）と、本体が起動する evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）である。受け渡しの方式は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定め、evaluator もこれに従う（FNC-207）。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。ただし consult の一時的な振る舞い（FNC-205）は本書が定める。
+対象は review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）と、本体が起動する evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）である。受け渡しの方式は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が定め、evaluator もこれに従う（FNC-207）。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。
 
 ## 対象システムの性質
 
@@ -41,7 +41,7 @@ feature_note:
 
 ## 要件一覧
 
-evaluator の仕事は 3 段からなる。**入力を得る → 所見を起点に読んで当否を判定する → 結果を返す。** これに加えて、evaluator 自身の定義が持つもの・本体の仕事・実装期間中の移行措置を定める。
+evaluator の仕事は 3 段からなる。**入力を得る → 所見を起点に読んで当否を判定する → 結果を返す。** これに加えて、evaluator 自身の定義が持つものと、本体の仕事を定める。
 
 ### 0. evaluator の定義が持つもの
 
@@ -157,17 +157,6 @@ evaluation は次のフィールドを持つ。
 disposition_cause や flawed_premise_detail のような専用フィールドは持たない（disposition に値を 1 つ足す・reason に書く、で足りる）。
 
 evaluation は finding と 1 対 1 の対応を持たない。同じ finding_id を複数の evaluation が参照することも許される（食い違った場合の調停は、実行主体の判断に委ね、要件としては規則化しない）。
-
-### 移行措置
-
-#### FNC-205: 本 feature の実装期間中、consult は agenda へ記録せず、提示状態を自ら保持する
-
-consult は本 feature の実装期間中、agenda への記録を行わない。提示に必要な状態（所見の一覧・残件・採否）は、agenda を介さず consult 自身が保持する。所見の提示（1 件ずつの採否確認）は継続する。
-
-- **理由**: agenda（`structural_judgment` の必須記録・提示フローの駆動源等）は本書が定める evaluation の構造と対応が取れておらず、本書の後に別の差分 feature（agenda 全面刷新）で再設計される。この期間中の agenda は書き換えの途上にあり、依存したままでは提示自体が成立しない
-- **影響範囲の確認**: consult は agenda の唯一の呼び出し元であり、agenda に依存する他の主体は無い。ただし review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）の一部の手順（段階的提示の中断報告・前回記録の破棄確認）は、consult が保持する状態を前提にしている。これらは consult の新しい保持方式に合わせて読み替える——記録が存在しない・永続化されない前提で、報告内容・破棄判定を行う
-- **提示状態の保持方式**（保持の実装方式・形式・置き場は実装の責務）: consult は所見の一覧・残件・採否の記録を、agenda を介さず自ら保持し、1 件ずつの提示・次項目の判断・残件の報告を行える状態を保つ
-- agenda への永続化（ファイルに残す・後で見返す・表示の改訂）は、agenda 全面刷新の feature が扱う。本 feature の期間中、提示状態は永続化されない（会話が終われば失われる）
 
 ## 未確定事項
 
