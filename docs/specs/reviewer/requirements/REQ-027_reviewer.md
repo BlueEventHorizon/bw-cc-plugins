@@ -15,7 +15,7 @@ feature_note:
 
 本書は reviewer の定義が持つもの・入力・作業・出力を定める。受け渡しの方式、対象の読み方と target 種別の判定、所見と終了の値の返し方が対象である。
 
-対象は reviewer（[reviewer.md](../../../../plugins/forge/agents/reviewer.md)）・reviewer への依頼・依頼を組み立てる review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）。
+対象は review 本体（[review/SKILL.md](../../../../plugins/forge/skills/review/SKILL.md)）と、本体が起動する reviewer（[reviewer.md](../../../../plugins/forge/agents/reviewer.md)）、および両者が受け渡す依頼である。
 
 **本書が定める受け渡しの方式（FNC-302〜304）は、evaluator との受け渡しにも及ぶ。** 同じ問題への答えを 2 つ持たないため、方式は本書が持ち、[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-207 がこれに従う。evaluator のメタ観点と評価の構造は同書が定める。
 
@@ -238,6 +238,25 @@ target 種別が判定できないことはエラーに含めない。FNC-307 �
 
 - **エラー終了した場合、それまでに書かれた所見を後続の工程で使わない。** 結果が不完全であるため。利用者への報告に用いることは妨げない
 - **正常に終えたのに終了の値を書き忘れた場合も、書けない異常終了として扱う。** 正しい結果が異常として扱われることはあるが、異常が正常として通るよりは安全である
+
+### 本体の仕事
+
+#### FNC-312: 本体は依頼を組み立て、reviewer を起動し、結果を取り出す
+
+レビューを進めるのは review 本体である。reviewer は本体が起動する実行主体であり、対象を読んで所見を返す工程を担う。**本書が変える範囲において**、本体の仕事は次で尽きる。
+
+| 仕事                     | 定めている要件  |
+| ------------------------ | --------------- |
+| `review_id` を生成する   | FNC-302         |
+| 依頼を組み立てて保持する | FNC-303・DM-301 |
+| reviewer を起動する      | FNC-302         |
+| ラウンドを回す           | FNC-305         |
+| 所見を取り出す           | FNC-309         |
+| 終了の値で成否を判定する | FNC-311         |
+
+**どの仕組みで reviewer を動かすかは本書が定めない。** 実行主体をどう起動するかは実現手段の選択であり、設計が決める。本書が課すのは、どの実行主体であっても同じ契約に従うことだけである（FNC-309）。
+
+修正・提示・報告など、本書が変えない工程は現行のまま有効である。評価の扱いは [REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) が定める。
 
 ### データモデル
 
