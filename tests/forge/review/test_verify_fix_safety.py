@@ -5,7 +5,7 @@
 Claude 自身が行う設計（DES-066 §3.7）であり、本テストはロールバック実施の有無ではなく
 allowlist 逸脱・構文検証結果の検出が正しいことのみを検証する。
 
-構文検証対象の拡張子（dprint系/.py/.sh）は、実 Codex レビューで発見の「削除されたファイル」
+構文検証対象の拡張子（dprint系/.py/.sh）は、実レビューで発見の「削除されたファイル」
 判定（§2.1 追加）がファイルの実在確認に基づくため、各テストは実在するダミーファイルを
 一時ディレクトリに作成したうえで `project_root` を渡す（存在しないパスは無条件で
 `syntax_skipped_deleted` に振り分けられ、mock した subprocess の結果を経由しない）。
@@ -27,7 +27,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "verify_fix_safety.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_verify_fix_safety", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("verify_fix_safety", _SCRIPT_PATH)
 verify_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(verify_mod)
 
@@ -182,7 +182,7 @@ class VerifySyntaxNonBaselineTest(unittest.TestCase):
         self.assertIn("a.sh", result["syntax_errors"])
 
     def test_python_syntax_check_does_not_create_pycache_directory(self):
-        """Python 構文検証がバイトコードキャッシュを残さないこと（実 Codex レビューで発見の回帰）。
+        """Python 構文検証がバイトコードキャッシュを残さないこと（実レビューで発見の回帰）。
 
         本スクリプトは「ファイルを一切書き換えない」検出専用スクリプト（§2.1）。
         `python3 -m py_compile` は cfile 未指定時に __pycache__/*.pyc を常に書き込み
@@ -220,7 +220,7 @@ class VerifySyntaxNonBaselineTest(unittest.TestCase):
 
 
 class VerifyDeletedFileTest(unittest.TestCase):
-    """削除された（実在しない）ファイルの構文検証スキップ（実 Codex レビューで発見）。"""
+    """削除された（実在しない）ファイルの構文検証スキップ（実レビューで発見）。"""
 
     def test_deleted_python_file_is_skipped_not_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:

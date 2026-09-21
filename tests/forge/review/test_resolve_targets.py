@@ -3,8 +3,8 @@
 resolve_targets.py のテスト（DES-066 §3.1.1 / §6 テスト設計）
 
 一時 git リポジトリを実際に作成し、staged / unstaged / untracked / commit 済みの
-ケースを作り分けて実挙動を検証する（`tests/forge/msg-sys/test_check_setup.py` の
-importlib 直接ロード・一時ディレクトリ実ファイル作成方式を踏襲）。
+ケースを作り分けて実挙動を検証する（importlib 直接ロード・一時ディレクトリへの
+実ファイル作成方式）。
 
 実行:
   python3 -m unittest tests.forge.review.test_resolve_targets -v
@@ -24,7 +24,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "resolve_targets.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_resolve_targets", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("resolve_targets", _SCRIPT_PATH)
 resolve_targets_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(resolve_targets_mod)
 
@@ -89,7 +89,7 @@ class DiffModeTest(unittest.TestCase):
         )
 
     def test_non_ascii_untracked_filename_is_not_escaped(self):
-        """非ASCIIファイル名が git の C-style クォート化されずそのまま返る（msg-review review_id=043e2823d633478fb8e8dd1a74fa92a5 round=2 所見1）。"""
+        """非ASCIIファイル名が git の C-style クォート化されずそのまま返る（実レビュー review_id=043e2823d633478fb8e8dd1a74fa92a5 round=2 所見1）。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _init_repo(project_root)

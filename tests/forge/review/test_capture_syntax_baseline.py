@@ -17,7 +17,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "capture_syntax_baseline.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_capture_syntax_baseline", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("capture_syntax_baseline", _SCRIPT_PATH)
 baseline_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(baseline_mod)
 

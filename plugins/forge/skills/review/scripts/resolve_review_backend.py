@@ -25,8 +25,12 @@ FNC-1318「バックエンド固有の事情を本体に持ち込まない」）
 ## 既定の候補順
 
 明示指定が無いときの順序は本モジュールの `DEFAULT_ORDER` 1 箇所で定義する。
-外部依存を持たない `agent-review` を第一候補、常駐セッションと通信基盤を使う
-`msg-review` を第二候補とする。
+現在の候補は外部依存を持たない `agent-review` のみである。候補が 1 つでも
+`order` の機構（先頭から検査し、全滅で fail closed）は変えない——複数候補が
+戻ったときに定義点と検査順が別物にならないようにするためである。
+
+TODO: 往復の文脈を永続化するバックエンド（`retains_context: true` を申告する
+実行主体）は現在存在しない。別方式での再設計は issue #67 で扱う。
 
 ## 設定（`.claude/.forge.yaml` の `review` セクション）
 
@@ -105,7 +109,12 @@ SOURCE_SETTING = "setting"
 SOURCE_DEFAULT = "default"
 
 #: 既定の候補順。**既定値の定義点はこの 1 箇所のみ**（DES-066 §2.1）
-DEFAULT_ORDER = ("agent-review", "msg-review")
+#:
+#: 現在の候補は `agent-review` のみ。往復の文脈を永続化する実行主体
+#: （`retains_context: true`）は存在しない（TODO: 別方式の実装は issue #67）。
+#: 候補が 1 つでも `order` の解決機構は残す（複数候補が戻ったときに
+#: 定義点と検査順が別物にならないようにするため）。
+DEFAULT_ORDER = ("agent-review",)
 
 #: 設定のセクション名とスキーマ（スキーマの所有は DES-066 §2.2）
 #:

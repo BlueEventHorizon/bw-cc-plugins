@@ -78,7 +78,9 @@ from plan_contract import normalize_group_key  # noqa: E402
 # `scope_text` が review 側の注入検証（`build_review_request.py` の構造行拒否）を通ることを
 # 生成側でも保証する。受け取る側は生成元の保証を検証できないため、両側で独立に検査する。
 _STRUCTURE_LINE_RE = re.compile(r"^ {0,3}(?:#{1,6}(?:\s|$)|```|~~~)")
-_PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:", "[msg-review]")
+# バックエンド固有のワイヤヘッダを持つ実行主体が現れたら、その接頭辞をここへ足す
+# （現在の唯一の実行主体 `agent-review` はワイヤヘッダを持たない）。
+_PROTOCOL_LINE_PREFIXES = ("REVIEW_RESULT:",)
 
 _OUT_OF_SCOPE_HEADING = "以下は今回の範囲外である。担当タスクで実装される。"
 _NO_OUT_OF_SCOPE = "範囲外の項目はない（今回の対象はこの範囲で最終形に到達する）。"

@@ -40,6 +40,15 @@ build_review_request = _load(_SCRIPT_PATH, "forge_build_review_request")
 
 _TOKEN_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 
+#: バックエンド固有のワイヤヘッダ形（backend 名は任意）。共通依頼本文はこの形の
+#: 先頭行を持ってはならない。現時点でこの形のヘッダを付ける実行主体は存在しないが、
+#: 本文の中立性は特定のバックエンド名に依存せず守る。
+_WIRE_HEADER_RE = re.compile(r"^\[[^\]\s]+\]\s+\S+\s+review_id=\S+\s+round=\d+\s*$")
+
+
+def _assert_no_wire_header(case, body):
+    case.assertIsNone(_WIRE_HEADER_RE.fullmatch(body.splitlines()[0]))
+
 
 def _run_cli(argv):
     result = subprocess.run(
@@ -198,17 +207,14 @@ class TemplateTokenContractTest(unittest.TestCase):
                     self.assertFalse(has_branch_tokens)
 
     def test_no_template_or_generated_body_starts_with_backend_header(self):
-        header_re = re.compile(
-            r"^\[msg-review\]\s+\S+\s+review_id=\S+\s+round=\d+\s*$"
-        )
         for pattern in build_review_request.VALID_PATTERNS:
             with self.subTest(pattern=pattern):
                 text = build_review_request.template_path(pattern).read_text(encoding="utf-8")
                 self.assertNotIn("{{PROTOCOL_HEADER}}", text)
-                self.assertIsNone(header_re.fullmatch(text.splitlines()[0]))
+                _assert_no_wire_header(self, text)
 
                 body = _build(pattern)
-                self.assertIsNone(header_re.fullmatch(body.splitlines()[0]))
+                _assert_no_wire_header(self, body)
 
 
 class FocusTest(unittest.TestCase):
@@ -382,8 +388,8 @@ class ScopeArgumentTest(unittest.TestCase):
                     _build("diff", scope=f"到達目標\n{line}")
 
     def test_backend_header_is_not_a_common_scope_contract(self):
-        body = _build("diff", scope="到達目標\n[msg-review] という文字列を整理する")
-        self.assertIn("[msg-review]", body)
+        body = _build("diff", scope="到達目標\n[example-backend] という文字列を整理する")
+        self.assertIn("[example-backend]", body)
 
     def test_carriage_return_in_scope_rejected(self):
         with self.assertRaises(ValueError):
@@ -603,7 +609,7 @@ class SecretsTrustBoundaryTest(unittest.TestCase):
         self.assertEqual(returncode, 0, stderr)
         payload = json.loads(stdout)
         self.assertIn("review_id", payload)
-        self.assertNotIn("[msg-review]", payload["body"])
+        _assert_no_wire_header(self, payload["body"])
         self.assertIn("走査ファイル数:", payload["body"])
 
     def test_build_uses_the_scanner_output_directly(self):
@@ -753,7 +759,7 @@ class RequestEnvelopeTest(unittest.TestCase):
             "diff", _REPO_ROOT, review_id="abc123"
         )
         self.assertEqual(payload["review_id"], "abc123")
-        self.assertNotIn("[msg-review]", payload["body"])
+        _assert_no_wire_header(self, payload["body"])
         self.assertTrue(payload["body"].startswith("## レビュー依頼"))
 
     def test_review_id_is_a_readable_creation_timestamp(self):
@@ -885,7 +891,7 @@ class ScopedPatternContractTest(unittest.TestCase):
 class ScopeInstructionContractTest(unittest.TestCase):
     """対象欄が「範囲の宣言」ではなく「能動的な手順」を指示していること（DES-055 §8.5）。
 
-    実 Codex レビュー（review_id=1571fca6…）で、`--dirs` 指定に対しレビュアーが
+    実レビュー（review_id=1571fca6…）で、`--dirs` 指定に対しレビュアーが
     未コミット変更の有無を見て差分レビューの枠組みへ切り替え、15 文書 3242 行を
     読まずに `approved` を返した。原因は対象欄が範囲を宣言するだけで、列挙という
     最初の作業を命じていなかったこと（`--files` は渡された一覧そのものが手順に
@@ -1152,7 +1158,7 @@ class MainCliTest(unittest.TestCase):
         self.assertEqual(stderr, "")
         payload = json.loads(stdout)
         self.assertEqual(set(payload), {"review_id", "body"})
-        self.assertNotIn("[msg-review]", payload["body"])
+        _assert_no_wire_header(self, payload["body"])
 
     def test_branch_pattern_requires_branches_and_exits_nonzero(self):
         returncode, stdout, stderr = _run_cli(

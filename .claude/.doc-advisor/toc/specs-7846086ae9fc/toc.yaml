@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-20T16:29:36Z
-  file_count: 41
+  generated_at: 2026-09-21T03:04:10Z
+  file_count: 37
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -37,34 +37,34 @@ docs:
       - REVIEW_RESULT
       - parse_findings
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md:
-    title: agent-review Backend Requirements
-    purpose: Defines the behavior and boundaries of a read-only custom Agent reviewer backend with no external dependencies
+    title: agent-review Backend Requirements Definition
+    purpose: Defines the behavior and boundaries of a read-only custom Agent that serves as the review execution principal with no external dependencies
     content_details:
-      - Single-round single-Agent execution lifecycle
-      - Common backend contract compliance (approved/findings/failure results)
-      - Stateless non-persistent execution
-      - Read-only reviewer Agent constraints (no file/git/external writes)
-      - Availability check procedure
-      - Common finding format compliance (severity/text/location)
-      - No history persistence or recovery
-      - Backend-neutral message passing without msg-review header injection
+      - One-round, one-Agent execution lifecycle with no session reuse
+      - Read-only reviewer Agent constraints (no file creation/deletion/modification, no git changes, no external writes)
+      - Common backend contract compliance for round results (approved, findings, failure)
+      - Availability check requirements (Agent definition resolution, execution capability, read-only constraint verification)
+      - Stateless operation with no persistence, history, or session continuation across rounds
+      - Common finding format compliance with severity, text, and location fields
+      - History non-recovery guarantee and new review requirement for continuation requests
     applicable_tasks:
       - agent-review backend implementation
-      - backend contract review
-      - reviewer Agent definition creation
-      - availability check implementation
-      - result judgment logic implementation
-      - failure handling and error messaging
+      - Integration testing with review body
+      - agent-review contract review
+      - Backend availability verification
+      - Review round result validation
+      - Read-only constraint enforcement
     keywords:
       - agent-review
       - reviewer
       - read-only
-      - review backend
       - stateless
-      - backend contract
-      - approved
+      - review backend
       - findings
+      - approved
       - failure
+      - FNC-1603
+      - backend contract
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
     title: DES-025 Issue-Driven Development Flow Design
     purpose: Specifies the issue-driven development flow design in anvil, including 4 SKILLs (create, triage, implementation, UI), architecture, module design, use cases, data structures, and error handling strategies
@@ -829,38 +829,51 @@ docs:
       - launch context
       - schema design
       - automation
+  docs/specs/forge/design/DES-047_fix_safety_guardrails_design.md:
+    title: Safety Guardrails for Review Fix Application Design
+    purpose: Defines safety boundaries and verification mechanisms for applying fixes in the review skill, including sequential application, allowlist enforcement, syntax validation, and independent change verification.
+    content_details:
+      - Baseline capture of syntax violations before fix application
+      - Sequential application of confirmed fixes with per-finding validation
+      - Safety verification CLI (verify_fix_safety.py) for allowlist and syntax checks
+      - End-of-round independent verification using collect_modified_files.py
+      - Responsibility boundaries between backend, review body, and verification scripts
+      - Verification output structure (allowlist_violations, syntax_errors, status)
+      - Test design for baseline, safety verification, and file collection
+    applicable_tasks:
+      - Review fix application implementation
+      - Fix safety validation logic
+      - Syntax error detection in modified files
+      - Allowlist violation detection
+    keywords:
+      - safety guardrails
+      - fix application
+      - confirmed_fix
+      - allowlist
+      - syntax validation
   docs/specs/forge/design/DES-055_review_request_template_design.md:
     title: Review Request Template Design
-    purpose: Specifies the design of review request templates for 8 review patterns (diff, branch, code, requirement, design, plan, uxui, secrets), including template structure, placeholder token contracts, validation rules, script responsibilities, and testing strategy
+    purpose: Specifies design for pattern-specific review request templates where scripts handle dynamic data embedding and validation, enabling templates as specifications for reviewers while maintaining backend-neutral common bodies.
     content_details:
-      - Template overview and benefits (natural language templates with dynamic data embedding)
-      - "Constraints: no prose in scripts, no condition branching per target axis, no wire protocol in templates"
-      - List of 8 template patterns with file locations and applicable review types
-      - Named forge internal criteria documents used by each template
-      - "Placeholder contract: 13 tokens (REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, PROJECT_RULES, PROJECT_SPECS, BASE_BRANCH, TARGET_BRANCH, TARGET_PATHS, FOCUS, SCOPE, SCAN_FINDINGS, SCAN_SUPPRESSED, SCAN_STATS)"
-      - Placeholder validation rules and fail-closed checks
-      - "Script responsibilities: build_review_request.py, analyze_branch_point.py, resolve_targets.py, scan_secrets.py"
-      - Template selection rules based on command parameters
-      - Test design with 16 verification points (token substitution, backend neutrality, security scanning, etc.)
-      - "Design rationale: pattern separation, script responsibility, trusted scan generation, directory vs file templates, target path handling, SCOPE vs TARGET_PATHS distinction"
+      - Template overview with single natural language template per review pattern
+      - Design constraints - no prose in scripts, no condition branching per target axis, no wire protocol
+      - Template list - 8 patterns (diff, branch, code, requirement, design, plan, uxui, secrets) with target axes
+      - Placeholder contract - {{TOKEN}} notation with global and pattern-specific tokens (REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, TARGET_PATHS, FOCUS, SCOPE)
+      - Placeholder validation (fail-closed) - uneaten tokens, unknown tokens, newline injection, absolute paths, double target axis
+      - Script responsibilities - build_review_request.py for token replacement and validation, scan_secrets.py for deterministic detection
+      - Template selection logic - mapping review invocation patterns to selected templates
+      - Test design - token replacement, backend neutrality verification, absolute path resolution, template completeness contracts
     applicable_tasks:
-      - Review request template implementation
-      - Review workflow script development
-      - Placeholder token validation logic
-      - Test case definition for template contracts
-      - Backend-neutral request format design
-      - Secret scanning and masking integration
+      - Review request generation and template building
+      - Template placeholder embedding and validation
+      - Pattern-specific review body configuration
+      - Backend-neutral protocol implementation
     keywords:
-      - review template
-      - placeholder token
-      - build_review_request
-      - scan_secrets
-      - forge review
+      - review request template
+      - placeholder embedding
+      - "{{TOKEN}} notation"
+      - backend neutral
       - template pattern
-      - validation contract
-      - FOCUS
-      - SCOPE
-      - TARGET_PATHS
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: DES-061 forge Project Settings File Design
     purpose: Defines the design of a universal settings file (.claude/.forge.yaml) for adjusting forge behavior per project, establishing file placement, structure, reading, and error handling conventions.
@@ -889,36 +902,31 @@ docs:
       - parse_error_handling
       - feature_area_section
   docs/specs/forge/design/DES-066_review_body_design.md:
-    title: /forge:review Core Design (Backend-Independent)
-    purpose: Specifies the design of the /forge:review core skill that orchestrates review requests, evaluates findings, and processes reviewer verdicts independent of any specific backend implementation
+    title: Review Body Design (Backend-Independent)
+    purpose: Defines the design for the review body layer that orchestrates review requests to backends and processes results, remaining completely independent of reviewer identity while managing separation between backend-neutral and backend-specific concerns.
     content_details:
-      - Backend resolution strategy with fail-closed policy and default order (agent-review, msg-review)
-      - Architecture overview with modules for target resolution, branch analysis, and request building
-      - Evaluator agent assessing findings for disposition, severity, confidence
-      - Finding and evaluation combination with index validation
-      - Location-based findings split (located vs unlocated)
-      - Module specifications for syntax baseline and fix safety verification
-      - Judgement handling (approved, findings, failure) with endpoint processing
-      - Context preservation for multi-round reviews without implicit fallback
-      - Staged presentation delegation to consult skill
-      - File collection and modification tracking
+      - Architecture overview with backend resolution, scripts for target resolution and request building
+      - Backend resolution strategy - name to SKILL mapping, explicit designation vs. candidate order, fail-closed on unknown backends
+      - Default candidate order (agent-review), immutable ordering, configuration constraints
+      - Review section in .forge.yaml with optional backend key (no candidate order configuration)
+      - Module responsibilities for backend resolution, branch analysis, target resolution, request building, evaluation
+      - Single exit endpoint for 4 termination paths (approved, halted_with_open_findings, failure, interrupted)
+      - Finding location splitting and dual confidence - located/unlocated, confidence vs. fix_confident
+      - Finding-evaluation combination with deterministic index-based joining and validation
+      - Staged presentation delegation to consult SKILL
+      - Test design with endpoint coverage, module validation, index alignment verification
     applicable_tasks:
-      - Review orchestrator workflow design
-      - Backend abstraction interface design
-      - Finding evaluation and disposition assignment
-      - Review request template design
-      - Endpoint pathway determination
-      - Safety validation for code modifications
-      - Multi-round review state preservation
+      - Review body implementation and orchestration logic
+      - Backend resolution and candidate evaluation
+      - Finding-evaluator judgment combination and validation
+      - Fix safety verification and allowlist management
+      - Multi-round review loop management
     keywords:
-      - review
-      - backend
-      - finding
-      - evaluator
-      - disposition
-      - agent
-      - staged presentation
-      - fail-closed
+      - review body orchestration
+      - backend resolution
+      - finding evaluation
+      - fix safety verification
+      - multi-round review
   docs/specs/forge/design/DES-074_plan_format_design.md:
     title: Default Format for Implementation Plans
     purpose: Defines the JSON schema and field specifications for implementation plan files, including traceability matrices, task structures, validation rules, and script implementation contracts for plan creation and update operations
@@ -1006,35 +1014,37 @@ docs:
       - semantic choice elimination
       - error guard placement
   docs/specs/forge/requirements/REQ-013_review_policy.md:
-    title: REQ-013 Review Policy Requirements
-    purpose: Defines forge document-driven review policy, establishing a three-tier priority system (rule compliance, contradiction detection, unnecessary complexity), target specification axes, interaction modes, confidence marking, backend systems, and judgment independence requirements.
+    title: Review Policy Requirements
+    purpose: Defines the review feature architecture for forge, establishing a document-driven process that prioritizes rule matching, eliminates custom review perspectives, and clarifies the boundary between findings and implementation guidance.
     content_details:
-      - Philosophy shift to document-driven review from exhaustive detection
-      - "Three-tier priority system: P1 (rule compliance), P2 (contradiction/consistency), P3 (unnecessary complexity)"
-      - "Target axes: --diff, --branch, --files, --dirs for scope specification"
-      - "Interaction modes: --interactive (default), --auto (confidence-based auto-fix)"
-      - "Confidence marking: ✅ (implement), ☑️ (finding correct), unmarked (uncertain)"
-      - "Review backend axis with resolution order: agent-review > msg-review"
-      - Focus perspective and scope/arrival target for per-request directives
-      - Self-verification and independent evaluation requirements for all findings
-      - Secret information review as independent process with non-reproduction rule
-      - Rule omission discovery with three-condition Issue creation criteria
+      - Three-level observation hierarchy (P1 rule matching, P2 internal contradictions, P3 unnecessary complexity)
+      - Elimination of custom perspectives from criteria; judgment consolidation in principles
+      - Target specification axes (--diff, --branch, --files, --dirs) with granularity preservation
+      - Interaction modes (--interactive vs --auto) with confidence-based automatic correction
+      - Optional axes for focus perspective, scope/completion target, and principles import
+      - Review backend selection with fallback resolution order and availability checking
+      - Self-verification (Chain-of-Verification) and independent evaluation of findings
+      - Secrets detection with dual machine and AI approach
+      - Built-in rule fallback via forge_anti_patterns.md and issue creation for rule gaps
+      - Setting that review result is insight not direction; finding adoption is author decision
     applicable_tasks:
-      - forge review system specification
-      - Review policy implementation
-      - Criteria hierarchy definition
-      - Backend integration and resolution
-      - Finding evaluation pipeline design
-      - Review SKILL development
+      - Review backend implementation and integration
+      - Review criteria structure and template design
+      - Severity catalog and judgment principles establishment
+      - Secret scanning and machine detection setup
+      - Review policy rollout and governance planning
+      - Finding evaluation and disposition workflow design
     keywords:
-      - review policy
-      - priority system
-      - criteria
-      - confidence marking
-      - judgment independence
-      - backend resolution
-      - principles
-      - finding verification
+      - review-policy
+      - forge
+      - SDD
+      - Chain-of-Verification
+      - backend-selection
+      - severity-catalog
+      - interaction-mode
+      - FNC
+      - observation-hierarchy
+      - P1
   docs/specs/forge/requirements/REQ-024_implementation_plan_spec.md:
     title: Implementation Plan Specification Requirements
     purpose: Defines requirements for implementation plan documents that capture design-derived tasks and manage execution order and progress in forge
@@ -1085,145 +1095,3 @@ docs:
       - feature identifier
       - merge
       - additive development
-  docs/specs/msg-review/design/DES-045_msg_review_skill_design.md:
-    title: msg-review Review Backend Design
-    purpose: Specifies the design of msg-review, an inherited SKILL backend that synchronously completes review rounds with resident Codex sessions, handling setup checks, message wiring, sending, waiting, parsing, and notifications
-    content_details:
-      - Four operation modes (availability check, round execution, completion notification, history restoration)
-      - Eight modules with division of labor (SKILL orchestration, availability probe, wrapper CLI, header processing, history filter, common parser, message infrastructure, thread extraction)
-      - "Wire header format: [msg-review] <type> review_id=<id> round=<n>"
-      - "Three-value judgment: approved, findings with severity (critical/major/minor), failure"
-      - "Position tracking in findings: path+line or unknown=true, with warnings for missing positions"
-      - Timeout handling with last observed state and wake failure diagnostics
-      - History restoration via thread_filter and in_reply_to chain
-      - Database messages with delivered_ids for delivery rights management
-    applicable_tasks:
-      - Review backend implementation
-      - Codex session integration
-      - Wire protocol message handling
-      - Timeout and error recovery design
-      - Review history reconstruction
-    keywords:
-      - msg-review
-      - Codex session
-      - review backend
-      - wire header
-      - finding severity
-      - in_reply_to
-      - review_id
-      - delivered_ids
-      - parse_findings
-      - probe_availability
-  docs/specs/msg-review/design/DES-047_msg_review_fix_safety_guardrails_design.md:
-    title: Fix Safety Guardrails Design
-    purpose: Defines safety boundaries for applying confirmed_fix in the review process, including sequential per-finding application, target file allowlist enforcement, syntax validation, and independent change file confirmation
-    content_details:
-      - Baseline capture for syntax and format violations before applying fixes
-      - Sequential application of fixes per finding (one at a time, never batched)
-      - Allowlist validation against modified files to detect violations
-      - Syntax validation for Markdown, JSON, YAML, TOML, Python, Shell with dprint and ast.parse
-      - Distinction between pre-existing violations, new violations, unsupported extensions, and deleted files
-      - Independent verification at round end using git porcelain output with NUL-delimited parsing
-      - "Responsibility boundaries: backend returns finding arrays, review body decides and applies fixes"
-      - "Three CLI scripts: capture_syntax_baseline.py, verify_fix_safety.py, collect_modified_files.py"
-    applicable_tasks:
-      - Fix application and safety verification
-      - Code review safety enforcement
-      - Syntax validation configuration
-      - File change audit and allowlist management
-      - Multi-round fix integration
-    keywords:
-      - fix safety
-      - syntax validation
-      - allowlist
-      - dprint
-      - baseline
-      - verify_fix_safety
-      - collect_modified_files
-      - confirmed_fix
-      - ast.parse
-      - allowlist_violations
-  docs/specs/msg-review/requirements/REQ-012_msg_review_skill.md:
-    title: msg-review Review Backend Requirements Specification
-    purpose: Specifies requirements for the msg-review review backend that synchronously exchanges review requests with Codex sessions, validating prerequisites and returning structured results in a single turn
-    content_details:
-      - Availability check with independent assessment of wakeup means, session permanence, and configuration health
-      - Synchronous round execution completing within single turn via header attachment, sending, wakeup, and response retrieval
-      - Result judgment as one of approved, findings, or failure with specific severity and location information
-      - Wire protocol header [msg-review] with review_id and round number, with in_reply_to thread chaining
-      - Timeout handling returning confirmed failure with elapsed time, review_id, and diagnostic information
-      - End-of-review notification with idempotent handling
-      - Optional history restoration from msg-sys database via wire header thread identification
-      - Codex session wakeup via cmux with result distinction and best-effort approach
-    applicable_tasks:
-      - msg-review backend implementation
-      - synchronous request-response pattern design
-      - thread-based communication integration with msg-sys
-      - timeout and failure handling strategy
-      - Codex session interaction management
-      - wire protocol validation
-    keywords:
-      - msg-review
-      - msg-sys
-      - wire protocol
-      - in_reply_to
-      - review_id
-      - cmux
-      - availability check
-      - synchronous round
-      - Codex session
-  docs/specs/msg-sys/design/DES-034_codex_review_messaging_design.md:
-    title: DES-034 msg-sys Codex Continuous Dialogue Messaging Design
-    purpose: Specifies the asynchronous messaging infrastructure for bidirectional communication between Claude and Codex sessions using SQLite mailbox, Stop hook implementation, and reply hints with round-trip limiting
-    content_details:
-      - SQLite3-based append-only mailbox with WAL mode and per-project database isolation
-      - Stop hook implementation (check_inbox.py) with FORGE_MSG_AGENT_NAME environment variable controlling Claude/Codex distinction
-      - Module design with send.py, inbox.py, history.py, lib/mailbox.py, and lib/notify.py components
-      - Reply hint generation using shlex.join() for safe command quoting and executable delivery instructions
-      - Eight-stage error flow with fail-safe continue behavior that defers ack until complete construction
-      - Round-trip limiting via in_reply_to chain traversal with FORGE_MSG_MAX_ROUND_TRIPS environment variable
-      - Dynamic DB path resolution using git rev-parse --show-toplevel for project-root-relative path discovery
-      - Human notification mechanism for round-trip limit reached with manual ack command in notification body
-    applicable_tasks:
-      - Implementing asynchronous messaging between AI agents
-      - Designing and integrating Stop hook handlers
-      - Setting up message persistence and history tracking
-      - Implementing safe reply hint generation
-      - Handling error cases with fail-safe behavior
-    keywords:
-      - msg-sys
-      - Stop hook
-      - check_inbox.py
-      - mailbox
-      - reply_chain_length
-      - FORGE_MSG_AGENT_NAME
-      - FORGE_MSG_MAX_ROUND_TRIPS
-      - shlex.join
-  docs/specs/msg-sys/requirements/REQ-006_codex_review_messaging.md:
-    title: "REQ-006: Codex Continuous Dialogue Messaging Requirements"
-    purpose: Defines requirements for asynchronous messaging between Claude and Codex sessions, including send/receive operations, automatic inbox checking at turn boundaries, reply hints, and delivery consistency guarantees
-    content_details:
-      - SQLite-based message send/receive/history with separate mark-as-read operation
-      - Codex automatic inbox check at stop hook time (INT-002) with round limit enforcement
-      - Claude automatic inbox check at turn boundary (INT-003) with symmetric stopping conditions
-      - Continuation dialogue round limit as stopping condition (FNC-002) with failsafe when unset
-      - Self-contained reply hints with executable format, correct message ID, and target action
-      - Bidirectional reply hint support (Claude→Codex and Codex→Claude, FNC-004)
-      - "Message delivery consistency: separate get and mark-as-read operations to preserve unread state on processing failure"
-    applicable_tasks:
-      - Implementation of Codex-Claude asynchronous messaging system
-      - Stop hook integration and automatic inbox checking
-      - Reply hint mechanism design and integration testing
-      - Message delivery consistency and fault tolerance testing
-      - Operational tuning of continuation dialogue round limits
-    keywords:
-      - Codex messaging
-      - inbox checking
-      - reply hints
-      - stop hook
-      - asynchronous polling
-      - continuation dialogue
-      - message consistency
-      - turn boundary detection
-      - mark-as-read separation
-      - round limit configuration

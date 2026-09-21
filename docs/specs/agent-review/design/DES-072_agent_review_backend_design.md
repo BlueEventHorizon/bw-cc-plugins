@@ -26,7 +26,7 @@ keywords:
   - REVIEW_RESULT
   - parse_findings
 type: doc-advisor
-body_hash: sha256:c810b85f43f3da92e997f15ad1203cbbbb8c4473dc6c0a923200f6dec606d833
+body_hash: sha256:b4f5d5d88e776aaa03c2707d2c8a6f58c765abc383489f00f27016033961863b
 ---
 
 # DES-072 agent-review バックエンド設計
@@ -117,7 +117,7 @@ read-only git 照会は、`status`、`diff`、`show`、`log`、`merge-base`、`r
 
 Agent 起動時に resume ID、前ラウンドの transcript、前回の最終応答を渡さない。後続ラウンドで必要な変更内容と未解決所見は、本体が共通依頼本文へ明示的に組み立てた情報だけを使う。
 
-`review_id` とラウンド番号は本体との結果対応に使うが、Agent の継続識別子としては使わない。`[msg-review]` ワイヤヘッダを生成または注入しない。受信した共通本文の先頭行が厳密なワイヤヘッダ形に一致する場合だけ混入として拒否し、本文中の説明や引用にある単なる `[msg-review]` の言及は許可する。
+`review_id` とラウンド番号は本体との結果対応に使うが、Agent の継続識別子としては使わない。バックエンド固有のワイヤヘッダを生成または注入しない。受信した共通本文の先頭行が厳密なワイヤヘッダ形 `[<backend 名>] <pattern> review_id=<id> round=<n>` に一致する場合だけ混入として拒否し、本文中の説明や引用にある単なる角括弧の言及は許可する。
 
 ### 3.3 終了通知
 
@@ -165,7 +165,7 @@ Agent 起動時に resume ID、前ラウンドの transcript、前回の最終�
 | execution    | timeout、Agent の異常終了              |
 | response     | 応答欠落、未知判定、共通形式違反       |
 
-ラウンド実行後の `failure` を理由に `msg-review` へ切り替えない。
+ラウンド実行後の `failure` を理由に他のバックエンドへ切り替えない。
 
 ## 5. 状態と資源
 
@@ -189,7 +189,7 @@ Agent 起動時に resume ID、前ラウンドの transcript、前回の最終�
 | read-only 制約       | 編集・外部書き込みツールが無く、変更 git 操作を実行できない                       |
 | 正常結果             | `approved` と、位置情報付き所見配列を伴う `findings` を共通形式で返す             |
 | 異常結果             | 起動失敗、timeout、応答欠落、未知判定、形式不正を理由付き `failure` にする        |
-| ワイヤ中立性         | Agent 入力に `[msg-review]` を付加しない                                          |
+| ワイヤ中立性         | Agent 入力にバックエンド固有のワイヤヘッダを付加しない                            |
 | 終了通知             | 成功する no-op であり、Agent、記録、通信を追加しない                              |
 | 履歴非対応           | 履歴要求に `unsupported` を返し、空履歴または暗黙の前ラウンド文脈を返さない       |
 | 非永続性             | ラウンド後に DB、履歴ファイル、常駐プロセス、再利用可能な Agent 参照が残らない    |
