@@ -143,7 +143,7 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 **script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい。
 
 ```text
-⭕ 本スクリプトは REQ-012 FNC-004 の実装である    （script のコメント）
+⭕ 本スクリプトは REQ-NNN FNC-NNN の実装である    （script のコメント。実在する仕様 ID に置き換える）
 ```
 
 **ID 体系・書式の抽象例は許容する。** プレースホルダ番号（`DES-001` / `REQ-001` / `TASK-001` 等）や、対象プロジェクト側の構造を示すプレースホルダパス（`docs/specs/<feature>/design/*.md`、`docs/specs/**/design/` 等）は、実在文書を指していないため対象外である。format 文書・設定例・出力例がこれらを使えないと成立しないため、禁止してはならない。

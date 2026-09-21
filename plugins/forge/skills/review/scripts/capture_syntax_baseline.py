@@ -3,9 +3,8 @@
 
 `/forge:review` パイプラインの `check_baseline_violations.py` の dprint 判定ロジック
 （exit code 0/14/20 の解釈、dprint 未インストール時の fail-safe）をそのまま踏襲するが、
-`session_dir`/`refs.yaml` への結合を持たない（REQ-012 §2.2 により review は
-session_dir ベースの review パイプラインと結合しないため）。プレーンなファイルパスの
-リストを直接受け取り、結果を標準出力の JSON として返す（ファイルへの書き込みは行わない）。
+`session_dir`/`refs.yaml` への結合を持たない。プレーンなファイルパスのリストを直接受け取り、
+結果を標準出力の JSON として返す（ファイルへの書き込みは行わない）。
 
 Usage:
     python3 capture_syntax_baseline.py --files-json '["a.md", "b.py"]' [--project-root <path>]
