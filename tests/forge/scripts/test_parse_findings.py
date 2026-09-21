@@ -22,7 +22,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "scripts" / "review" / "parse_findings.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_parse_findings", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("parse_findings", _SCRIPT_PATH)
 parse_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(parse_mod)
 
@@ -32,19 +32,21 @@ class ParseFindingsTest(unittest.TestCase):
 
     def test_extracts_single_finding_with_severity(self):
         body = (
-            "[msg-review] generic review_id=abc round=2\n\n"
-            "1. 🔴 critical `plugins/forge/skills/review/scripts/wake_codex.sh:58-59` "
+            # 先頭のワイヤヘッダ行は、バックエンド固有の形式を持つ実行主体が
+            # 付けうるもの。parser はこれを所見として拾わない。
+            "[example-backend] generic review_id=abc round=2\n\n"
+            "1. 🔴 critical `plugins/forge/skills/review/scripts/collect_modified_files.py:58-59` "
             "— 検証なしにテキストを注入している\n\n"
             "REVIEW_RESULT: findings\n"
         )
         findings = parse_mod.parse_findings(body)
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["severity"], "critical")
-        self.assertIn("wake_codex.sh:58-59", findings[0]["text"])
+        self.assertIn("collect_modified_files.py:58-59", findings[0]["text"])
         self.assertEqual(
             findings[0]["location"],
             {
-                "path": "plugins/forge/skills/review/scripts/wake_codex.sh",
+                "path": "plugins/forge/skills/review/scripts/collect_modified_files.py",
                 "line": 58,
                 "end_line": 59,
             },
@@ -98,12 +100,12 @@ class ParseFindingsTest(unittest.TestCase):
             "返信する場合:\n"
             "1. 返信本文を一時ファイルに書き出す\n"
             "2. 次のコマンドを実行する:\n"
-            "   python3 send.py claude codex - --in-reply-to xxx\n"
+            "   python3 reply.py --in-reply-to xxx\n"
         )
         findings = parse_mod.parse_findings(body)
         self.assertEqual(len(findings), 1)
         self.assertNotIn("返信する場合", findings[0]["text"])
-        self.assertNotIn("send.py", findings[0]["text"])
+        self.assertNotIn("reply.py", findings[0]["text"])
 
     def test_low_level_extraction_stops_at_first_of_multiple_declarations(self):
         body = (
@@ -118,7 +120,7 @@ class ParseFindingsTest(unittest.TestCase):
     def test_marker_in_fenced_code_block_is_not_a_finding_start(self):
         """フェンス（```）で囲まれたコード例中のマーカーは finding として抽出しない。
 
-        実 Codex レビューで発見: 返信形式の例をコードブロックで示す際、その中の
+        実レビューで発見: 返信形式の例をコードブロックで示す際、その中の
         `🔴 critical ...` が誤って finding として抽出されていた。
         """
         body = (
@@ -150,7 +152,7 @@ class ParseFindingsTest(unittest.TestCase):
     def test_marker_in_indented_code_block_is_not_a_finding_start(self):
         """4スペース/タブインデントのコードブロック中のマーカーは finding として抽出しない。
 
-        実 Codex レビューで発見: `.lstrip()` によってインデントが失われ、インデント
+        実レビューで発見: `.lstrip()` によってインデントが失われ、インデント
         コードブロック（Markdown のもう一つの標準的なコードブロック記法）内の
         例示マーカーが finding として誤抽出されていた。
         """
@@ -168,7 +170,7 @@ class ParseFindingsTest(unittest.TestCase):
     def test_marker_in_prose_is_not_a_finding_start(self):
         """行頭以外（説明文中）に出現するマーカーは finding として抽出しない。
 
-        実 Codex レビューで発見の具体例: 「概要: 🟡 major の基準を参照しました。」
+        実レビューで発見の具体例: 「概要: 🟡 major の基準を参照しました。」
         という説明文中のマーカーが誤って finding 化されていた。
         """
         body = (

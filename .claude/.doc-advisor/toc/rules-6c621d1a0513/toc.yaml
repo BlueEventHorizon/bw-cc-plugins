@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-20T12:13:05Z
+  generated_at: 2026-09-21T08:34:02Z
   file_count: 8
 
 docs:
@@ -98,34 +98,35 @@ docs:
       - session_dir
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules for plugin scripts and SKILL.md implementation including language selection, testing requirements, script placement, and code organization standards
+    purpose: Defines rules and best practices for plugin script development (Python/Bash) and SKILL.md authoring, including testing requirements, code organization, and design documentation standards.
     content_details:
-      - Language selection criteria - Python for data transformation/parsing, Bash for external command calls (PyYAML only permitted external library)
-      - Test requirement matrix - mandatory for plugins/*.py, integration tests for Bash, SKILL.md and .claude/ excluded
-      - Test directory structure under tests/ organized by plugin and skill names
-      - No inline scripts in SKILL.md - process logic must be in independent script files
-      - Script placement rules - skill-specific under skills/{skill}/, shared multi-skill under plugins/{plugin}/
-      - Cross-skill reference prohibition - no hardcoded references to other skill directories
-      - Temporary file handling with mktemp -d and trap for cleanup and deletion
-      - Design document placement - ADR files at docs/specs/**/design/ADR-{NNN}_{topic}.md
-      - Distribution content reference prohibition - no project docs paths/IDs in user-facing SKILL.md
-      - Version file editing restrictions - only /forge:update-version can modify version numbers
+      - Script language selection criteria (Python for data transformation, Bash for shell operations)
+      - Python standard library only requirement with PyYAML exception
+      - Testing requirements for plugin Python scripts and test directory structure
+      - Prohibition of inline scripts in SKILL.md and correct pattern of external script calling
+      - Script placement conventions (skill-specific vs plugin-common locations)
+      - Temporary file handling using mktemp and trap for cleanup
+      - Design document maintenance including ADR placement rules
+      - Distribution assets cannot reference project development documents
+      - Dual placement options for rules (inline in SKILL.md or separate document with reference)
+      - Unused code deletion policy and fallback implementation guidelines
     applicable_tasks:
-      - Plugin script development for data processing and file operations
-      - Test suite creation and maintenance for Python modules
-      - SKILL.md authoring with proper script separation and organization
-      - Script placement and multi-skill asset sharing decisions
-      - Temporary file and resource cleanup implementation
-      - ADR document creation and design decision recording
+      - Plugin script implementation and review
+      - SKILL.md authoring and maintenance
+      - Test development and unit test implementation
+      - Code refactoring and cleanup
+      - Design documentation and ADR creation
     keywords:
-      - Python scripts - standard library
-      - Bash script execution
-      - test organization structure
-      - SKILL.md implementation patterns
-      - script placement hierarchy
-      - temporary file cleanup
-      - version management automation
-      - distribution reference rules
+      - Python scripting
+      - Bash scripting
+      - PyYAML
+      - SKILL.md
+      - unittest
+      - mktemp
+      - trap
+      - ADR
+      - Testing
+      - update-version
   docs/rules/script_error_output_rules.md:
     title: Script Error Output
     purpose: Defines exit code conventions and output format requirements for Python scripts in the plugins directory, establishing how scripts declare exit codes and callers interpret results.

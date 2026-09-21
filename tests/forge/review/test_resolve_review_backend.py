@@ -58,11 +58,14 @@ class NoSettingTest(unittest.TestCase):
         """候補が 1 つも無ければ、どの実行主体も試せない。"""
         self.assertTrue(resolve_mod.DEFAULT_ORDER)
 
-    def test_default_order_prefers_agent_review(self):
-        self.assertEqual(
-            resolve_mod.DEFAULT_ORDER,
-            ("agent-review", "msg-review"),
-        )
+    def test_default_order_is_agent_review_only(self):
+        """現在の候補は `agent-review` のみ。
+
+        往復の文脈を永続化する実行主体（`retains_context: true`）は廃止済みで、
+        別方式での再設計は issue #67 で扱う。候補が 1 つでも `order` の解決機構
+        （先頭から検査し、全滅で fail closed）は残す。
+        """
+        self.assertEqual(resolve_mod.DEFAULT_ORDER, ("agent-review",))
 
     def test_reads_the_review_section(self):
         settings = _FakeSettings()
@@ -73,11 +76,11 @@ class NoSettingTest(unittest.TestCase):
 class ArgumentTakesPrecedenceTest(unittest.TestCase):
     def test_backend_argument_is_explicit(self):
         code, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="codex-appserver", settings=_FakeSettings()
+            _PROJECT_ROOT, backend_argument="not-implemented-backend", settings=_FakeSettings()
         )
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
         self.assertEqual(payload["mode"], resolve_mod.MODE_EXPLICIT)
-        self.assertEqual(payload["order"], ["codex-appserver"])
+        self.assertEqual(payload["order"], ["not-implemented-backend"])
         self.assertEqual(payload["source"], resolve_mod.SOURCE_ARGUMENT)
 
     def test_argument_beats_setting(self):
@@ -91,17 +94,17 @@ class ArgumentTakesPrecedenceTest(unittest.TestCase):
         """今まさに与えられた指定を、無関係な設定不正で妨げない。"""
         settings = _FakeSettings(raises=resolve_mod.forge_settings.SettingsError("壊れています"))
         code, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="msg-review", settings=settings
+            _PROJECT_ROOT, backend_argument="example-backend", settings=settings
         )
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
-        self.assertEqual(payload["order"], ["msg-review"])
+        self.assertEqual(payload["order"], ["example-backend"])
         self.assertEqual(settings.calls, [])
 
     def test_argument_is_trimmed(self):
         _, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="  msg-review  ", settings=_FakeSettings()
+            _PROJECT_ROOT, backend_argument="  example-backend  ", settings=_FakeSettings()
         )
-        self.assertEqual(payload["order"], ["msg-review"])
+        self.assertEqual(payload["order"], ["example-backend"])
 
     def test_blank_argument_is_an_error(self):
         code, payload = resolve_mod.run(
@@ -113,11 +116,11 @@ class ArgumentTakesPrecedenceTest(unittest.TestCase):
 
 class SettingBackendTest(unittest.TestCase):
     def test_setting_backend_is_explicit(self):
-        settings = _FakeSettings({"backend": "msg-review"})
+        settings = _FakeSettings({"backend": "example-backend"})
         code, payload = resolve_mod.run(_PROJECT_ROOT, settings=settings)
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
         self.assertEqual(payload["mode"], resolve_mod.MODE_EXPLICIT)
-        self.assertEqual(payload["order"], ["msg-review"])
+        self.assertEqual(payload["order"], ["example-backend"])
         self.assertEqual(payload["source"], resolve_mod.SOURCE_SETTING)
 
 
@@ -174,12 +177,12 @@ class SettingsInvalidTest(unittest.TestCase):
         self._assert_invalid(raises=resolve_mod.forge_settings.SettingsError("3 行目付近"))
 
     def test_unknown_key(self):
-        payload = self._assert_invalid({"backned": "msg-review"})
+        payload = self._assert_invalid({"backned": "example-backend"})
         # 綴り誤りを発見できるようキー名は載せる（値は載せない）
         self.assertIn("backned", payload["message"])
 
     def test_backend_is_not_a_string(self):
-        self._assert_invalid({"backend": ["msg-review"]})
+        self._assert_invalid({"backend": ["example-backend"]})
 
     def test_backend_is_blank(self):
         self._assert_invalid({"backend": "   "})
@@ -196,7 +199,7 @@ class NoAvailabilityProbeTest(unittest.TestCase):
         with mock.patch.object(subprocess, "run") as run_mock:
             resolve_mod.run(_PROJECT_ROOT, settings=_FakeSettings())
             resolve_mod.run(
-                _PROJECT_ROOT, backend_argument="msg-review", settings=_FakeSettings()
+                _PROJECT_ROOT, backend_argument="example-backend", settings=_FakeSettings()
             )
         run_mock.assert_not_called()
 
@@ -216,7 +219,7 @@ class CliTest(unittest.TestCase):
 
     def test_cli_accepts_backend_argument(self):
         proc = subprocess.run(
-            [sys.executable, str(_SCRIPT_PATH), "--backend", "msg-review"],
+            [sys.executable, str(_SCRIPT_PATH), "--backend", "example-backend"],
             capture_output=True,
             text=True,
         )

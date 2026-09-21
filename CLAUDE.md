@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.5.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、既定は外部依存を持たない `agent-review`（`review` / `agent-review` / `msg-review`）。相談は常駐 Codex セッションとの往復で行う（`talk-to-codex`）
+- **forge** (v0.5.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、現在の唯一の候補は外部依存を持たない `agent-review`（`review` / `agent-review`）
 - **anvil** (v0.1.3) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
 > 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
@@ -30,7 +30,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 **要約ツール越しに読んだものを一次情報と呼ばない。** WebFetch が返すのは取得したページではなく、それを別モデルに要約させた出力である。要約は元の文面を保証しないため、根拠に用いて断定できない。とくに「ドキュメントに記載が無い」という否定の主張は、要約側の見落としと区別がつかない。
 
-公式ドキュメントで確かめきれない挙動は、**本リポジトリ自身の実装**（`scripts/plugin-installer/install_copy*.sh`）が実際に何をしているかで裏を取る。
+公式ドキュメントで確かめきれない挙動は推測で補わず、確認できない事項として明示する。
 
 ### 3 層構造
 
@@ -44,17 +44,13 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 `${CLAUDE_PLUGIN_ROOT}` と `${CLAUDE_SKILL_DIR}` は**シェル変数ではない**。プラグイン／スキルの機構が置換する。したがってシェルの引用符（`'` か `"` か）は置換の可否に影響しない。
 
-**両者は非対称である**。下表は本リポジトリの copy install 実装（`scripts/plugin-installer/install_copy.sh` / `install_copy_codex.sh`）が実際にそう扱っていることで裏が取れる。
+**両者は非対称である**。
 
-|                             | `${CLAUDE_PLUGIN_ROOT}`                                                      | `${CLAUDE_SKILL_DIR}`                               |
-| --------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
-| 何を指すか                  | プラグインの配置先                                                           | その SKILL.md が置かれたディレクトリ                |
-| 性格                        | plugin コンテキスト変数                                                      | スキルレベル変数（`plugin.json` 不要）              |
-| copy 配置でのランタイム解決 | **効かない**（`.claude-plugin/` を除外するため正式な plugin と認識されない） | `.claude/skills/<skill>/` 配下なら効く              |
-| copy install での静的置換   | 種別 A / B ともに**必須**                                                    | 種別 B（Codex）のみ。種別 A では literal のまま残す |
+|            | `${CLAUDE_PLUGIN_ROOT}` | `${CLAUDE_SKILL_DIR}`                  |
+| ---------- | ----------------------- | -------------------------------------- |
+| 何を指すか | プラグインの配置先      | その SKILL.md が置かれたディレクトリ   |
+| 性格       | plugin コンテキスト変数 | スキルレベル変数（`plugin.json` 不要） |
 
-- 展開されるのは**直後に `/` がある場合のみ**。bare トークン（`${CLAUDE_SKILL_DIR}` 単体）は説明文として保持される。SKILL.md に書くときは `/` の有無で意図を区別する（installer の正規表現が `(?=/)` の lookahead を持つ）
-- 本リポジトリは copy install（`make {forge,anvil}-install-{claude,codex}-project-copy`）を提供するため、この規則は他人事ではない
 - **プレースホルダの挙動を、素のシェルでの実験で確かめない。** 置換するのはプラグイン機構であってシェルではないため、シェルで再現した結果は実際の経路の挙動を示さない
 
 ## ドッグフーディング
@@ -124,7 +120,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ## Development
 
-ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` はビルドではなくインストール・外部接続用（`make {forge,anvil}-install-claude-project-copy`、Codex 向けは `make {forge,anvil}-install-codex-project-copy`。いずれも `DIR=` 必須で、実ファイルを copy する。自動 uninstall は無い）。
+ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` は MCP サーバーの接続・切断用であり、プラグインのインストールには使わない。
 
 - **Python 3.11 以上をサポート対象とする**。Python 3.10 以下は対象外
 - **CI（`.github/workflows/ci.yml`）のゲートは 2 つ**: `python3 -m unittest discover -s tests -p 'test_*.py'` と `dprint check`。JSON / TOML / Markdown / YAML を編集したら [dprint](https://dprint.dev/) で `dprint fmt` を通す（設定は `dprint.jsonc`）。通さないと CI が落ちる

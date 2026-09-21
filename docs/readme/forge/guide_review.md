@@ -71,7 +71,7 @@ A standalone review that targets leaked secrets only — tokens, private keys, c
 
 - **The target is the whole repository.** It cannot be combined with a type or a target axis (`--diff` / `--branch` / `--files` / `--dirs`). A secret committed earlier does not appear in today's diff but is still in the repository, so narrowing to a diff defeats the purpose.
 - **Deterministic scan plus AI, in that order.** `scan_secrets.py` first matches known shapes (AWS / GitHub / Slack tokens, private key blocks, credentialed connection strings, JWTs, high-entropy strings), and its results are attached to the request. The reviewer judges each hit and, separately, hunts for what the scanner cannot match — credentials buried in prose, internal endpoints with no fixed shape.
-- **Detected values never appear in the request.** Only position, kind, length, and a short prefix are passed, masked. The request is persisted in the message DB, so including real values would make detection itself a copying channel.
+- **Detected values never appear in the request.** Only position, kind, length, and a short prefix are passed, masked. The request goes to a separate process and a separate AI, and some backends persist it, so including real values would make detection itself a copying channel.
 - **Nothing is auto-fixed.** Even with `--auto`, the run completes as "findings left unaddressed". A committed secret survives deletion in history, so remediation means revoking and reissuing it — a human decision.
 
 If a test fixture legitimately needs a string that matches a pattern, end the line with `secrets-scan: ignore`. That classifies it — it does **not** drop it. Suppressed hits are always reported with their positions, and overusing the marker is itself reviewable.
@@ -130,16 +130,15 @@ The review body is **independent of who performs the review**. It resolves targe
 
 | Selection                                 | Behavior                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Nothing specified                         | Probe candidates in order and take the first available one (order: `agent-review` → `msg-review`) |
+| Nothing specified                         | Probe candidates in order and take the first available one (`agent-review` is the only candidate) |
 | `--backend <name>`                        | Run on that subject. If unavailable, **fail closed** — no substitute is chosen                    |
 | `review.backend` in `.claude/.forge.yaml` | Project-level explicit choice (same fail-closed treatment as `--backend`)                         |
 
-| Backend        | Who reviews                                      | External dependencies             |
-| -------------- | ------------------------------------------------ | --------------------------------- |
-| `agent-review` | A read-only custom Agent shipped with the plugin | None                              |
-| `msg-review`   | A resident Codex session                         | Codex CLI, cmux, msg-sys settings |
+| Backend        | Who reviews                                      | External dependencies |
+| -------------- | ------------------------------------------------ | --------------------- |
+| `agent-review` | A read-only custom Agent shipped with the plugin | None                  |
 
-`agent-review` comes first because it has no external dependencies: installing the plugin is enough to start reviewing. To use a resident Codex session, name it explicitly with `--backend msg-review` or in `.claude/.forge.yaml` — **without an explicit choice, a different subject runs**.
+`agent-review` is currently the only backend, and it has no external dependencies: installing the plugin is enough to start reviewing. The selection and resolution machinery is kept for when more candidates exist.
 
 The candidate order itself lives on the design side (`DEFAULT_ORDER` and the design document). What configuration selects is only _which_ subject to use.
 
@@ -157,17 +156,6 @@ Prerequisites differ per backend. **What is missing is likewise reported per bac
 - A host that can launch custom Agents
 
 No external tool, resident session, or database is required. It works as installed.
-
-#### `msg-review`
-
-Runs on top of msg-sys (the Claude ⇔ Codex messaging layer). You need:
-
-- **Codex CLI installed and running as a resident session in the target project directory** (start it manually; the skill never auto-starts Codex)
-- **The cmux terminal multiplexer on PATH** (used to wake Codex's turn from the second round onward)
-- The forge plugin installed (the Claude-side Stop hook registers automatically via the plugin mechanism)
-- A Codex-side Stop hook entry in `.codex/hooks.json` (the skill provisions this as initialization on every run, so manual setup is normally unnecessary — a fresh clone or a new worktree is initialized at the availability-probe step)
-
-If the prerequisites hold but Codex never answers, the skill reports a **definitive failure** after the wait budget (600s by default). Under cmux, the target pane is discovered automatically and woken via push, so the wait is usually tens of seconds.
 
 #### When prerequisites cannot be met
 
@@ -191,7 +179,7 @@ When resolving by candidate order (no `--backend`, no setting), the next candida
 | **Request** | `/forge:review` invoked by a user or another skill         | Resolve targets → build request → delegate to the backend → evaluate and fix → decide completion |
 | **Resume**  | User asks for status after a round-trip-limit notification | Summarize unresolved findings from the round-trip history                                        |
 
-**Resume is only available on backends that persist the round-trip history.** History restoration is an optional extension, and the default `agent-review` does not provide it because it keeps no state. A review interrupted on such a backend is not resumed under the same `review_id`; it is re-run as a new review.
+**Resume is only available on backends that persist the round-trip history.** History restoration is an optional extension, and `agent-review` — the only current backend — does not provide it because it keeps no state. **Resume therefore does not work at present**; a persisting backend is being redesigned separately. A review interrupted on such a backend is not resumed under the same `review_id`; it is re-run as a new review.
 
 The round trip with the reviewer is contained **inside the backend**, where sending, waiting, and interpreting one round complete synchronously. The body receives a verdict (approved / findings / failure) plus the findings array, and holds no transport details.
 
@@ -343,4 +331,4 @@ Only `--interactive` step-by-step presentation spans turns, because it waits on 
 
 **There is always exactly one such file, and it holds only the round in progress.** If you break off partway, it stays behind with its undecided rows, and the next review asks you whether to delete it and start fresh or pick up where you left off. That question is the resume entry point. Settled outcomes show up in the fixes themselves and in the reply table, so nothing accumulates in the file.
 
-When the round-trip history is needed it is requested from the backend, but **only on backends that provide history restoration** (for `msg-review`, the msg-sys message DB is the source; `agent-review` keeps no history). Restoration happens only when a user or the body asks for it with an explicit `review_id` — never automatically in response to a message arriving or a wait timing out.
+When the round-trip history is needed it is requested from the backend, but **only on backends that provide history restoration** (`agent-review`, the only current backend, keeps no history, so this request cannot succeed today). Restoration happens only when a user or the body asks for it with an explicit `review_id` — never automatically in response to a message arriving or a wait timing out.

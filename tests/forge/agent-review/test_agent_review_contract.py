@@ -56,14 +56,22 @@ class AgentReviewContractTest(unittest.TestCase):
     def test_backend_is_stateless_and_has_no_external_transport(self):
         self.assertIn("`retains_context` は常に `false` です", self.skill)
         self.assertIn("前ラウンドの transcript を渡しません", self.skill)
-        for forbidden in ("msg-sys", "cmux", "filter_review_history.py", "DB レコード"):
+        # 外部通信基盤・端末多重化・DB を前提とする語彙が本バックエンドの
+        # SKILL.md へ再混入しないことの回帰
+        for forbidden in ("msg-sys", "cmux", "DB レコード"):
             self.assertNotIn(forbidden, self.skill)
 
-    def test_backend_rejects_msg_review_header(self):
-        self.assertIn("[msg-review]", self.skill)
+    def test_backend_rejects_foreign_wire_header(self):
+        """バックエンド固有のワイヤヘッダ混入を拒否する契約が残っていること。
+
+        判定は「行全体がヘッダ形に一致するか」であり、角括弧の有無ではない。
+        固有ヘッダを持つバックエンドが現時点で存在しなくても、共通本文の
+        中立性を守るガードとしてこの契約を残す。
+        """
+        self.assertIn("[<backend 名>] <pattern> review_id=<id> round=<n>", self.skill)
         self.assertIn("固有ヘッダ混入", self.skill)
         self.assertIn("本文先頭行が厳密なワイヤヘッダ形", self.skill)
-        self.assertIn("単なる `[msg-review]` が含まれるだけなら拒否しません", self.skill)
+        self.assertIn("角括弧の有無ではありません", self.skill)
 
     def test_reviewer_role_prohibits_mutation_and_delegation(self):
         for phrase in (

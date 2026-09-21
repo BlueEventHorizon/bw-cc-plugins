@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-20T16:29:15Z
+  generated_at: 2026-09-21T03:01:12Z
   file_count: 41
 
 docs:
@@ -686,29 +686,33 @@ docs:
       - overdesign-prevention
   plugins/forge/docs/sensitive_information_spec.md:
     title: Sensitive Information Leakage Prevention
-    purpose: Defines sensitive information categories prohibited in repositories, detection methodology combining deterministic scanning and AI analysis, and severity catalog for secret violations
+    purpose: Defines sensitive information categories prohibited from repositories, detection judgment criteria, secret revocation requirements, and severity levels for violations
     content_details:
-      - Authentication/authorization secrets (API tokens, keys, passwords, connection strings)
-      - Public-unsafe information (internal networks, personal data, customer identifiers)
-      - Acceptable secret handling (environment variables, placeholders, official samples, suppression markers)
-      - Real-value examples must not be modified versions of actual credentials
-      - Two-stage detection approach (deterministic scanning plus AI analysis)
-      - "Suppression marker secrets-scan: ignore for false positives with mandatory reporting"
-      - Severity catalog (critical, major, minor) with 10 violation types
+      - "Authentication secrets: API tokens, private keys, passwords, connection strings"
+      - "Public-dangerous information: internal networks, personal data, customer IDs, infrastructure details"
+      - "Permitted references: environment variables, explicit placeholders, public values, deprecated examples"
+      - "Example value rules: use official reserved examples or placeholders, avoid partially-modified real values"
+      - "Two-phase detection: deterministic scanning combined with AI analysis both for verification and discovery"
+      - "Suppression markers: secrets-scan ignore comments reported to reviewers alongside detections"
+      - Prohibition on reproducing secrets in review findings or logs
+      - "Severity catalog: 10 violation types from critical authenticated information leaks to minor placeholder clarity issues"
     applicable_tasks:
-      - Secret detection and scanning in code review
-      - Sensitive information policy enforcement
-      - Secret remediation and invalidation verification
-      - Repository integrity validation
-      - Pre-commit security scanning
+      - Secret leakage detection review
+      - Repository security audit for sensitive information
+      - Code review for confidential data
+      - Secret management policy compliance
+      - Security violation severity classification
     keywords:
-      - secrets
-      - authentication
-      - API tokens
+      - API token
       - credentials
-      - leakage detection
-      - secret scanning
-      - severity
+      - private key
+      - detection pattern
+      - severity catalog
+      - suppression marker
+      - placeholder
+      - secrets-scan
+      - authentication secret
+      - connection string
   plugins/forge/docs/spec_design_boundary_spec.md:
     title: Requirements and Design Document Boundary Guide
     purpose: Clarifies the boundary between requirements (What) and design (How) documents, providing judgment criteria and guidance for correct content placement

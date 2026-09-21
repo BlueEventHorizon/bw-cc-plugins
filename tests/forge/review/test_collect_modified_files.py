@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""collect_modified_files.py のテスト（DES-066 §6 テスト設計、実 Codex レビューで発見の回帰）。
+"""collect_modified_files.py のテスト（DES-066 §6 テスト設計、実レビューで発見の回帰）。
 
 `git status --porcelain`（-z 無し）は空白・改行・非 ASCII を含むパスを C-style quote し、
 rename/copy は ` -> ` を含む1行で表現するため、行/矢印単位の手動パースでは実パスを取り違える。
@@ -21,7 +21,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "collect_modified_files.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_collect_modified_files", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("collect_modified_files", _SCRIPT_PATH)
 collect_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(collect_mod)
 
@@ -69,7 +69,7 @@ class ParsePorcelainZTest(unittest.TestCase):
     def test_filename_containing_arrow_substring_is_not_misparsed(self):
         """ファイル名自体に ` -> ` を含む場合でも、矢印区切りではなく NUL 区切りで正しく1パスとして扱われる。
 
-        行/矢印ベースの手動パース（実 Codex レビューで指摘）では、この種のファイル名を
+        行/矢印ベースの手動パース（実レビューで指摘）では、この種のファイル名を
         rename の区切りと誤認識しうる。NUL 区切り解析ならこの曖昧性は生じない。
         """
         raw = b"M  weird -> name.txt\x00"
@@ -95,7 +95,7 @@ class CollectModifiedFilesRealGitTest(unittest.TestCase):
             subprocess.run(["git", "config", "user.name", "t"], cwd=tmpdir, check=True)
             # グローバル設定で commit.gpgSign=true の環境でも commit が失敗しないよう、
             # このリポジトリ限定で署名を無効化する（実行環境の個人設定に依存しない。
-            # 実 Codex レビューで発見: test_resolve_targets.py の既存対策と同じ）。
+            # 実レビューで発見: test_resolve_targets.py の既存対策と同じ）。
             subprocess.run(["git", "config", "commit.gpgSign", "false"], cwd=tmpdir, check=True)
 
             (Path(tmpdir) / "existing.txt").write_text("original\n", encoding="utf-8")

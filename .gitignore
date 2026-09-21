@@ -4,13 +4,6 @@
 .claude/settings.local.json
 .claude/.temp/
 
-# ensure_codex_hook.py が各環境で生成するsymlink（プラグイン実体への絶対パスを含むためマシン固有・非追跡）
-.codex/msg-sys/scripts
-# msg-review push起床のキャッシュファイル（廃止済み、新実装は読まない）。旧バージョンが
-# 各worktreeに既に生成している可能性があり、ignore規則自体を消すとそのファイルが
-# untrackedとして露出し誤コミットされうる（実 Codex レビューで発見）。全利用者が
-# 移行するまでこの規則自体は残す
-.codex/cmux_target.json
 # doc-advisor embedding index は派生物 (API キー/モデルバージョン依存) のため非追跡
 .claude/doc-advisor/index/
 
