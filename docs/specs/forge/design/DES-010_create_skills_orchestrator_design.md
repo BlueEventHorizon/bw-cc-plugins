@@ -60,7 +60,7 @@ return value の形式（例）:
 
 #### インライン prompt による自己完結性の確保（FNC-003 準拠）
 
-各 agent への指示は、SKILL.md にインラインで記述した prompt テンプレートで渡す（DES-013 §5）。テンプレートには以下を含め、agent は prompt だけで自己完結して動作する:
+各 agent への指示は、SKILL.md にインラインで記述した prompt テンプレートで渡す。テンプレートには以下を含め、agent は prompt だけで自己完結して動作する:
 
 1. **検索目的**: Feature 名・作業種別を埋め込んだ目的文
 2. **検索手段**: `/forge:query-db-specs` / `/forge:query-db-rules` の呼び出し、または `Grep` / `Glob` の探索手順
