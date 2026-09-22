@@ -34,7 +34,7 @@ sequenceDiagram
     participant E as evaluator
 
     Body->>E: review_id, round_number
-    E->>E: 依頼と所見の検証済みパスを得て JSON を直接読む
+    E->>E: resolve_input_paths.py で 2 つの検証済みパスを得て直接読む
     loop 所見ごと
         E->>E: 所見が指す箇所を読み、target 種別を判定し、観点文書を読む
         E->>E: 所見の当否を判定する
@@ -57,16 +57,15 @@ sequenceDiagram
 
 ## 3. 責務
 
-| 担い手                           | 責務                                                                                     | 要件                                                                        |
-| -------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| evaluator                        | 依頼と所見のパスを得て直接読み、所見が指す箇所と観点文書を読み、当否を判定して評価を渡す | FNC-201・206・209                                                           |
-| `evaluator.md`                   | script の呼び方、入力の各項目の扱い、メタ観点、評価として何を述べるか                    | FNC-208                                                                     |
-| `scripts/evaluator/` の各 script | 評価・終了の値を書き、AI 向けには検証済みの結果パスを返す                                | FNC-207（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2） |
-| `link_evaluations.py`            | 所見と評価の JSON を内部で読み、紐づけを検証して所見単位へ結び付ける                     | FNC-203                                                                     |
-| review 本体                      | 未参照があれば結合せず、利用者へ報告する                                                 | FNC-203                                                                     |
-| review 本体                      | `flawed_premise` を自動修正の対象から外す                                                | FNC-204                                                                     |
-| review 本体                      | 評価が食い違ったときに調停する                                                           | DM-201                                                                      |
-| consult                          | 所見を 1 件ずつ提示し、採否を得る。状態を自ら保持する                                    | §9（暫定措置）                                                              |
+| 担い手                           | 責務                                                                                         | 要件              |
+| -------------------------------- | -------------------------------------------------------------------------------------------- | ----------------- |
+| evaluator                        | 依頼と所見を持つ評価依頼を直接読み、所見が指す箇所と観点文書を読み、当否を判定して評価を渡す | FNC-201・206・209 |
+| `evaluator.md`                   | script の呼び方、入力の各項目の扱い、メタ観点、評価として何を述べるか                        | FNC-208           |
+| `scripts/evaluator/` の各 script | 評価と終了の値を書き、評価結果の検証済みパスを本体へ返し、紐づけを検証する                   | FNC-203・207・209 |
+| review 本体                      | 未参照があれば結合せず、利用者へ報告する                                                     | FNC-203           |
+| review 本体                      | `flawed_premise` を自動修正の対象から外す                                                    | FNC-204           |
+| review 本体                      | 評価が食い違ったときに調停する                                                               | DM-201            |
+| consult                          | 所見を 1 件ずつ提示し、採否を得る。状態を自ら保持する                                        | §9（暫定措置）    |
 
 ## 4. reviewer と同じ部分
 
@@ -78,6 +77,7 @@ sequenceDiagram
 | 値の受け渡し（標準入力）                   | 同 §4.5                                                          |
 | 形式の検証を置かない                       | 同 §4.6                                                          |
 | 1 件ずつ渡す                               | 同 §4.2                                                          |
+| `finding_id` の採番                        | 同 §4.2「採番」                                                  |
 | 確定後に書き出す                           | 同 §4.2（FNC-310）                                               |
 | 終了の値                                   | 同 §4.4                                                          |
 | 結果の構造                                 | 同 §5.3                                                          |
@@ -91,16 +91,22 @@ sequenceDiagram
 
 `evaluator.md` が持つ項目は FNC-208 が定める。`reviewer.md`（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-301）と同じ並びで、**メタ観点が 1 項目多い**。中身が異なるのは「対象の読み方」「出力として何を述べるか」とメタ観点（§6）である。
 
-## 5. 入力
+## 5. evaluator の入力
 
-依頼に加えて、reviewer が返した所見が渡る（FNC-207）。
+evaluator は、依頼と reviewer が返した所見を読む（FNC-207・DM-202）。**専用の入力ファイルを持たない。**
 
-| 直接読むもの | パスを解決する script                      | 定めている箇所                                                   |
-| ------------ | ------------------------------------------ | ---------------------------------------------------------------- |
-| 依頼         | `scripts/reviewer/resolve_request_path.py` | [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §5.1 |
-| 所見         | `scripts/reviewer/resolve_result_path.py`  | 同 §5.2                                                          |
+| 直接読むもの | 構成                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| 依頼         | `review_request.json`（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §5.1） |
+| 所見         | `review_result.json`（同 §5.3）                                                           |
 
-evaluator は reviewer 側の**パス解決操作だけ**を呼び、返された正規化済み絶対パスの JSON を Read で直接読む。JSON 本文を resolver の標準出力で受け取らず、別の JSON に写して evaluator へ渡す主体も置かない。書き込みは自分の側にしか持たない（同 §4.2）。これにより、同じ `review_id` と `round_number` を渡すだけで evaluator は依頼も所見も見つけられる。
+**パスは 1 回の呼び出しで両方を得る。** evaluator は `review_id` と `round_number` を `resolve_input_paths.py`（§7.3）へ渡し、返された 2 つの正規化済み絶対パスから依頼と所見を Read で直接読む。JSON 本文を resolver の標準出力で受け取らず、別主体に書き写させない。
+
+**依頼と所見は常に対で要る。** evaluator が片方だけを使う場面が無いため、2 回に分けず 1 操作とする。パスの組み立てと成否の判定は既存の 2 本（`scripts/review/resolve_request_path.py` と `scripts/reviewer/resolve_result_path.py`）が持ち、`resolve_input_paths.py` はそれらを内部で呼ぶだけで、同じ規則を持ち直さない。
+
+**2 つを 1 つに束ねた入力ファイルを作らない。** 束ねれば原本と同じ内容が写しとして 2 箇所に置かれ、写しを作る script とその公開状態も要る。依頼は公開後に書き換えられず、結果は上書きされないため、別々に読んでも組がずれない。**`evaluate_request.json` が運んでいた情報のうち、原本に無いものは 1 つも無かった。**
+
+**レビューが正常終了していなければ、パス解決が失敗する。** 所見の終了の値が `"0"` でなければ `resolve_input_paths.py` はどちらのパスも返さない（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.4）。evaluator はそこで止まり、評価に入れない。本体が確認の段を持つ必要はない。
 
 **evaluator はラウンドごとに 1 回起動される。** 読み書きするのは、受け取った `review_id` と `round_number` が指すラウンドだけである。次ラウンドでは新しい evaluator が新しい `round_number` を受け取り、そのラウンドの依頼と所見を読んで評価を書く。1 回の起動で未参照があっても、同じラウンドの evaluator を再び起動しない（§8.4）。
 
@@ -141,7 +147,7 @@ FNC-201 は 5 つのメタ観点を**態度として**課し、出力構造を�
 | 複数の指摘が 1 つの原因から出ていると気づいた | 1 件の評価が複数の `finding_id` を引き、`reason` が共通原因を述べる       |
 | 指摘の前提となった情報が誤っていた            | `disposition: misunderstanding` と、誤りの所在を述べた `reason`           |
 | 規範文書側に欠陥があった                      | `disposition: flawed_premise` と、どの文書のどこが誤りかを述べた `reason` |
-| 見落としを見つけた                            | 自ら採番した `finding_id` を引く評価（§6.4）                              |
+| 見落としを見つけた                            | 新規に採番された `finding_id` を引く評価（§6.4）                          |
 | 所見が既存の決定の当否を判定していた          | `disposition: invalid` と、根拠にした決定を述べた `reason`                |
 | 俯瞰したが共通原因は無かった                  | 複数を引かない評価と、無いと判断した根拠を述べた `reason`                 |
 
@@ -167,15 +173,18 @@ FNC-201 は 5 つのメタ観点を**態度として**課し、出力構造を�
 
 ### 6.4 新規に指摘する
 
-reviewer が返した所見のどれとも対応しない問題を見つけたとき、evaluator は reviewer の連番の続きから `finding_id` を採番し、それを引く評価として渡す（FNC-206）。
+reviewer が返した所見のどれとも対応しない問題を見つけたとき、evaluator はそれを新規の指摘として渡す（FNC-206）。`finding_id` は script が、そのラウンドで reviewer が採番した最大の ID の次から採る。
 
-- 採番範囲を超える `finding_id` であること自体が出自を表す。別の印を足さない
+- **そのラウンドの `review_result.json` に現れる最大の `finding_id` を超えること自体が出自を表す。** 別の印を足さない
+- **出自を件数で判定しない。** 第 2 ラウンド以降は `finding_id` が 1 から始まらないため、所見の件数と ID の値は一致しない。判定の境界は常に、そのラウンドで reviewer が採番した最大の ID である。そのラウンドで reviewer が 0 件だった場合、境界はそのラウンドの採番基点の 1 つ手前となる
 - この評価は `location` を持つ。参照先の所見が存在しないため、位置を自ら示す
-- 新規に発見した問題は evaluator 自身が成立すると判断した指摘なので、`disposition` は `valid` とする。`add_new_finding_evaluation.py` が採番と、DM-201 の必須フィールドをすべて持つ evaluation の追加を 1 回の操作で行う。採番だけの中間状態は作らず、続けて `add_valid_evaluation.py` を呼ぶ二段階の操作にも分けない
+- 新規に発見した問題は evaluator 自身が成立すると判断した指摘なので、`disposition` は `valid` とする。`add_new_finding_evaluation.py` が採番と、DM-201 の必須フィールドをすべて持つ evaluation の追加を 1 回の操作で行う。採番だけの中間状態は作らず、続けて `add_valid_evaluation.py` を呼ぶ二段階の操作にも分けない。採番の規則は [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2「採番」が定め、reviewer と共通の 1 本の連番から取る
 
 ## 7. 出力
 
-### 7.1 保持する構造
+### 7.1 evaluator の出力ファイル `evaluate_result.json`
+
+`evaluate_result.json` は、evaluation の配列と終了の値を 1 つの構造として保持する（DM-203）。evaluation 1 件の構造は次のとおりである（DM-201）。
 
 ```json
 {
@@ -191,12 +200,28 @@ reviewer が返した所見のどれとも対応しない問題を見つけた�
 
 reviewer の所見（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §5.2）との違いは 2 つである。
 
-| 違い                        | 内容                                                                                                                    |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `finding_ids` が可変長      | 評価は判定の単位であり、1 個以上の所見を引く。1 対 1 の対応を課さない（DM-201）。これが §6.2 の表を成立させる構造である |
-| `location` は条件付きで持つ | 採番範囲を超える `finding_id` を引くときだけ持つ。reviewer 由来だけを引くなら、位置は所見の側にある（DM-201）           |
+| 違い                        | 内容                                                                                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `finding_ids` が可変長      | 評価は判定の単位であり、1 個以上の所見を引く。1 対 1 の対応を課さない（DM-201）。これが §6.2 の表を成立させる構造である     |
+| `location` は条件付きで持つ | そのラウンドの最大の `finding_id` を超える値を引くときだけ持つ。reviewer 由来だけを引くなら、位置は所見の側にある（DM-201） |
 
 `location` は所見と同じく文字列である（同 §5.2）。
+
+```json
+{
+  "evaluations": [
+    {
+      "finding_ids": [3, 7],
+      "disposition": "valid",
+      "severity": "major",
+      "reason": "…",
+      "confidence": "confirmed",
+      "fix_confident": true
+    }
+  ],
+  "exit": "0"
+}
+```
 
 ### 7.2 評価を渡す
 
@@ -208,55 +233,60 @@ reviewer の所見（[DES-084](../../reviewer/design/DES-084_reviewer_design.md)
 
 分け方の原則は [DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2 に従う——**1 操作 1 script**、第 1 引数は `review_id`、第 2 引数は `round_number`、終了コードは `3` 以上を使わない。
 
-各 script は `review_id` と `round_number` が指すラウンドの `evaluator/` だけを読み書きする。他ラウンドの評価を上書きしない。
+各 script は `review_id` と `round_number` が指すラウンドの `evaluate_result.json` だけを読み書きする。他ラウンドの評価を上書きしない。
+
+**例外は採番のための読み取りである。** `add_new_finding_evaluation.py` は、`finding_id` を採番するために**同じラウンドの `review_result.json`** を読む（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2「採番」）。reviewer と evaluator は 1 本の連番を分け合うため、採番済みの ID がこの 2 ファイルにまたがるからである。読むのは同じラウンドに限られ、書き込み先は `evaluate_result.json` だけなので、書き込みの隔離は変わらない。
 
 評価が持つ自由記述は `reason` だけであり、**1 回の標準入力全体を 1 件の評価の `reason` として扱う**。`finding_ids`・`severity`・`confidence`・`fix_confident`・`location` は構造化された引数として渡し、`reason` と他の値を区切り文字や JSON に詰めない。AI にエスケープ、JSON 生成、区切り文字の選択をさせない。
 
-| script                                | 責務                                                                                                                                        | 入力                                                                                                 | 出力（`0`）                   | エラー                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------- |
-| `add_valid_evaluation.py`             | **`valid` の評価を 1 件積む。** `confidence` と `fix_confident` を必須で受ける                                                              | `<review_id> <round_number> --findings --severity --confidence --fix-confident` / 標準入力: 判定根拠 | なし                          | 既に終了の値がある                      |
-| `add_invalid_evaluation.py` ほか 3 本 | **その `disposition` の評価を 1 件積む。** 分類は script が持つ                                                                             | `<review_id> <round_number> --findings --severity` / 標準入力: 判定根拠                              | なし                          | 同上                                    |
-| `add_new_finding_evaluation.py`       | **見落としを `valid` の評価として 1 件積む。** reviewer の採番範囲の続きから `finding_id` を採番し、完全な evaluation を追加する（FNC-206） | `<review_id> <round_number> --severity --confidence --fix-confident --location` / 標準入力: 判定根拠 | 採番した `finding_id`         | 同上                                    |
-| `finish.py`                           | **正常に書き終えたことを示す。** 終了の値 `"0"` を書く                                                                                      | `<review_id> <round_number>`                                                                         | なし                          | 既に終了の値がある                      |
-| `abort.py`                            | **自覚したエラーで終えたことを示す。** 定義されたエラー値を書く                                                                             | `<review_id> <round_number> <エラー値>`                                                              | なし                          | 定義に無い値（`2`）／既に終了の値がある |
-| `resolve_result_path.py`              | **評価の結果パスを返す。** 終了の値が `"0"` の場合だけ返し、JSON 本文は返さない                                                             | `<review_id> <round_number>`                                                                         | `path` だけを持つ JSON object | 終了の値が `"0"` でない／結果が無い     |
+| script                                | 責務                                                                                                                                                                   | 入力                                                                                                 | 出力（`0`）           | エラー                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------- | --------------------------------------- |
+| `add_valid_evaluation.py`             | **`valid` の評価を 1 件積む。** `confidence` と `fix_confident` を必須で受ける                                                                                         | `<review_id> <round_number> --findings --severity --confidence --fix-confident` / 標準入力: 判定根拠 | なし                  | 既に終了の値がある                      |
+| `add_invalid_evaluation.py` ほか 3 本 | **その `disposition` の評価を 1 件積む。** 分類は script が持つ                                                                                                        | `<review_id> <round_number> --findings --severity` / 標準入力: 判定根拠                              | なし                  | 同上                                    |
+| `add_new_finding_evaluation.py`       | **見落としを `valid` の評価として 1 件積む。** そのラウンドの `review_result.json` に現れる最大の `finding_id` の次から採番し、完全な evaluation を追加する（FNC-206） | `<review_id> <round_number> --severity --confidence --fix-confident --location` / 標準入力: 判定根拠 | 採番した `finding_id` | 同上                                    |
+| `finish.py`                           | **正常に書き終えたことを示す。** 終了の値 `"0"` を書く                                                                                                                 | `<review_id> <round_number>`                                                                         | なし                  | 既に終了の値がある                      |
+| `abort.py`                            | **自覚したエラーで終えたことを示す。** 定義されたエラー値を書く                                                                                                        | `<review_id> <round_number> <エラー値>`                                                              | なし                  | 定義に無い値（`2`）／既に終了の値がある |
 
 `add_invalid_evaluation.py` 以外の 3 本は、`add_misunderstanding_evaluation.py`、`add_out_of_scope_evaluation.py`、`add_flawed_premise_evaluation.py` である。
 
 **判定ごとに script を分ける。** `disposition` の値を綴らせず、判定ごとに違う必須項目（`valid` のときだけ `confidence` と `fix_confident`）を AI に覚えさせないためである。判定の分類が script 名に現れるため、`disposition` を増やせば script が増える。
 
-`add_new_finding_evaluation.py` が追加する evaluation は、`finding_ids` に自ら採番した ID を 1 個持ち、`disposition` は `valid`、`severity`・`reason`・`confidence`・`fix_confident`・`location` は同じ呼び出しで受け取った値を持つ。これにより、DM-201 が新規指摘へ課す必須フィールドが 1 回の書き込みで揃う。
+`add_new_finding_evaluation.py` が追加する evaluation は、`finding_ids` に script が採番した ID を 1 個持ち、`disposition` は `valid`、`severity`・`reason`・`confidence`・`fix_confident`・`location` は同じ呼び出しで受け取った値を持つ。これにより、DM-201 が新規指摘へ課す必須フィールドが 1 回の書き込みで揃う。
 
 **評価 script は、引く `finding_id` が実在するかを検証しない。** 所見と評価の関係の検証は `link_evaluations.py` の責務であり（FNC-203）、書き込み時に持ち込むと同じ判定が 2 箇所に分かれる。
 
-evaluator が呼ぶ入力側の resolver は reviewer 領域にある（§5）。**評価を書く口は evaluator 領域にしかなく、所見を書く口を持たない。**
+**評価を書く口は evaluator 領域にしかなく、所見を書く口を持たない。**
+
+上表に加えて、本ディレクトリは次の 3 本を持つ。`resolve_input_paths.py` は evaluator の入力を扱うため本領域にある。残る 2 本は `evaluate_result.json` を扱うため本領域にあり、呼ぶのは evaluator ではなく本体である（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2——**置き場は扱う JSON の領域を表し、呼ぶ主体は欄が示す**）。
+
+| script                   | 責務                                                                                                                                                                      | 呼ぶ主体  | 入力                         | 出力（`0`）                              | エラー                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------- |
+| `resolve_input_paths.py` | **evaluator の入力 2 つのパスを返す。** `scripts/review/resolve_request_path.py` で依頼のパスを、`scripts/reviewer/resolve_result_path.py` で所見のパスを内部で得る（§5） | evaluator | `<review_id> <round_number>` | `request` と `result` を持つ JSON object | 依頼が未公開／所見の終了の値が `"0"` でない／結果が無い／識別値が不正         |
+| `resolve_result_path.py` | **`evaluate_result.json` のパスを返す。** 終了の値が `"0"` の場合だけ返し、JSON 本文は返さない                                                                            | 本体      | `<review_id> <round_number>` | `path` だけを持つ JSON object            | 終了の値が `"0"` でない／結果が無い／識別値が不正                             |
+| `link_evaluations.py`    | **所見と評価の紐づけを検証する。** 両結果を内部で読み、全 `finding_id` が参照されているかを検証する（§8.1）                                                               | 本体      | `<review_id> <round_number>` | なし                                     | 所見・評価のいずれかが正常終了していない／JSON を読めない／契約違反を検出した |
+
+**下 2 本を evaluator が呼ばない理由。** 評価の中身を読むのは本体である（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-209）——evaluator は自分が書いた評価を読み返さない。紐づけの検証も、評価をどう扱うかを決める本体の仕事である。
 
 ## 8. review 本体による評価の扱い
 
 ### 8.1 紐づけの検証と結び付け
 
-| 項目        | 内容                                                                                                                               |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 責務        | **所見と評価を突き合わせる。** 全 `finding_id` が参照されているかを検証し、評価を所見 1 件単位へ展開する                           |
-| 呼ぶ主体    | review 本体だけ                                                                                                                    |
-| 入力        | `<review_id> <round_number>`                                                                                                       |
-| 出力（`0`） | 所見単位へ展開した要素の配列と、**未参照の `finding_id` の一覧**                                                                   |
-| エラー      | 所見・評価のいずれかが正常終了していない、または JSON を読めない／採番範囲を超える `finding_id` を引く評価が `location` を持たない |
+`link_evaluations.py` の責務・入力・出力・エラーは §7.3 が定める。本節はその中身、すなわち**何を検証し、結果をどう扱うか**を定める。
 
 行う検証は 2 つである。
 
-| 検証         | 内容                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| 紐づけの検証 | reviewer が返した全 `finding_id` が、いずれかの評価から参照されているか（FNC-203）         |
-| 出自の検証   | 採番範囲を超える `finding_id` を引く評価が `location` を持つか。持たなければ契約違反とする |
+| 検証         | 内容                                                                                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 紐づけの検証 | reviewer が返した全 `finding_id` が、いずれかの評価から参照されているか（FNC-203）                                                                                                                 |
+| 出自の検証   | そのラウンドの `review_result.json` に現れる最大の `finding_id` を超える値を引く評価が `location` を持つか。持たなければ契約違反とする。境界は所見の件数からではなく、この最大値から求める（§6.4） |
 
-**未参照があってもエラーにしない。** 未参照は `link_evaluations.py` の失敗ではなく、検証した結果である。一覧を返し、本体が利用者へ報告する（§8.4）。エラーにすると、何が未参照だったかを本体が受け取れず、報告できなくなる。
+**未参照があってもエラーにしない。** 未参照は `link_evaluations.py` の失敗ではなく、検証した結果である。
+
+**本体は所見と評価を自分で読む。** [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-309 と FNC-209 のとおり、`review_id` と `round_number` を `scripts/reviewer/resolve_result_path.py` と `scripts/evaluator/resolve_result_path.py` へ渡してパスを得て、`review_result.json` と `evaluate_result.json` を直接読む。未参照の `finding_id` がどれかも、利用者へ提示する所見と評価の中身も、この 2 ファイルから得る。`link_evaluations.py` がそれらを標準出力で返すことはない。
 
 **これは形式の検証ではない。** 形式は script が組み立てるため検査しない（[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.6）。ここで検証するのは**所見と評価という 2 つの集合の関係**であり、script が組み立てても自動的には満たされない。
 
-置き場は review スキル配下とする。review 本体だけが呼ぶ（[DES-024](../../forge/design/DES-024_skill_script_layout_design.md)）。終了コードは `3` 以上を使わない（同 §4.2）。
-
-`link_evaluations.py` は `review_id` と `round_number` から所見と評価の所定位置を内部で解決し、両結果の終了の値が `"0"` であることを確認してから JSON を直接読む。AI に各 JSON の本文やパスを引数・標準入力で渡させない。パス解決と終了状態の判定は各 `resolve_result_path.py` と同じ共通ロジックを使い、別の規則を持たない。
+`link_evaluations.py` は `review_id` と `round_number` から `review_result.json` と `evaluate_result.json` の所定位置を内部で解決し、両結果の終了の値が `"0"` であることを確認してから JSON を直接読む。AI に各 JSON の本文やパスを引数・標準入力で渡させない。パス解決と終了状態の判定は、各 `resolve_result_path.py` と同じ共通ロジックを使い、別の規則を持たない。
 
 ### 8.2 判定の単位と、後段の単位は異なる
 
@@ -264,12 +294,12 @@ evaluator が呼ぶ入力側の resolver は reviewer 領域にある（§5）�
 
 `link_evaluations.py` は、評価を各所見へ展開する。
 
-| 引かれた `finding_id` | 出力に現れる形                                                          |
-| --------------------- | ----------------------------------------------------------------------- |
-| reviewer の採番範囲内 | その所見に、評価が付く                                                  |
-| 採番範囲を超える      | 評価が持つ `location` と `reason` を実体として、1 要素になる（FNC-206） |
+| 引かれた `finding_id`                          | 出力に現れる形                                                          |
+| ---------------------------------------------- | ----------------------------------------------------------------------- |
+| そのラウンドの `review_result.json` に存在する | その所見に、評価が付く                                                  |
+| そのラウンドの最大の `finding_id` を超える     | 評価が持つ `location` と `reason` を実体として、1 要素になる（FNC-206） |
 
-出力要素はいずれも「位置」と「判定」を持つ。新規指摘に対して reviewer 由来の所見を模したレコードを作らない——採番範囲を超える `finding_id` であること自体が出自を表しており、別の印を足せば同じ事実を 2 箇所で持つことになる。
+出力要素はいずれも「位置」と「判定」を持つ。新規指摘に対して reviewer 由来の所見を模したレコードを作らない——そのラウンドの最大の `finding_id` を超える値であること自体が出自を表しており、別の印を足せば同じ事実を 2 箇所で持つことになる。
 
 ### 8.3 同じ所見を複数の評価が引く場合
 
@@ -336,19 +366,21 @@ review 本体の要約報告は、未対応所見の一覧と理由を**会話�
 
 **単体テスト対象**:
 
-- `link_evaluations.py`: `review_id` と `round_number` だけから所見と評価の JSON を内部で読み、JSON 本文やパスを外部入力に要求しないこと。いずれかが正常終了していなければ失敗すること。全 `finding_id` が参照済みなら空の未参照集合を返すこと。未参照があればその一覧を返すこと。1 件の評価が複数の所見を引くとき、各所見に同じ評価が付くこと。1 つの所見を複数の評価が引くとき、要素が複製されず 1 要素が複数の評価を持つこと。採番範囲を超える `finding_id` を引く評価が 1 要素になること。採番範囲を超える `finding_id` を引きながら `location` を持たない評価を契約違反として返すこと
+- `link_evaluations.py`: `review_id` と `round_number` だけから所見と評価の JSON を内部で読み、JSON 本文やパスを外部入力に要求しないこと。いずれかが正常終了していなければ失敗すること。全 `finding_id` が参照済みなら空の未参照集合を返すこと。未参照があればその一覧を返すこと。1 件の評価が複数の所見を引くとき、各所見に同じ評価が付くこと。1 つの所見を複数の評価が引くとき、要素が複製されず 1 要素が複数の評価を持つこと。そのラウンドの最大の `finding_id` を超える値を引く評価が 1 要素になること。その値を引きながら `location` を持たない評価を契約違反として返すこと。**第 2 ラウンド以降、`finding_id` が 1 から始まらない状態でも出自の境界を正しく求めること**。そのラウンドで reviewer が 0 件だった場合も境界を求められること
+- `scripts/evaluator/resolve_input_paths.py`: 1 回の呼び出しで依頼と所見の正規化済み絶対パスを `request` と `result` の 2 項目で返し、成果物の JSON 本文を含めないこと。依頼が未公開のとき、および所見が正常終了していないときに失敗し、どちらのパスも返さないこと。パスの組み立てと成否の判定を自ら持たず、既存の 2 本の結果と一致すること
 - `scripts/evaluator/resolve_result_path.py`: 終了の値が `"0"` の評価だけ正規化済み絶対パスを `path` 1 項目の JSON object で返し、成果物の JSON 本文を標準出力へ含めないこと。結果が無い、終了の値が無い、または `"0"` 以外なら失敗すること
 - 評価を書き込む全 script: 改行・引用符・バッククォート・非 ASCII を含む標準入力全体が、1 件の evaluation の `reason` として同一に保持されること
-- `add_new_finding_evaluation.py`: reviewer の採番範囲の続きから ID を採番し、その ID だけを `finding_ids` に持つ `valid` の evaluation を 1 件追加すること。`severity`・`reason`・`confidence`・`fix_confident`・`location` が同じ呼び出しの値と一致すること。採番だけが残る中間状態を作らないこと
+- `add_new_finding_evaluation.py`: そのラウンドの `review_result.json` に現れる最大の `finding_id` の次から採番し、その ID だけを `finding_ids` に持つ `valid` の evaluation を 1 件追加すること。同じラウンドで 2 件目を追加したとき、1 件目の ID の次が採られること。そのラウンドで reviewer が 0 件でも採番基点から採れること。第 2 ラウンド以降、前ラウンドまでの ID を踏まないこと。`severity`・`reason`・`confidence`・`fix_confident`・`location` が同じ呼び出しの値と一致すること。採番だけが残る中間状態を作らないこと
 
 **契約テスト対象**:
 
-- `evaluator.md` が持つ script の呼び方が、[DES-084](../../reviewer/design/DES-084_reviewer_design.md) §4.2 の script 群の実際の引数と一致すること
+- `evaluator.md` が持つ script の呼び方が、§7.3 の script 群の実際の引数と一致すること
 - `evaluator.md` が `reviewer.md` と同じ 5 項目（§4）を持つこと
 - `evaluator.md` が FNC-201 の 5 つのメタ観点すべてと、`disposition` の 5 値を持つこと
 
 **統合テスト対象**:
 
+- evaluator が `resolve_input_paths.py` の返す 2 パスから `review_request.json` と `review_result.json` を直接読み、`evaluate_result.json` を返すまでが成立すること
 - 所見から結び付けまでが、束ねた評価・新規指摘・同じ所見への複数評価のいずれのケースでも成立すること
 - 未参照がある場合、未参照の一覧が利用者への報告に現れ、**評価が付いた所見だけが結び付けられる**こと
 

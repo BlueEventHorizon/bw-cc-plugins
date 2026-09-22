@@ -26,7 +26,7 @@ feature_note:
 | 用語        | 定義                                                                                                                                                                                                   |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | finding     | reviewer が返す所見 1 件（構成は [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-302）                                                                                                   |
-| finding_id  | finding 1 件を指す一意な識別子。reviewer が 1 始まりの連番で付与する（同 FNC-309）                                                                                                                     |
+| finding_id  | finding 1 件を指す識別子。script が 1 つのレビューの中で 1 始まりの連番として採番する（同 FNC-309）                                                                                                    |
 | evaluation  | evaluator が返す評価 1 件。1 個以上の finding_id を参照する                                                                                                                                            |
 | disposition | evaluator が下す判定の分類（値の意味は直下の表）                                                                                                                                                       |
 | メタ観点    | evaluator が `disposition` を判定する際の手がかり（FNC-201）。レビュー観点（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md)）が対象を照らす規範であるのに対し、メタ観点は判定そのものを疑う |
@@ -51,7 +51,7 @@ evaluator 自身の定義が次を持つ。依頼はこれを運ばない——�
 
 | 持つもの                                    | 内容                                                                                 |
 | ------------------------------------------- | ------------------------------------------------------------------------------------ |
-| script の呼び方                             | 依頼と所見のパスを得る script・評価を渡す script を、どう呼ぶか                      |
+| script の呼び方                             | 評価依頼のパスを得る script・評価を渡す script を、どう呼ぶか                        |
 | 入力の各項目の扱い                          | 依頼の項目が何であり、どう扱うか。値を持たないときにどう扱うか。**所見をどう読むか** |
 | 対象の読み方                                | **所見を起点に読む**。所見が指す箇所と、判断に要るだけの周辺を読む                   |
 | target 種別の判定基準と、種別ごとに読む文書 | [REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-307・FNC-308 に従う   |
@@ -68,21 +68,22 @@ evaluator 自身の定義が次を持つ。依頼はこれを運ばない——�
 
 #### FNC-207: evaluator との受け渡しは reviewer と同じ方式による [MANDATORY]
 
-evaluator への入力と、evaluator が返す評価は、[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が reviewer について定める方式に従う。
+evaluator への入力は、[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) が reviewer の入力について定める方式に従う。
 
 | 従う要件 | 内容                                                                                     |
 | -------- | ---------------------------------------------------------------------------------------- |
 | FNC-302  | `review_id` と `round_number` で対象を特定する。AI が主体間で運ぶ識別値はこの 2 つに限る |
-| FNC-303  | script が組み立てる。AI は組み立てない。**形式の検証を置かない**                         |
-| FNC-304  | 値は変形せずに受け渡される。`reason` には改行・引用符・非 ASCII が含まれる               |
-| FNC-310  | 書き出しは判断を確定させた後に行う。上書き・修正の操作を持たない                         |
-| FNC-311  | 終了の値で結果の成否を表す。感知するのは script である                                   |
+| FNC-303  | 同じ方針で script が入力を組み立てる。AI は組み立てない。**形式の検証を置かない**        |
+| FNC-304  | レビュー依頼の値は変形せずに受け渡される                                                 |
+| FNC-309  | reviewer が返した所見の値は変形せずに受け渡される                                        |
 
-FNC-310 は evaluator でとくに重い。**複数の所見を 1 件の評価で束ねる**（FNC-201）には全所見を見てから評価を確定する必要があり、判断しながら逐次書き出すと束ねる評価が書けない。
+evaluator に固有なのは入力の中身だけである。**evaluator は、レビュー依頼に加えて reviewer が返した所見を読む。**
 
-evaluator に固有なのは入力の中身だけである。**依頼に加えて、reviewer が返した所見が渡る。**
+**2 つを 1 つに束ねない。** evaluator は `review_id` と `round_number` を受け取り、`review_request.json` と `review_result.json` それぞれのパス解決 script へそのまま渡して、返された絶対パスから 2 つを直接読む。写しを作れば、原本と同じ内容が 2 箇所に置かれる。依頼は公開後に書き換えられず（FNC-303）、所見は上書きされないため（FNC-310）、別々に読んでも組がずれない。
 
-evaluator はラウンドごとに起動され、そのラウンドの依頼と所見を評価する。評価は同じラウンドの下に保持し、別ラウンドの所見・評価と混ぜない。evaluator は `review_id` と `round_number` を受け取り、両方をパス解決 script へそのまま渡す。返された絶対パスから依頼と所見の JSON を直接読み、JSON 本文を script の標準出力や別主体から受け取らない。
+evaluator はラウンドごとに起動され、そのラウンドの依頼と所見を評価する。評価は同じラウンドの下に保持し、別ラウンドの所見・評価と混ぜない。JSON 本文を script の標準出力や別主体から受け取らない。
+
+**所見のパス解決は、正常終了した結果だけを返す**（FNC-311）。レビューが正常に終わっていなければ evaluator は所見へ到達できず、そこで止まる。
 
 reviewer と evaluator で方式を分けない。分ければ、同じ問題への答えが 2 つになり、片方だけが直される。
 
@@ -108,21 +109,27 @@ evaluator は自身の判断を見た目だけ整えるために、成立しな�
 
 #### FNC-206: evaluator は reviewer の見落としを新規に指摘できる
 
-evaluator は、reviewer が返した finding のどれとも対応しない問題を発見した場合、その問題に自ら finding_id を採番し、それを参照する evaluation として新規に指摘してよい。
+evaluator は、reviewer が返した finding のどれとも対応しない問題を発見した場合、その問題に finding_id を採番して、それを参照する evaluation として新規に指摘してよい。
 
-- 採番は reviewer の連番の続きから行う（reviewer が N 件返したなら N+1 以降）。したがって **reviewer の採番範囲を超える finding_id は、evaluator が新規に指摘したものである**——出自を示す別の印は持たない
+- **採番は script が行う**（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-309）。reviewer と evaluator は 1 つのレビューに 1 本の連番を分け合う。evaluator の新規指摘は、**そのラウンドで reviewer が採番した最大の finding_id の次**から始まる
+- したがって **そのラウンドの `review_result.json` に現れる最大の finding_id を超える値は、evaluator が新規に指摘したものである**——出自を示す別の印は持たない
+- **出自を件数で判定しない。** ラウンドが進むと finding_id は 1 から始まらないため、所見の件数と finding_id の値は一致しない。判定の境界は常に、そのラウンドで reviewer が採番した最大の finding_id である
+- そのラウンドで reviewer が 1 件も返さなかった場合、境界はそのラウンドの採番基点の 1 つ手前となり、evaluator の新規指摘は基点から始まる
 - この場合、参照先の finding が存在しないため `location`（DM-201）を自ら明示する
 
 ### 3. 出力
 
 #### FNC-209: 評価は script を通して返す
 
-evaluator は評価の値と `review_id`・`round_number` を script へ渡し、script が指定されたラウンドの下へ評価を保持する（構成は DM-201）。評価を AI が読む場合は、同じ 2 値から検証済みの結果パスを得て、その JSON を直接読む。所見との結び付けは、機械処理が同じ 2 値から所見と評価を特定し、両 JSON を内部で読んで行う。
+evaluator は評価の値と `review_id`・`round_number` を script へ渡し、script が指定されたラウンドの `evaluate_result.json` へ評価を保持する（構成は DM-203）。評価の出力には、[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) FNC-310 の確定後の書き出しと上書き禁止、および FNC-311 の終了の値による成否判定を適用する。評価を AI が読む場合は、同じ 2 値から検証済みの結果パスを得て、その JSON を直接読む。所見との結び付けは、機械処理が同じ 2 値から `review_result.json` と `evaluate_result.json` を特定し、両 JSON を内部で読んで行う。
+
+確定後に書き出す規則は evaluator でとくに重要である。**複数の所見を 1 件の評価で束ねる**（FNC-201）には全所見を見てから評価を確定する必要があり、判断しながら逐次書き出すと束ねる評価が書けない。
 
 - **evaluator は JSON を自ら組み立てない。** 値を渡すだけであり、形は script が持つ（FNC-207）
+- `reason` を含む値は、改行・引用符・バッククォート・非 ASCII を含んでも、渡した内容と同一のまま保持する
 - 所見が 0 件なら評価も 0 件とする。評価すべき対象が無い。この場合も終了の値を渡す（FNC-311）
 
-結果は評価の集合と終了の値を持つ 1 つの構造である（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-303 と同型。所見の配列を評価の配列に読み替える）。評価が 0 件で終了の値が `"0"` であることが「評価すべき対象が無かった」を表し、結果が無いことが異常を表す。
+評価が 0 件で終了の値が `"0"` であることが「評価すべき対象が無かった」を表し、結果が無いことが異常を表す（DM-203）。
 
 ### 本体の仕事
 
@@ -130,7 +137,7 @@ evaluator は評価の値と `review_id`・`round_number` を script へ渡し�
 
 evaluator も、reviewer と同じく review 本体が起動する実行主体である。所見の当否を判定する工程を担い、その結果をどう扱うかは本体が決める。**本書が変える範囲において**、本体の仕事は次で尽きる。
 
-本体は各ラウンドで reviewer の後に evaluator を 1 回起動する。evaluator の終了後に次ラウンドへ進む場合、次の evaluator は新しいラウンドの置き場へ評価を書く。
+本体は各ラウンドで reviewer の後に evaluator を 1 回起動する。evaluator の終了後に次ラウンドへ進む場合、次の evaluator は新しいラウンドの依頼と所見を読み、そのラウンドの `evaluate_result.json` へ評価を書く。
 
 | 仕事                                       | 定めている要件 |
 | ------------------------------------------ | -------------- |
@@ -167,21 +174,41 @@ reviewer が返した全 finding_id が、いずれかの evaluation から参�
 
 evaluation は次のフィールドを持つ。
 
-| フィールド    | 型         | 必須                                                  | 内容                                                                                                                                                                                               |
-| ------------- | ---------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| finding_ids   | 整数の配列 | 必須（1 個以上。空配列は不正）                        | 参照する finding の ID を列挙する。全件を対象とする場合も省略記法を用いず列挙する。evaluator が新規に指摘する場合は自ら採番した ID（FNC-206）                                                      |
-| disposition   | enum       | 必須                                                  | `invalid` / `misunderstanding` / `flawed_premise` / `out_of_scope` / `valid`                                                                                                                       |
-| severity      | enum       | 必須                                                  | 重大度カタログから決まる値（`forge:REQ-013` 継承）                                                                                                                                                 |
-| reason        | 文字列     | 必須                                                  | 判定根拠。`flawed_premise` の場合は、どの文書のどこが誤りかをここに書く                                                                                                                            |
-| confidence    | enum       | `valid` のとき必須                                    | `confirmed` / `inferred` / `unverified`                                                                                                                                                            |
-| fix_confident | 真偽値     | `valid` のとき必須                                    | `confidence: confirmed` でなければ真になれない                                                                                                                                                     |
-| location      | 文字列     | reviewer の採番範囲を超える finding_id を含むとき必須 | 表記と行番号の扱いは finding と同じ（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-302）。reviewer 由来の finding_id だけを参照する場合、位置は参照先の finding が持つため持たない |
+| フィールド    | 型         | 必須                                                                                         | 内容                                                                                                                                                                                               |
+| ------------- | ---------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| finding_ids   | 整数の配列 | 必須（1 個以上。空配列は不正）                                                               | 参照する finding の ID を列挙する。全件を対象とする場合も省略記法を用いず列挙する。evaluator が新規に指摘する場合は、その指摘のために採番された ID（FNC-206）                                      |
+| disposition   | enum       | 必須                                                                                         | `invalid` / `misunderstanding` / `flawed_premise` / `out_of_scope` / `valid`                                                                                                                       |
+| severity      | enum       | 必須                                                                                         | 重大度カタログから決まる値（`forge:REQ-013` 継承）                                                                                                                                                 |
+| reason        | 文字列     | 必須                                                                                         | 判定根拠。`flawed_premise` の場合は、どの文書のどこが誤りかをここに書く                                                                                                                            |
+| confidence    | enum       | `valid` のとき必須                                                                           | `confirmed` / `inferred` / `unverified`                                                                                                                                                            |
+| fix_confident | 真偽値     | `valid` のとき必須                                                                           | `confidence: confirmed` でなければ真になれない                                                                                                                                                     |
+| location      | 文字列     | そのラウンドの reviewer 採番範囲を超える finding_id を含むとき必須（境界の定め方は FNC-206） | 表記と行番号の扱いは finding と同じ（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-302）。reviewer 由来の finding_id だけを参照する場合、位置は参照先の finding が持つため持たない |
 
 **severity は必須フィールドとして定義するが、値そのものに他の判断（disposition の当否・修正するかどうか等）を振り回されてはいけない。** 判断の実質を持つのは reason であり、severity を取り違えても人間が reason を読めば重大さは伝わる。`flawed_premise` を含むすべての disposition について、severity の特定不能時の扱いを新たに規則化しない（既存の運用を継承する）。
 
 disposition_cause や flawed_premise_detail のような専用フィールドは持たない（disposition に値を 1 つ足す・reason に書く、で足りる）。
 
 evaluation は finding と 1 対 1 の対応を持たない。同じ finding_id を複数の evaluation が参照することも許される（食い違った場合の調停は、実行主体の判断に委ね、要件としては規則化しない）。
+
+#### DM-202: evaluator の入力
+
+evaluator は専用の入力ファイルを持たない。読むのは既にある 2 つである（FNC-207）。
+
+| 読むもの | 構成                                                                                                            |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| 依頼     | `review_request.json`（[REQ-027](../../reviewer/requirements/REQ-027_reviewer.md) DM-301）                      |
+| 所見     | `review_result.json`（同 DM-303）の `findings`。0 件のこともある。`exit` は結果の状態であり、評価の材料ではない |
+
+#### DM-203: evaluator の出力ファイルの構成
+
+evaluator の出力ファイル `evaluate_result.json` は、評価の集合と終了の値を持つ 1 つの構造である。
+
+| フィールド    | 型                | 必須               | 内容                             |
+| ------------- | ----------------- | ------------------ | -------------------------------- |
+| `evaluations` | evaluation の配列 | 必須（0 件もある） | 書き出された評価（DM-201）       |
+| `exit`        | 文字列（enum）    | 正常終了時は必須   | `"0"`、またはエラー値（FNC-311） |
+
+`exit` を持たない結果は、書き出しの途中で終えたことを意味する。この構造自体が存在しないこともある。いずれも書けない異常終了として扱う（FNC-311）。
 
 ## 未確定事項
 
