@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-21T03:01:12Z
-  file_count: 41
+  generated_at: 2026-09-22T06:23:03Z
+  file_count: 42
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
@@ -483,6 +483,35 @@ docs:
       - categorization
       - configuration
       - document paths
+  plugins/forge/docs/document_definitions_spec.md:
+    title: Document Definitions Specification
+    purpose: "Defines the responsibilities and scope of five document types produced by Software Design and Development (SDD): Requirements, Design, Architecture Decision Record (ADR), Implementation Strategy, and Plan. Clarifies content boundaries without prescribing classification methods."
+    content_details:
+      - Five SDD document types with core responsibilities
+      - Requirements definition document scope and prohibited content
+      - Design document scope and prohibited content
+      - ADR document scope and prohibited content
+      - Implementation strategy document scope and prohibited content
+      - Plan document scope and prohibited content
+      - "Scope clarification: rules, review records, and CHANGELOG are not covered"
+      - Delegation references for format guidelines, principles, and severity catalogs
+    applicable_tasks:
+      - Requirements definition writing and review
+      - Design document writing and review
+      - ADR decision recording
+      - Implementation strategy planning
+      - Plan document creation
+      - Document type classification
+      - Requirement-design boundary determination
+    keywords:
+      - SDD
+      - requirements
+      - design
+      - ADR
+      - implementation strategy
+      - plan
+      - document scope
+      - responsibilities
   plugins/forge/docs/document_style_guide.md:
     title: Document Style Guide
     purpose: Defines generic writing style for forge plugin documents (requirements, design, plans), covering tags, headings, emphasis, references, and structure conventions
@@ -602,31 +631,30 @@ docs:
       - task_granularity
       - test_task_mandatory
   plugins/forge/docs/requirement_format.md:
-    title: Requirement Definition Document Format
-    purpose: Provides default template and format for requirement definition documents when no project-specific format exists. Includes frontmatter rules for additive features and severity ratings for format compliance.
+    title: Requirement Definition Document Default Format
+    purpose: Generic template for requirement definition documents, defining structure for standard requirements and special handling of additive features with temporary-feature frontmatter.
     content_details:
-      - "Additive feature frontmatter with feature_type: temporary-feature and 4-point feature_note structure"
-      - Document body sections (overview, prerequisites, requirements list, error cases, undecided items)
-      - Requirement subcategories (display requirements, operation requirements with input/output, error cases)
-      - Operation requirement format with input constraints and output/transition details
-      - Error case specification table with condition and error message/behavior columns
-      - Undecided items tracking table with ID, content, and deadline
-      - References to related specifications (priorities, boundary, additive development, frontmatter)
-      - Severity rating catalog for frontmatter compliance violations
+      - "Additive feature frontmatter (feature_type: temporary-feature) for separating temporary changes"
+      - Document template structure with ID, name, overview, and preconditions sections
+      - "Requirement categories: display requirements, operation requirements with inputs and outputs"
+      - Error case handling with condition and error message mapping
+      - Unresolved items (TBD) tracking with ID, content, and deadline
+      - Severity catalog for reviewing violation patterns
+      - Major severity designation for missing frontmatter in additive features
     applicable_tasks:
-      - Write requirement definition documents from default template
-      - Add frontmatter for additive feature requirements
-      - Review requirement document format and severity compliance
-      - Validate requirement specification completeness and scope
+      - Creating requirement definition documents
+      - Planning additive feature requirements
+      - Validating requirement document format and compliance
+      - Reviewing documents for frontmatter correctness
+      - Merging specification changes after temporary features complete
     keywords:
       - requirement definition
-      - frontmatter
-      - feature_type
-      - temporary-feature
-      - additive-feature
-      - requirement-format
-      - error-case
-      - severity
+      - frontmatter format
+      - feature type
+      - temporary feature
+      - additive development
+      - severity catalog
+      - specification boundary
   plugins/forge/docs/review_priorities_spec.md:
     title: Review Priorities Specification
     purpose: Defines review perspective priorities (P1/P2/P3), severity relationship, and delegation model for forge review criteria and principles, establishing mandatory policy for /forge:review SKILL
@@ -714,37 +742,35 @@ docs:
       - authentication secret
       - connection string
   plugins/forge/docs/spec_design_boundary_spec.md:
-    title: Requirements and Design Document Boundary Guide
-    purpose: Clarifies the boundary between requirements (What) and design (How) documents, providing judgment criteria and guidance for correct content placement
+    title: Requirement Definition Document and Design Document Boundary Guide
+    purpose: Provides clear guidance on the boundary between What (requirement definition) and How (design) with judgment criteria, category-specific guidelines, examples, and traceability norms.
     content_details:
-      - Basic principles - requirements vs design purpose, viewpoint, content, readers
-      - ADR relationship - design contains current design while reasons belong in ADR
-      - Primary judgment criterion - is it decided with no choice left?
-      - Secondary criterion - would it appear in user manual?
-      - Supplementary criteria - technology dependency, implementation method changes, technical terms, class/method names
-      - Decision flowchart for categorization
-      - Category-specific guidelines for data, state, processing, business rules, testing, quantitative targets
-      - Gray zone handling - data model types and diagram types permitted at different levels
-      - Good and bad examples across multiple categories
-      - Severity catalog and traceability norms
+      - "Basic principles: requirements are user-centric with values and rules; design is developer-centric with implementation methods"
+      - "Three-level judgment criteria: already decided, user manual test, technical terms and implementation references"
+      - Decision flowchart for categorizing content into requirements or design documents
+      - Category-specific guidelines for data, state, processing, business rules, testing, and quantitative goals
+      - Good and bad examples demonstrating What/How boundary violations
+      - Severity catalog for boundary violations with critical, major, and minor designations
+      - Gray zone tolerance for data types (String/Int permitted) and diagrams (user-facing vs internal)
+      - Traceability norms requiring design documents to reference requirement IDs with approval records
     applicable_tasks:
-      - Requirements specification writing
-      - Design document review
-      - Requirements vs design boundary violation detection
-      - Traceability validation between requirements and design
-      - Content placement guidance
-      - Quantitative targets validation
-      - Architecture decision record integration
+      - Reviewing requirement documents for misplaced implementation details
+      - Creating design documents that respect requirement boundaries
+      - Validating What/How separation in specification reviews
+      - Planning design decisions requiring approval records
+      - Verifying traceability between requirements and design
+      - Gray zone assessment in documentation reviews
     keywords:
-      - requirements
-      - design
-      - What How boundary
-      - specification
-      - ADR
+      - requirement definition
+      - design document
+      - What vs How
+      - user manual test
+      - judgment criteria
+      - boundary violation
       - traceability
-      - severity
-      - gray zone
-      - quantitative targets
+      - approval records
+      - additive development
+      - severity catalog
   plugins/forge/docs/spec_format.md:
     title: Specification ID Classification Catalog
     purpose: Reference catalog of ID classification prefixes (APP, SCR, FNC, DES, ADR, etc.), directory structure conventions, file naming rules, and cross-reference principles for specification documents

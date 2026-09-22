@@ -74,7 +74,7 @@ doc_type `plan`（feature 未指定）で既存ファイルの有無を確認し
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
 doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める。
 
-- `plan` に対応するエントリが無い場合は AskUserQuestion で出力先を確認する
+エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たず、出力先を独自に尋ねない）。
 
 ### モード判定
 
@@ -193,7 +193,7 @@ prompt:
 Agent 完了後、return value (戦略書 markdown) を承認前にそのまま最終出力先へ Write する。チャットへの全文転記より先にファイルとして配置し、ユーザーが文書そのものを読んでレビューできるようにする:
 
 - **配置先**: `{output_dir}/{feature}_strategy.md`
-- **ライフサイクル**: 実装完了後に削除する ephemeral 文書
+- **ライフサイクル**: 計画書と同じ。全タスク完了時に計画書とともに存廃を利用者が選択する（`${CLAUDE_PLUGIN_ROOT}/docs/document_definitions_spec.md`「実装戦略書」）
 - 承認されなかった場合は 3.3 の修正結果でこのファイルを上書きする（配置は確定ではなく作業版の起点）
 
 ### 3.3 ユーザーレビューと承認
@@ -327,5 +327,5 @@ commit/push の確認フローを担うスキル（例: `anvil:commit`）が ava
 次のステップ:
   /forge:start-implement {feature}    # タスクの実行を開始
 
-※ 実装戦略書・計画書は実装完了後に削除する ephemeral 文書です。
+※ 実装戦略書・計画書は一時文書です。全タスク完了時に、残すか削除するかを確認します。
 ```
