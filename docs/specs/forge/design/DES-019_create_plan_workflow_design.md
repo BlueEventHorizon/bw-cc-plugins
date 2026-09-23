@@ -5,14 +5,21 @@
 `/forge:start-plan` は設計書から実装戦略を策定し、タスクを抽出して計画書を作成するオーケストレータスキル。
 文書取得 → 実装戦略策定 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
 
-### 汎用 Agent への委譲
+### Agent への委譲
 
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程を汎用 Agent (general-purpose) に委譲している:
+以下の工程を Agent に委譲している:
 
-- 要件定義書・設計書・ルールの収集（コンテキスト収集 Agent）
-- 実装戦略の策定（実装戦略 Agent — [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md)）
-- AIレビュー（`/forge:review plan`）
+| 工程                             | Agent                                                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 要件定義書・設計書・ルールの収集 | 汎用 Agent (general-purpose)                                                                                                                 |
+| 実装戦略の策定                   | カスタム Agent `forge:plan-strategist`（手順は [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md)） |
+| AIレビュー                       | `/forge:review plan`                                                                                                                         |
+
+実装戦略の策定をカスタム Agent とするのは、read-only を frontmatter の `tools` で担保するためである。
+この Agent は差分開発で既存実装と旧仕様を読むが、実装期間中は旧仕様を書き換えてはならない
+（[additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §3）。書き込み系ツールを持たせなければ、
+この禁止は指示ではなく構造として成立する。
 
 ---
 
@@ -36,7 +43,7 @@ flowchart TD
     READ --> STRATEGY_PHASE
 
     subgraph STRATEGY_PHASE["Phase 3: 実装戦略策定"]
-        SA["strategy agent<br>strategy_formulation_spec.md"] --> DRAFT["return value<br>（戦略書 markdown）"]
+        SA["forge:plan-strategist<br>strategy_formulation_spec.md"] --> DRAFT["return value<br>（戦略書 markdown）"]
         DRAFT --> APPROVAL{"ユーザー承認?"}
         APPROVAL -->|"修正要望"| SA
         APPROVAL -->|"承認"| COPY["output_dir に配置<br>feature_strategy.md"]
@@ -95,14 +102,17 @@ flowchart TD
 
 ### Phase 3: 実装戦略の策定 [MANDATORY]
 
-| Step | 内容                                                                                                                      | 実行者       |
-| ---- | ------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 3.1  | strategy Agent 起動（[strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) を渡す） | 汎用 Agent   |
-| 3.2  | Agent の return value（戦略書 markdown）を全文提示し、ユーザー承認を取得                                                  | orchestrator |
-| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置                                                                | orchestrator |
+| Step | 内容                                                                                        | 実行者                |
+| ---- | ------------------------------------------------------------------------------------------- | --------------------- |
+| 3.0  | 既存戦略書（`{output_dir}/{feature}_strategy.md`）の有無を確認。あれば Read して 3.1 へ渡す | orchestrator          |
+| 3.1  | `forge:plan-strategist` 起動（必読文書は Agent 定義が持つため prompt では入力のみを渡す）   | forge:plan-strategist |
+| 3.2  | Agent の return value（戦略書 markdown）を配置後に提示し、ユーザー承認を取得                | orchestrator          |
+| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置                                  | orchestrator          |
 
-**入力**: Phase 1 の仕様書 return value から抽出した設計書パス + 計画書ルール return value のルール文書パス
-**出力**: strategy Agent の return value（戦略書 markdown）→ 承認後に `{output_dir}/{feature}_strategy.md` へ Write
+**入力**: Phase 1 の仕様書 return value から抽出した要件定義書パス・設計書パス + 計画書ルール return value のルール文書パス + 既存戦略書の全文（あれば）
+**出力**: Agent の return value（戦略書 markdown）→ 承認後に `{output_dir}/{feature}_strategy.md` へ Write
+
+差分開発型（要件定義書・設計書が `feature_type: temporary-feature` を持つ）の場合、戦略書は既存実装と新仕様の不一致と、各々への処置（修正 / 削除 / 新規作成 / 統合 / 分割）を含む。要件定義書を入力に含めるのは、差分開発型かどうかの判定と新旧の突き合わせに要るためである。
 
 ### Phase 4: 計画書の作成・更新
 
@@ -180,6 +190,7 @@ flowchart TD
 | ファイル                                                                                    | 説明                                         |
 | ------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                 | スキル仕様                                   |
-| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略 Agent 作業指示書                    |
+| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                   | 実装戦略 Agent の役割・制約・必読文書        |
+| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略の策定手順・出力テンプレート         |
 | [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
 | [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |

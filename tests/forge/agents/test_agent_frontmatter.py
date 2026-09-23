@@ -15,6 +15,7 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
    - reviewer: Read, Grep, Glob, Bash（read-only、対象を自分で探索するため Grep/Glob を持つ）
    - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
    - rules-query-worker: Read, Grep, Glob（read-only、内蔵 ToC と文書の Read だけで完結するため Bash を持たない）
+   - plan-strategist: Read, Grep, Glob（read-only、文書と既存コードの読解で完結するため Bash を持たない）
    - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
@@ -40,6 +41,7 @@ EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'evaluator': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'rules-query-worker': frozenset({'Read', 'Grep', 'Glob'}),
+    'plan-strategist': frozenset({'Read', 'Grep', 'Glob'}),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
