@@ -168,25 +168,21 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 - **存在する場合**: 削除・上書きせず `Read` する。設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割等が既に記録されている可能性があるため、ゼロから策定し直さない。3.1 の Agent 起動時、既存戦略書の全文を prompt に含めて渡し、**既存内容を土台に、不足している観点（アプローチ選択・検証ポイント・リスク対策等）を補う・詳細化する**よう指示する（新規策定ではなく差分の追記・精緻化）
 - **存在しない場合**: 3.1 へ進み、現行どおり新規に策定する
 
-### 3.1 汎用 Agent の起動
+### 3.1 カスタム Agent の起動
 
-Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す。3.0 で既存戦略書を発見した場合は、その全文も渡す:
+Agent ツールでカスタム Agent `forge:plan-strategist`（`${CLAUDE_PLUGIN_ROOT}/agents/plan-strategist.md`）を起動する。Phase 1 で得た仕様書 return value から要件定義書パスと設計書パスを抽出し、agent 起動の引数として渡す。3.0 で既存戦略書を発見した場合は、その全文も渡す:
 
 ```
-Agent ツール起動: 実装戦略策定 (subagent_type: general-purpose)
+Agent ツール起動: 実装戦略策定 (subagent_type: forge:plan-strategist)
 prompt:
-  以下の設計書を読み、実装戦略を策定する。
-  詳細手順は `${CLAUDE_PLUGIN_ROOT}/docs/strategy_formulation_spec.md` を Read して従うこと。
-
   - feature: {feature}
+  - requirement_docs: [{要件定義書パス1}, ...]        ← Phase 1 仕様書 return value から抽出
   - design_docs: [{設計書パス1}, {設計書パス2}, ...]  ← Phase 1 仕様書 return value から抽出
   - rules_docs: [{ルール文書パス1}, ...]              ← Phase 1 計画書ルール return value から抽出
   - existing_strategy: {既存戦略書の全文、または「なし」}  ← 3.0 の確認結果
-
-  existing_strategy が「なし」でない場合、ゼロから策定せず、その内容を土台に不足を補う・詳細化すること。
-  策定した実装戦略の markdown を return value として返すこと。
-  (ファイルへの書き出しは不要。main AI が return value を受け取ってから配置する)
 ```
+
+必読文書（策定手順・実装戦略書の定義・差分開発の規範）と read-only 制約は agent 定義が持つ。**prompt で指示を重ねない**。
 
 ### 3.2 実装戦略書の配置
 
