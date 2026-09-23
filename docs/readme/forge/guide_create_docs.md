@@ -86,7 +86,6 @@ Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. 
 ### Reference Documents
 
 - `plugins/forge/docs/requirement_format.md` — Requirements template
-- `plugins/forge/docs/spec_format.md` — ID classification catalog
 - `plugins/forge/docs/spec_design_boundary_spec.md` — Requirements/design boundary guide
 
 ---

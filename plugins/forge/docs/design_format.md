@@ -20,13 +20,13 @@
 
 ---
 
-## ファイル命名規則
+## 設計ID
 
-```
-{設計ID}_{対象名}_design.md
-```
+| ID prefix | 対象           | 主な用途                           |
+| --------- | -------------- | ---------------------------------- |
+| `DES-xxx` | 設計書（汎用） | モジュール設計・画面設計・機能設計 |
 
-例: `DES-001_<name>_design.md`
+ADR（`ADR-xxx`）は別の文書型であり、書式は [adr_format.md](adr_format.md)、配置・採番・運用は [adr_principles_spec.md](adr_principles_spec.md) が定める。
 
 ---
 

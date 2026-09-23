@@ -15,7 +15,7 @@ applicable_when:
 **NEVER skip.** 下記を全て読み込み、深く理解すること
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md`** — フィーチャーの概念定義（§0）・追加開発ワークフロー仕様
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID 分類カタログ（使用する ID をここから選択）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_principles_spec.md`** — 要件定義書の定義（責務・書かないもの・存在期間・改訂）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
@@ -256,7 +256,7 @@ Phase 2 の主要シナリオを元に、ユーザーとシステムの相互作
 
 ### 3.1 要件の作成
 
-プロジェクトの性質に応じて必要な ID を `spec_format.md` から選択し、要件を作成する。以下は代表的な要件種別:
+プロジェクトの性質に応じて必要な ID を `requirement_format.md`「要件ID カタログ」から選択し、要件を作成する。以下は代表的な要件種別:
 
 **画面要件（SCR-xxx）** — UI を持つプロジェクトの場合:
 

@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-21T08:33:10Z
-  file_count: 37
+  generated_at: 2026-09-23T14:28:58Z
+  file_count: 38
 
 docs:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
@@ -523,35 +523,37 @@ docs:
       - backend selection
       - .doc_structure.yaml
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
-    title: DES-010 create-* Skills Orchestrator Design
-    purpose: Defines orchestrator pattern for start-design/start-plan/start-requirements SKILLs, common context collection framework, parallel agent coordination, and phase structure per SKILL
+    title: DES-010 Orchestrator Design for Create-* Skills
+    purpose: Defines orchestrator pattern architecture for create-design, create-plan, and create-requirements skills with common context collection framework and skill-specific phase structures
     content_details:
-      - 3 SKILLs (start-design, start-plan, start-requirements) orchestrated with common framework
-      - "Orchestrator responsibilities: pre-check, progress management, user interaction, decision branching"
-      - "Context collection agents (specs/rules/code) with return value contract: parallel execution, markdown bullet list format"
-      - "Common context collection framework: inline prompt directives (search purpose, search method, output contract)"
-      - "Phase composition for start-design: pre-check, context collection (Phase 1), analysis (Phase 2), document creation (Phase 3), AI review (Phase 4), QA (Phase 5)"
-      - "Context collection matrix per SKILL: start-design requires specs/rules/code; start-plan requires specs/rules; start-requirements requires rules, specs/code mode-dependent"
-      - "Parallel execution failure handling: independent agent failure, empty result handling, progress reporting (5 items full, 6+ items first 3 + ellipsis)"
-      - "Mode-dependent behaviors in start-requirements: interactive, reverse-engineering, from-figma modes with different agent combinations"
+      - Orchestrator pattern architecture with parallel agent execution
+      - Common context collection framework for specs, rules, and code agents
+      - Return value contract using markdown bullet lists (DES-022 aligned)
+      - Phase structures for start-design with context collection, analysis, creation, review, and assurance
+      - Phase structures for start-plan with collection, reading, strategy, creation, and review
+      - "Phase structures for start-requirements with three modes: interactive, reverse-engineering, from-figma"
+      - Context collection agent application matrix per skill showing mandatory vs. optional roles
+      - Parallel execution of specs, rules, and code agents with independent failure handling
+      - Progress reporting convention for 5 items or less shown fully, 6+ show first 3 plus omission
+      - Session-less design decision for intermediate result handling via return value
     applicable_tasks:
-      - start-design SKILL orchestrator implementation
-      - start-plan SKILL orchestrator implementation
-      - start-requirements SKILL orchestrator implementation
-      - Context collection framework and agent coordination design
-      - Parallel AI agent execution and result collection
-      - Documentation creation workflow orchestration
+      - Designing orchestrator patterns for multi-phase skills
+      - Planning context collection strategies for requirement/design/planning workflows
+      - Implementing parallel agent coordination and error handling
+      - Defining skill-specific phase structures and transitions
+      - Creating agent instruction templates and return value contracts
+      - Reviewing and validating create-* skill architecture
     keywords:
-      - forge
-      - orchestrator
+      - orchestrator pattern
+      - context collection
+      - parallel execution
+      - return value contract
       - start-design
       - start-plan
       - start-requirements
-      - context collection
-      - return value
-      - parallel agent
-      - DES-013
-      - progress reporting
+      - agent coordination
+      - phase structure
+      - markdown bullet list
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     title: DES-013 Context Gathering Task Specification
     purpose: Defines context gathering task specification for create-* and start-implement SKILLs, including 3 task types, parallel agent execution method, and SKILL-specific task matrices
@@ -615,100 +617,96 @@ docs:
       - staged migration
       - pure functions
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md:
-    title: forge Requirements Definition Workflow Design
-    purpose: Defines orchestration skill design for requirements creation supporting three modes (interactive dialogue, reverse-engineering from source, Figma integration) with self-contained mode-specific workflows
+    title: DES-017 Create-Requirements Workflow Design
+    purpose: "Defines dispatcher pattern and mode-specific workflows for start-requirements skill with three self-contained workflow implementations: interactive (dialogue-driven), reverse-engineering (source-analysis), and from-figma (design-driven)"
     content_details:
-      - Orchestration dispatcher pattern with mode-specific workflow file branching (interactive, reverse-engineering, from-figma)
-      - SKILL.md dispatcher responsibilities (prerequisite check, mode selection, session management) with workflow delegation
-      - Self-contained workflow pattern where each mode handles complete flow (context collection through completion)
-      - "interactive mode phases (0: scope check, 0.5: on-demand rules, 1-3: vision/flow/detailed specs, 4: integration and review)"
-      - "reverse-engineering mode phases (1: prep + parallel agents, 2-3: code analysis and extraction, 4-5: writing and quality confirmation)"
-      - "from-figma mode phases (1: Figma MCP verification, 2: design system building, 3-5: requirements generation through asset management)"
-      - Context collection optimization per mode (on-demand for interactive, batch parallel for reverse-engineering and Figma)
-      - ID taxonomy system (APP, SCR, FNC, BL, DM, CMP, THEME, NAV, API, EXT, NFR, SEC, ERR) from spec_format.md
-      - What/How separation principle using spec_design_boundary_spec.md as reference for requirement/design boundary
-      - Workflow completion includes AI review, ToC update, commit confirmation, and session cleanup
+      - Dispatcher pattern in SKILL.md for prerequisite checks, mode selection, and session management
+      - Interactive mode workflow with on-demand context collection during dialogue spanning phases 0-4
+      - Reverse-engineering mode workflow with batch context collection and source code analysis (phases 1-5)
+      - From-figma mode workflow with Figma MCP integration and design system building (phases 1-5)
+      - "Context collection optimization per mode: on-demand for interactive, batch parallel for reverse-engineering and from-figma"
+      - Self-contained workflow principle where each mode includes prerequisite checks, context collection, creation, review, ToC update, commit, and cleanup
+      - Requirement ID system consistency enforced via requirement_format.md
+      - "Design principle What vs. How: requirement documents define WHAT to realize, design defines HOW to implement"
+      - Spec/design boundary guidance in spec_design_boundary_spec.md for disambiguation
+      - "Workflow self-closure design: no return to SKILL.md after delegation to workflow files"
     applicable_tasks:
-      - Designing orchestration workflows for multi-mode skills
-      - Defining interactive requirements gathering dialogue flows
-      - Implementing source code reverse-engineering analysis patterns
-      - Integrating Figma MCP for design-driven requirements creation
-      - Creating self-contained workflow document structures
-      - Establishing requirements/design boundary rules and validation
-      - Designing session management for skill workflows
-      - Planning context collection strategies (on-demand vs batch architecture)
+      - Designing workflow dispatchers with mode-specific branching
+      - Planning on-demand vs. batch context collection strategies
+      - Creating self-contained workflow templates for different input sources
+      - Implementing interactive requirement gathering with user dialogue
+      - Designing reverse-engineering workflows for existing codebases
+      - Implementing Figma design-driven requirement creation
     keywords:
-      - start-requirements
-      - interactive workflow
+      - workflow dispatcher
+      - interactive mode
       - reverse-engineering
       - from-figma
-      - orchestration
-      - workflow dispatcher
-      - APP-xxx
-      - SCR-xxx
-      - FNC-xxx
-      - self-contained phases
+      - self-contained workflow
+      - on-demand collection
+      - batch collection
+      - requirement definition
+      - What vs. How principle
+      - spec/design boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: forge Design Document Creation Workflow Design
-    purpose: Defines orchestration skill design for creating design documents from requirements through parallel context collection (specs, rules, code), design drafting, human review cycles, AI review, and quality assurance
+    title: DES-018 Create-Design Workflow Design
+    purpose: Defines orchestrator workflow for start-design skill with parallel context collection agents, design document creation with mandatory human review, AI review, and quality assurance phases emphasizing existing asset reuse and requirement coverage
     content_details:
-      - Orchestration pattern with three parallel context collection agents (specs via query-db-specs, rules via query-db-rules, code via glob/grep search)
-      - Prerequisite phase including .doc_structure.yaml confirmation, feature name resolution, output directory resolution, and mode detection
-      - Mandatory existing asset discovery and reuse pattern (search for similar components, design assuming reuse not creation)
-      - Phase 2 design drafting with collected context integration, design_format.md template application, DES-xxx ID system confirmation
-      - File-by-file human review loop with AskUserQuestion checkpoints for each completed design file (mandatory)
-      - Phase 3 AI review using /forge:review design --auto with differential scope (modified files only)
-      - Phase 4 quality assurance with completeness validation (requirement coverage, ID uniqueness, asset reuse confirmation)
-      - What/How separation principle per spec_design_boundary_spec.md (design focuses on How, What remains in requirements)
-      - Workflow closure with /forge:update-db-specs execution and /anvil:commit confirmation
-      - Design format compliance validation including specification format ID catalog and design principles guidelines
+      - Orchestrator pattern for start-design with parallel context collection from specs, rules, and code agents
+      - Prerequisite phase with doc_structure.yaml confirmation, feature name, output directory resolution, mode detection, and defaults loading
+      - "Phase 1: Context collection using parallel agents via /forge:query-db-specs, /forge:query-db-rules, and Glob/Grep for existing assets"
+      - Return value contract for context agents returning markdown bullet lists of collected items
+      - "Phase 2: Design document creation with format application, ID system validation (DES-xxx), and mandatory human review per file via AskUserQuestion"
+      - "Phase 3: AI review via /forge:review design --auto targeting diff-only modifications"
+      - "Phase 4: Quality assurance with completeness check (requirement coverage, ID uniqueness, asset reuse), ToC update, and commit/push confirmation"
+      - "Design principle: mandatory existing asset reuse - similar components must be reused, not created new"
+      - "What/How boundary: design focuses on HOW (structure/composition), not What (requirements) which is specification responsibility"
+      - "Requirement completeness: design must fully cover all requirements from requirement definition document"
     applicable_tasks:
-      - Designing orchestration workflows for multi-phase design document creation
-      - Implementing parallel context collection agent patterns for requirements and rules retrieval
-      - Creating and validating design document templates with format_spec compliance
-      - Establishing code asset discovery and mandatory reuse-first design patterns
-      - Defining human review checkpoint architecture for file-by-file automation
-      - Implementing requirement-to-design mapping and completeness validation checks
-      - Designing AI review automation with differential scope filtering
-      - Establishing What/How separation boundaries and validation mechanisms
+      - Designing orchestrator workflows with parallel context collection
+      - Implementing requirement document analysis and coverage validation
+      - Planning existing asset discovery and reuse strategies
+      - Creating design documents with format consistency checks
+      - Implementing human review feedback loops in document creation
+      - Validating design/requirement boundary alignment
     keywords:
-      - start-design
-      - orchestrator
-      - context collection
-      - existing asset
-      - design_format.md
-      - DES-xxx
-      - human review
-      - AI review
-      - spec_design_boundary_spec.md
+      - orchestrator workflow
+      - parallel context collection
+      - design creation
+      - existing asset reuse
+      - What vs How boundary
+      - requirement coverage
+      - design principles
+      - human review loop
+      - format consistency
+      - completeness check
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: forge Plan Creation Workflow Design
-    purpose: Specifies the /forge:start-plan orchestrator workflow for creating planning documents from specifications, including phases for context collection, strategy formulation, task extraction, and review
+    title: DES-019 Plan Creation Workflow Design
+    purpose: Specifies the /forge:start-plan orchestrator skill workflow for creating implementation plans from design documents through multi-phase coordination including context gathering, strategy formulation, and task extraction.
     content_details:
-      - Orchestrator pattern delegating to general-purpose agents
-      - Phase 1 context collection via query-db-specs and query-db-rules
-      - Phase 2 document reading
-      - Phase 3 implementation strategy formulation with user approval
-      - Phase 4 planning document creation with task extraction
-      - Phase 5 AI review process
-      - Task granularity and traceability matrix requirements
-      - Design principles for agent execution units
-      - Completion processing with update-db-specs and anvil:commit
+      - Phase-based orchestrator pattern with delegation to specs/rules/strategy agents
+      - "Phase 1-2: Context gathering from specification and rule databases"
+      - "Phase 3: Implementation strategy formulation with user approval and feature_strategy.md output"
+      - "Phase 4: Task extraction and division with completeness validation"
+      - Traceability matrix requirements mapping requirements to design to tasks
+      - "Task granularity rules: single-agent execution units and 5-10 items per plan"
+      - "Plan creation modes: new creation versus update with existing asset confirmation"
+      - AI review integration via /forge:review and database updates
     applicable_tasks:
-      - Orchestrator workflow design
-      - Implementation strategy formulation
-      - Planning document creation
-      - Task extraction and prioritization
-      - Traceability validation
-      - AI review process definition
+      - Implementation plan creation for new features
+      - Implementation strategy formulation and approval
+      - Task extraction and prioritization from design documents
+      - Task dependency and traceability validation
+      - Plan structure and completeness verification
     keywords:
+      - start-plan
       - orchestrator
       - strategy formulation
       - task extraction
-      - traceability
-      - planning
-      - workflow
-      - phase
+      - traceability matrix
+      - context gathering
+      - phase-based workflow
+      - agent delegation
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: DES-022 Parallel Agent Output Contract Pattern Design
     purpose: Defines the output contract pattern for parallel Agent execution, preventing race conditions by requiring agents to return results via return values rather than writing to shared resources
@@ -1095,3 +1093,27 @@ docs:
       - feature identifier
       - merge
       - additive development
+  docs/specs/forge/requirements/REQ-028_document_system.md:
+    title: Document System Requirements
+    purpose: Defines the document taxonomy system including document types, identifiers, placement rules, and reference conventions to prevent information fragmentation and identifier collisions
+    content_details:
+      - Document identification with PREFIX-NNN format
+      - Cross-component shared specification rules and ownership boundaries
+      - .doc_structure.yaml as placement authority
+      - Skill-based ID numbering to prevent collisions
+      - Prevention of manual ID assignment in parallel branches
+      - Scope boundaries limited to internal forge and project documentation
+    applicable_tasks:
+      - Document taxonomy planning
+      - Cross-component specification management
+      - Document ID generation and collision prevention
+      - Documentation structure configuration
+      - Specification ownership verification
+    keywords:
+      - document-taxonomy
+      - document-identification
+      - cross-component-specification
+      - ID-collision
+      - document-placement
+      - specification-ownership
+      - PREFIX-NNN

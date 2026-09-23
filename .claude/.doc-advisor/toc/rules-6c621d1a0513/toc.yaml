@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-21T08:34:02Z
-  file_count: 8
+  generated_at: 2026-09-23T14:29:51Z
+  file_count: 10
 
 docs:
   docs/rules/cli_output_formatting.md:
@@ -36,6 +36,33 @@ docs:
       - color coding
       - header banner
       - PASS FAIL
+  docs/rules/design_taxonomy.md:
+    title: Design Document Taxonomy
+    purpose: "Classifies development documents along three dimensions: content type, authority source, and scope, to guide AI-driven rule analysis and responsibility division between forge platform and project-specific definitions"
+    content_details:
+      - "Content type categories: Constraint, Convention, Format, Process, Decision, Reference"
+      - Classification priority order for overlapping categories
+      - "Authority sources: Tool-provided, Project-defined, External standard"
+      - "Scope dimensions: Universal and Project-specific"
+      - Responsibility matrix showing forge vs. project responsibilities
+      - Judgment criteria and discrimination rules for each content type
+    applicable_tasks:
+      - Rule document analysis and classification
+      - Documentation structure planning
+      - Document type validation
+      - Requirement and design document review
+      - Rule document creation and maintenance
+    keywords:
+      - taxonomy
+      - content type
+      - constraint
+      - convention
+      - format
+      - process
+      - decision
+      - reference
+      - authority source
+      - scope
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
     purpose: Establishes unified conventions for document structure, formatting, terminology, and metadata across project documentation to ensure consistency and enable efficient AI processing
@@ -96,37 +123,68 @@ docs:
       - anti-patterns
       - document-escalation
       - session_dir
+  docs/rules/forge_document_type_roles.md:
+    title: forge Distribution Document Types and Roles
+    purpose: Defines file type conventions for forge development documents, specifying which document types (*_format.md, *_principles_spec.md, SKILL.md, review_criteria_*.md) should contain specific content and responsibility allocation
+    content_details:
+      - File type classifications and content responsibility matrix
+      - "Format specification role: structure, templates, identifiers, naming systems"
+      - "Principles specification role: principles, norms, prohibitions, decision criteria, severity catalogs"
+      - "SKILL document role: flow, phases, execution steps, branching logic"
+      - "Review criteria files: ordering and delegation lists"
+      - One-document-one-type principle for clarity
+      - Single source of truth requirement for principles
+    applicable_tasks:
+      - forge development rule compliance
+      - Documentation structure and template design
+      - Rule document organization and authoring
+      - SKILL document creation
+      - Review criteria definition
+    keywords:
+      - forge
+      - document type
+      - format spec
+      - principles spec
+      - SKILL
+      - review criteria
+      - template
+      - naming convention
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
-    purpose: Defines rules and best practices for plugin script development (Python/Bash) and SKILL.md authoring, including testing requirements, code organization, and design documentation standards.
+    purpose: Defines implementation rules for plugin scripts, SKILL.md code, testing requirements, file placement, code quality standards, and version management procedures
     content_details:
-      - Script language selection criteria (Python for data transformation, Bash for shell operations)
-      - Python standard library only requirement with PyYAML exception
-      - Testing requirements for plugin Python scripts and test directory structure
-      - Prohibition of inline scripts in SKILL.md and correct pattern of external script calling
-      - Script placement conventions (skill-specific vs plugin-common locations)
-      - Temporary file handling using mktemp and trap for cleanup
-      - Design document maintenance including ADR placement rules
-      - Distribution assets cannot reference project development documents
-      - Dual placement options for rules (inline in SKILL.md or separate document with reference)
-      - Unused code deletion policy and fallback implementation guidelines
+      - Script language selection criteria (Python vs Bash)
+      - Python external dependency restrictions (standard library + PyYAML exception only)
+      - Testing requirements for plugins and placement in tests/ directory
+      - Prohibition of inline scripts in SKILL.md
+      - Script and document placement rules (skills/skill/ vs plugins/plugin/)
+      - Temporary file creation with mktemp and trap cleanup
+      - Design document maintenance rules and ADR placement
+      - Prohibition of distribution materials referencing project development documents
+      - Fallback implementation guidelines and error reporting standards
+      - Version file editing prohibition and version management workflow
     applicable_tasks:
-      - Plugin script implementation and review
-      - SKILL.md authoring and maintenance
-      - Test development and unit test implementation
-      - Code refactoring and cleanup
-      - Design documentation and ADR creation
+      - Script implementation review
+      - Test coverage validation
+      - SKILL.md design review
+      - Code cleanup and refactoring
+      - Design decision documentation
+      - Plugin packaging and distribution
+      - Version management and release
+      - Code quality assessment
+      - Dependency audit
+      - Cross-component integration review
     keywords:
-      - Python scripting
-      - Bash scripting
+      - Python
+      - Bash
       - PyYAML
       - SKILL.md
-      - unittest
       - mktemp
-      - trap
       - ADR
-      - Testing
-      - update-version
+      - test
+      - plugin script
+      - git history
+      - fallback
   docs/rules/script_error_output_rules.md:
     title: Script Error Output
     purpose: Defines exit code conventions and output format requirements for Python scripts in the plugins directory, establishing how scripts declare exit codes and callers interpret results.

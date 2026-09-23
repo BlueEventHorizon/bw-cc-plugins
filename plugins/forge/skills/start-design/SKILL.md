@@ -74,7 +74,7 @@ doc_type `design`（feature 未指定）で既存ファイルの有無を確認�
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
 doc_type `design`、feature `{feature}` で出力先ディレクトリを求める。
 
-- `design` に対応するエントリが無い場合は AskUserQuestion で出力先を確認する
+エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たず、出力先を独自に尋ねない）。
 
 ### モード判定
 
@@ -95,10 +95,10 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 以下のプラグイン文書を**常に**読み込む:
 
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（設計IDの体系を確認）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`** — 設計書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`** — 設計原則・作成ガイドライン
 - **`${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md`** — ADR に何を書き何を書かないか（ADR を作成する場合）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md`** — ADR の書式・テンプレート・失効マーカーの記法（ADR を作成する場合）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
@@ -192,7 +192,7 @@ Phase 1 の 3 agent の return value を起点に、必要なファイルを Rea
 
 要件に曖昧な点・矛盾がある場合は、質問リストを作成して AskUserQuestion を使用してユーザーに確認する。
 
-仕様変更が発生した場合は、要件定義書を即座に更新すること（設計作業の前に不明点を解消すること）。
+仕様変更が発生した場合は、設計作業の前に要件定義書を更新すること。要件定義書の変更を AI が独断で行わない。追記・修正の内容をユーザーに提示し、承認を得てから書く。
 
 ### 2.4 既存実装資産の確認
 
@@ -235,16 +235,28 @@ JSON 出力の `next_id` をファイル名・設計 ID として使用する。
 python3 "$SCAN_SCRIPT" ADR --share-prefixes ADR,DES
 ```
 
-ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md` の設計ID カタログを参照）。
+ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` を参照）。
 
 ### 3.3 設計書の作成
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
+- **ファイル名**: `{設計ID}_{対象名}_design.md`（例: `DES-001_session_expiry_design.md`）。`{対象名}` は英語のスネークケースで、**その設計が扱う対象を表す名前**とする。一覧を見た人が中身を推測できること。`impl` `detail` 等の内容を示さない名前を使わない
 - **追加開発（`--add`）の場合**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note は本設計書が対象範囲における現在の設計であることを述べ、対応する追加 feature 要件定義書（REQ-xxx）と食い違う場合は要件定義書に従うと添える。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
 - **ユーザーレビューは AI レビュー（Phase 4）の後に実施する** — AI レビューで品質問題を修正してからユーザー確認を行う方が効率的
 
 **禁止事項・よくある失敗パターン**: `design_principles_spec.md`「記載してはいけない内容」「よくある失敗パターン」節に従う（事前準備で読み込み済み）。
+
+### 3.4 要件定義書に無い設計が必要になった場合
+
+設計中に要件定義書に無い必要が判明したら、**設計を止める**。設計書で補わない。
+
+1. **要件へ戻せる場合**: 要件定義書への追記内容をユーザーに提示し、**承認を得てから**追記する。追加開発なら `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 の判定を行い、差分 feature に該当するなら差分側の要件定義書へ書く
+2. **要件へ戻せない場合**: 要件へ戻せないものとは、ユーザーマニュアルに書く内容ではなく、How の帰結としてのみ生じる必要（実装手段が要求する中間形式・受け渡し経路など）である。この場合に限り、内容と理由をユーザーに説明して承認を得たうえで設計書に書き、**承認を ADR に記録して設計書の当該節からリンクする**
+
+記録の無い承認は承認として扱われない（`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` §10）。ADR の ID は 3.2 の手順で採番する。
+
+この ADR は `adr_principles_spec.md`「書く対象・書かない対象」の 2 条件を満たす。要件に無い以上、その設計を削る提案が将来出る見込みがあり（条件 1）、それが誤りであることは仕様を見ても分からない（条件 2）ためである。
 
 ---
 

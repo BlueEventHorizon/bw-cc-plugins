@@ -3,19 +3,16 @@
 プロジェクト固有の「ADR フォーマット」が見つからない場合に使用する汎用フォーマット。
 
 作成トリガー（どのようなときに ADR を作成・更新するか）: [adr_principles_spec.md](adr_principles_spec.md)「書く対象・書かない対象」
-運用（目的・書く対象・可変性・失効の扱い・棄却理由の書き方・読み手の義務）: [adr_principles_spec.md](adr_principles_spec.md)（**本ファイルは記法のみを定める**）
+運用（目的・書く対象・可変性・失効の扱い・棄却理由の書き方・読み手の義務・配置と ID 採番）: [adr_principles_spec.md](adr_principles_spec.md)（**本ファイルは記法のみを定める**）
 違反時の severity: [adr_principles_spec.md](adr_principles_spec.md) 重大度カタログを参照（本ファイルは severity を宣言しない）
 
 ---
 
-## ファイル命名規則・配置
+## ファイル命名規則
 
 ```
 ADR-{NNN}_{topic}.md
 ```
-
-- 設計書と同じディレクトリに配置する（ADR 専用ディレクトリは作らない）
-- ID は手動で決めず、必ず `next-spec-id` スキルで採番する（`python3 scan_spec_ids.py ADR --share-prefixes ADR,DES`）。ADR と DES は同一ディレクトリで通し番号を共有するため `--share-prefixes ADR,DES` を必ず付与する
 
 例: `ADR-032_path_schema_unification.md`
 
