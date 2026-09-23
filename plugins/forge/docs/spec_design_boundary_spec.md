@@ -2,6 +2,8 @@
 
 **目的**: What（要件定義書）と How（設計書）の境界を明確化し、記載内容の判断を支援する
 
+各文書型の責務そのものは [requirement_principles_spec.md](requirement_principles_spec.md) / [design_principles_spec.md](design_principles_spec.md) が定める。本書は 2 者の振り分け判定だけを持つ。
+
 ---
 
 ## 1. 基本原則

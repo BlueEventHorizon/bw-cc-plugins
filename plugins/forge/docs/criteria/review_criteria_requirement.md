@@ -10,6 +10,7 @@ P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重�
 
 | priority | path                                                                               | doc_type   | 役割                                                                                                                                             |
 | -------- | ---------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1       | [requirement_principles_spec.md](../requirement_principles_spec.md)                | principles | 要件定義書の定義 (責務 / 書かないもの / 存在期間 / 改訂)                                                                                         |
 | P1       | [requirement_format.md](../requirement_format.md)                                  | format     | 要件定義書フォーマット (メタデータ・未確定事項表・必須項目等の規範本体 + 重大度カタログ)                                                         |
 | P1       | [spec_priorities_spec.md](../spec_priorities_spec.md)                              | principles | 仕様優先度・非機能要件カテゴリ網羅性・主目的禁止・倒錯パターン (規範本体 + 重大度カタログ)                                                       |
 | P1       | [additive_development_spec.md](../additive_development_spec.md)                    | principles | 追加開発ワークフロー (`feature_type: temporary-feature` 文書の判定基準 §1 / 旧仕様の置き換え §2 / P2 矛盾除外規定の前提を提供)                   |
@@ -25,7 +26,7 @@ P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重�
 
 要件定義書種別に合わせ「どの委譲先文書から先に読むか」の順序。規範本体は再掲しない:
 
-1. **P1 ルール合致**: [requirement_format.md](../requirement_format.md) (フォーマット・必須項目・未確定事項表の構造) → [spec_priorities_spec.md](../spec_priorities_spec.md) (非機能要件カテゴリ網羅性・主目的禁止・倒錯パターン) → `(query-db-rules: "要件レビューに関するプロジェクト固有の文書記述・仕様記述規約")` (プロジェクト固有の文書記述・仕様記述規約) の順で要件定義書本文と照合する
+1. **P1 ルール合致**: [requirement_principles_spec.md](../requirement_principles_spec.md) (責務の逸脱・書かないものの混入) → [requirement_format.md](../requirement_format.md) (フォーマット・必須項目・未確定事項表の構造) → [spec_priorities_spec.md](../spec_priorities_spec.md) (非機能要件カテゴリ網羅性・主目的禁止・倒錯パターン) → `(query-db-rules: "要件レビューに関するプロジェクト固有の文書記述・仕様記述規約")` (プロジェクト固有の文書記述・仕様記述規約) の順で要件定義書本文と照合する
    - **追加 feature 文書の frontmatter 必須**: 対象が追加 feature の要件定義書 (判定基準: [additive_development_spec.md](../additive_development_spec.md) §1。判定は変更の実質 [分離管理価値・旧仕様との衝突リスク] で行い、文書操作の形式 [新規作成か追記か] では判定しない。**既存仕様が存在しない初回立ち上げ・分離して管理する価値のない軽微な追記・修正は対象外** = false positive 防止) の場合、`requirement_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter が文書先頭に付与されているか照合する。欠如時の severity は `requirement_format.md` 重大度カタログに従う (本ファイルは severity を宣言しない)
    - **文書参照**: [document_style_guide.md](../document_style_guide.md) §5 / §8 と照合し、対象要件定義書が他文書へ張る参照の記法を確認する。メタデータの `関連要件` / `関連設計` に並ぶ ID は他文書への参照ではなく依存関係の記録であるため、リンクになっていないことを違反として扱わない。severity は [review_priorities_spec.md](../review_priorities_spec.md) §2.3 重大度カタログ（文書参照）に従う
 2. **P2 矛盾・齟齬**: target ファイル内部の要件間 (FNC-xxx 相互参照 / 用語定義 / 優先度) と、関連設計書 (`docs/specs/<feature>/design/*.md`) との間で、同一対象への相反記述 (機能定義 / データモデル / ビジネスゴール紐付け等) を突き合わせる (不足・欠落は P2 対象外、P1 で扱う)

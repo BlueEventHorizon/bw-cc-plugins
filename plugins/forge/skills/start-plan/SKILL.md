@@ -96,6 +96,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン（計画書ファイルの形式そのものは script が保証するため、AI が読む必要はない）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`** — 実装戦略書の定義（責務・書かないもの・存在期間）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ---
@@ -193,7 +194,7 @@ prompt:
 Agent 完了後、return value (戦略書 markdown) を承認前にそのまま最終出力先へ Write する。チャットへの全文転記より先にファイルとして配置し、ユーザーが文書そのものを読んでレビューできるようにする:
 
 - **配置先**: `{output_dir}/{feature}_strategy.md`
-- **ライフサイクル**: 計画書と同じ。全タスク完了時に計画書とともに存廃を利用者が選択する（`${CLAUDE_PLUGIN_ROOT}/docs/document_definitions_spec.md`「実装戦略書」）
+- **ライフサイクル**: 計画書と同じ。全タスク完了時に計画書とともに存廃を利用者が選択する（`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`）
 - 承認されなかった場合は 3.3 の修正結果でこのファイルを上書きする（配置は確定ではなく作業版の起点）
 
 ### 3.3 ユーザーレビューと承認
