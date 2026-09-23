@@ -38,8 +38,6 @@ feature_note:
 
 計画書には frontmatter を付与しない。計画書は `requirements_traceability` で対応する要件定義書（REQ-xxx）を既に参照しており、その要件定義書が §1.1 の `feature_type: temporary-feature` を持つかどうかで、当該計画書が追加 feature のものかを辿って判定できる。計画書自体に重複してマーカーを持たせる必要はない。
 
-計画書は実装完了後に破棄される（[additive_development_spec.md](additive_development_spec.md) §4.3 手順4）ため、要件定義書・設計書と異なり merge 時に分離維持を判断する対象にもならない。
-
 ---
 
 ## 2. doc_status（文書のライフサイクル状態マーカー）

@@ -94,7 +94,6 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 
 以下のプラグイン文書を**常に**読み込む:
 
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（タスクIDの体系を確認）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン（計画書ファイルの形式そのものは script が保証するため、AI が読む必要はない）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`** — 実装戦略書の定義（責務・書かないもの・存在期間）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）

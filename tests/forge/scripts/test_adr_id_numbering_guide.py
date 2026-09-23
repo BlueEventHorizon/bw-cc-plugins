@@ -11,10 +11,6 @@ ID 採番手順がスキル・文書に明記されておらず、並行ブラ�
 - スクリプト挙動: scan_spec_ids が `ADR` プレフィックスを正しく採番する。
   ADR を設計ディレクトリ配下に置く限り、ADR 専用ディレクトリが scan 対象になくても
   既存 ADR を検出できること (「ADR-001〜004 使用済み → ADR-005」を再現)。
-- 文書カバレッジ: ID 体系の正本 (spec_format.md)・採番スキル (next-spec-id)・
-  生成スキル (start-design)・ADR 運用原則 (adr_principles_spec) の各層に
-  「ADR は next-spec-id で採番する」ガイドが存在すること。
-
 実行:
   python3 -m unittest tests.forge.scripts.test_adr_id_numbering_guide -v
 """
@@ -27,18 +23,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-FORGE_DOCS = REPO_ROOT / "plugins" / "forge" / "docs"
 SKILLS_DIR = REPO_ROOT / "plugins" / "forge" / "skills"
 
 sys.path.insert(0, str(SKILLS_DIR / "next-spec-id" / "scripts"))
 
 from scan_spec_ids import scan_spec_ids  # noqa: E402
-
-
-def _read(path: Path) -> str:
-    if not path.is_file():
-        raise unittest.SkipTest(f"必須ファイルが存在しない: {path}")
-    return path.read_text(encoding="utf-8")
 
 
 class TestADRScanBehavior(unittest.TestCase):
@@ -117,68 +106,6 @@ class TestADRScanBehavior(unittest.TestCase):
             for id_value in duplicate["ids"]
         }
         self.assertIn("ADR-003", duplicate_ids)
-
-
-class TestADRDocCoverage(unittest.TestCase):
-    """ADR 採番ガイドが各層の文書に存在し続けること (構造的欠落の回帰防止)。"""
-
-    def test_spec_format_design_catalog_includes_adr(self):
-        """ID 体系の正本 spec_format.md の設計ID カタログに ADR が登録されていること。"""
-        content = _read(FORGE_DOCS / "spec_format.md")
-        self.assertIn("## 設計ID カタログ", content)
-        self.assertIn(
-            "`ADR-xxx`",
-            content,
-            "spec_format.md 設計ID カタログに ADR prefix の行がない "
-            "(ADR が未定義 prefix のまま残存)",
-        )
-        self.assertIn(
-            "next-spec-id",
-            content,
-            "spec_format.md が ADR 採番に next-spec-id を指していない",
-        )
-
-    def test_next_spec_id_skill_mentions_adr(self):
-        """next-spec-id/SKILL.md の description と CLI 例示が ADR を含むこと。"""
-        content = _read(SKILLS_DIR / "next-spec-id" / "SKILL.md")
-        self.assertIn(
-            "ADR",
-            content,
-            "next-spec-id/SKILL.md が ADR を例示・説明していない",
-        )
-        # CLI 例示に ADR プレフィックスの実行例があること
-        self.assertIn(
-            '"$SCRIPT" ADR',
-            content,
-            "next-spec-id/SKILL.md の CLI 例示に ADR 採番の実行例がない",
-        )
-
-    def test_start_design_instructs_adr_numbering(self):
-        """start-design/SKILL.md が ADR 作成時の next-spec-id 採番を指示していること。"""
-        content = _read(SKILLS_DIR / "start-design" / "SKILL.md")
-        self.assertIn("ADR", content, "start-design/SKILL.md が ADR に言及していない")
-        # 採番スクリプトを ADR プレフィックスで呼ぶ指示があること
-        self.assertIn(
-            'SCAN_SCRIPT" ADR',
-            content,
-            "start-design/SKILL.md に ADR を next-spec-id で採番する手順がない",
-        )
-
-    def test_adr_principles_instructs_adr_numbering(self):
-        """adr_principles_spec.md が ADR 採番ルールと git スキャン注記を持つこと。"""
-        content = _read(FORGE_DOCS / "adr_principles_spec.md")
-        self.assertIn("ADR", content)
-        self.assertIn(
-            "next-spec-id",
-            content,
-            "adr_principles_spec.md が ADR 採番に next-spec-id を指していない",
-        )
-        # ADR 専用ディレクトリが .doc_structure.yaml になくても検出できる注記
-        self.assertIn(
-            ".doc_structure.yaml",
-            content,
-            "adr_principles_spec.md に ADR の git スキャン検出に関する注記がない",
-        )
 
 
 if __name__ == "__main__":

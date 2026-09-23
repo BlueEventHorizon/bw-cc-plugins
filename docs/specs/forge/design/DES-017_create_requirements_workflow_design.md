@@ -180,14 +180,7 @@ SKILL.md への参照・戻りは不要。
 
 ### ID 体系の一貫性
 
-`spec_format.md` に定義された ID 体系に従う:
-
-- `APP-xxx`: アプリ概要
-- `SCR-xxx`: 画面
-- `FNC-xxx`: 機能要件
-- `BL-xxx`: ビジネスロジック
-- `DM-xxx`: データモデル
-- その他（CMP, THEME, NAV, API, EXT, NFR, SEC, ERR）
+要件 ID の体系は [requirement_format.md](../../../../plugins/forge/docs/requirement_format.md) が定める。
 
 ---
 
@@ -200,5 +193,4 @@ SKILL.md への参照・戻りは不要。
 | `plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md` | ソース解析型ワークフロー       |
 | `plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md`          | Figma 型ワークフロー           |
 | `plugins/forge/docs/requirement_format.md`                                                  | 要件定義書テンプレート         |
-| `plugins/forge/docs/spec_format.md`                                                         | ID 分類カタログ                |
 | `plugins/forge/docs/spec_design_boundary_spec.md`                                           | 要件/設計の境界ガイド          |

@@ -86,7 +86,6 @@ start-requirements → start-design → start-plan → start-implement
 ### 参考ドキュメント
 
 - `plugins/forge/docs/requirement_format.md` — 要件定義書テンプレート
-- `plugins/forge/docs/spec_format.md` — ID 分類カタログ
 - `plugins/forge/docs/spec_design_boundary_spec.md` — 要件/設計の境界ガイド
 
 ---

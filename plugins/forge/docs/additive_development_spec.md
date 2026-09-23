@@ -67,8 +67,11 @@ specs/
 ├── requirements/        ← 既存
 └── {feature}/
     ├── requirements/
-    └── design/
+    ├── design/
+    └── plan/
 ```
+
+実際のパスはプロジェクトの `.doc_structure.yaml` で定義される。上記は例であり、`requirements` / `design` / `plan` を同じ階層に揃えることだけが要件である。
 
 ---
 
@@ -231,7 +234,6 @@ specs/
      解消済みのため、追加側に残る内容が無い。その文書を**削除**する
    - **追加側に「旧仕様のどこにも書かれていない新しい機能」の部分が残る場合**: その文書は**残す**。
      この場合、一時 feature 用 frontmatter（§6）を外し、恒久的な仕様として扱う
-   - 計画書は破棄する
 5. **ToC 再生成**
    - `/forge:update-db-specs` で specs ToC を更新
 

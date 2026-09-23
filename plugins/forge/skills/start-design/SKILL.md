@@ -95,10 +95,10 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 以下のプラグイン文書を**常に**読み込む:
 
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID分類カタログ（設計IDの体系を確認）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`** — 設計書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`** — 設計原則・作成ガイドライン
 - **`${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md`** — ADR に何を書き何を書かないか（ADR を作成する場合）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md`** — ADR の書式・テンプレート・失効マーカーの記法（ADR を作成する場合）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
@@ -235,12 +235,13 @@ JSON 出力の `next_id` をファイル名・設計 ID として使用する。
 python3 "$SCAN_SCRIPT" ADR --share-prefixes ADR,DES
 ```
 
-ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md` の設計ID カタログを参照）。
+ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` を参照）。
 
 ### 3.3 設計書の作成
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
+- **ファイル名**: `{設計ID}_{対象名}_design.md`（例: `DES-001_session_expiry_design.md`）。`{対象名}` は英語のスネークケースで、**その設計が扱う対象を表す名前**とする。一覧を見た人が中身を推測できること。`impl` `detail` 等の内容を示さない名前を使わない
 - **追加開発（`--add`）の場合**: `design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note は本設計書が対象範囲における現在の設計であることを述べ、対応する追加 feature 要件定義書（REQ-xxx）と食い違う場合は要件定義書に従うと添える。新規アプリ（`--new`）・既存設計書の追記更新時は付与しない。
 - **ユーザーレビューは AI レビュー（Phase 4）の後に実施する** — AI レビューで品質問題を修正してからユーザー確認を行う方が効率的
 
