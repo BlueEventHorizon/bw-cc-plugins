@@ -15,13 +15,13 @@ feature_note:
 
 本書が持つのは次の 3 つである。
 
-| 範囲         | 内容                                                                                                                                                                                                                              |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 受け渡し機構 | `review_id`・`round_number` の規約と、依頼・所見を保持し、検証済みのパスを返す script。**evaluator との受け渡しもこの機構による**（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-207） |
-| シーケンス   | 依頼の保持から、所見と評価が結び付くまでの流れ                                                                                                                                                                                    |
-| reviewer     | target 種別の判定とレビュー観点の選択、所見の作り方                                                                                                                                                                               |
+| 範囲         | 内容                                                                                                                                                                                                     |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 受け渡し機構 | `review_id`・`round_number` の規約と、依頼・所見を保持し、検証済みのパスを返す script。**evaluator との受け渡しもこの機構による**（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207） |
+| シーケンス   | 依頼の保持から、所見と評価が結び付くまでの流れ                                                                                                                                                           |
+| reviewer     | target 種別の判定とレビュー観点の選択、所見の作り方                                                                                                                                                      |
 
-evaluator 自身の設計と、本体が評価をどう扱うかは [DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) が持つ。
+evaluator 自身の設計と、本体が評価をどう扱うかは [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
 ## 2. シーケンス
 
@@ -56,9 +56,9 @@ sequenceDiagram
 
 **主体間で AI が運ぶ識別値は `review_id` と `round_number` だけである。** 依頼・所見・評価は script が保持する。AI が内容を必要とするときは、script が返した絶対パスを使って JSON を直接読み、JSON 本文を script の標準出力や別主体から受け取らない。
 
-**本体も、パスを得てから読む。** 所見と評価の中身が要るときは、各 `resolve_result_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を直接読む（FNC-309、[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-209）。紐づけの検証は `link_evaluations.py` が両 JSON を内部で読んで行い、本文を標準出力へ返さない。evaluator も同じ 2 値からパスを解決し、依頼と所見を直接読む。
+**本体も、パスを得てから読む。** 所見と評価の中身が要るときは、各 `resolve_result_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を直接読む（FNC-309、[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-209）。紐づけの検証は `link_evaluations.py` が両 JSON を内部で読んで行い、本文を標準出力へ返さない。evaluator も同じ 2 値からパスを解決し、依頼と所見を直接読む。
 
-evaluator の区間（評価・紐づけの検証・結び付け）の詳細は [DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) が持つ。
+evaluator の区間（評価・紐づけの検証・結び付け）の詳細は [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
 **エラーフロー**: 終了の値が `"0"` でなければ、そのラウンドはエラーである。結果そのものが無い場合も同じ（§4.4）。
 
@@ -132,13 +132,13 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 
 **置き場を、扱う JSON の領域ごとに分ける。** 領域は review（レビューの進行）・reviewer（所見）・evaluator（評価）の 3 つであり、それぞれに 1 つのディレクトリを与える（[DES-024](../../forge/design/DES-024_skill_script_layout_design.md)）。
 
-| 置き場               | 扱う JSON                                     | 定めている箇所                                                                             |
-| -------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `scripts/review/`    | `review_request.json`。ラウンドの進行と片付け | 本節                                                                                       |
-| `scripts/reviewer/`  | `review_result.json`                          | 本節                                                                                       |
-| `scripts/evaluator/` | `evaluate_result.json`                        | [DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3 |
+| 置き場               | 扱う JSON                                     | 定めている箇所                                          |
+| -------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| `scripts/review/`    | `review_request.json`。ラウンドの進行と片付け | 本節                                                    |
+| `scripts/reviewer/`  | `review_result.json`                          | 本節                                                    |
+| `scripts/evaluator/` | `evaluate_result.json`                        | [DES-083](DES-083_evaluator_perspective_design.md) §7.3 |
 
-**呼ぶ主体は置き場ではなく、各 script の欄が示す。** 呼ぶ主体でディレクトリを分けると、読み取り専用の resolver を複数の主体が呼ぶ場面で破綻する——evaluator は依頼と所見を読むため、review 側と reviewer 側の resolver を呼ぶ（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-207）。
+**呼ぶ主体は置き場ではなく、各 script の欄が示す。** 呼ぶ主体でディレクトリを分けると、読み取り専用の resolver を複数の主体が呼ぶ場面で破綻する——evaluator は依頼と所見を読むため、review 側と reviewer 側の resolver を呼ぶ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207）。
 
 **守るべき隔離は書き込みである。** 要件が課しているのは reviewer が評価のファイルへ書けないこと（`forge:REQ-013` FNC-1322）であり、読み取りは制限されていない。resolver は状態を変えないため、複数の主体が呼んでも隔離は破れない。**同じ resolver を主体ごとに複製しない。**
 
@@ -150,7 +150,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 
 #### `scripts/review/`
 
-レビューの進行を扱う。評価に関わるもの（評価結果のパス解決・紐づけの検証）は [DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3 が定める。
+レビューの進行を扱う。評価に関わるもの（評価結果のパス解決・紐づけの検証）は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。
 
 | script                    | 責務                                                                                                                | 呼ぶ主体 | 入力                                                                                           | 出力（`0`）                   | エラー                                                                    |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------- |
@@ -164,7 +164,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 | `advance_round.py`        | **次のラウンドへ進める。** 記録済みの対応を確定し、次のラウンドのディレクトリ・採番基点・公開済み依頼を原子的に作る | 本体     | `<project_root> <review_id> <round_number>`                                                    | 次の `round_number`           | 指定ラウンドが正常に終えていない／全所見の対応が揃っていない              |
 | `cleanup.py`              | **レビューの痕跡を消す。** ディレクトリを削除する。無くても成功とする                                               | 本体     | `<project_root> <review_id>`                                                                   | なし                          | 削除できない                                                              |
 
-**依頼の resolver は evaluator 側からも使われる。** evaluator も同じ `review_request.json` を読むため（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-207）、`scripts/evaluator/resolve_input_paths.py` が本 script を内部で呼ぶ（[DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3）。主体ごとに複製しない。
+**依頼の resolver は evaluator 側からも使われる。** evaluator も同じ `review_request.json` を読むため（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207）、`scripts/evaluator/resolve_input_paths.py` が本 script を内部で呼ぶ（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。主体ごとに複製しない。
 
 #### `scripts/reviewer/`
 
@@ -177,9 +177,9 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 | `abort.py`               | **自覚したエラーで終えたことを示す。** 定義されたエラー値を書く                                                       | **reviewer のみ** | `<project_root> <review_id> <round_number> <エラー値>`                                 | なし                          | 定義に無い値（`2`）／既に終了の値がある           |
 | `resolve_result_path.py` | **`review_result.json` のパスを返す。** 終了の値が `"0"` の場合だけ返し、JSON 本文は返さない                          | 本体              | `<project_root> <review_id> <round_number>`                                            | `path` だけを持つ JSON object | 終了の値が `"0"` でない／結果が無い／識別値が不正 |
 
-**所見の resolver は本体が呼び、evaluator 側からも使われる。** evaluator は `resolve_input_paths.py` を通して本 script の結果を受け取る（[DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3）。reviewer は自分が書いた所見を読み返さないため、この口を渡さない。
+**所見の resolver は本体が呼び、evaluator 側からも使われる。** evaluator は `resolve_input_paths.py` を通して本 script の結果を受け取る（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。reviewer は自分が書いた所見を読み返さないため、この口を渡さない。
 
-`scripts/evaluator/` 配下の script は [DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3 が定める。本節の原則（1 操作 1 script・第 1 引数は `review_id`・第 2 引数は `round_number`・終了コード）はそちらにも及ぶ。
+`scripts/evaluator/` 配下の script は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。本節の原則（1 操作 1 script・第 1 引数は `review_id`・第 2 引数は `round_number`・終了コード）はそちらにも及ぶ。
 
 `start_review.py` の標準出力は `review_id` と最初の `round_number` を持つ JSON object とする。`advance_round.py` の標準出力は次の `round_number` とする。いずれも AI は値を生成・加算せず、script の出力から得た値を後続へ渡す。
 
@@ -191,7 +191,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 
 **1 つのレビューで 1 本の連番とする。** ラウンドが変わっても振り直さず、前ラウンドまでに採番された最大値の次から続ける。ラウンドごとに 1 へ戻すと、第 2 ラウンドの依頼に載る `prior_round` の `finding_id` と、そのラウンドで新たに採番される `finding_id` が、同じ値で別の所見を指す。レビュー全体を対象とする報告でも同じ衝突が起きる。
 
-**同じラウンドの中で、reviewer 側と evaluator 側の script が 1 本の連番を分け合う。** evaluator は見落としを新規に指摘するときに ID を消費する（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-206）。採番済みの ID は 1 つのファイルに集まらない。
+**同じラウンドの中で、reviewer 側と evaluator 側の script が 1 本の連番を分け合う。** evaluator は見落としを新規に指摘するときに ID を消費する（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-206）。採番済みの ID は 1 つのファイルに集まらない。
 
 **採番のための状態を持たない。** 次の `finding_id` は、そのラウンドの `review_result.json` と `evaluate_result.json` に現れる `finding_id` の最大値と、そのラウンドの採番基点の 1 つ手前とを比べ、大きいほうの次とする。カウンタを別に持つと、採番したが書き込み前に落ちたときに番号が飛び、連番でなくなる。採番と書き込みは 1 回の操作で行うため、導出した値が書かれないまま残ることはない。
 
@@ -203,11 +203,11 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 
 #### 渡す script を主体ごとに限定する
 
-| 主体      | 渡す script                                                                                                             | 持たない口                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| reviewer  | `scripts/reviewer/` の全                                                                                                | 結果を読む口・評価を書く口 |
-| evaluator | `scripts/evaluator/` の全（[DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) §7.3） | 結果を読む口・所見を書く口 |
-| 本体      | `scripts/review/` の全                                                                                                  | **回答を書く口**           |
+| 主体      | 渡す script                                                                          | 持たない口                 |
+| --------- | ------------------------------------------------------------------------------------ | -------------------------- |
+| reviewer  | `scripts/reviewer/` の全                                                             | 結果を読む口・評価を書く口 |
+| evaluator | `scripts/evaluator/` の全（[DES-083](DES-083_evaluator_perspective_design.md) §7.3） | 結果を読む口・所見を書く口 |
+| 本体      | `scripts/review/` の全                                                               | **回答を書く口**           |
 
 **置き場と一致する。** 主体ごとにディレクトリを分けたため、この表はディレクトリの対応をなぞるだけになる。渡してよい script かどうかは置き場で決まる。
 
@@ -322,7 +322,7 @@ script が組み立てる以上、形が壊れるのはバグである（FNC-303
 
 `resolve_request_path.py` が公開済みの依頼だけを返すことと、結果の resolver 2 本が結果 JSON を解析して `exit` を確認することは、一般的な JSON schema の検証ではない。前者は公開状態、後者は FNC-311 の成否状態を判定するために必要な最小限の読み取りである。
 
-検査が要るのは、**script が組み立てても自動的には満たされないもの**だけである。所見と評価の紐づけ（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-203）がこれにあたり、[DES-083](../../evaluator-perspective/design/DES-083_evaluator_perspective_design.md) が持つ。
+検査が要るのは、**script が組み立てても自動的には満たされないもの**だけである。所見と評価の紐づけ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-203）がこれにあたり、[DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
 ## 5. 保持する構造
 
@@ -459,7 +459,7 @@ flowchart TB
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 依頼       | `start_review.py` へ必須項目を渡して `review_id` と最初の `round_number` を受け取る。任意の `focus` / `scope` は `set_request_text.py` へ 1 項目ずつ、`references` は `add_reference.py` へパス配列を、同じ 2 値とともに渡す。最後に `finish_request.py` で公開する。`references` の値は `/forge:query-db-rules` / `/forge:query-db-specs` の結果を用いる |
 | 起動       | reviewer を `review_id` と `round_number` で起動する。続けて evaluator を同じ 2 値で起動する。両者の script は指定されたラウンドを読む                                                                                                                                                                                                                    |
-| 結果の読み | evaluator の終了後、`link_evaluations.py` で紐づけを検証する。所見と評価の中身は、各 `resolve_result_path.py` が返したパスの JSON をそれぞれ Read して得る（FNC-309・[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-209）                                                                                       |
+| 結果の読み | evaluator の終了後、`link_evaluations.py` で紐づけを検証する。所見と評価の中身は、各 `resolve_result_path.py` が返したパスの JSON をそれぞれ Read して得る（FNC-309・[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-209）                                                                                                                |
 | 次ラウンド | 対応済みの `finding_id` と同じ 2 値を `add_prior_handled.py` へ渡す。対応しない所見も `add_prior_unhandled.py` へ 1 件ずつ理由とともに渡す。最後に `advance_round.py` を呼び、返された次の `round_number` で再び起動する。依頼の形は変えない（FNC-305）                                                                                                   |
 | 片付け     | レビューが終わったとき、`review_id` のディレクトリを片付ける（§4.3）                                                                                                                                                                                                                                                                                      |
 
@@ -473,7 +473,7 @@ flowchart TB
 
 ### 7.1 バックエンド
 
-**本体は reviewer を直接起動しない。** バックエンドを経由する。バックエンドは reviewer をどう動かすか（ローカルの Agent か、常駐セッションか）を担う層であり、レビューそのものは行わない。evaluator はバックエンドを持たず、本体が直接起動する（[REQ-026](../../evaluator-perspective/requirements/REQ-026_evaluator_perspective.md) FNC-210）。
+**本体は reviewer を直接起動しない。** バックエンドを経由する。バックエンドは reviewer をどう動かすか（ローカルの Agent か、常駐セッションか）を担う層であり、レビューそのものは行わない。evaluator はバックエンドを持たず、本体が直接起動する（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-210）。
 
 | 項目                     | 内容                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
