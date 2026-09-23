@@ -5,7 +5,7 @@ file_count: 42
 checksums:
   plugins/forge/docs/additive_development_spec.md: d1234d9ba4502f7e11597a89acd2d1ed763ffb7c44bc8634fd8ab6ef49188312
   plugins/forge/docs/adr_format.md: 353ed097fdb06da0ba61c84143c77a1256259d683292a751dc5c401975bc6f95
-  plugins/forge/docs/adr_principles_spec.md: a499e5fe29504e8d481061b8f377f29297af2beb67499a4932e1db8a1a8f98e9
+  plugins/forge/docs/adr_principles_spec.md: 9727346c0cf3f45c8bdef336e062ce519b3e6cbc69f280c3d70a2c1080b301ad
   plugins/forge/docs/consult_principles_spec.md: db230680c0ed32fe8fbd16005d9943ee2096eeeecd1cc8fdb41042ae27faf175
   plugins/forge/docs/criteria/review_criteria_code.md: db0142cb94dff160544afdcb79e15ddd7ba3c1165caa0677294e100fbb1ed471
   plugins/forge/docs/criteria/review_criteria_design.md: 0844e6097ef350f7f72edcda1d4627b287b091b047ed0628c55d2135f6da5f22
@@ -15,7 +15,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_secrets.md: 0f248f092c9ebbbdc44a6f8d3a267cf4d76a282b009c27950055f3ef76059365
   plugins/forge/docs/criteria/review_criteria_uxui.md: a236b55548f4558a0db4bdea1e180913fe97893c4380e9b343f4538da6b028de
   plugins/forge/docs/design_format.md: 8b49d1b43a21a1654d7e87d16922f1b246c5a988eac6b4d2b0bacd36b72f81f5
-  plugins/forge/docs/design_principles_spec.md: ebacbde0e7e89cb3aae1a7b17d46c3dfb746cf913b377050f3e1581cba0d0fb3
+  plugins/forge/docs/design_principles_spec.md: aa003a4907383e0dfb43fecef3fcdf39063a2c02abeb822d8120df70b71ad869
   plugins/forge/docs/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   plugins/forge/docs/deterministic_generation_spec.md: b0eacd7205bb92c652345f5a7f44997c813307d88c450a1e4c0a64823c16718e
   plugins/forge/docs/doc_structure_format.md: 99d576c9fb411d796024ad5e9e24b86b993d4852b2da7809246adb6382b2579e

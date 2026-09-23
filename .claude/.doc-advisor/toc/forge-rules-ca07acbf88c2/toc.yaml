@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-22T06:23:03Z
+  generated_at: 2026-09-23T01:01:31Z
   file_count: 42
 
 docs:
@@ -62,36 +62,34 @@ docs:
       - alternatives-table
       - decision-rationale
   plugins/forge/docs/adr_principles_spec.md:
-    title: ADR Operating Principles
-    purpose: Defines operational norms for Architecture Decision Records (ADRs), including when to write them, content constraints, maintenance rules, and handling of deprecated decisions.
+    title: ADR (Architecture Decision Record) Operating Principles
+    purpose: Establishes governance principles for creating, maintaining, and referencing ADRs as the formal repository of decision rationale and rejected alternatives
     content_details:
-      - When to write ADRs (two simultaneous conditions for creation)
-      - Scope for recording rejection reasons and alternative analysis
-      - Prohibition on duplicating specifications and rules from other documents
-      - ADR structure as non-binding guidance that can be revisited if premises change
-      - Handling deprecated decisions with markers when replaced by separate ADRs
-      - Rules for mutating documents while preserving section numbers and previous decisions
-      - Rejection reason writing using future proposal vocabulary and explicit premises
-      - ADR placement and ID numbering with shared counter for DES prefix
-      - Gray zone tolerance patterns for allowed and disallowed modifications
-      - Critical severity catalog for common violations
+      - Definition and purpose of ADR as decision rationale repository
+      - Scope field rules for boundary disambiguation
+      - Writing targets and exclusions (no specification duplication)
+      - Rejection reasoning guidelines for future proposals
+      - Changeability and in-place update rules
+      - ADR expiration handling with supersession markers
+      - Decision reversal judgment criteria (new ADR vs. in-place amendment)
+      - Section number preservation for external references
+      - Gray zone tolerance patterns (permitted vs. prohibited actions)
+      - Severity catalog for ADR maintenance violations
     applicable_tasks:
-      - ADR creation and review
-      - Architecture decision evaluation
-      - Handling deprecated decisions and transitions
-      - Proposal assessment against existing decisions
-      - Design change tracking and notation
-      - ADR content and structure validation
-      - Determining scope boundaries in design documents
+      - ADR creation and governance
+      - Design decision review and validation
+      - Proposal evaluation against existing decisions
+      - ADR structure and format verification
+      - Decision reversal and supersession handling
+      - Design change impact assessment on existing ADRs
     keywords:
       - ADR
-      - Architecture Decision Record
-      - decision-making
-      - rejection reason
-      - deprecation
-      - proposal evaluation
-      - design principles
-      - ADR format
+      - decision rationale
+      - rejection reasoning
+      - supersession
+      - scope definition
+      - design decision
+      - architecture decision record
   plugins/forge/docs/consult_principles_spec.md:
     title: Principles for Presenting Consultations
     purpose: Establishes principles for how AI should present judgment requests and guide discussions with users in console environments, emphasizing structured presentation, background, and user-centric interaction patterns.
@@ -364,32 +362,38 @@ docs:
       - use-case-design
       - Mermaid
   plugins/forge/docs/design_principles_spec.md:
-    title: Design Principles Specification
-    purpose: Defines universal principles for design document creation, including mandatory structure elements, content guidelines, architecture rules, responsibility division, and quality standards.
+    title: Design Specification Creation Principles
+    purpose: "Provides foundational principles for creating design specifications when project-specific rules don't exist, establishing separation between How (design) and What (requirements), with mandatory structural elements and judgment criteria"
     content_details:
-      - Design vs Requirements (How vs What) distinction and boundary
-      - Mandatory structure elements (module lists, component diagrams, use case lists, sequence diagrams)
-      - Content guidelines with prohibited patterns and severity ratings
-      - Architecture dependency rules (layered architecture, clean architecture, circular dependencies)
-      - Single responsibility principle and cohesion patterns with allowed exceptions
-      - Availability and SPOF (Single Point of Failure) remediation rules
-      - Design maintenance process for API changes, decision reversals, and parameter updates
-      - Common failure patterns with severity classification and remediation strategies
+      - Basic principle separating design (How) from requirements (What)
+      - "Mandatory structural elements: module list, diagrams, use cases, sequence diagrams"
+      - "Required content: implementation methods, design patterns, processing flow, data flow, test case design"
+      - "Prohibited content: full source code, unsubstantiated framework choices, out-of-scope features, quantitative guarantees"
+      - "Quantitative target handling: allow architecture policy (caching, debounce, async) but forbid achievement guarantees"
+      - "Judgment criteria: implementability test (Can an implementer code this from this specification?)"
+      - "Design hierarchy guidelines: split when >500 lines, child specs link to parent design"
+      - "File naming convention: {ID}_{target}_design.md using snake_case"
+      - Mermaid diagram syntax for flowcharts, class diagrams, and sequence diagrams
+      - "Design maintenance procedures: report mismatches to user, tie changes to ADR, document intent not code transfer"
     applicable_tasks:
-      - Design specification creation and validation
-      - Architecture pattern and dependency compliance review
-      - Design quality assessment with severity classification
-      - Post-implementation design document maintenance and updates
-      - Project-specific design rule establishment for new projects
+      - Design specification creation
+      - Design specification review and validation
+      - Architecture pattern specification and verification
+      - Design-requirement boundary validation
+      - Design structural adequacy assessment
+      - Design maintenance and update procedures
+      - Dependency direction and architecture validation
+      - Component responsibility and cohesion review
     keywords:
-      - design principles
-      - architecture dependency
-      - single responsibility
+      - design specification
+      - architecture pattern
+      - design diagram
       - Mermaid
-      - SPOF
-      - ADR
-      - scope boundary
-      - quantitative goal
+      - dependency direction
+      - responsibility division
+      - single responsibility principle
+      - design maintenance
+      - implementability
   plugins/forge/docs/design_taxonomy.md:
     title: Document Taxonomy
     purpose: Defines a classification system for development documents organized by content type, authority source, and scope to guide document analysis and responsibility division between forge and projects
