@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-23T14:26:11Z
-  file_count: 41
+  generated_at: 2026-09-24T09:29:32Z
+  file_count: 42
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
@@ -507,6 +507,34 @@ docs:
       - abstract naming
       - style guide
       - document structure
+  plugins/forge/docs/error_classification_spec.md:
+    title: Error Classification Specification
+    purpose: Defines what constitutes an error versus non-error in system interfaces, establishes decision criteria for distinguishing errors from bugs and failures, and provides principles for failure handling.
+    content_details:
+      - "Three conditions for defining errors: occurs in normal state, changes receiver behavior, actionable"
+      - "Non-error categories: bugs (abnormal state only), failures (uncontrollable), determinable events"
+      - Decision checklist with four questions before adding error values
+      - Severity catalog with five violation patterns and severity levels (critical, major, minor)
+      - "Failure communication principle: transmit without type distinction"
+      - Error value scope determination framework
+    applicable_tasks:
+      - Error handling specification and design
+      - API response code definition
+      - Script exit code validation
+      - Agent return value specification
+      - Requirement specification for error cases
+      - Code review for error classification patterns
+      - Interface design validation
+    keywords:
+      - error classification
+      - bug vs failure
+      - severity catalog
+      - error value
+      - determinable event
+      - exit code
+      - error handling
+      - non-error
+      - interface design
   plugins/forge/docs/forge_anti_patterns.md:
     title: forge Anti-Patterns Collection
     purpose: Provides the base anti-pattern collection that /forge:review SKILL uses as fallback for P1 rule compliance checks when project-specific rules are unavailable, covering industry-standard patterns across multiple domains
