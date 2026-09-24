@@ -14,9 +14,17 @@ prompt / return value に載せない。依頼は本 script が組み立てて�
 
 終了の値は正常時の ``"0"`` だけであり、エラー値は持たない。``"0"`` が取れないことを異常とする。
 
+## 終了コード
+
+| code | 意味                             |
+| ---- | -------------------------------- |
+| 0    | 操作が完了した                   |
+| 1    | 区別のない失敗（標準出力の ``errors`` に理由） |
+| 2    | 引数を受理できない（``argparse``） |
+
 Usage:
     python3 strategy_exchange.py open --output-dir DIR --feature NAME \\
-        --requirement-doc PATH [...] --design-doc PATH [...] [--rules-doc PATH ...]
+        --design-doc PATH [...] [--requirement-doc PATH ...] [--rules-doc PATH ...]
     python3 strategy_exchange.py request-path --output-dir DIR --feature NAME
     python3 strategy_exchange.py finish --output-dir DIR --feature NAME
     python3 strategy_exchange.py check --output-dir DIR --feature NAME
@@ -64,22 +72,30 @@ def _absolute(paths):
     return [str(Path(p).resolve()) for p in paths]
 
 
+def _file_error(exc):
+    """ファイル操作の失敗を、終了コード 1 と標準出力の ``errors`` で返す。"""
+    _emit({"status": "error", "errors": [f"ファイルを操作できません: {exc}"]})
+    return 1
+
+
 def cmd_open(args):
     paths = _paths(args.output_dir, args.feature)
-    paths["dir"].mkdir(parents=True, exist_ok=True)
-    # 前回の終了の値が残っていると、今回の策定が終わる前に check が成功と判定してしまう
-    paths["result"].unlink(missing_ok=True)
-
     existing = paths["strategy"] if paths["strategy"].is_file() else None
     request = {
         "feature": args.feature,
-        "requirement_docs": _absolute(args.requirement_doc),
+        "requirement_docs": _absolute(args.requirement_doc or []),
         "design_docs": _absolute(args.design_doc),
         "rules_docs": _absolute(args.rules_doc or []),
         "existing_strategy": str(existing) if existing else None,
         "strategy_path": str(paths["strategy"]),
     }
-    _publish_json(paths["request"], request)
+    try:
+        paths["dir"].mkdir(parents=True, exist_ok=True)
+        # 前回の終了の値が残っていると、今回の策定が終わる前に check が成功と判定してしまう
+        paths["result"].unlink(missing_ok=True)
+        _publish_json(paths["request"], request)
+    except OSError as exc:
+        return _file_error(exc)
     _emit({"status": "ok"})
     return 0
 
@@ -87,8 +103,8 @@ def cmd_open(args):
 def cmd_request_path(args):
     paths = _paths(args.output_dir, args.feature)
     if not paths["request"].is_file():
-        _emit({"status": "error", "message": f"依頼が公開されていません: {paths['request']}"})
-        return 20
+        _emit({"status": "error", "errors": [f"依頼が公開されていません: {paths['request']}"]})
+        return 1
     _emit({"status": "ok", "path": str(paths["request"])})
     return 0
 
@@ -97,12 +113,15 @@ def cmd_finish(args):
     paths = _paths(args.output_dir, args.feature)
     strategy = paths["strategy"]
     if not strategy.is_file() or strategy.stat().st_size == 0:
-        _emit({"status": "error", "message": f"戦略書が書かれていません: {strategy}"})
-        return 20
+        _emit({"status": "error", "errors": [f"戦略書が書かれていません: {strategy}"]})
+        return 1
     if paths["result"].exists():
-        _emit({"status": "error", "message": f"終了の値は既に記録されています: {paths['result']}"})
-        return 20
-    _publish_json(paths["result"], {"exit": EXIT_OK})
+        _emit({"status": "error", "errors": [f"終了の値は既に記録されています: {paths['result']}"]})
+        return 1
+    try:
+        _publish_json(paths["result"], {"exit": EXIT_OK})
+    except OSError as exc:
+        return _file_error(exc)
     _emit({"status": "ok"})
     return 0
 
@@ -120,15 +139,18 @@ def cmd_check(args):
     exit_value = _read_exit(paths["result"]) if paths["result"].is_file() else None
 
     # 成否にかかわらず、この受け渡しのために置いたものを片付ける。戦略書は残す
-    paths["request"].unlink(missing_ok=True)
-    paths["result"].unlink(missing_ok=True)
+    try:
+        paths["request"].unlink(missing_ok=True)
+        paths["result"].unlink(missing_ok=True)
+    except OSError as exc:
+        return _file_error(exc)
 
     if exit_value != EXIT_OK:
         _emit({
             "status": "error",
-            "message": "plan-strategist が正常に書き終えていません（終了の値が記録されていない）",
+            "errors": ["plan-strategist が正常に書き終えていません（終了の値が記録されていない）"],
         })
-        return 20
+        return 1
     _emit({"status": "ok", "strategy_path": str(paths["strategy"])})
     return 0
 
@@ -144,7 +166,8 @@ def build_parser():
 
     p_open = subs.add_parser("open")
     _add_identity(p_open)
-    p_open.add_argument("--requirement-doc", action="append", required=True)
+    # 要件定義書を持たないプロジェクトがあるため任意。設計書は戦略の前提であり必須
+    p_open.add_argument("--requirement-doc", action="append")
     p_open.add_argument("--design-doc", action="append", required=True)
     p_open.add_argument("--rules-doc", action="append")
     p_open.set_defaults(func=cmd_open)

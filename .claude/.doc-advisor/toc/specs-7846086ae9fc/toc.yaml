@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-24T12:05:46Z
+  generated_at: 2026-09-24T13:44:22Z
   file_count: 38
 
 docs:
@@ -681,35 +681,34 @@ docs:
       - format consistency
       - completeness check
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: DES-019 Forge Plan Creation Workflow Design
-    purpose: Specifies the design of the forge plan creation workflow, orchestrating document collection, implementation strategy formulation, task extraction, plan creation, AI review, and human approval.
+    title: DES-019 forge Plan Creation Workflow Design
+    purpose: Specifies the complete workflow design for the forge:start-plan orchestrator skill that collects context, formulates implementation strategies, extracts tasks, and creates planning documents
     content_details:
-      - Five-phase orchestration workflow (context collection, document reading, strategy formulation, plan creation, AI review)
-      - Dual-Agent pattern for specs/rules collection and strategy formulation via query-db agents
-      - strategy_exchange.py script with open/request-path/finish/check subcommands for Agent request/response handoff
-      - "Task granularity rules: 5-10 items, Agent-executable units, build success as completion condition"
-      - Traceability matrix linking requirement IDs to design IDs to task IDs for validation
-      - Strategy refinement with user approval and iterative correction loop
-      - Update mode workflow for existing plan document checking and delta requirement handling
-      - Agent data exchange via JSON request/result files with feature and output_dir identifiers
+      - Orchestrator pattern delegations to specs/rules agents and strategy formulation agent
+      - Agent data exchange rules using JSON request/result pairs and file-based protocols
+      - "Four-phase workflow: context collection, document reading, strategy formulation, plan creation"
+      - "Strategy exchange script with four subcommands: open, request-path, finish, check"
+      - Task extraction based on strategy phases with completion criteria (single Agent unit, 5-10 items, compile success)
+      - Traceability matrix covering requirement → design → task ID mappings
+      - Update mode handling including existing plan confirmation and consistency checks
+      - AI review phase and database spec update completion steps
+      - Constraint on Agent modifications (strategy document only, no spec/code changes)
     applicable_tasks:
-      - Implementation strategy formulation for new features
-      - Plan document creation and workflow execution
-      - Task extraction and granularity validation
-      - Phase-based task sequencing and prioritization
-      - Multi-Agent orchestration design and coordination
-      - Feature requirement to implementation task mapping
-      - Incremental feature modification planning in update mode
+      - Planning workflow implementation and orchestration
+      - Implementation strategy formulation process design
+      - Task extraction and decomposition for agent execution
+      - Agent orchestration pattern implementation
+      - Feature-based development workflow setup
     keywords:
-      - plan-strategist
-      - strategy-exchange
-      - orchestrator
-      - task-granularity
-      - traceability-matrix
-      - phase-decomposition
       - start-plan
-      - forge
-      - feature-planning
+      - plan-strategist
+      - strategy_exchange
+      - task extraction
+      - traceability matrix
+      - orchestrator pattern
+      - agent delegation
+      - implementation strategy
+      - feature-based workflow
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: DES-022 Parallel Agent Output Contract Pattern Design
     purpose: Defines the output contract pattern for parallel Agent execution, preventing race conditions by requiring agents to return results via return values rather than writing to shared resources

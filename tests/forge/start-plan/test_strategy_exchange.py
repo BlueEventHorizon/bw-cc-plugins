@@ -141,20 +141,46 @@ class StrategyExchangeTest(unittest.TestCase):
         self.assertEqual(request["feature"], "検索")
         self.assertEqual(request["requirement_docs"], [str(req.resolve())])
 
-    def test_open_requires_requirement_and_design_docs(self):
+    def test_open_requires_design_doc(self):
+        """設計書は戦略の前提であり必須。欠けると引数エラーになる。"""
         completed = subprocess.run(
-            [sys.executable, str(SCRIPT), "open", *self.identity, "--design-doc", str(self.des)],
+            [sys.executable, str(SCRIPT), "open", *self.identity, "--requirement-doc", str(self.req)],
             capture_output=True, text=True,
         )
-        self.assertNotEqual(completed.returncode, 0)
+        self.assertEqual(completed.returncode, 2)
+
+    def test_open_accepts_missing_requirement_docs(self):
+        """要件定義書を持たないプロジェクトがあるため、要件定義書は任意。"""
+        code, _ = run("open", *self.identity, "--design-doc", str(self.des))
+        self.assertEqual(code, 0)
+        self.assertEqual(self._request()["requirement_docs"], [])
+
+    def test_open_reports_write_failure_as_errors(self):
+        """置き場を作れないとき、traceback ではなく errors で理由を返す。"""
+        blocker = self.root / "blocker"
+        blocker.write_text("", encoding="utf-8")
+        code, payload = run(
+            "open", "--output-dir", str(blocker / "plan"), "--feature", "foo",
+            "--design-doc", str(self.des),
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(payload["status"], "error")
+        self.assertIsInstance(payload["errors"], list)
 
     # --- request-path -------------------------------------------------------
 
     def test_request_path_before_open_fails(self):
         code, payload = run("request-path", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
         self.assertEqual(payload["status"], "error")
         self.assertNotIn("path", payload)
+
+    def test_error_carries_errors_as_array(self):
+        """エラーの理由は常に配列で返す（1 件でも配列）。"""
+        _, payload = run("request-path", *self.identity)
+        self.assertIsInstance(payload["errors"], list)
+        self.assertEqual(len(payload["errors"]), 1)
+        self.assertNotIn("message", payload)
 
     def test_request_path_returns_absolute_path_only(self):
         self._open()
@@ -168,14 +194,14 @@ class StrategyExchangeTest(unittest.TestCase):
     def test_finish_without_strategy_records_nothing(self):
         self._open()
         code, _ = run("finish", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
         self.assertFalse((self.plan_dir / "foo_strategy_result.json").exists())
 
     def test_finish_with_empty_strategy_records_nothing(self):
         self._open()
         self._write_strategy("")
         code, _ = run("finish", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
         self.assertFalse((self.plan_dir / "foo_strategy_result.json").exists())
 
     def test_finish_records_exit_zero(self):
@@ -191,7 +217,20 @@ class StrategyExchangeTest(unittest.TestCase):
         self._write_strategy()
         run("finish", *self.identity)
         code, _ = run("finish", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
+
+    def test_finish_reports_write_failure_as_errors(self):
+        """終了の値を書けないとき、traceback ではなく errors で理由を返す。"""
+        self._open()
+        self._write_strategy()
+        self.plan_dir.chmod(0o500)
+        try:
+            code, payload = run("finish", *self.identity)
+        finally:
+            self.plan_dir.chmod(0o700)
+        self.assertEqual(code, 1)
+        self.assertEqual(payload["status"], "error")
+        self.assertIsInstance(payload["errors"], list)
 
     # --- check --------------------------------------------------------------
 
@@ -211,7 +250,7 @@ class StrategyExchangeTest(unittest.TestCase):
         self._open()
         self._write_strategy()
         code, payload = run("check", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
         self.assertEqual(payload["status"], "error")
         self.assertNotIn("strategy_path", payload)
         self.assertFalse((self.plan_dir / "foo_strategy_request.json").exists())
@@ -221,13 +260,13 @@ class StrategyExchangeTest(unittest.TestCase):
         self._open()
         (self.plan_dir / "foo_strategy_result.json").write_text('{"exit": "1"}', encoding="utf-8")
         code, _ = run("check", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
 
     def test_check_with_broken_result_fails(self):
         self._open()
         (self.plan_dir / "foo_strategy_result.json").write_text("not json", encoding="utf-8")
         code, _ = run("check", *self.identity)
-        self.assertEqual(code, 20)
+        self.assertEqual(code, 1)
 
 
 if __name__ == "__main__":

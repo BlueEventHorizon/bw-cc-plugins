@@ -5,7 +5,7 @@ description: |
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature> [--new|--add]"
-allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-plan
@@ -150,10 +150,9 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 - **計画書ルール return value** → プロジェクト固有の計画書フォーマット・タスク設計ルールを把握（プラグイン文書より優先）
 
 該当 agent がエラー終了して return value を得られなかった場合 → 該当カテゴリなしで続行。
-ただし **仕様書 return value に設計書が含まれていない場合** → AskUserQuestion:
+ただし **仕様書 return value に設計書が含まれていない場合** → 設計書は実装戦略の前提であり欠かせないため、AskUserQuestion で設計書のパスを手動で指定してもらう。指定できなければ中止する。
 
-- 設計書のパスを手動で指定する
-- 設計書なしで計画書作成を進める（リスクを理解した上で）
+要件定義書は任意である。要件定義書を持たないプロジェクトがあるため、見つからなくてもそのまま進む。
 
 ---
 
@@ -169,16 +168,18 @@ SCRIPT="${CLAUDE_SKILL_DIR}/scripts/strategy_exchange.py"
 
 ### 3.1 依頼を置く
 
-Phase 1 の仕様書 return value から要件定義書パスと設計書パスを、計画書ルール return value からルール文書パスを抽出し、script に渡して依頼を置く。パスは 1 件ごとにオプションを繰り返す:
+Phase 2 で読んだ設計書パス・要件定義書パス（あれば）と、計画書ルール return value のルール文書パスを script に渡して依頼を置く。パスは 1 件ごとにオプションを繰り返す:
 
 ```bash
 python3 "$SCRIPT" open --output-dir "{output_dir}" --feature "{feature}" \
-  --requirement-doc "{要件定義書パス1}" [--requirement-doc ...] \
   --design-doc "{設計書パス1}" [--design-doc ...] \
+  [--requirement-doc "{要件定義書パス1}" ...] \
   [--rules-doc "{ルール文書パス1}" ...]
 ```
 
-既存戦略書（`{output_dir}/{feature}_strategy.md`）の有無は script が判定して依頼に入れる。特定の生成元を問わず、このパスに実装戦略書が既にあれば、設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割が記録されている可能性がある。これを土台に不足を補い詳細化することは agent 定義が定める。**既存戦略書を Read・削除・上書きしない。**
+`open` が失敗した場合（終了コードが 0 以外）は、標準出力の `errors` を利用者へ報告して止める。終了コードが 2（引数を受理できない）のときは標準出力が空なので、標準エラーの内容を報告する。
+
+既存戦略書（`{output_dir}/{feature}_strategy.md`）の有無は script が判定して依頼に入れる。特定の生成元を問わず、このパスに実装戦略書が既にあれば、設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割が記録されている可能性があり、Agent はそれを土台にする。
 
 ### 3.2 カスタム Agent の起動
 
@@ -201,8 +202,8 @@ Agent の完了後、script で成否を判定する。return value の内容で
 python3 "$SCRIPT" check --output-dir "{output_dir}" --feature "{feature}"
 ```
 
-- `status: ok` → 返された `strategy_path` を 3.4 へ
-- `status: error` → Agent が策定を終えられなかった。Agent の return value（何が起きたかの自然文）を添えて利用者へ報告し、AskUserQuestion で再実行か中止かを確認する
+- `status: ok` → 3.4 へ
+- `status: error` → Agent が策定を終えられなかった。Agent の return value（何が起きたかの自然文）を添えて利用者へ報告し、AskUserQuestion で再実行か中止かを確認する。**再実行は 3.1 からやり直す**（`check` が依頼を削除しているため、3.2 だけをやり直すと Agent は依頼を読めない）
 
 `check` は成否にかかわらず依頼と終了の値の記録を削除する。戦略書は残す。
 
@@ -211,14 +212,9 @@ python3 "$SCRIPT" check --output-dir "{output_dir}" --feature "{feature}"
 
 ### 3.4 ユーザーレビューと承認
 
-1. 戦略書のパスを提示する（全文をチャットに転記しない。ユーザーはファイルを開いて読む）:
-   ```
-   実装戦略書を作成しました: {output_dir}/{feature}_strategy.md
-   内容を確認してください。
-   ```
-2. AskUserQuestion でユーザーに確認する:
-   - **承認** → Phase 4 へ
-   - **修正要望あり** → 戦略書の末尾に `## 修正要望` 節を Edit で追記し、利用者の要望をそのまま書く。そのうえで 3.1 からやり直す。3.1 は今回の戦略書を既存戦略書として依頼に入れるので、Agent はそれを土台に要望を反映する（要望を prompt に載せない）
+**Agent が戦略書を書くのは 1 回だけである。以後、戦略書は本スキルを実行している主体が責任を持って管理する。**
+
+戦略書のパスを提示し（全文をチャットに転記しない。利用者はファイルを開いて読む）、AskUserQuestion で承認を得る。修正要望があれば、利用者と確かめながら自ら Read・Edit で直し、承認を得たら Phase 4 へ進む。
 
 ---
 

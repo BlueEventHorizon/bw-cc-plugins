@@ -26,14 +26,14 @@
 
 受け渡しは [agent_data_exchange_rules.md](../../../rules/agent_data_exchange_rules.md) に従う。戦略書は大きくなりうるため、依頼の中身も戦略書の本文も prompt / return value に載せない。
 
-| 本書が決める事項 | 内容                                                                                                                                                                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 識別値           | `output_dir`（計画書と同じディレクトリ）と `feature` の 2 つ。feature ディレクトリで分離されているため、実行ごとの識別子は持たない                                            |
-| 置き場           | `output_dir`。計画書・`tasks/` と同じ場所                                                                                                                                     |
-| 依頼             | `{feature}_strategy_request.json`。フィールドは `feature` / `requirement_docs` / `design_docs` / `rules_docs` / `existing_strategy` / `strategy_path`（パスはすべて絶対パス） |
-| 結果             | 戦略書 `{feature}_strategy.md`（Agent が直接書く）と、終了の値 `{feature}_strategy_result.json`                                                                               |
-| エラー値         | 持たない（空集合）。渡された文書が読めないのは収集直後の状態ではバグか障害であり、関連仕様や既存実装が見つからないのは戦略書に明記して続ける判定事項である                    |
-| 片付け           | 成否にかかわらず依頼と終了の値の記録を削除する。戦略書は計画書と同じライフサイクルで残す                                                                                      |
+| 本書が決める事項 | 内容                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 識別値           | `output_dir`（計画書と同じディレクトリ）と `feature` の 2 つ。feature ディレクトリで分離されているため、実行ごとの識別子は持たない                                                                  |
+| 置き場           | `output_dir`。計画書・`tasks/` と同じ場所                                                                                                                                                           |
+| 依頼             | `{feature}_strategy_request.json`。フィールドは `feature` / `requirement_docs`（0 件以上）/ `design_docs`（1 件以上）/ `rules_docs` / `existing_strategy` / `strategy_path`（パスはすべて絶対パス） |
+| 結果             | 戦略書 `{feature}_strategy.md`（Agent が直接書く）と、終了の値 `{feature}_strategy_result.json`                                                                                                     |
+| エラー値         | 持たない（空集合）。渡された文書が読めないのは収集直後の状態ではバグか障害であり、関連仕様や既存実装が見つからないのは戦略書に明記して続ける判定事項である                                          |
+| 片付け           | 成否にかかわらず依頼と終了の値の記録を削除する。戦略書は計画書と同じライフサイクルで残す                                                                                                            |
 
 script は `plugins/forge/skills/start-plan/scripts/strategy_exchange.py` の 1 本で、4 つのサブコマンドを持つ。
 
@@ -68,11 +68,14 @@ flowchart TD
     subgraph STRATEGY_PHASE["Phase 3: 実装戦略策定"]
         OPEN["依頼を置く<br>strategy_exchange open"] --> SA["forge:plan-strategist<br>戦略書を直接書く"]
         SA --> CHECK["成否の判定<br>strategy_exchange check"]
-        CHECK --> APPROVAL{"ユーザー承認?"}
-        APPROVAL -->|"修正要望を戦略書へ追記"| OPEN
+        CHECK -->|"成功"| APPROVAL{"ユーザー承認?"}
+        CHECK -->|"失敗・再実行"| OPEN
+        CHECK -->|"失敗・中止"| ABORT([中止])
+        APPROVAL -->|"修正要望"| FIX["呼び出し元が戦略書を直接修正"]
+        FIX --> APPROVAL
     end
 
-    STRATEGY_PHASE --> MODE_CHECK{モード?}
+    APPROVAL -->|"承認"| MODE_CHECK{モード?}
 
     MODE_CHECK -->|"新規作成"| CREATE
     MODE_CHECK -->|"更新"| UPDATE_CHECK
@@ -114,14 +117,14 @@ flowchart TD
 | 要件定義書 + 設計書 | `/forge:query-db-specs` | return value（仕様書リスト、specs agent）       |
 | 実装ルール          | `/forge:query-db-rules` | return value（計画書ルールリスト、rules agent） |
 
-**設計書は必須入力。** 見つからない場合は AskUserQuestion でユーザーに手動指定またはスキップ確認（リスク理解のもと）。
+**設計書は必須入力。** 実装戦略の前提であり、見つからない場合は AskUserQuestion でユーザーにパスを手動指定してもらう。指定できなければ中止する。**要件定義書は任意**（要件定義書を持たないプロジェクトがある）。
 
 ### Phase 2: 文書の読み込み
 
-| Step | 内容                                                      | 実行者       |
-| ---- | --------------------------------------------------------- | ------------ |
-| 2.1  | 仕様書 return value → 要件定義書・設計書を Read           | orchestrator |
-| 2.2  | 計画書ルール return value → プロジェクト固有ルールを Read | orchestrator |
+| Step | 内容                                                                                                                | 実行者       |
+| ---- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 2.1  | 仕様書 return value → 要件定義書・設計書を Read。設計書が無ければ利用者に手動指定してもらう（指定できなければ中止） | orchestrator |
+| 2.2  | 計画書ルール return value → プロジェクト固有ルールを Read                                                           | orchestrator |
 
 ### Phase 3: 実装戦略の策定 [MANDATORY]
 
@@ -130,9 +133,9 @@ flowchart TD
 | 3.1  | `strategy_exchange open` で依頼を置く（要件定義書・設計書・ルール文書のパス。既存戦略書の有無は script が判定） | orchestrator          |
 | 3.2  | `forge:plan-strategist` を識別値（`output_dir` / `feature`）だけで起動する                                      | forge:plan-strategist |
 | 3.3  | `strategy_exchange check` で成否を判定する                                                                      | orchestrator          |
-| 3.4  | 戦略書のパスを提示し、ユーザー承認を取得する。修正要望は戦略書の末尾へ追記して 3.1 からやり直す                 | orchestrator          |
+| 3.4  | 戦略書のパスを提示し、ユーザー承認を取得する。修正要望は orchestrator が直接直す（Agent が書くのは 1 回だけ）   | orchestrator          |
 
-**入力**: Phase 1 の仕様書 return value から抽出した要件定義書パス・設計書パス + 計画書ルール return value のルール文書パス
+**入力**: Phase 2 で確定した設計書パス（1 件以上）・要件定義書パス（あれば）+ 計画書ルール return value のルール文書パス
 **出力**: `{output_dir}/{feature}_strategy.md`（Agent が直接書く）。orchestrator が受け取るのは成否と戦略書のパスだけ
 
 差分開発型（要件定義書・設計書が `feature_type: temporary-feature` を持つ）の場合、戦略書は既存実装と新仕様の不一致と、各々への処置（修正 / 削除 / 新規作成 / 統合 / 分割）を含む。要件定義書を入力に含めるのは、差分開発型かどうかの判定と新旧の突き合わせに要るためである。
