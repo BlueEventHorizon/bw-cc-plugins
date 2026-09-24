@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-24T08:11:05Z
+  generated_at: 2026-09-24T12:05:46Z
   file_count: 38
 
 docs:
@@ -681,34 +681,35 @@ docs:
       - format consistency
       - completeness check
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: Plan Workflow Design
-    purpose: Defines the workflow and design for the start-plan orchestrator skill, which creates plan documents from design specifications through context collection, strategy formulation, task extraction, plan creation, AI review, and user approval.
+    title: DES-019 Forge Plan Creation Workflow Design
+    purpose: Specifies the design of the forge plan creation workflow, orchestrating document collection, implementation strategy formulation, task extraction, plan creation, AI review, and human approval.
     content_details:
-      - "Orchestrator phases: prerequisites, context collection, strategy formulation, plan creation, AI review"
-      - Agent delegation to plan-strategist agent for implementation strategy formulation
-      - Implementation strategy formulation using plan-strategist agent with self-directed document queries
-      - Task extraction and splitting based on implementation strategy phase division
-      - Plan document creation with traceability matrix (requirements → design → task mapping)
-      - "Differential development support: handling existing implementation and legacy specification"
-      - "Design principles: agent execution unit division, traceability, existing asset confirmation for update mode"
-      - Complete workflow flowchart from context collection through AI review to spec index update and commit
+      - Five-phase orchestration workflow (context collection, document reading, strategy formulation, plan creation, AI review)
+      - Dual-Agent pattern for specs/rules collection and strategy formulation via query-db agents
+      - strategy_exchange.py script with open/request-path/finish/check subcommands for Agent request/response handoff
+      - "Task granularity rules: 5-10 items, Agent-executable units, build success as completion condition"
+      - Traceability matrix linking requirement IDs to design IDs to task IDs for validation
+      - Strategy refinement with user approval and iterative correction loop
+      - Update mode workflow for existing plan document checking and delta requirement handling
+      - Agent data exchange via JSON request/result files with feature and output_dir identifiers
     applicable_tasks:
-      - Understanding start-plan orchestrator workflow design
-      - Feature implementation planning via plan workflow
-      - Task extraction and splitting strategy definition
-      - Implementation strategy formulation process
-      - Plan document creation and validation
+      - Implementation strategy formulation for new features
+      - Plan document creation and workflow execution
+      - Task extraction and granularity validation
+      - Phase-based task sequencing and prioritization
+      - Multi-Agent orchestration design and coordination
+      - Feature requirement to implementation task mapping
+      - Incremental feature modification planning in update mode
     keywords:
-      - start-plan
       - plan-strategist
-      - implementation strategy
-      - task extraction
-      - feature strategy
-      - context collection
-      - traceability matrix
-      - strategy formulation
-      - phase division
-      - agent orchestration
+      - strategy-exchange
+      - orchestrator
+      - task-granularity
+      - traceability-matrix
+      - phase-decomposition
+      - start-plan
+      - forge
+      - feature-planning
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: DES-022 Parallel Agent Output Contract Pattern Design
     purpose: Defines the output contract pattern for parallel Agent execution, preventing race conditions by requiring agents to return results via return values rather than writing to shared resources

@@ -15,7 +15,7 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
    - reviewer: Read, Grep, Glob, Bash（read-only、対象を自分で探索するため Grep/Glob を持つ）
    - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
    - rules-query-worker: Read, Grep, Glob（read-only、内蔵 ToC と文書の Read だけで完結するため Bash を持たない）
-   - plan-strategist: Read, Grep, Glob, Skill（既存の仕様書・ルールを query スキルで自ら検索するため Skill を持つ。仕様書・コードを書き換えないため Edit / Write を持たない）
+   - plan-strategist: Read, Grep, Glob, Skill, Bash, Write, Edit（既存の仕様書・ルールを query スキルで検索するため Skill、受け渡しの script を呼ぶため Bash、戦略書を書くため Write / Edit を持つ。書いてよいのは戦略書 1 ファイルだけという制約は agent 定義が持つ）
    - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
@@ -41,7 +41,7 @@ EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'evaluator': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'rules-query-worker': frozenset({'Read', 'Grep', 'Glob'}),
-    'plan-strategist': frozenset({'Read', 'Grep', 'Glob', 'Skill'}),
+    'plan-strategist': frozenset({'Read', 'Grep', 'Glob', 'Skill', 'Bash', 'Write', 'Edit'}),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
