@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-23T22:55:22Z
+  generated_at: 2026-09-24T01:11:42Z
   file_count: 38
 
 docs:
@@ -681,39 +681,32 @@ docs:
       - format consistency
       - completeness check
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
-    title: DES-019 forge Plan Creation Workflow Design
-    purpose: "Specifies the workflow for forge's plan creation skill, covering context gathering, implementation strategy formulation, task extraction and division, plan document generation, AI review, and phase-wise orchestration patterns"
+    title: DES-019 forge Plan Workflow Design
+    purpose: Specifies the plan creation workflow in forge. Defines orchestrator phases, agent responsibilities, and task extraction procedures from design documents and specifications.
     content_details:
-      - Orchestrator pattern delegation (specs agent, rules agent, plan-strategist custom agent)
-      - Mandatory prerequisite confirmation phase with .doc_structure.yaml and feature name confirmation
-      - Phase 1 context collection via /forge:query-db-specs and /forge:query-db-rules
-      - Phase 3 implementation strategy formulation with plan-strategist Agent and user approval
-      - Phase 4 task extraction and division based on strategy phases using write_plan.py
-      - Phase 5 AI review execution with /forge:review plan --auto
-      - Task granularity constraints (single Agent execution unit, 5-10 items, build success completion)
-      - Mandatory traceability matrix ensuring requirement-design-task correspondence
-      - Update mode verification of existing plan documents and unstarted tasks
-      - Downstream workflow integration with /forge:start-implement for task execution
+      - Plan creation workflow orchestrator architecture (context collection → strategy → task extraction → plan creation → review)
+      - "Three agent delegations: specs agent, rules agent, plan-strategist custom agent"
+      - Phase 3 implementation strategy decision procedure via plan-strategist agent
+      - Task extraction from implementation strategy with phase division
+      - Traceability matrix requirements (requirement ID → design ID → task ID mapping)
+      - Agent execution unit task granularity (5-10 tasks, single agent completes one task)
+      - Task completion conditions (build success as minimum standard)
+      - Update mode existing asset confirmation procedure
     applicable_tasks:
-      - Plan creation workflow design
-      - Implementation strategy formulation process specification
-      - Task extraction and division strategy definition
-      - Plan document generation procedure design
-      - Agent orchestration pattern specification
-      - Workflow phase integration and handoff design
-      - AI review integration into plan workflow
-      - Traceability requirement definition for plan tasks
+      - Planning phase setup and orchestration
+      - Implementation strategy formulation from design documents
+      - Feature planning and task breakdown
+      - Planning workflow configuration
+      - Feature implementation scheduling
     keywords:
-      - plan creation
       - orchestrator
+      - plan-strategist agent
       - strategy formulation
       - task extraction
-      - phase workflow
-      - Agent delegation
       - traceability matrix
-      - write_plan.py
-      - start-plan
-      - plan-strategist
+      - feature planning
+      - phase division
+      - implementation strategy
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
     title: DES-022 Parallel Agent Output Contract Pattern Design
     purpose: Defines the output contract pattern for parallel Agent execution, preventing race conditions by requiring agents to return results via return values rather than writing to shared resources

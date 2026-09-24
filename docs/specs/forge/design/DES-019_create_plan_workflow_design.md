@@ -10,11 +10,11 @@
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
 以下の工程を Agent に委譲している:
 
-| 工程                             | Agent                                                                                                                                        |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 要件定義書・設計書・ルールの収集 | 汎用 Agent (general-purpose)                                                                                                                 |
-| 実装戦略の策定                   | カスタム Agent `forge:plan-strategist`（手順は [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md)） |
-| AIレビュー                       | `/forge:review plan`                                                                                                                         |
+| 工程                             | Agent                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| 要件定義書・設計書・ルールの収集 | 汎用 Agent (general-purpose)                                                        |
+| 実装戦略の策定                   | カスタム Agent `forge:plan-strategist`（役割・制約・手順・出力を 1 ファイルで持つ） |
+| AIレビュー                       | `/forge:review plan`                                                                |
 
 実装戦略の策定をカスタム Agent とするのは、read-only を frontmatter の `tools` で担保するためである。
 この Agent は差分開発で既存実装と旧仕様を読むが、実装期間中は旧仕様を書き換えてはならない
@@ -43,7 +43,7 @@ flowchart TD
     READ --> STRATEGY_PHASE
 
     subgraph STRATEGY_PHASE["Phase 3: 実装戦略策定"]
-        SA["forge:plan-strategist<br>strategy_formulation_spec.md"] --> DRAFT["return value<br>（戦略書 markdown）"]
+        SA["forge:plan-strategist"] --> DRAFT["return value<br>（戦略書 markdown）"]
         DRAFT --> APPROVAL{"ユーザー承認?"}
         APPROVAL -->|"修正要望"| SA
         APPROVAL -->|"承認"| COPY["output_dir に配置<br>feature_strategy.md"]
@@ -187,10 +187,10 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                                                    | 説明                                         |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                 | スキル仕様                                   |
-| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                   | 実装戦略 Agent の役割・制約・必読文書        |
-| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略の策定手順・出力テンプレート         |
-| [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
-| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |
+| ファイル                                                                                  | 説明                                         |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)               | スキル仕様                                   |
+| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                 | 実装戦略 Agent の役割・制約・策定手順・出力  |
+| [strategy_principles_spec.md](../../../../plugins/forge/docs/strategy_principles_spec.md) | 実装戦略書の定義と原則                       |
+| [DES-074](DES-074_plan_format_design.md)                                                  | 計画書 script 実装契約（`write_plan.py` 等） |
+| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)         | 計画書作成原則ガイド                         |

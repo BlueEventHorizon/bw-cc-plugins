@@ -10,7 +10,7 @@ P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重�
 
 | priority | path                                                                                 | doc_type   | 役割                                                                                                                                                    |
 | -------- | ------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1       | [spec_design_boundary_spec.md](../spec_design_boundary_spec.md)                      | principles | 要件と設計の境界 (What/How 境界、§4 カテゴリ別ガイド / §6 グレーゾーン、規範本体 + 重大度カタログ)                                                      |
+| P1       | [spec_design_boundary_spec.md](../spec_design_boundary_spec.md)                      | principles | 要件と設計の境界 (What/How 境界、§3 カテゴリ別ガイド / §5 グレーゾーン許容範囲、規範本体 + 重大度カタログ)                                              |
 | P1       | [design_principles_spec.md](../design_principles_spec.md)                            | principles | 設計原則 (定量目標の扱い / よくある失敗パターン / 記載すべき内容、規範本体 + 重大度カタログ)                                                            |
 | P1       | [design_format.md](../design_format.md)                                              | format     | 設計書フォーマット (追加 feature 用 frontmatter `feature_type: temporary-feature` の定義。severity は `design_principles_spec.md` 重大度カタログを参照) |
 | P1       | [additive_development_spec.md](../additive_development_spec.md)                      | principles | 追加開発ワークフロー (`feature_type: temporary-feature` 文書の判定基準 §1 / 旧仕様の置き換え §2 / P2 矛盾除外規定の前提を提供)                          |
@@ -29,7 +29,7 @@ P1 で照合すべき委譲先文書一覧。各文書は「規範本体 + 重�
 
 種別ごとに「どの委譲先文書から先に読むか」の順序。規範本体は再掲しない:
 
-1. **P1 ルール合致**: [spec_design_boundary_spec.md](../spec_design_boundary_spec.md) (What/How 境界 / §4 カテゴリ別ガイド) → [design_principles_spec.md](../design_principles_spec.md) (設計原則 / 失敗パターン) → [design_format.md](../design_format.md) (追加 feature 用 frontmatter) → プロジェクト固有アーキテクチャ規約 (`(query-db-rules: "設計レビューに関するプロジェクト固有のアーキテクチャ・設計規約")` のうち存在するもの) の順で対象設計書と照合する
+1. **P1 ルール合致**: [spec_design_boundary_spec.md](../spec_design_boundary_spec.md) (What/How 境界 / §3 カテゴリ別ガイド) → [design_principles_spec.md](../design_principles_spec.md) (設計原則 / 失敗パターン) → [design_format.md](../design_format.md) (追加 feature 用 frontmatter) → プロジェクト固有アーキテクチャ規約 (`(query-db-rules: "設計レビューに関するプロジェクト固有のアーキテクチャ・設計規約")` のうち存在するもの) の順で対象設計書と照合する
    - **追加 feature 文書の frontmatter 必須**: 対象が追加 feature の設計書 (判定基準: [additive_development_spec.md](../additive_development_spec.md) §1。判定は変更の実質 [分離管理価値・旧仕様との衝突リスク] で行い、文書操作の形式 [新規作成か追記か] では判定しない。**既存仕様が存在しない初回立ち上げ・分離して管理する価値のない軽微な追記・修正は対象外** = false positive 防止) の場合、`design_format.md`「追加 feature 用 frontmatter」が定義する `feature_type: temporary-feature` frontmatter が文書先頭に付与されているか照合する。欠如時の severity は `design_principles_spec.md` 重大度カタログに従う (本ファイルは severity を宣言しない)
    - **文書参照**: [document_style_guide.md](../document_style_guide.md) §5 / §8 と照合し、対象設計書が他文書へ張る参照の記法を確認する。severity は [review_priorities_spec.md](../review_priorities_spec.md) §2.3 重大度カタログ（文書参照）に従う
    - **ADR 運用**: target_files に ADR (`ADR-*.md`) が含まれる場合、[adr_format.md](../adr_format.md) の必須構成 (コンテキスト / 決定 / 検討した代替案)・節の構成 (`## 1.`〜`## 4.` の 4 節、`###` 小節は親節の番号を継ぐ)・失効マーカーの記法と照合する。あわせて、別 ADR が覆した決定に失効マーカーが付いているか、棄却理由に依拠する前提が書かれているかを確認する。また、対象設計書の変更が設計判断の転換 (選択肢 A → B) を含むのに、対応する ADR の新規作成・更新が伴わない場合も指摘する。severity はいずれも `adr_principles_spec.md` 重大度カタログに従う
