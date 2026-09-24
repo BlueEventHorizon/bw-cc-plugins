@@ -1,13 +1,14 @@
 # ToC checksums for key: rules
 # Auto-generated - do not edit
-generated_at: 2026-09-23T14:29:51Z
-file_count: 10
+generated_at: 2026-09-24T09:45:26Z
+file_count: 11
 checksums:
+  docs/rules/agent_data_exchange_rules.md: eccb938b1f931b73149070712cee213f7263f2d7435afb65124018e600dae2cb
   docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
   docs/rules/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
   docs/rules/document_writing_rules.md: be534e1075f6d6e90189058c13ee65f5da7a4b0e83987198a8e94d151572df1f
   docs/rules/forge_doc_access_principle.md: 19548891135917407697ebe037a89886961ced9d1f9e92cdd71079ddbf9407bf
-  docs/rules/forge_document_type_roles.md: 96f71a090a461309a0cd56ad20226142e28bce62e564910a1ea109ca7c4e21c3
+  docs/rules/forge_document_type_roles.md: c18e0f1699e15dfec756cb86498990d57856dee5dbf5a5b518adcac3f9ec9cba
   docs/rules/implementation_guidelines.md: 85a94b187b734184eed6f401c7f9f9465e09db8d6ab713b3dbaff5ed866d1c64
   docs/rules/script_error_output_rules.md: 599126a0033d941a78f641a30d853d5d196c6817064fcad72b75074126b3150f
   docs/rules/skill_authoring_notes.md: c92d159e5393cae5917d5908e650fb77f7a7c979c0636cc25b83337c2ad6224d

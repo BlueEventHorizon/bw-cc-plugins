@@ -5,10 +5,37 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-23T14:29:51Z
-  file_count: 10
+  generated_at: 2026-09-24T09:45:26Z
+  file_count: 11
 
 docs:
+  docs/rules/agent_data_exchange_rules.md:
+    title: Agent Data Exchange Rules
+    purpose: Defines rules for exchanging transient data between SKILL and custom Agent during processing cycle, ensuring data integrity regardless of size
+    content_details:
+      - Identification values only - script generates, AI passes unchanged
+      - Data written by script, not AI - values not generated or summarized
+      - Path-based reading - reader obtains absolute path and reads directly
+      - Value integrity - no omission, transformation, or fragmentation
+      - Meaning in definition - SKILL/agent definition holds field semantics
+      - Deterministic writing - complete before writing, no overwriting
+      - Exit values for success/failure - normal is zero, errors as closed set
+      - No runtime format validation
+      - Absolute paths allowed for transient data
+    applicable_tasks:
+      - Designing inter-Agent communication protocols
+      - Implementing data exchange between SKILL and Agent
+      - Reviewing Agent data handling for integrity
+      - Planning custom Agent development
+      - Troubleshooting data corruption in Agent calls
+    keywords:
+      - agent
+      - SKILL
+      - identification value
+      - script
+      - exit value
+      - JSON
+      - path-based reading
   docs/rules/cli_output_formatting.md:
     title: CLI Output Formatting Guidelines
     purpose: Defines color-coding conventions and output patterns for shell scripts and CLI tools
@@ -124,31 +151,31 @@ docs:
       - document-escalation
       - session_dir
   docs/rules/forge_document_type_roles.md:
-    title: forge Distribution Document Types and Roles
-    purpose: Defines file type conventions for forge development documents, specifying which document types (*_format.md, *_principles_spec.md, SKILL.md, review_criteria_*.md) should contain specific content and responsibility allocation
+    title: Document Types and Roles in forge Distribution
+    purpose: Defines development conventions for forge repository files, specifying which document type contains structure/format, principles, implementation procedures, and review criteria
     content_details:
-      - File type classifications and content responsibility matrix
-      - "Format specification role: structure, templates, identifiers, naming systems"
-      - "Principles specification role: principles, norms, prohibitions, decision criteria, severity catalogs"
-      - "SKILL document role: flow, phases, execution steps, branching logic"
-      - "Review criteria files: ordering and delegation lists"
-      - One-document-one-type principle for clarity
-      - Single source of truth requirement for principles
+      - Format documents (*_format.md) - define structure, templates, identifier systems, naming conventions
+      - Principles documents (*_principles_spec.md) - establish norms, rules, prohibitions, judgment criteria, severity catalogs
+      - SKILL documents - describe flows, phases, execution steps, branching logic
+      - Review criteria documents (criteria/review_criteria_*.md) - define matching order, delegation lists, review perspectives
+      - Single-type convention - maintain separation between norms and procedures
+      - Centralized principle documentation - avoid duplication across SKILL and criteria files
+      - Suffix-based classification - files with suffixes follow their base form conventions
     applicable_tasks:
-      - forge development rule compliance
-      - Documentation structure and template design
-      - Rule document organization and authoring
-      - SKILL document creation
-      - Review criteria definition
+      - Designing forge documentation structure
+      - Creating new forge development guidelines
+      - Reviewing forge development documents for conformance
+      - Establishing document categorization for principles vs procedures
+      - Planning review criteria documentation
     keywords:
-      - forge
-      - document type
-      - format spec
-      - principles spec
-      - SKILL
+      - format.md
+      - principles_spec.md
+      - SKILL.md
       - review criteria
-      - template
-      - naming convention
+      - document type
+      - principles
+      - procedures
+      - naming conventions
   docs/rules/implementation_guidelines.md:
     title: Implementation Guidelines
     purpose: Defines implementation rules for plugin scripts, SKILL.md code, testing requirements, file placement, code quality standards, and version management procedures
