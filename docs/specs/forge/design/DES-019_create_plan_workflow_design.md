@@ -16,10 +16,11 @@
 | 実装戦略の策定                   | カスタム Agent `forge:plan-strategist`（役割・制約・手順・出力を 1 ファイルで持つ） |
 | AIレビュー                       | `/forge:review plan`                                                                |
 
-実装戦略の策定をカスタム Agent とするのは、read-only を frontmatter の `tools` で担保するためである。
-この Agent は差分開発で既存実装と旧仕様を読むが、実装期間中は旧仕様を書き換えてはならない
-（[additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §3）。書き込み系ツールを持たせなければ、
-この禁止は指示ではなく構造として成立する。
+実装戦略の策定をカスタム Agent とするのは、手順と制約を Agent の定義に固定するためである。
+
+この Agent は、渡された要件定義書・設計書に加えて、**関連する既存の仕様書を query スキル（`/forge:query-db-specs` / `/forge:query-db-rules`）で自ら検索して読み、既存コードも読む**。渡されるのは当該 feature の文書だけであり、既存の仕様とコードを読まなければ戦略は立てられないためである。そのため `tools` は Read / Grep / Glob / Skill とする。
+
+差分開発で既存実装と旧仕様を読むが、実装期間中は旧仕様を書き換えてはならない（[additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §3）。Edit / Write を持たせないことで、仕様書・コードを書き換える経路を持たない。検索に伴う索引の更新は query スキルの側の処理であり、その許可は利用者に申請される。
 
 ---
 
