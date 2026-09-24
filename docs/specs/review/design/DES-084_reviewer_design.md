@@ -1,7 +1,7 @@
 ---
 feature_type: temporary-feature
 feature_note:
-  - 本設計書が、本設計書の対象範囲における現在の設計である。旧設計書の記述は現在の設計ではなく、矛盾の有無に関わらず本設計書へ置き換わっている。本設計書と対応する追加 feature 要件定義書（[REQ-027](../requirements/REQ-027_reviewer.md)）が食い違う場合は要件定義書に従う。
+  - 本設計書が、本設計書の対象範囲における現在の設計である。旧設計書の記述は現在の設計ではなく、矛盾の有無に関わらず本設計書へ置き換わっている。本設計書と対応する追加 feature 要件定義書（[REQ-029](../requirements/REQ-029_review_exchange.md)・[REQ-027](../requirements/REQ-027_reviewer.md)）が食い違う場合は要件定義書に従う。
   - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリへ切り出すこと。
   - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
   - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
@@ -11,15 +11,15 @@ feature_note:
 
 ## 1. 概要
 
-[REQ-027](../requirements/REQ-027_reviewer.md) を実現する設計を定める。
+[REQ-029](../requirements/REQ-029_review_exchange.md) の受け渡しと本体の仕事、および [REQ-027](../requirements/REQ-027_reviewer.md) を実現する設計を定める。
 
 本書が持つのは次の 3 つである。
 
-| 範囲         | 内容                                                                                                                                                                                                     |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 受け渡し機構 | `review_id`・`round_number` の規約と、依頼・所見を保持し、検証済みのパスを返す script。**evaluator との受け渡しもこの機構による**（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207） |
-| シーケンス   | 依頼の保持から、所見と評価が結び付くまでの流れ                                                                                                                                                           |
-| reviewer     | target 種別の判定とレビュー観点の選択、所見の作り方                                                                                                                                                      |
+| 範囲         | 内容                                                                                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 受け渡し機構 | `review_id`・`round_number` の規約と、依頼・所見を保持し、検証済みのパスを返す script。**evaluator との受け渡しもこの機構による**（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302） |
+| シーケンス   | 依頼の保持から、所見と評価が結び付くまでの流れ                                                                                                                                                     |
+| reviewer     | target 種別の判定とレビュー観点の選択、所見の作り方                                                                                                                                                |
 
 evaluator 自身の設計と、本体が評価をどう扱うかは [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
@@ -27,36 +27,50 @@ evaluator 自身の設計と、本体が評価をどう扱うかは [DES-083](DE
 
 ```mermaid
 sequenceDiagram
+    actor Human as 利用者
     participant Body as review 本体
+    participant B as バックエンド
     participant R as reviewer
     participant E as evaluator
 
-    Body->>Body: review_id を生成し、第1ラウンドの依頼を保持する
+    Body->>B: 可用性検査
+    B-->>Body: available, missing, retains_context
+    Body->>Body: start_review.py で review_id を生成し、第 1 ラウンドの依頼を公開する
     loop ラウンドごと
-        Body->>R: review_id, round_number
+        Body->>B: review_id, round_number
+        B->>R: review_id, round_number
         R->>R: 依頼の検証済みパスを得て JSON を直接読む
         R->>R: 対象を読み、target 種別を判定し、レビュー観点を適用する
         R->>R: 判断を確定させてから所見を渡す（0 件のこともある）
         R->>R: 終了の値を渡す
-        R-->>Body: 完了
+        R-->>B: 完了
+        B-->>Body: 完了
         Body->>E: review_id, round_number
         E->>E: 依頼と所見の検証済みパスを得て、2 つを直接読む
         E->>E: メタ観点を働かせて評価する
         E->>E: 判断を確定させてから評価を渡す
         E->>E: 終了の値を渡す
         E-->>Body: 完了
-        Body->>Body: 紐づけを検証して所見単位へ結び付ける
-        opt 次ラウンドへ進む
-            Body->>Body: 次ラウンドを作り、新しい round_number を得る
+        Body->>Body: link_evaluations.py で紐づけを検査する
+        alt 未参照の finding_id がある
+            Body->>Human: 未参照の一覧を報告する
+            Human-->>Body: 次の行動を決める
+        end
+        Body->>Body: 所見と評価のパスを得て直接読み、提示へ渡す
+        alt 終端に達した（所見が尽きた、または利用者が終えると決めた）
+            Body->>Body: ループを抜ける
+        else
+            Body->>Body: advance_round.py で次のラウンドを作り、新しい round_number を得る
         end
     end
+    Body->>Body: cleanup.py でそのレビューの保持物を削除する
 ```
 
-結び付けから先（振り分け・提示・修正）は本書の範囲ではない。
+提示から先（採否の確認・修正）は本書の範囲ではない。
 
 **主体間で AI が運ぶ識別値は `review_id` と `round_number` だけである。** 依頼・所見・評価は script が保持する。AI が内容を必要とするときは、script が返した絶対パスを使って JSON を直接読み、JSON 本文を script の標準出力や別主体から受け取らない。
 
-**本体も、パスを得てから読む。** 所見と評価の中身が要るときは、各 `resolve_result_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を直接読む（FNC-309、[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-209）。紐づけの検証は `link_evaluations.py` が両 JSON を内部で読んで行い、本文を標準出力へ返さない。evaluator も同じ 2 値からパスを解決し、依頼と所見を直接読む。
+**本体も、パスを得てから読む。** 所見と評価の中身が要るときは、各 `resolve_result_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を直接読む（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302）。紐づけの検証は `link_evaluations.py` が両 JSON を内部で読んで行い、本文を標準出力へ返さない。evaluator も同じ 2 値からパスを解決し、依頼と所見を直接読む。
 
 evaluator の区間（評価・紐づけの検証・結び付け）の詳細は [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
@@ -73,6 +87,7 @@ evaluator の区間（評価・紐づけの検証・結び付け）の詳細は 
 | reviewer                        | 依頼のパスを得て直接読み、対象を読み、target 種別を判定し、観点を適用して所見を渡す    | FNC-306〜309 |
 | `resolve_doc_structure.py`      | パスから文書の種別を返す                                                               | FNC-307      |
 | `reviewer.md`                   | script の呼び方、依頼の各項目の扱い、target 種別ごとに読む文書、所見として何を述べるか | FNC-301      |
+| `review/SKILL.md`               | script の呼び方、読む JSON の各項目の扱い、どの値で扱いを分けるか（§7.1）              | FNC-314      |
 
 ## 4. 受け渡し機構
 
@@ -96,16 +111,16 @@ evaluator の区間（評価・紐づけの検証・結び付け）の詳細は 
 
 **書き込み script は JSON を組み立て、パス解決 script は対象の状態を確認して絶対パスだけを返す。状態を自ら持たない。** 何が起きたかはすべて JSON に現れる。AI は返されたパスの JSON を直接読む。JSON を入力にする決定論的な機械処理は、本文を AI に返してから再入力させず、自らファイルを読む。
 
-| 要件                     | script が保証すること                                                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| FNC-302                  | `review_id` と `round_number` からラウンドの置き場を決める。AI にパスを組み立てさせない。2 値の一方でも欠ければ何も読み書きできない        |
-| FNC-303                  | 依頼の構造は script が作る。初回依頼は完成まで下書きとし、完成後に一度だけ公開する                                                         |
-| FNC-304                  | 依頼の値を同一に保持する。読み出しでは JSON 本文を再出力せず、そのファイルを直接読ませる                                                   |
-| FNC-305                  | ラウンドが変わっても同じ操作・同じ構成で受け付け、指定された `round_number` ごとに JSON を別のディレクトリへ置く                           |
-| FNC-309                  | 所見を 1 件ずつ受け取り、値を変形せず配列として保持する（DM-303 の `findings`）。0 件を表現できる。`finding_id` を採番する（§4.2「採番」） |
-| FNC-310                  | 上書き・修正の操作を持たない。一度書かれた所見を書き換える口を開けない                                                                     |
-| FNC-311                  | 結果を読み、終了の値が `"0"` の場合だけ絶対パスを返す。それ以外と結果が無い場合は**エラーとして報告する**                                  |
-| `forge:REQ-013` FNC-1322 | reviewer に渡す script が `evaluate_result.json` へ書けない                                                                                |
+| 要件                     | script が保証すること                                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FNC-302                  | `review_id` と `round_number` からラウンドの置き場を決める。AI にパスを組み立てさせない。2 値の一方でも欠ければ何も読み書きできない                                 |
+| FNC-303                  | 依頼の構造は script が作る。初回依頼は完成まで下書きとし、完成後に一度だけ公開する                                                                                  |
+| FNC-304                  | 依頼の値を同一に保持する。読み出しでは JSON 本文を再出力せず、そのファイルを直接読ませる                                                                            |
+| FNC-305                  | ラウンドが変わっても同じ操作・同じ構成で受け付け、指定された `round_number` ごとに JSON を別のディレクトリへ置く                                                    |
+| FNC-309                  | 所見を 1 件ずつ受け取り、値を変形せず配列として保持する（REQ-029 DM-305 の `findings`）。0 件を表現できる。`finding_id` を採番する（§4.2「採番」、REQ-029 FNC-313） |
+| FNC-310                  | 上書き・修正の操作を持たない。一度書かれた所見を書き換える口を開けない                                                                                              |
+| FNC-311                  | 結果を読み、終了の値が `"0"` の場合だけ絶対パスを返す。それ以外と結果が無い場合は**エラーとして報告する**                                                           |
+| `forge:REQ-013` FNC-1322 | reviewer に渡す script が `evaluate_result.json` へ書けない                                                                                                         |
 
 最下段から 2 行目が、結果パス解決の形を決める。判定材料は終了の値だけであり完全に決定論的なので、AI の判断を挟む理由がない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。**終了の値をそのまま返して呼び出し側に判定させる形を取らない**——判定が AI 側にあると、確認を飛ばして次へ進む経路が残り、機構ではなく手順が正しさを担うことになる。
 
@@ -138,7 +153,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 | `scripts/reviewer/`  | `review_result.json`                          | 本節                                                    |
 | `scripts/evaluator/` | `evaluate_result.json`                        | [DES-083](DES-083_evaluator_perspective_design.md) §7.3 |
 
-**呼ぶ主体は置き場ではなく、各 script の欄が示す。** 呼ぶ主体でディレクトリを分けると、読み取り専用の resolver を複数の主体が呼ぶ場面で破綻する——evaluator は依頼と所見を読むため、review 側と reviewer 側の resolver を呼ぶ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207）。
+**呼ぶ主体は置き場ではなく、各 script の欄が示す。** 呼ぶ主体でディレクトリを分けると、読み取り専用の resolver を複数の主体が呼ぶ場面で破綻する——evaluator は依頼と所見を読むため、review 側と reviewer 側の resolver を呼ぶ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) DM-202）。
 
 **守るべき隔離は書き込みである。** 要件が課しているのは reviewer が評価のファイルへ書けないこと（`forge:REQ-013` FNC-1322）であり、読み取りは制限されていない。resolver は状態を変えないため、複数の主体が呼んでも隔離は破れない。**同じ resolver を主体ごとに複製しない。**
 
@@ -164,7 +179,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 | `advance_round.py`        | **次のラウンドへ進める。** 記録済みの対応を確定し、次のラウンドのディレクトリ・採番基点・公開済み依頼を原子的に作る | 本体     | `<project_root> <review_id> <round_number>`                                                    | 次の `round_number`           | 指定ラウンドが正常に終えていない／全所見の対応が揃っていない              |
 | `cleanup.py`              | **レビューの痕跡を消す。** ディレクトリを削除する。無くても成功とする                                               | 本体     | `<project_root> <review_id>`                                                                   | なし                          | 削除できない                                                              |
 
-**依頼の resolver は evaluator 側からも使われる。** evaluator も同じ `review_request.json` を読むため（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-207）、`scripts/evaluator/resolve_input_paths.py` が本 script を内部で呼ぶ（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。主体ごとに複製しない。
+**依頼の resolver は evaluator 側からも使われる。** evaluator も同じ `review_request.json` を読むため（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) DM-202）、`scripts/evaluator/resolve_input_paths.py` が本 script を内部で呼ぶ（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。主体ごとに複製しない。
 
 #### `scripts/reviewer/`
 
@@ -174,12 +189,12 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------- |
 | `add_finding.py`         | **`review_result.json` へ所見を 1 件積む。** そのラウンドの採番基点から続けて `finding_id` を採番する（§4.2「採番」） | **reviewer のみ** | `<project_root> <review_id> <round_number> --severity --location` / 標準入力: 所見本文 | なし                          | 既に終了の値がある（書き終えた後に足せない）      |
 | `finish.py`              | **正常に書き終えたことを示す。** 終了の値 `"0"` を書く                                                                | **reviewer のみ** | `<project_root> <review_id> <round_number>`                                            | なし                          | 既に終了の値がある（二重に終えられない）          |
-| `abort.py`               | **自覚したエラーで終えたことを示す。** 定義されたエラー値を書く                                                       | **reviewer のみ** | `<project_root> <review_id> <round_number> <エラー値>`                                 | なし                          | 定義に無い値（`2`）／既に終了の値がある           |
+| `abort.py`               | **自覚したエラーで終えたことを示す。** エラー値 `target_unreadable` を書く（REQ-027 FNC-315）                         | **reviewer のみ** | `<project_root> <review_id> <round_number> <エラー値>`                                 | なし                          | 定義に無い値（`2`）／既に終了の値がある           |
 | `resolve_result_path.py` | **`review_result.json` のパスを返す。** 終了の値が `"0"` の場合だけ返し、JSON 本文は返さない                          | 本体              | `<project_root> <review_id> <round_number>`                                            | `path` だけを持つ JSON object | 終了の値が `"0"` でない／結果が無い／識別値が不正 |
 
 **所見の resolver は本体が呼び、evaluator 側からも使われる。** evaluator は `resolve_input_paths.py` を通して本 script の結果を受け取る（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。reviewer は自分が書いた所見を読み返さないため、この口を渡さない。
 
-`scripts/evaluator/` 配下の script は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。本節の原則（1 操作 1 script・第 1 引数は `review_id`・第 2 引数は `round_number`・終了コード）はそちらにも及ぶ。
+`scripts/evaluator/` 配下の script は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。本節の原則（1 操作 1 script・第 1 引数はプロジェクトルート、続いて `review_id`・`round_number`・終了コード）はそちらにも及ぶ。
 
 `start_review.py` の標準出力は `review_id` と最初の `round_number` を持つ JSON object とする。`advance_round.py` の標準出力は次の `round_number` とする。いずれも AI は値を生成・加算せず、script の出力から得た値を後続へ渡す。
 
@@ -187,7 +202,7 @@ script 名は、単一項目の設定を `set_`、配列への追加を `add_`�
 
 #### 採番
 
-`finding_id` は script が採番する（FNC-309）。reviewer も evaluator も ID を渡さない——採番は既に書かれた実体から一意に決まる決定論的な処理であり、AI の判断が入る余地がない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。
+`finding_id` は script が採番する（REQ-029 FNC-313）。reviewer も evaluator も ID を渡さない——採番は既に書かれた実体から一意に決まる決定論的な処理であり、AI の判断が入る余地がない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。
 
 **1 つのレビューで 1 本の連番とする。** ラウンドが変わっても振り直さず、前ラウンドまでに採番された最大値の次から続ける。ラウンドごとに 1 へ戻すと、第 2 ラウンドの依頼に載る `prior_round` の `finding_id` と、そのラウンドで新たに採番される `finding_id` が、同じ値で別の所見を指す。レビュー全体を対象とする報告でも同じ衝突が起きる。
 
@@ -280,7 +295,7 @@ reviewer と evaluator のパス解決・書き込み script は、いずれも�
 
 reviewer は所見を書き出し終えたら**終了の値を渡す**（FNC-311）。所見が 0 件でも渡す。evaluator も同様である。
 
-終了の値は結果 JSON の 1 フィールドであり（DM-303 の `exit`）、別の記録機構ではない。script はそれを書き、読んで報告するだけで、状態を自ら持たない。
+終了の値は結果 JSON の 1 フィールドであり（REQ-029 DM-305 の `exit`）、別の記録機構ではない。script はそれを書き、読んで報告するだけで、状態を自ら持たない。
 
 成否の判定は FNC-311 が定める。本節が定めるのは、**その状態でどの操作がどう振る舞うか**である。
 
@@ -322,7 +337,7 @@ script が組み立てる以上、形が壊れるのはバグである（FNC-303
 
 `resolve_request_path.py` が公開済みの依頼だけを返すことと、結果の resolver 2 本が結果 JSON を解析して `exit` を確認することは、一般的な JSON schema の検証ではない。前者は公開状態、後者は FNC-311 の成否状態を判定するために必要な最小限の読み取りである。
 
-検査が要るのは、**script が組み立てても自動的には満たされないもの**だけである。所見と評価の紐づけ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-203）がこれにあたり、[DES-083](DES-083_evaluator_perspective_design.md) が持つ。
+検査が要るのは、**script が組み立てても自動的には満たされないもの**だけである。所見と評価の紐づけ（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-203）がこれにあたり、[DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
 ## 5. 保持する構造
 
@@ -345,7 +360,7 @@ script が組み立てる以上、形が壊れるのはバグである（FNC-303
 }
 ```
 
-`targets` の `kind` が形を示す（DM-301 の「どの形であるかが判別できること」）。
+`targets` の `kind` が形を示す（REQ-029 DM-301）。
 
 | `kind`     | 持つもの                                                                    |
 | ---------- | --------------------------------------------------------------------------- |
@@ -375,11 +390,11 @@ script が組み立てる以上、形が壊れるのはバグである（FNC-303
 }
 ```
 
-`finding_id` は script が採番する（§4.2「採番」）——reviewer は ID を渡さず、第 2 ラウンド以降は 1 から始まらない。`location` は DM-302 が定めるとおり文字列であり、分解せずそのまま保持する——**script は位置を解釈しない**。行番号が修正の時点で有効かは、修正する側が対象を読み直して確かめる（DM-302）。
+`finding_id` は script が採番する（§4.2「採番」）——reviewer は ID を渡さず、第 2 ラウンド以降は 1 から始まらない。`location` は REQ-029 DM-304 が定めるとおり文字列であり、分解せずそのまま保持する——**script は位置を解釈しない**。行番号が修正の時点で有効かは、修正する側が対象を読み直して確かめる（DM-304）。
 
 ### 5.3 reviewer の出力ファイル `review_result.json`
 
-`review_result.json` は、所見の配列と終了の値を 1 つの構造として保持する（DM-303）。
+`review_result.json` は、所見の配列と終了の値を 1 つの構造として保持する（REQ-029 DM-305）。
 
 ```json
 {
@@ -420,20 +435,26 @@ script が組み立てる以上、形が壊れるのはバグである（FNC-303
 
 ### 6.3 target 種別を判定する
 
-**先に設定を引き、決まらないものだけファイルを見る。**
+**先に設定を引いて種別を決め、決まらないものと細分が要るものだけファイルを読む。**
 
 ```mermaid
 flowchart TB
     A["対象 1 件"] --> B["resolve_doc_structure.py に問う"]
-    B --> C{"target 種別が返るか"}
-    C -->|"返る"| D["その target 種別とする"]
-    C -->|"返らない"| E["ファイルを読む"]
-    E --> F{"ソースコードか"}
-    F -->|"はい"| G["code。import 等から UI に関わるなら uxui"]
-    F -->|"いいえ"| H["判定できない旨を所見にする"]
+    B --> C{"種別が返るか"}
+    C -->|"plan"| D["plan とする"]
+    C -->|"requirement / design"| E["ファイルを読む"]
+    E --> F{"UI を扱う文書か"}
+    F -->|"はい"| G["uxui とする"]
+    F -->|"いいえ"| H["返った種別とする"]
+    C -->|"返らない"| I["ファイルを読む"]
+    I --> J{"ソースコードか"}
+    J -->|"はい"| K["code とする"]
+    J -->|"いいえ"| L["判定できない旨を所見にする"]
 ```
 
-`resolve_doc_structure.py` は `.doc_structure.yaml` の宣言から `design` / `plan` / `requirement` / `rule` を返す。**改修して、パスを与えて種別を返す口を設ける**——同 script が既に同ファイルの解決を担っており、別 script にすると設定を解釈する箇所が 2 つになる。
+`resolve_doc_structure.py` は `.doc_structure.yaml` の specs の宣言から `design` / `plan` / `requirement` を返す。**改修して、パスを与えて種別を返す口を設ける**——同 script が既に同ファイルの解決を担っており、別 script にすると設定を解釈する箇所が 2 つになる。
+
+**uxui は設定に区分を持たない。** UI を扱う文書（デザイントークン・UI コンポーネント・画面・UX 評価、設計書の UI 設計）は requirement または design の置き場にあるため、設定で大分類を得た後にファイルを読んで見分ける（REQ-027 FNC-307）。
 
 設定にも実体にも当たらずに、名前だけで target 種別を当てない。
 
@@ -459,9 +480,12 @@ flowchart TB
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 依頼       | `start_review.py` へ必須項目を渡して `review_id` と最初の `round_number` を受け取る。任意の `focus` / `scope` は `set_request_text.py` へ 1 項目ずつ、`references` は `add_reference.py` へパス配列を、同じ 2 値とともに渡す。最後に `finish_request.py` で公開する。`references` の値は `/forge:query-db-rules` / `/forge:query-db-specs` の結果を用いる |
 | 起動       | reviewer を `review_id` と `round_number` で起動する。続けて evaluator を同じ 2 値で起動する。両者の script は指定されたラウンドを読む                                                                                                                                                                                                                    |
-| 結果の読み | evaluator の終了後、`link_evaluations.py` で紐づけを検証する。所見と評価の中身は、各 `resolve_result_path.py` が返したパスの JSON をそれぞれ Read して得る（FNC-309・[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-209）                                                                                                                |
+| 結果の読み | evaluator の終了後、`link_evaluations.py` で紐づけを検証する。所見と評価の中身は、各 `resolve_result_path.py` が返したパスの JSON をそれぞれ Read して得る（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302）                                                                                                                               |
 | 次ラウンド | 対応済みの `finding_id` と同じ 2 値を `add_prior_handled.py` へ渡す。対応しない所見も `add_prior_unhandled.py` へ 1 件ずつ理由とともに渡す。最後に `advance_round.py` を呼び、返された次の `round_number` で再び起動する。依頼の形は変えない（FNC-305）                                                                                                   |
-| 片付け     | レビューが終わったとき、`review_id` のディレクトリを片付ける（§4.3）                                                                                                                                                                                                                                                                                      |
+| 終端       | そのラウンドの `review_result.json` の `findings` が空なら、確認せずに終端とする。所見が残っていて、本体がすべて軽微で対応不要と判断した場合は、利用者へ終えるかを確認する。終えると答えた場合だけ終端とし、それ以外は次ラウンドへ進む。終端に達したら「削除」の段へ進む（REQ-029 FNC-318）                                                               |
+| 削除       | レビューが終わったとき、`review_id` のディレクトリを削除する（§4.3、REQ-029 FNC-302）                                                                                                                                                                                                                                                                     |
+
+**本体は単独で打ち切らない。** 所見が残っている限り、終えるかを決めるのは利用者である（REQ-029 FNC-318）。往復の回数で打ち切る上限は置かない。要件に無いためである。
 
 **確認の段を持たない。** reviewer の終了の値が `"0"` でなければ、evaluator が所見のパスを解決できず、評価に入れない（§4.4）。本体が終了の値を確かめる手順を挟むと、その手順を飛ばせば進めてしまう。手順ではなく機構で止める。
 
@@ -471,55 +495,41 @@ flowchart TB
 
 依頼の組み立てを AI が行わない。本体は値を渡すだけで、構造は script が作る（FNC-303）。
 
-### 7.1 バックエンド
+### 7.1 本体の定義が持つもの
 
-**本体は reviewer を直接起動しない。** バックエンドを経由する。バックエンドは reviewer をどう動かすか（ローカルの Agent か、常駐セッションか）を担う層であり、レビューそのものは行わない。evaluator はバックエンドを持たず、本体が直接起動する（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-210）。
+`plugins/forge/skills/review/SKILL.md` が持つ（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-314）。`reviewer.md`（§6.1）と `evaluator.md`（[DES-083](DES-083_evaluator_perspective_design.md) §4）が自分の分を持つのと同じ形である。
 
-| 項目                     | 内容                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------ |
-| 本体 → バックエンド      | `review_id` と `round_number` を渡す（FNC-302）                                                  |
-| バックエンド → reviewer  | 同じ 2 値を渡す。依頼本文を運ばない——reviewer は resolver からパスを得て自分で直接読む           |
-| バックエンド → 本体      | 完了したかどうか。**所見を解釈しない**——所見は script が保持し、成否は終了の値が表す（FNC-311）  |
-| 可用性検査               | 各バックエンドが持つ（`forge:REQ-013` FNC-1318）。本体は順序だけを名前として持つ                 |
-| `retains_context` の申告 | 各バックエンドが持つ。**ラウンド間で状態を持つかという性質**であり、依頼の運び方とは独立している |
+| 持つもの                 | 内容                                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| script の呼び方          | `scripts/review/` の全 script、所見と評価のパスを得る 2 本の `resolve_result_path.py`、`link_evaluations.py`。どの呼び出しも第 1 引数に `${CLAUDE_PROJECT_DIR}` を置く（§4.2） |
+| 読む JSON の各項目の扱い | 所見（REQ-029 DM-302）と評価（同 DM-201）の各フィールドが何を意味するか。`disposition`・`confidence`・`fix_confident` の各値を含む                                             |
+| 何を決めるか             | `disposition` で扱いを分けること（`flawed_premise` を自動修正から外す）、終端の判定（§7 の「終端」の段）                                                                       |
+
+### 7.2 バックエンド
+
+**本体は reviewer を直接起動しない。** バックエンドを経由する。バックエンドは reviewer をどう動かすか（ローカルの Agent か、常駐セッションか）を担う層であり、レビューそのものは行わない。evaluator はバックエンドを持たず、本体が直接起動する。どの仕組みで agent を動かすかは要件が定めず、設計に委ねている（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-312）。
+
+| 項目                     | 内容                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 本体 → バックエンド      | `review_id` と `round_number` を渡す（FNC-302）                                                                                                        |
+| バックエンド → reviewer  | 同じ 2 値を渡す。依頼本文を運ばない——reviewer は resolver からパスを得て自分で直接読む                                                                 |
+| バックエンド → 本体      | 完了したかどうか。**所見を解釈しない**——所見は script が保持し、成否は終了の値が表す（FNC-311）                                                        |
+| 可用性検査               | 各バックエンドが持つ（`forge:REQ-013` FNC-1318）。本体は順序だけを名前として持つ                                                                       |
+| `retains_context` の申告 | バックエンドが可用性検査の応答で返す。本体はレビュー開始前に 1 回だけ受け取り、そのレビューの間保持する。ラウンドごとに問い直さない（REQ-029 FNC-316） |
 
 `retains_context` を廃さない。依頼が `review_id` と `round_number` 経由で毎ラウンド完全に直接読めるようになっても、実行主体がラウンド間で状態を保つかどうかという性質は残る——セッションを維持するか、毎ラウンド新しく起こすかが分かれる。
 
-### 7.2 msg-review を当面使わない（暫定措置）
+### 7.3 `retains_context` は依頼の形を変えない
 
-`msg-review` は現行の実装が特定のターミナル環境に依存しており、コンテキスト永続型のバックエンドは別途新しいものを導入する。**本 feature の期間中、`msg-review` は使わない。**
+本体は `retains_context` を reviewer から取得して保持する（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-316）。**backend 名から推測しない**——バックエンド固有の事情を本体に持ち込まないため（`forge:REQ-013` FNC-1318）。
 
-| 事柄                      | 扱い                                                                 |
-| ------------------------- | -------------------------------------------------------------------- |
-| バックエンドの分岐機構    | **残す**。永続型を導入する場所として必要                             |
-| `msg-review` の可用性検査 | 常に `available: false` を返す                                       |
-| 既定の候補順              | `msg-review` を外す。指定しない限り誰も踏まない                      |
-| 明示指定されたとき        | **fail closed で失敗する**（`--backend` / `.forge.yaml` のいずれも） |
+**依頼の形も渡し方も、この値で分岐しない。** どちらの値でも、各ラウンドの依頼は `review_id` の下に残り続け、reviewer が毎ラウンド `resolve_request_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を自ら直接読む（§4.2）。本体が依頼本文を組み立て直して送る工程が消え、**本体が渡すのは 2 つの識別値だけになる**。
 
-**明示指定を黙って成功させない。** レビューしていないのに正常終了する経路を作らないためである（FNC-311 が「異常が正常として通る」ことを否定しているのと同じ理由）。既存の解決方針（明示指定は代替を選ばず fail closed）にも沿う。
+ラウンドごとの結果は独立して保持される。前ラウンドで意図的に対応しなかったものは `prior_round` が伝える（REQ-029 DM-301）。**`retains_context` が `false` の reviewer は毎回新しく起こされ、前ラウンドの所見を覚えていない**——そのため `prior_round` には理由が読める形で入っている必要がある。
 
-### 7.3 往復の形は `retains_context` で分かれる
+依頼を渡した後の扱いがこの値で分かれることはありうるが、本 feature では設計しない（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-316）。
 
-本体は `retains_context` の申告で往復の形を切り替える。**backend 名から推測しない**——バックエンド固有の事情を本体に持ち込まないため（`forge:REQ-013` FNC-1318）。
-
-| `retains_context` | 依頼                                  | ラウンドごとの回答                     | 終端                   |
-| ----------------- | ------------------------------------- | -------------------------------------- | ---------------------- |
-| `false`（非永続） | **毎ラウンド渡る**                    | 毎回、それだけで完結した所見           | 「問題ない」という回答 |
-| `true`（永続）    | **最初の 1 回だけ。以降は相手に残る** | 返ってよい。間に自由なやり取りを挟める | 同上                   |
-
-**終端は共通である。** どちらも最後に「これで問題ない」という回答を得て往復を終える。
-
-#### 非永続型では依頼の再送が不要になる
-
-各ラウンドの依頼は `review_id` の下に残り続け、reviewer が毎ラウンド `resolve_request_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を自ら直接読む（§4.2）。本体が依頼本文を組み立て直して送る工程が消え、**本体が渡すのは 2 つの識別値だけになる**。
-
-ラウンドごとの結果は独立して保持される。毎回新しい reviewer が修正後の対象を同じ条件でレビューするため、前ラウンドの所見を引き継がない。前ラウンドで意図的に対応しなかったものは `prior_round` が伝える（DM-301）——**reviewer は前ラウンドの所見を覚えていないので、`prior_round` には理由が読める形で入っている必要がある**。
-
-#### 永続型は本 feature では設計しない
-
-永続型では最初に一度依頼を渡せば足り、その間は「直した」「こうした」を伝えて反応を得るやり取りができる。**往復の形が非永続型と異なるため、非永続型の設計をそのまま当てはめられない。**
-
-本 feature では設計しない。§7.2 のとおり `msg-review` を当面使わず、**実装対象となる永続型バックエンドが存在しない**ためである。分岐の場所（`retains_context` の申告と、それによる切り替え）は残す。
+**終端は `retains_context` によらず共通である**（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-318）。
 
 ## 8. テスト設計
 

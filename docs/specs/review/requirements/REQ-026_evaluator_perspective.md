@@ -17,7 +17,7 @@ feature_note:
 
 **受け渡し・採番・書き出しと終了の値・本体の仕事・データの構造は本書が定めない。** それらは review 機構の共通契約であり、[REQ-029](REQ-029_review_exchange.md) が定める。evaluator はその契約に従う。本書は共通契約を繰り返さず、evaluator に固有のことだけを書く。
 
-対象は本体が起動する evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）である。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。
+対象は本体が起動する evaluator（[evaluator.md](../../../../plugins/forge/agents/evaluator.md)）である。agenda・consult の表示・記録**機構そのものの再設計**は本書のスコープ外であり、別の差分 feature（agenda 全面刷新）で扱う。再設計が済むまで、consult は agenda へ記録しない。記録を続けると、書き換え途上の agenda に依存して提示が成り立たなくなるためである。
 
 ## 対象システムの性質
 
@@ -79,6 +79,7 @@ evaluator は、reviewer が返した finding のどれとも対応しない問�
 
 - **採番は script が行う。** 新規指摘の ID がどこから始まり、その出自がどう分かるかは共通契約が定める（[REQ-029](REQ-029_review_exchange.md) FNC-313）
 - 参照先の finding が存在しないため、`location` を自ら明示する（同 DM-201）
+- 新規指摘の `disposition` は `valid` とする。evaluator が自ら成立すると判断して挙げた指摘であり、退ける判定（`invalid` 等）は当たらない
 
 ### 2. 出力
 
