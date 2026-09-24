@@ -5,7 +5,7 @@ description: |
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
 argument-hint: "<feature> [--new|--add]"
-allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
 # /forge:start-plan
@@ -95,7 +95,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 以下のプラグイン文書を**常に**読み込む:
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/plan_principles_spec.md`** — 計画書作成原則・タスク設計ガイドライン（計画書ファイルの形式そのものは script が保証するため、AI が読む必要はない）
-- **`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`** — 実装戦略書の定義（責務・書かないもの・存在期間）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`** — 実装戦略書の定義と原則（計画書との線引き・差分開発の扱いを含む）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
 
 ---
@@ -150,64 +150,71 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 - **計画書ルール return value** → プロジェクト固有の計画書フォーマット・タスク設計ルールを把握（プラグイン文書より優先）
 
 該当 agent がエラー終了して return value を得られなかった場合 → 該当カテゴリなしで続行。
-ただし **仕様書 return value に設計書が含まれていない場合** → AskUserQuestion:
+ただし **仕様書 return value に設計書が含まれていない場合** → 設計書は実装戦略の前提であり欠かせないため、AskUserQuestion で設計書のパスを手動で指定してもらう。指定できなければ中止する。
 
-- 設計書のパスを手動で指定する
-- 設計書なしで計画書作成を進める（リスクを理解した上で）
+要件定義書は任意である。要件定義書を持たないプロジェクトがあるため、見つからなくてもそのまま進む。
 
 ---
 
 ## Phase 3: 実装戦略の策定
 
-タスク分割の前に、設計書全体を俯瞰し「どういうアプローチで実装に到達するか」を汎用 Agent (general-purpose) に策定させる。
+タスク分割の前に、設計書全体を俯瞰し「どういうアプローチで実装に到達するか」をカスタム Agent `forge:plan-strategist` に策定させる。
 
-### 3.0 既存の実装戦略書の確認 [MANDATORY]
+**Agent との間で運ぶのは識別値（`output_dir` と `feature`）だけである。** 依頼の中身も戦略書の本文も prompt / return value に載せない。依頼は script が組み立てて置き、戦略書は Agent が直接書き、成否は script が終了の値で判定する。
 
-`{output_dir}/{feature}_strategy.md`（命名規則に従う戦略書。特定の生成元を問わず、このパスに実装戦略書が既に存在するかで判定する）の存在を Glob 等で確認する。
+```bash
+SCRIPT="${CLAUDE_SKILL_DIR}/scripts/strategy_exchange.py"
+```
 
-- **存在する場合**: 削除・上書きせず `Read` する。設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割等が既に記録されている可能性があるため、ゼロから策定し直さない。3.1 の Agent 起動時、既存戦略書の全文を prompt に含めて渡し、**既存内容を土台に、不足している観点（アプローチ選択・検証ポイント・リスク対策等）を補う・詳細化する**よう指示する（新規策定ではなく差分の追記・精緻化）
-- **存在しない場合**: 3.1 へ進み、現行どおり新規に策定する
+### 3.1 依頼を置く
 
-### 3.1 汎用 Agent の起動
+Phase 2 で読んだ設計書パス・要件定義書パス（あれば）と、計画書ルール return value のルール文書パスを script に渡して依頼を置く。パスは 1 件ごとにオプションを繰り返す:
 
-Agent ツールで実装戦略 agent を起動する。Phase 1 で得た仕様書 return value から設計書パスを抽出し、agent 起動の引数として渡す。3.0 で既存戦略書を発見した場合は、その全文も渡す:
+```bash
+python3 "$SCRIPT" open --output-dir "{output_dir}" --feature "{feature}" \
+  --design-doc "{設計書パス1}" [--design-doc ...] \
+  [--requirement-doc "{要件定義書パス1}" ...] \
+  [--rules-doc "{ルール文書パス1}" ...]
+```
+
+`open` が失敗した場合（終了コードが 0 以外）は、標準出力の `errors` を利用者へ報告して止める。終了コードが 2（引数を受理できない）のときは標準出力が空なので、標準エラーの内容を報告する。
+
+既存戦略書（`{output_dir}/{feature}_strategy.md`）の有無は script が判定して依頼に入れる。特定の生成元を問わず、このパスに実装戦略書が既にあれば、設計フェーズ中の議論・レビュー往復で判明した移行方針・フェーズ分割が記録されている可能性があり、Agent はそれを土台にする。
+
+### 3.2 カスタム Agent の起動
+
+Agent ツールで `forge:plan-strategist`（`${CLAUDE_PLUGIN_ROOT}/agents/plan-strategist.md`）を起動する。prompt に書くのは識別値だけである:
 
 ```
-Agent ツール起動: 実装戦略策定 (subagent_type: general-purpose)
+Agent ツール起動: 実装戦略策定 (subagent_type: forge:plan-strategist)
 prompt:
-  以下の設計書を読み、実装戦略を策定する。
-  詳細手順は `${CLAUDE_PLUGIN_ROOT}/docs/strategy_formulation_spec.md` を Read して従うこと。
-
+  - output_dir: {output_dir}
   - feature: {feature}
-  - design_docs: [{設計書パス1}, {設計書パス2}, ...]  ← Phase 1 仕様書 return value から抽出
-  - rules_docs: [{ルール文書パス1}, ...]              ← Phase 1 計画書ルール return value から抽出
-  - existing_strategy: {既存戦略書の全文、または「なし」}  ← 3.0 の確認結果
-
-  existing_strategy が「なし」でない場合、ゼロから策定せず、その内容を土台に不足を補う・詳細化すること。
-  策定した実装戦略の markdown を return value として返すこと。
-  (ファイルへの書き出しは不要。main AI が return value を受け取ってから配置する)
 ```
 
-### 3.2 実装戦略書の配置
+必読文書、依頼の読み方、関連する既存の仕様書とコードを自ら読む手順、書いてよいのは戦略書だけという制約は agent 定義が持つ。**prompt で指示を重ねない。**
 
-Agent 完了後、return value (戦略書 markdown) を承認前にそのまま最終出力先へ Write する。チャットへの全文転記より先にファイルとして配置し、ユーザーが文書そのものを読んでレビューできるようにする:
+### 3.3 成否の判定
+
+Agent の完了後、script で成否を判定する。return value の内容で判断しない:
+
+```bash
+python3 "$SCRIPT" check --output-dir "{output_dir}" --feature "{feature}"
+```
+
+- `status: ok` → 3.4 へ
+- `status: error` → Agent が策定を終えられなかった。Agent の return value（何が起きたかの自然文）を添えて利用者へ報告し、AskUserQuestion で再実行か中止かを確認する。**再実行は 3.1 からやり直す**（`check` が依頼を削除しているため、3.2 だけをやり直すと Agent は依頼を読めない）
+
+`check` は成否にかかわらず依頼と終了の値の記録を削除する。戦略書は残す。
 
 - **配置先**: `{output_dir}/{feature}_strategy.md`
 - **ライフサイクル**: 計画書と同じ。全タスク完了時に計画書とともに存廃を利用者が選択する（`${CLAUDE_PLUGIN_ROOT}/docs/strategy_principles_spec.md`）
-- 承認されなかった場合は 3.3 の修正結果でこのファイルを上書きする（配置は確定ではなく作業版の起点）
 
-### 3.3 ユーザーレビューと承認
+### 3.4 ユーザーレビューと承認
 
-Write 完了後:
+**Agent が戦略書を書くのは 1 回だけである。以後、戦略書は本スキルを実行している主体が責任を持って管理する。**
 
-1. 配置したファイルパスを提示する（全文をチャットに転記しない。ユーザーはファイルを開いて読む）:
-   ```
-   実装戦略書を作成しました: {output_dir}/{feature}_strategy.md
-   内容を確認してください。
-   ```
-2. AskUserQuestion でユーザーに確認する:
-   - **承認** → Phase 4 へ
-   - **修正要望あり** → 修正内容を反映して Agent を再起動（または orchestrator が直接修正）し、3.2 のファイルを再 Write してから本 Step を再実行
+戦略書のパスを提示し（全文をチャットに転記しない。利用者はファイルを開いて読む）、AskUserQuestion で承認を得る。修正要望があれば、利用者と確かめながら自ら Read・Edit で直し、承認を得たら Phase 4 へ進む。
 
 ---
 

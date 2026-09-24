@@ -47,7 +47,7 @@
 
 - ❌ ソースコード（説明用の小規模例・5〜10行程度は許容）
 - ❌ 技術選択の理由を記載しないままフレームワークを指定
-- ❌ 要件にない機能の追加（ユーザーの承認を得て ADR に記録した場合を除く。手続きは `/forge:start-design`、判定条件は [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §10）
+- ❌ 要件にない機能の追加（ユーザーの承認を得て ADR に記録した場合を除く。手続きは `/forge:start-design`、判定条件は [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §6）
 - ❌ 「本設計により X ms を切る」等、定量目標の達成を保証する記述
 - ❌ 実行後に人間が体感して決める値を、AI が数値例から推測した設計目標
 
@@ -68,7 +68,7 @@
 定量目標の最終的な達成可否は、負荷試験・プロファイリング・本番計測・人間の受け入れ判断など、実行後の検証で確定する。
 
 構造品質（責務分割・境界・依存方向）の数値化禁止、および未確定定量値の捏造禁止は [spec_priorities_spec.md](spec_priorities_spec.md) に従う。
-要件定義書との振り分けは [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §4.6 に従う。
+要件定義書との振り分けは [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §3.1 に従う。
 
 ---
 
@@ -243,7 +243,7 @@ Mermaid 構文リファレンス:
 | 設計書にソースコードを多量に記載 (5〜10行を超える) | 🟡 major       | 設計書と実装の乖離源。MAJOR (≠ 即修正でないが品質問題) |
 | 技術選択の理由を記載しないままフレームワーク指定   | 🔴 critical    | 設計判断の根拠喪失                                     |
 | 要件にない機能を、承認の記録を伴わずに追加         | 🔴 critical    | スコープクリープ。設計駆動の破壊                       |
-| 「本設計により X を達成する」等の保証表現          | 🔴 critical    | spec_design_boundary §4.6 違反                         |
+| 「本設計により X を達成する」等の保証表現          | 🔴 critical    | spec_design_boundary §3.1 違反                         |
 | AI が数値例から推測した設計目標                    | 🔴 critical    | spec_priorities §3.4 違反                              |
 
 ### 必須構成要素 (本文書既存)

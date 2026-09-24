@@ -121,7 +121,7 @@ AI が未確定の定量値を推測して、要件・設計に書いてはな�
 定量目標（応答時間・スループット等、運用で検証可能なもの）を
 **要件定義書と設計書のどちらに書くか**という振り分け判定は本文書の範囲外である。
 
-→ 振り分け判定は [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §4.6 を参照。
+→ 振り分け判定は [spec_design_boundary_spec.md](spec_design_boundary_spec.md) §3.1 を参照。
 
 ---
 

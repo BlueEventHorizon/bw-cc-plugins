@@ -5,14 +5,44 @@
 `/forge:start-plan` は設計書から実装戦略を策定し、タスクを抽出して計画書を作成するオーケストレータスキル。
 文書取得 → 実装戦略策定 → タスク抽出・分割 → 計画書作成 → AIレビュー → 人間承認の流れで動作する。
 
-### 汎用 Agent への委譲
+### Agent への委譲
 
 オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程を汎用 Agent (general-purpose) に委譲している:
+以下の工程を Agent に委譲している:
 
-- 要件定義書・設計書・ルールの収集（コンテキスト収集 Agent）
-- 実装戦略の策定（実装戦略 Agent — [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md)）
-- AIレビュー（`/forge:review plan`）
+| 工程                             | Agent                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| 要件定義書・設計書・ルールの収集 | 汎用 Agent (general-purpose)                                                        |
+| 実装戦略の策定                   | カスタム Agent `forge:plan-strategist`（役割・制約・手順・出力を 1 ファイルで持つ） |
+| AIレビュー                       | `/forge:review plan`                                                                |
+
+実装戦略の策定をカスタム Agent とするのは、手順と制約を Agent の定義に固定するためである。
+
+この Agent は、依頼に挙がった要件定義書・設計書に加えて、**関連する既存の仕様書を query スキル（`/forge:query-db-specs` / `/forge:query-db-rules`）で自ら検索して読み、既存コードも読む**。依頼に挙がるのは当該 feature の文書だけであり、既存の仕様とコードを読まなければ戦略は立てられないためである。検索に伴う索引の更新は query スキルの側の処理であり、その許可は利用者に申請される。
+
+差分開発で既存実装と旧仕様を読むが、実装期間中は旧仕様を書き換えてはならない（[additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §3）。Agent が書いてよいのは依頼が指す戦略書 1 ファイルだけであり、仕様書・コードの書き換えは制約として禁じる。
+
+### Agent との受け渡し
+
+受け渡しは [agent_data_exchange_rules.md](../../../rules/agent_data_exchange_rules.md) に従う。戦略書は大きくなりうるため、依頼の中身も戦略書の本文も prompt / return value に載せない。
+
+| 本書が決める事項 | 内容                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 識別値           | `output_dir`（計画書と同じディレクトリ）と `feature` の 2 つ。feature ディレクトリで分離されているため、実行ごとの識別子は持たない                                                                  |
+| 置き場           | `output_dir`。計画書・`tasks/` と同じ場所                                                                                                                                                           |
+| 依頼             | `{feature}_strategy_request.json`。フィールドは `feature` / `requirement_docs`（0 件以上）/ `design_docs`（1 件以上）/ `rules_docs` / `existing_strategy` / `strategy_path`（パスはすべて絶対パス） |
+| 結果             | 戦略書 `{feature}_strategy.md`（Agent が直接書く）と、終了の値 `{feature}_strategy_result.json`                                                                                                     |
+| エラー値         | 持たない（空集合）。渡された文書が読めないのは収集直後の状態ではバグか障害であり、関連仕様や既存実装が見つからないのは戦略書に明記して続ける判定事項である                                          |
+| 片付け           | 成否にかかわらず依頼と終了の値の記録を削除する。戦略書は計画書と同じライフサイクルで残す                                                                                                            |
+
+script は `plugins/forge/skills/start-plan/scripts/strategy_exchange.py` の 1 本で、4 つのサブコマンドを持つ。
+
+| サブコマンド   | 呼ぶ主体        | 動作                                                                                 |
+| -------------- | --------------- | ------------------------------------------------------------------------------------ |
+| `open`         | start-plan      | 依頼を組み立てて公開する。既存戦略書の有無を判定して依頼に入れ、前回の終了の値を消す |
+| `request-path` | plan-strategist | 公開済みの依頼の絶対パスだけを返す                                                   |
+| `finish`       | plan-strategist | 戦略書が書かれていることを確かめ、終了の値 `"0"` を記録する。上書きしない            |
+| `check`        | start-plan      | 終了の値が `"0"` なら戦略書のパスを返す。成否にかかわらず依頼と記録を削除する        |
 
 ---
 
@@ -36,13 +66,16 @@ flowchart TD
     READ --> STRATEGY_PHASE
 
     subgraph STRATEGY_PHASE["Phase 3: 実装戦略策定"]
-        SA["strategy agent<br>strategy_formulation_spec.md"] --> DRAFT["return value<br>（戦略書 markdown）"]
-        DRAFT --> APPROVAL{"ユーザー承認?"}
-        APPROVAL -->|"修正要望"| SA
-        APPROVAL -->|"承認"| COPY["output_dir に配置<br>feature_strategy.md"]
+        OPEN["依頼を置く<br>strategy_exchange open"] --> SA["forge:plan-strategist<br>戦略書を直接書く"]
+        SA --> CHECK["成否の判定<br>strategy_exchange check"]
+        CHECK -->|"成功"| APPROVAL{"ユーザー承認?"}
+        CHECK -->|"失敗・再実行"| OPEN
+        CHECK -->|"失敗・中止"| ABORT([中止])
+        APPROVAL -->|"修正要望"| FIX["呼び出し元が戦略書を直接修正"]
+        FIX --> APPROVAL
     end
 
-    STRATEGY_PHASE --> MODE_CHECK{モード?}
+    APPROVAL -->|"承認"| MODE_CHECK{モード?}
 
     MODE_CHECK -->|"新規作成"| CREATE
     MODE_CHECK -->|"更新"| UPDATE_CHECK
@@ -84,25 +117,28 @@ flowchart TD
 | 要件定義書 + 設計書 | `/forge:query-db-specs` | return value（仕様書リスト、specs agent）       |
 | 実装ルール          | `/forge:query-db-rules` | return value（計画書ルールリスト、rules agent） |
 
-**設計書は必須入力。** 見つからない場合は AskUserQuestion でユーザーに手動指定またはスキップ確認（リスク理解のもと）。
+**設計書は必須入力。** 実装戦略の前提であり、見つからない場合は AskUserQuestion でユーザーにパスを手動指定してもらう。指定できなければ中止する。**要件定義書は任意**（要件定義書を持たないプロジェクトがある）。
 
 ### Phase 2: 文書の読み込み
 
-| Step | 内容                                                      | 実行者       |
-| ---- | --------------------------------------------------------- | ------------ |
-| 2.1  | 仕様書 return value → 要件定義書・設計書を Read           | orchestrator |
-| 2.2  | 計画書ルール return value → プロジェクト固有ルールを Read | orchestrator |
+| Step | 内容                                                                                                                | 実行者       |
+| ---- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 2.1  | 仕様書 return value → 要件定義書・設計書を Read。設計書が無ければ利用者に手動指定してもらう（指定できなければ中止） | orchestrator |
+| 2.2  | 計画書ルール return value → プロジェクト固有ルールを Read                                                           | orchestrator |
 
 ### Phase 3: 実装戦略の策定 [MANDATORY]
 
-| Step | 内容                                                                                                                      | 実行者       |
-| ---- | ------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 3.1  | strategy Agent 起動（[strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) を渡す） | 汎用 Agent   |
-| 3.2  | Agent の return value（戦略書 markdown）を全文提示し、ユーザー承認を取得                                                  | orchestrator |
-| 3.3  | 承認済み戦略書を `output_dir/{feature}_strategy.md` に配置                                                                | orchestrator |
+| Step | 内容                                                                                                            | 実行者                |
+| ---- | --------------------------------------------------------------------------------------------------------------- | --------------------- |
+| 3.1  | `strategy_exchange open` で依頼を置く（要件定義書・設計書・ルール文書のパス。既存戦略書の有無は script が判定） | orchestrator          |
+| 3.2  | `forge:plan-strategist` を識別値（`output_dir` / `feature`）だけで起動する                                      | forge:plan-strategist |
+| 3.3  | `strategy_exchange check` で成否を判定する                                                                      | orchestrator          |
+| 3.4  | 戦略書のパスを提示し、ユーザー承認を取得する。修正要望は orchestrator が直接直す（Agent が書くのは 1 回だけ）   | orchestrator          |
 
-**入力**: Phase 1 の仕様書 return value から抽出した設計書パス + 計画書ルール return value のルール文書パス
-**出力**: strategy Agent の return value（戦略書 markdown）→ 承認後に `{output_dir}/{feature}_strategy.md` へ Write
+**入力**: Phase 2 で確定した設計書パス（1 件以上）・要件定義書パス（あれば）+ 計画書ルール return value のルール文書パス
+**出力**: `{output_dir}/{feature}_strategy.md`（Agent が直接書く）。orchestrator が受け取るのは成否と戦略書のパスだけ
+
+差分開発型（要件定義書・設計書が `feature_type: temporary-feature` を持つ）の場合、戦略書は既存実装と新仕様の不一致と、各々への処置（修正 / 削除 / 新規作成 / 統合 / 分割）を含む。要件定義書を入力に含めるのは、差分開発型かどうかの判定と新旧の突き合わせに要るためである。
 
 ### Phase 4: 計画書の作成・更新
 
@@ -177,9 +213,11 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                                                    | 説明                                         |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                 | スキル仕様                                   |
-| [strategy_formulation_spec.md](../../../../plugins/forge/docs/strategy_formulation_spec.md) | 実装戦略 Agent 作業指示書                    |
-| [DES-074](DES-074_plan_format_design.md)                                                    | 計画書 script 実装契約（`write_plan.py` 等） |
-| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)           | 計画書作成原則ガイド                         |
+| ファイル                                                                                         | 説明                                         |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                      | スキル仕様                                   |
+| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                        | 実装戦略 Agent の役割・制約・策定手順・出力  |
+| [strategy_exchange.py](../../../../plugins/forge/skills/start-plan/scripts/strategy_exchange.py) | 実装戦略の依頼と終了の値の受け渡し           |
+| [strategy_principles_spec.md](../../../../plugins/forge/docs/strategy_principles_spec.md)        | 実装戦略書の定義と原則                       |
+| [DES-074](DES-074_plan_format_design.md)                                                         | 計画書 script 実装契約（`write_plan.py` 等） |
+| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)                | 計画書作成原則ガイド                         |
