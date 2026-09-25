@@ -11,6 +11,8 @@ feature_note:
 
 ## 概要
 
+reviewer は、対象に合った規範で読み、誤りを見落とさずに挙げる。利用者は、気づけなかった誤りを根拠とともに知ることができる。
+
 本書には、通常は設計書に属する具体的な記述（script のパス・文書名・エラー値等）を含む。これは、既に決定済みで選択の余地が無い事項を要件定義書に具体的に書く原則（[spec_design_boundary_spec.md](../../../../plugins/forge/docs/spec_design_boundary_spec.md) §2）に基づく。
 
 **本書は reviewer の振る舞いを定める。** 対象をどう読み、target 種別をどう判定し、種別ごとに何を読み、何を所見として挙げるかである。
@@ -108,12 +110,12 @@ target 種別ごとに、reviewer が扱うものを次のとおり定める。�
 
 **requirement（要件定義書）**
 
-| 区分             | 内容                                                                                                                                                                        |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| レビュー観点     | `criteria/review_criteria_requirement.md`                                                                                                                                   |
-| 内蔵規範         | `requirement_format.md` / `spec_design_boundary_spec.md` / `spec_priorities_spec.md` / `additive_development_spec.md` / `frontmatter_format.md` / `document_style_guide.md` |
-| プロジェクト固有 | 文書記述・仕様記述規約                                                                                                                                                      |
-| 突き合わせ対象   | 対象ファイル内部 / 関連設計書                                                                                                                                               |
+| 区分             | 内容                                                                                                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| レビュー観点     | `criteria/review_criteria_requirement.md`                                                                                                                                                                      |
+| 内蔵規範         | `requirement_principles_spec.md` / `requirement_format.md` / `spec_design_boundary_spec.md` / `spec_priorities_spec.md` / `additive_development_spec.md` / `frontmatter_format.md` / `document_style_guide.md` |
+| プロジェクト固有 | 文書記述・仕様記述規約                                                                                                                                                                                         |
+| 突き合わせ対象   | 対象ファイル内部 / 関連設計書                                                                                                                                                                                  |
 
 **design（設計書・ADR）**
 
