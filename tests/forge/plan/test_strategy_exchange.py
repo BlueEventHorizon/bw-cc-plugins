@@ -18,9 +18,8 @@ SCRIPT = (
     REPO_ROOT
     / "plugins"
     / "forge"
-    / "skills"
-    / "start-plan"
     / "scripts"
+    / "plan"
     / "strategy_exchange.py"
 )
 
