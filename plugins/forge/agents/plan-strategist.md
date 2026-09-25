@@ -60,7 +60,7 @@ model: inherit
 ### 受け渡しの script
 
 ```bash
-SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/start-plan/scripts/strategy_exchange.py"
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/plan/strategy_exchange.py"
 
 # 依頼の絶対パスを得る（最初に 1 回）
 python3 "$SCRIPT" request-path --output-dir "{output_dir}" --feature "{feature}"

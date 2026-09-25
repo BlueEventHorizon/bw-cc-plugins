@@ -163,7 +163,7 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 **Agent との間で運ぶのは識別値（`output_dir` と `feature`）だけである。** 依頼の中身も戦略書の本文も prompt / return value に載せない。依頼は script が組み立てて置き、戦略書は Agent が直接書き、成否は script が終了の値で判定する。
 
 ```bash
-SCRIPT="${CLAUDE_SKILL_DIR}/scripts/strategy_exchange.py"
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/plan/strategy_exchange.py"
 ```
 
 ### 3.1 依頼を置く

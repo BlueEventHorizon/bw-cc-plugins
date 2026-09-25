@@ -35,7 +35,7 @@
 | エラー値         | 持たない（空集合）。渡された文書が読めないのは収集直後の状態ではバグか障害であり、関連仕様や既存実装が見つからないのは戦略書に明記して続ける判定事項である                                          |
 | 片付け           | 成否にかかわらず依頼と終了の値の記録を削除する。戦略書は計画書と同じライフサイクルで残す                                                                                                            |
 
-script は `plugins/forge/skills/start-plan/scripts/strategy_exchange.py` の 1 本で、4 つのサブコマンドを持つ。
+script は `plugins/forge/scripts/plan/strategy_exchange.py` の 1 本で、4 つのサブコマンドを持つ。本スキルと Agent の双方が呼ぶため、スキルの内側ではなく共有 script の置き場に置く。
 
 | サブコマンド   | 呼ぶ主体        | 動作                                                                                 |
 | -------------- | --------------- | ------------------------------------------------------------------------------------ |
@@ -213,11 +213,11 @@ flowchart TD
 
 ## 6. 関連ファイル
 
-| ファイル                                                                                         | 説明                                         |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)                      | スキル仕様                                   |
-| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                        | 実装戦略 Agent の役割・制約・策定手順・出力  |
-| [strategy_exchange.py](../../../../plugins/forge/skills/start-plan/scripts/strategy_exchange.py) | 実装戦略の依頼と終了の値の受け渡し           |
-| [strategy_principles_spec.md](../../../../plugins/forge/docs/strategy_principles_spec.md)        | 実装戦略書の定義と原則                       |
-| [DES-074](DES-074_plan_format_design.md)                                                         | 計画書 script 実装契約（`write_plan.py` 等） |
-| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)                | 計画書作成原則ガイド                         |
+| ファイル                                                                                  | 説明                                         |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [start-plan SKILL.md](../../../../plugins/forge/skills/start-plan/SKILL.md)               | スキル仕様                                   |
+| [plan-strategist.md](../../../../plugins/forge/agents/plan-strategist.md)                 | 実装戦略 Agent の役割・制約・策定手順・出力  |
+| [strategy_exchange.py](../../../../plugins/forge/scripts/plan/strategy_exchange.py)       | 実装戦略の依頼と終了の値の受け渡し           |
+| [strategy_principles_spec.md](../../../../plugins/forge/docs/strategy_principles_spec.md) | 実装戦略書の定義と原則                       |
+| [DES-074](DES-074_plan_format_design.md)                                                  | 計画書 script 実装契約（`write_plan.py` 等） |
+| [plan_principles_spec.md](../../../../plugins/forge/docs/plan_principles_spec.md)         | 計画書作成原則ガイド                         |
