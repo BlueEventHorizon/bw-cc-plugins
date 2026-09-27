@@ -3,7 +3,7 @@
 Validate machine-readable launch path terminology.
 
 The TOML file is a small machine-readable subset of
-docs/rules/skill_launch_paths_definitions.md. It must not become a second
+docs/rules/claude_code_reference.md. It must not become a second
 implementation of changed-line policy.
 """
 

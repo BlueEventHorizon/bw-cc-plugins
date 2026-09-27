@@ -313,14 +313,6 @@ docs/
 | `.claude/skills/`   | プロジェクトローカル SKILL（非配布） | bw-cc-plugins 内部運用専用の SKILL           |
 | `plugins/*/skills/` | 配布 SKILL                           | マーケットプレイス経由で配布される SKILL     |
 
-**`docs/rules/` 内の役割分担:**
-
-| 種別     | 役割                       | 例                                                      |
-| -------- | -------------------------- | ------------------------------------------------------- |
-| Rules    | どう書くか・どう実装するか | `document_writing_rules.md`, `cli_output_formatting.md` |
-| Workflow | 何をするか（手順と順序）   | （必要に応じて追加）                                    |
-| Notes    | 個別の留意点               | `skill_authoring_notes.md`                              |
-
 ### 5.1 本文は現在状態・移行履歴は CHANGELOG にのみ置く [MANDATORY]
 
 **なぜ**: ルールを守る／作業を進める読み手が必要とするのは現在状態だけで、移行・廃止の経緯（「旧 X を廃止し Y へ移行」「かつて…だった」）は雑音になり、現在の規範を読み取りにくくする。
@@ -505,5 +497,5 @@ grep -r "下記のドキュメントを全て読み込み" docs/rules/ docs/spec
 
 ## 10. 参考
 
-- `docs/rules/skill_authoring_notes.md` — SKILL 作成時の留意点
+- [claude_code_authoring_guide.md](claude_code_authoring_guide.md) — SKILL 作成時の規約
 - `docs/rules/cli_output_formatting.md` — CLI 出力フォーマット規約

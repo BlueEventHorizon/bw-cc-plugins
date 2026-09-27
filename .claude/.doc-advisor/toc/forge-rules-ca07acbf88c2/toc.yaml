@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-24T09:45:26Z
+  generated_at: 2026-09-27T14:18:03Z
   file_count: 41
 
 docs:
@@ -939,117 +939,102 @@ docs:
       - usage scenarios
       - terminology
   plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md:
-    title: Figma Requirements Workflow
-    purpose: Guides creation of requirements documents and design tokens from Figma design files through structured phases of design system building and requirement extraction
+    title: Figma Requirements Document Creation Workflow
+    purpose: Defines the complete workflow for extracting requirements from Figma design files, including design token extraction, requirement specification writing, component identification, and asset management strategies.
     content_details:
-      - Figma MCP tool availability check
-      - Design system 2-layer architecture with tokens and themes
-      - Reusable component identification
-      - Design token extraction for colors typography and spacing
-      - Requirement ID assignment using scan_spec_ids.py
-      - Screen requirement extraction with ASCII layout diagrams
-      - UI component requirement specification
-      - Functional requirement extraction
-      - Non-design requirement completion for error handling loading and accessibility
-      - Static asset management and naming conventions
-      - Quality validation checklist
+      - Design tokens extraction (colors, typography, spacing, shadows, radius)
+      - Design system two-layer structure (tokens and semantic themes)
+      - Screen requirement extraction methodology with ID prefixes
+      - Reusable component identification and property definition
+      - Feature requirement extraction from UI and hidden requirements
+      - Asset requirement handling (icons, illustrations, logos, backgrounds)
+      - Quality validation checklist for design tokens and requirements
+      - Glossary creation for requirement terminology
+      - AI review process and specification format validation
     applicable_tasks:
-      - Figma-based requirements document creation
-      - Design system definition from mockups
-      - Design token extraction and organization
-      - UI component requirement specification
-      - Screen layout documentation
-      - Functional requirement identification from mockups
+      - Creating requirement documents from design files
+      - Extracting design tokens from Figma
+      - Identifying reusable components from designs
+      - Writing screen requirement specifications
+      - Documenting feature requirements
+      - Defining design systems
     keywords:
       - Figma
-      - requirements
       - design tokens
       - design system
-      - components
+      - requirements extraction
+      - SCR
+      - CMP
+      - FNC
+      - layout constraints
       - typography
-      - spacing
-      - colors
-      - workflow
-      - accessibility
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
-    title: Interactive Requirements Workflow
-    purpose: Guides creation of requirements documents through multi-phase dialogue with users when design files and mockups do not exist, covering new applications and feature additions
+    title: Interactive Requirements Definition Workflow
+    purpose: Describes a workflow for creating requirements documents through interactive dialogue when design files do not exist, covering vision clarification, experience flow definition, detailed specifications, and quality validation for new applications or feature additions.
     content_details:
-      - New vs. feature addition determination
-      - Existing assets confirmation using query-db-specs
-      - Design rules and specifications retrieval
-      - Vision and value clarification for new applications
-      - Feature scope and relationship confirmation for additions
-      - User experience flow mapping with scenarios
-      - Screen and interface inventory creation
-      - Glossary creation for shared terminology
-      - System architecture exploration and state modeling
-      - Requirement creation by type (SCR FNC BL DM CMP NAV API)
-      - ID assignment using scan_spec_ids.py
-      - Quality assurance and consistency checks
-      - TBD management for undecided items
-      - Dialogue principles and anti-patterns
-      - AI-powered review workflow
+      - Pre-confirmation phase for new vs existing feature scenarios
+      - Vision and value clarification with APP-001 overview document
+      - Experience flow definition with user scenarios and navigation flows
+      - Glossary creation for terminology and domain concepts
+      - System architecture exploration with entities, relations, and state models
+      - Detailed requirement specification creation (SCR, FNC, BL, DM, CMP, NAV, API, EXT, NFR, SEC, ERR ID types)
+      - Quality validation checklist with form and content verification
+      - Interactive dialogue principles for eliciting requirements
+      - Antipattern guidance for requirement elicitation
     applicable_tasks:
-      - Interactive requirements definition for new applications
-      - Feature scope planning and discovery
-      - Multi-phase dialogue with user validation
-      - Requirements specification without design mockups
-      - Feature addition planning with impact analysis
-      - Glossary and terminology definition
-      - Requirement quality assurance
-      - User experience flow documentation
+      - Creating requirements from dialogue without design mockups
+      - Defining new application requirements
+      - Adding features to existing applications
+      - Eliciting user requirements through structured questions
+      - Validating requirement specifications
+      - Reviewing requirement documents
+      - Managing requirement scope
     keywords:
-      - requirements
+      - requirements definition
+      - interactive workflow
       - dialogue
-      - interactive
-      - workflow
-      - specifications
-      - features
-      - scope
-      - discovery
-      - user engagement
-      - phase-based
+      - specification IDs
+      - glossary
+      - APP-001
+      - feature addition
+      - requirement validation
+      - state model
+      - architecture
   plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
-    title: Requirements Reverse Engineering Workflow
-    purpose: Extracts requirements from existing application source code and creates requirement documents, supporting legacy application reconstruction and modernization while preserving functionality
+    title: Requirements Document Creation Workflow (Existing Application Analysis Version)
+    purpose: Defines the workflow for creating requirement documents by reverse-engineering existing applications when source code exists, extracting requirements from code to produce specifications for rebuilding with new architecture or design.
     content_details:
-      - Design policy confirmation for redesign vs. preservation
-      - Rule and specification document retrieval using query-db-rules and query-db-specs
-      - Rules agent for implementation rules collection
-      - Code agent for existing source code exploration
-      - Project structure analysis and file organization
-      - Screen and view class enumeration
-      - Navigation structure identification with transition maps
-      - Design element handling based on policy
-      - Requirement extraction priority order (APP-001 screens features business logic data)
-      - User action identification from source code patterns
-      - Conditional logic conversion to requirements
-      - Data persistence specification detection
-      - Error handling extraction from code
-      - Extraction checklist for actions UI elements data processing navigation business rules and integrations
-      - ID assignment using scan_spec_ids.py
-      - Glossary creation for domain terminology
-      - Quality assurance checklist and validation
-      - AI-powered review workflow
+      - Pre-confirmation phase with design approach decision (refresh vs preserve)
+      - Rule document and existing specification retrieval
+      - Source code context collection using specialized agents for rules and code
+      - Source code structure analysis with project structure mapping
+      - Screen and component analysis from existing code
+      - Navigation structure identification and screen transition mapping
+      - Requirement extraction priority sequence (APP-001, SCR, FNC, BL, DM)
+      - User action detection from code (@IBAction, button taps, gestures)
+      - Business logic extraction with conditional branching and validation rules
+      - Data persistence identification and error handling extraction
+      - Quality validation checklist for completeness
+      - AI review process with auto mode
     applicable_tasks:
-      - Legacy application modernization planning
-      - Source code analysis for requirements extraction
-      - Existing application redesign with feature preservation
-      - Application scratch rebuild planning
-      - Architecture modernization with preserved functionality
-      - Requirements documentation from existing implementations
+      - Extracting requirements from existing application source code
+      - Reverse-engineering legacy applications
+      - Analyzing application architecture from code
+      - Creating requirements for code reconstruction
+      - Rebuilding existing applications with new architecture
+      - Requirement specification writing from code analysis
     keywords:
       - reverse engineering
       - source code analysis
       - existing application
-      - legacy modernization
-      - code analysis
-      - feature preservation
-      - requirements extraction
-      - specifications
-      - workflow
-      - modernization
+      - APP-001
+      - SCR
+      - FNC
+      - BL
+      - DM
+      - user action
+      - screen transitions
+      - code exploration
   plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md:
     title: Apple Design Principles & UX/UI Philosophy Knowledge Base
     purpose: "Knowledge base for design analysis, defining Apple's design philosophy, HIG principles, typography system, color semantics, usability heuristics, visual perception principles, and accessibility standards"

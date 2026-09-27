@@ -4,7 +4,7 @@
 
 forge-subagent の変更行 gate では、slash command の近傍に起動経路の説明があるかを判定するため、起動経路の公式用語を Python テスト内に直書きしている。
 
-この公式用語リストを、`docs/rules/skill_launch_paths_definitions.md` の機械可読 subset として TOML に切り出す。TOML は Python 3.11 以降の標準ライブラリ `tomllib` で読めるため、外部依存を追加しない。
+この公式用語リストを、[Claude Code リファレンス][reference] の機械可読 subset として TOML に切り出す。TOML は Python 3.11 以降の標準ライブラリ `tomllib` で読めるため、外部依存を追加しない。
 
 本設計の目的は「公式起動経路用語の二重管理を減らすこと」に限定する。ユーザー向け使用例マーカー、正規表現、判定距離、旧 CLI 構文検出などのテスト実装詳細は TOML 化しない。
 
@@ -14,14 +14,14 @@ forge-subagent の変更行 gate では、slash command の近傍に起動経路
 
 ### 2.1 採用する方針
 
-| 方針                      | 内容                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| 公式用語だけを TOML 化    | `docs/rules/skill_launch_terms.toml` には起動経路の公式用語だけを置く                |
-| テスト文脈語は Python 側  | 使用例マーカーはテスト誤検知抑制のための heuristic なので、テストコードに残す        |
-| regex は Python 側に残す  | `subagent` 検出、slash command 検出、旧 review CLI 検出などはテストロジックに残す    |
-| version は持たない        | 初期実装では schema version の運用が不要。必要になった時点で運用ルールと共に追加する |
-| schema 検査は最小限にする | TOML が読めること、必要な配列が存在し空でないこと、重複定義がないことだけを検査する  |
-| Markdown 正本は維持する   | 用語の意味・背景・使い分けは `skill_launch_paths_definitions.md` を正本として扱う    |
+| 方針                      | 内容                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 公式用語だけを TOML 化    | `docs/rules/skill_launch_terms.toml` には起動経路の公式用語だけを置く                                                           |
+| テスト文脈語は Python 側  | 使用例マーカーはテスト誤検知抑制のための heuristic なので、テストコードに残す                                                   |
+| regex は Python 側に残す  | `subagent` 検出、slash command 検出、旧 review CLI 検出などはテストロジックに残す                                               |
+| version は持たない        | 初期実装では schema version の運用が不要。必要になった時点で運用ルールと共に追加する                                            |
+| schema 検査は最小限にする | TOML が読めること、必要な配列が存在し空でないこと、重複定義がないことだけを検査する                                             |
+| Markdown 正本は維持する   | 用語の意味・背景は [Claude Code リファレンス][reference]、使い分けは [Claude Code 作成ガイド][authoring-guide] を正本として扱う |
 
 ### 2.2 採用しない方針
 
@@ -46,7 +46,7 @@ docs/rules/skill_launch_terms.toml
 
 `docs/rules/` 配下に置く理由:
 
-- `skill_launch_paths_definitions.md` と同じ責務領域で管理できる
+- [Claude Code リファレンス][reference] と同じ責務領域で管理できる
 - 用語定義の近くにあり、変更時に見落としにくい
 - plugin 配布物ではなく、リポジトリの品質 gate 用データとして扱える
 
@@ -61,7 +61,7 @@ docs/rules/skill_launch_terms.toml
 
 ```toml
 [metadata]
-source_doc = "docs/rules/skill_launch_paths_definitions.md"
+source_doc = "docs/rules/claude_code_reference.md"
 
 [launch_context]
 terms = [
@@ -93,7 +93,7 @@ TOML にはテスト用 heuristic を入れない。使用例マーカーは `te
 | ファイル                                            | 変更内容                                                          |
 | --------------------------------------------------- | ----------------------------------------------------------------- |
 | `docs/rules/skill_launch_terms.toml`                | 起動経路公式用語を追加する                                        |
-| `docs/rules/skill_launch_paths_definitions.md`      | 機械可読 subset の配置を逆参照として追記する                      |
+| `docs/rules/claude_code_reference.md`               | 機械可読 subset の配置を逆参照として追記する                      |
 | `tests/forge/subagent/skill_launch_terms.py`        | `tomllib` で公式用語 TOML を読むテスト用 helper を追加する        |
 | `tests/forge/subagent/test_changed_lines_policy.py` | `_LAUNCH_CONTEXT_PATTERNS` を TOML 参照にする                     |
 | `tests/forge/subagent/test_skill_launch_terms.py`   | TOML の最小 schema、source_doc 参照、重複リスト回帰防止を検査する |
@@ -167,13 +167,13 @@ for node in ast.walk(tree):
 | Step | 作業                                                                                                                                            |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | `.doc_structure.yaml` の rules 対象 glob が `.md` 限定であること、`dprint.jsonc` の TOML plugin が有効であることを確認する                      |
-| 2    | `docs/rules/skill_launch_terms.toml` を追加し、`docs/rules/skill_launch_paths_definitions.md` に機械可読 subset の逆参照を追記する              |
+| 2    | `docs/rules/skill_launch_terms.toml` を追加し、`docs/rules/claude_code_reference.md` に機械可読 subset の逆参照を追記する                       |
 | 3    | `tests/forge/subagent/skill_launch_terms.py` / `test_skill_launch_terms.py` を追加し、`test_changed_lines_policy.py` を TOML 読み込みに変更する |
 | 4    | 対象テストと全体テストを実行する                                                                                                                |
 
 Step 2-3 は同一変更セットで実施する。commit する場合も同一 commit にまとめ、中間状態として未使用 helper や fail する重複検査を main に積まない。
 
-`skill_launch_paths_definitions.md` への追記例:
+`claude_code_reference.md` への追記例:
 
 ```markdown
 > 機械可読 subset: `docs/rules/skill_launch_terms.toml`
@@ -189,7 +189,7 @@ Step 2-3 は同一変更セットで実施する。commit する場合も同一 
 
 ### 7.2 テスト用 heuristic を公式用語へ逆流させない
 
-使用例マーカーはテストの誤検知を避けるための heuristic であり、公式用語ではない。`docs/rules/skill_launch_terms.toml` や `skill_launch_paths_definitions.md` に「用語」として追加しない。
+使用例マーカーはテストの誤検知を避けるための heuristic であり、公式用語ではない。`docs/rules/skill_launch_terms.toml` や [Claude Code リファレンス][reference] に「用語」として追加しない。
 
 ### 7.3 用語集とテスト実装の境界が崩れる可能性
 
@@ -198,3 +198,6 @@ TOML に regex、判定距離、ignore marker、旧 CLI 契約を追加し始め
 ### 7.4 Markdown 正本との完全同期は保証しない
 
 TOML は機械可読 subset であり、意味・背景・使い分けは Markdown 側に残す。自動テストは TOML から Markdown への片方向検査だけを行う。Markdown から TOML への逆方向 drift は、将来も人間レビューで担保する方針とする。
+
+[reference]: ../../../rules/claude_code_reference.md
+[authoring-guide]: ../../../rules/claude_code_authoring_guide.md

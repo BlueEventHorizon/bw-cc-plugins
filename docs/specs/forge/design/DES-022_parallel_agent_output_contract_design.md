@@ -34,7 +34,7 @@ Agent A と Agent B が同時に同一ファイルを更新すると、最後に
 
 本契約が規定するのは**並列 agent の結果を orchestrator へ受け渡す経路**である。
 
-書き込み系 agent（start-implement の実装 executor 等）が**担当範囲の成果物を編集すること自体は本契約の対象ではない**。その安全性は編集可能ファイルの allowlist・対象を絞った起動・指摘と無関係なリファクタリングの禁止・構文検証が担う（COMMON-DES-001 §6.2）。並列起動する場合も、allowlist が担当範囲を分離していれば複数 agent が同一リソースを触らないため、§2.1 の競合は成立しない。
+書き込み系 agent（start-implement の実装 executor 等）が**担当範囲の成果物を編集すること自体は本契約の対象ではない**。その安全性は編集可能ファイルの allowlist・対象を絞った起動・指摘と無関係なリファクタリングの禁止・構文検証が担う（[Claude Code 作成ガイド][authoring-guide]「カスタム Agent」）。並列起動する場合も、allowlist が担当範囲を分離していれば複数 agent が同一リソースを触らないため、§2.1 の競合は成立しない。
 
 ### 3.1 基本原則
 
@@ -138,3 +138,5 @@ Claude Code の Agent 環境ではファイルロック（`flock` 等）の信�
 | 3 | orchestrator は全 agent の完了を待機してから統合するか                               |
 | 4 | 一部の agent が結果を返さなかった場合の方針は定義されているか                        |
 | 5 | 結果の受け渡しに中間ファイル・セッションディレクトリを使っていないか                 |
+
+[authoring-guide]: ../../../rules/claude_code_authoring_guide.md

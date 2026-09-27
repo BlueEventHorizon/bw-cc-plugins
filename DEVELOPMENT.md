@@ -124,5 +124,6 @@ dprint check    # 差分チェックのみ（CI 向け）
 ## 7. 参考
 
 - `CLAUDE.md` — リポジトリ全体の規約・構成説明
-- `docs/rules/skill_authoring_notes.md` — SKILL.md 作成時の留意点
+- [docs/rules/claude_code_authoring_guide.md](docs/rules/claude_code_authoring_guide.md) — SKILL.md / カスタム Agent の書き方の規約
+- [docs/rules/claude_code_reference.md](docs/rules/claude_code_reference.md) — Claude Code の SKILL・プラグイン・Agent の仕組みの事実
 - `docs/rules/implementation_guidelines.md` — 実装ガイドライン

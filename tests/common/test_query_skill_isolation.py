@@ -2,19 +2,19 @@
 """
 検索系 SKILL の subagent 隔離 / read-only 制約テスト
 
-COMMON-DES-001 §4 (docs/specs/common/design/COMMON-DES-001_skill_base_design.md)
-で採択された以下の制約が、対象 SKILL.md に反映されていることを検証する:
+docs/rules/claude_code_authoring_guide.md（「SKILL 実行モデル」「多重防御」）の
+以下の制約が、対象 SKILL.md に反映されていることを検証する:
 
-- fork 型 SKILL の frontmatter に `context: fork` が含まれている (§4 規定リスト)
+- fork 型 SKILL の frontmatter に `context: fork` が含まれている
 - 全 query-* SKILL の Role 章に read-only 制約 (Edit/Write/MultiEdit/NotebookEdit 禁止) が
   明記されている (B 層: AI 行動規範での逸脱抑止)
 - Role 章に git 管理ファイル書き換え禁止が明記されている
 - 引数解釈ガード ([MANDATORY]) が含まれている
 
 対象:
-- 継承型 dispatcher として Role 制約を維持する SKILL (COMMON-DES-001 §6.3):
+- 継承型 dispatcher として Role 制約を維持する SKILL:
   - plugins/forge/skills/query-forge-rules/SKILL.md
-- その dispatcher が Agent ツールで起動する read-only worker (COMMON-DES-001 §6.2 の共通設計):
+- その dispatcher が Agent ツールで起動する read-only worker (作成ガイド「カスタム Agent」):
   - plugins/forge/agents/rules-query-worker.md
 
 注: forge の query-db-rules / query-db-specs は doc-advisor:query-docs へ転送する薄いラッパー
@@ -30,13 +30,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# COMMON-DES-001 §4 規定リスト: fork 型 SKILL（context: fork 必須）。
+# fork 型 SKILL（context: fork 必須）の対象。
 # doc-advisor の fork 型 query skill は外部リポジトリへ分離されたため、本リポジトリには
 # 配布される fork 型 query skill は存在しない（空リスト）。
 FORK_TARGET_SKILLS: list[Path] = []
 
 # Role 制約・引数解釈ガード・出力契約を維持する全 query-* SKILL と、その worker Agent
-# (fork 型 + COMMON-DES-001 §6.3 で継承型 dispatcher に再分類された SKILL + 実検索を担う read-only Agent)
+# (fork 型 + 継承型 dispatcher の SKILL + 実検索を担う read-only Agent)
 CONSTRAINT_TARGET_SKILLS = FORK_TARGET_SKILLS + [
     REPO_ROOT / 'plugins' / 'forge' / 'skills' / 'query-forge-rules' / 'SKILL.md',
     REPO_ROOT / 'plugins' / 'forge' / 'agents' / 'rules-query-worker.md',
@@ -69,8 +69,7 @@ def _split_frontmatter_body(skill_path: Path):
 class TestQuerySkillFrontmatterFork(unittest.TestCase):
     """fork 型 SKILL の frontmatter に `context: fork` が含まれていることを検証
 
-    対象は COMMON-DES-001 §4 規定リスト（fork 型）のみ。継承型に再分類された
-    SKILL（§4.2）は本検証の対象外。
+    対象は fork 型 SKILL のみ。継承型の SKILL は本検証の対象外。
     """
 
     def test_context_fork_present(self):
@@ -81,12 +80,12 @@ class TestQuerySkillFrontmatterFork(unittest.TestCase):
                     fm,
                     r'(?m)^context:\s*fork\s*$',
                     f"{skill_path.relative_to(REPO_ROOT)} の frontmatter に "
-                    f"`context: fork` がない (COMMON-DES-001 §4 規定リスト違反)"
+                    f"`context: fork` がない (fork 型の対象リスト違反)"
                 )
 
 
 class TestQuerySkillRoleReadonlyConstraint(unittest.TestCase):
-    """Role 章に read-only 制約が明記されていることを検証 (多重防御 B 層 / COMMON-DES-001 §8)"""
+    """Role 章に read-only 制約が明記されていることを検証 (多重防御 B 層)"""
 
     REQUIRED_PHRASES = [
         # read-only であることの明記
@@ -141,7 +140,7 @@ class TestQuerySkillArgumentGuard(unittest.TestCase):
 class TestDispatcherWorkerWiring(unittest.TestCase):
     """dispatcher SKILL が起動する worker と、worker Agent の定義が対応していることを検証
 
-    dispatcher 側は ToC を自分で読まず Agent へ委譲する構成（COMMON-DES-001 §6.3）なので、
+    dispatcher 側は ToC を自分で読まず Agent へ委譲する構成なので、
     - dispatcher の frontmatter `allowed-tools` に `Agent` がある
     - dispatcher 本文が worker の subagent_type を名指ししている
     - worker の frontmatter `name` が subagent_type の `<plugin>:` 以降と一致する

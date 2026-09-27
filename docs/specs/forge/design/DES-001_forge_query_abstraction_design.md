@@ -63,14 +63,14 @@ wrapper は category を固定し、当該 SKILL が必要とする操作だけ�
 ### SKILL 契約 [MANDATORY]
 
 `/forge:query-db-rules` / `/forge:query-db-specs` は **継承型検索 SKILL**
-（COMMON-DES-001 §3.1 デフォルト方針 / §6 規定リスト外、`context: fork` を指定しない）。
+（[Claude Code 作成ガイド][authoring-guide]「SKILL 実行モデル」に従い、`context: fork` を指定しない）。
 doc-advisor 経路の転送先 `doc-advisor:query-docs` も継承型 dispatcher であり、実検索は read-only なカスタム Agent（`doc-advisor:query-worker`）へ隔離される。隔離境界は Agent ツール起動が担うため、forge 側・doc-advisor 側のいずれも `context: fork` を使わない。
 `allowed-tools: Skill, Read, Bash, AskUserQuestion`（Bash は wrapper / 順序リスト解決 CLI の実行に使い、
 `AskUserQuestion` はセッション内変更の確認と索引整備の承認に使う。`Grep` は許可しない —
 grep フォールバックは廃止済みであり、検索の代替にしない）。書き込み・コミット・自己再帰は行わない。
 
 呼び出し側は `args` を **検索キーワード + 短い自然文タスク記述のみ**に限定する。Issue 本文・実装指示・差分等の
-親 context を貼り付けてはならない（COMMON-DES-001 §4）。
+親 context を貼り付けてはならない（[Claude Code 作成ガイド][authoring-guide]「継承型 SKILL」）。
 
 ---
 
@@ -122,3 +122,5 @@ grep フォールバックは廃止済みであり、検索の代替にしない
 - `tests/forge/doc_backend/` — backend 選択（順序リスト・settings_invalid）、doc-db 経路の低レベル CLI、
   doc-advisor 契約（`test_advisor_contract.py`）を検証する。
 - `tests/forge/{query,update}-db-{rules,specs}/` — SKILL 固有 wrapper の透過性を検証する。
+
+[authoring-guide]: ../../../rules/claude_code_authoring_guide.md
