@@ -63,7 +63,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
 doc_type `requirement`、feature `{feature}` で出力先ディレクトリを求める。
 
-- `requirement` に対応するエントリが無い場合 → `specs/{feature}/requirements/` をデフォルトとして使用
+エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たない）。
 
 ---
 

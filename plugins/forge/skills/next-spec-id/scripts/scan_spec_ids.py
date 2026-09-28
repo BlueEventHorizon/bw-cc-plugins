@@ -196,6 +196,60 @@ def scan_ids_in_branch(branch, prefix, scan_dirs, cwd=None):
     return results
 
 
+def scan_ids_in_worktree(prefix, scan_dirs, cwd=None):
+    """現在の作業ツリーから指定プレフィックスの ID を抽出する。
+
+    未コミットの新規仕様書も採番済み ID を主張しているため、branch tree だけを
+    見ると同じ ID を再発行してしまう。tracked/untracked の両方を対象にし、
+    TASK だけは未コミット plan 本文の ``task_id`` も走査する。
+
+    Returns:
+        list[tuple[str, str, str]]: (id_string, ``WORKTREE``, file_path)
+    """
+    pattern = re.compile(r'(?<![A-Za-z0-9-])' + re.escape(prefix) + r'-(\d+)')
+    unique_prefixes = sorted(set(
+        _normalize_glob_to_prefix(d) for d in scan_dirs
+    ))
+    unique_prefixes = [p for p in unique_prefixes if p]
+    if not unique_prefixes:
+        unique_prefixes = ['specs/']
+
+    output = _run_git(
+        'ls-files', '--cached', '--others', '--exclude-standard', '--',
+        *unique_prefixes,
+        cwd=cwd,
+    )
+    results = []
+    for filepath in output.splitlines():
+        if not filepath:
+            continue
+        if os.path.basename(os.path.dirname(filepath)) == 'tasks':
+            continue
+
+        match = pattern.search(filepath)
+        if match:
+            results.append((
+                '{}-{}'.format(prefix, match.group(1)),
+                'WORKTREE',
+                filepath,
+            ))
+
+        if prefix == 'TASK' and filepath.endswith('_plan.json'):
+            path = Path(cwd or '.') / filepath
+            try:
+                content = path.read_text(encoding='utf-8')
+            except (OSError, UnicodeError):
+                continue
+            for content_match in pattern.finditer(content):
+                results.append((
+                    '{}-{}'.format(prefix, content_match.group(1)),
+                    'WORKTREE',
+                    filepath,
+                ))
+
+    return results
+
+
 def find_duplicates(id_entries, shared_numbering=False):
     """異なる文書が同じ ID（共有採番モードでは同じ番号）を主張しているケースを検出する。
 
@@ -268,6 +322,10 @@ def scan_spec_ids(prefix, project_root, doc_structure_path=None, cwd=None, share
         for scan_prefix in scan_prefixes:
             pairs = scan_ids_in_branch(branch, scan_prefix, scan_dirs, cwd=cwd)
             all_pairs.extend(pairs)
+    for scan_prefix in scan_prefixes:
+        all_pairs.extend(
+            scan_ids_in_worktree(scan_prefix, scan_dirs, cwd=cwd)
+        )
 
     # 最大番号を算出（scan_prefixes 全体の横断最大値）
     number_pattern = re.compile(

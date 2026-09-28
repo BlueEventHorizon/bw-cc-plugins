@@ -39,21 +39,70 @@ def _escape(value: Any) -> str:
 
 
 def _severity_value(item: dict, severity_field: str | None) -> str:
-    """`config.severity_field` が指すキーの生の値を `item["fields"]` から取り出す。
+    """`config.severity_field` が指すキーの生の値を取り出す。
 
     DES-077 §3.1a・agenda:REQ-019 FNC-009（中立性）: ``severity`` というキー名を
     本モジュールが決め打ちしてはならない。``severity_field`` が未指定、または
     対応する値が存在しない場合は空文字列を返す。エスケープ・フォールバック
     表示（`-` 等）は呼び出し側の責務とする（表示先ごとに異なるため。
     `_severity_badge_html` はバッジ非表示、`_summary_row_html` は `-` 表示）。
+
+    探索順は ``item["fields"]`` の中が先、無ければ項目の直下（DES-077 §3.1a）。
+    呼び出し側が値を作り替えずに渡すと重大度は項目の直下に来るため、``fields``
+    だけを見ていると到達できない。``fields`` を先に見るのは、変更前に保存された
+    記録が読めなくなる経路を作らないためである。値が「無い」と判定する条件
+    （空文字・``0``・``false`` を無いとみなす扱い）は両方の探索先で同じとし、
+    ``fields`` 側が「無い」なら直下を見る。
     """
     if not severity_field:
         return ""
     fields = item.get("fields")
-    if not isinstance(fields, dict):
-        return ""
-    value = fields.get(severity_field)
+    if isinstance(fields, dict):
+        value = fields.get(severity_field)
+        if value:
+            return str(value)
+    value = item.get(severity_field)
     return str(value) if value else ""
+
+
+def _display_title(item: dict) -> str:
+    """一覧行・項目見出しに出す名前を返す（DES-077 §3）。
+
+    ``title`` は必須ではない。空であれば ``id`` を表示に用い、項目を識別できない
+    空欄を出さない。エスケープは呼び出し側が行う（他の導出ヘルパーと契約を揃える）。
+    """
+    title = item.get("title")
+    if title:
+        return str(title)
+    item_id = item.get("id")
+    return str(item_id) if item_id else ""
+
+
+def _is_settled(item: dict) -> bool:
+    """項目が決着しているかどうかを返す（DES-077 §3.3）。
+
+    決着は ``decision.by`` / ``decision.outcome`` / ``decision.reason`` の 3 値が
+    すべて非空のときとする。3 値は 1 つずつ加えられるため、揃うまでの間は部分的な
+    ``decision`` が保存される。この状態は記録側では未決着（残件に数える）であり、
+    提示もそれに揃える（agenda:REQ-021 FNC-003「提示の内容と記録の内容が食い違わない」）。
+
+    判定は本モジュール内で自前に行い、``agenda_schema`` へ依存しない。表示層は
+    ``agenda.json`` の契約だけに依存する（DES-075 §3.1）。記録側の述語との一致は
+    統合テストが固定する。
+    """
+    decision = item.get("decision")
+    if not isinstance(decision, dict):
+        return False
+    return all(_is_non_empty(decision.get(key)) for key in ("by", "outcome", "reason"))
+
+
+def _is_non_empty(value: object) -> bool:
+    """値が非空の文字列であるかを返す。
+
+    記録側（``agenda_schema``）が受理条件で使う非空判定と同じ規則である。
+    真偽値評価で済ませると、空白のみの本文や非文字列値で記録側と判定が割れる。
+    """
+    return isinstance(value, str) and value.strip() != ""
 
 
 def _severity_badge_html(item: dict, severity_field: str | None) -> str:
@@ -75,17 +124,17 @@ def _derive_status_label(item: dict) -> str:
     ``background``・``essence`` の記入有無だけを見る（独立した状態フィールドは
     持たない）:
 
-    - ``decision`` が存在する → 「決着または棄却」。``decision.outcome`` の
-      内容をそのまま表示する（呼び出し側の自由記述。agenda 機構は意味を
-      解釈しない）
-    - ``decision`` が無く、``background``・``essence`` のいずれかが非空 →
-      「進行中」
+    - 決着している（``decision`` の 3 値が揃っている。DES-077 §3.3） →
+      「決着または棄却」。``decision.outcome`` の内容をそのまま表示する
+      （呼び出し側の自由記述。agenda 機構は意味を解釈しない）
+    - 決着しておらず、``background``・``essence`` のいずれかが非空 → 「進行中」
     - 両方空 → 「未着手」
+
+    ``decision`` が部分的に保存されているだけの項目は未決着として扱う
+    （DES-077 §3.3）。
     """
-    decision = item.get("decision")
-    if isinstance(decision, dict):
-        outcome = decision.get("outcome")
-        return outcome if outcome else "(未定)"
+    if _is_settled(item):
+        return str(item["decision"]["outcome"])
     if item.get("background") or item.get("essence"):
         return "進行中"
     return "未着手"
@@ -94,58 +143,84 @@ def _derive_status_label(item: dict) -> str:
 def _decision_text(item: dict) -> str:
     """項目節の「決着」行に表示するテキストを返す。
 
-    ``decision``（DES-075 §4 の ``items[].decision``）が記入されていれば
-    「結論（理由）」の形にまとめる。未記入（``None``）の場合は決着していない
-    ことが分かる文言を返す（軽微な表示詳細。DES-077 §3 のテンプレートは
-    「決着: ...」という記入欄であることのみを示し、未記入時の具体的な文言は
-    定めていないため、ここで推測して補う）。
+    決着している（``decision`` の 3 値が揃っている。DES-077 §3.3）場合に
+    「結論（理由）」の形にまとめる。決着していない場合は決着していないことが
+    分かる文言を返す（軽微な表示詳細。DES-077 §3 のテンプレートは「決着: ...」
+    という記入欄であることのみを示し、未決着時の具体的な文言は定めていないため、
+    ここで推測して補う）。
     """
-    decision = item.get("decision")
-    if not isinstance(decision, dict):
+    if not _is_settled(item):
         return "(未定)"
-    outcome = decision.get("outcome")
-    reason = decision.get("reason")
-    if not outcome and not reason:
-        return "(未定)"
-    parts = [p for p in (outcome, reason) if p]
-    return "（".join(parts) + "）" if len(parts) > 1 else (parts[0] if parts else "(未定)")
+    decision = item["decision"]
+    return f"{decision['outcome']}（{decision['reason']}）"
 
 
 def _result_summary(item: dict) -> str:
     """アジェンダ表の「結果・課題」列に表示する短い要約を、raw のまま返す。
 
-    ``decision`` が記入済みなら outcome を、未記入なら「未着手」を意味する
-    プレースホルダを返す（軽微な表示詳細。§3 のテンプレートは列の存在のみを
-    定め、内容の導出方法は定めていないため、DES-075 §4 の既存フィールドから
-    妥当な範囲で推測する）。**エスケープしない**——他の導出ヘルパー
-    （`_derive_status_label`/`_decision_text`）と契約を揃え、エスケープは
-    呼び出し側（`_summary_row_html`）が一律に行う。
+    決着している（``decision`` の 3 値が揃っている。DES-077 §3.3）なら
+    「結論: 理由」を、そうでなければプレースホルダを返す（軽微な表示詳細。§3 の
+    テンプレートは列の存在のみを定め、内容の導出方法は定めていないため、
+    DES-075 §4 の既存フィールドから妥当な範囲で推測する）。**エスケープしない**
+    ——他の導出ヘルパー（`_derive_status_label`/`_decision_text`）と契約を揃え、
+    エスケープは呼び出し側（`_summary_row_html`）が一律に行う。
     """
-    decision = item.get("decision")
-    if isinstance(decision, dict) and decision.get("outcome"):
-        reason = decision.get("reason")
-        if reason:
-            return f"{decision['outcome']}: {reason}"
-        return decision["outcome"]
-    return "-"
+    if not _is_settled(item):
+        return "-"
+    decision = item["decision"]
+    return f"{decision['outcome']}: {decision['reason']}"
+
+
+def _changed_field_names(item: dict) -> list:
+    """`last_changed_fields` に入っているフィールド名だけを取り出す（DES-077 §3.1）。
+
+    記録側（`agenda_store.py`）は書き込みのたびに全項目の印を消してから、その
+    書き込みで変えた項目にだけ名前 1 つを立てる。したがってここに名前があるのは、
+    **直前の書き込みで変わった項目**だけである。
+    """
+    last_changed_fields = item.get("last_changed_fields")
+    if not isinstance(last_changed_fields, list):
+        return []
+    return [name for name in last_changed_fields if isinstance(name, str)]
 
 
 def _is_changed(item: dict) -> bool:
     """`last_changed_fields` が空でない項目かどうかを返す（DES-077 §3.1）。"""
-    last_changed_fields = item.get("last_changed_fields")
-    return isinstance(last_changed_fields, list) and len(last_changed_fields) > 0
+    return len(_changed_field_names(item)) > 0
+
+
+def _is_row_changed(changed_names: list, field: str) -> bool:
+    """その欄が直前の書き込みで変わったかどうかを返す（DES-077 §3.1b）。
+
+    入れ子表記に対応する——`decision.by` が変わったなら「決着」欄（`decision`）が
+    変わったものとして扱う。項目単位の点（`_is_changed`）が「どの項目か」を示すのに
+    対し、本判定は「その項目のどの欄か」まで絞る。
+    """
+    return any(name == field or name.startswith(field + ".") for name in changed_names)
+
+
+def _changed_mark(changed_names: list, field: str) -> str:
+    """変わった欄へ付ける属性（`data-changed="true"`）を返す。変化が無ければ空文字列。
+
+    CSS の付け外しに使う印であり、値そのものは表示に出ない。属性を出さない側を
+    既定にするのは、既存の出力（変化が無い欄）を変えないためである。
+    """
+    return ' data-changed="true"' if _is_row_changed(changed_names, field) else ""
 
 
 def _summary_row_html(item: dict, severity_field: str | None) -> str:
     """`#agenda-summary` テーブルの 1 行分の HTML を返す（DES-077 §3 FNC-001）。"""
     item_id = _escape(item.get("id"))
-    title = _escape(item.get("title"))
+    title = _escape(_display_title(item))
     status = _escape(_derive_status_label(item))
     severity_value = _escape(_severity_value(item, severity_field))
     severity_cell = severity_value or "-"
     result_cell = _escape(_result_summary(item))
+    # 直前に変わった項目は一覧側でも見つけられるようにする（agenda:REQ-021 FNC-002。
+    # 項目カードまで下りなくても、どの行が動いたかが俯瞰で分かる）。
+    changed_mark = ' data-changed="true"' if _is_changed(item) else ""
     return (
-        "<tr>"
+        f"<tr{changed_mark}>"
         f"<td>{item_id}</td>"
         f"<td>{title}</td>"
         f"<td>{severity_cell}</td>"
@@ -168,28 +243,38 @@ def _item_section_html(item: dict, severity_field: str | None) -> str:
 
     問題（`problem`）と推奨（`recommendation`）は任意フィールドであり、
     記入があるときだけ行を出す（空のラベルチップを並べない。DES-077 §3）。
+
+    `title` は必須ではないため、空であれば見出しにも `id` を出す（DES-077 §3）。
     """
     item_id_raw = item.get("id")
     item_id = _escape(item_id_raw)
-    title = _escape(item.get("title"))
+    title = _escape(_display_title(item))
     background = _escape(item.get("background"))
     essence = _escape(item.get("essence"))
     decision_dd = _decision_dd_html(item)
     changed = _is_changed(item)
     severity_badge = _severity_badge_html(item, severity_field)
 
+    changed_names = _changed_field_names(item)
+
+    def row(label: str, body: str, field: str, label_class: str = "") -> str:
+        """1 欄分の `<dt>`/`<dd>` を返す。直前に変わった欄には印を付ける（§3.1b）。"""
+        mark = _changed_mark(changed_names, field)
+        cls = f' class="{label_class}"' if label_class else ""
+        return f"    <dt{cls}{mark}>{label}</dt><dd{mark}>{body}</dd>"
+
     rows: list = []
     problem = item.get("problem")
     if problem:
-        rows.append(f"    <dt>問題</dt><dd>{_escape(problem)}</dd>")
-    rows.append(f"    <dt>背景</dt><dd>{background}</dd>")
-    rows.append(f"    <dt>本質</dt><dd>{essence}</dd>")
+        rows.append(row("問題", _escape(problem), "problem"))
+    rows.append(row("背景", background, "background"))
+    rows.append(row("本質", essence, "essence"))
     recommendation = item.get("recommendation")
     if recommendation:
         rows.append(
-            f'    <dt class="label-recommend">推奨</dt><dd>{_escape(recommendation)}</dd>'
+            row("推奨", _escape(recommendation), "recommendation", "label-recommend")
         )
-    rows.append(f'    <dt class="label-decision">決着</dt><dd>{decision_dd}</dd>')
+    rows.append(row("決着", decision_dd, "decision", "label-decision"))
     rows_html = "\n".join(rows)
 
     return (
@@ -214,6 +299,8 @@ _STYLE = """
     --line: #e5e8ee;
     --accent: #4a6fa5;
     --changed: #f0c36d;
+    --changed-soft: #fdf5e4;
+    --changed-ink: #8a6410;
   }
   body {
     margin: 0;
@@ -272,6 +359,11 @@ _STYLE = """
     border-bottom: 1px solid var(--line);
   }
   #agenda-summary tr:last-child td { border-bottom: none; }
+  /* 直前の書き込みで変わった項目の行（DES-077 §3.1b）。色に加えて左端の帯でも示す。 */
+  #agenda-summary tbody tr[data-changed="true"] { background: var(--changed-soft); }
+  #agenda-summary tbody tr[data-changed="true"] td:first-child {
+    box-shadow: inset 3px 0 0 var(--changed);
+  }
   #agenda-summary tbody tr:hover { background: #f6f9fd; }
   #agenda-summary td:first-child, #agenda-summary th:first-child {
     text-align: center; width: 3em; color: var(--ink-muted);
@@ -338,8 +430,21 @@ _STYLE = """
   }
   dt.label-recommend { background: var(--accent); }
   dt.label-decision { background: #5d7a5f; }
-  dd { margin: 0; }
+  /* 本文の改行・空行は書き手が付けた構造である。HTML の既定（改行を空白へ畳む）に
+     任せると段落が 1 行に潰れて読めなくなるため、そのまま保つ。 */
+  dd { margin: 0; white-space: pre-wrap; }
   dd .undecided { color: var(--ink-muted); }
+
+  /* 直前の書き込みで変わった欄（DES-077 §3.1b）。色に加えて左端の帯と濃いラベルで示し、
+     色以外の手がかりを残す（WCAG 2.2 達成基準 1.4.1）。 */
+  dt[data-changed="true"] { background: var(--changed-ink); }
+  dd[data-changed="true"] {
+    background: var(--changed-soft);
+    border-left: 3px solid var(--changed);
+    border-radius: 3px;
+    padding: 2px 8px;
+    margin-left: -11px;
+  }
 
   .severity-badge {
     display: inline-block;

@@ -1,12 +1,15 @@
 # ToC checksums for key: rules
 # Auto-generated - do not edit
-generated_at: 2026-08-29T03:35:35Z
-file_count: 7
+generated_at: 2026-09-28T12:06:36Z
+file_count: 10
 checksums:
+  docs/rules/agent_data_exchange_rules.md: eccb938b1f931b73149070712cee213f7263f2d7435afb65124018e600dae2cb
+  docs/rules/claude_code_authoring_guide.md: 2729d902d214b0a16280500b60759becd08cdb6d2e475c35a8e82d15fb61a823
+  docs/rules/claude_code_reference.md: c158d66e30f3eec4ee9b2a9d851f233333fbf43b6c55724590a47458c13ef87e
   docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
-  docs/rules/document_writing_rules.md: 14a02bd5208868e7a31acd76cfc91a599be563abdd61999c630464c58e87fba7
-  docs/rules/forge_doc_access_principle.md: 6a7538cb53287b28cfba35ced7b3149553d13f641ed5f068c44d2a419053b806
-  docs/rules/implementation_guidelines.md: c5b214189dc1ffd92bbb2c9543cdb2022e82109c6e950dd45239e269e6078342
-  docs/rules/skill_authoring_notes.md: 04df243b785233eed08e6fe8029042267a315e191755fd947b1719448a898aa8
-  docs/rules/skill_launch_paths_definitions.md: 745c42ca2e9183c597b35ebee041fc7664c29618f5db8e61effba11728456276
+  docs/rules/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a
+  docs/rules/forge_doc_access_principle.md: 19548891135917407697ebe037a89886961ced9d1f9e92cdd71079ddbf9407bf
+  docs/rules/forge_document_type_roles.md: c18e0f1699e15dfec756cb86498990d57856dee5dbf5a5b518adcac3f9ec9cba
+  docs/rules/implementation_guidelines.md: 85a94b187b734184eed6f401c7f9f9465e09db8d6ab713b3dbaff5ed866d1c64
+  docs/rules/script_error_output_rules.md: 599126a0033d941a78f641a30d853d5d196c6817064fcad72b75074126b3150f
   docs/rules/version_migration_design.md: ce28a295db8659ff25af1d7c7a8e659d1dc5c33c250fca50664988ba3cfe4044

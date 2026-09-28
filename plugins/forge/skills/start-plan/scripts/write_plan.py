@@ -2,8 +2,9 @@
 """AI が決定した計画内容（候補 JSON）を検証し、計画書（`{feature}_plan.json`）へ書き出す。
 
 `/forge:start-plan` Phase 4 のローカル操作入口。AI はタスクの意味内容（title・description・
-acceptance_criteria 等）を決定するが、計画書ファイルへの書き込みと構造検証は本 script が担う
-（REQ-020 FNC-002）。
+acceptance_criteria 等）を決定するが、計画書ファイルへの書き込みと構造検証は本 script が担う。
+単一 SKILL が所有する決定論的な実体ロジック（DES-024 §6.1「SKILL ローカル実体」）であり、
+他 SKILL へ再利用される共有低レベル script ではない。
 """
 
 import argparse

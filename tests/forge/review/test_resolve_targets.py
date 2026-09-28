@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-resolve_targets.py のテスト（DES-045 §3.3 / §7 テスト設計）
+resolve_targets.py のテスト（DES-066 §3.1.1 / §6 テスト設計）
 
 一時 git リポジトリを実際に作成し、staged / unstaged / untracked / commit 済みの
-ケースを作り分けて実挙動を検証する（`tests/forge/msg-sys/test_check_setup.py` の
-importlib 直接ロード・一時ディレクトリ実ファイル作成方式を踏襲）。
+ケースを作り分けて実挙動を検証する（importlib 直接ロード・一時ディレクトリへの
+実ファイル作成方式）。
 
 実行:
   python3 -m unittest tests.forge.review.test_resolve_targets -v
@@ -24,7 +24,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "resolve_targets.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_resolve_targets", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("resolve_targets", _SCRIPT_PATH)
 resolve_targets_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(resolve_targets_mod)
 
@@ -60,7 +60,7 @@ def _write(project_root: Path, rel_path: str, content: str = "content\n"):
 
 
 class DiffModeTest(unittest.TestCase):
-    """diff モード: 未 commit 変更（staged + unstaged）+ 未追跡ファイルの列挙（DES-045 §3.3）。"""
+    """diff モード: 未 commit 変更（staged + unstaged）+ 未追跡ファイルの列挙（REQ-013 FNC-1312）。"""
 
     def test_staged_unstaged_untracked_are_all_listed(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -89,7 +89,7 @@ class DiffModeTest(unittest.TestCase):
         )
 
     def test_non_ascii_untracked_filename_is_not_escaped(self):
-        """非ASCIIファイル名が git の C-style クォート化されずそのまま返る（msg-review review_id=043e2823d633478fb8e8dd1a74fa92a5 round=2 所見1）。"""
+        """非ASCIIファイル名が git の C-style クォート化されずそのまま返る（実レビュー review_id=043e2823d633478fb8e8dd1a74fa92a5 round=2 所見1）。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _init_repo(project_root)
@@ -104,7 +104,7 @@ class DiffModeTest(unittest.TestCase):
         self.assertIn("日本語.txt", result["files"])
 
     def test_gitignored_untracked_file_is_excluded(self):
-        """`.gitignore` 対象の未追跡ファイルは無視され、通常の未追跡ファイルのみ返る（DES-045 §3.3）。"""
+        """`.gitignore` 対象の未追跡ファイルは無視され、通常の未追跡ファイルのみ返る（REQ-013 FNC-1312）。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _init_repo(project_root)
@@ -822,7 +822,7 @@ def _run_main_capture(argv):
 
 
 class MainTest(unittest.TestCase):
-    """公開インターフェース main() の引数処理・単一 JSON 出力・終了コードを検証する（DES-045 §3.3）。"""
+    """公開インターフェース main() の引数処理・単一 JSON 出力・終了コードを検証する（REQ-013 FNC-1312）。"""
 
     def test_diff_mode_outputs_single_json_line_with_exit_code_0(self):
         with tempfile.TemporaryDirectory() as tmpdir:

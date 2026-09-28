@@ -24,7 +24,12 @@ SCRIPT = SCRIPTS_PATH / "group_review_batch.py"
 if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
-from group_review_batch import InvalidInputError, build_review_batches, normalize_group_key
+from group_review_batch import (
+    _PROTOCOL_LINE_PREFIXES,
+    InvalidInputError,
+    build_review_batches,
+    normalize_group_key,
+)
 
 
 class TestNormalizeGroupKey(unittest.TestCase):
@@ -275,7 +280,7 @@ class TestScopeAggregation(unittest.TestCase):
 
         判定をバッチ単位（`scope_text is None`）で行うと、合算本文が非 None になるため
         残りのメンバーが漏れる。しかも範囲外 0 件の本文は「最終形に到達する」と断言するので、
-        沈黙ではなく誤った断定をレビュアーへ渡すことになる（Codex レビュー
+        沈黙ではなく誤った断定をレビュアーへ渡すことになる（実レビュー
         review_id=26c40f40... で検出）。
         """
         out = build_review_batches({
@@ -337,7 +342,14 @@ class TestScopeAggregation(unittest.TestCase):
             self.assertFalse(line.lstrip().startswith("#"), line)
             self.assertFalse(line.lstrip().startswith("```"), line)
             self.assertFalse(line.lstrip().startswith("REVIEW_RESULT:"), line)
-            self.assertFalse(line.lstrip().startswith("[msg-review]"), line)
+
+    def test_completion_declaration_stays_in_the_protocol_prefixes(self):
+        """禁止接頭辞の定数が完了宣言行を守り続けていること。
+
+        上の検証は期待値を literal で持つ。定数側から接頭辞が落ちても、
+        生成本文が偶然その行を含まなければ気づけないため、定数の内容も固定する。
+        """
+        self.assertIn("REVIEW_RESULT:", _PROTOCOL_LINE_PREFIXES)
 
     def test_newline_in_scope_in_raises(self):
         with self.assertRaises(InvalidInputError):

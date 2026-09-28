@@ -131,7 +131,7 @@ SSE_WITHOUT_MATCHING_ID = (
 )
 
 #: KEY 不在の tool error（JSON-RPC error 経路）。doc-db 0.3.3 の識別子契約
-#: （ADR-058）に基づく実応答の形（2026-08-02 実測）。判別の正本は `error.data.code`
+#: （DES-057 §4.5）に基づく実応答の形（2026-08-02 実測）。判別の正本は `error.data.code`
 #: であり、`message` 先頭の識別子トークンは補助。文言全文・数値 code を判別根拠にしない。
 KEY_NOT_FOUND_ERROR_JSON = json.dumps({
     "jsonrpc": "2.0",
@@ -144,7 +144,7 @@ KEY_NOT_FOUND_ERROR_JSON = json.dumps({
 })
 
 #: ゴミ箱状態の tool error（JSON-RPC error 経路）。`KEY_TRASHED` は公開契約の値で
-#: あるため `trash_index` を実行して採取せず、契約記述（ADR-058 / DES-057 §4.5）から
+#: あるため `trash_index` を実行して採取せず、契約記述（DES-057 §4.5）から
 #: 書く。message の文言は公開契約ではない（契約は先頭の識別子トークンのみ）。
 KEY_TRASHED_ERROR_JSON = json.dumps({
     "jsonrpc": "2.0",
@@ -690,7 +690,7 @@ class ToolErrorTest(unittest.TestCase):
 
 
 class ErrorIdentifierContractTest(unittest.TestCase):
-    """doc-db 0.3.3 の error 識別子契約（ADR-058 / DES-057 §4.5）。
+    """doc-db 0.3.3 の error 識別子契約（DES-057 §4.5）。
 
     判別の正本は `ToolError.data["code"]`（`KEY_NOT_FOUND` / `KEY_TRASHED`）であり、
     `message` 先頭の識別子トークンは補助。メッセージ文言の全文・数値 code では

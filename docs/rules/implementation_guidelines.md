@@ -75,7 +75,7 @@ AI が SKILL.md 内のスクリプトを解釈して実行する際、コード�
 以下の Python コードを実行してデータを集計する:
 
     import json
-    data = json.load(open('plan.yaml'))
+    data = json.load(open('plan.json'))
     # ... 50行のロジック ...
 
 # ✅ OK — 外部スクリプトを呼び出す
@@ -102,6 +102,23 @@ SKILL.md からの参照には `${CLAUDE_SKILL_DIR}` または `${CLAUDE_PLUGIN_
 
 ---
 
+## 一時ファイルは実行ごとに一意な場所へ作り、確実に削除する [MANDATORY]
+
+シェルコマンドが一時ファイルを作るときは、`mktemp -d` で実行ごとに一意なディレクトリを作り、`trap` で終了時に削除する。
+
+```bash
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+```
+
+- **固定パスを使わない**。並行実行（複数セッション・複数対象の同時作業）や前回異常終了時の残骸と衝突し、別の対象の内容を誤って結合・上書きする
+- **後始末を末尾の `rm` で書かない**。途中の失敗で到達せず残骸が残る。`trap ... EXIT` は失敗経路でも走る
+- **配布物では、プロジェクト内のディレクトリを一時ファイルの置き場にしない**。利用者環境で `.gitignore` されている保証がなく、一時ファイルが `git status` に現れ commit される
+
+例外は、AI が `Write` ツールで書き script が読む受け渡しファイルである。`Write` はプロジェクト外へ書けないため `.claude/.temp/` 配下を使い、読み取り側の script が処理後に削除する。
+
+---
+
 ## 設計書の保守 [MANDATORY]
 
 forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.md`「設計書の保守」）に従う。
@@ -116,21 +133,23 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 `plugins/` 配下のうち**利用者環境で読まれるもの**（SKILL.md / `agents/*.md` / `commands/*.md` / 配布物内蔵 `docs/*.md` / templates）から、**本リポジトリに実在する** `docs/` 配下の文書（`docs/specs/` / `docs/rules/` / `docs/readme/`）を参照しない。パス直書きも spec ID による出典表記も禁止する。
 
+利用者環境に実体が無いため参照が解決できず、規範の根拠も検証できないからである。
+
 ```text
 ❌ 複数文書間の優先順位は DES-028 §3.4.1 に従う
 ❌ 詳細は docs/specs/forge/design/DES-029... を参照
 ```
 
-**script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい（判断根拠は [ADR-055](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md) §2.3）。
+**script（`.py` / `.sh`）のコメント・docstring と、`scripts/` 配下の開発者向け README は対象外とする。** 基準は拡張子ではなく**誰が読むか**である。 利用者環境のフローでは読まれず（SKILL.md はコンテキストへ注入され内蔵 docs は SKILL から名指しで読まれるが、script はソースを開いた者にしか見えない）、開くのは実装を追う開発者だからである。実装の意図がどの決定に由来するかを実装のすぐ隣に残せる価値のほうが大きい。
 
 ```text
-⭕ 本スクリプトは REQ-012 FNC-004 の実装である    （script のコメント）
+⭕ 本スクリプトは REQ-NNN FNC-NNN の実装である    （script のコメント。実在する仕様 ID に置き換える）
 ```
 
 **ID 体系・書式の抽象例は許容する。** プレースホルダ番号（`DES-001` / `REQ-001` / `TASK-001` 等）や、対象プロジェクト側の構造を示すプレースホルダパス（`docs/specs/<feature>/design/*.md`、`docs/specs/**/design/` 等）は、実在文書を指していないため対象外である。format 文書・設定例・出力例がこれらを使えないと成立しないため、禁止してはならない。
 
 ```text
-⭕ - requirement_id: REQ-001          （plan.yaml の書式例）
+⭕ - requirement_id: REQ-001          （plan.json の書式例）
 ⭕ docs/specs/<feature>/design/*.md    （対象プロジェクトの構造を示すプレースホルダ）
 ⭕ "docs/specs/**/design/": design     （.doc_structure.yaml の設定例）
 ```
@@ -147,6 +166,8 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 ### 規範の置き場は 2 通り。どちらを選んでもよい
 
+2 通りを用意するのは、本文へ畳む方式だけでは分量の大きい規範で SKILL.md が肥大するためである。
+
 | 方式                                    | 書き方                                                                       | 向いているケース                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **A. 参照元に本文を持たせる**           | 規範本文を参照元（SKILL.md / agent / 内蔵 docs）にそのまま書く               | 分量が小さい。1 箇所でしか使わない                                       |
@@ -159,7 +180,19 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 方式 B で新規文書を作ったら、その配布物の ToC を再生成する（forge なら `update-forge-toc`）。再生成しないと `/forge:query-forge-rules` から発見できない。
 
-判断根拠: [ADR-055_distribution_boundary_for_doc_references.md](../specs/common/design/ADR-055_distribution_boundary_for_doc_references.md)
+---
+
+## 他コンポーネントへの窓口は SKILL だけ [MANDATORY]
+
+他のコンポーネントに依存するとき、インターフェースは **SKILL に限る**。依拠してよいのは SKILL.md が公開する引数・出力の契約だけである。
+
+- 他コンポーネントのスクリプトを直接呼ばない
+- 内部設計 ID（DES / FNC / ADR）・内部文書の記述をインターフェースにしない
+- 設計書を読んで同じ動作を自分で実装しない
+
+内部は予告なく変わる。スクリプトの引数・出力・配置も内部実装であり、公開契約ではない。
+
+SKILL で表せない情報・機能を公開する必要がある場合は、SKILL 個別の文書・スクリプトではなく、プラグイン全体の公開物として置く。
 
 ---
 

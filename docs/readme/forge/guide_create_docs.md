@@ -86,7 +86,6 @@ Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. 
 ### Reference Documents
 
 - `plugins/forge/docs/requirement_format.md` — Requirements template
-- `plugins/forge/docs/spec_format.md` — ID classification catalog
 - `plugins/forge/docs/spec_design_boundary_spec.md` — Requirements/design boundary guide
 
 ---
@@ -176,7 +175,7 @@ Extract tasks from design documents and create a JSON plan.
 ### Plan Structure (Minimal Complete JSON)
 
 The plan is a JSON file named `{feature}_plan.json`. **It is not Markdown.**
-The top level has exactly four keys: `requirements_traceability` / `design_traceability` / `tasks` / `revision_history`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document's `feature_type: temporary-feature` frontmatter. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
+The top level has exactly three keys: `requirements_traceability` / `design_traceability` / `tasks`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document's `feature_type: temporary-feature` frontmatter. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
 
 ```json
 {
@@ -210,8 +209,7 @@ The top level has exactly four keys: `requirements_traceability` / `design_trace
       "acceptance_criteria": "Yes/No-judgable acceptance criteria",
       "required_reading": ["specs/{feature}/design/DES-001_xxx.md"]
     }
-  ],
-  "revision_history": [{ "date": "2026-03-15", "content": "Initial revision" }]
+  ]
 }
 ```
 

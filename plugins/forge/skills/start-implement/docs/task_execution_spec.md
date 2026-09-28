@@ -55,7 +55,9 @@ Step 5: 完了処理（結果報告、終了）
 | producer validator         | return 前に JSON を検証するローカル操作入口の絶対パス         |
 | producer input path        | 候補 JSON を安全に渡す一時ファイルの相対パス                  |
 
-**タスクコンテキストファイルを Read で読み込み、以下のフィールドから実行に必要な情報を得る**（`task_id` / `title` / `priority` / `description` / `acceptance_criteria` / `scope_in` / `scope_out` / `required_reading` / `implementation_instructions` / `verification`）。このファイルは今回のタスク専用に生成されたものであり、他タスクの情報は含まれない。
+**タスクコンテキストファイルを Read で読み込み、以下のフィールドから実行に必要な情報を得る**（`task_id` / `title` / `priority` / `description` / `acceptance_criteria` / `scope_in` / `scope_out` / `required_reading` / `spec_authority` / `implementation_instructions` / `verification`）。このファイルは今回のタスク専用に生成されたものであり、他タスクの情報は含まれない。
+
+`spec_authority` は、`required_reading` の `design_docs` / `requirement_docs` / `additional` に挙がった文書のうち **並行状態にある文書**（新旧 2 つの仕様が同時に存在し、この文書が新しい側であるもの）のパスの配列である。オーケストレーターが機械的に判定して渡す。**このフィールドは必ず存在する。** 該当が無い場合は空配列であり、「渡されなかった」状態は起こらない（該当を判定できなかった場合、タスクコンテキストの生成そのものが失敗するため、executor は起動されない）。扱いは Step 3 が定める。
 
 `acceptance_criteria` が `null` でない場合、記載された基準を Step 4 の検証要件へ追加する（Step 4.3 参照）。
 
@@ -114,6 +116,16 @@ Step 5: 完了処理（結果報告、終了）
 ---
 
 ## Step 3: 実装
+
+### 3.0 並行状態にある文書に従う [MANDATORY]
+
+`spec_authority` が空でない場合、そこに挙がった文書は**その文書が対象とする範囲の現在の仕様**である。当該範囲について、旧仕様の記述（既存の要件定義書・設計書・計画書・ソースコード）は現在の仕様ではなく、まだ更新されていないだけである。
+
+- 当該範囲の実装で、旧仕様の記述を実装の根拠にしない
+- **これは矛盾を見つけたときだけの話ではない。** 矛盾の有無に関わらず、当該範囲の現在の仕様は `spec_authority` の文書である。新旧を読み比べて矛盾を探す作業は要らない
+- 旧仕様の文書を書き換えない。齟齬の解消は実装完了後の別工程が担う
+
+`spec_authority` が空配列の場合は、並行状態にある文書が無い。`required_reading` の各文書をそのまま現在の仕様として扱う。
 
 ### 3.1 実装の進め方
 

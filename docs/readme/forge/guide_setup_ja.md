@@ -104,22 +104,23 @@ forge スキル一覧を表示し、選択したスキルの引数をガイド�
 
 ### ウィザードの流れ
 
-1. **スキル選択**: 番号で選択
+1. **スキル選択**: 一覧が表示され、その中から選ぶ
 2. **引数構成**: 選択スキルに応じた対話形式の質問
 3. **コマンド確認**: 構築されたコマンドを表示して実行確認
 
 ```
-1.  review                            : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
-2.  consult                           : 議論を進行。論点を立て、討議ファイルに記録しながら 1 件ずつ
-3.  start-requirements                : 要件定義書の作成。3モード対応
-4.  start-design                      : 設計書の作成。レビュー+自動修正→commit
-5.  start-plan                        : 計画書の作成。レビュー+自動修正→commit
-6.  start-implement                   : 計画書から実装・レビュー・計画更新
-7.  start-uxui-design                 : デザイントークン・UI 視覚仕様を創造
-8.  create-feature-from-markdown-plan : Markdown plan から要件定義→設計書へ展開
-9.  merge-specs                       : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
-10. setup-doc-structure               : .doc_structure.yaml を対話的に生成
-11. setup-version-config              : .version-config.yaml を対話的に生成
-12. update-version                    : バージョンを一括更新。CHANGELOG 自動反映
-13. query-forge-rules                 : forge 内蔵知識ベースを ToC 検索
+利用可能な forge スキル:
+
+  review              : コード・文書をレビュー。重大度 🔴🟡🟢 で分類
+  start-requirements  : 要件定義書の作成。3モード対応
+  start-design        : 設計書の作成。レビュー+自動修正→commit
+  start-plan          : 計画書の作成。レビュー+自動修正→commit
+  start-implement     : 計画書から実装・レビュー・計画更新
+  start-uxui-design    : デザイントークン・UI 視覚仕様を創造
+  create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
+  merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
+  setup-doc-structure : .doc_structure.yaml を対話的に生成
+  setup-version-config: .version-config.yaml を対話的に生成
+  update-version      : バージョンを一括更新。CHANGELOG 自動反映
+  query-forge-rules   : forge 内蔵知識ベースを ToC 検索
 ```

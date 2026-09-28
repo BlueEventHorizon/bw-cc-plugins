@@ -49,39 +49,39 @@ class HappyPathTest(unittest.TestCase):
         raw = json.dumps(
             {
                 "evaluations": [
-                    _valid_entry(0),
-                    _drop_entry(1, "invalid"),
-                    _drop_entry(2, "misunderstanding"),
-                    _drop_entry(3, "out_of_scope"),
+                    _valid_entry(1),
+                    _drop_entry(2, "invalid"),
+                    _drop_entry(3, "misunderstanding"),
+                    _drop_entry(4, "out_of_scope"),
                 ]
             }
         )
         result = parse_mod.interpret_evaluation(raw, findings_count=4)
         self.assertEqual(result["status"], "ok")
-        self.assertEqual([e["index"] for e in result["evaluations"]], [0, 1, 2, 3])
+        self.assertEqual([e["index"] for e in result["evaluations"]], [1, 2, 3, 4])
 
     def test_out_of_order_indices_are_sorted(self):
-        raw = json.dumps({"evaluations": [_drop_entry(1), _valid_entry(0)]})
+        raw = json.dumps({"evaluations": [_drop_entry(2), _valid_entry(1)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=2)
         self.assertEqual(result["status"], "ok")
-        self.assertEqual([e["index"] for e in result["evaluations"]], [0, 1])
+        self.assertEqual([e["index"] for e in result["evaluations"]], [1, 2])
 
     def test_fenced_json_is_unwrapped(self):
-        body = json.dumps({"evaluations": [_drop_entry(0)]})
+        body = json.dumps({"evaluations": [_drop_entry(1)]})
         raw = f"```json\n{body}\n```"
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
     def test_prose_before_fenced_json_is_ignored(self):
         """実測: 指示（前置き文を書かない）に反して説明文を書いてから ```json を出す応答がある。"""
-        body = json.dumps({"evaluations": [_drop_entry(0)]})
+        body = json.dumps({"evaluations": [_drop_entry(1)]})
         raw = f"## 検証結果\n\n所見0 は事実誤認でした。\n\n```json\n{body}\n```"
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
     def test_prose_before_unfenced_json_is_ignored(self):
         """実測: コードフェンスすら付けず、前置き文の直後に生の JSON を返す応答がある。"""
-        body = json.dumps({"evaluations": [_drop_entry(0)]})
+        body = json.dumps({"evaluations": [_drop_entry(1)]})
         raw = f"No catalog entry found. Finalizing.\n\n{body}"
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
@@ -89,14 +89,14 @@ class HappyPathTest(unittest.TestCase):
     def test_last_fenced_block_is_used_when_multiple_present(self):
         """途中に例示コードブロックを挟んでいても、最後のブロックを結論として使う。"""
         example = json.dumps({"evaluations": []})
-        body = json.dumps({"evaluations": [_drop_entry(0)]})
+        body = json.dumps({"evaluations": [_drop_entry(1)]})
         raw = f"例えばこういう形式です:\n```json\n{example}\n```\n\n実際の結論:\n```json\n{body}\n```"
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
     def test_valid_without_extra_fields_is_not_required_for_drops(self):
         """drop 系 disposition は confidence/fix_confident を持たなくてよい。"""
-        raw = json.dumps({"evaluations": [_drop_entry(0, "misunderstanding")]})
+        raw = json.dumps({"evaluations": [_drop_entry(1, "misunderstanding")]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
@@ -125,79 +125,79 @@ class ContractViolationTest(unittest.TestCase):
         self.assertEqual(result["status"], "error")
 
     def test_count_mismatch_too_few(self):
-        raw = json.dumps({"evaluations": [_drop_entry(0)]})
+        raw = json.dumps({"evaluations": [_drop_entry(1)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=2)
         self.assertEqual(result["status"], "error")
 
     def test_count_mismatch_too_many(self):
-        raw = json.dumps({"evaluations": [_drop_entry(0), _drop_entry(1)]})
+        raw = json.dumps({"evaluations": [_drop_entry(1), _drop_entry(2)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_duplicate_index(self):
-        raw = json.dumps({"evaluations": [_drop_entry(0), _drop_entry(0)]})
+        raw = json.dumps({"evaluations": [_drop_entry(1), _drop_entry(1)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=2)
         self.assertEqual(result["status"], "error")
 
     def test_index_out_of_range(self):
-        raw = json.dumps({"evaluations": [_drop_entry(5)]})
+        raw = json.dumps({"evaluations": [_drop_entry(6)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_index_must_be_int_not_bool(self):
-        entry = _drop_entry(0)
+        entry = _drop_entry(1)
         entry["index"] = True
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_unknown_disposition(self):
-        raw = json.dumps({"evaluations": [_drop_entry(0, "bogus")]})
+        raw = json.dumps({"evaluations": [_drop_entry(1, "bogus")]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_empty_reason(self):
-        entry = _drop_entry(0)
+        entry = _drop_entry(1)
         entry["reason"] = "   "
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_missing_severity(self):
-        entry = _drop_entry(0)
+        entry = _drop_entry(1)
         del entry["severity"]
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_unknown_severity(self):
-        entry = _drop_entry(0, severity="urgent")
+        entry = _drop_entry(1, severity="urgent")
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_severity_required_even_for_valid(self):
-        entry = _valid_entry(0)
+        entry = _valid_entry(1)
         del entry["severity"]
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_valid_missing_confidence(self):
-        entry = _valid_entry(0)
+        entry = _valid_entry(1)
         del entry["confidence"]
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_valid_bad_confidence_value(self):
-        entry = _valid_entry(0, confidence="very_sure")
+        entry = _valid_entry(1, confidence="very_sure")
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_valid_fix_confident_not_boolean(self):
-        entry = _valid_entry(0)
+        entry = _valid_entry(1)
         entry["fix_confident"] = "yes"
         raw = json.dumps({"evaluations": [entry]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
@@ -208,22 +208,22 @@ class ConfidenceFixConsistencyTest(unittest.TestCase):
     """confidence が confirmed でなければ fix_confident は真になれない。"""
 
     def test_confirmed_with_fix_confident_true_is_ok(self):
-        raw = json.dumps({"evaluations": [_valid_entry(0, "confirmed", True)]})
+        raw = json.dumps({"evaluations": [_valid_entry(1, "confirmed", True)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
     def test_inferred_with_fix_confident_false_is_ok(self):
-        raw = json.dumps({"evaluations": [_valid_entry(0, "inferred", False)]})
+        raw = json.dumps({"evaluations": [_valid_entry(1, "inferred", False)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "ok")
 
     def test_inferred_with_fix_confident_true_is_rejected(self):
-        raw = json.dumps({"evaluations": [_valid_entry(0, "inferred", True)]})
+        raw = json.dumps({"evaluations": [_valid_entry(1, "inferred", True)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
     def test_unverified_with_fix_confident_true_is_rejected(self):
-        raw = json.dumps({"evaluations": [_valid_entry(0, "unverified", True)]})
+        raw = json.dumps({"evaluations": [_valid_entry(1, "unverified", True)]})
         result = parse_mod.interpret_evaluation(raw, findings_count=1)
         self.assertEqual(result["status"], "error")
 
@@ -232,7 +232,7 @@ class MainTest(unittest.TestCase):
     """main(): --response-file / --findings-count 引数処理・単一 JSON 出力。"""
 
     def test_cli_reads_response_file(self):
-        body = json.dumps({"evaluations": [_drop_entry(0)]})
+        body = json.dumps({"evaluations": [_drop_entry(1)]})
         with tempfile.NamedTemporaryFile(
             "w", suffix=".txt", delete=False, encoding="utf-8"
         ) as handle:

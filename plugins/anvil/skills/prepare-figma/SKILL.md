@@ -1,23 +1,23 @@
 ---
 name: prepare-figma
-description: Figma デザインからデザイン仕様書を作成する subagent スキル。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-issue の Phase 6 から呼び出される。
+description: Figma デザインからデザイン仕様書を作成する AI 専用スキル（impl-ui が立てる汎用 Agent の中で Skill ツールから起動される）。PAT で対象フレームを特定し、MCP で詳細取得、PAT で精度補完。画面設計書の nodeId を信頼せず Figma で検証する。JSON レイアウト定義から AI 理解プレビューを自動生成し、Figma SS と並べて検証する。impl-ui（design 段階）から呼び出される。
 user-invocable: false
-allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(uv *), Bash(bash *), Bash(mkdir *), Bash(command *), Bash(which *), Bash(brew *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill(resolve-figma-node), Skill(figma-mcp-guide), mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
+allowed-tools: Bash(curl *), Bash(echo *), Bash(jq *), Bash(python3 *), Bash(uv *), Bash(bash *), Bash(mkdir *), Bash(command *), Bash(which *), Bash(brew *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill(resolve-figma-node), mcp__figma-dev-mode-mcp-server__get_design_context, mcp__figma-dev-mode-mcp-server__get_metadata, mcp__figma-dev-mode-mcp-server__get_screenshot, mcp__figma-dev-mode-mcp-server__get_variable_defs
 ---
 
 # prepare-figma
 
-Figma デザインからデザイン仕様書（What: 何を作るか）を作成する subagent スキル。
+Figma デザインからデザイン仕様書（What: 何を作るか）を作成する AI 専用スキル（impl-ui が立てる汎用 Agent の中で Skill ツールから起動される）。
 
 **作成するもの**: デザイン仕様書（`specs/design/{id}/デザイン仕様書.md`）
 **作成しないもの**: 実装設計書（How: どう作るか）— ルール文書・類似PR・既存コードの調査後に作成するため
 
 ## 入力
 
-オーケストレータ（impl-issue Phase 6）から以下を受け取る：
+オーケストレータ（impl-ui の design 段階）から以下を受け取る：
 
 - **画面 ID**（例: `{画面ID}_{画面名}_{バリエーション}`）
-- **画面設計書パス** — オーケストレータが Phase 2 で特定・読み込み済みのファイルパス
+- **画面設計書パス** — impl-issue の仕様書調査で特定・読み込み済みのファイルパス
 - **確認・調整事項パス**（任意）— 存在する場合のファイルパス
 - **Figma URL** — 画面設計書に記載されていた Figma URL
 
@@ -392,7 +392,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/prepare-figma/scripts/render_preview.sh" \
 - すべての差異が **🟡 データなし** または **🟢 ダミーデータ** に分類された
 - すなわち **🔴 構造誤りがゼロ** になった
 
-この時点で初めて、ユーザーレビュー（impl-issue Phase 7）に進む資格を得る。
+この時点で初めて、ユーザーレビュー（impl-ui Phase 2）に進む資格を得る。
 
 #### 進めない場合
 
@@ -487,11 +487,3 @@ PAT / MCP で数値が取れていても、スクリーンショットで見た�
 8. **アスキーアート配置図を書いてしまう（廃止済み）** — レイアウトは JSON が単一の真実。アスキーアートは禁止
 9. **プレビュー生成をスキップする** — `render_preview.sh` の実行は必須。生成された PNG を Figma SS と並べて見比べないと AI の理解違いが残る
 10. **JSON とテーブルに同じプロパティを二重に書く** — padding/gap/font は JSON だけに書く。テーブルは Figma 参照と役割の説明のみ
-
-## 参照
-
-- [デザイン仕様書テンプレート](references/design-spec-template.md)
-- [Preview JSON スキーマ](references/preview-json-schema.md)
-- [プレビュー生成スクリプト](scripts/README.md)
-- [figma-mcp-guide スキル](../figma-mcp-guide/SKILL.md) — Figma MCP ツール仕様
-- [resolve-figma-node スキル](../resolve-figma-node/SKILL.md) — nodeId 発見・検証

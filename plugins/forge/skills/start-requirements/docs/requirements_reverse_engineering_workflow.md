@@ -9,11 +9,11 @@ applicable_when:
 
 # 要件定義書作成ワークフロー（既存アプリ解析版）
 
-## 必須参照文書
+## 必須文書
 
 **NEVER skip.** 下記を全て読み込み、深く理解すること
 
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID 分類カタログ（使用する ID をここから選択）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_principles_spec.md`** — 要件定義書の定義（責務・書かないもの・存在期間・改訂）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
@@ -270,15 +270,21 @@ Skill ツールで `/forge:review` を起動する:
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。
 
-### 5.3 specs ToC 更新
+### 5.3 参照の実在性検査
+
+<!-- 未実装: 参照の実在性検査 -->
+
+現時点では本節で行う処理は無い。次の節へ進む。
+
+### 5.4 specs ToC 更新
 
 `/forge:update-db-specs` が利用可能であれば実行する。
 
-### 5.4 commit/push 確認
+### 5.5 commit/push 確認
 
 `/anvil:commit` を実行して commit/push を確認する。
 
-### 5.5 完了案内
+### 5.6 完了案内
 
 ```
 要件定義書を作成しました:

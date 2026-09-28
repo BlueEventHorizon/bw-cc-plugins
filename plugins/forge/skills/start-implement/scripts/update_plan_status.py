@@ -3,8 +3,9 @@
 
 `/forge:start-implement` Phase 6.2 のローカル操作入口。レビュー完了後の `status: pending` →
 `status: completed` への一括変更と、要件トレーサビリティの判定・更新は AI ではなく本 script
-が行う（REQ-020 FNC-004）。`held_groups[]` に含まれる task_id は呼び出し側（AI）が対象から
-除外して渡す。
+が行う。単一 SKILL が所有する決定論的な実体ロジック（DES-024 §6.1「SKILL ローカル実体」）で
+あり、他 SKILL へ再利用される共有低レベル script ではない。`held_groups[]` に含まれる task_id
+は呼び出し側（AI）が対象から除外して渡す。
 """
 
 import argparse

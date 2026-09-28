@@ -33,4 +33,4 @@ forge プラグインの**開発ルール**。forge 内部 (SKILL / agent / scri
 ## 関連
 
 - 設計判断の根拠: 削除された `context_gathering_spec.md` (forge 内蔵 doc で「プロジェクト spec の検索手順」を定義していた矛盾) と session/refs 機構の撤廃 (start 系から)
-- query 経路の実装: `plugins/forge/skills/query-db-specs/`, `plugins/forge/skills/query-db-rules/`, `plugins/forge/skills/query-forge-rules/`
+- query 経路の実装: `plugins/forge/skills/query-db-specs/`, `plugins/forge/skills/query-db-rules/`, `plugins/forge/skills/query-forge-rules/`（dispatcher。実検索は `plugins/forge/agents/rules-query-worker.md`）

@@ -19,14 +19,14 @@ permissionMode: plan
 - 環境から注入される `advisor` ツールを呼ばない（この役割に不要であり、応答待ちが実行時間を浪費する）
 - 外部サービスへ書き込まない
 
-依頼には、reviewer へ渡されたのと同じレビュー依頼本文（対象・観点文書・重点観点・到達目標を含む）と、reviewer が返した所見の配列（0 始まりの `index` 付き、reviewer が付けた `severity` を含む）が含まれます。**所見の記述をそのまま信用せず、依頼本文が指す観点文書・対象実体を自分で読んで独立に検証してください**（reviewer の判断を鵜呑みにするための Agent ではありません）。
+依頼には、reviewer へ渡されたのと同じレビュー依頼本文（対象・観点文書・重点観点・到達目標を含む）と、reviewer が返した所見の配列（1 始まりの `index` 付き、reviewer が付けた `severity` を含む）が含まれます。**所見の記述をそのまま信用せず、依頼本文が指す観点文書・対象実体を自分で読んで独立に検証してください**（reviewer の判断を鵜呑みにするための Agent ではありません）。
 
 ## severity の再検証 [MANDATORY]
 
 `severity`（🔴 critical / 🟡 major / 🟢 minor）の単一の真実源は、reviewer の主観ではなく、**その所見が違反している規範文書側の「重大度カタログ」**です（`${CLAUDE_PLUGIN_ROOT}/docs/review_priorities_spec.md` §2.2）。次の手順で確認してください。
 
 1. 依頼本文の観点文書一覧（criteria の「SSOT参照」相当）から、この所見が実際に違反している規範文書（principles / format）を特定する
-2. その文書の「重大度カタログ」節を実際に Read し、該当する違反区分の severity を確認する
+2. その文書の「重大度カタログ」節を実際に Read し、該当する違反区分の severity を確認する。規範文書自身にカタログが無く、`review_priorities_spec.md` §2.2 が別の置き場を指している場合（文書参照の違反は同 §2.3）は、そこを Read する
 3. reviewer が付けた `severity` と一致しなければ、カタログの値に訂正する
 4. 該当する重大度カタログを特定できない場合は、reviewer の値をそのまま維持し、`reason` に「重大度カタログを特定できず未検証」と明記する
 
@@ -66,7 +66,7 @@ permissionMode: plan
 {
   "evaluations": [
     {
-      "index": 0,
+      "index": 1,
       "disposition": "valid",
       "severity": "major",
       "reason": "...",
@@ -74,7 +74,7 @@ permissionMode: plan
       "fix_confident": true
     },
     {
-      "index": 1,
+      "index": 2,
       "disposition": "invalid",
       "severity": "minor",
       "reason": "..."

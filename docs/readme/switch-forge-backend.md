@@ -2,10 +2,10 @@
 
 forge has two independent, swappable backend axes.
 
-| Axis                    | Candidates                                          | Used by                                                                            |
-| ----------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Document-search backend | doc-advisor (default first) / doc-db                | `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` |
-| Review executor         | agent-review (default first candidate) / msg-review | `/forge:review`                                                                    |
+| Axis                    | Candidates                                | Used by                                                                            |
+| ----------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| Document-search backend | doc-advisor (default first) / doc-db      | `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` |
+| Review executor         | agent-review (the only current candidate) | `/forge:review`                                                                    |
 
 Both are switched via the project settings file `.claude/.forge.yaml` (relative to the project root). The file is optional; without it, the defaults apply.
 
@@ -17,7 +17,7 @@ doc_backend:
   prefer: doc-db # doc-db | doc-advisor
 
 review:
-  backend: msg-review # agent-review | msg-review
+  backend: agent-review # agent-review is the only current candidate
 ```
 
 ### `doc_backend.prefer` (document search)
@@ -29,7 +29,7 @@ review:
 ### `review.backend` (review executor)
 
 - Runs **only** the specified backend (treated as an explicit choice). If it is unavailable, forge does not pick an alternative; it fails without sending a request (fail closed)
-- Without this setting, the candidates are probed in order (agent-review → msg-review) and the first available one is used
+- Without this setting, the candidates are probed in order and the first available one is used (**agent-review is the only current candidate**; the resolution machinery is unchanged even with a single candidate)
 - The only accepted key is `backend`
 
 ## Forcing a Backend by Argument (overrides the setting)

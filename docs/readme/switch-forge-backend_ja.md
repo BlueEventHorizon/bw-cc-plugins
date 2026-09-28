@@ -2,10 +2,10 @@
 
 forge には差し替え可能な backend が 2 軸ある。
 
-| 軸               | 候補                                     | 使うスキル                                                                         |
-| ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
-| 文書検索 backend | doc-advisor（既定先位）/ doc-db          | `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` |
-| レビュー実行主体 | agent-review（既定第一候補）/ msg-review | `/forge:review`                                                                    |
+| 軸               | 候補                            | 使うスキル                                                                         |
+| ---------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
+| 文書検索 backend | doc-advisor（既定先位）/ doc-db | `/forge:query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs` |
+| レビュー実行主体 | agent-review（現状唯一の候補）  | `/forge:review`                                                                    |
 
 どちらもプロジェクト設定ファイル `.claude/.forge.yaml`（プロジェクトルート相対）で切り替える。ファイルは任意であり、無ければ既定動作になる。
 
@@ -17,7 +17,7 @@ doc_backend:
   prefer: doc-db # doc-db | doc-advisor
 
 review:
-  backend: msg-review # agent-review | msg-review
+  backend: agent-review # 現状の候補は agent-review のみ
 ```
 
 ### `doc_backend.prefer`（文書検索 backend）
@@ -29,7 +29,7 @@ review:
 ### `review.backend`（レビュー実行主体）
 
 - 指定した backend **だけ**で実行する（明示指定扱い）。利用不能でも代替を選ばず、依頼を送らずにエラー終了する（fail closed）
-- 未指定なら候補順（agent-review → msg-review）で可用性を検査して採用する
+- 未指定なら候補順で可用性を検査して採用する（**現状の候補は agent-review のみ**。候補が 1 つでも解決の機構は変わらない）
 - 許容キーは `backend` のみ
 
 ## 引数による強制指定（設定より優先）

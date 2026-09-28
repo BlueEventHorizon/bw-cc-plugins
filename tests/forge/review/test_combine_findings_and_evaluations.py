@@ -54,17 +54,17 @@ class HappyPathTest(unittest.TestCase):
 
     def test_combines_by_index_in_ascending_order(self):
         findings = [_finding("critical", "f0"), _finding("minor", "f1")]
-        # evaluations を逆順（index=1 が先）で渡しても index で対応させること。
-        evaluations = [_evaluation(1, severity="minor"), _evaluation(0, severity="critical")]
+        # evaluations を逆順（index=2 が先）で渡しても index で対応させること。
+        evaluations = [_evaluation(2, severity="minor"), _evaluation(1, severity="critical")]
         result = combine_mod.combine_findings_and_evaluations(findings, evaluations)
         self.assertEqual(result["status"], "ok")
         combined = result["combined"]
         self.assertEqual(len(combined), 2)
         self.assertEqual(combined[0]["text"], "f0")
-        self.assertEqual(combined[0]["index"], 0)
+        self.assertEqual(combined[0]["index"], 1)
         self.assertEqual(combined[0]["disposition"], "valid")
         self.assertEqual(combined[1]["text"], "f1")
-        self.assertEqual(combined[1]["index"], 1)
+        self.assertEqual(combined[1]["index"], 2)
 
     def test_empty_inputs_combine_to_empty(self):
         result = combine_mod.combine_findings_and_evaluations([], [])
@@ -74,7 +74,7 @@ class HappyPathTest(unittest.TestCase):
         """キーが衝突した場合は evaluation 側の値を優先する。"""
         finding = _finding("major")
         finding["severity"] = "major"
-        evaluation = _evaluation(0, severity="critical")
+        evaluation = _evaluation(1, severity="critical")
         result = combine_mod.combine_findings_and_evaluations([finding], [evaluation])
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["combined"][0]["severity"], "critical")
@@ -85,28 +85,28 @@ class RejectionTest(unittest.TestCase):
 
     def test_length_mismatch_is_rejected(self):
         findings = [_finding(), _finding()]
-        evaluations = [_evaluation(0)]
+        evaluations = [_evaluation(1)]
         result = combine_mod.combine_findings_and_evaluations(findings, evaluations)
         self.assertEqual(result["status"], "error")
         self.assertNotIn("combined", result)
 
     def test_missing_index_is_rejected(self):
-        """index 集合に欠落がある場合（{0,1,2} のうち 1 が無い）。"""
+        """index 集合に欠落がある場合（{1,2,3} のうち 2 が無い）。"""
         findings = [_finding(), _finding(), _finding()]
-        evaluations = [_evaluation(0), _evaluation(2), _evaluation(3)]
+        evaluations = [_evaluation(1), _evaluation(3), _evaluation(4)]
         result = combine_mod.combine_findings_and_evaluations(findings, evaluations)
         self.assertEqual(result["status"], "error")
 
     def test_duplicate_index_is_rejected(self):
-        """index が重複している場合（{0,1} の代わりに {0,0}）。"""
+        """index が重複している場合（{1,2} の代わりに {1,1}）。"""
         findings = [_finding(), _finding()]
-        evaluations = [_evaluation(0), _evaluation(0)]
+        evaluations = [_evaluation(1), _evaluation(1)]
         result = combine_mod.combine_findings_and_evaluations(findings, evaluations)
         self.assertEqual(result["status"], "error")
 
     def test_out_of_range_index_is_rejected(self):
         findings = [_finding()]
-        evaluations = [_evaluation(1)]
+        evaluations = [_evaluation(2)]
         result = combine_mod.combine_findings_and_evaluations(findings, evaluations)
         self.assertEqual(result["status"], "error")
 
@@ -116,7 +116,7 @@ class MainTest(unittest.TestCase):
 
     def test_cli_processes_args_and_outputs_single_json(self):
         findings_json = json.dumps([_finding("critical", "f0")])
-        evaluations_json = json.dumps([_evaluation(0, severity="critical")])
+        evaluations_json = json.dumps([_evaluation(1, severity="critical")])
         result = subprocess.run(
             [
                 "python3", str(_SCRIPT_PATH),
@@ -135,7 +135,7 @@ class MainTest(unittest.TestCase):
             [
                 "python3", str(_SCRIPT_PATH),
                 "--findings-json", json.dumps([_finding(), _finding()]),
-                "--evaluations-json", json.dumps([_evaluation(0)]),
+                "--evaluations-json", json.dumps([_evaluation(1)]),
             ],
             capture_output=True, text=True,
         )

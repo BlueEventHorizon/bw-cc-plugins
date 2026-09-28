@@ -11,8 +11,8 @@ argument-hint: ""
 
 ## 概要
 
-仕様書（要件定義書・設計書・計画書）の次の連番 ID を、全ブランチスキャンで安全に取得する。
-ブランチ間での ID 重複を防止する。
+仕様書（要件定義書・設計書・計画書）の次の連番 ID を、全ブランチと現在の作業ツリーのスキャンで安全に取得する。
+ブランチ間および未コミット文書との ID 重複を防止する。
 
 forge 内の他スキルからの呼び出し専用（`user-invocable: false`）。
 
@@ -108,8 +108,8 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
 
 どのプレフィックスを使うかは **呼び出し側のスキル** が決定する:
 
-1. プロジェクト固有の `spec_format.md` やルールがあればそれに従う
-2. なければ forge の `${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md` をフォールバック参照
+1. プロジェクト固有のルールがあればそれに従う
+2. なければ forge の各文書型の format / principles をフォールバック参照（要件 → `requirement_format.md`、設計 → `design_format.md`、ADR → `adr_format.md`、タスク → `plan_principles_spec.md`）
 
 ## 他スキルからの呼び出し方
 
@@ -148,6 +148,7 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 3. ベースブランチ（develop or main）を特定
 4. ベースブランチから派生した全ブランチをスキャン（ローカル + リモート）
 5. `git ls-tree` で各ブランチの specs ディレクトリを走査
-6. 指定プレフィックスの最大番号を検出
-7. 異なるファイルが同じ ID / 共有番号を主張する衝突があれば `duplicates` に記録（同一パス由来の複数ブランチ出現は正常として除外）
-8. 最大番号 + 1 を返す
+6. `git ls-files --cached --others --exclude-standard` で現在の tracked／untracked 文書を走査
+7. 指定プレフィックスの最大番号を検出
+8. 異なるファイルが同じ ID / 共有番号を主張する衝突があれば `duplicates` に記録（同一パス由来の複数ブランチ出現は正常として除外）
+9. 最大番号 + 1 を返す

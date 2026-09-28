@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.5] - 2026-09-28
+
+### marketplace
+
+- **chore**: forge 0.5.1 / anvil 0.1.4 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.5.1] - 2026-09-28
+
+### forge
+
+- **remove**: msg-sys 通信基盤・`msg-review` バックエンド・`/forge:talk-to-codex`・プラグインの hooks を削除。レビューのバックエンドは `agent-review` のみとなり、`--backend msg-review` と `.claude/.forge.yaml` の `review.backend: msg-review` はエラーになる。レビューの再開経路も削除
+- **feat**: 実装戦略の策定をカスタム Agent `plan-strategist` へ移し、既存仕様の検索・既存コードの読解・差分開発での既存実装との不一致の洗い出しを手順化。start-plan との受け渡しは識別値だけで行う（`strategy_exchange.py`）
+- **feat**: 差分 feature の途中にある必読文書を `spec_authority` として実装者へ機械的に伝達する（start-implement）
+- **feat**: onboarding の転記範囲を専用ファイルへ分離し、判定・承認文言・次の行動を script が返す形にした
+- **refactor**: query-forge-rules を継承型 dispatcher と read-only カスタム Agent `rules-query-worker` に分離し、内蔵 ToC の全文読解を呼び出し元の context から隔離
+- **refactor**: agenda が受け取ったデータをそのまま保存する形へ作り替え、wrapper を共有 script の置き場へ移設
+- **fix**: 計画書契約から `revision_history` を削除（最上位キーは `requirements_traceability` / `design_traceability` / `tasks` の 3 つ）
+- **fix**: plan-strategist から query スキル経由の仕様検索（doc-advisor backend）が通らない不具合を修正
+- **fix**: 並行状態の判定で UTF-8 でない文書を例外で落とさず解析失敗として扱う。所見の位置抽出で括弧に囲まれたパスを取り出す。所見の index を 1 始まりに揃える。agenda の表示で本文の改行が失われる不具合を修正
+- **fix**: 配布物から開発文書・削除済み仕様への参照を除去
+- **docs**: 決定論的生成・エラー分類・要件定義・実装戦略の規範文書を新設し、文書定義を各 principles へ集約（`spec_format.md` / `design_taxonomy.md` / `strategy_formulation_spec.md` を廃止）。文書記述ルールを `document_style_guide.md` へ統合し、文書参照記法に系統 (3) を追加
+
+## [anvil 0.1.4] - 2026-09-28
+
+### anvil
+
+- **feat**: impl-issue から Figma ベースの UI 設計・実装・レビューを `impl-ui` へ分離。impl-issue は利用者が直接起動できるようにした
+- **refactor**: triage-issue を、Issue の正誤検証と TASK 化の可否によるワンショット実装 / 要件定義からの開始の判定へ転換
+- **feat**: create-pr の CI 結果確認を、状態を語で返す `inspect_ci_status.py` に移し、チェック未登録を失敗と誤報告しないようにした。`gh` 自体の失敗は未登録と取り違えずエラーにする
+- **fix**: triage-issue から要件定義工程への起動を確定済みの引数で渡す。一時ファイルの扱いと仕様記述の誤りを修正
+
 ## [marketplace 0.3.4] - 2026-08-29
 
 ### marketplace
@@ -66,7 +97,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: レビュー本体とレビューバックエンドを別 SKILL へ分離（ADR-066）。`--backend` 軸・`failure` 判定・終了通知を実装し、バックエンドの可用性検査と解決順（未指定時は候補を順に検査して最初に使えたものを採る）を追加。可用性検査は初期化の後に置き、判定を exit code から切り離したうえで、不足時には全経路で初期化の失敗理由を添える。`.forge.yaml` の review セクションから `backend_order` を削除し、候補順の決定は設計側へ戻した
+- **feat**: レビュー本体とレビューバックエンドを別 SKILL へ分離。`--backend` 軸・`failure` 判定・終了通知を実装し、バックエンドの可用性検査と解決順（未指定時は候補を順に検査して最初に使えたものを採る）を追加。可用性検査は初期化の後に置き、判定を exit code から切り離したうえで、不足時には全経路で初期化の失敗理由を添える。`.forge.yaml` の review セクションから `backend_order` を削除し、候補順の決定は設計側へ戻した
 - **feat**: doc-db backend を新設。低レベル CLI 群・`forge_settings`・MCP クライアント・runtime / project identity を実装し、query 系・update 系 SKILL を backend 順序リスト選択へ切替（既定は doc-advisor 先位）、grep フォールバックを削除
 - **feat**: review 依頼に `--scope` 軸を追加。到達目標と意図的な未実装をレビュアーへ明示的に渡す
 - **feat**: onboarding が汎用規範をプロジェクトの CLAUDE.md へ承認のうえ転記する機構を追加（スキルを経由しない会話直の作業でも規範が文脈に入るようにする）
@@ -75,7 +106,7 @@ All notable changes to this project will be documented in this file.
 - **fix**: `--secrets` の共通引数欠落を補い、直列化の根拠をバックエンド限定に修正
 - **fix**: start-implement の executor 起動前確認を削除し、`-n` の並列実行確認を提示のみに変更
 - **fix**: `--dirs` レビューの対象欄に能動的な手順を指示し、設計書の古い記述を削除
-- **refactor**: `${CLAUDE_PLUGIN_ROOT}` symlink の自己修復機構を廃止（ADR-069）
+- **refactor**: `${CLAUDE_PLUGIN_ROOT}` symlink の自己修復機構を廃止
 - **refactor**: テンプレートトークン `TARGET_SCOPE` を `TARGET_PATHS` へ改名し、`--scope` 系 2 軸を要件・設計へ反映
 - **docs**: merge を意味の統合として定義し直し、スコープ判断を規約化。msg-review の可用性検査を要件・設計へ反映し、画面推測による生存確認設計を廃止
 
@@ -188,7 +219,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: findings 出力を構造化フォーマットに刷新（ADR-033）。finding ID 衝突防止・`--diff-only` 対応・resume ループの解消など、関連するレビュー指摘も併せて修正
+- **feat**: findings 出力を構造化フォーマットに刷新。finding ID 衝突防止・`--diff-only` 対応・resume ループの解消など、関連するレビュー指摘も併せて修正
 - **refactor**: forge 内蔵の共有ドキュメント・スクリプト・ToC・テンプレートを `.forge/` 配下に整理統合。移行に伴う stale な ssot_refs・テンプレートパス参照とスクリプトスキャン漏れを修正
 - **refactor**: `resolve_doc_structure.py` を共有 `scripts/` に移動し、`plugins/` → 共有層の逆依存を解消
 - **feat**: AI 間メッセージシステムを追加
@@ -288,8 +319,8 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: ADR-032 path schema unification を実装。refs.yaml / session.yaml の「パスを持つフィールド」11 箇所を統一形式 `[{path: ..., ...metadata}]` dict 配列に集約。`ssot_refs[].doc_path` を `path` に統一（従前の決定を覆す）、`output_path` を `output_filename` に改名 (sandbox 内ファイル名と外部参照 path の概念区別)、`target_files` を文字列配列から dict 配列に移行。旧 schema は明示的 ValueError で reject (後方互換層なし)
-- **feat**: review pipeline の構造化 agent prompt を固定化 (ADR-032)。general-purpose agent (related_code 探索) の出力を `- path:` / `reason:` の構造化 markdown 形式に強制し、orchestrator が refs.yaml の `related_code[]` に直接マッピング可能に
+- **feat**: path schema unification を実装。refs.yaml / session.yaml の「パスを持つフィールド」11 箇所を統一形式 `[{path: ..., ...metadata}]` dict 配列に集約。`ssot_refs[].doc_path` を `path` に統一（従前の決定を覆す）、`output_path` を `output_filename` に改名 (sandbox 内ファイル名と外部参照 path の概念区別)、`target_files` を文字列配列から dict 配列に移行。旧 schema は明示的 ValueError で reject (後方互換層なし)
+- **feat**: review pipeline の構造化 agent prompt を固定化。general-purpose agent (related_code 探索) の出力を `- path:` / `reason:` の構造化 markdown 形式に強制し、orchestrator が refs.yaml の `related_code[]` に直接マッピング可能に
 - **refactor**: findings_session を DES-024 準拠の単機能 wrapper 群 (`mark_in_progress` / `mark_skipped` / `mark_needs_review` / `mark_issued` / `mark_fixed` / `batch_update` / `list_items_sorted` / `list_fixable_pending` / `summarize_progress`) に分割
 - **refactor**: start-design / start-implement / start-plan / start-requirements / start-uxui-design から session / refs / init_session 機構を撤去。review 専用に絞り SKILL の責務を整理
 - **fix**: `/forge:review` パイプラインの整合性問題を一括修正。write_refs.py の validation エラー露出 (Python traceback で潰れていた問題)、review SKILL.md の refs JSON schema 説明不足、旧 fork 型 SKILL の削除済みパス参照
@@ -297,7 +328,7 @@ All notable changes to this project will be documented in this file.
 - **fix**: session_manager.py の `parse_extra_args` で `val.lstrip("-").isdigit()` が `"--1"` を True と判定し `int(val)` で ValueError を投げる不具合を try/except に修正
 - **fix**: update-version ラッパーで stdout を対象ファイルへ書き戻す改修。format pre-commit hook の起動順を修正
 - **fix**: forge:review で additive feature と legacy specs の衝突を P2 観点から除外
-- **docs**: ADR-032 を accepted 化。操作的仕様 SoT は `plugins/forge/docs/session_format.md` に委譲、本 ADR は設計判断の履歴として保持。session_format.md / DES-011/014/015/028/029 / review SKILL.md / present-findings SKILL.md / 3 agent prompt を新 schema に同期
+- **docs**: path schema unification の決定を確定。操作的仕様 SoT は `plugins/forge/docs/session_format.md` に委譲。session_format.md / DES-011/014/015/028/029 / review SKILL.md / present-findings SKILL.md / 3 agent prompt を新 schema に同期
 
 ## [marketplace 0.2.6] - 2026-06-22
 
@@ -473,10 +504,10 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: forge-query 抽象 SKILL（`query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs`）を新設し、doc-advisor / doc-db バックエンドを自動選択する設計を導入（DES-001 / ADR-001）。`select_backend.py` が API キー有無と利用可能バックエンドから採用先を決定し、4 SKILL は `user-invocable: false` の内部 SKILL として動作する
+- **feat**: forge-query 抽象 SKILL（`query-db-rules` / `query-db-specs` / `update-db-rules` / `update-db-specs`）を新設し、doc-advisor / doc-db バックエンドを自動選択する設計を導入（DES-001）。`select_backend.py` が API キー有無と利用可能バックエンドから採用先を決定し、4 SKILL は `user-invocable: false` の内部 SKILL として動作する
 - **refactor**: forge skills 内の `/doc-advisor:*` 直呼びを `/forge:*-db-*` 抽象 SKILL に切り替え（review / start-design / start-plan / clean-rules / merge-feature-specs / create-feature-from-plan / start-requirements / start-uxui-design）
-- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加（ADR-002）
-- **refactor**: start-plan SKILL に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを判断し `strategy_draft.md` を生成する
+- **fix(skills)**: query 系 SKILL に read-only 制約を実装し、subagent が書き込み系ツールを使用しないように Role 否定的制約 + allowed-tools 絞り込みを追加
+- **refactor**: start-plan SKILL に実装戦略策定フェーズを追加。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを判断し `strategy_draft.md` を生成する
 - **refactor**: FNC-008/DES-028 を doc-advisor へ再配置し、merge-feature-specs に配置整合性検査を追加
 - **docs**: SKILL 基本設計書を新設し fork 型を規定リストで厳密管理。forge 文書スタイル指針と ID 参照記法、文書スタイル指針 (document_style_guide) を追加し DWR を整理
 
@@ -522,7 +553,7 @@ All notable changes to this project will be documented in this file.
 
 ### forge
 
-- **feat**: start-plan に実装戦略策定フェーズを追加（DES-027）。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを戦略的に判断し `strategy_draft.md` を生成するフェーズを導入
+- **feat**: start-plan に実装戦略策定フェーズを追加。設計書からタスクを機械的に分解する前に、SubAgent が実装アプローチを戦略的に判断し `strategy_draft.md` を生成するフェーズを導入
 - **fix(BR-001)**: スクリプトのエラーメッセージからスラッシュコマンド形式を除去し、プラグインモード・スタンドアロンモード両方で正しいスキル名を案内するよう変更
 
 ## [doc-advisor 0.2.4] - 2026-05-12

@@ -60,11 +60,12 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 doc_type `plan`、feature `{feature}` でディレクトリを求め、その配下の `{feature}_plan.json` を
 計画書パスとする。
 
-1. ファイルが存在する → そのパスを使用
-2. `plan` に対応するエントリが無い、またはファイルが存在しない → `specs/{feature}/plan/{feature}_plan.json` をデフォルトとする
-3. それでも見つからない → AskUserQuestion で手動指定
+エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たない）。
 
-**計画書全体を Read しない**: タスク選択・依存関係判定は Phase 2 の script が行うため、AI が計画書ファイルを直接読み込む必要はない（REQ-020 FNC-003・FNC-007）。他タスクの内容は、選択されたタスクについて Phase 4.3 で生成される `tasks/{タスクID}.json` を通してのみ扱う。
+1. ファイルが存在する → そのパスを使用
+2. ディレクトリは解決できたがファイルが存在しない → 当該 feature の計画書が未作成である。`/forge:start-plan {feature}` を案内して終了する
+
+**計画書全体を Read しない**: タスク選択・依存関係判定は Phase 2 の script が行うため、AI が計画書ファイルを直接読み込む必要はない。他タスクの内容は、選択されたタスクについて Phase 4.3 で生成される `tasks/{タスクID}.json` を通してのみ扱う。
 
 ### 1.2 要件定義書・設計書の更新確認
 
@@ -78,7 +79,7 @@ Issue やバグ修正など計画書外のタスクを追加する場合:
 
 ## Phase 2: タスク選択
 
-タスクの優先度ソート・`status: pending` 抽出・依存関係チェック・グループ原子的選択・実行可能/待機グループへの分割は AI ではなく script が行う（REQ-020 FNC-003）。
+タスクの優先度ソート・`status: pending` 抽出・依存関係チェック・グループ原子的選択・実行可能/待機グループへの分割は AI ではなく script が行う。
 
 ### 2.1 選択 script の実行
 
@@ -254,6 +255,7 @@ Phase 2.1 の `selected_tasks` から該当タスクの `required_reading` 配�
    - `required_reading`: Phase 3.2 で統合した文書パスを `design_docs` / `requirement_docs` / `strategy_doc` / `rule_docs` / `reference_code` / `additional` へ分類する
    - `implementation_instructions`: タスク固有の実装方針（必読文書を踏まえて AI がその場で書く。従来の「実装指示」と同じ内容）
    - `verification`: 4.1 の判定結果（`build` は `required`/`skipped`、`tests` は `required`/`optional`/`skipped`。スキップ時のみ `_reason` を添える）
+   - **`spec_authority` は候補 JSON に含めない**。`design_docs` / `requirement_docs` / `additional` に挙げた文書のうちどれが並行状態にあるかは script が frontmatter から機械的に判定して付与する（AI が判定・転記しない）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/task-context-${CLAUDE_SESSION_ID}-{タスクID}.candidate.json` へ書く（シェルコマンドへ直接埋め込まない。自由記述をシェル文字列に乗せると注入リスクを生むため）
 3. **生成 script を 1 回実行する**。`plan.json` の該当タスクエントリと候補 JSON をマージして `tasks/{タスクID}.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
@@ -463,7 +465,13 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
 
 ### 5.3 レビュー完了
 
-レビュー+自動修正が完了したら Phase 6 へ進む。
+レビュー+自動修正が完了したら 5.4 へ進む。
+
+### 5.4 参照の実在性検査
+
+<!-- 未実装: 参照の実在性検査 -->
+
+現時点では本節で行う処理は無い。次の節へ進む。
 
 ---
 
@@ -486,7 +494,7 @@ executor のステータスに基づいて分岐:
 
 ### 6.2 計画書の更新
 
-レビュー完了後、計画書を更新する。タスクのステータス変更・要件トレーサビリティの判定は AI ではなく script が行う（REQ-020 FNC-004）。
+レビュー完了後、計画書を更新する。タスクのステータス変更・要件トレーサビリティの判定は AI ではなく script が行う。
 
 **`held_groups[]` の task_id は対象外**（レビュー未実施のため `completed` にしない）。`held_groups[]` を除いた全 SUCCESS タスクの task_id を**1 回の script 実行で一括指定**する。個別に実行しない。
 
@@ -518,10 +526,10 @@ commit/push の確認フローを担うスキル（例: `anvil:commit`）が ava
 
 AskUserQuestion:「全タスクが完了しました。計画書（plan）を削除しますか？」
 
-`tasks/` ディレクトリ（4.3 で生成した `tasks/{タスクID}.json` の置き場）は計画書と同じライフサイクルとする。計画書を削除するときは必ず一緒に削除し、残すときは一緒に残す（個別に確認しない）。
+`tasks/` ディレクトリ（4.3 で生成した `tasks/{タスクID}.json` の置き場）と実装戦略書（`{feature}_strategy.md`）は計画書と同じライフサイクルとする。計画書を削除するときは必ず一緒に削除し、残すときは一緒に残す（個別に確認しない）。戦略書を単独で残すと、全タスクの `required_reading` が指す先が失われる。
 
-- **削除する** → `rm {plan_path}` → `rm -rf {計画書と同じディレクトリ}/tasks/` → 完了案内（plan 削除パターン）
-- **残す** → 計画書・`tasks/` ともそのまま残す → 完了案内（plan 残しパターン）
+- **削除する** → `rm -f {計画書と同じディレクトリ}/{feature}_plan.json` → `rm -rf {計画書と同じディレクトリ}/tasks/` → `rm -f {計画書と同じディレクトリ}/{feature}_strategy.md` → 完了案内（plan 削除パターン）
+- **残す** → 計画書・`tasks/`・戦略書ともそのまま残す → 完了案内（plan 残しパターン）
 
 ### 6.5 エラー対応（FAILURE パス）
 

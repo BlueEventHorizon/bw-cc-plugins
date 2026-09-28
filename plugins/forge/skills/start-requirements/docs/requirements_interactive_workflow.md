@@ -10,12 +10,12 @@ applicable_when:
 
 # 対話型要件定義ワークフロー
 
-## 必須参照文書
+## 必須文書
 
 **NEVER skip.** 下記を全て読み込み、深く理解すること
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md`** — フィーチャーの概念定義（§0）・追加開発ワークフロー仕様
-- **`${CLAUDE_PLUGIN_ROOT}/docs/spec_format.md`** — ID 分類カタログ（使用する ID をここから選択）
+- **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_principles_spec.md`** — 要件定義書の定義（責務・書かないもの・存在期間・改訂）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`** — 要件定義書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド（What/How の判断基準）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
@@ -124,7 +124,7 @@ graph TD
 
 **追加開発（`--add`）の場合は以下も Read**:
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 適用条件・優先度・新規ファイル分離・merge 手順
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 適用条件・旧仕様の置き換え・実装期間中に書き換えないもの・merge 手順
 - `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` — `feature_type: temporary-feature` frontmatter 定義
 
 これらに従い、**追加開発の要件定義書先頭に frontmatter を付与**し、既存仕様は書き換えず新規ファイルとして切り出す前提で作業する。
@@ -256,7 +256,7 @@ Phase 2 の主要シナリオを元に、ユーザーとシステムの相互作
 
 ### 3.1 要件の作成
 
-プロジェクトの性質に応じて必要な ID を `spec_format.md` から選択し、要件を作成する。以下は代表的な要件種別:
+プロジェクトの性質に応じて必要な ID を `requirement_format.md`「要件ID カタログ」から選択し、要件を作成する。以下は代表的な要件種別:
 
 **画面要件（SCR-xxx）** — UI を持つプロジェクトの場合:
 
@@ -308,8 +308,6 @@ Phase 2 の主要シナリオを元に、ユーザーとシステムの相互作
 各要件定義書を `requirement_format.md` に従って整形:
 
 - 要件 ID の付与（**次の ID はスクリプトで取得する**）
-- メタデータの記載
-- 関連要件のリンク設定
 
 #### ID 採番
 
@@ -365,15 +363,21 @@ JSON 出力の `next_id` をファイル名・要件 ID として使用する。
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。
 
-### 4.5 specs ToC 更新
+### 4.5 参照の実在性検査
+
+<!-- 未実装: 参照の実在性検査 -->
+
+現時点では本節で行う処理は無い。次の節へ進む。
+
+### 4.6 specs ToC 更新
 
 `/forge:update-db-specs` が利用可能であれば実行する（利用不可の場合はスキップ）。
 
-### 4.6 commit/push 確認
+### 4.7 commit/push 確認
 
 `/anvil:commit` を実行して commit/push を確認する。
 
-### 4.7 完了案内
+### 4.8 完了案内
 
 作成したファイルパスとともに次のステップを案内する:
 

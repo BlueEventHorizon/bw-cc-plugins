@@ -4,8 +4,7 @@ forge カスタム Agent (`plugins/forge/agents/*.md`) の frontmatter 妥当性
 
 REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への置き換え」フィーチャー
 (no-fork-skill) は REQ-005 §11 / DES-029 へ fold 済みであり、DES-032 自体はもう存在しない
-（`docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §6 が置き換え後の唯一の
-正式記録）。tools allowlist は各 Agent の frontmatter（`plugins/forge/agents/*.md`）自体を
+（fork 型 SKILL を採用しない方針は `docs/rules/claude_code_authoring_guide.md` が持つ）。tools allowlist は各 Agent の frontmatter（`plugins/forge/agents/*.md`）自体を
 正とし、本テストは frontmatter が構文的・慣習的に妥当であることを静的に検証する。
 
 検証内容:
@@ -14,6 +13,8 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
 3. `tools` 値が既知 Agent の期待 allowlist と一致すること
    - reviewer: Read, Grep, Glob, Bash（read-only、対象を自分で探索するため Grep/Glob を持つ）
    - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
+   - rules-query-worker: Read, Grep, Glob（read-only、内蔵 ToC と文書の Read だけで完結するため Bash を持たない）
+   - plan-strategist: Read, Grep, Glob, Skill, Bash, Write, Edit, Agent, AskUserQuestion（既存の仕様書・ルールを query スキルで検索するため Skill、受け渡しの script を呼ぶため Bash、戦略書を書くため Write / Edit を持つ。query スキルは継承型で plan-strategist 自身の context で実行され、backend によっては検索用 Agent の起動や索引整備の確認を求めるため Agent / AskUserQuestion を持つ。書いてよいのは戦略書 1 ファイルだけ、Agent / AskUserQuestion は query スキルの手順が指示する場面でだけ使うという制約は agent 定義が持つ）
    - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
@@ -38,6 +39,10 @@ AGENTS_DIR = REPO_ROOT / 'plugins' / 'forge' / 'agents'
 EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'reviewer': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
     'evaluator': frozenset({'Read', 'Grep', 'Glob', 'Bash'}),
+    'rules-query-worker': frozenset({'Read', 'Grep', 'Glob'}),
+    'plan-strategist': frozenset(
+        {'Read', 'Grep', 'Glob', 'Skill', 'Bash', 'Write', 'Edit', 'Agent', 'AskUserQuestion'}
+    ),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
@@ -177,6 +182,16 @@ class TestAgentFrontmatter(unittest.TestCase):
         tools = _parse_tools(fm['tools'])
         self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob', 'Bash'}))
         self.assertTrue({'Edit', 'Write', 'Agent'}.isdisjoint(tools))
+        self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
+        self.assertEqual(fm.get('permissionMode'), 'plan')
+
+    def test_rules_query_worker_is_read_only_and_inherits_model(self):
+        worker = AGENTS_DIR / 'rules-query-worker.md'
+        self.assertTrue(worker.is_file())
+        fm = _parse_frontmatter_keys(_extract_frontmatter(worker))
+        tools = _parse_tools(fm['tools'])
+        self.assertEqual(tools, frozenset({'Read', 'Grep', 'Glob'}))
+        self.assertTrue({'Edit', 'Write', 'Agent', 'Bash'}.isdisjoint(tools))
         self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
         self.assertEqual(fm.get('permissionMode'), 'plan')
 

@@ -24,13 +24,11 @@ COMPLETION_LINES = ("REVIEW_RESULT: approved", "REVIEW_RESULT: findings")
 FENCE_RE = re.compile(r"^(```|~~~)")
 LOCATION_RE = re.compile(
     r"(?<![\w./\\-])(?P<quote>`)?"
-    r"(?P<path>(?:[A-Za-z]:[\\/])?[^`\s:\"'()[\]{}<>,;!?。、，；：！？「」『』【】]+):"
+    r"(?P<path>(?:[A-Za-z]:[\\/])?[^`\s:\"'()[\]{}<>,;!?。、，；：！？（）「」『』【】]+):"
     r"(?P<line>\d+)(?:-(?P<end_line>\d+))?"
     r"(?(quote)`)(?![\w./\\-])"
 )
 UNKNOWN_LOCATION_MARKERS = ("位置未確定", "location unknown", "unknown location")
-LOCATION_OPENING_WRAPPERS = frozenset("([{<「『【")
-LOCATION_CLOSING_WRAPPERS = frozenset(")]}>」』】")
 CONVENTIONAL_EXTENSIONLESS_FILES = {
     "AUTHORS",
     "Brewfile",
@@ -112,16 +110,12 @@ def _looks_like_file_path(path: str) -> bool:
 def _extract_location(text: str) -> dict | None:
     """所見本文からファイルパスらしい明示位置だけを抽出する。"""
     for match in LOCATION_RE.finditer(text):
-        before = text[match.start() - 1] if match.start() > 0 else ""
-        after = text[match.end()] if match.end() < len(text) else ""
         path = match.group("path")
         line = int(match.group("line"))
         end_line_text = match.group("end_line")
         end_line = int(end_line_text) if end_line_text is not None else None
         if (
-            before in LOCATION_OPENING_WRAPPERS
-            or after in LOCATION_CLOSING_WRAPPERS
-            or not _looks_like_file_path(path)
+            not _looks_like_file_path(path)
             or line < 1
             or (end_line is not None and end_line < line)
         ):
@@ -284,8 +278,12 @@ def interpret_response(body: str) -> dict:
             "error": "findings 宣言には重大度マーカー付き所見が必要です",
         }
 
+    # 所見の番号は 1 始まりである（本体が evaluator へ渡す `index` と同じ基準。
+    # `enumerate` の start で表しておき、表示時の +1 に頼らない）。
     missing_location = [
-        index + 1 for index, finding in enumerate(findings) if finding["location"] is None
+        index
+        for index, finding in enumerate(findings, start=1)
+        if finding["location"] is None
     ]
     for finding in findings:
         if finding["location"] is None:

@@ -66,7 +66,7 @@ flowchart TD
 
 **読み込む defaults:**
 
-- `spec_format.md` — ID 分類カタログ
+- `design_format.md` — 設計書テンプレート・設計ID
 - `design_format.md` — 設計書テンプレート
 - `design_principles_spec.md` — 設計原則ガイド
 - `spec_design_boundary_spec.md` — 要件/設計の境界ガイド
@@ -92,7 +92,7 @@ flowchart TD
 | ---- | -------------------------------------------------------------------- |
 | 2.1  | 収集結果（各 agent の return value）を統合し、設計書のドラフトを作成 |
 | 2.2  | フォーマット適用（`design_format.md` に準拠）                        |
-| 2.3  | 設計ID体系の確認（`spec_format.md` の DES-xxx）                      |
+| 2.3  | 設計ID体系の確認（`design_format.md` の DES-xxx）                    |
 | 2.4  | **各ファイル完成ごとに AskUserQuestion で人間レビュー** [MANDATORY]  |
 
 ### Phase 3: AIレビュー
@@ -144,5 +144,4 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 | `plugins/forge/skills/start-design/SKILL.md`      | スキル仕様            |
 | `plugins/forge/docs/design_format.md`             | 設計書テンプレート    |
 | `plugins/forge/docs/design_principles_spec.md`    | 設計原則ガイド        |
-| `plugins/forge/docs/spec_format.md`               | ID分類カタログ        |
 | `plugins/forge/docs/spec_design_boundary_spec.md` | 要件/設計の境界ガイド |

@@ -1,5 +1,5 @@
 [metadata]
-source_doc = "docs/rules/skill_launch_paths_definitions.md"
+source_doc = "docs/rules/claude_code_reference.md"
 
 [launch_context]
 terms = [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""capture_syntax_baseline.py のテスト（DES-047 §3.2 テスト設計）。
+"""capture_syntax_baseline.py のテスト（DES-066 §6 テスト設計）。
 
 実行:
   python3 -m unittest tests.forge.review.test_capture_syntax_baseline -v
@@ -17,7 +17,7 @@ _SCRIPT_PATH = (
     / "plugins" / "forge" / "skills" / "review" / "scripts" / "capture_syntax_baseline.py"
 )
 
-_spec = importlib.util.spec_from_file_location("msg_review_capture_syntax_baseline", _SCRIPT_PATH)
+_spec = importlib.util.spec_from_file_location("capture_syntax_baseline", _SCRIPT_PATH)
 baseline_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(baseline_mod)
 

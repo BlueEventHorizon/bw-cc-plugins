@@ -3,7 +3,8 @@
 
 `/forge:start-implement` Phase 2 のローカル操作入口。優先度順ソート・`status: pending`
 抽出・依存関係チェック・グループ原子的選択・実行可能/待機グループ分割は AI ではなく本 script
-が行う（REQ-020 FNC-003）。
+が行う。単一 SKILL が所有する決定論的な実体ロジック（DES-024 §6.1「SKILL ローカル実体」）で
+あり、他 SKILL へ再利用される共有低レベル script ではない。
 """
 
 import argparse

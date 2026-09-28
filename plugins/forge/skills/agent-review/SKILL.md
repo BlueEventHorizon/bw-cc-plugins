@@ -19,7 +19,6 @@ allowed-tools: Agent, Read, Write, Bash
 | 可用性検査   | なし                                            | `available`、不足条件の `missing`、`retains_context: false`     |
 | ラウンド実行 | `review_id`、ラウンド番号、パターン、純粋な本文 | `approved` / `findings` / `failure` と所見、解釈時の `warnings` |
 | 終了通知     | `review_id`                                     | 受理結果                                                        |
-| 履歴復元     | `review_id`                                     | `unsupported` と非永続である旨。履歴は返さない                  |
 
 `failure` を `approved` または空の `findings` に変換してはなりません。別バックエンドへ切り替えてはなりません。
 
@@ -44,7 +43,7 @@ Agent を起動せず、`${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md` を Read し�
 ## ラウンド実行
 
 1. `review_id` が空でない文字列、ラウンド番号が 1 以上の整数、本文が空でない文字列であることを確認します。不正なら `failure` を返します。パターンは受け取るだけで、判定にも Agent 起動にも使いません（本バックエンドはワイヤヘッダを持たないため用途がありません）。
-2. 本文先頭行が厳密なワイヤヘッダ形 `[msg-review] <pattern> review_id=<id> round=<n>` に一致した場合だけ、共通本文への固有ヘッダ混入として `failure` を返します。本文中の説明や引用に単なる `[msg-review]` が含まれるだけなら拒否しません。
+2. 本文先頭行が厳密なワイヤヘッダ形 `[<backend 名>] <pattern> review_id=<id> round=<n>` に一致した場合だけ、共通本文への固有ヘッダ混入として `failure` を返します。本文中の説明や引用に角括弧で囲まれた語が現れるだけなら拒否しません（判定は行全体がこの形に一致するかであり、角括弧の有無ではありません）。
 3. Agent ツールでカスタム Agent `forge:reviewer` を **1 回だけ foreground 起動**します（`run_in_background: false`）。resume ID、前ラウンドの transcript、前回応答を渡してはなりません。prompt には受け取った本文だけを、レビュー依頼としてそのまま渡します。
 4. 起動失敗、timeout、応答欠落は段階と説明を伴う `failure` にします。
 5. Agent の最終応答を Write で一時ファイルへ保存し、次を 1 回実行します。
@@ -56,14 +55,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review/parse_findings.py" \
 
 6. 一時ファイルを削除します。JSON の `judgment` と `findings` をそのまま本体へ返します。`judgment: failure` の場合は `error` を失敗理由として返します。
 
-**`warnings` があればそれも本体へ返します**。判定と所見配列だけを返して `warnings` を捨ててはなりません。位置未確定として受理した所見の件数はここにしか現れず、捨てると本体は利用者へ通知できません（本体はその通知を義務づけられています）。同じ共通 parser を使う他のバックエンドは `warnings` を渡すため、捨てるとバックエンドを替えただけで通知が消える非対称になります。
+**`warnings` があればそれも本体へ返します**。判定と所見配列だけを返して `warnings` を捨ててはなりません。位置未確定として受理した所見の件数はここにしか現れず、捨てると本体は利用者へ通知できません（本体はその通知を義務づけられています）。
 
 各ラウンドで必ず新しい `forge:reviewer` を起動し、Agent の識別子や応答を保持しません。
 
 ## 終了通知
 
 `review_id` を受理して成功として直ちに返す no-op です。Agent の探索・停止、履歴保存、追加通信を行いません。
-
-## 履歴復元
-
-履歴復元には `{"status": "unsupported", "reason": "agent-review は非永続バックエンドのため履歴を復元できません"}` を返します。`messages: []` などの空履歴を返してはなりません。同一 `review_id` の継続を偽装せず、本体が新しいレビューとして再実行できるようにします。

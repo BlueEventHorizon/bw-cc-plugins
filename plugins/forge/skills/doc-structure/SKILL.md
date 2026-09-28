@@ -34,6 +34,21 @@ forge 内の他スキルからの呼び出し専用（`user-invocable: false`）
    要求した能力の手順を最初からやり直す（`.doc_structure.yaml` が生成されているはず）。
 3. **いいえ** → 呼び出し元へ「`.doc_structure.yaml` が無いため解決できません」と報告して終了する。
 
+## `doc_type` に対応するエントリが無い場合の共通ハンドオフ
+
+`.doc_structure.yaml` は存在するが、求めた `doc_type` に対応するエントリが `doc_types_map` に無い場合は、この手順に従う。**呼び出し元スキルは独自の既定パスを持たず、ユーザーへ出力先を尋ねもしない**（本スキルに一本化する）。
+
+配置はプロジェクトが `.doc_structure.yaml` で宣言するものであり、forge が決めるものではない。宣言が無いときに既定値を当てはめることも、他の `doc_type` のキーから導出することも、**宣言されていない配置を forge が発明する行為**である。当たっている保証が無く、外れたときは文書が想定外の場所に作られ、後続スキルはそれを見つけられない。
+
+1. AskUserQuestion を使用して確認する:
+   ```
+   .doc_structure.yaml に doc_type `{doc_type}` に対応するエントリがありません。
+   /forge:setup-doc-structure を実行して定義する必要があります。
+   今すぐ /forge:setup-doc-structure を実行しますか？
+   ```
+2. **はい** → Skill ツールで `/forge:setup-doc-structure` を呼び出す。完了後、呼び出し元が要求した能力の手順を最初からやり直す
+3. **いいえ** → 呼び出し元へ「`{doc_type}` に対応するエントリが無いため解決できません」と報告して終了する
+
 ## 出力先ディレクトリの解決 [他スキルから参照する場合 MANDATORY]
 
 新規ドキュメントの出力先ディレクトリを求めたい他スキル（start-design 等）は、`.doc_structure.yaml`
@@ -49,7 +64,7 @@ forge 内の他スキルからの呼び出し専用（`user-invocable: false`）
 
 1. `.doc_structure.yaml` を `Read` する。存在しない場合は上記「共通ハンドオフ」に従う。
 2. `{category}.doc_types_map` から、値が入力 `doc_type` と一致するエントリ（キー）を1つ探す。
-   見つからない場合は「`{doc_type}` に対応するエントリがありません」と報告して終了する。
+   見つからない場合は下記「`doc_type` に対応するエントリが無い場合の共通ハンドオフ」に従う。
 3. **`feature` が指定されている場合**: エントリのキー（例: `docs/specs/**/design/`）の `*`/`**`
    セグメントを `feature` に置換し、解決済みディレクトリとする（例: `docs/specs/{feature}/design/`）。
 4. **`feature` が指定されていない場合**: エントリのキーをそのまま `Glob` パターンとして使い

@@ -9,7 +9,7 @@
 - 実在しない path の除外と件数通知
 - 対象文書 0 件の先行判定（索引側の状態確認より前）
 - KEY / series 未整備の exit code 30 分類（`list_indexes` 依拠）
-- ゴミ箱状態と障害の判別（`error.data.code` 正本。ADR-058）
+- ゴミ箱状態と障害の判別（`error.data.code` 正本。DES-057 §4.5）
 - 初回接続成功・起動後接続成功・利用不能（exit 10 `unavailable`）の各経路
 - 設定を読まないこと（責務分離。順序リストの解決は `resolve_backend_order.py`）
 - MCP JSON 応答と SSE 応答（実 Client + transport 注入）
@@ -263,7 +263,7 @@ class IndexMissingTest(_Base):
         self.assertEqual(payload["reason_code"], "key_not_found")
 
 
-# --- ゴミ箱状態と障害の判別（ADR-058） ---------------------------------------------
+# --- ゴミ箱状態と障害の判別（DES-057 §4.5） ---------------------------------------
 
 
 class ErrorDiscriminationTest(_Base):
