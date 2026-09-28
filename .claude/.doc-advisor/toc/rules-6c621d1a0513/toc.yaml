@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-27T17:00:58Z
+  generated_at: 2026-09-28T03:15:02Z
   file_count: 11
 
 docs:
@@ -38,38 +38,32 @@ docs:
       - path-based reading
   docs/rules/claude_code_authoring_guide.md:
     title: Claude Code Authoring Guide (SKILL / Custom Agent)
-    purpose: Defines conventions for creating SKILLs and custom Agents in forge/anvil, covering execution models, launch path selection, multi-layer security boundaries, and role constraints
+    purpose: Specifies rules and conventions for authoring SKILLs and custom Agents in forge and anvil, including execution models, launch path selection, and defense layers
     content_details:
-      - "Decision tree for launch paths: Bash subprocess (deterministic scripts) to generic Agent (one-time delegation) to custom Agent (isolated context) to inherited SKILL (stable procedures)"
-      - "Inherited SKILL conventions: document parent task non-interference and provide only minimal parameters without issue text, diffs, or directives"
-      - "Custom Agent frontmatter requirements: name, description, tools, model fields and prohibition statements for other-agent invocation"
-      - "Multi-layer defense architecture: Agent boundary isolation, role constraints in system prompt, allowlist in tools/allowed-tools, and physical deny in settings.json"
-      - "Naming conventions: use project short names (inherited SKILL, fork SKILL, custom Agent, generic Agent) not generic subagent terminology"
-      - "Agent completion waiting: receive final response or completion notification; never use ScheduleWakeup for Agent completion waiting"
-      - "User interaction pattern: AskUserQuestion for all questions and confirmations, not plain text prompts"
-      - "Custom Agent restrictions: prohibit invocation of other Agents, parent task inheritance, and unrelated refactoring"
-      - "Dependency verification: check SKILL availability using available-skills before launching dependent SKILLs"
-      - "Claude Code official specification verification: must consult claude-code-guide Agent before writing any SKILL or custom Agent"
+      - Inheritance-only SKILL model with fork/agent keywords prohibited
+      - "Custom Agent requirements: frontmatter, prohibition statements, write constraints, test validation"
+      - "Launch path decision tree: Bash subprocess to generic Agent to custom Agent to inherited SKILL"
+      - "Multi-layer defense layers: Agent boundary, Role constraints, allowlist, physical deny"
+      - "User confirmation method: AskUserQuestion required; discussion-type SKILLs are exceptions"
+      - Agent completion waiting without ScheduleWakeup polling
+      - Nomenclature standards for short names and subagent_type field restrictions
+      - Dependent SKILL verification via available-skills or startup failure detection
     applicable_tasks:
-      - Designing custom Agents for role isolation and context management
-      - Selecting appropriate SKILL execution models and launch paths
-      - Implementing multi-layer security boundaries for Agent tools
-      - Establishing role constraints and allowlist policies
-      - Verifying parent-task non-interference in inherited SKILLs
-      - Designing Agent completion notification handling
-      - Documenting user interaction requirements with AskUserQuestion
-      - Reviewing custom Agent prohibition statements
+      - SKILL authoring
+      - Custom Agent authoring
+      - Launch path selection
+      - Multi-layer defense design
+      - User confirmation flow design
+      - Agent role constraint validation
     keywords:
       - SKILL
-      - custom Agent
-      - Agent boundary
-      - inherited SKILL
-      - execution model
-      - allowlist
-      - role constraint
-      - ScheduleWakeup
+      - Agent
       - AskUserQuestion
-      - fork context
+      - allowlist
+      - frontmatter
+      - defense
+      - launch path
+      - inherited
   docs/rules/claude_code_reference.md:
     title: Claude Code Reference (SKILL / Plugin / Agent)
     purpose: Provides factual information on Claude Code mechanisms (launch paths, agent types, tool restrictions) and repository definitions needed for combining SKILLs and Agents in forge/anvil platforms

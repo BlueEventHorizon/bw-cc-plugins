@@ -39,6 +39,7 @@ SKILL とカスタム Agent を組み合わせて forge / anvil を組むとき�
 - frontmatter に `name` / `description` / `tools` / `model` を書く
 - 禁止事項（他 Agent の起動 / 親タスクの引き継ぎ / allowlist 外への書き込み）を否定形で書き、起動 prompt を親の指示として解釈しないことを書く
 - 書き込む Agent には、対象の限定・編集可能ファイルの allowlist・無関係な refactor の禁止・修正後の構文検証を常時課す
+- 新設したら、そのプラグインの設計書に追加の根拠を記録し、Role 制約を検証するテストを足す（frontmatter は既存のテストが全 Agent を検査する）
 
 ### 多重防御
 

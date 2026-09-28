@@ -2,10 +2,12 @@
 """
 検索系 SKILL の subagent 隔離 / read-only 制約テスト
 
-docs/rules/claude_code_authoring_guide.md（「SKILL 実行モデル」「多重防御」）の
-以下の制約が、対象 SKILL.md に反映されていることを検証する:
+対象 SKILL.md / Agent 定義について、本テストは次の項目を検証する
+（B 層の Role 制約は docs/rules/claude_code_authoring_guide.md「多重防御」に基づく。
+git 管理ファイル書き換え禁止と引数解釈ガードは、本テストが独自に課す項目）:
 
 - fork 型 SKILL の frontmatter に `context: fork` が含まれている
+  （作成ガイドは fork 型 SKILL を採用しないため対象は空であり、この検証は監査用に残している）
 - 全 query-* SKILL の Role 章に read-only 制約 (Edit/Write/MultiEdit/NotebookEdit 禁止) が
   明記されている (B 層: AI 行動規範での逸脱抑止)
 - Role 章に git 管理ファイル書き換え禁止が明記されている

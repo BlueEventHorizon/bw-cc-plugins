@@ -1,10 +1,10 @@
 # ToC checksums for key: rules
 # Auto-generated - do not edit
-generated_at: 2026-09-27T17:00:58Z
+generated_at: 2026-09-28T03:15:02Z
 file_count: 11
 checksums:
   docs/rules/agent_data_exchange_rules.md: eccb938b1f931b73149070712cee213f7263f2d7435afb65124018e600dae2cb
-  docs/rules/claude_code_authoring_guide.md: 964cb0967a233464c9819546df02b5b4ed2767f306d4d0dc32f1bac64be21a76
+  docs/rules/claude_code_authoring_guide.md: 2729d902d214b0a16280500b60759becd08cdb6d2e475c35a8e82d15fb61a823
   docs/rules/claude_code_reference.md: c4fcc7ff4d805678424f4fb9f9f54bd5ca0d05024dd4f5bd23d0edea6f77097b
   docs/rules/cli_output_formatting.md: ed28854e71a9d2163463164af53b6484a77688a836ed734a98640dcdb3ec964b
   docs/rules/design_taxonomy.md: d7ceddde4bb9d10321600541f5a8aba0908a070701cf885aa130472de490b53a

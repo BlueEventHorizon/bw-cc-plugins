@@ -93,7 +93,7 @@ TOML にはテスト用 heuristic を入れない。使用例マーカーは `te
 | ファイル                                            | 変更内容                                                          |
 | --------------------------------------------------- | ----------------------------------------------------------------- |
 | `docs/rules/skill_launch_terms.toml`                | 起動経路公式用語を追加する                                        |
-| `docs/rules/claude_code_reference.md`               | 機械可読 subset の配置を逆参照として追記する                      |
+| [Claude Code リファレンス][reference]               | 機械可読 subset の配置を逆参照として追記する                      |
 | `tests/forge/subagent/skill_launch_terms.py`        | `tomllib` で公式用語 TOML を読むテスト用 helper を追加する        |
 | `tests/forge/subagent/test_changed_lines_policy.py` | `_LAUNCH_CONTEXT_PATTERNS` を TOML 参照にする                     |
 | `tests/forge/subagent/test_skill_launch_terms.py`   | TOML の最小 schema、source_doc 参照、重複リスト回帰防止を検査する |
@@ -167,13 +167,13 @@ for node in ast.walk(tree):
 | Step | 作業                                                                                                                                            |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | `.doc_structure.yaml` の rules 対象 glob が `.md` 限定であること、`dprint.jsonc` の TOML plugin が有効であることを確認する                      |
-| 2    | `docs/rules/skill_launch_terms.toml` を追加し、`docs/rules/claude_code_reference.md` に機械可読 subset の逆参照を追記する                       |
+| 2    | `docs/rules/skill_launch_terms.toml` を追加し、[Claude Code リファレンス][reference] に機械可読 subset の逆参照を追記する                       |
 | 3    | `tests/forge/subagent/skill_launch_terms.py` / `test_skill_launch_terms.py` を追加し、`test_changed_lines_policy.py` を TOML 読み込みに変更する |
 | 4    | 対象テストと全体テストを実行する                                                                                                                |
 
 Step 2-3 は同一変更セットで実施する。commit する場合も同一 commit にまとめ、中間状態として未使用 helper や fail する重複検査を main に積まない。
 
-`claude_code_reference.md` への追記例:
+[Claude Code リファレンス][reference] への追記例:
 
 ```markdown
 > 機械可読 subset: `docs/rules/skill_launch_terms.toml`

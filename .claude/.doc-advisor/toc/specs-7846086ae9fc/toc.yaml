@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-27T17:00:43Z
+  generated_at: 2026-09-28T03:14:20Z
   file_count: 37
 
 docs:
@@ -775,38 +775,34 @@ docs:
       - dependency direction
       - script placement
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md:
-    title: DES-030 Changed-Line Gate Launch Path Terms TOML Design
-    purpose: Specifies the design for extracting official launch path terminology into a machine-readable TOML file (skill_launch_terms.toml) to centralize the canonical reference and reduce duplication with test implementations.
+    title: DES-030 Changed-line Gate Launch-context Terms TOML Design
+    purpose: Specifies the design for converting launch-context official terminology from Python test code to a machine-readable TOML configuration file, enabling centralized management and reducing documentation duplication.
     content_details:
-      - "Problem: official launch path terms currently hard-coded in Python tests need external reference"
-      - "Design principle: TOML placed in docs/rules/ as machine-readable subset of Claude Code reference"
-      - TOML uses Python 3.11+ tomllib standard library for parsing, no external dependencies
-      - "Schema: metadata section with source_doc reference, launch_context section with terms array"
-      - "Terms list: 汎用Agent, カスタムAgent, 継承型SKILL, fork型SKILL, Bash subprocess, Skillツール, Agentツール"
-      - "Implementation: helper in tests/forge/subagent/skill_launch_terms.py to load TOML"
-      - "Test responsibility: test_changed_lines_policy.py uses TOML terms, test_skill_launch_terms.py validates schema"
-      - "Validation: source_doc existence, non-empty terms array, substring match to source markdown, no duplicates in test code"
-      - "Migration steps: confirm doc_structure constraints, add TOML, update tests, run all tests"
-      - "Risks: Python 3.11 minimum, heuristics remain in tests, regex kept in Python side"
+      - TOML file placement at docs/rules/skill_launch_terms.toml with metadata and launch_context sections
+      - tomllib-based helper function in tests/forge/subagent/skill_launch_terms.py for reading terms
+      - "Minimum schema validation: source_doc file existence, non-empty terms array, substring match verification"
+      - AST-based duplicate detection in test_skill_launch_terms.py to prevent public term literals in test code
+      - Python 3.11+ requirement using tomllib standard library (no external dependencies)
+      - Four-step migration procedure from inline constants to TOML configuration
+      - "Risk mitigations: heuristics and regex remain in Python, Markdown source as SSOT for semantics, one-way validation"
+      - "Acceptance criteria: passing unit tests, dprint format check, no external dependencies added"
     applicable_tasks:
-      - Implementing centralized launch path terminology management
-      - Refactoring changed-line policy test to use TOML reference
-      - Adding schema validation tests for TOML files
-      - Synchronizing Python test implementations with machine-readable documentation
-      - Maintaining launch context terminology for Claude Code authoring
-      - Implementing AST-based duplicate detection in tests
-      - Managing machine-readable document subsets
+      - Design review for changing line gate test infrastructure
+      - Implementation of launch-context terminology TOML configuration
+      - Migration planning from Python inline constants to external configuration
+      - Schema validation and duplicate detection testing
+      - Integration testing for forge subagent test framework improvements
     keywords:
-      - skill_launch_terms.toml
-      - launch_context
+      - TOML configuration
+      - launch context terms
       - tomllib
-      - changed-line policy
-      - test_changed_lines_policy.py
-      - test_skill_launch_terms.py
-      - machine-readable subset
-      - AST-based validation
-      - claude_code_reference.md
-      - claude_code_authoring_guide.md
+      - AST parsing
+      - schema validation
+      - test framework
+      - duplicate detection
+      - Python standard library
+      - test infrastructure
+      - migration design
   docs/specs/forge/design/DES-047_fix_safety_guardrails_design.md:
     title: Safety Guardrails for Review Fix Application Design
     purpose: Defines safety boundaries and verification mechanisms for applying fixes in the review skill, including sequential application, allowlist enforcement, syntax validation, and independent change verification.
