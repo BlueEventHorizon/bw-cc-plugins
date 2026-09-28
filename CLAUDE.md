@@ -95,6 +95,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ### 文書スタイル
 
+- **文書の書き方は forge の[文書スタイル指針](plugins/forge/docs/document_style_guide.md)に従う**。以下はその要点
 - **タグ（`[MANDATORY]` / `[CRITICAL]` / `[IMPORTANT]`）は見出し行の末尾に付ける**: `[MANDATORY]` は 1 文書 0〜3 箇所に抑え、迷ったら CRITICAL → IMPORTANT → タグなしの順に格下げする
 - **見出しは 4 階層（`####`）まで**
 - **語尾の長音は JIS Z 8301 に従い省略する**（例: ディレクトリ、カテゴリ）

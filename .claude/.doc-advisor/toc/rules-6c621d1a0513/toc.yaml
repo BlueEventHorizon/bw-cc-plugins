@@ -5,8 +5,8 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-28T03:15:02Z
-  file_count: 11
+  generated_at: 2026-09-28T07:13:20Z
+  file_count: 10
 
 docs:
   docs/rules/agent_data_exchange_rules.md:
@@ -151,39 +151,6 @@ docs:
       - reference
       - authority source
       - scope
-  docs/rules/document_writing_rules.md:
-    title: Document Writing Rules
-    purpose: Establishes consistent formatting, terminology, structure, and style standards for all project documentation to ensure readability for both AI and human readers
-    content_details:
-      - "Heading and tag conventions: [MANDATORY] for absolute rules, [CRITICAL] for violations causing serious issues, [IMPORTANT] for caution items; tags must be placed at end of heading line with exactly 1 space before tag; limit 0-3 tags per document to maintain signal effectiveness"
-      - "Heading level hierarchy: # for file title (one per file), ## for main sections, ### for subsections, #### for detail items; maximum 4 levels with deeper nesting requiring structure review"
-      - "Terminology standardization rules: replace non-recommended terms with recommended ones (必読文書 to 必須参照文書); use hyphenated section naming (共通 - 必須参照文書); use English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS) for maximum AI effectiveness"
-      - "Japanese long-vowel abbreviation rule following JIS Z 8301 standard: abbreviate final long vowels (ディレクトリ not ディレクトリー, カテゴリ not カテゴリー) except for official framework names and fixed proper nouns"
-      - "Document structure templates by type: workflow documents require frontmatter with name/description/applicable_when plus sections for required references, overview, procedure steps; rule documents require basic principles, detailed rules, exceptions sections"
-      - "Cross-reference principle: write references only when necessary for understanding or verifying main claims; exclude metadata sections listing related documents; follow forge document_style_guide system (3) for same-project references"
-      - "Document nature separation: docs/rules (project rules and guidelines), docs/specs (requirements and design documents), plugins/*/docs (plugin internal specifications), .claude/skills (local non-distributed skills), plugins/*/skills (distributed marketplace skills)"
-      - "Current state only rule: write only present-state content in document body; exclude transition narratives, change histories, and obsolete references; place all history in CHANGELOG.md and design decisions in ADR"
-      - "Abstract placeholder system for docs/rules documents: use generic placeholders (Foo, Bar, Hoge, Fuga) not project-specific names; use business terms (item, category, field) not project entities"
-      - "Formatting standards: language-tagged code blocks, lists nested maximum 2 levels, tables with maximum 6 columns, inline code for filenames and variables, strong for keywords, markdown emphasis for visual distinction"
-    applicable_tasks:
-      - Writing and reviewing rule documents in docs/rules directory
-      - Creating specification documents in docs/specs with consistent structure
-      - Designing SKILL frontmatter metadata with name and description fields
-      - Enforcing terminology consistency across entire project documentation
-      - Reviewing heading and tag placement compliance
-      - Establishing and validating cross-reference policies
-      - Validating document structure standards by document type
-    keywords:
-      - heading
-      - tag
-      - MANDATORY
-      - CRITICAL
-      - terminology
-      - frontmatter
-      - document structure
-      - cross-reference
-      - formatting
-      - CHANGELOG
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."

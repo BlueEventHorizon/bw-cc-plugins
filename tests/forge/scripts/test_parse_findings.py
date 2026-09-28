@@ -269,13 +269,30 @@ class LocationExtractionTest(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(parse_mod._extract_location(text), expected)
 
-    def test_rejects_wrapping_brackets_and_path_punctuation(self):
+    def test_accepts_location_wrapped_in_brackets(self):
+        """括弧で囲むのは位置を書く普通の形であり、囲みを理由に位置を捨てない。
+
+        括弧はパスに含めない。含めると存在しないパスが位置として扱われ、
+        括弧の直前に続く文までパスに取り込まれる。
+        """
+        expected = {"path": "src/a.py", "line": 12}
         cases = (
             "(src/a.py:12)",
             "[src/a.py:12]",
+            "「src/a.py:12」",
+            "（src/a.py:12）",
+            "本文の規定（src/a.py:12）が食い違う",
+            "直書きで書いています（src/a.py:12、`x`）",
+        )
+        for text in cases:
+            with self.subTest(text=text):
+                self.assertEqual(parse_mod._extract_location(text), expected)
+
+    def test_rejects_path_punctuation_before_line(self):
+        cases = (
             "src/a.py,:12",
             "src/a.py):12",
-            "「src/a.py:12」",
+            "src/a.py）:12",
         )
         for text in cases:
             with self.subTest(text=text):
@@ -456,7 +473,7 @@ class InterpretResponseTest(unittest.TestCase):
         cases = (
             "Issue:123",
             "12:34",
-            "(src/a.py:1)",
+            "src/a.py):1",
             "src/a.py:0",
             "src/a.py:3-2",
         )

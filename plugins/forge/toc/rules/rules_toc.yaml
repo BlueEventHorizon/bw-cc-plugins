@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-09-27T14:18:03Z
+  generated_at: 2026-09-28T07:19:48Z
   file_count: 41
 
 docs:
@@ -246,34 +246,40 @@ docs:
       - complexity
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: Requirement Review Criteria
-    purpose: Establishes requirement review criteria including SSOT document references, check order, frontmatter requirements for additional features, requirement-specific field validation, contradiction detection, and recommendation judgment rules
+    purpose: Defines review criteria for requirement definition documents, specifying SoT reference priorities, sequential check order (P1/P2/P3), and recommendation judgment rules
     content_details:
-      - SSOT references for requirement review (requirement_principles_spec, requirement_format, spec_priorities_spec, additive_development_spec, frontmatter_format, document_style_guide)
-      - P1 rule compliance checking (responsibility, format, non-functional requirement completeness, main purpose prohibition)
-      - "Additional feature frontmatter requirement (feature_type: temporary-feature for requirement documents)"
-      - Document reference validation per document_style_guide
-      - P2 contradiction detection (intra-requirement consistency, alignment with related design documents)
-      - doc_status exception handling (not_implemented and draft markers)
-      - P3 unnecessary complexity assessment (quantification prohibition, inverted patterns)
-      - Recommendation judgment (fix, create_issue, skip)
-      - Three conditions for create_issue recommendations
+      - SoT reference priority table with delegation to principles, formats, and project-specific rules
+      - "Check sequence: P1 rule alignment, P2 contradiction detection, P3 unnecessary complexity"
+      - "Temporary-feature frontmatter requirement (feature_type: temporary-feature)"
+      - Document reference notation rules (document_style_guide.md sections 5 and 8)
+      - P2 contradiction detection methodology for requirements and specifications
+      - Additive feature exemption rule for P2 (old spec replacement as intentional)
+      - doc_status marker special handling (not_implemented and draft status rules)
+      - P3 complexity assessment patterns (direct quantization prohibition, inverted patterns)
+      - Recommendation judgment rules (fix, create_issue, skip) with adoption conditions
+      - Create_issue determination conditions (no applicable rule, recurrence or objectivity, explicit formalization)
     applicable_tasks:
-      - Requirement document review
-      - Requirement format and completeness validation
-      - Feature requirement frontmatter verification
-      - Non-functional requirement category coverage checking
-      - Design document alignment verification
-      - Requirement-specification consistency validation
+      - Review requirement definition documents for SoT compliance
+      - Validate frontmatter in additive feature requirement documents
+      - Verify document reference notation
+      - Detect contradictions between requirements
+      - Check alignment between requirements and specifications
+      - Assess requirement structure complexity
+      - Determine review recommendations (fix vs create_issue vs skip)
+      - Validate doc_status marker correctness
+      - Detect P2 conflicts in feature-based requirement sets
+      - Identify candidate rules for issue creation
     keywords:
-      - requirement review criteria
-      - requirement_principles_spec
-      - requirement_format
-      - spec_priorities_spec
-      - "feature_type: temporary-feature"
+      - requirement_review
+      - review_criteria
+      - additive_feature
+      - doc_status
+      - temporary_feature
+      - SSOT
       - frontmatter_format
-      - document_style_guide
-      - additive_development_spec
-      - non-functional requirements
+      - recommendation_judgment
+      - contradiction_detection
+      - P1_P2_P3_check
   plugins/forge/docs/criteria/review_criteria_secrets.md:
     title: Secrets Review Criteria
     purpose: Defines review criteria for secrets and sensitive information detection, validation against standards, and machine detection result verification
@@ -367,35 +373,38 @@ docs:
       - frontmatter
       - temporary-feature
   plugins/forge/docs/design_principles_spec.md:
-    title: Design Document Creation Principles
-    purpose: Defines principles for creating design documents that specify implementation structure, modules, and processing flows, including essential components, content guidelines, judgment criteria, and maintenance rules.
+    title: Design Principles Specification
+    purpose: Defines universal principles for creating design documents when project-specific rules are absent, covering mandatory components, content guidelines, and architectural norms
     content_details:
-      - "Definition of design documents: specification of How (implementation structure/modules/flows) contrasting with What (requirements)"
-      - "Essential components: module lists with responsibilities/dependencies, component/class diagrams in Mermaid, use case lists, sequence diagrams"
-      - "Content to include: implementation methods, technical details, process flows, data flows, test design, existing component paths"
-      - "Content to exclude: full source code, unjustified technology selection, out-of-scope features, quantitative performance guarantees"
-      - "Quantitative goal handling: describe structure and policies to achieve goals, not guarantee achievement"
-      - "Judgment criterion: include if implementers can code from it; otherwise needs more detail"
-      - "Architecture dependency rules: explicitly define chosen pattern rules (Layered, Clean Architecture, Hexagonal, etc.) and forbidden patterns"
-      - "Responsibility division principles: single responsibility per module, avoid tight coupling, Rule of Three for abstractions, YAGNI principle"
-      - "Availability and SPOF handling: define redundancy/failover paths, retry strategies, error paths, and failure behavior for external APIs"
+      - Definition - specification of implementation How (structure, modules, flow), not requirements What or decision rationale Why
+      - Mandatory components - module list table with responsibility/dependency columns, component/class diagram (Mermaid), use case list table, sequence diagram
+      - Required content - implementation methods, class/method names, design patterns, technical framework details with brief rationale, data flow, test cases (normal/abnormal)
+      - Prohibited content - source code beyond 5-10 lines, framework selection without stated rationale, out-of-scope features, quantitative performance guarantees, AI-speculated design targets
+      - Quantitative targets - design principles and structures listed (caching, debounce, async), never performance guarantees; verification through load testing/profiling
+      - "Judgment criterion - evaluating completeness: Can implementers implement from this? Yes include in design, No needs more detail"
+      - Mermaid diagrams - recommended format with specific syntax (flowchart TB for architecture, classDiagram for modules, sequenceDiagram for flows)
+      - Hierarchical structure guidance - split files over 500 lines, maintain parent/child document cross-references
+      - "Architecture dependency rules - pattern-specific norms (layered: no reverse dependencies, clean: no Domain-to-Infrastructure, hexagonal), no circular dependencies allowed"
+      - Responsibility separation - single responsibility principle, cohesion rules, facade patterns with explicit intent, Rule-of-Three abstraction (no premature YAGNI violations)
     applicable_tasks:
       - Design document creation
       - Design document review and validation
-      - Architecture pattern selection and compliance checking
-      - Module structure and responsibility design
-      - Data flow and sequence design
-      - API contract and interface definition
-      - Performance and availability design
+      - Architecture pattern verification
+      - Dependency direction validation
+      - Module responsibility verification
+      - Availability and SPOF validation
+      - Component and data flow verification
     keywords:
-      - design document
-      - How
-      - module responsibility
-      - dependency direction
-      - architecture pattern
+      - design principles
       - component diagram
       - sequence diagram
-      - data flow
+      - Mermaid
+      - single responsibility
+      - architecture patterns
+      - circular dependency
+      - SPOF
+      - quantitative targets
+      - ADR
   plugins/forge/docs/deterministic_generation_spec.md:
     title: Deterministic Generation Should Not Be Done by AI
     purpose: Defines the principle that deterministically-created artifacts (data structures, file placement, identifiers) should be generated by deterministic systems rather than AI to prevent error chains from generation through silent data loss
@@ -463,35 +472,35 @@ docs:
       - document paths
   plugins/forge/docs/document_style_guide.md:
     title: Document Style Guide
-    purpose: Defines generic writing style for forge plugin documents (requirements, design, plans), covering tags, headings, emphasis, references, and structure conventions
+    purpose: Defines universal writing style conventions for documents (requirements, design, planning) generated/updated/reviewed by this plugin, covering tags, headings, emphasis, structure, references, naming, historical records, and related document sections
     content_details:
-      - Tag types MANDATORY, CRITICAL, IMPORTANT with placement rules
-      - Tag application criteria (irreversible damage, architecture collapse, legal requirements, irreversible judgment, AI trap mechanisms)
-      - "Heading hierarchy levels 1-4 only: H1 title, H2 sections, H3 subsections, H4 details"
-      - "Emphasis notation rules: bold, italic, code, GFM alert types (NOTE, TIP, IMPORTANT, WARNING, CAUTION)"
-      - Reference notation systems for docs/ internal, SKILL.md/agents/commands, and project documents
-      - Code block language requirement and list nesting max 2 levels
-      - "Table constraints: max 6 columns, no code blocks in cells, no multiple paragraphs"
-      - Abstract example naming using Foo, Bar, Hoge, Fuga with type suffixes, avoid concrete domains
-      - Prohibition on revision history and changelog sections in document body
-      - Prohibition on related documents list sections with exceptions for external URLs and referenced file lists
+      - Tag system - three types (MANDATORY/CRITICAL/IMPORTANT) placed at heading end with 1 space before tag, MANDATORY criteria (irreversible damage, architecture collapse, legal requirement, irreversible decision, AI trap mechanism), frequency 0-3 per document, signal value maintained by rarity
+      - "Heading levels - four levels only (# title, ## main section, ### subsection, #### details), exceeding 4 requires restructuring"
+      - Emphasis techniques - English signal phrases (NEVER/MUST/DO NOT/ALWAYS) for AI clarity, JIS Z 8301 long-vowel abbreviation (directory not directory-), bold for key terms, code for identifiers/paths, no italics for Japanese
+      - GFM alerts - five types (NOTE/TIP/IMPORTANT/WARNING/CAUTION) in quote blocks distinct from heading tags, per-block kept to few lines
+      - "Structured elements - code blocks (language tag required: bash, yaml, python, markdown, text), lists (unordered - for enumeration, ordered 1. for procedures, max 2 nesting levels), tables (max 6 columns, complex content separated)"
+      - "Document reference systems - three types: docs-to-docs with relative paths, SKILL/agent/command-to-docs using placeholder, project-docs using ID identifiers and reference-style links"
+      - Reference-style links - label definitions at document end centralize paths for maintenance when moving/renaming
+      - Abstract naming - placeholders (FooService/BarRepository) not real project names, generic terms (item not contact, category not group, field A not phone), exception for OS frameworks
+      - No historical records - current content only, use CHANGELOG and git for change history, ADR for design decision rationale, no formerly/once was language except in specific functional contexts
+      - No related documents section - essential references in introduction or body, use query skills for discovery, exception only for external URLs or recap of body-referenced files
     applicable_tasks:
-      - Writing forge plugin documentation
-      - Creating requirements definition documents
-      - Writing design documents
-      - Creating planning documents
-      - Reviewing document style compliance
-      - Establishing reference notation standards
+      - Document authoring and creation
+      - Style guide consultation during writing
+      - Document review and validation
+      - Reference structure verification
+      - Style consistency checking
     keywords:
-      - tag MANDATORY CRITICAL IMPORTANT
-      - heading level
+      - heading tags
+      - MANDATORY
+      - CRITICAL
       - GFM alert
       - reference notation
-      - code block
-      - emphasis notation
-      - abstract naming
-      - style guide
-      - document structure
+      - placeholder naming
+      - relative path
+      - CHANGELOG
+      - ADR
+      - JIS Z 8301
   plugins/forge/docs/error_classification_spec.md:
     title: Error Classification Specification
     purpose: Defines what constitutes an error versus non-error in system interfaces, establishes decision criteria for distinguishing errors from bugs and failures, and provides principles for failure handling.
@@ -970,36 +979,38 @@ docs:
       - typography
   plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md:
     title: Interactive Requirements Definition Workflow
-    purpose: Describes a workflow for creating requirements documents through interactive dialogue when design files do not exist, covering vision clarification, experience flow definition, detailed specifications, and quality validation for new applications or feature additions.
+    purpose: A structured workflow for defining requirements through user dialogue when wireframes are unavailable, progressing through phases from vision clarification to quality confirmation.
     content_details:
-      - Pre-confirmation phase for new vs existing feature scenarios
-      - Vision and value clarification with APP-001 overview document
-      - Experience flow definition with user scenarios and navigation flows
-      - Glossary creation for terminology and domain concepts
-      - System architecture exploration with entities, relations, and state models
-      - Detailed requirement specification creation (SCR, FNC, BL, DM, CMP, NAV, API, EXT, NFR, SEC, ERR ID types)
-      - Quality validation checklist with form and content verification
-      - Interactive dialogue principles for eliciting requirements
-      - Antipattern guidance for requirement elicitation
+      - Phase-based workflow structure (Phase 0–4) with visual flowchart
+      - Preliminary confirmation including scope definition and impact analysis
+      - Development rules and existing specifications retrieval via query-db skills
+      - Vision and value clarification for new or feature-addition contexts
+      - Experience flow definition with screen inventory and navigation structure
+      - Detailed specifications including glossary, architecture models, and state models
+      - Quality assurance including AI review and specification ID assignment
+      - Dialogue principles emphasizing choice-first and visual confirmation approaches
+      - Critical review response framework
+      - Antipatterns with solutions and special rules for ambiguity handling
     applicable_tasks:
-      - Creating requirements from dialogue without design mockups
-      - Defining new application requirements
-      - Adding features to existing applications
-      - Eliciting user requirements through structured questions
-      - Validating requirement specifications
-      - Reviewing requirement documents
-      - Managing requirement scope
+      - Interactive requirement specification creation for new applications
+      - Interactive requirement specification creation for feature additions
+      - User dialogue facilitation and structured interaction planning
+      - Requirement clarity and scope definition
+      - Vision and value confirmation with stakeholders
+      - Detailed specification development including glossary and data models
+      - Quality assurance review of requirements
+      - Specification ID assignment and documentation structure
     keywords:
+      - Interactive workflow
       - requirements definition
-      - interactive workflow
-      - dialogue
-      - specification IDs
-      - glossary
-      - APP-001
-      - feature addition
-      - requirement validation
-      - state model
-      - architecture
+      - user dialogue
+      - phases
+      - vision clarification
+      - experience flow
+      - glossary creation
+      - specification types
+      - state models
+      - quality confirmation
   plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md:
     title: Requirements Document Creation Workflow (Existing Application Analysis Version)
     purpose: Defines the workflow for creating requirement documents by reverse-engineering existing applications when source code exists, extracting requirements from code to produce specifications for rebuilding with new architecture or design.
@@ -1070,38 +1081,35 @@ docs:
       - 8pt grid
   plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md:
     title: UI Component Catalog Template
-    purpose: Template for generating UI component catalog documentation with UX evaluation notes, including metadata, design principles, component definitions, navigation structure, and accessibility assessment
+    purpose: Structured template for generating UI component catalog documents with design specifications, state definitions, UX evaluation criteria, and design token references for iOS and macOS platforms
     content_details:
-      - Metadata section with Feature ID, platform, design tokens reference, and input source
-      - Design principles transcription from Design Intent (brand tension, cultural references, anti-goals)
-      - Component summary list with HIG correspondence and usage descriptions
-      - Navigation structure with screen flow diagrams and pattern documentation
-      - Detailed component definitions with basic info, constituent elements, and state variations
-      - iOS and macOS platform-specific state variations (Default, Pressed, Disabled, Selected, Loading/Hover/Focused)
-      - Design token references (colors, typography, border radius, spacing)
-      - Component layout ASCII diagrams and UX evaluation notes
-      - Component interdependencies and common design patterns with Mermaid diagrams
-      - Overall UX evaluation with HIG compliance, consistency, reusability, and distinctiveness assessment
+      - Design direction specification table
+      - Design principles transferred from Design Intent
+      - Component summary list with standard HIG components and custom components
+      - Navigation structure with screen transitions and navigation patterns
+      - Component detailed definitions including basic info, constituent elements, and platform-specific states
+      - Design token usage documentation for colors, typography, spacing, and border radius
+      - Component layout representation using ASCII diagrams
+      - UX evaluation notes covering HIG compliance, Nielsen heuristics, Gestalt principles, accessibility, and brand signature
+      - Component dependency relationships and common patterns
+      - Overall UX evaluation covering standard utilization, consistency, reusability, and distinctiveness
     applicable_tasks:
-      - UI component design and specification documentation
-      - Component catalog generation and output
-      - Design consistency verification across components
-      - HIG compliance assessment and validation
-      - Accessibility evaluation and improvement planning
-      - UX rationale documentation and design note preparation
-      - Component state definition and interaction design
-      - Navigation pattern documentation
+      - UI component catalog generation for feature design
+      - Design documentation creation for UX/UI projects
+      - Component definition documentation for design systems
+      - UX evaluation and analysis documentation
+      - HIG compliance verification for iOS and macOS components
     keywords:
-      - component catalog
-      - HIG correspondence
+      - component_catalog_template
+      - UI component
+      - HIG
       - design tokens
-      - UX notes
-      - component states
-      - accessibility evaluation
-      - Nielsen heuristics
-      - design rationale
-      - navigation patterns
-      - Gestalt principles
+      - UX evaluation
+      - accessibility
+      - design intent
+      - iOS
+      - macOS
+      - design system
   plugins/forge/skills/start-uxui-design/docs/design_philosophy.md:
     title: Design Philosophy — Integrated Principles of Beautiful Design
     purpose: Framework for integrating various design theories (Rams, Norman, Tufte, Japanese aesthetics) into a coherent 3-layer model explaining how to create design that feels natural to humans
@@ -1138,35 +1146,37 @@ docs:
       - cognitive constraints
   plugins/forge/skills/start-uxui-design/docs/design_token_template.md:
     title: Design Token Template
-    purpose: Template structure and guidelines for generating design token documentation including color palettes, typography, spacing, and UX evaluation frameworks
+    purpose: Structured template for generating design token documentation including color palettes with Light/Dark modes, typography specifications, spacing scales, border radius definitions, shadows, and comprehensive UX evaluation criteria for design system implementation
     content_details:
-      - Color palette with base, status, and semantic colors
-      - Typography token definitions with font families and text styles
-      - Spacing scale with 8pt grid compliance
-      - Border radius token definitions
-      - Shadow token definitions with offset and blur
-      - Contrast ratio verification tables for WCAG
-      - UX evaluation framework with HIG compliance metrics
-      - Design Intent transcription guidelines
-      - Theme metadata structure including ID and platform
-      - Light and Dark mode color specifications
+      - Design direction specification with Provocation selection and brand tension definition
+      - Creative policy section documenting concept, cultural references, and brand anti-goals from Design Intent
+      - Base color palette with primary, secondary, background, and text colors in Light and Dark modes
+      - Status colors for success, warning, error, and info states with contrast ratio validation
+      - Semantic color definitions mapping token names to button states, surface types, and UI elements
+      - Font family specifications for heading, body text, and monospace fonts with UX notes
+      - Text style definitions with token names, sizes, weights, line heights for typography hierarchy
+      - Spacing scale using 8pt grid system from xxs to xxl for consistent layouts
+      - Layout spacing for screen margins, card padding, and section gaps
+      - Border radius tokens for buttons, cards, modals, and avatars
+      - Shadow definitions with offset, blur radius, and color for visual depth
+      - UX evaluation covering HIG compliance, color appropriateness, spacing consistency, typography hierarchy, Light/Dark mode support, accessibility, and distinctiveness
     applicable_tasks:
-      - Design token implementation
-      - Design system documentation creation
-      - Theme creation and management
-      - UI design token specification
-      - Accessibility verification
+      - Design token documentation generation for UI design systems
+      - Color palette and typography definition for feature design
+      - Accessibility verification and contrast ratio validation
+      - Light/Dark mode design token specification
+      - UX evaluation documentation for design systems
     keywords:
+      - design_token_template
       - design tokens
       - color palette
       - typography
-      - spacing scale
-      - border radius
-      - semantic colors
+      - spacing
+      - accessibility
+      - HIG compliance
+      - Light/Dark mode
+      - semantic tokens
       - contrast ratio
-      - WCAG
-      - UX evaluation
-      - theme metadata
   plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md:
     title: iOS Platform Guide
     purpose: "iOS-specific UX/UI design guidelines covering touch interaction, navigation patterns, layout, standard components, and accessibility based on Apple's Human Interface Guidelines"

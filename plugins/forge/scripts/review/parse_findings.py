@@ -24,13 +24,11 @@ COMPLETION_LINES = ("REVIEW_RESULT: approved", "REVIEW_RESULT: findings")
 FENCE_RE = re.compile(r"^(```|~~~)")
 LOCATION_RE = re.compile(
     r"(?<![\w./\\-])(?P<quote>`)?"
-    r"(?P<path>(?:[A-Za-z]:[\\/])?[^`\s:\"'()[\]{}<>,;!?。、，；：！？「」『』【】]+):"
+    r"(?P<path>(?:[A-Za-z]:[\\/])?[^`\s:\"'()[\]{}<>,;!?。、，；：！？（）「」『』【】]+):"
     r"(?P<line>\d+)(?:-(?P<end_line>\d+))?"
     r"(?(quote)`)(?![\w./\\-])"
 )
 UNKNOWN_LOCATION_MARKERS = ("位置未確定", "location unknown", "unknown location")
-LOCATION_OPENING_WRAPPERS = frozenset("([{<「『【")
-LOCATION_CLOSING_WRAPPERS = frozenset(")]}>」』】")
 CONVENTIONAL_EXTENSIONLESS_FILES = {
     "AUTHORS",
     "Brewfile",
@@ -112,16 +110,12 @@ def _looks_like_file_path(path: str) -> bool:
 def _extract_location(text: str) -> dict | None:
     """所見本文からファイルパスらしい明示位置だけを抽出する。"""
     for match in LOCATION_RE.finditer(text):
-        before = text[match.start() - 1] if match.start() > 0 else ""
-        after = text[match.end()] if match.end() < len(text) else ""
         path = match.group("path")
         line = int(match.group("line"))
         end_line_text = match.group("end_line")
         end_line = int(end_line_text) if end_line_text is not None else None
         if (
-            before in LOCATION_OPENING_WRAPPERS
-            or after in LOCATION_CLOSING_WRAPPERS
-            or not _looks_like_file_path(path)
+            not _looks_like_file_path(path)
             or line < 1
             or (end_line is not None and end_line < line)
         ):
