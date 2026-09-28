@@ -469,7 +469,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
 
 ### 5.4 参照の実在性検査
 
-TODO: 参照リンクの整合性確認処理を呼び出す
+<!-- 未実装: 参照の実在性検査 -->
+
+現時点では本節で行う処理は無い。次の節へ進む。
 
 ---
 
