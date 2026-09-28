@@ -1,4 +1,19 @@
 {
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": ["gh *", "git *"],
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "code.claude.com",
+        "platform.claude.com",
+        "docs.anthropic.com",
+        "developers.openai.com",
+        "learn.chatgpt.com"
+      ]
+    }
+  },
   "permissions": {
     "deny": [
       "Bash(git push --force *)",
