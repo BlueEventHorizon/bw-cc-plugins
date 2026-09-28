@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [marketplace 0.3.5] - 2026-09-28
+
+### marketplace
+
+- **chore**: forge 0.5.1 / anvil 0.1.4 のリリースに伴い marketplace バージョンをバンプ
+
+## [forge 0.5.1] - 2026-09-28
+
+### forge
+
+- **remove**: msg-sys 通信基盤・`msg-review` バックエンド・`/forge:talk-to-codex`・プラグインの hooks を削除。レビューのバックエンドは `agent-review` のみとなり、`--backend msg-review` と `.claude/.forge.yaml` の `review.backend: msg-review` はエラーになる。レビューの再開経路も削除
+- **feat**: 実装戦略の策定をカスタム Agent `plan-strategist` へ移し、既存仕様の検索・既存コードの読解・差分開発での既存実装との不一致の洗い出しを手順化。start-plan との受け渡しは識別値だけで行う（`strategy_exchange.py`）
+- **feat**: 差分 feature の途中にある必読文書を `spec_authority` として実装者へ機械的に伝達する（start-implement）
+- **feat**: onboarding の転記範囲を専用ファイルへ分離し、判定・承認文言・次の行動を script が返す形にした
+- **refactor**: query-forge-rules を継承型 dispatcher と read-only カスタム Agent `rules-query-worker` に分離し、内蔵 ToC の全文読解を呼び出し元の context から隔離
+- **refactor**: agenda が受け取ったデータをそのまま保存する形へ作り替え、wrapper を共有 script の置き場へ移設
+- **fix**: 計画書契約から `revision_history` を削除（最上位キーは `requirements_traceability` / `design_traceability` / `tasks` の 3 つ）
+- **fix**: plan-strategist から query スキル経由の仕様検索（doc-advisor backend）が通らない不具合を修正
+- **fix**: 並行状態の判定で UTF-8 でない文書を例外で落とさず解析失敗として扱う。所見の位置抽出で括弧に囲まれたパスを取り出す。所見の index を 1 始まりに揃える。agenda の表示で本文の改行が失われる不具合を修正
+- **fix**: 配布物から開発文書・削除済み仕様への参照を除去
+- **docs**: 決定論的生成・エラー分類・要件定義・実装戦略の規範文書を新設し、文書定義を各 principles へ集約（`spec_format.md` / `design_taxonomy.md` / `strategy_formulation_spec.md` を廃止）。文書記述ルールを `document_style_guide.md` へ統合し、文書参照記法に系統 (3) を追加
+
+## [anvil 0.1.4] - 2026-09-28
+
+### anvil
+
+- **feat**: impl-issue から Figma ベースの UI 設計・実装・レビューを `impl-ui` へ分離。impl-issue は利用者が直接起動できるようにした
+- **refactor**: triage-issue を、Issue の正誤検証と TASK 化の可否によるワンショット実装 / 要件定義からの開始の判定へ転換
+- **feat**: create-pr の CI 結果確認を、状態を語で返す `inspect_ci_status.py` に移し、チェック未登録を失敗と誤報告しないようにした。`gh` 自体の失敗は未登録と取り違えずエラーにする
+- **fix**: triage-issue から要件定義工程への起動を確定済みの引数で渡す。一時ファイルの扱いと仕様記述の誤りを修正
+
 ## [marketplace 0.3.4] - 2026-08-29
 
 ### marketplace
