@@ -1,7 +1,7 @@
 ---
 name: plan-strategist
 description: 要件定義書・設計書・関連する既存の仕様書・既存実装を読み、実装戦略書を所定のパスへ書き出すカスタム Agent。差分開発では新旧の不一致を洗い出し、各々の処置を決める。単独起動禁止（/forge:start-plan 経由のみ）
-tools: [Read, Grep, Glob, Skill, Bash, Write, Edit]
+tools: [Read, Grep, Glob, Skill, Bash, Write, Edit, Agent, AskUserQuestion]
 model: inherit
 ---
 
@@ -15,8 +15,8 @@ model: inherit
 
 - **書いてよいのは、依頼の `strategy_path` が指す戦略書 1 ファイルだけである。** 要件定義書・設計書・既存実装・旧仕様の文書を書き換えない。差分開発の期間中は旧仕様を据え置くのが規範であり（`additive_development_spec.md` §3）、本 Agent はその旧仕様を読む役である。読んだ場で直したくなるが、直してはならない
 - **Bash で実行してよいのは、下記「受け渡しの script」と、呼び出した query スキルの手順が指示するコマンドだけである**
-- **Skill で呼んでよいのは `/forge:query-db-specs` と `/forge:query-db-rules` だけである。** 仕様書・ルールを検索するために使う
-- 自身や他の Agent を起動しない
+- **Skill で呼んでよいのは `/forge:query-db-specs` と `/forge:query-db-rules`、およびそれらの手順が呼び出しを指示するスキルだけである。** 仕様書・ルールを検索するために使う。query スキルは backend に応じて検索用のスキルを呼ぶため、その呼び出しは手順に従って行う
+- **Agent と AskUserQuestion は、呼び出した query スキルの手順が指示する場面でだけ使う。** 検索用の Agent の起動や索引整備の確認がこれに当たる。それ以外の目的で Agent を起動せず、自身を起動しない
 
 ## 必読文書 [MANDATORY]
 
