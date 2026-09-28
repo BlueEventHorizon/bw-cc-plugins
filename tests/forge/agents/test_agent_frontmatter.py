@@ -4,8 +4,7 @@ forge カスタム Agent (`plugins/forge/agents/*.md`) の frontmatter 妥当性
 
 REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への置き換え」フィーチャー
 (no-fork-skill) は REQ-005 §11 / DES-029 へ fold 済みであり、DES-032 自体はもう存在しない
-（`docs/specs/common/design/COMMON-DES-001_skill_base_design.md` §6 が置き換え後の唯一の
-正式記録）。tools allowlist は各 Agent の frontmatter（`plugins/forge/agents/*.md`）自体を
+（fork 型 SKILL を採用しない方針は `docs/rules/claude_code_authoring_guide.md` が持つ）。tools allowlist は各 Agent の frontmatter（`plugins/forge/agents/*.md`）自体を
 正とし、本テストは frontmatter が構文的・慣習的に妥当であることを静的に検証する。
 
 検証内容:

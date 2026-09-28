@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-24T09:45:26Z
+  generated_at: 2026-09-28T03:15:02Z
   file_count: 11
 
 docs:
@@ -36,6 +36,67 @@ docs:
       - exit value
       - JSON
       - path-based reading
+  docs/rules/claude_code_authoring_guide.md:
+    title: Claude Code Authoring Guide (SKILL / Custom Agent)
+    purpose: Specifies rules and conventions for authoring SKILLs and custom Agents in forge and anvil, including execution models, launch path selection, and defense layers
+    content_details:
+      - Inheritance-only SKILL model with fork/agent keywords prohibited
+      - "Custom Agent requirements: frontmatter, prohibition statements, write constraints, test validation"
+      - "Launch path decision tree: Bash subprocess to generic Agent to custom Agent to inherited SKILL"
+      - "Multi-layer defense layers: Agent boundary, Role constraints, allowlist, physical deny"
+      - "User confirmation method: AskUserQuestion required; discussion-type SKILLs are exceptions"
+      - Agent completion waiting without ScheduleWakeup polling
+      - Nomenclature standards for short names and subagent_type field restrictions
+      - Dependent SKILL verification via available-skills or startup failure detection
+    applicable_tasks:
+      - SKILL authoring
+      - Custom Agent authoring
+      - Launch path selection
+      - Multi-layer defense design
+      - User confirmation flow design
+      - Agent role constraint validation
+    keywords:
+      - SKILL
+      - Agent
+      - AskUserQuestion
+      - allowlist
+      - frontmatter
+      - defense
+      - launch path
+      - inherited
+  docs/rules/claude_code_reference.md:
+    title: Claude Code Reference (SKILL / Plugin / Agent)
+    purpose: Provides factual information on Claude Code mechanisms (launch paths, agent types, tool restrictions) and repository definitions needed for combining SKILLs and Agents in forge/anvil platforms
+    content_details:
+      - "Five launch paths with short names: inherited SKILL (Skill tool, parent context, in-process output), fork SKILL (Skill with context:fork, isolated context, return value only), generic Agent (built-in Agent tool, isolated context, completion notification), custom Agent (plugin:name Agent tool, isolated context, completion notification), Bash subprocess (external process, no handbook, exit code/stdout)"
+      - "Fork SKILL bugs documenting seven public Issues preventing fork adoption: #18394 context fork ineffective, #34164 ARGUMENTS substitution in nested fork SKILL, #60720 Desktop UI output failure, #55592 infinite recursion fixed in v2.1.145, #34328 subagent creation failure, #19751 AskUserQuestion broken in fork, #17351 nested SKILL returns to main not caller"
+      - "Subagent_type value domain limited to: built-in Agent names (general-purpose, Explore, Plan, claude, statusline-setup, claude-code-guide), plugin-scoped custom Agent names; invalid: SKILL names, slash notation like /<plugin>:<skill>, file paths"
+      - "Tool restriction scope: allowed-tools grants single-turn pre-approval cleared on next user message; disallowed-tools restriction also clears on next message making multi-turn dialogue ineffective"
+      - "Agent launch mode determined by hierarchy: in-process agent team teammate (foreground), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 (foreground), fork mode ON (background default in interactive), fork mode OFF (background unless result needed)"
+      - SKILL frontmatter provides no launch mode specification; Agent definition background:true only applies in fork mode OFF
+      - ScheduleWakeup is /loop dynamic mode tool only for resume scheduling; background task completion uses harness notification instead
+      - "Source citation method distinguishes: public (URL and official docs quote), observed (empirical testing), public Issue (GitHub issue reference); mark investigation date, version, and Anthropic response status (fixed, not planned, open)"
+      - "Machine-readable subset: skill_launch_terms.toml validates other-skill invocation paths; update together with reference document"
+      - "Authority hierarchy: Claude Code official behavior has source citation, repository definitions require no citation, SKILL author guidance lives in separate document"
+    applicable_tasks:
+      - Selecting appropriate launch path between inherited SKILL, fork SKILL, generic Agent, custom Agent, and Bash subprocess
+      - Evaluating fork SKILL viability given documented public Issues and Anthropic non-fix decisions
+      - Validating subagent_type values against allowed built-in and custom Agent names
+      - Understanding tool restriction scope for security allowlist implementation
+      - Designing Agent background task completion notification handling
+      - Tracking Claude Code version changes and mechanism status updates
+      - Reviewing SKILL context isolation requirements against launch path options
+    keywords:
+      - launch path
+      - fork SKILL
+      - subagent_type
+      - context isolation
+      - tool restriction
+      - allowed-tools
+      - disallowed-tools
+      - background task
+      - ScheduleWakeup
+      - Claude Code Issue
   docs/rules/cli_output_formatting.md:
     title: CLI Output Formatting Guidelines
     purpose: Defines color-coding conventions and output patterns for shell scripts and CLI tools
@@ -92,33 +153,37 @@ docs:
       - scope
   docs/rules/document_writing_rules.md:
     title: Document Writing Rules
-    purpose: Establishes unified conventions for document structure, formatting, terminology, and metadata across project documentation to ensure consistency and enable efficient AI processing
+    purpose: Establishes consistent formatting, terminology, structure, and style standards for all project documentation to ensure readability for both AI and human readers
     content_details:
-      - Tag types and placement rules ([MANDATORY], [CRITICAL], [IMPORTANT]) with spacing standards
-      - Terminology standardization including unified terms and English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS)
-      - Long vowel rule following JIS Z 8301 standard
-      - Document structure templates with frontmatter format for different document types
-      - Heading hierarchy with maximum 4 levels for organization
-      - Document reference notation principles (necessary references only, no separate metadata sections)
-      - Directory role classification distinguishing rules, specs, plugin docs, and skills
-      - Current state documentation principle - present tense only, history in CHANGELOG
-      - Abstraction requirement using generic placeholders instead of project-specific names
-      - Content formatting standards for emphasis, code, lists, and tables
+      - "Heading and tag conventions: [MANDATORY] for absolute rules, [CRITICAL] for violations causing serious issues, [IMPORTANT] for caution items; tags must be placed at end of heading line with exactly 1 space before tag; limit 0-3 tags per document to maintain signal effectiveness"
+      - "Heading level hierarchy: # for file title (one per file), ## for main sections, ### for subsections, #### for detail items; maximum 4 levels with deeper nesting requiring structure review"
+      - "Terminology standardization rules: replace non-recommended terms with recommended ones (必読文書 to 必須参照文書); use hyphenated section naming (共通 - 必須参照文書); use English emphasis phrases (NEVER skip, MUST, DO NOT, ALWAYS) for maximum AI effectiveness"
+      - "Japanese long-vowel abbreviation rule following JIS Z 8301 standard: abbreviate final long vowels (ディレクトリ not ディレクトリー, カテゴリ not カテゴリー) except for official framework names and fixed proper nouns"
+      - "Document structure templates by type: workflow documents require frontmatter with name/description/applicable_when plus sections for required references, overview, procedure steps; rule documents require basic principles, detailed rules, exceptions sections"
+      - "Cross-reference principle: write references only when necessary for understanding or verifying main claims; exclude metadata sections listing related documents; follow forge document_style_guide system (3) for same-project references"
+      - "Document nature separation: docs/rules (project rules and guidelines), docs/specs (requirements and design documents), plugins/*/docs (plugin internal specifications), .claude/skills (local non-distributed skills), plugins/*/skills (distributed marketplace skills)"
+      - "Current state only rule: write only present-state content in document body; exclude transition narratives, change histories, and obsolete references; place all history in CHANGELOG.md and design decisions in ADR"
+      - "Abstract placeholder system for docs/rules documents: use generic placeholders (Foo, Bar, Hoge, Fuga) not project-specific names; use business terms (item, category, field) not project entities"
+      - "Formatting standards: language-tagged code blocks, lists nested maximum 2 levels, tables with maximum 6 columns, inline code for filenames and variables, strong for keywords, markdown emphasis for visual distinction"
     applicable_tasks:
-      - Document authoring and style standardization
-      - Project rule establishment and maintenance
-      - Documentation structure design
-      - Content review for consistency compliance
-      - Creating specification and requirements documents
+      - Writing and reviewing rule documents in docs/rules directory
+      - Creating specification documents in docs/specs with consistent structure
+      - Designing SKILL frontmatter metadata with name and description fields
+      - Enforcing terminology consistency across entire project documentation
+      - Reviewing heading and tag placement compliance
+      - Establishing and validating cross-reference policies
+      - Validating document structure standards by document type
     keywords:
-      - document writing rules
-      - frontmatter metadata
-      - heading hierarchy
-      - tag placement
-      - terminology standardization
-      - SKILL document format
-      - document reference notation
-      - changelog management
+      - heading
+      - tag
+      - MANDATORY
+      - CRITICAL
+      - terminology
+      - frontmatter
+      - document structure
+      - cross-reference
+      - formatting
+      - CHANGELOG
   docs/rules/forge_doc_access_principle.md:
     title: forge Document Access Principle
     purpose: "Defines the design principle for how forge internal components (SKILL, agent, scripts) access documentation via two routes: direct reference to built-in docs or query-based discovery of project specs and rules."
@@ -244,69 +309,6 @@ docs:
       - JSON_errors
       - script_interface
       - exit_code_table
-  docs/rules/skill_authoring_notes.md:
-    title: Notes on SKILL.md Authoring
-    purpose: Provides guidelines for creating and editing Claude Code SKILL.md files including frontmatter fields, execution models, agent boundaries, tool permissions, and interaction patterns
-    content_details:
-      - Required SKILL documentation - claude-code-guide Agent for official specs, skill_launch_paths_definitions.md for naming conventions
-      - Frontmatter field specifications including name, description, user-invocable, argument-hint, disable-model-invocation, allowed-tools, disallowed-tools
-      - SKILL execution models - inheritance type (context unspecified, adopted) vs. fork type (deprecated, no longer used)
-      - Multi-defense layers - Agent boundary isolation, Role constraints in system prompt, allowlist permissions, physical deny via settings.json
-      - Custom Agent adoption criteria - multiple call sources, write boundary constraints, context efficiency, Agent tool with subagent_type launching
-      - Inheritance SKILL requirements - responsibility boundary documentation, minimal $ARGUMENTS, clear write-side effect conditions
-      - Description authoring patterns - specific what/when/trigger information for auto-invocation decision
-      - Self-recursion prohibition - query/build/start SKILL cannot re-invoke themselves to prevent infinite loops
-      - Agent background launch with ScheduleWakeup - must stop scheduled fallback when task-notification received
-      - User interaction via AskUserQuestion - mandatory for questions/selections except when discussion content itself is deliverable
-    applicable_tasks:
-      - SKILL.md authoring with proper frontmatter configuration
-      - Inheritance type SKILL execution flow design
-      - Custom Agent definition with role constraints and permission boundaries
-      - Tool permission allowlist specification for SKILL and Agent
-      - User interaction design using AskUserQuestion tool
-      - Agent orchestration with background task and fallback management
-    keywords:
-      - SKILL.md frontmatter
-      - inheritance SKILL model
-      - custom Agent tool
-      - allowed-tools permissions
-      - Agent boundaries
-      - AskUserQuestion tool
-      - self-recursion prohibition
-      - ScheduleWakeup management
-      - fork type deprecated
-      - Role constraints
-  docs/rules/skill_launch_paths_definitions.md:
-    title: SKILL / Agent / Subagent Launch Path Definitions
-    purpose: Defines the 5 delegation launch paths in Claude Code (inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess) and establishes their official short names to prevent terminology confusion
-    content_details:
-      - Launch path classification table of 5 types (継承型 SKILL, fork 型 SKILL, 汎用 Agent, カスタム Agent, Bash subprocess) with launch tool, procedure-document location, parent-context, input, output, and adoption-status columns
-      - "fork-type SKILL deprecation rationale citing anthropics/claude-code structural bugs #18394, #34164, #60720, #55592 (context: fork ignored, $ARGUMENTS substitution failure, silent output loss, infinite recursion)"
-      - Naming usage rule mandating official short names over the ambiguous term subagent
-      - Term-usage unification table mapping ambiguous subagent references to the correct short name (fork型SKILL / 汎用Agent / カスタム Agent)
-      - "subagent_type value domain definition: general-purpose/Explore/Plan/statusline-setup for 汎用Agent, agents/<name>.md-defined names like forge:reviewer or doc-advisor:toc-updater for カスタム Agent"
-      - "Invalid subagent_type value examples: SKILL/slash-command names (forge:review, /anvil:create-pr), file paths (plugins/forge/skills/review/SKILL.md)"
-      - "Essential relationship notes: 汎用Agent vs カスタム Agent distinguished by where the procedure document lives (prompt each call vs fixed system prompt)"
-      - "Historical equivalence note: fork型SKILL and カスタム Agent share the same isolated-context-plus-predefined-role model, differing only in launch tool and definition file location"
-      - Reference to the machine-readable term subset docs/rules/skill_launch_terms.toml
-    applicable_tasks:
-      - Writing or reviewing SKILL.md launch path terminology
-      - Choosing the correct subagent_type value when launching an Agent tool
-      - Distinguishing custom Agent from general-purpose Agent
-      - Reviewing design documents for correct launch path short names
-      - "Auditing SKILL.md or agents/*.md for deprecated context: fork usage"
-      - Resolving ambiguous subagent terminology in project documentation
-    keywords:
-      - 継承型 SKILL
-      - fork 型 SKILL
-      - 汎用 Agent
-      - カスタム Agent
-      - Bash subprocess
-      - subagent_type
-      - "context: fork"
-      - skill_launch_terms.toml
-      - general-purpose
-      - COMMON-DES-001
   docs/rules/version_migration_design.md:
     title: Version Upgrade and Migration Design Rules
     purpose: Defines design principles (pipeline, idempotency, forward compatibility) and anti-patterns for implementing safe multi-step version migrations across config files, Swift models, and databases.

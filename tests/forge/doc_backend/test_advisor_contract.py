@@ -256,8 +256,8 @@ class TestNoVersionInference(unittest.TestCase):
         書くことは REQ-003 FNC-004 が禁じており（警告文は AI に禁止対象の存在を認識させ逆効果に
         なりうる）、SKILL.md 側にこの文言を要求すると 2 つの規約が衝突する。
 
-        SKILL.md の禁止警告が一律に禁じられているわけではない（COMMON-DES-001 §7.1 / §7.2 は
-        責務境界と自己再帰禁止の明記を [MANDATORY] としている）。ここで設計書側へ寄せているのは
+        SKILL.md の禁止警告が一律に禁じられているわけではない（docs/rules/claude_code_authoring_guide.md は
+        責務境界と自己再帰禁止の明記を求めている）。ここで設計書側へ寄せているのは
         バージョン判定に限る。
         """
         design = (
