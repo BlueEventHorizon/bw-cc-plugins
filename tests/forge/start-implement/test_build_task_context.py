@@ -447,6 +447,25 @@ class SpecAuthorityTest(unittest.TestCase):
             self.assertIsNone(merged)
             self.assertTrue(any("読み取りに失敗" in e for e in errors))
 
+    def test_non_utf8_document_fails_instead_of_raising(self):
+        """UTF-8 で読めない文書も解析失敗として errors に載せる（例外で落ちない）。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            plan_path = Path(tmp) / "foo_plan.json"
+            write_plan(plan_path, [valid_plan_task()])
+            binary_doc = Path(tmp) / "docs" / "specs" / "extra.md"
+            binary_doc.parent.mkdir(parents=True)
+            binary_doc.write_bytes(b"\xff\xfe\x00---\n")
+            candidate = valid_candidate()
+            candidate["required_reading"] = dict(
+                candidate["required_reading"],
+                requirement_docs=[],
+                design_docs=[],
+                additional=[str(binary_doc)],
+            )
+            merged, errors = build_task_context(str(plan_path), "TASK-001", candidate)
+            self.assertIsNone(merged)
+            self.assertTrue(any("UTF-8 として読めません" in e for e in errors))
+
 
 class RunCliTest(unittest.TestCase):
     def _run(self, plan_path, task_id, input_rel_path, output_path):

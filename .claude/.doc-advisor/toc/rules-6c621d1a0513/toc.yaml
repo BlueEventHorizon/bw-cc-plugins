@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (rules)
   key: rules
-  generated_at: 2026-09-28T07:13:20Z
+  generated_at: 2026-09-28T12:06:36Z
   file_count: 10
 
 docs:
@@ -66,37 +66,31 @@ docs:
       - inherited
   docs/rules/claude_code_reference.md:
     title: Claude Code Reference (SKILL / Plugin / Agent)
-    purpose: Provides factual information on Claude Code mechanisms (launch paths, agent types, tool restrictions) and repository definitions needed for combining SKILLs and Agents in forge/anvil platforms
+    purpose: Documents Claude Code mechanisms and project-specific definitions for combining SKILLs and Agents in forge/anvil development
     content_details:
-      - "Five launch paths with short names: inherited SKILL (Skill tool, parent context, in-process output), fork SKILL (Skill with context:fork, isolated context, return value only), generic Agent (built-in Agent tool, isolated context, completion notification), custom Agent (plugin:name Agent tool, isolated context, completion notification), Bash subprocess (external process, no handbook, exit code/stdout)"
-      - "Fork SKILL bugs documenting seven public Issues preventing fork adoption: #18394 context fork ineffective, #34164 ARGUMENTS substitution in nested fork SKILL, #60720 Desktop UI output failure, #55592 infinite recursion fixed in v2.1.145, #34328 subagent creation failure, #19751 AskUserQuestion broken in fork, #17351 nested SKILL returns to main not caller"
-      - "Subagent_type value domain limited to: built-in Agent names (general-purpose, Explore, Plan, claude, statusline-setup, claude-code-guide), plugin-scoped custom Agent names; invalid: SKILL names, slash notation like /<plugin>:<skill>, file paths"
-      - "Tool restriction scope: allowed-tools grants single-turn pre-approval cleared on next user message; disallowed-tools restriction also clears on next message making multi-turn dialogue ineffective"
-      - "Agent launch mode determined by hierarchy: in-process agent team teammate (foreground), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 (foreground), fork mode ON (background default in interactive), fork mode OFF (background unless result needed)"
-      - SKILL frontmatter provides no launch mode specification; Agent definition background:true only applies in fork mode OFF
-      - ScheduleWakeup is /loop dynamic mode tool only for resume scheduling; background task completion uses harness notification instead
-      - "Source citation method distinguishes: public (URL and official docs quote), observed (empirical testing), public Issue (GitHub issue reference); mark investigation date, version, and Anthropic response status (fixed, not planned, open)"
-      - "Machine-readable subset: skill_launch_terms.toml validates other-skill invocation paths; update together with reference document"
-      - "Authority hierarchy: Claude Code official behavior has source citation, repository definitions require no citation, SKILL author guidance lives in separate document"
+      - "5 launch path types: inherited SKILL, fork SKILL, general-purpose Agent, custom Agent, Bash subprocess"
+      - fork SKILL issues and Anthropic response status (7 documented issues)
+      - subagent_type value domain (built-in agents, custom Agent naming with <plugin>:<name> namespace)
+      - Tool restriction scope for allowed-tools and disallowed-tools (per-turn lifecycle)
+      - Agent startup mode decision logic (foreground vs background determination)
+      - Source citation conventions for Claude Code behaviors and repository definitions
+      - Tool restrictions clearing on user message (disallowed-tools behavior across multiple turns)
     applicable_tasks:
-      - Selecting appropriate launch path between inherited SKILL, fork SKILL, generic Agent, custom Agent, and Bash subprocess
-      - Evaluating fork SKILL viability given documented public Issues and Anthropic non-fix decisions
-      - Validating subagent_type values against allowed built-in and custom Agent names
-      - Understanding tool restriction scope for security allowlist implementation
-      - Designing Agent background task completion notification handling
-      - Tracking Claude Code version changes and mechanism status updates
-      - Reviewing SKILL context isolation requirements against launch path options
+      - SKILL design and development
+      - Agent definition and customization
+      - Fork SKILL adoption decision-making
+      - Tool authorization management
+      - Agent startup configuration
     keywords:
-      - launch path
-      - fork SKILL
+      - SKILL
+      - Agent
+      - plugin
+      - fork
       - subagent_type
-      - context isolation
-      - tool restriction
       - allowed-tools
       - disallowed-tools
-      - background task
-      - ScheduleWakeup
-      - Claude Code Issue
+      - context
+      - background
   docs/rules/cli_output_formatting.md:
     title: CLI Output Formatting Guidelines
     purpose: Defines color-coding conventions and output patterns for shell scripts and CLI tools

@@ -58,6 +58,8 @@ def _classify_parallel_state(path):
         text = Path(path).read_text(encoding="utf-8")
     except OSError as exc:
         return None, f"{path}: 並行状態を判定できません（読み取りに失敗: {exc.strerror or exc}）"
+    except UnicodeDecodeError:
+        return None, f"{path}: 並行状態を判定できません（UTF-8 として読めません）"
 
     lines = text.splitlines()
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:

@@ -71,6 +71,7 @@ foreground / background は次の最初に当てはまるもので決まる。
 
 - 出典: 2026-09-26 / 2.1.283 / 公式 [Subagents](https://code.claude.com/docs/en/sub-agents)「Claude Code picks foreground or background from the first of these cases that applies」「Where fork mode is on, as it is by default in an interactive session, Claude Code runs the subagent in the background」
 - 対話セッションの Agent ツールには `run_in_background` 引数が無く、常に background で動き、結果は後のターンに完了通知で届いた。出典: 2026-09-26 / 2.1.283 / 観測
+- background で動いた subagent には AskUserQuestion が無かった。`tools:` に AskUserQuestion を列挙したカスタム Agent でも、`tools:` を省いた `general-purpose` でも同じだった。原因は確認できず。出典: 2026-09-28 / 2.1.283 / 観測
 - SKILL の frontmatter から起動方式を指定する手段は確認できず。Agent 定義の `background: true` は fork mode OFF のときだけ効く。出典: 2026-09-26 / 2.1.283 / 公式 [Subagents](https://code.claude.com/docs/en/sub-agents)
 - `ScheduleWakeup` は `/loop` 動的モードの起動予約ツールであり、background 作業の完了はハーネスが通知する。出典: 2026-09-26 / 2.1.283 / 観測（ツール説明「Schedule when to resume work in /loop dynamic mode」）
 

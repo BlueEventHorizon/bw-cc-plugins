@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Code プラグインのマーケットプレイスリポジトリ。2 プラグインを格納・配布する。
 
-- **forge** (v0.5.0) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、現在の唯一の候補は外部依存を持たない `agent-review`（`review` / `agent-review`）
-- **anvil** (v0.1.3) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
+- **forge** (v0.5.1) — ドキュメントライフサイクルツール。要件定義・設計・計画書の作成、コード・文書レビュー、自動修正に対応。レビューは交換可能なバックエンドで実行し、現在の唯一の候補は外部依存を持たない `agent-review`（`review` / `agent-review`）
+- **anvil** (v0.1.4) — GitHub 連携（commit / PR / Issue 作成・トリアージ・実装）
 
 > 上記 2 つの版数は `.version-config.yaml` が CLAUDE.md を同期対象として宣言している箇所であり、`/forge:update-version` が機械的に書き換える。手で消したり書式を変えたりしない（`tests/common/test_version_sync_drift.py` が検証する）。
 
@@ -173,7 +173,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m unittest tests.forge.review.test_xxx -v
 ```
 
-<!-- FORGE_ONBOARDING_START hash=9f7a476f695a -->
+<!-- FORGE_ONBOARDING_START hash=de2e40869532 -->
 
 > このブロックは forge の onboarding スキルが生成する。手で編集しない（次回実行で上書きされる）。
 > `${CLAUDE_PLUGIN_ROOT}` は forge プラグインの配置先を指すプレースホルダであり、この文脈では実パスに解決されない。実体を読むには onboarding スキルを起動する。
@@ -188,6 +188,7 @@ python3 -m unittest tests.forge.review.test_xxx -v
 - 文書内に「改定履歴」「変更履歴」等の履歴セクションを置かない。履歴は CHANGELOG と git 履歴が持ち、設計判断の変更は ADR に記録する
 - 「関連文書」等のリンク集セクションを置かない。必要でない参照は書かない。書かなければ本文が理解・検証できない参照だけを `[表示名](相対パス)` 形式で書く
 - 要件（What）と設計（How）の境界は「ユーザーマニュアルに書く内容か」で判定する。ただし決定済みの「設計」「実装」は要件として記載されることもある。
+- 設計中に要件定義書に無い必要が判明したら設計を止める。要件へ戻す場合も、戻せず設計書に書く場合も、ユーザーの承認を得る。後者は承認を ADR に記録し、設計書の当該節からリンクする
 - 未確定の定量値を推測して書かない（TBD とする）。責務分割・境界・依存方向などの構造品質を数値目標に翻訳しない
 - 実装・設計・命名を変えて文書と乖離が生じたら、同じ変更の中で文書も直す
 - ADR に仕様・ルールの本文を写さない（真実源が 2 つになる）。ADR を根拠に提案を見送るときは、棄却理由の前提が今も成立するかを確かめ、根拠にした ADR ID を添える。ADR の節番号は変えない

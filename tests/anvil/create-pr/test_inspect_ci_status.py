@@ -10,6 +10,7 @@
 - キャンセルを失敗と別の語にすること
 - スキップを成功に含めること
 - 未知の bucket を黙って捨てず、エラーにすること
+- `gh` 自体の失敗（空の stdout・非ゼロ終了・未登録の文言なし）を未登録に畳まず、エラーにすること
 
 `gh` は呼ばない。stdout 相当の JSON 文字列を渡して写像だけを検証する。
 """
@@ -96,6 +97,29 @@ class NotReportedTest(unittest.TestCase):
     def test_not_reported_is_independent_of_exit_code(self):
         """`gh` は未登録を非ゼロで返す。終了コードを判定に使わないことを固定する。"""
         self.assertEqual(_status("[]", returncode=1), "not_reported")
+
+
+class GhFailureTest(unittest.TestCase):
+    """`gh` 自体の失敗を「チェック未登録」に畳むと、呼び出し側は来ない登録を待ち続ける。"""
+
+    def test_empty_stdout_with_error_raises(self):
+        stderr = "GraphQL: Could not resolve to a PullRequest with the number of 999999."
+        with self.assertRaises(ci_mod.GhCommandError):
+            ci_mod.inspect("", stderr, 1)
+
+    def test_error_message_carries_exit_code_and_stderr(self):
+        with self.assertRaises(ci_mod.GhCommandError) as ctx:
+            ci_mod.inspect("", "  authentication required\n", 4)
+        self.assertIn("4", str(ctx.exception))
+        self.assertIn("authentication required", str(ctx.exception))
+
+    def test_empty_stdout_with_not_reported_message_is_not_reported(self):
+        """未登録は非ゼロで返る。stderr の文言で失敗と区別する。"""
+        stderr = "no checks reported on the 'feature/foo' branch"
+        self.assertEqual(ci_mod.inspect("", stderr, 1)["status"], "not_reported")
+
+    def test_empty_stdout_with_zero_exit_is_not_reported(self):
+        self.assertEqual(ci_mod.inspect("", "", 0)["status"], "not_reported")
 
 
 class ExitCodeIsNotUsedForJudgmentTest(unittest.TestCase):

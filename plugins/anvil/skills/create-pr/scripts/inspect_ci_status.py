@@ -65,10 +65,10 @@ push 直後は GitHub 側でチェックが登録される前に問い合わせ�
 待つか打ち切るかは呼び出し側（SKILL）が決める。進行の管理は決定論的に作れないため実行系へ移さない
 （forge の `deterministic_generation_spec.md` §6「適用しない場面」）。
 
-## 終了コードを判定に使わない
+## 終了コードを状態の判定に使わない
 
-判定は stdout の JSON だけで行う。`gh pr checks` の終了コードの値域は `--json` を併用したときの挙動が
-実測できていないため、判定の根拠にしない。追跡のため `gh_exit_code` と `gh_stderr` は出力に含める
+状態の判定は stdout の JSON だけで行う。`gh pr checks` の終了コードの値域は `--json` を併用したときの
+挙動が実測できていないため、状態の根拠にしない。追跡のため `gh_exit_code` と `gh_stderr` は出力に含める
 （判定に使わないが、握りつぶさない）。
 
 ## 未実測の境界
@@ -76,6 +76,17 @@ push 直後は GitHub 側でチェックが登録される前に問い合わせ�
 **チェックが未登録のとき、`--json` 併用時の stdout が空文字列になるのか `[]` になるのかは未実測である。**
 PR にチェックが登録される前の状態を再現できなかった。どちらか一方に決め打つと、外れた側で JSON の
 パースに失敗して検査そのものが落ちる。したがって**両方を `not_reported` として受け付ける**。
+
+## `gh` 自体の失敗はエラーにする
+
+PR 番号の誤り・認証切れ・ネットワーク障害で `gh` が失敗したときも、stdout は空になりエラーは stderr に
+出る。空の stdout を無条件に `not_reported` とすると、失敗が「チェックがまだ登録されていない」に化け、
+呼び出し側は来ない登録を待ち続ける。
+
+そこで **stdout が空のときに限り**、終了コードと stderr で両者を区別する。終了コードが非ゼロで、stderr に
+未登録を示す `no checks reported` が無ければ `gh` 自体の失敗とみなし、例外を投げて非ゼロ終了する。
+未登録の判定を stderr の文言に頼るのは、上記のとおり未登録時の stdout の形が未実測で、空の stdout だけでは
+未登録と失敗を見分けられないためである。
 
 ## 未知の bucket はエラーにする
 
@@ -104,8 +115,17 @@ _KNOWN_BUCKETS = ("pass", "fail", "pending", "skipping", "cancel")
 _JSON_FIELDS = "name,state,bucket,link"
 
 
+# チェック未登録のとき `gh pr checks` が stderr に出す文言。stdout が空のときに、未登録と
+# `gh` 自体の失敗を区別するためだけに使う（module docstring「`gh` 自体の失敗はエラーにする」参照）。
+_NOT_REPORTED_MARKER = "no checks reported"
+
+
 class UnknownBucketError(RuntimeError):
     """`gh` が既知でない bucket を返した。集計に含められないためエラーにする。"""
+
+
+class GhCommandError(RuntimeError):
+    """`gh` 自体が失敗した。CI の状態を問い合わせられていないためエラーにする。"""
 
 
 def _run_gh(pr: str, repo: str) -> tuple[str, str, int]:
@@ -178,6 +198,10 @@ def decide_status(counts: dict[str, int]) -> str:
 
 def inspect(stdout: str, stderr: str, returncode: int) -> dict:
     """`gh` の出力から状態語と内訳を組み立てる。"""
+    if not stdout.strip() and returncode != 0 and _NOT_REPORTED_MARKER not in stderr:
+        raise GhCommandError(
+            f"gh pr checks が失敗しました（exit {returncode}）: {stderr.strip()}"
+        )
     checks = parse_checks(stdout)
     counts = count_buckets(checks)
     normalized = [
