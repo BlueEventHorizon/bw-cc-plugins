@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-28T03:14:20Z
+  generated_at: 2026-09-28T12:36:18Z
   file_count: 37
 
 docs:
@@ -902,39 +902,31 @@ docs:
       - fix safety verification
       - multi-round review
   docs/specs/forge/design/DES-074_plan_format_design.md:
-    title: Default Format for Implementation Plans
-    purpose: Defines the JSON schema and field specifications for implementation plan files, including traceability matrices, task structures, validation rules, and script implementation contracts for plan creation and update operations
+    title: Implementation Plan Default Format
+    purpose: Specifies the JSON schema and field structure for implementation plans that encode requirements traceability, design mapping, and task definitions for the forge build system.
     content_details:
-      - "JSON schema with four top-level keys: requirements_traceability, design_traceability, tasks, revision_history"
-      - "Requirements traceability fields: requirement_id, title, design_id, status for REQ-DES mapping"
-      - "Design traceability fields: design_id, title, requirement_ids array, task_ids array for complete trace"
-      - "Task fields: task_id, title, priority, status, design_id, depends_on, group_id, build_check, description array, acceptance_criteria, required_reading"
-      - "Status transitions: pending to in_progress to completed with machine update semantics"
-      - "Priority ranges: 70-99 high (core logic, blockers), 40-69 medium (main features), 1-39 low (UI, helpers)"
-      - "JSON format rationale: structured parsing for task selection, dependency validation, status updates versus Markdown uncertainty"
-      - "Script implementation contracts: write_plan.py, select_tasks.py, update_plan_status.py, build_task_context.py dependencies and validations"
-      - "Frontmatter exclusion: plans do not carry feature_type markers, instead feature tracking via requirements documents"
-      - "Parallel state specification: spec_authority field classification for additive features with temporary-feature documents"
+      - JSON schema with requirements_traceability, design_traceability, and tasks objects
+      - Task field definitions including task_id, title, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading
+      - "Status transitions: pending, in_progress, completed"
+      - "Priority level guidelines: 70-99 high (core logic/blockers), 40-69 medium (main features), 1-39 low (UI/auxiliary)"
+      - Feature type detection via frontmatter analysis for temporary-feature identification
+      - spec_authority field for documenting parallel state documents in task context
     applicable_tasks:
-      - Implementation plan creation from requirements and design specifications
-      - Plan update with existing task status and traceability tracking
-      - Traceability matrix definition, creation, and maintenance
-      - JSON schema validation for plan file consistency
-      - Script implementation contracts (write_plan.py, select_tasks.py, build_task_context.py)
-      - Task dependency resolution and build-check rule application
-      - Additive feature planning with parallel state identification
-      - Frontmatter analysis for feature_type detection
+      - Implementation task planning with priority and dependency tracking
+      - Task context construction for start-implement skill
+      - Parallel feature development scope identification
+      - Plan format validation and script contract definition
     keywords:
-      - plan.json
-      - requirements_traceability
-      - design_traceability
-      - task_id
+      - implementation plan
       - JSON schema
-      - build_check
-      - spec_authority
+      - task_id
+      - priority
+      - status
+      - design_id
       - feature_type
       - temporary-feature
-      - priority
+      - spec_authority
+      - build_task_context.py
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: Orchestrator Pattern Requirements
     purpose: Defines requirements for the orchestrator pattern architecture in forge skills, addressing context consumption, scalability, and parallel execution needs

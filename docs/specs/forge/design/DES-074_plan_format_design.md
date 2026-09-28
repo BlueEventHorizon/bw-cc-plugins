@@ -25,7 +25,7 @@
 
 計画書には frontmatter を付与しない。追加 feature に属する計画書かどうかは、`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で辿って判定する。計画書自体に重複してマーカーを持たせる必要はない。
 
-トップレベルキーは `requirements_traceability` / `design_traceability` / `tasks` / `revision_history` のみ許容する（それ以外の追加は 🟡 major 違反）。
+トップレベルキーは `requirements_traceability` / `design_traceability` / `tasks` のみ許容する（それ以外の追加は 🟡 major 違反）。
 
 frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/frontmatter_format.md) §1.3
 判定基準・旧仕様の置き換え・merge 手順: [additive_development_spec.md](../../../../plugins/forge/docs/additive_development_spec.md) §1 適用条件
@@ -68,8 +68,7 @@ frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/front
       "acceptance_criteria": "受け入れ基準の記述",
       "required_reading": ["path/to/design.md", "path/to/rule.md"]
     }
-  ],
-  "revision_history": [{ "date": "2026-03-15", "content": "初版作成" }]
+  ]
 }
 ```
 
@@ -110,13 +109,6 @@ frontmatter 定義: [frontmatter_format.md](../../../../plugins/forge/docs/front
 | description         | string[]    | Yes  | やるべき内容の配列（1項目 = 1行）         |
 | acceptance_criteria | string/null | Yes  | 受け入れ基準。なければ `null`             |
 | required_reading    | string[]    | Yes  | 必読文書パスの配列。なければ `[]`         |
-
-### revision_history
-
-| フィールド | 型     | 必須 | 説明               |
-| ---------- | ------ | ---- | ------------------ |
-| date       | string | Yes  | 日付（YYYY-MM-DD） |
-| content    | string | Yes  | 改定内容           |
 
 ---
 

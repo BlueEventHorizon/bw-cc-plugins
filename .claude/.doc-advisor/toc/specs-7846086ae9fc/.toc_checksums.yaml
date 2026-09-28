@@ -1,6 +1,6 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-09-28T03:14:20Z
+generated_at: 2026-09-28T12:36:18Z
 file_count: 37
 checksums:
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: b6b0ecbf63dd4debf0436bcffd2a6e40fec4c9dee3bd5ab00ee48a6f0476d628
@@ -33,7 +33,7 @@ checksums:
   docs/specs/forge/design/DES-055_review_request_template_design.md: 6060ff95ba9b3d627acdc794af673acb9b54853888f9f1769cb80b0e49af0807
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: a943a04970ffe3c9335d338aa004d5b77554b032ffe484ad1ab6c92d38b438b5
   docs/specs/forge/design/DES-066_review_body_design.md: 0c13e5d4f87f873b3d5fa4af961947e16a2c223f184cb670719239fd19e801b9
-  docs/specs/forge/design/DES-074_plan_format_design.md: 0c8025cfb63fca54fdaed3b67b24352f7238f4c940aaa46b037db0e0a7cc33ba
+  docs/specs/forge/design/DES-074_plan_format_design.md: 8b65d5bb15222e278d7add57d1c67043fca81bbcc077015f1985ac7c0040fe7a
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 99039e16412df5e6706b114cfdec42065822f43e1a9a5177c18eec01deee8294
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 9b289e8d8178b8d39615379d75e69dd1eae0035ae7a42bd0f28727438afbe0a6
   docs/specs/forge/requirements/REQ-013_review_policy.md: 74226dadc1d7f0a20dad6324fe44c2c3c89526cf47658ad0ce996393eed91ab7
