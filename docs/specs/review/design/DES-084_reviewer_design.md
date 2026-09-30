@@ -11,435 +11,224 @@ feature_note:
 
 ## 1. 概要
 
-[REQ-029](../requirements/REQ-029_review_exchange.md) の受け渡しと本体の仕事、および [REQ-027](../requirements/REQ-027_reviewer.md) を実現する設計を定める。
+[REQ-029](../requirements/REQ-029_review_exchange.md) の受け渡し・採番・書き出しと終了の値・本体の仕事と、[REQ-027](../requirements/REQ-027_reviewer.md) を実現する設計を定める。evaluator の設計（評価の JSON、evaluator の script、evaluator の作業）は [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
 
-本書が持つのは次の 3 つである。
+**主体はスキルとエージェント（本体・reviewer・evaluator）である。その間を取り持つのが JSON と script であり、これらをクラスとして説明する。** シーケンスが全体の流れを示し、クラスごとに責務・入出力を定める。
 
-| 範囲         | 内容                                                                                                                                                                                               |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 受け渡し機構 | `review_id`・`round_number` の規約と、依頼・所見を保持し、検証済みのパスを返す script。**evaluator との受け渡しもこの機構による**（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302） |
-| シーケンス   | 可用性検査から、終端と保持物の削除までの流れ                                                                                                                                                       |
-| reviewer     | target 種別の判定とレビュー観点の選択、所見の作り方                                                                                                                                                |
+| 範囲                 | 内容                                                                        | 章 |
+| -------------------- | --------------------------------------------------------------------------- | -- |
+| シーケンス           | 使う reviewer の決定から、reviewer の区間、ラウンドの進行と保持物の削除まで | §2 |
+| クラス図             | 主体と、JSON・script の関係                                                 | §3 |
+| スキル・エージェント | 本体、reviewer                                                              | §4 |
+| JSON                 | 置き場、依頼、所見の結果、終了の値、`finding_id`                            | §5 |
+| script               | 共通の約束と、script ごとの責務・入出力・動作・エラー                       | §6 |
 
-evaluator 自身の設計と、本体が評価をどう扱うかは [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
+設計の骨格は次の 3 点である。
+
+1. **JSON は script が書く。** AI は書けず、script が返したパスの JSON を直接読む（REQ-029 FNC-302・303）。
+2. **script は決定論で済む処理だけを担う。** 識別値、採番、封緘、集計である。修正するか捨てるか、終端に達したかは、最終決定者である本体が判断する（REQ-029 FNC-312）。
+3. **reviewer と evaluator の定義に渡す script は、`--kind` を固定したラッパーだけにする。** reviewer の定義には評価を書く口が、evaluator の定義には所見を書く口が現れない（`forge:REQ-013` FNC-1322）。
 
 ## 2. シーケンス
 
+図の S 番号は、§4 と §6 の説明と、DES-083 §2 の番号と同じである。S2・S4・S5・S10・S17・S18 は script を呼ばない（AI の判断、または起動である）。「書く」は script が JSON を書く処理、「直接読む」は AI が JSON を読む処理で、どちらも自分の処理である。evaluator の区間と、本体が所見・評価を扱う区間（S10〜S18）は、DES-083 §2 が持つ。
+
 ```mermaid
 sequenceDiagram
-    actor Human as 利用者
-    participant Body as review 本体
-    participant B as バックエンド
+    participant Body as 本体
     participant R as reviewer
-    participant E as evaluator
+    participant Sc as script
 
-    Body->>B: 可用性検査
-    B-->>Body: available, missing, retains_context
-    Body->>Body: start_review.py で review_id を生成し、第 1 ラウンドの依頼を公開する
-    loop ラウンドごと
-        Body->>B: review_id, round_number
-        B->>R: review_id, round_number
-        R->>R: 依頼の検証済みパスを得て JSON を直接読む
-        R->>R: 対象を読み、target 種別を判定し、レビュー観点を適用する
-        R->>R: 判断を確定させてから所見を渡す（0 件のこともある）
-        R->>R: 終了の値を渡す
-        R-->>B: 完了
-        B-->>Body: 完了
-        Body->>E: review_id, round_number
-        E->>E: 依頼と所見の検証済みパスを得て、2 つを直接読む
-        E->>E: メタ観点を働かせて評価する
-        E->>E: 判断を確定させてから評価を渡す
-        E->>E: 終了の値を渡す
-        E-->>Body: 完了
-        Body->>Body: link_evaluations.py で紐づけを検査する
-        alt 未参照の finding_id がある
-            Body->>Human: 未参照の一覧を報告する
-            Human-->>Body: 次の行動を決める
-        end
-        Body->>Body: 所見と評価のパスを得て直接読み、提示へ渡す
-        alt 終端に達した（所見が尽きた、または利用者が終えると決めた）
-            Body->>Body: ループを抜ける
-        else
-            Body->>Body: advance_round.py で次のラウンドを作り、新しい round_number を得る
+    Body->>Sc: S1 resolve_review_backend.py
+    Sc-->>Body: 候補と retains_context
+    Body->>R: S1 可用性検査
+    R-->>Body: available, missing
+    Body->>Body: S2 依頼の値をそろえる
+    Body->>Sc: S3 request.py
+    Sc->>Sc: 依頼を書く
+    Sc-->>Body: review_id, round_number=1
+    alt S4 retains_context が true
+        Note over Body: 本書の範囲外（§4.1）
+    else S4 retains_context が false
+        loop ラウンド
+            Body->>R: S5 review_id, round_number
+            R->>Sc: S6 reviewer_resolve_request
+            Sc-->>R: 依頼のパス
+            R->>R: S6 依頼を直接読む
+            R->>Sc: S7 resolve_doc_structure.py
+            Sc-->>R: 種別
+            R->>R: S7 対象を読み、所見を確定させる
+            R->>Sc: S8 reviewer_add_finding ×n
+            Sc->>Sc: 所見を書く
+            Sc-->>R: finding_id
+            R->>Sc: S9 reviewer_finish または reviewer_abort
+            Sc->>Sc: 所見の exit を書く
+            Sc-->>R: 完了
+            R-->>Body: 完了
+            Note over Body,Sc: S10〜S18 evaluator の区間と、所見・評価の扱い（DES-083 §2）
+            alt S18 終端に達した（対応を要するものが尽きた、または利用者が終えると決めた）
+                Body->>Body: ループを抜ける
+            else 終端に達していない
+                Body->>Sc: S19 advance_round
+                Sc-->>Body: round_number
+            end
         end
     end
-    Body->>Body: cleanup.py でそのレビューの保持物を削除する
+    Body->>Sc: S20 cleanup
+    Sc-->>Body: 完了
 ```
 
-提示から先（採否の確認・修正）は本書の範囲ではない。
-
-**主体間で AI が運ぶ識別値は `review_id` と `round_number` だけである。** 依頼・所見・評価は script が保持する。AI が内容を必要とするときは、script が返した絶対パスを使って JSON を直接読み、JSON 本文を script の標準出力や別主体から受け取らない。
-
-**本体も、パスを得てから読む。** 所見と評価の中身が要るときは、各 `resolve_result_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を直接読む（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302）。紐づけの検証は `link_evaluations.py` が両 JSON を内部で読んで行い、本文を標準出力へ返さない。evaluator も同じ 2 値からパスを解決し、依頼と所見を直接読む。
-
-evaluator の区間（評価・紐づけの検証・結び付け）の詳細は [DES-083](DES-083_evaluator_perspective_design.md) が持つ。
-
-**エラーフロー**: 終了の値が `"0"` でなければ、そのラウンドはエラーである。結果そのものが無い場合も同じ（§4.4）。
-
-## 3. 責務
-
-| 担い手                          | 責務                                                                                   | 要件         |
-| ------------------------------- | -------------------------------------------------------------------------------------- | ------------ |
-| review 本体                     | `review_id` と最初の `round_number` を生成し、依頼を保持する                           | FNC-302      |
-| review 本体                     | バックエンドへ `review_id` と `round_number` を渡し、reviewer を起動させる（§7.2）     | FNC-302・309 |
-| `scripts/review/` の各 script   | 依頼を組み立てて公開し、その検証済みパスを返し、ラウンドを進める（§4.2）               | FNC-302・303 |
-| `scripts/reviewer/` の各 script | 依頼の検証済みパスを返し、所見と終了の値を書く（§4.2）                                 | FNC-302・309 |
-| reviewer                        | 依頼のパスを得て直接読み、対象を読み、target 種別を判定し、観点を適用して所見を渡す    | FNC-306〜309 |
-| `resolve_doc_structure.py`      | パスから文書の種別を返す                                                               | FNC-307      |
-| `reviewer.md`                   | script の呼び方、依頼の各項目の扱い、target 種別ごとに読む文書、所見として何を述べるか | FNC-301      |
-| `review/SKILL.md`               | script の呼び方、読む JSON の各項目の扱い、どの値で扱いを分けるか（§7.1）              | FNC-314      |
-
-## 4. 受け渡し機構
-
-### 4.1 `review_id` と `round_number`
-
-| 決めたこと   | 内容                                                             |
-| ------------ | ---------------------------------------------------------------- |
-| 生成する主体 | review 本体。reviewer を起動する前、依頼を保持する時点で生成する |
-| 形           | 他のレビューと衝突しない不透明な値。意味を読み取らせない         |
-| 寿命         | 1 レビューにつき 1 つ。往復の全ラウンドで同じ値を使う            |
-
-**`review_id` と `round_number` から置き場を AI が組み立てない。** 2 値を受け取った script が置き場を決める（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。AI は 2 値を script へ渡し、返された絶対パスを直後のファイル読み込みに使うだけである。
-
-`round_number` は同じ `review_id` の中でラウンドを一意に指す 1 始まりの整数である。`start_review.py` は `1` を返し、`advance_round.py` は指定されたラウンドの次の値を返す。AI は返された値をそのまま渡し、自ら加算しない。
-
-### 4.2 script の責務
-
-#### 要件から導かれる、保証すべきこと
-
-操作を決める前に、各要件が script に何を求めているかを確定する。
-
-**書き込み script は JSON を組み立て、パス解決 script は対象の状態を確認して絶対パスだけを返す。状態を自ら持たない。** 何が起きたかはすべて JSON に現れる。AI は返されたパスの JSON を直接読む。JSON を入力にする決定論的な機械処理は、本文を AI に返してから再入力させず、自らファイルを読む。
-
-| 要件                     | script が保証すること                                                                                                                                               |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FNC-302                  | `review_id` と `round_number` からラウンドの置き場を決める。AI にパスを組み立てさせない。2 値の一方でも欠ければ何も読み書きできない                                 |
-| FNC-303                  | 依頼の構造は script が作る。初回依頼は完成まで下書きとし、完成後に一度だけ公開する                                                                                  |
-| FNC-304                  | 依頼の値を同一に保持する。読み出しでは JSON 本文を再出力せず、そのファイルを直接読ませる                                                                            |
-| FNC-305                  | ラウンドが変わっても同じ操作・同じ構成で受け付け、指定された `round_number` ごとに JSON を別のディレクトリへ置く                                                    |
-| FNC-309                  | 所見を 1 件ずつ受け取り、値を変形せず配列として保持する（REQ-029 DM-305 の `findings`）。0 件を表現できる。`finding_id` を採番する（§4.2「採番」、REQ-029 FNC-313） |
-| FNC-310                  | 上書き・修正の操作を持たない。一度書かれた所見を書き換える口を開けない                                                                                              |
-| FNC-311                  | 結果を読み、終了の値が `"0"` の場合だけ絶対パスを返す。それ以外と結果が無い場合は**エラーとして報告する**                                                           |
-| `forge:REQ-013` FNC-1322 | reviewer に渡す script が `evaluate_result.json` へ書けない                                                                                                         |
-
-最下段から 2 行目が、結果パス解決の形を決める。判定材料は終了の値だけであり完全に決定論的なので、AI の判断を挟む理由がない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。**終了の値をそのまま返して呼び出し側に判定させる形を取らない**——判定が AI 側にあると、確認を飛ばして次へ進む経路が残り、機構ではなく手順が正しさを担うことになる。
-
-したがって確認を独立した操作として持たず、**結果パスの解決が失敗することで止める**。結果を読もうとすれば各 `resolve_result_path.py` が失敗し、結果を入力にする `link_evaluations.py` も同じ成否判定を内部で行う。失敗すれば正常結果の JSON へ到達できない。
-
-#### 分け方
-
-2 つの軸で分ける。
-
-| 軸                            | 何を守るか                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------- |
-| 主体                          | reviewer が評価のファイルへ書けない（独立評価の前提。`forge:REQ-013` FNC-1322） |
-| **パス解決 / 書く**（script） | JSON 本文を標準出力で中継せず、書き込み操作と読み出し前の確認を混ぜない         |
-
-主体だけで分けると、1 本の script がパス解決も書き込みも持つ。すると呼び出す操作を誤ったときに、本来は読むだけの主体から書き込みへ到達する口ができるため、操作も分ける。
-
-ただし、これは OS のアクセス制御ではない。実行主体が共有ファイルシステムを読める以上、script を分けるだけで直接アクセスを技術的に禁止することはできない。書き込みは「必ず script を使い、JSON を直接編集しない」という契約で制限し、テストで各 script の書き込み先を検証する。読み出し側の script は、パスの組み立てと公開・終了状態の判定を AI から外すための決定論的な入口である。
-
-**1 操作 1 script とする。** 1 本にまとめて引数で操作を切り替える形にすると、呼ぶ側が「どの操作か」「その操作に何が要るか」を判断することになる。**判断が要らないものは script 名へ畳む**——引数を増やすより script を増やす。
-
-script 名は、単一項目の設定を `set_`、配列への追加を `add_`、検証済みパスの返却を `resolve_`、ライフサイクルの開始・進行を `start_` / `advance_` とする。依頼の公開、結果の終了・異常終了、削除は、それぞれ `finish_request.py`、`finish.py` / `abort.py`、`cleanup.py` とする。
-
-自由記述を持つ操作では、**1 回の標準入力が 1 つの値だけを表す**。複数の値を区切り文字や JSON に詰めず、値の行数・文字種を構造の判定に使わない。`set_request_text.py` の `focus` / `scope` は同じ「依頼の自由記述を 1 項目置く」操作の格納先を、閉じた選択肢から指定するものであり、操作そのものの切り替えではない。
-
-**置き場を、扱う JSON の領域ごとに分ける。** 領域は review（レビューの進行）・reviewer（所見）・evaluator（評価）の 3 つであり、それぞれに 1 つのディレクトリを与える（[DES-024](../../forge/design/DES-024_skill_script_layout_design.md)）。
-
-| 置き場                             | 扱う JSON                                   | 定めている箇所                                          |
-| ---------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| `plugins/forge/scripts/review/`    | `review_request.json`。ラウンドの進行と削除 | 本節                                                    |
-| `plugins/forge/scripts/reviewer/`  | `review_result.json`                        | 本節                                                    |
-| `plugins/forge/scripts/evaluator/` | `evaluate_result.json`                      | [DES-083](DES-083_evaluator_perspective_design.md) §7.3 |
-
-**スキルの内側ではなく、プラグインの共有領域に置く。** reviewer はバックエンドのスキルを通じて提供され、review スキル以外のスキルからも呼ばれる。スキルの内側の script は他のスキルから呼べないため、複数のスキルが使う script の置き場である共有領域に置く。どの主体も `${CLAUDE_PLUGIN_ROOT}/scripts/...` で呼ぶ。`plugins/forge/scripts/review/` には既存の `parse_findings.py` が同居する。
-
-以下、本書と [DES-083](DES-083_evaluator_perspective_design.md) では `plugins/forge/` を省いて `scripts/review/` のように記す。
-
-**呼ぶ主体は置き場ではなく、各 script の欄が示す。** 呼ぶ主体でディレクトリを分けると、読み取り専用の resolver を複数の主体が呼ぶ場面で破綻する——evaluator は依頼と所見を読むため、review 側と reviewer 側の resolver を呼ぶ（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) DM-202）。
-
-**守るべき隔離は書き込みである。** 要件が課しているのは reviewer が評価のファイルへ書けないこと（`forge:REQ-013` FNC-1322）であり、読み取りは制限されていない。resolver は状態を変えないため、複数の主体が呼んでも隔離は破れない。**同じ resolver を主体ごとに複製しない。**
-
-**すべての script が、第 1 引数でプロジェクトルートを受け取る。** 続く引数は `review_id`、`round_number` である（`start_review.py` と `cleanup.py` は `round_number` を持たず、後者は `review_id` だけを加える）。AI は受け取った値を右から左へ渡すだけで、値そのものについて考える場面がない。
-
-**プロジェクトルートは定義が渡す。** `reviewer.md`・`evaluator.md`・review skill のコマンド行に `${CLAUDE_PROJECT_DIR}` を書いておけば、AI に届いた時点で実パスに置換されている。AI が組み立てる値ではなく、呼び方の一部である（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-314）。
-
-**script ファイルの中にプレースホルダを書かない。** 置換するのはスキル機構であり、対象は機構がモデルへ渡す定義の本文である。script ファイルは機構を通らず bash / python が直接読むため、書いても素の文字列のまま残る。同じ理由で、**JSON の中にも書かない**——Read で読んだ内容は置換されない。
-
-#### `scripts/review/`
-
-レビューの進行を扱う。評価に関わるもの（評価結果のパス解決・紐づけの検証）は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。
-
-| script                    | 責務                                                                                                                | 呼ぶ主体 | 入力                                                                                           | 出力（`0`）                   | エラー                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------- |
-| `start_review.py`         | **レビューを開始する。** 衝突しない `review_id` と第 1 ラウンドを作り、必須項目を未公開の依頼下書きへ書く           | 本体     | `<project_root>` / 引数: `targets`                                                             | `review_id` と `round_number` | 必須項目が無い（`2`）                                                     |
-| `set_request_text.py`     | **依頼下書きの自由記述を 1 項目置く。** `focus` または `scope` を標準入力どおりに書く                               | 本体     | `<project_root> <review_id> <round_number> <focus\|scope>` / 標準入力: 選んだ 1 項目の値       | なし                          | 選択肢が不正（`2`）／同じ項目が既にある／依頼が公開済み                   |
-| `add_reference.py`        | **依頼下書きへ参照文書のパス配列を積む。** 絶対パスをまとめて追加し、**重複を排除する**                             | 本体     | `<project_root> <review_id> <round_number> --paths <絶対パス>...`                              | なし                          | 下書きが無い／パスが絶対パスでない／依頼が公開済み                        |
-| `finish_request.py`       | **初回依頼を公開する。** 完成した依頼を `review_request.json` として公開する                                        | 本体     | `<project_root> <review_id> <round_number>`                                                    | なし                          | 下書きが無い／依頼が公開済み                                              |
-| `resolve_request_path.py` | **`review_request.json` のパスを返す。** 公開済みの指定ラウンドだけを対象にし、JSON 本文は返さない                  | reviewer | `<project_root> <review_id> <round_number>`                                                    | `path` だけを持つ JSON object | 依頼が未公開または無い／識別値が不正                                      |
-| `add_prior_handled.py`    | **対応済みを記録する。** 次ラウンドへ渡す対応済みの `finding_id` をまとめて追加する                                 | 本体     | `<project_root> <review_id> <round_number> --findings <finding_id>...`                         | なし                          | 指定ラウンドが正常に終えていない／存在しない ID／同じ ID の記録が既にある |
-| `add_prior_unhandled.py`  | **未対応を 1 件記録する。** `finding_id` と、対応しない理由を標準入力どおりに追加する                               | 本体     | `<project_root> <review_id> <round_number> --finding <finding_id>` / 標準入力: その 1 件の理由 | なし                          | 指定ラウンドが正常に終えていない／存在しない ID／理由が無い／既に記録済み |
-| `advance_round.py`        | **次のラウンドへ進める。** 記録済みの対応を確定し、次のラウンドのディレクトリ・採番基点・公開済み依頼を原子的に作る | 本体     | `<project_root> <review_id> <round_number>`                                                    | 次の `round_number`           | 指定ラウンドが正常に終えていない／全所見の対応が揃っていない              |
-| `cleanup.py`              | **レビューの痕跡を消す。** ディレクトリを削除する。無くても成功とする                                               | 本体     | `<project_root> <review_id>`                                                                   | なし                          | 削除できない                                                              |
-
-**依頼の resolver は evaluator 側からも使われる。** evaluator も同じ `review_request.json` を読むため（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) DM-202）、`scripts/evaluator/resolve_input_paths.py` が本 script を内部で呼ぶ（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。主体ごとに複製しない。
-
-#### `scripts/reviewer/`
-
-`review_result.json` を扱う。
-
-| script                   | 責務                                                                                                                  | 呼ぶ主体          | 入力                                                                                   | 出力（`0`）                   | エラー                                            |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------- |
-| `add_finding.py`         | **`review_result.json` へ所見を 1 件積む。** そのラウンドの採番基点から続けて `finding_id` を採番する（§4.2「採番」） | **reviewer のみ** | `<project_root> <review_id> <round_number> --severity --location` / 標準入力: 所見本文 | なし                          | 既に終了の値がある（書き終えた後に足せない）      |
-| `finish.py`              | **正常に書き終えたことを示す。** 終了の値 `"0"` を書く                                                                | **reviewer のみ** | `<project_root> <review_id> <round_number>`                                            | なし                          | 既に終了の値がある（二重に終えられない）          |
-| `abort.py`               | **自覚したエラーで終えたことを示す。** エラー値 `target_unreadable` を書く（REQ-027 FNC-315）                         | **reviewer のみ** | `<project_root> <review_id> <round_number> <エラー値>`                                 | なし                          | 定義に無い値（`2`）／既に終了の値がある           |
-| `resolve_result_path.py` | **`review_result.json` のパスを返す。** 終了の値が `"0"` の場合だけ返し、JSON 本文は返さない                          | 本体              | `<project_root> <review_id> <round_number>`                                            | `path` だけを持つ JSON object | 終了の値が `"0"` でない／結果が無い／識別値が不正 |
-
-**所見の resolver は本体が呼び、evaluator 側からも使われる。** evaluator は `resolve_input_paths.py` を通して本 script の結果を受け取る（[DES-083](DES-083_evaluator_perspective_design.md) §7.3）。reviewer は自分が書いた所見を読み返さないため、この口を渡さない。
-
-`scripts/evaluator/` 配下の script は [DES-083](DES-083_evaluator_perspective_design.md) §7.3 が定める。本節の原則（1 操作 1 script・第 1 引数はプロジェクトルート、続いて `review_id`・`round_number`・終了コード）はそちらにも及ぶ。
-
-`start_review.py` の標準出力は `review_id` と最初の `round_number` を持つ JSON object とする。`advance_round.py` の標準出力は次の `round_number` とする。いずれも AI は値を生成・加算せず、script の出力から得た値を後続へ渡す。
-
-各 resolver の標準出力は `{"path":"<正規化済み絶対パス>"}` の 1 項目だけを持つ JSON object とする。複数のパスを返す resolver は、項目名でどのパスかを示す JSON object とする（`resolve_input_paths.py`）。生の 1 行として返さないため、パスに空白や改行があっても値の境界が曖昧にならない。これは成果物 JSON の中継ではなく、直後の Read に必要な制御情報だけである。
-
-#### 採番
-
-`finding_id` は script が採番する（REQ-029 FNC-313）。reviewer も evaluator も ID を渡さない——採番は既に書かれた実体から一意に決まる決定論的な処理であり、AI の判断が入る余地がない（[deterministic_generation_spec.md](../../../../plugins/forge/docs/deterministic_generation_spec.md) §5）。
-
-**1 つのレビューで 1 本の連番とする。** ラウンドが変わっても振り直さず、前ラウンドまでに採番された最大値の次から続ける。ラウンドごとに 1 へ戻すと、第 2 ラウンドの依頼に載る `prior_round` の `finding_id` と、そのラウンドで新たに採番される `finding_id` が、同じ値で別の所見を指す。レビュー全体を対象とする報告でも同じ衝突が起きる。
-
-**同じラウンドの中で、reviewer 側と evaluator 側の script が 1 本の連番を分け合う。** evaluator は見落としを新規に指摘するときに ID を消費する（[REQ-026](../requirements/REQ-026_evaluator_perspective.md) FNC-206）。採番済みの ID は 1 つのファイルに集まらない。
-
-**採番のための状態を持たない。** 次の `finding_id` は、そのラウンドの `review_result.json` と `evaluate_result.json` に現れる `finding_id` の最大値と、そのラウンドの採番基点の 1 つ手前とを比べ、大きいほうの次とする。カウンタを別に持つと、採番したが書き込み前に落ちたときに番号が飛び、連番でなくなる。採番と書き込みは 1 回の操作で行うため、導出した値が書かれないまま残ることはない。
-
-**この導出が成立するのは、既存の順序制約による。** evaluator は `review_result.json` が正常終了していなければ所見のパスを得られず（§4.4）、そもそも評価に入れない。したがって evaluator が採番する時点で reviewer 側の ID は確定している。`advance_round.py` は指定ラウンドの正常終了を要求するため、次ラウンドの基点を決める時点で両結果が確定している。同じ ID を 2 つの script が同時に取る経路はない。
-
-**ラウンドの採番基点は script が確定する。** 第 1 ラウンドの基点は `1` であり `start_review.py` が置く。以降は `advance_round.py` が、指定ラウンドまでに採番された最大値の次を基点として、次のラウンドの内部 JSON へ置く（§4.3）。各書き込み script は自分のラウンドだけを見て採番でき、前ラウンドを遡らない。
-
-`add_new_finding_evaluation.py` は、採番のために**同じラウンドの `review_result.json` を読む**（同 §7.3）。書き込み先は `evaluate_result.json` だけであり、書き込みの隔離（§4.3）は変わらない。
-
-#### 渡す script を主体ごとに限定する
-
-| 主体      | 渡す script                                                                          | 持たない口                 |
-| --------- | ------------------------------------------------------------------------------------ | -------------------------- |
-| reviewer  | `scripts/reviewer/` の全                                                             | 結果を読む口・評価を書く口 |
-| evaluator | `scripts/evaluator/` の全（[DES-083](DES-083_evaluator_perspective_design.md) §7.3） | 結果を読む口・所見を書く口 |
-| 本体      | `scripts/review/` の全                                                               | **回答を書く口**           |
-
-**置き場と一致する。** 主体ごとにディレクトリを分けたため、この表はディレクトリの対応をなぞるだけになる。渡してよい script かどうかは置き場で決まる。
-
-#### 終了コード
-
-**`3` 以上を使わない。** §4.4 が「書けない異常終了の内訳を区別しない」と決めているため、終了コードで内訳を区別すると決定が食い違う。エラーは `1` に畳み、理由は `errors` の自然文で伝える（[script_error_output_rules.md](../../../../docs/rules/script_error_output_rules.md)）。引数の誤りは `argparse` が `2` を返す。
-
-**上書き・修正の操作を持たない**（FNC-310）。一度書かれた所見を書き換える口を開けると、判断しながら逐次書き出す形を誘発する。
-
-**所見と評価は 1 件ずつ積む。** 1 回でまとめて渡すより AI の負担が軽い。書き出しは判断を確定させた後に行うため（FNC-310）、途中で前の所見を直す必要が生じない。書き出しの途中で落ちた場合は終了の値が書かれず、異常として判定される（FNC-311）。
-
-### 4.3 置き場
-
-`review_id` でレビューを分け、その下をラウンド番号で分ける。各ラウンドが主体間で交換する正式な JSON インターフェースは次の 4 ファイルである。
-
-```
-<project_root>/.claude/.temp/review/
-└── <review_id>/
-    ├── 1/
-    │   ├── review_request.json
-    │   ├── review_result.json
-    │   └── evaluate_result.json
-    └── 2/
-        └── ...
+提示から先（採否・修正）は本書の範囲ではない（REQ-029 :89）。
+
+**エラーフロー:** 本体がレビューを止めたとき（止める条件と流れは DES-083 §2）も、利用者へ伝え終えてから S20 で保持物を削除する。
+
+## 3. クラス図
+
+主体（スキル・エージェント）と、その間を取り持つ JSON・script の関係である。点線は script が JSON を読む処理、太線は AI が JSON を直接読む処理、実線は script が JSON を書く処理を表す。ラッパーは、主体から script への矢印の上に名前を書く（§6.9）。
+
+```mermaid
+flowchart LR
+    Body["本体（review SKILL）"]
+    R["reviewer（reviewer.md）"]
+    E["evaluator（evaluator.md）"]
+
+    subgraph S["script"]
+        Bk["resolve_review_backend.py"]
+        Rq["request.py"]
+        Ap["append.py"]
+        Sl["seal.py"]
+        Rs["resolve.py"]
+        Ct["count_actionable.py"]
+        Ad["advance_round.py"]
+        Cl["cleanup.py"]
+        Dt["resolve_doc_structure.py"]
+    end
+
+    subgraph J["JSON"]
+        JR[("依頼")]
+        JF[("所見の結果")]
+        JE[("評価の結果")]
+    end
+
+    Body --> Bk
+    Body --> Rq
+    Body -->|"body_resolve_findings / body_resolve_evaluations"| Rs
+    Body --> Ct
+    Body --> Ad
+    Body --> Cl
+    R -->|"reviewer_resolve_request"| Rs
+    R -->|"reviewer_add_finding"| Ap
+    R -->|"reviewer_finish / reviewer_abort"| Sl
+    R --> Dt
+    E -->|"evaluator_resolve_inputs"| Rs
+    E -->|"evaluator_add_evaluation"| Ap
+    E -->|"evaluator_finish"| Sl
+    E --> Dt
+
+    Rq --> JR
+    Ap --> JF
+    Ap --> JE
+    Sl --> JF
+    Sl --> JE
+    Rs -.-> JR
+    Rs -.-> JF
+    Rs -.-> JE
+    Ct -.-> JE
+    Ad -.-> JF
+    Ad -.-> JE
+
+    R ==> JR
+    E ==> JR
+    E ==> JF
+    Body ==> JF
+    Body ==> JE
 ```
 
-**置き場の基点は作業ディレクトリではない。** 各 script はプロジェクトルートを引数で受け取り、そこから `.claude/.temp/review/` をたどる。`review_id` と `round_number` と合わせて、次のパスが一意に定まる。作業ディレクトリに依存させると、実行主体ごとにどこから始まるかという確かめていない前提へ乗ることになり、外れたときは「ファイルが無い」という形でしか現れない。
+- 依存の向きは、主体 → script → JSON の一方向である。script 同士は呼び合わない（ラッパーが基本の script を呼ぶ関係を除く）。
+- `append.py` は、採番のために、全ラウンドの所見と評価の JSON を読む（点線は省略している）。
 
-| JSON インターフェース | パス                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| レビュー依頼          | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/review_request.json`  |
-| レビュー結果          | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/review_result.json`   |
-| 評価結果              | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/evaluate_result.json` |
+## 4. スキル・エージェント
 
-resolver は、渡されたプロジェクトルートから該当する位置を解決し、正規化済み絶対パスとして返す。
+### 4.1 review 本体
 
-**依頼・所見・評価をすべてラウンドごとに分ける。** 依頼は毎ラウンド同じ構成だが（FNC-305）、`prior_round` の値が変わる。結果は上書きしないため（FNC-310）、依頼だけを共有して更新せず、各ラウンドでその時点の依頼と結果を同じディレクトリに固定する。これにより、2 ラウンド目の書き込みが 1 ラウンド目の終了の値や評価と衝突せず、後から前ラウンドの組を取り違えない。
+`plugins/forge/skills/review/SKILL.md` が持つ（REQ-029 FNC-314）。本体は最終決定者である（REQ-029 FNC-312）。所見も評価も判断の材料であり、決定ではない。
 
-ラウンド番号は 1 始まりの連番とする。`start_review.py` が `1/` を作って `1` を返し、`advance_round.py` だけが指定された番号の次を作って返す。各 script は受け取った `review_id` と `round_number` を組み合わせて置き場を決める。存在する最大番号から「現在」を推定しない。
+#### 定義が持つもの
 
-初回は `start_review.py` が内部の `request.draft.json` に未公開の依頼を組み立て、任意項目の追加後に `finish_request.py` が `review_request.json` として公開する。`resolve_request_path.py` は公開済みの `review_request.json` だけを対象にし、組み立て途中の状態を返さない。公開後は依頼を書き換えられない。
+| 持つもの                 | 内容                                                                                                                                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| script の呼び方          | `request.py`・`count_actionable.py`・`advance_round.py`・`cleanup.py`、`body_*` のラッパー 2 本、`resolve_review_backend.py`。第 1 引数に `${CLAUDE_PROJECT_DIR}` を置く                                                      |
+| 読む JSON の各項目の扱い | 所見（DM-302）と評価（DM-201）の各フィールドが何を意味するか。`disposition`・`confidence`・`fix_confident` の各値を含む。値が無いときは低い側として扱う（`confidence` は `unverified`、`fix_confident` は偽。REQ-029 DM-201） |
+| 本体の判断               | 下記                                                                                                                                                                                                                          |
 
-次ラウンド用の対応は、review skill 内部の `next_round.json` に確定前の値として保持する。`advance_round.py` は、指定されたラウンドの全 `finding_id` に対応が 1 件ずつあることを検査し、揃っている場合だけ次のラウンドのディレクトリを作り、指定ラウンドの依頼を基に `prior_round` を置き換えた新しい `review_request.json` を公開する。途中まで記録した状態や重複した対応を、次ラウンドの依頼として見せない。2 ラウンド目以降は `advance_round.py` の 1 操作で完成済み依頼を作るため、`finish_request.py` を別に呼ばない。
+#### 本体の仕事
 
-#### 内部実装
+| S  | 仕事                                           | 呼ぶ script                                         | 要件                 |
+| -- | ---------------------------------------------- | --------------------------------------------------- | -------------------- |
+| 1  | 使う reviewer を決め、`retains_context` を得る | `resolve_review_backend.py`                         | REQ-029 FNC-316      |
+| 2  | 依頼の値をそろえる                             | —                                                   | REQ-029 FNC-303・304 |
+| 3  | 依頼を作って公開する                           | `request.py`                                        | REQ-029 FNC-302・303 |
+| 4  | `retains_context` で流れを分ける               | —                                                   | REQ-029 FNC-316      |
+| 5  | reviewer を起動する                            | —                                                   | REQ-029 FNC-302      |
+| 10 | evaluator を起動する                           | —                                                   | REQ-029 FNC-302      |
+| 15 | 所見と評価が読めるかを確かめて読む             | `body_resolve_findings`・`body_resolve_evaluations` | REQ-029 FNC-311・312 |
+| 16 | 対応を要する件数を得る                         | `count_actionable.py`                               | REQ-029 FNC-318      |
+| 17 | 所見と評価を吟味して、提示へ渡す               | —                                                   | REQ-029 FNC-312・204 |
+| 18 | 終端に達したかを判断する                       | —                                                   | REQ-029 FNC-318      |
+| 19 | 次のラウンドへ進む                             | `advance_round.py`                                  | REQ-029 FNC-302      |
+| 20 | 保持物を削除する                               | `cleanup.py`                                        | REQ-029 FNC-302・318 |
 
-依頼の組み立て途中の状態、次ラウンド用の対応を集める状態、およびそのラウンドの採番基点には、次の内部 JSON を用いる。
+#### 判断の内容
 
-| 内部 JSON            | パス                                                                                | 用途                                                                   |
-| -------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `request.draft.json` | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/request.draft.json` | 公開前のレビュー依頼を組み立てる                                       |
-| `next_round.json`    | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/next_round.json`    | 次ラウンドへ渡す対応を組み立てる                                       |
-| `numbering.json`     | `<project_root>/.claude/.temp/review/<review_id>/<round_number>/numbering.json`     | そのラウンドの採番基点を持つ。ラウンドの作成時に確定し、以後変わらない |
+- **依頼の組み立て（S2）:** 利用者の指定を `targets` へ読み替える。`base_branch` は AskUserQuestion で確認する。`focus` / `scope` を抽出し、Write ツールでファイルに書く。参照文書は `/forge:query-db-rules` / `/forge:query-db-specs` の結果を用いる。`references` は target 種別で絞らない。どの種別が対象に含まれるかは reviewer が判定するので、依頼を組み立てる時点では確定しない。全種別分を問い合わせて渡し、reviewer が該当するものを使う。依頼の組み立ては script が行い、本体は値を渡すだけである（REQ-029 FNC-303）。
+- **読み出しと失敗（S15）:** 所見と評価は、`body_resolve_findings` と `body_resolve_evaluations` が返したパスの JSON を、本体が直接読む（REQ-029 FNC-302）。読み出しが失敗したら、レビューを止めて `errors` を利用者へ伝える。読んだ内容から成否を判断しない（REQ-029 FNC-311・318）。reviewer が失敗していれば、所見側の `errors` にエラー値が入るので、reviewer の失敗として伝える。evaluator が失敗していれば、そのラウンドの所見は評価を経ていないので、severity を持たない未評価の所見として報告に載せる。
+- **吟味（S17）:** 所見と評価を受け取った時点で、それが本当に正しいかを自分で理解し、調査し、考える。対象と規範に照らして吟味し、誤りがあれば、その誤りを理解したうえで、正しい対応を行う。`disposition`・`confidence`・`fix_confident` などの値にそのまま従って、修正・ドロップ・終端を決めない。script は行き先を決めず、`count_actionable.py` が件数を数えるだけである。`flawed_premise` は、`confidence` / `fix_confident` の値に関わらず自動修正の対象にせず、常に提示する（REQ-029 FNC-204）。この規則は本体の定義（`SKILL.md`）に書く。
+- **提示の単位（S17）:** 提示は評価 1 件を単位とする。束ねた評価は 1 回だけ示し、影響する所見を列挙する。20 件の所見を 1 つの原因で束ねた評価を所見ごとに提示すると、同じ根拠を 20 回見せて 20 回採否を問うことになり、束ねられる表現を用意した意味が失われる。evaluator の新規指摘は、評価が持つ `location` と `reason` を、そのまま位置と根拠として扱う。reviewer 由来の所見を模したレコードを作らない。この対応づけのために新しいデータ構造を作らない。どの評価がどの所見に当たるかは、評価が `finding_ids` として既に持っている。本体は評価の結果を入口にし、所見の結果から `finding_ids` で所見を引く。提示から先（採否の確認・修正）は、本 feature が変えない工程である（REQ-029 :89）。
+- **終端の判断（S18）:** `count_actionable.py` の件数を材料に、終端に達したかを判断する（REQ-029 FNC-318）。件数を数えるのは決定論的な処理であり、AI が JSON を読んで行わない。件数が 0 のときも、`invalid`・`misunderstanding`・`out_of_scope` として退けられた所見の退け方が妥当かを、本体が内容を確かめてから終端とする。対応を要するものが尽きたときは、確認を要しない。残りが軽微と本体が判断したときは、利用者へ確認し、終えるかは利用者が決める。
+- **削除（S20）:** 終端に達したとき、エラーで止めたとき、利用者が中止したときのいずれも、報告を済ませてから削除する。報告は結果を読むためである。
 
-この 3 ファイルは受け渡し機構の内部実装であり、正式な JSON インターフェースではない。resolver はパスを返さず、reviewer・evaluator・他の skill から参照させない。原子的な公開に用いる一時ファイルや排他制御も内部実装とし、その名前や保持方法は固定しない。内部 JSON の実装を変更しても、公開する 4 ファイルの契約は変わらない。
+#### 使う reviewer と `retains_context`（S1・S4）
 
-reviewer と evaluator のパス解決・書き込み script は、いずれも指定されたラウンドだけを対象にする。各 resolver は、`review_id` と `round_number` のパス区切りや親ディレクトリ参照を拒み、対象が `.claude/.temp/review/<review_id>/<round_number>/` の所定位置にあることを確認したうえで、正規化済み絶対パスだけを返す。AI は `start_review.py` または `advance_round.py` が返した `round_number` をそのまま渡し、自ら数えない。
+要件は、reviewer の実行主体を「バックエンド」と呼ぶ（REQ-029 FNC-316）。バックエンドは reviewer そのものであり、本体と reviewer の間に別の層があるわけではない。本体は、レビューを始める前に、使うバックエンドを決め、その `retains_context` を得る。evaluator は選択の対象ではなく、本体が起動する。
 
-- **`review_id` を外側に置く**。`review_id` は 1 レビューにつき 1 つであり（FNC-302）、その寿命はレビューの寿命と一致する。1 `review_id`＝1 ディレクトリなら、レビューが終わったときの後始末が 1 回で済む。主体を外側にすると、同じレビューの内容が 2 箇所へ散る
-- **その下をラウンドで分ける**。4 ファイルの名前が主体と入出力を表すため、同じ `review_id` と `round_number` が指すラウンド内で取り違えない
-- 一時領域に置く。プロジェクトの規約が `.claude/.temp/` を一時ファイルの置き場としており、`.gitignore` に登録済みである
+| 項目              | 内容                                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 本体 → reviewer   | `review_id` と `round_number` を渡す。依頼本文を運ばない                                                                                                                  |
+| reviewer → 本体   | 完了したかどうか。所見を解釈しない                                                                                                                                        |
+| 可用性検査        | 各 reviewer（バックエンド）が持つ（`forge:REQ-013` FNC-1318）。本体は順序だけを名前として持つ                                                                             |
+| `retains_context` | `resolve_review_backend.py` が候補とともに返す。値はバックエンドごとに固定で、script が持つ。本体は開始前に 1 回だけ受け取り、そのレビューの間保持する（REQ-029 FNC-316） |
 
-**書き込みの隔離は script が決める**（§4.2）。reviewer 側の script は `review_result.json`、evaluator 側の script は `evaluate_result.json` にしか書かない。
+`false` の場合が本書の流れ（reviewer は毎ラウンド新しく起こされ、毎ラウンド同じ依頼を読む）である。`true` の場合は分岐し、その先は別の要件定義書・設計書が定める（Issue #67）。現状 `true` を返すバックエンドは無い。終端は `retains_context` によらず共通である（REQ-029 FNC-318）。
 
-置き場を組み立てるのは script であり、AI は `review_id` と `round_number` を渡すだけである（§4.1）。
+### 4.2 reviewer
 
-レビューが終わったとき、その `review_id` のディレクトリを削除する。残しても次のレビューは別の `review_id` を使うため参照されず、溜まるだけになる。
+`plugins/forge/agents/reviewer.md` が持つ（REQ-027 FNC-301）。reviewer は依頼 JSON を直接読むが、JSON を生成しない。出力値は script に渡すだけである。
 
-### 4.4 終了の値
+#### 定義が持つもの
 
-reviewer は所見を書き出し終えたら**終了の値を渡す**（FNC-311）。所見が 0 件でも渡す。evaluator も同様である。
+| 持つもの                  | 内容                                                                                                                                                                                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| script の呼び方           | `reviewer_*` のラッパー 4 本と `resolve_doc_structure.py`。第 1 引数に `${CLAUDE_PROJECT_DIR}` を置く。`resolve_doc_structure.py` には `--project-root ${CLAUDE_PROJECT_DIR}` を渡す（省略すると作業ディレクトリから自動検出し、置き場の基点を作業ディレクトリに依存させない方針に反する） |
+| 依頼の各項目の扱い        | 項目が何であり、どう扱うか。持たないときにどう扱うか（`focus` / `scope` / `references` は持たないことがある）                                                                                                                                                                              |
+| 対象の読み方              | `targets` のキーごと（下記）                                                                                                                                                                                                                                                               |
+| target 種別ごとに読む文書 | `criteria/review_target_types.md` を読む指示（下記）                                                                                                                                                                                                                                       |
+| 所見として何を述べるか    | 何を問題として挙げ、どこまで書くか                                                                                                                                                                                                                                                         |
 
-終了の値は結果 JSON の 1 フィールドであり（REQ-029 DM-305 の `exit`）、別の記録機構ではない。script はそれを書き、読んで報告するだけで、状態を自ら持たない。
+#### 対象を読む
 
-成否の判定は FNC-311 が定める。本節が定めるのは、**その状態でどの操作がどう振る舞うか**である。
+対象の読み方は `targets` のキーで決まる（REQ-027 FNC-306）。
 
-| FNC-311 の状態                      | 結果パスの解決                                          |
-| ----------------------------------- | ------------------------------------------------------- |
-| 終了の値が `"0"`                    | 正規化済み絶対パスを `path` 1 項目の JSON object で返す |
-| 終了の値がエラー値                  | **失敗する**                                            |
-| 終了の値が無い / 結果そのものが無い | **失敗する**                                            |
+| キー          | 読み方                                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| `paths`       | ファイルは全文読む。ディレクトリは配下を自ら列挙して全文読む           |
+| `base_branch` | 基点から分岐して以降の、現在のブランチの全変更を、自ら差分から確定する |
+| `diff`        | 未コミット変更のすべてを、自ら差分から確定する                         |
 
-script は状態を読んでパスまたは失敗を返すだけで、判定のための状態を自ら持たない。JSON 本文を標準出力へ載せない。「終了の値が取れない」の内訳（結果が無いのか、結果はあるが `exit` が無いのか）は script の内部事情であり、呼び出し側には同じ失敗として現れる。
+差分から確定する場合、削除とリネームも変更に含める。`reviewer.md` は `git diff` 等を実行できるので、一覧を渡さなくても確定できる。
 
-パスを受け取った AI は、そのファイルを Read で直接読む。resolver の成功後に結果を別の JSON へ写したり、script の引数や標準入力へ戻したりしない。結果は終了後に不変であるため、状態確認と Read の間で正常結果の内容が変わる経路はない。
+#### target 種別を判定する
 
-**なぜ主体自身にエラーを返させないか。** reviewer も evaluator も AI であり、失敗を申告せずに終えることがある。応答が返ったことは、レビューが行われたことを意味しない。したがって失敗の申告を受け取る形ではなく、**成功の印を残させ、その不在を失敗とみなす**形を取る。
-
-この形でなければ、所見 0 件のとき「指摘が無かった」と「所見を渡さずに終えた」が同じ姿になり、後者が正常として通る。
-
-**識別値が不正な場合と区別できる。** 依頼の JSON は本体が必ず書くため（FNC-302）、`review_id` と `round_number` が指す依頼が無ければ識別値が不正、依頼はあるが結果が無ければ reviewer が一度も書き出さなかった、と JSON の有無だけで分かれる。
-
-書き忘れによる偽陽性は残るが、正しい結果が異常として扱われるほうが、異常が正常として通るより安全である（FNC-311）。
-
-### 4.5 値の受け渡し
-
-**自由記述の値は標準入力から渡す。** 所見の本文・重点観点・到達目標・対応しない理由・判定根拠には、改行・引用符・バッククォート・非 ASCII が含まれる（FNC-304）。
-
-これらをコマンドライン引数へ載せると、シェルの解釈を経る。引用の崩れで値が分断され、あるいは構文として解釈される。`consult` が同じ問題に対して既に標準入力を用いており（`agenda_wrapper.py`）、本設計はその形を踏襲する。
-
-**1 回の呼び出しで、標準入力全体を 1 つの値として扱う。** `focus` と `scope` は別々に呼び、対応しない理由は所見 1 件ごとに呼ぶ。複数の自由記述を区切る記法は設けず、AI にエスケープ、JSON 生成、区切り文字の選択をさせない。
-
-**自由記述を持たない値は、引数でまとめて渡す。** `references` の絶対パスと、対応済みの `finding_id` がこれにあたる。標準入力を要するのは自由記述だけであり、1 件ずつに分ける理由もそこにしかない。
-
-**積み増せる配列は、script が重複を排除する。** `add_reference.py` は公開前なら何度でも呼べるため、1 回の呼び出しの中でも、呼び出しをまたいでも同じパスが入りうる。同じ文書が 2 度渡れば reviewer が同じものを 2 度読む。比較の前にパスを正規化し、既にあるものは加えず、最初に現れた順序を保つ。**呼ぶ側に「まだ渡していないか」を覚えさせない**——判断が要らないものは script が引き受ける（§4.2）。
-
-**値の内容を理由に拒まない。** 改行を含むから渡せない、という制約を置かない。
-
-### 4.6 形式の検証を置かない
-
-script が組み立てる以上、形が壊れるのはバグである（FNC-303）。実行時に形式を検査する script を設けない。
-
-`resolve_request_path.py` が公開済みの依頼だけを返すことと、結果の resolver 2 本が結果 JSON を解析して `exit` を確認することは、一般的な JSON schema の検証ではない。前者は公開状態、後者は FNC-311 の成否状態を判定するために必要な最小限の読み取りである。
-
-検査が要るのは、**script が組み立てても自動的には満たされないもの**だけである。所見と評価の紐づけ（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-203）がこれにあたり、[DES-083](DES-083_evaluator_perspective_design.md) が持つ。
-
-## 5. 保持する構造
-
-### 5.1 reviewer の入力ファイル `review_request.json`
-
-```json
-{
-  "targets": {
-    "kind": "paths",
-    "files": ["/abs/a.md"],
-    "dirs": ["/abs/docs/"]
-  },
-  "focus": "…",
-  "scope": "…",
-  "references": ["/abs/docs/rules/foo.md", "/abs/docs/specs/bar.md"],
-  "prior_round": [
-    { "finding_id": 1, "handled": true },
-    { "finding_id": 2, "handled": false, "reason": "…" }
-  ]
-}
-```
-
-`targets` の `kind` が形を示す（REQ-029 DM-301）。
-
-| `kind`     | 持つもの                                                                    |
-| ---------- | --------------------------------------------------------------------------- |
-| `paths`    | `files` と `dirs`。**ディレクトリを配下のファイルへ展開しない**（粒度保存） |
-| `branches` | 基点と対象のブランチ名                                                      |
-| `diff`     | なし。未コミット差分を指す                                                  |
-
-`focus` / `scope` / `references` / `prior_round` は持たないことがある。**持たないことの意味は `reviewer.md` が述べる**（FNC-301）——値の不在そのものに意味を持たせない。
-
-`review_request.json` は次の順で script が組み立てる。
-
-1. `start_review.py` が必須項目を内部の `request.draft.json` へ置き、`review_id` と最初の `round_number` を返す
-2. `focus` / `scope` がある場合は、その 2 値とともに `set_request_text.py` を 1 回ずつ呼ぶ
-3. `references` がある場合は、その 2 値とともにパス配列を `add_reference.py` へ渡す
-4. `finish_request.py` が完成した依頼を `review_request.json` として公開する
-
-2 ラウンド目以降の `prior_round` は、`add_prior_handled.py` と `add_prior_unhandled.py` が確定前の対応を内部の `next_round.json` へ追加し、`advance_round.py` が完全性を検査してから次ラウンドの新しい `review_request.json` へ確定する。いずれも AI が依頼 JSON を組み立てる口は持たない。
-
-### 5.2 所見
-
-```json
-{
-  "finding_id": 1,
-  "severity": "major",
-  "location": "/abs/path/to/project/docs/rules/foo.md:42",
-  "body": "…"
-}
-```
-
-`finding_id` は script が採番する（§4.2「採番」）——reviewer は ID を渡さず、第 2 ラウンド以降は 1 から始まらない。`location` は REQ-029 DM-304 が定めるとおり文字列であり、分解せずそのまま保持する——**script は位置を解釈しない**。行番号が修正の時点で有効かは、修正する側が対象を読み直して確かめる（DM-304）。
-
-### 5.3 reviewer の出力ファイル `review_result.json`
-
-`review_result.json` は、所見の配列と終了の値を 1 つの構造として保持する（REQ-029 DM-305）。
-
-```json
-{
-  "findings": [
-    { "finding_id": 1, "severity": "major", "location": "…", "body": "…" }
-  ],
-  "exit": "0"
-}
-```
-
-`findings` は所見を渡すたびに伸び、`exit` は終了の値を渡したときに現れる。**`exit` が無い、あるいはこの構造自体が無いことが、書けない異常終了を表す**（§4.4）。
-
-## 6. reviewer
-
-### 6.1 定義が持つもの
-
-`plugins/forge/agents/reviewer.md` が持つ。
-
-| 持つもの                  | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| script の呼び方           | `resolve_request_path.py` で依頼のパスを得て直接読み、`add_finding.py` で所見を積み、`finish.py` で終える（§4.2）。`resolve_doc_structure.py` で文書の種別を得る。**§4.2 の script 群は第 1 引数に `${CLAUDE_PROJECT_DIR}` を置き（§4.2）、`resolve_doc_structure.py` には `--project-root ${CLAUDE_PROJECT_DIR}` を渡す**——省略すると作業ディレクトリから遡って自動検出するため、置き場の基点を作業ディレクトリに依存させない方針（§4.3）に反する |
-| 依頼の各項目の扱い        | 項目が何であり、どう扱うか。持たないときにどう扱うか                                                                                                                                                                                                                                                                                                                                                                                               |
-| 対象の読み方              | `targets` の `kind` ごと（§6.2）                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| target 種別ごとに読む文書 | `REQ-027` FNC-308 の対応（§6.4）                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| 所見として何を述べるか    | 何を問題として挙げ、どこまで書くか                                                                                                                                                                                                                                                                                                                                                                                                                 |
-
-**JSON を組み立てるための構造は持たない。** reviewer は依頼 JSON を直接読むが、JSON を生成せず、出力値は script に渡すだけである。
-
-### 6.2 対象を読む
-
-| `kind`     | 読み方                                                  |
-| ---------- | ------------------------------------------------------- |
-| `paths`    | `files` は全文読む。`dirs` は配下を自ら列挙して全文読む |
-| `branches` | 基点から分岐して以降の全変更を、自ら差分から確定する    |
-| `diff`     | 未コミット変更のすべてを、自ら差分から確定する          |
-
-差分から確定する場合、削除とリネームも変更に含める。`reviewer.md` は `git diff` 等を実行できるため、一覧を渡さなくても確定できる。
-
-### 6.3 target 種別を判定する
-
-**先に設定を引いて種別を決め、決まらないものと細分が要るものだけファイルを読む。**
+先に設定を引いて種別を決め、決まらないものと細分が要るものだけファイルを読む（REQ-027 FNC-307）。
 
 ```mermaid
 flowchart TB
@@ -453,108 +242,316 @@ flowchart TB
     C -->|"返らない"| I["ファイルを読む"]
     I --> J{"ソースコードか"}
     J -->|"はい"| K["code とする"]
-    J -->|"いいえ"| L["判定できない旨を所見にする"]
+    J -->|"いいえ"| L["共通の文書だけで見る"]
 ```
 
-`resolve_doc_structure.py` は `.doc_structure.yaml` の specs の宣言から `design` / `plan` / `requirement` を返す。**改修して、パスを与えて種別を返す口を設ける**——同 script が既に同ファイルの解決を担っており、別 script にすると設定を解釈する箇所が 2 つになる。
+- **`resolve_doc_structure.py` の口:** パスを 1 つ受け取り、`.doc_structure.yaml` の specs の宣言から `design` / `plan` / `requirement` を返す。宣言に合わないパスには、種別を返さない。新設せず既存の script を改修するのは、設定を解釈する箇所を 1 つに保つためである（§6.11）。
+- **`exclude` は適用しない:** 既存の `match_path_to_doc_type` は `exclude` を適用しない。`exclude` はファイル収集の範囲を決めるものであり（`resolve_doc_structure.py` のファイル収集）、種別を決めるものではない。本リポジトリの設定は `exclude: [plan]` を持つので、適用すると計画書の種別が決まらない。
+- **uxui は設定に区分を持たない:** UI を扱う文書は requirement または design の置き場にあるので、設定で大分類を得た後にファイルを読んで見分ける。
+- **決まらない対象:** REQ-027 FNC-308 の「全 target 種別に共通」の文書だけで見る。所見にもエラーにもしない。名前だけで target 種別を当てない。
 
-**uxui は設定に区分を持たない。** UI を扱う文書（デザイントークン・UI コンポーネント・画面・UX 評価、設計書の UI 設計）は requirement または design の置き場にあるため、設定で大分類を得た後にファイルを読んで見分ける（REQ-027 FNC-307）。
+#### target 種別ごとに読む文書
 
-設定にも実体にも当たらずに、名前だけで target 種別を当てない。
+判定の手順と、種別ごとに上乗せする観点文書の対応は、`plugins/forge/docs/criteria/review_target_types.md` に置く。`reviewer.md` と `evaluator.md` がどちらもこの文書を読む（REQ-027 FNC-307・308、REQ-026 FNC-208）。同じ判定と対応を 2 つの主体が使うので、置き場を 1 つにする。
 
-### 6.4 target 種別ごとに読む文書
+- **書くもの:** 判定の手順と「種別ごとに上乗せする観点文書」、すべての種別に当てる共通の文書。種別ごとの内蔵規範・プロジェクト固有の規約・突き合わせる対象は、各観点文書が持つので写さない。
+- **観点文書の置き場に置く理由:** 種別を判定する目的が、上乗せする観点文書を選ぶことだからである（[forge_document_type_roles.md](../../../rules/forge_document_type_roles.md)）。
+- **参照の記法:** 内蔵文書は `${CLAUDE_PLUGIN_ROOT}/docs/` 配下の固定パスで直接参照する。プロジェクト固有の文書は依頼の `references` が運ぶ（[forge_doc_access_principle.md](../../../rules/forge_doc_access_principle.md)）。
 
-`REQ-027` FNC-308 が定める対応を `reviewer.md` が持つ。内蔵文書は `${CLAUDE_PLUGIN_ROOT}/docs/` 配下の固定パスで直接参照する（[forge_doc_access_principle.md](../../../../docs/rules/forge_doc_access_principle.md) の経路 A）。プロジェクト固有の文書は依頼の `references` が運ぶ（同経路 B）。
+#### 所見を渡す
 
-**規範の中身を `reviewer.md` に写さない。** 持つのは観点文書への索引までであり、観点文書から規範への委譲は観点文書の側が持つ。
+すべての判断を確定させてから書き出す（REQ-029 FNC-310）。確定した所見を 1 件ずつ `reviewer_add_finding` へ渡す。`finding_id` は script が採るので、reviewer は渡さない。所見が無ければ 1 件も渡さない（REQ-027 FNC-309）。書き出し終えたら `reviewer_finish` を呼ぶ（所見が 0 件でも呼ぶ）。対象が読めないときは `reviewer_abort` を呼ぶ（エラー値は `target_unreadable` だけである。REQ-027 FNC-315）。
 
-### 6.5 所見を渡す
+## 5. JSON
 
-**すべての判断を確定させてから書き出す**（FNC-310）。対象を読み進めて前の判断が変わること、同じ問題が複数箇所にあると後で気づくことは起こるため、判断しながら逐次書き出さない。
+### 5.1 置き場
 
-確定した所見を 1 件ずつ `add_finding.py` へ渡す。`finding_id` は script が採番するため、reviewer は ID を渡さない（§4.2「採番」）。所見が無ければ 1 件も渡さない。
+```text
+<project_root>/.temp/review/
+└── <review_id>/
+    ├── review_request.json
+    ├── 1/
+    │   ├── review_result.json
+    │   └── evaluate_result.json
+    └── 2/
+        └── ...
+```
 
-書き出し終えたら終了の値を渡す（§4.4）。所見が 0 件でも渡す。自覚したエラーで終える場合は、`"0"` の代わりにエラー値を渡す（FNC-311）。
+置き場は、`review_id` と `round_number` から script が決める。AI は組み立てない。依頼（`review_request.json`）はレビューに 1 つ置き（REQ-029 FNC-305）、所見の結果（`review_result.json`）と評価の結果（`evaluate_result.json`）はラウンドごとに置く。結果は上書きしないので、ラウンドごとに分けても取り違えない。レビューが終わったとき、`review_id` のディレクトリごと削除する（S20）。
 
-## 7. review 本体
+### 5.2 依頼（`review_request.json`）
 
-本体が担うのは、`review_id` と `round_number` の取得、依頼の公開、起動、後続の機械処理への接続である。
+構造は REQ-029 DM-301 が定める。1 つのレビューに 1 つで、公開後は書き換えない（FNC-305）。依頼は対象の種別を持たない（FNC-317）。
 
-| 段         | 手順                                                                                                                                                                                                                                                                                                                                                      |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 依頼       | `start_review.py` へ必須項目を渡して `review_id` と最初の `round_number` を受け取る。任意の `focus` / `scope` は `set_request_text.py` へ 1 項目ずつ、`references` は `add_reference.py` へパス配列を、同じ 2 値とともに渡す。最後に `finish_request.py` で公開する。`references` の値は `/forge:query-db-rules` / `/forge:query-db-specs` の結果を用いる |
-| 起動       | バックエンドへ `review_id` と `round_number` を渡して reviewer を起動させる（§7.2）。続けて evaluator を同じ 2 値で直接起動する。両者の script は指定されたラウンドを読む                                                                                                                                                                                 |
-| 結果の読み | evaluator の終了後、`link_evaluations.py` で紐づけを検証する。所見と評価の中身は、各 `resolve_result_path.py` が返したパスの JSON をそれぞれ Read して得る（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-302）                                                                                                                               |
-| 終端       | そのラウンドの `review_result.json` の `findings` が空なら、確認せずに終端とする。所見が残っていて、本体がすべて軽微で対応不要と判断した場合は、利用者へ終えるかを確認する。終えると答えた場合だけ終端とし、それ以外は次ラウンドへ進む。終端に達したら「削除」の段へ進む（REQ-029 FNC-318）                                                               |
-| 次ラウンド | 対応済みの `finding_id` と同じ 2 値を `add_prior_handled.py` へ渡す。対応しない所見も `add_prior_unhandled.py` へ 1 件ずつ理由とともに渡す。最後に `advance_round.py` を呼び、返された次の `round_number` で再び起動する。依頼の形は変えない（FNC-305）                                                                                                   |
-| 削除       | レビューが終わったとき、`review_id` のディレクトリを削除する（§4.3、REQ-029 FNC-302）                                                                                                                                                                                                                                                                     |
+| 書く                              | 読む                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `request.py`（公開時に 1 回だけ） | reviewer と evaluator（パスを `resolve.py` から得て直接読む。毎ラウンド同じ依頼を読む） |
 
-**本体は単独で打ち切らない。** 所見が残っている限り、終えるかを決めるのは利用者である（REQ-029 FNC-318）。往復の回数で打ち切る上限は置かない。要件に無いためである。
+| フィールド | 型             | 必須             | 書く入力                                            |
+| ---------- | -------------- | ---------------- | --------------------------------------------------- |
+| targets    | target の配列  | 必須（1 個以上） | `--paths…` / `--base-branch` / `--diff`（渡した順） |
+| focus      | 文字列         | 任意             | `--focus-file`                                      |
+| scope      | 文字列         | 任意             | `--scope-file`                                      |
+| references | 絶対パスの配列 | 任意             | `--references…`                                     |
 
-**確認の段を持たない。** reviewer の終了の値が `"0"` でなければ、evaluator が所見のパスを解決できず、評価に入れない（§4.4）。本体が終了の値を確かめる手順を挟むと、その手順を飛ばせば進めてしまう。手順ではなく機構で止める。
+target は `paths`（絶対パスの配列）・`base_branch`（文字列）・`diff`（空の構造）のうち、ちょうど 1 つのキーを持つ。`paths` はディレクトリを配下へ展開しない。
 
-失敗は evaluator 側での所見のパス解決の失敗として現れる。本体は結果を読むが、**読んだ内容から成否を判断しない**——成否は script が終了の値で判定し、正常でなければパスが返らない（§4.4）。
+### 5.3 所見の結果（`review_result.json`）
 
-**`references` は target 種別で絞らない。** どの target 種別が対象に含まれるかは reviewer が判定するため、依頼を組み立てる時点では確定しない。全 target 種別分を問い合わせて渡し、reviewer が該当するものを使う。
+構造は REQ-029 DM-305（reviewer の結果）と DM-302（finding）が定める。reviewer がラウンドごとに 1 つ書く。
 
-依頼の組み立てを AI が行わない。本体は値を渡すだけで、構造は script が作る（FNC-303）。
+| 書く                                                                           | 読む                                                                                               |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `append.py --kind findings`（所見の追記）、`seal.py --kind findings`（`exit`） | evaluator と本体（パスを `resolve.py` から得て直接読む）。`append.py` と `advance_round.py` も読む |
 
-### 7.1 本体の定義が持つもの
+| フィールド | 型             | 必須             | 書く入力                                  |
+| ---------- | -------------- | ---------------- | ----------------------------------------- |
+| findings   | finding の配列 | 必須（0 件あり） | 所見 1 件ずつの追記                       |
+| exit       | 文字列         | 封緘後に持つ     | `seal.py` の `--exit`（省略すると `"0"`） |
 
-`plugins/forge/skills/review/SKILL.md` が持つ（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-314）。`reviewer.md`（§6.1）と `evaluator.md`（[DES-083](DES-083_evaluator_perspective_design.md) §4）が自分の分を持つのと同じ形である。
+finding は `finding_id`（`append.py` が採番）、`location`（`--location…`、1 個以上）、`body`（標準入力）を持つ。所見は severity を持たない（DM-302）。
 
-| 持つもの                 | 内容                                                                                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| script の呼び方          | `scripts/review/` の全 script、所見と評価のパスを得る 2 本の `resolve_result_path.py`、`link_evaluations.py`。どの呼び出しも第 1 引数に `${CLAUDE_PROJECT_DIR}` を置く（§4.2） |
-| 読む JSON の各項目の扱い | 所見（REQ-029 DM-302）と評価（同 DM-201）の各フィールドが何を意味するか。`disposition`・`confidence`・`fix_confident` の各値を含む                                             |
-| 何を決めるか             | `disposition` で扱いを分けること（`flawed_premise` を自動修正から外す）、終端の判定（§7 の「終端」の段）                                                                       |
+### 5.4 終了の値と成否
 
-### 7.2 バックエンド
+結果の `exit` と、結果の有無が、成否を表す（REQ-029 FNC-311）。読み出す script（`resolve.py`）が判定し、AI に判定させない。
 
-**本体は reviewer を直接起動しない。** バックエンドを経由する。バックエンドは reviewer をどう動かすか（ローカルの Agent か、常駐セッションか）を担う層であり、レビューそのものは行わない。evaluator はバックエンドを持たず、本体が直接起動する。どの仕組みで agent を動かすかは要件が定めず、設計に委ねている（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-312）。
+| 結果 | `exit`   | 成否             | `resolve.py` の動作                             |
+| ---- | -------- | ---------------- | ----------------------------------------------- |
+| ある | `"0"`    | 正常             | パスを返す                                      |
+| ある | エラー値 | エラー           | 失敗する。`errors` にエラー値を入れる           |
+| ある | 無い     | 書けない異常終了 | 失敗する。`errors` に封緘されていない旨を入れる |
+| 無い | —        | 書けない異常終了 | 失敗する。`errors` に結果が無い旨を入れる       |
 
-| 項目                     | 内容                                                                                                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 本体 → バックエンド      | `review_id` と `round_number` を渡す（FNC-302）                                                                                                        |
-| バックエンド → reviewer  | 同じ 2 値を渡す。依頼本文を運ばない——reviewer は resolver からパスを得て自分で直接読む                                                                 |
-| バックエンド → 本体      | 完了したかどうか。**所見を解釈しない**——所見は script が保持し、成否は終了の値が表す（FNC-311）                                                        |
-| 可用性検査               | 各バックエンドが持つ（`forge:REQ-013` FNC-1318）。本体は順序だけを名前として持つ                                                                       |
-| `retains_context` の申告 | バックエンドが可用性検査の応答で返す。本体はレビュー開始前に 1 回だけ受け取り、そのレビューの間保持する。ラウンドごとに問い直さない（REQ-029 FNC-316） |
+エラー値の集合は閉じている。`seal.py` は、`--kind findings` に `"0"` と `target_unreadable`、`--kind evaluations` に `"0"` だけを受け付ける（REQ-027 FNC-315、REQ-026 FNC-319）。
 
-`retains_context` を廃さない。依頼が `review_id` と `round_number` 経由で毎ラウンド完全に直接読めるようになっても、実行主体がラウンド間で状態を保つかどうかという性質は残る——セッションを維持するか、毎ラウンド新しく起こすかが分かれる。
+### 5.5 `finding_id`
 
-### 7.3 `retains_context` は依頼の形を変えない
+`finding_id` は script が採る。reviewer も evaluator も ID を渡さない（REQ-029 FNC-313）。
 
-本体は `retains_context` を reviewer から取得して保持する（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-316）。**backend 名から推測しない**——バックエンド固有の事情を本体に持ち込まないため（`forge:REQ-013` FNC-1318）。
+- **次の番号:** そのレビューの全ラウンドの所見と評価に現れる `finding_id` の最大値の次。どれにも無ければ `1`。採番のための状態を別に持たない。採番と書き込みは 1 回の操作なので、採った番号が書かれないまま残ることはない。
+- **同じ番号を 2 つの script が同時に採らない:** evaluator は所見が正常に封緘されていなければ始まらず（S11）、`advance_round.py` は所見と評価がともに正常に封緘されていなければ次のラウンドを作らない（S19）。
+- **出自:** 当該ラウンドの所見に無い番号で、当該ラウンドの評価に現れるものが、evaluator が新規に指摘したものである。件数では判定しない（第 2 ラウンド以降は番号が `1` から始まらない）。
 
-**依頼の形も渡し方も、この値で分岐しない。** どちらの値でも、各ラウンドの依頼は `review_id` の下に残り続け、reviewer が毎ラウンド `resolve_request_path.py` へ `review_id` と `round_number` を渡し、返されたパスの JSON を自ら直接読む（§4.2）。本体が依頼本文を組み立て直して送る工程が消え、**本体が渡すのは 2 つの識別値だけになる**。
+## 6. script
 
-ラウンドごとの結果は独立して保持される。前ラウンドで意図的に対応しなかったものは `prior_round` が伝える（REQ-029 DM-301）。**`retains_context` が `false` の reviewer は毎回新しく起こされ、前ラウンドの所見を覚えていない**——そのため `prior_round` には理由が読める形で入っている必要がある。
+### 6.1 共通の約束
 
-依頼を渡した後の扱いがこの値で分かれることはありうるが、本 feature では設計しない（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-316）。
+script は `plugins/forge/scripts/review/` に置く。基本の script が処理を持ち、ラッパーは呼ぶ主体から決定論的に決まるオプションを固定して基本の script を呼ぶだけである（§6.9）。AI が判断して決める値（`disposition`、位置、確信度など）は、ラッパーに畳まず引数として渡す。
 
-**終端は `retains_context` によらず共通である**（[REQ-029](../requirements/REQ-029_review_exchange.md) FNC-318）。
+- **引数:** `<project_root> <review_id> <round_number>` の順に、位置引数で渡す。持たない script は右から省く（`request.py` は `<project_root>` だけ、`cleanup.py` は `<project_root> <review_id>`）。プロジェクトルートは、定義のコマンド行に書いた `${CLAUDE_PROJECT_DIR}` が置換されたものを渡す（REQ-029 FNC-314）。script ファイルの中にプレースホルダは書かない（置換するのはスキル機構であり、script ファイルは機構を通らない）。
+- **標準出力:** 成功時は JSON object を 1 つ出力する。返す値が無ければ `{}`。失敗時は終了コード `1` と、自然文の日本語の配列 `errors` を持つ JSON object。引数の誤りは終了コード `2`（`argparse` が返す）。`3` 以上は使わない（[script_error_output_rules.md](../../../rules/script_error_output_rules.md)）。
+- **標準入力:** 自由記述は標準入力の全体を 1 つの値として、加工せずに受け取る。値の内容を理由に拒まない（REQ-029 FNC-304）。`focus` / `scope` だけは、2 つの自由記述を 1 回の操作で渡すため、本体が Write ツールで書いたファイルで受け取り、`request.py` が読んで削除する（[implementation_guidelines.md](../../../rules/implementation_guidelines.md) の受け渡しファイルの例外）。
+- **書き込み:** JSON は、同じディレクトリの一時ファイルへ書いてから置き換える。読み手が途中の状態を読まない。文字コードは UTF-8 とする。
+- **絶対パス:** 依頼と結果が持つパスと位置は、すべて絶対パスである（REQ-029 DM-304）。
 
-## 8. テスト設計
+### 6.2 `request.py`
 
-**単体テスト対象**:
+**責務:** 依頼を組み立てて公開し、`review_id` とラウンド 1 を作る（REQ-029 FNC-302・303・305・317、DM-301）。
 
-- 受け渡しの script 群（§4.2）: 同じプロジェクトルート・`review_id`・`round_number` から所定のファイルの正規化済み絶対パスが得られること。**作業ディレクトリを変えても同じ結果になること**。渡されたルートの外を置き場にしないこと。resolver の標準出力が `path` 1 項目だけの JSON object であり、成果物の JSON 本文を含まないこと。空白・改行を含むパスも 1 つの値として復元できること。返されたパスの JSON が保持した内容と同一であること。**異なる `review_id` および異なる `round_number` の内容が混ざらないこと**。`focus`、`scope`、対応しない理由、所見本文のそれぞれについて、改行・引用符・バッククォート・非 ASCII を含む標準入力全体が 1 つの値として同一に保持されること。1 件ずつ渡したものが配列として保持されること。保持していない識別値、およびパス区切りや親ディレクトリ参照を含む識別値でパスを解決しようとしたとき失敗すること
-- 依頼の組み立て: `set_request_text.py` が `focus` / `scope` 以外を受け付けないこと。同じ項目を 2 度設定できないこと。複数の参照文書のパスが順序どおり保持されること。絶対パスでないものを拒むこと。**1 回の呼び出しの中でも、呼び出しをまたいでも、同じパスが重複して保持されないこと。正規化すると同じになるパスも重複として扱われ、最初に現れた順序が保たれること**。`finish_request.py` より前は `resolve_request_path.py` が失敗し、公開後だけ `review_request.json` のパスを返すこと。公開後の依頼へ追加・変更できないこと
-- 次ラウンド: 対応済みの複数 ID をまとめて記録できること。対応しない理由が所見ごとに無損失で記録されること。存在しない ID と重複した記録を拒むこと。全所見の対応が揃うまで `advance_round.py` が失敗し、揃った場合だけ次ラウンドのディレクトリと `prior_round` を持つ依頼の作成がともに完了すること。前ラウンドの依頼・所見・評価が変わらないこと
-- 置き場の分離: `scripts/reviewer/` の script が `review_result.json` 以外の結果へ書き込まず、`scripts/evaluator/` の script が `evaluate_result.json` 以外の結果へ書き込まないこと。各ディレクトリに、その主体以外が呼ぶ script が無いこと
-- 結果の読み出し: `scripts/reviewer/resolve_result_path.py` と `scripts/evaluator/resolve_result_path.py` が、それぞれの結果の正規化済み絶対パスを `path` 1 項目で返すこと。`link_evaluations.py` が JSON 本文を標準出力へ載せないこと
-- ラウンドの分離: 2 ラウンド以上で reviewer と evaluator がそれぞれ終了の値を書けること。指定ラウンドの読み書きが他ラウンドの依頼・所見・評価を変更せず、パス解決も混同しないこと。最大のラウンド番号ではなく、渡された `round_number` が対象になること
-- 終了の値: 終了の値が無い状態で結果パスの解決が失敗すること。**結果そのものが無い状態でも失敗すること**。`"0"` なら正しい絶対パスを `path` 1 項目で返すこと。**定義に無いエラー値でも失敗すること**。所見 0 件かつ `"0"` なら空配列を持つ結果 JSON のパスを返すこと。reviewer だけが `"0"` を書いた状態で、評価結果のパス解決が失敗すること
-- 上書きの不在: 終了の値を書いた後に所見を積めないこと。一度書かれた所見を書き換える口が無いこと（FNC-310）
-- 採番: `finding_id` が 1 つのレビューで 1 本の連番になること。第 1 ラウンドが `1` から始まり、第 2 ラウンド以降の最初の ID が前ラウンドまでに採番された最大値の次であること。前ラウンドで evaluator が新規採番した ID を次ラウンドの reviewer が踏まないこと。reviewer が 0 件で終えたラウンドを挟んでも基点が引き継がれること。reviewer・evaluator のいずれも `finding_id` を入力として受け取らないこと。書き込みが失敗したときに番号が飛ばないこと
-- `resolve_doc_structure.py`（改修分）: `.doc_structure.yaml` が宣言するパターンに合うパスへ種別を返すこと。合わないパスへ種別を返さないこと
+| 入力                                                                                                                                       | 出力                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `<project_root>`、`--paths P…` / `--base-branch B` / `--diff`（1 つ以上。渡した順）、`--references R…`、`--focus-file F`、`--scope-file S` | 書く: `review_request.json`、ラウンド `1` の置き場。標準出力: `{"review_id": …, "round_number": 1}` |
 
-**契約テスト対象**:
+**動作**
 
-- `reviewer.md` が持つ script の呼び方が、§4.2 の script 群と `resolve_doc_structure.py` の実際の引数と一致すること
-- `reviewer.md` が `REQ-027` FNC-308 の全 target 種別・全文書を持つこと
+1. target を、渡された順に `targets` へ並べる。`--paths` は `{"paths": […]}`、`--base-branch` は `{"base_branch": B}`、`--diff` は `{"diff": {}}` になる。`paths` は展開しない。
+2. `--references` は、正規化して重複を除く（最初に現れた順序を保つ）。
+3. `--focus-file` と `--scope-file` があれば、内容をそのまま `focus`・`scope` に置く。無ければ、そのキーを持たない。
+4. `review_id` を生成する。他のレビューと衝突しない不透明な値（UUID の 16 進表記）とし、意味を読み取らせない。`<review_id>/` を新規に作る。既に存在すれば、別の値で作り直す。
+5. `review_request.json` を書いて公開し、`1/` を作る。
+6. `--focus-file`・`--scope-file` のファイルを削除する。
 
-**統合テスト対象**:
+**エラー（終了コード 1）:** target が 1 つも無い。`--paths`・`--references` に絶対パスでないものがある。`--focus-file`・`--scope-file` が読めない。書き込みに失敗した。失敗したときは、作りかけの `<review_id>/` を残さず、`--focus-file`・`--scope-file` のファイルは削除しない。
 
-- `review_id` と最初の `round_number` の生成から、依頼の公開、resolver が返したパスによる JSON の直接読み出し、所見と評価の結び付けまでが、`targets` の 3 形すべてで成立すること
+### 6.3 `append.py`
+
+**責務:** 結果へ 1 件追記する。`finding_id` を採る。評価では、所見との関係を書く時点で保証する（REQ-029 FNC-310・313・203、DM-302・DM-201）。
+
+| 入力                                                                                                                                                                         | 出力                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `<project_root> <review_id> <round_number> --kind findings\|evaluations`。読む: 全ラウンドの所見と評価の結果。当該ラウンドの所見の結果。標準入力: 所見では本文、評価では根拠 | 書く: 所見または評価の結果。標準出力: 所見と `--new` の評価では `{"finding_id": n}`、他は `{}` |
+
+**共通の動作:** ラウンドの置き場が実在することを確かめる。追記先の結果が封緘済み（`exit` を持つ）なら失敗する。追記は、ファイルが無ければ空の配列から始める。次の `finding_id` は、§5.5 のとおり導く。
+
+#### `--kind findings`
+
+| 引数            | 内容                                                           |
+| --------------- | -------------------------------------------------------------- |
+| `--location L…` | 1 個以上。所見の位置（DM-304）。渡された順に保持し、解釈しない |
+| 標準入力        | 所見の本文                                                     |
+
+**動作:** 次の `finding_id` を採り、`{"finding_id", "location", "body"}` を `findings` へ追記する。
+
+**エラー:** 封緘済み。本文が空。`--location` が無い（引数の誤り。終了コード 2）。
+
+#### `--kind evaluations`
+
+| 引数                          | 内容                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| `--disposition`               | `invalid` / `misunderstanding` / `out_of_scope` / `flawed_premise` / `valid`（必須） |
+| `--severity`                  | `critical` / `major` / `minor`（必須）                                               |
+| `--findings N…`               | 引く番号                                                                             |
+| `--new`                       | 新規指摘の番号を採り、この評価が引く番号に加える                                     |
+| `--location L…`               | 新規指摘の番号を含む評価の位置                                                       |
+| `--confidence`                | `confirmed` / `inferred` / `unverified`（`valid` のとき必須）                        |
+| `--fix-confident true\|false` | その修正を責任を持って実行できるか（`valid` のとき必須）                             |
+| 標準入力                      | 判定の根拠（`reason`）                                                               |
+
+**動作**
+
+1. `--new` のとき、次の `finding_id` を採る。
+2. `finding_ids` を、`--findings` の番号（渡した順）と、続けて `--new` で採った番号で作る。
+3. `{"finding_ids", "disposition", "severity", "reason"}` に、`valid` のとき `confidence` と `fix_confident`、新規指摘の番号を含むとき `location` を加えて、`evaluations` へ追記する。
+
+**エラー**（いずれも何も書かない）
+
+| 条件                                                                                                                              | 根拠                    |
+| --------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| 当該ラウンドの所見の結果が、正常に封緘されていない                                                                                | REQ-026 DM-202          |
+| 評価の結果が封緘済み                                                                                                              | REQ-029 FNC-310         |
+| `--findings` も `--new` も無い                                                                                                    | DM-201（1 個以上）      |
+| `--findings` の番号が、当該ラウンドの所見にも、当該ラウンドの評価に既にある新規指摘の番号にも無い（その番号を `errors` に入れる） | REQ-029 FNC-203         |
+| 新規指摘の番号を含む（`--new`、または既にある新規指摘の番号を引く）のに `--location` が無い。含まないのに `--location` がある     | DM-201                  |
+| `--new` なのに `--disposition` が `valid` でない                                                                                  | REQ-026 FNC-206         |
+| `valid` なのに `--confidence` または `--fix-confident` が無い。`valid` 以外に、この 2 つを渡した                                  | DM-201                  |
+| `--fix-confident true` なのに `--confidence` が `confirmed` でない                                                                | DM-201                  |
+| 根拠（標準入力）が空                                                                                                              | DM-201（`reason` 必須） |
+
+### 6.4 `seal.py`
+
+**責務:** 結果を封緘する。評価では、全所見が引かれていることを保証する（REQ-029 FNC-311・203、REQ-027 FNC-315、REQ-026 FNC-319）。
+
+| 入力                                                                                                                                                 | 出力                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `<project_root> <review_id> <round_number> --kind findings\|evaluations`、`--exit V`（省略すると `"0"`）。読む: 当該ラウンドの所見の結果と評価の結果 | 書く: 結果の `exit`。標準出力: `{}` |
+
+**動作**
+
+1. `--exit` の値が、その kind の閉じた集合に含まれることを確かめる（`findings` は `"0"` と `target_unreadable`、`evaluations` は `"0"`）。含まなければ引数の誤りとする（終了コード 2）。
+2. 結果が無ければ、`findings`（または `evaluations`）が空配列の結果を作る（0 件のときも `exit` を書けるようにする）。
+3. `evaluations` では、当該ラウンドの所見の結果が正常に封緘されていることを確かめ、所見の `finding_id` のうち、どの評価の `finding_ids` にも無いものを数える。
+4. `exit` を書く。
+
+**エラー（終了コード 1）:** 既に封緘済み。`evaluations` で、所見の結果が正常に封緘されていない。`evaluations` で、引かれていない所見が残っている（その `finding_id` をすべて `errors` に入れ、何も書かない）。
+
+### 6.5 `resolve.py`
+
+**責務:** 読み出せる状態かを判定し、絶対パスを返す。JSON 本文は返さない（REQ-029 FNC-302・311）。
+
+| 入力                                                                                                                          | 出力                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `<project_root> <review_id> <round_number> --kind request\|inputs\|findings\|evaluations`。読む: 依頼、所見の結果、評価の結果 | 標準出力: `{"path": …}`。`inputs` は `{"request": …, "findings": …}`。正常でなければ失敗し、`errors` に理由 |
+
+**動作**
+
+| `--kind`      | 判定                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| `request`     | `<review_id>/` と `<round_number>/` が実在し、`review_request.json` が公開されている              |
+| `findings`    | `review_result.json` の状態を §5.4 の表で判定する                                                 |
+| `evaluations` | `evaluate_result.json` の状態を §5.4 の表で判定する                                               |
+| `inputs`      | `request` と `findings` の両方を判定する。片方でも失敗すれば失敗し、`errors` に両方の理由を入れる |
+
+**エラー（終了コード 1）:** `review_id` が保持されていない。ラウンドが無い。依頼が公開されていない。結果が無い。`exit` が無い。`exit` が `"0"` でない（値を `errors` に入れる）。
+
+### 6.6 `count_actionable.py`
+
+**責務:** 対応を要する評価の件数を数える。何も書かず、返すのは件数だけで、所見と評価の JSON 本文は返さない（REQ-029 FNC-318）。
+
+| 入力                                                                          | 出力                          |
+| ----------------------------------------------------------------------------- | ----------------------------- |
+| `<project_root> <review_id> <round_number>`。読む: 評価の結果の `disposition` | 標準出力: `{"actionable": n}` |
+
+**動作:** 評価の結果が正常に封緘されていることを確かめ、`disposition` が `valid` または `flawed_premise` の評価を数える。
+
+**エラー（終了コード 1）:** 評価の結果が無い、または正常に封緘されていない。
+
+### 6.7 `advance_round.py`
+
+**責務:** 次のラウンドの置き場を作る。依頼も、採番のための状態も作らない（REQ-029 FNC-302・313）。
+
+| 入力                                                                         | 出力                                                                 |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `<project_root> <review_id> <round_number>`。読む: 所見と評価の結果の `exit` | 標準出力: `{"round_number": <次の値>}`（書く: 次のラウンドの置き場） |
+
+**動作:** 当該ラウンドの所見の結果と評価の結果が、どちらも正常に封緘されていることを確かめ、`<round_number + 1>/` を作る。
+
+**エラー（終了コード 1）:** 所見または評価の結果が、正常に封緘されていない。次のラウンドの置き場が既に存在する。
+
+### 6.8 `cleanup.py`
+
+**責務:** そのレビューの保持物を、依頼・所見・評価ともにすべて削除する（REQ-029 FNC-302・318）。
+
+| 入力                         | 出力           |
+| ---------------------------- | -------------- |
+| `<project_root> <review_id>` | 標準出力: `{}` |
+
+**動作:** `<review_id>/` をディレクトリごと削除する。置き場が無いときも成功する。
+
+**エラー（終了コード 1）:** 削除できない。
+
+### 6.9 ラッパー
+
+ラッパーは、呼ぶ主体から決定論的に決まるオプションを固定して、基本の script を呼ぶ。処理を持たず、標準出力と終了コードをそのまま返す。受け取る引数は、基本の script の引数から、固定したオプションを除いたものである。
+
+| 主体      | ラッパー                      | 呼ぶもの                                                                                                   |
+| --------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| reviewer  | `reviewer_resolve_request.py` | `resolve.py --kind request`                                                                                |
+| reviewer  | `reviewer_add_finding.py`     | `append.py --kind findings`                                                                                |
+| reviewer  | `reviewer_finish.py`          | `seal.py --kind findings`                                                                                  |
+| reviewer  | `reviewer_abort.py`           | `seal.py --kind findings --exit target_unreadable`（エラー値が 1 つだけなので固定できる。REQ-027 FNC-315） |
+| 本体      | `body_resolve_findings.py`    | `resolve.py --kind findings`                                                                               |
+| 本体      | `body_resolve_evaluations.py` | `resolve.py --kind evaluations`                                                                            |
+| evaluator | `evaluator_*`（3 本）         | DES-083 §6                                                                                                 |
+
+本体は、決定論的なオプションを持たない基本の script（`request.py`・`count_actionable.py`・`advance_round.py`・`cleanup.py`）を直接呼ぶ。reviewer の定義には評価を書く口が、evaluator の定義には所見を書く口が現れない。
+
+### 6.10 `resolve_review_backend.py`（改修）
+
+**責務:** 使う reviewer（バックエンド）の候補と、候補ごとの `retains_context` を返す（REQ-029 FNC-316）。置き場は `plugins/forge/skills/review/scripts/`。
+
+既存の契約（`--backend`、`--project-root`、終了コード `0` / `20`、`status`・`mode`・`order`・`source`）は変えない。次を足す。
+
+| 項目   | 内容                                                                                                                                                                           |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 出力   | 成功時の JSON に `retains_context`（候補名 → 真偽値のオブジェクト）を加える。値は本 script が持つ表（現在は `agent-review` が `false`）から引く                                |
+| エラー | `order` の候補に、値の宣言が無い名前があるとき、終了コード `20`、`reason_code` は `backend_undeclared`。値を補わない。`message` に指定された値そのものを載せない（既存の方針） |
+
+### 6.11 `resolve_doc_structure.py`（改修）
+
+**責務:** パスを 1 つ受け取り、`.doc_structure.yaml` の宣言から種別を返す（REQ-027 FNC-307）。置き場は `plugins/forge/scripts/doc_structure/`。reviewer と evaluator が呼ぶ。
+
+既存の契約（`--type` / `--features` / `--doc-type` / `--version` の排他の指定、`--project-root`、`--doc-structure`、`--category`、`status`、終了コード）は変えない。次を足す。
+
+| 項目   | 内容                                                                                                                                                                               |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入力   | `--match-path PATH`。既存の排他の指定に並べる。`PATH` は絶対パス、またはプロジェクトルートからの相対パス。`--category`（省略すると `specs`）と `--project-root` を使う             |
+| 動作   | `PATH` をプロジェクトルートからの相対パスにし、既存の `match_path_to_doc_type` で `doc_types_map` を引く。`exclude` は適用しない。プロジェクトルートの外のパスには、種別を返さない |
+| 出力   | `{"status": "ok", "category": …, "path": <相対パス>, "doc_type": "design" \| "plan" \| "requirement" \| null}`。宣言に合わないパスは `null`                                        |
+| エラー | `.doc_structure.yaml` が無い、または不正なときは、既存と同じ（`status: error`、終了コード 1）                                                                                      |
+
+## 7. テスト設計
+
+**単体テスト対象**
+
+対象は、基本の script 7 本、ラッパー、改修する 2 本である。それぞれ、§6 の責務・入出力・動作・エラーを確かめる。全体として、次を確かめる。
+
+- 標準出力が JSON object であり、成果物の本文を含まないこと。失敗が終了コード `1` と `errors` であること。作業ディレクトリを変えても、同じパスが得られること。
+- `request.py`: 種類をまたいで渡した target が、渡した順に `targets` の要素になること。`paths` のディレクトリが展開されないこと。`--references` の重複が除かれること。`focus` / `scope` の値が、改行・引用符・バッククォート・非 ASCII を含めて同一に保持されること。公開前は読み出せず、公開後は書き換えられないこと。
+- `append.py` / `seal.py`: `finding_id` が 1 つのレビューで連番になること（第 2 ラウンド以降、reviewer が 0 件のラウンドを挟んだ場合、evaluator が前ラウンドで採った番号を含む）。封緘後の追記が拒まれること。§6.3 の評価のエラーが、1 つ 1 つ拒まれること。0 件でも空配列の結果が作られること。エラー値の集合が閉じていること。
+- `resolve.py`: 正常でない結果（エラー値、`exit` が無い、結果が無い）で失敗し、`errors` に理由が入ること。
+- ラッパー: `reviewer_*` が評価に、`evaluator_*` が所見に書けないこと。
+- `resolve_doc_structure.py`（改修分）: 宣言するパターンに合うパスへ種別を返し、`exclude: [plan]` の設定でも計画書に `plan` を返すこと。
+- `resolve_review_backend.py`（改修分）: 候補ごとに `retains_context` を返し、値を持たない名前で失敗すること。
+
+**契約テスト対象**
+
+- `reviewer.md` が持つ script の呼び方が、§6.9 のラッパーと `resolve_doc_structure.py` の実際の引数と一致すること。`reviewer.md` に `evaluator_*` と `body_*` が現れないこと。
+- `criteria/review_target_types.md` が、REQ-027 FNC-308 の全 target 種別と、種別ごとに上乗せする観点文書、全 target 種別に共通の文書を持つこと。
+- `reviewer.md` と `evaluator.md` が、どちらも `criteria/review_target_types.md` を読む指示を持つこと。
+- 本体の定義（`SKILL.md`）が、`disposition` などの値にそのまま従わず、内容を吟味してから修正・ドロップ・終端を決める指示を持つこと。
+
+**統合テスト対象**
+
+- `targets` の 3 形（`paths` / `base_branch` / `diff`）すべてで、`review_id` の生成から、依頼の公開、パスによる JSON の直接読み出し、所見と評価の結び付けまでが成立すること。
+- reviewer が `target_unreadable` で終えたとき、本体が S15 で止まって、エラー値を利用者へ伝えること。
+- reviewer か evaluator が書き出さずに終えたとき、本体が S15 で止まること。
