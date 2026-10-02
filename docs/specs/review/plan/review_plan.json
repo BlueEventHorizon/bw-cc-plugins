@@ -1,0 +1,834 @@
+{
+  "requirements_traceability": [
+    {
+      "requirement_id": "REQ-029 FNC-302",
+      "title": "入力は review_id と round_number で受け渡す",
+      "task_ids": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-303",
+      "title": "入力は script が組み立てる",
+      "task_ids": [
+        "TASK-001",
+        "TASK-003"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-304",
+      "title": "値は変形せずに受け渡される",
+      "task_ids": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-305",
+      "title": "依頼はレビューの間変えない",
+      "task_ids": [
+        "TASK-001"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-317",
+      "title": "依頼は対象の種別を載せない",
+      "task_ids": [
+        "TASK-001",
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-313",
+      "title": "finding_id は script が採番する",
+      "task_ids": [
+        "TASK-002",
+        "TASK-008"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-310",
+      "title": "書き出しは判断を確定させた後に行う",
+      "task_ids": [
+        "TASK-002",
+        "TASK-005",
+        "TASK-008",
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-311",
+      "title": "終了の値で結果の成否を表す",
+      "task_ids": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-008"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-203",
+      "title": "全 finding_id はいずれかの evaluation に紐づく",
+      "task_ids": [
+        "TASK-008"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-312",
+      "title": "本体はレビューを進行させる",
+      "task_ids": [
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-314",
+      "title": "扱いと呼び方はそれぞれの定義が持つ",
+      "task_ids": [
+        "TASK-005",
+        "TASK-010",
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-316",
+      "title": "本体は retains_context を得て分岐する",
+      "task_ids": [
+        "TASK-004",
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-318",
+      "title": "レビューは対応を要するものが尽きるか、利用者が終えると決めたときに終わる",
+      "task_ids": [
+        "TASK-009",
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 FNC-204",
+      "title": "flawed_premise は自動修正の対象にしない",
+      "task_ids": [
+        "TASK-013"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 DM-301",
+      "title": "依頼の構成",
+      "task_ids": [
+        "TASK-001"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 DM-305",
+      "title": "結果の構成",
+      "task_ids": [
+        "TASK-002",
+        "TASK-008"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 DM-302",
+      "title": "finding の構成",
+      "task_ids": [
+        "TASK-002"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 DM-201",
+      "title": "evaluation の構成",
+      "task_ids": [
+        "TASK-008"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-029 DM-304",
+      "title": "パスと位置の表記",
+      "task_ids": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-301",
+      "title": "reviewer の定義が持つ中身",
+      "task_ids": [
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-306",
+      "title": "対象を読む",
+      "task_ids": [
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-307",
+      "title": "対象ごとに target 種別を判定する",
+      "task_ids": [
+        "TASK-004",
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-308",
+      "title": "target 種別ごとに扱う文書",
+      "task_ids": [
+        "TASK-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-309",
+      "title": "reviewer が所見として返すもの",
+      "task_ids": [
+        "TASK-005",
+        "TASK-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-027 FNC-315",
+      "title": "reviewer が挙げるエラー値",
+      "task_ids": [
+        "TASK-002",
+        "TASK-003"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 FNC-208",
+      "title": "evaluator の定義が持つ中身",
+      "task_ids": [
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 FNC-201",
+      "title": "evaluator は指摘の奥にある本質・対象情報を疑う",
+      "task_ids": [
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 FNC-206",
+      "title": "evaluator は reviewer の見落としを新規に指摘できる",
+      "task_ids": [
+        "TASK-008",
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 FNC-209",
+      "title": "evaluator が評価として返すもの",
+      "task_ids": [
+        "TASK-008",
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 FNC-319",
+      "title": "evaluator はエラー値を持たない",
+      "task_ids": [
+        "TASK-008",
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 DM-202",
+      "title": "evaluator の入力",
+      "task_ids": [
+        "TASK-008",
+        "TASK-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "requirement_id": "REQ-026 TBD-001",
+      "title": "メタ観点が実際に働くかは未検証",
+      "task_ids": [],
+      "status": "pending",
+      "exclusion_reason": "REQ-026 と DES-083 が実装後の検証と定めている。実装の完了条件に含めず、フェーズ 3 の統合確認の後に別の作業として行う（戦略書 決定事項 5）"
+    }
+  ],
+  "design_traceability": [
+    {
+      "design_id": "DES-084",
+      "requirement_ids": [
+        "REQ-029 FNC-302",
+        "REQ-029 FNC-303",
+        "REQ-029 FNC-304",
+        "REQ-029 FNC-305",
+        "REQ-029 FNC-317",
+        "REQ-029 FNC-313",
+        "REQ-029 FNC-310",
+        "REQ-029 FNC-311",
+        "REQ-029 FNC-314",
+        "REQ-029 FNC-316",
+        "REQ-029 DM-301",
+        "REQ-029 DM-305",
+        "REQ-029 DM-302",
+        "REQ-029 DM-304",
+        "REQ-027 FNC-301",
+        "REQ-027 FNC-306",
+        "REQ-027 FNC-307",
+        "REQ-027 FNC-308",
+        "REQ-027 FNC-309",
+        "REQ-027 FNC-315"
+      ],
+      "task_ids": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ]
+    },
+    {
+      "design_id": "DES-083",
+      "requirement_ids": [
+        "REQ-029 FNC-302",
+        "REQ-029 FNC-203",
+        "REQ-029 FNC-312",
+        "REQ-029 FNC-318",
+        "REQ-029 FNC-204",
+        "REQ-029 DM-201",
+        "REQ-026 FNC-208",
+        "REQ-026 FNC-201",
+        "REQ-026 FNC-206",
+        "REQ-026 FNC-209",
+        "REQ-026 FNC-319",
+        "REQ-026 DM-202"
+      ],
+      "task_ids": [
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "title": "publish_request.py と単体テストを作る",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-084 §6.2 の publish_request.py を plugins/forge/scripts/review/ に新規作成し、tests/forge/scripts/ に test_publish_request.py を置く（plugins/forge/scripts/ の script のテストの置き場。implementation_guidelines.md）。(1) targets の 3 形（paths / base_branch / diff）を渡した順に並べる (2) paths を展開しない (3) references の重複除去 (4) focus-file / scope-file の取り込みと削除 (5) review_id の生成と ラウンド 1 の置き場 (6) 公開前は読ませない（下書きから 1 回の操作で公開）(7) 絶対パス以外を拒む。共通の約束（DES-084 §6.1）に従う。.temp/ が .gitignore に無い場合は、その事実を作業報告に記載する。",
+      "acceptance_criteria": [
+        "DES-084 §7 の publish_request.py の単体テストがすべて通る",
+        "改行・引用符・バッククォート・非 ASCII を含む focus / scope が、同一の値で review_request.json に保持される",
+        "絶対パスでない --paths / --references を渡すと終了コード 1 と errors で失敗する",
+        "標準出力が JSON object 1 つで、成果物の本文を含まない",
+        ".temp/ の .gitignore 有無が作業報告に記載されている",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "docs/rules/script_error_output_rules.md",
+        "docs/rules/agent_data_exchange_rules.md",
+        "docs/rules/implementation_guidelines.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-002",
+      "title": "append_result.py と seal_result.py（findings）と単体テストを作る",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-084 §6.3・§6.4 の --kind findings を作る。(1) 所見の追記と finding_id の採番（全ラウンドの結果から次の番号。採番状態を別に持たない）(2) 封緘済みへの追記拒否 (3) location 1 個以上の必須 (4) seal の exit は \"0\" と target_unreadable だけ (5) 結果が無ければ空配列で作って exit を書く。evaluations の種別は TASK-008 で足す。",
+      "acceptance_criteria": [
+        "DES-084 §7 の append_result.py / seal_result.py（findings）の単体テストがすべて通る",
+        "第 2 ラウンド以降と、reviewer が 0 件のラウンドを挟んだ場合に、finding_id が重ならず連番になる",
+        "封緘後の追記が終了コード 1 で拒まれる",
+        "--exit に定義外の値を渡すと終了コード 2 で拒まれる",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "docs/specs/review/requirements/REQ-027_reviewer.md",
+        "docs/rules/script_error_output_rules.md",
+        "docs/rules/agent_data_exchange_rules.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-003",
+      "title": "resolve_review_path.py（request / findings）と単体テストを作る",
+      "priority": 85,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-084 §6.5 の resolve_review_path.py を作る。--kind request|findings で、読み出せる状態かを判定し、JSON 本文を返さず絶対パスだけを返す。結果の有無と exit の組み合わせ（DES-084 §5.4 の表）を判定し、正常でなければ失敗して errors に理由を入れる。evaluations と inputs は TASK-008 で足す。",
+      "acceptance_criteria": [
+        "DES-084 §5.4 の 4 状態（正常 / エラー値 / exit が無い / 結果が無い）が、それぞれ期待どおりの終了コードと errors になる",
+        "公開前の依頼のパスは返らない",
+        "標準出力に JSON 本文が含まれない",
+        "作業ディレクトリを変えても同じ絶対パスが得られる",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "docs/rules/script_error_output_rules.md",
+        "docs/rules/agent_data_exchange_rules.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-004",
+      "title": "resolve_doc_structure.py の --match-path と resolve_review_backend.py の retains_context を足す",
+      "priority": 90,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "既存 script の改修 2 本。(1) plugins/forge/scripts/doc_structure/resolve_doc_structure.py に --match-path を足す（DES-084 §6.8。既存の match_path_to_doc_type を使い、exclude は適用しない。プロジェクトルート外は種別を返さない）(2) plugins/forge/skills/review/scripts/resolve_review_backend.py の出力に retains_context（候補名 → 真偽値）を足し、値の宣言が無い名前は終了コード 20・reason_code backend_undeclared で拒む（§6.7）。既存の契約は変えない。既存テストの該当箇所も同時に直す。",
+      "acceptance_criteria": [
+        "exclude: [plan] の設定でも、計画書のパスに plan が返る",
+        "宣言に合わないパスと、プロジェクトルート外のパスで doc_type が null になる",
+        "候補ごとに retains_context が返り、agent-review は false になる",
+        "値の宣言が無い候補名で終了コード 20 と backend_undeclared になる",
+        "既存の終了コード 0 / 20 の契約と既存テストが通る",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "追加分のテストを、既存の tests/forge/review/test_resolve_review_backend.py と tests/forge/doc_structure/test_resolve_doc_structure.py に足した"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-027_reviewer.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "plugins/forge/scripts/doc_structure/resolve_doc_structure.py",
+        "plugins/forge/skills/review/scripts/resolve_review_backend.py",
+        "tests/forge/review/test_resolve_review_backend.py",
+        "tests/forge/doc_structure/test_resolve_doc_structure.py"
+      ]
+    },
+    {
+      "task_id": "TASK-005",
+      "title": "reviewer のラッパー・review_target_types.md・新 reviewer.md と契約テストを作る",
+      "priority": 80,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "(1) reviewer_resolve_request / reviewer_add_finding / reviewer_finish / reviewer_abort の 4 本（DES-084 §6.6）(2) plugins/forge/docs/criteria/review_target_types.md を新規作成（判定の手順、種別ごとに上乗せする観点文書、全種別に共通の文書。REQ-027 FNC-307・308）(3) plugins/forge/agents/reviewer.md を削除して新規作成する（パスは変えない）。FNC-301 の項目と、戦略書「移し替え」の項目（scope・focus の読み方、自己検証、規約が見当たらない場合の所見、削除とリネームの確認、ADR の棄却理由、比例性、advisor の禁止）を含む (4) tests/forge/agent-review/test_agent_review_contract.py のうち reviewer.md を検査する 3 テスト（test_reviewer_role_prohibits_mutation_and_delegation・test_reviewer_keeps_common_reply_contract・test_reviewer_states_where_the_severity_marker_goes）を直す。禁止条文（他の Agent または Skill を起動しない・advisor ツールを呼ばない・外部サービスへ書き込まない・修正、commit、push を行わない・実装指示ではなく常にレビュー依頼）は新しい reviewer.md にも残すので、その検査は維持する。「ファイルを作成、編集、削除しない」「成果物を変更し得るコマンドを実行しない」は、reviewer が所見を書く script を呼ぶ新仕様に合わせた文言に改め、検査も同じに直す。REVIEW_RESULT 宣言と重大度マーカーを要求する検査は、新仕様の reviewer が severity を持たず（DM-302）script で書き出すので削除する。tests/forge/agents/test_agent_frontmatter.py が固定する reviewer の frontmatter（tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）は保つ (5) forge 内蔵文書の索引を更新する（update-forge-toc）。",
+      "acceptance_criteria": [
+        "DES-084 §7 の契約テスト（reviewer.md の script の呼び方がラッパーの実際の引数と一致する、reviewer.md に evaluator_* と body_* が現れない、review_target_types.md が全 target 種別を持つ、reviewer.md が review_target_types.md を読む指示を持つ）が通る",
+        "reviewer.md が REQ-027 FNC-301 の項目をすべて持つ",
+        "戦略書「移し替え」の各項目が reviewer.md か review_target_types.md に存在するか、不要とした理由が記録されている",
+        "reviewer.md に REVIEW_RESULT 宣言を要求する記述が残っていない",
+        "reviewer_* のラッパーで評価を書けない",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "tests/forge/agents/test_agent_frontmatter.py が通る（reviewer の tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）",
+        "test_agent_review_contract.py の reviewer 関係 3 テストが新しい契約に直され、REVIEW_RESULT 宣言と重大度マーカーを要求する検査が残っていない",
+        "review_target_types.md の追加後に update-forge-toc を実行し、tests/forge/doc_structure/test_forge_toc_freshness.py が通る"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-027_reviewer.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "plugins/forge/agents/reviewer.md",
+        "tests/forge/agent-review/test_agent_review_contract.py",
+        "docs/rules/claude_code_authoring_guide.md",
+        "docs/rules/forge_document_type_roles.md",
+        "docs/rules/forge_doc_access_principle.md",
+        "tests/forge/agents/test_agent_frontmatter.py",
+        "tests/forge/doc_structure/test_forge_toc_freshness.py",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-006",
+      "title": "本物の reviewer で先行確認する",
+      "priority": 78,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [
+        "TASK-005"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "戦略書フェーズ 1 の先行確認。コードは書かない。TASK-005 で作った reviewer を、小さな対象（paths のファイル 1 つ）で実際に起動し、次の 2 点を確かめる。(1) permissionMode: plan のまま Bash で reviewer_add_finding と reviewer_finish が実際に書き込めるか (2) agent 定義の中で ${CLAUDE_PROJECT_DIR} が置換されるか。公式ドキュメントで確かめきれない事項は推測で補わず、実際に動かして観測する。どちらかが失敗したら、先へ進まず作業を止めて報告する。",
+      "acceptance_criteria": [
+        "reviewer_add_finding が review_result.json に所見を書き込んだ（ファイルの存在と内容で判定）",
+        "reviewer_finish が exit に \"0\" を書き、resolve_review_path.py が findings のパスを返す",
+        "agent 定義内の ${CLAUDE_PROJECT_DIR} が実パスに置換されていることを、実行結果で確認した",
+        "確認の結果（成功または失敗とその事実）が作業報告に記載されている。失敗した場合は後続のタスクへ進まず報告している",
+        "permissionMode: plan のままでは書き込めない場合は、frontmatter を変えずに作業を止めて報告している（tests/forge/agents/test_agent_frontmatter.py が固定している値を変える設計判断になるため）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/rules/claude_code_reference.md",
+        "docs/rules/claude_code_authoring_guide.md",
+        "tests/forge/agents/test_agent_frontmatter.py"
+      ]
+    },
+    {
+      "task_id": "TASK-007",
+      "title": "フェーズ 1 の全体確認",
+      "priority": 75,
+      "status": "pending",
+      "design_id": "DES-084",
+      "depends_on": [
+        "TASK-006"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "TASK-001〜006 の成果を通しで確認する。DES-084 §7 の単体・契約・統合テスト（targets の 3 形で、review_id の生成から依頼の公開、パスによる直接読み出し、所見の書き出しと封緘まで。target_unreadable と書き出さずに終えた場合に resolve_review_path.py が失敗すること）を実行して通す。テストが不足していれば足す。",
+      "acceptance_criteria": [
+        "DES-084 §7 の統合テスト 3 項目に対応するテストが存在し、通る",
+        "python3 -m unittest discover -s tests -p 'test_*.py' が全件通る",
+        "dprint check が通る"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-008",
+      "title": "append_result.py / seal_result.py / resolve_review_path.py の evaluations と inputs 対応",
+      "priority": 70,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-007"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-083 §6.2〜§6.4 に従い、TASK-002・003 で作った script に評価の種別を足す。(1) append_result.py --kind evaluations（--new による新規指摘の採番、引く番号の実在、location の必須・禁止、valid のときの confidence と fix_confident、根拠が空の拒否）(2) seal_result.py --kind evaluations（全所見が引かれていなければ失敗して番号をすべて返す。exit は \"0\" だけ）(3) resolve_review_path.py の evaluations と inputs。単体テストを足す。",
+      "acceptance_criteria": [
+        "DES-083 §6.2 のエラー表の各条件が、1 つ 1 つ終了コード 1 で拒まれ、何も書かれない",
+        "引かれていない所見が残るとき seal_result.py が失敗し、その finding_id をすべて errors に入れる",
+        "evaluator が前ラウンドで採った番号を含めて finding_id が連番になる",
+        "resolve_review_path.py --kind inputs は、片方でも失敗すれば失敗し、両方の理由を errors に入れる",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/requirements/REQ-026_evaluator_perspective.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-009",
+      "title": "count_actionable.py・advance_round.py・delete_review.py と単体テストを作る",
+      "priority": 65,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-008"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-083 §6.5〜§6.7 の本体専用 script 3 本を作る。(1) count_actionable.py: 評価の結果が正常に封緘されていることを確かめ、valid と flawed_premise を数える (2) advance_round.py: 所見と評価がともに正常に封緘されていなければ失敗し、次のラウンドの置き場を作る (3) delete_review.py: <review_id>/ をディレクトリごと削除し、置き場が無くても成功する。",
+      "acceptance_criteria": [
+        "DES-083 §7 の count_actionable / advance_round / delete_review の単体テストがすべて通る",
+        "count_actionable.py は valid と flawed_premise だけを数え、invalid・misunderstanding・out_of_scope は数えない",
+        "advance_round.py は封緘されていない結果があると失敗し、次のラウンドの置き場が既にあれば失敗する",
+        "delete_review.py の実行後に <review_id>/ が存在しない",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "docs/rules/script_error_output_rules.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-010",
+      "title": "evaluator のラッパーと新 evaluator.md と契約テストを作る",
+      "priority": 65,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-008"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "(1) evaluator_resolve_inputs / evaluator_add_evaluation / evaluator_finish の 3 本（DES-083 §6.1）(2) plugins/forge/agents/evaluator.md を削除して新規作成する（パスは変えない）。REQ-026 FNC-208 の項目、FNC-201 の 5 つのメタ観点、disposition の 5 値、reason の書き方（DES-083 §4.1 の各場面）、severity と確信度の付け方、新規指摘（--new）、確定してから書き出すこと、書き終えの手順を含む (3) tests/forge/agent-review/test_agent_review_contract.py の test_evaluator_role_prohibits_mutation_and_delegation を直す。禁止条文のうち新仕様でも残るもの（他の Agent または Skill を起動しない・advisor ツールを呼ばない・外部サービスへ書き込まない・修正、commit、push を行わない）の検査は維持し、「ファイルを作成、編集、削除しない」「成果物を変更し得るコマンドを実行しない」は、evaluator が評価を書く script を呼ぶ新仕様に合わせた文言に改めて、検査も同じに直す。tests/forge/agents/test_agent_frontmatter.py が固定する evaluator の frontmatter（tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）は保つ。",
+      "acceptance_criteria": [
+        "DES-083 §7 の契約テスト（evaluator.md の script の呼び方がラッパーの実際の引数と一致する、evaluator.md に reviewer_* と body_* が現れない、review_target_types.md を読む指示を持つ、REQ-026 FNC-208 の項目・5 つのメタ観点・disposition の 5 値・reason の書き方を持つ）が通る",
+        "evaluator_* のラッパーで所見を書けない",
+        "evaluator.md に、所見配列を依頼に載せる旧い形と、最終応答の JSON を返す旧い形の記述が残っていない",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）",
+        "tests/forge/agents/test_agent_frontmatter.py が通る（evaluator の tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/requirements/REQ-026_evaluator_perspective.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "plugins/forge/agents/evaluator.md",
+        "tests/forge/agent-review/test_agent_review_contract.py",
+        "docs/rules/claude_code_authoring_guide.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py",
+        "tests/forge/agents/test_agent_frontmatter.py"
+      ]
+    },
+    {
+      "task_id": "TASK-011",
+      "title": "本体のラッパー body_resolve_* を作る",
+      "priority": 65,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-008"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "DES-083 §6.8 の body_resolve_findings.py と body_resolve_evaluations.py を作る。resolve_review_path.py の --kind を固定して呼ぶだけで、標準出力と終了コードをそのまま返す。テストを足す。",
+      "acceptance_criteria": [
+        "body_resolve_findings が resolve_review_path.py --kind findings と同じ出力と終了コードを返す",
+        "body_resolve_evaluations が --kind evaluations と同じ出力と終了コードを返す",
+        "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
+        "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "tests/common/test_plugin_integrity.py",
+        "tests/common/test_test_discovery.py"
+      ]
+    },
+    {
+      "task_id": "TASK-012",
+      "title": "reviewer から evaluator までを 1 ラウンド手動で通す",
+      "priority": 60,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-009",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "コードは書かない。本物の reviewer と evaluator を、小さな対象で 1 ラウンド通す。さらに第 2 ラウンドへ進めて finding_id が連番になることを確かめる。evaluator が全所見を引かないまま evaluator_finish を呼んだときに失敗して番号が返り、足してから書き終えられることを確かめる。",
+      "acceptance_criteria": [
+        "reviewer の所見が evaluator の評価に引かれ、resolve_review_path.py が evaluations のパスを返す",
+        "第 2 ラウンドの finding_id が、第 1 ラウンドの最大値の次から始まる",
+        "引き残しで evaluator_finish が失敗し、引き残した番号が返る。評価を足した後は書き終えられる",
+        "確認の結果が作業報告に記載されている。失敗した場合は後続のタスクへ進まず報告している"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md"
+      ]
+    },
+    {
+      "task_id": "TASK-013",
+      "title": "本体 SKILL.md を新しい仕組みに書き換える（位置引数の廃止を含む）",
+      "priority": 50,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-012"
+      ],
+      "group_id": "GROUP-001 (1/4)",
+      "build_check": "skip",
+      "description": "plugins/forge/skills/review/SKILL.md の Step 1.5〜8 を、DES-084 §4.1 と DES-083 §4.2 に従って書き換える。(1) resolve_review_backend.py で retains_context を得る (2) 依頼の値をそろえ、focus / scope を .claude/.temp/ に書き、相対パスの対象と references に ${CLAUDE_PROJECT_DIR}/ を前置して publish_request.py に渡す (3) reviewer と evaluator を review_id と round_number だけで起動する (4) body_resolve_* で所見と評価のパスを得て直接読み、吟味する（disposition などの値にそのまま従わない。flawed_premise は常に提示）(5) count_actionable.py の件数を材料に終端を判断する (6) advance_round.py と delete_review.py。位置引数（code|design|...）を廃止し、渡されたら廃止を明示してエラー終了する。--secrets の記述には触れない（Issue #62 の範囲）。",
+      "acceptance_criteria": [
+        "SKILL.md に旧い script（build_review_request.py・parse_findings.py・parse_evaluation.py・combine_findings_and_evaluations.py）の呼び出しが残っていない（--secrets 節を除く）",
+        "位置引数が渡された場合に、廃止を明示してエラー終了する旨が SKILL.md に書かれている",
+        "DES-084 §7 の契約テスト（本体が disposition などの値にそのまま従わず内容を吟味してから修正・ドロップ・終端を決める指示を持つ）が通る",
+        "SKILL.md の引数解釈結果の定型出力が、廃止した位置引数を含んでいない",
+        "SKILL.md を検査する横断テスト（test_plugin_integrity の /plugin:skill 参照、test_agent_allowedtools_consistency、test_skill_allowedtools_consistency、test_slash_command_launch_context の baseline 43 件以下、test_subagent_term_usage、test_changed_lines_policy）が通る。追加した行に旧 `/forge:review <種別> <対象>` 構文を書かない。追加した `/forge:xxx` の行は、近傍 5 行以内に起動経路の語（Skill ツール等）か、25 行以内にユーザー入力例の語（使い方・Example 等）を置く。本文に Agent ツール・/forge:xxx の呼び出しを書くなら allowed-tools に Agent・Skill を残す"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/requirements/REQ-029_review_exchange.md",
+        "plugins/forge/skills/review/SKILL.md",
+        "docs/rules/claude_code_authoring_guide.md",
+        "tests/forge/subagent/test_changed_lines_policy.py",
+        "tests/forge/subagent/test_agent_allowedtools_consistency.py",
+        "tests/forge/subagent/test_skill_allowedtools_consistency.py",
+        "tests/forge/subagent/test_slash_command_launch_context.py"
+      ]
+    },
+    {
+      "task_id": "TASK-014",
+      "title": "agent-review の縮小・consult の暫定措置・split_by_location.py の修正",
+      "priority": 48,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-013"
+      ],
+      "group_id": "GROUP-001 (2/4)",
+      "build_check": "skip",
+      "description": "(1) plugins/forge/skills/agent-review/SKILL.md を可用性検査だけに縮小する（ラウンド実行と終了通知を外し、可用性検査の条件を新 reviewer に合わせる。REVIEW_RESULT 宣言の要求を外す）。tests/forge/agent-review/test_agent_review_contract.py の agent-review/SKILL.md を検査するテスト（allowed-tools・parse_findings.py のパス・ラウンド実行・ワイヤヘッダ・retains_context の各検査）を、可用性検査だけの契約に直す。SharedParserIntegrationTest は parse_findings.py ごと TASK-016 で削除する (2) plugins/forge/skills/consult/SKILL.md を DES-083 §4.3 の暫定措置にする（agenda に記録せず、状態をコンテキストに持つ）(3) split_by_location.py を新しい位置の形（文字列配列、位置未確定だけを要素とする形）に合わせて直し、テストを直す。",
+      "acceptance_criteria": [
+        "agent-review/SKILL.md にラウンド実行・終了通知・REVIEW_RESULT 宣言の記述が残っていない",
+        "resolve_review_backend.py の候補名と agent-review の SKILL 名（forge:agent-review）の対応が保たれている",
+        "consult/SKILL.md が agenda_wrapper.py を呼ぶ記述を持たない",
+        "split_by_location.py が、位置未確定だけを要素とする配列を unlocated に分ける。対応するテストが通る",
+        "SKILL.md を検査する横断テスト（test_plugin_integrity の /plugin:skill 参照、test_agent_allowedtools_consistency、test_skill_allowedtools_consistency、test_slash_command_launch_context の baseline 43 件以下、test_subagent_term_usage、test_changed_lines_policy）が通る。追加した行に旧 `/forge:review <種別> <対象>` 構文を書かない。追加した `/forge:xxx` の行は、近傍 5 行以内に起動経路の語（Skill ツール等）か、25 行以内にユーザー入力例の語（使い方・Example 等）を置く。本文に Agent ツール・/forge:xxx の呼び出しを書くなら allowed-tools に Agent・Skill を残す",
+        "test_agent_review_contract.py の agent-review/SKILL.md 関係のテストが、可用性検査だけの契約に直され、ラウンド実行・終了通知・ワイヤヘッダの検査が残っていない"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "plugins/forge/skills/agent-review/SKILL.md",
+        "plugins/forge/skills/consult/SKILL.md",
+        "plugins/forge/skills/review/scripts/split_by_location.py",
+        "tests/forge/subagent/test_changed_lines_policy.py",
+        "tests/forge/subagent/test_agent_allowedtools_consistency.py",
+        "tests/forge/subagent/test_skill_allowedtools_consistency.py",
+        "tests/forge/subagent/test_slash_command_launch_context.py",
+        "tests/forge/agent-review/test_agent_review_contract.py"
+      ]
+    },
+    {
+      "task_id": "TASK-015",
+      "title": "位置引数を渡している呼び出し元と利用例を直す",
+      "priority": 46,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-013"
+      ],
+      "group_id": "GROUP-001 (3/4)",
+      "build_check": "skip",
+      "description": "/forge:review に位置引数（code|design|requirement|plan|uxui）を渡している箇所から、位置引数を取り除く。対象は plugins/anvil/skills/impl-issue/SKILL.md、plugins/forge/skills/{help,start-design,start-implement,start-plan,start-uxui-design}/SKILL.md、plugins/forge/skills/start-requirements/docs/ の 3 文書、plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md、README.md、docs/readme/ の利用例。直す前に grep で全出現箇所を列挙し、直した後に同じ検索で 0 件を確かめる（検索語と範囲を作業報告に残す）。plugins/forge/skills/*/docs/ の文書を直すので、内蔵文書の索引を更新する（update-forge-toc）。",
+      "acceptance_criteria": [
+        "「/forge:review code」「/forge:review design」「/forge:review requirement」「/forge:review plan」「/forge:review uxui」に一致する記述が plugins/・README.md・docs/readme/ に残っていない",
+        "直した箇所の対象軸（--files・--dirs・--branch・--diff）と --auto の指定が変わっていない",
+        "検索語と範囲が作業報告に記載されている",
+        "SKILL.md を検査する横断テスト（test_plugin_integrity の /plugin:skill 参照、test_agent_allowedtools_consistency、test_skill_allowedtools_consistency、test_slash_command_launch_context の baseline 43 件以下、test_subagent_term_usage、test_changed_lines_policy）が通る。追加した行に旧 `/forge:review <種別> <対象>` 構文を書かない。追加した `/forge:xxx` の行は、近傍 5 行以内に起動経路の語（Skill ツール等）か、25 行以内にユーザー入力例の語（使い方・Example 等）を置く。本文に Agent ツール・/forge:xxx の呼び出しを書くなら allowed-tools に Agent・Skill を残す",
+        "tests/forge/doc_structure/test_forge_toc_freshness.py が通る"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "plugins/forge/skills/review/SKILL.md",
+        "tests/forge/subagent/test_changed_lines_policy.py",
+        "tests/forge/subagent/test_agent_allowedtools_consistency.py",
+        "tests/forge/subagent/test_skill_allowedtools_consistency.py",
+        "tests/forge/subagent/test_slash_command_launch_context.py",
+        "tests/forge/doc_structure/test_forge_toc_freshness.py"
+      ]
+    },
+    {
+      "task_id": "TASK-016",
+      "title": "旧実装・旧テスト・テンプレートを削除し、全体を検証する",
+      "priority": 44,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-014",
+        "TASK-015"
+      ],
+      "group_id": "GROUP-001 (4/4)",
+      "build_check": "on_group_complete",
+      "description": "削除: plugins/forge/skills/review/templates/ のテンプレート 7 本（--secrets 用の secrets_review_request_template.md は Issue #62 の範囲なので残す）、build_review_request.py（ファイルごと。--secrets は #62 のマージまで動かないが許容する。戦略書 決定事項 1）、parse_findings.py、parse_evaluation.py、combine_findings_and_evaluations.py、およびそれらのテスト。tests/forge/agenda/test_agenda_integration.py の _combined_stdin は結合 script の出力（status と combined を持つ JSON）を作っている。結合 script を import せず、同じ形の固定の辞書に置き換える（agenda の機構と他のテストは変えない）。tests/forge/agent-review/test_agent_review_contract.py の SharedParserIntegrationTest は parse_findings.py と一緒に削除する。tests/forge/review/test_resolve_targets.py の docstring が、削除するテスト（test_build_review_request.DirsScopeTest）を指す箇所を直す。配布物の文書で古くなる記述（help・start-* の SKILL、review_priorities_spec.md、forge_anti_patterns.md、additive_development_spec.md の、これらの script を指す記述）を直し、内蔵文書の索引を更新する。#62 のブランチ feature/62-feature-secret-linter と同じファイルを触る箇所を git diff で洗い出し、担当者へ共有する内容を作業報告に載せる。",
+      "acceptance_criteria": [
+        "削除した script・テンプレートの名前、別名、形式の呼び名を plugins/・tests/・docs/ で検索して、残りが 0 件（検索語と範囲を作業報告に記載）。ただし --secrets に関する資産（scan_secrets.py とそのテスト、review_criteria_secrets.md、secrets_review_request_template.md）の中の言及は、Issue #62 の範囲として残す",
+        "tests/forge/agenda/test_agenda_integration.py が結合 script を import せず、通る",
+        "--secrets に関する記述と資産（SKILL.md の --secrets 節、scan_secrets.py、review_criteria_secrets.md、sensitive_information_spec.md のマスク規定）を変更していない",
+        "--diff・--files・--dirs・--branch の各対象軸と --interactive / --auto で、小さな対象に対して /forge:review を実際に通せた",
+        "終端の 3 経路（対応を要するものが尽きる・利用者が終える・agent 失敗で止まる）で delete_review.py が走り、保持物が消える",
+        "#62 のブランチと同じファイルを触る箇所の一覧が作業報告に記載されている",
+        "python3 -m unittest discover -s tests -p 'test_*.py' が全件通り、dprint check が通る",
+        "test_agent_review_contract.py に parse_findings.py を呼ぶテストが残っていない"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "docs/rules/implementation_guidelines.md",
+        "tests/forge/agenda/test_agenda_integration.py",
+        "tests/forge/agent-review/test_agent_review_contract.py",
+        "tests/forge/review/test_resolve_targets.py"
+      ]
+    }
+  ]
+}
