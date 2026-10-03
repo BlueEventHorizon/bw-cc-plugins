@@ -49,6 +49,10 @@ tests/
 
 命名規則: `test_{module}.py`（例: `test_session_manager.py`）
 
+### AI の判断を試すテスト
+
+Agent・SKILL の判断（AI の出力）を試すテストは、`ai_tests/` に Markdown で置く。判定が揺れ、費用もかかるため、CI のゲートの対象外とし、手動で実行する。配置は `tests/` と同じく、プラグイン名・名前で分類する（例: `ai_tests/forge/adr-writer/`）。
+
 ### テスト実行
 
 ```bash
