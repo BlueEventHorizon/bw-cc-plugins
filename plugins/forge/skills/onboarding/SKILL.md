@@ -16,9 +16,8 @@ user-invocable: true
 **NEVER skip.** 下記を全件 Read し、深く理解する。**CLAUDE.md へ転記済みでも毎回読む**（転記されるのは規範の要旨であり全文ではないため、転記は読むことの代替にならない）。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md` — 文書を書く・直すときの記述スタイル
-- `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` — ADR を直接起票するときの書式
 - `${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md` — 設計書の保守と歴史的記録の扱い
-- `${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md` — ADR に何を書き何を書かないか、可変性と失効の扱い
+- `${CLAUDE_PLUGIN_ROOT}/docs/adr_usage_spec.md` — ADR を読むときの義務（ADR の作成は `/forge:write-adr` に依頼する）
 - `${CLAUDE_PLUGIN_ROOT}/docs/forge_anti_patterns.md` — 実装・文書で踏んではならないアンチパターン
 - `${CLAUDE_PLUGIN_ROOT}/docs/sensitive_information_spec.md` — リポジトリに含めてはならない情報
 - `${CLAUDE_PLUGIN_ROOT}/docs/scope_proportionality_spec.md` — 比例性の原則（過剰設計の抑止）

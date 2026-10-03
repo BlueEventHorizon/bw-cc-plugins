@@ -97,8 +97,6 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`** — 設計書テンプレート
 - **`${CLAUDE_PLUGIN_ROOT}/docs/design_principles_spec.md`** — 設計原則・作成ガイドライン
-- **`${CLAUDE_PLUGIN_ROOT}/docs/adr_principles_spec.md`** — ADR に何を書き何を書かないか（ADR を作成する場合）
-- **`${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md`** — ADR の書式・テンプレート・失効マーカーの記法（ADR を作成する場合）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md`** — 要件・設計の境界ガイド
 - **`${CLAUDE_PLUGIN_ROOT}/docs/spec_priorities_spec.md`** — 要件・設計で優先する価値観（構造品質の定量化禁止など）
 - **`${CLAUDE_PLUGIN_ROOT}/docs/document_style_guide.md`** — 文書スタイル指針（タグ・見出し・参照記法）
@@ -229,14 +227,6 @@ python3 "$SCAN_SCRIPT" DES --share-prefixes ADR,DES
 
 JSON 出力の `next_id` をファイル名・設計 ID として使用する。`duplicates` が空でない場合は警告を表示する（`duplicates` には「異なるファイルが同じ ID / 共有番号を主張している」実際の衝突のみが報告される。同一履歴由来の複数ブランチ出現はノイズとして除外済みのため、空でなければ必ずユーザーに提示する）。
 
-**ADR（アーキテクチャ決定記録）を作成する場合**: 設計判断の根拠を ADR として新規作成する際も、ADR の ID は手動で決定せず、必ず `next-spec-id` で採番する（プレフィックスは `ADR`）。手動採番は並行ブランチでの番号衝突（同一 `ADR-NNN` が別内容で重複）の原因になる。ADR と DES は同一ディレクトリで通し番号を共有するため、必ず `--share-prefixes ADR,DES` を付与する:
-
-```bash
-python3 "$SCAN_SCRIPT" ADR --share-prefixes ADR,DES
-```
-
-ADR は設計書と同じディレクトリに配置するため、`.doc_structure.yaml` に ADR 専用ディレクトリを定義しなくても既存 ADR が git スキャンで検出される（ID 体系は `${CLAUDE_PLUGIN_ROOT}/docs/adr_format.md` を参照）。
-
 ### 3.3 設計書の作成
 
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
@@ -254,9 +244,9 @@ ADR は設計書と同じディレクトリに配置するため、`.doc_structu
 1. **要件へ戻せる場合**: 要件定義書への追記内容をユーザーに提示し、**承認を得てから**追記する。追加開発なら `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 の判定を行い、差分 feature に該当するなら差分側の要件定義書へ書く
 2. **要件へ戻せない場合**: 要件へ戻せないものとは、ユーザーマニュアルに書く内容ではなく、How の帰結としてのみ生じる必要（実装手段が要求する中間形式・受け渡し経路など）である。この場合に限り、内容と理由をユーザーに説明して承認を得たうえで設計書に書き、**承認を ADR に記録して設計書の当該節からリンクする**
 
-記録の無い承認は承認として扱われない（`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` §6）。ADR の ID は 3.2 の手順で採番する。
+記録の無い承認は承認として扱われない（`${CLAUDE_PLUGIN_ROOT}/docs/spec_design_boundary_spec.md` §6）。
 
-この ADR は `adr_principles_spec.md`「書く対象・書かない対象」の 2 条件を満たす。要件に無い以上、その設計を削る提案が将来出る見込みがあり（条件 1）、それが誤りであることは仕様を見ても分からない（条件 2）ためである。
+ADR の作成は、Skill ツールで `/forge:write-adr approval-record {feature} --defer-finish` を起動して依頼する。渡す内容は、決定の内容、要件へ戻せない理由、ユーザーの承認の発言（そのまま）である。ADR の書式・採番・記載先は ADR ライターが担うため、本スキルは扱わない。作成された ADR ファイルのパス（出力先の ADR ファイル）を、設計書の当該節からリンクする。ADR ファイルは Phase 4 のレビュー対象に含める。
 
 ---
 

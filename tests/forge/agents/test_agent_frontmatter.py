@@ -15,6 +15,7 @@ REQ-006 / DES-032 で確定した「fork 型 SKILL 全廃と Agent 起動への�
    - evaluator: Read, Grep, Glob, Bash（read-only、reviewer と同じ独立調査能力を持つ）
    - rules-query-worker: Read, Grep, Glob（read-only、内蔵 ToC と文書の Read だけで完結するため Bash を持たない）
    - plan-strategist: Read, Grep, Glob, Skill, Bash, Write, Edit, Agent, AskUserQuestion（既存の仕様書・ルールを query スキルで検索するため Skill、受け渡しの script を呼ぶため Bash、戦略書を書くため Write / Edit を持つ。query スキルは継承型で plan-strategist 自身の context で実行され、backend によっては検索用 Agent の起動や索引整備の確認を求めるため Agent / AskUserQuestion を持つ。書いてよいのは戦略書 1 ファイルだけ、Agent / AskUserQuestion は query スキルの手順が指示する場面でだけ使うという制約は agent 定義が持つ）
+   - adr-writer: Read, Grep, Glob, Bash, Write, Edit（仕様・ルール・コードを読んで吟味するため Read/Grep/Glob、受け渡しの script を呼ぶため Bash、ADR ファイルを書くため Write / Edit を持つ。Agent / Skill / AskUserQuestion は持たず、利用者に質問しない。書いてよいのは依頼の記載先の ADR ファイルだけという制約は agent 定義が持つ）
    - fixer: 未実装（forge は fixer を分離しない。修正の実施は review 本体が直接担う）
 4. `name` がファイル名 (拡張子除く) と一致すること
 
@@ -43,6 +44,7 @@ EXPECTED_TOOLS: dict[str, frozenset[str]] = {
     'plan-strategist': frozenset(
         {'Read', 'Grep', 'Glob', 'Skill', 'Bash', 'Write', 'Edit', 'Agent', 'AskUserQuestion'}
     ),
+    'adr-writer': frozenset({'Read', 'Grep', 'Glob', 'Bash', 'Write', 'Edit'}),
 }
 
 REQUIRED_KEYS = ('name', 'description', 'tools', 'model')
@@ -194,6 +196,18 @@ class TestAgentFrontmatter(unittest.TestCase):
         self.assertTrue({'Edit', 'Write', 'Agent', 'Bash'}.isdisjoint(tools))
         self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
         self.assertEqual(fm.get('permissionMode'), 'plan')
+
+    def test_adr_writer_cannot_ask_or_launch_and_inherits_model(self):
+        """ADR ライターは書き込む Agent だが、利用者に質問せず、他の Agent・Skill を起動しない。"""
+        writer = AGENTS_DIR / 'adr-writer.md'
+        self.assertTrue(writer.is_file())
+        fm = _parse_frontmatter_keys(_extract_frontmatter(writer))
+        tools = _parse_tools(fm['tools'])
+        self.assertEqual(
+            tools, frozenset({'Read', 'Grep', 'Glob', 'Bash', 'Write', 'Edit'})
+        )
+        self.assertTrue({'Agent', 'Skill', 'AskUserQuestion'}.isdisjoint(tools))
+        self.assertEqual(fm['model'].strip('"').strip("'"), 'inherit')
 
 
 if __name__ == '__main__':

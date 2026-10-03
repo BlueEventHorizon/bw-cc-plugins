@@ -81,7 +81,7 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ### プロジェクト文書
 
-- **設計文書は `docs/specs/**/{requirements,design}/` に置き、`REQ-` / `DES-` / `ADR-` で命名する**（plan モードの成果も同じ）
+- **設計文書は `docs/specs/**/{requirements,design,adr}/` に置き、`REQ-` / `DES-` / `ADR-` で命名する**（plan モードの成果も同じ）
 
 ### 作業の進め方
 

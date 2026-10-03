@@ -125,7 +125,7 @@ forge 内蔵ルール（`/forge:query-forge-rules` → `design_principles_spec.m
 
 本リポジトリ固有の補足:
 
-- ADR の配置先: `docs/specs/**/design/ADR-{NNN}_{topic}.md`（設計書と同じディレクトリ。feature が入れ子になる場合も同じ）
+- ADR の配置先: `docs/specs/<feature>/adr/ADR-{NNN}_{feature}.md`（feature ごとに 1 ファイル。複数のコンポーネントに跨る決定は feature `common`）。作成・更新は `/forge:write-adr` に依頼する
 
 ---
 

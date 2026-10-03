@@ -293,18 +293,15 @@ Issue へ記載する形式は [`assets/TEMPLATE.md`](assets/TEMPLATE.md) に従
 
 `Skill` ツールで `/anvil:commit` を起動する。自動 commit はしない。
 
-commit メッセージには Issue 参照 `Closes #<N>` を含める。
-
 ### 12-2: PR 作成
 
 `Skill` ツールで `/anvil:create-pr <base-branch>` を起動する。
 
 > [!WARNING]
-> `/anvil:create-pr` は Issue 番号を引数で受け取る経路がない。PR 本文に `Closes #<N>` を含めるため、本スキルは次を必ず行う:
+> PR 本文に `Closes #<N>` を含めるため、本スキルは次を必ず行う:
 >
-> 1. commit メッセージに `Closes #<N>` を含める（12-1 で担保）
-> 2. create-pr の完了後、生成された PR 本文に `Closes #<N>` が含まれているか確認し、無ければ `gh pr edit <PR番号> --body-file` で追記する
-> 3. PR 作成に失敗した場合は `/anvil:create-pr` を直接再実行せず、`/anvil:impl-issue #<N>` を再実行する。Phase 0-2 の再開判定が実装済みを検知し、「Phase 12 から再開する」を選べば Phase 1〜11 を再実行せずここへ戻る
+> 1. create-pr の完了後、生成された PR 本文に `Closes #<N>` が含まれているか確認し、無ければ `gh pr edit <PR番号> --body-file` で追記する
+> 2. PR 作成に失敗した場合は `/anvil:create-pr` を直接再実行せず、`/anvil:impl-issue #<N>` を再実行する。Phase 0-2 の再開判定が実装済みを検知し、「Phase 12 から再開する」を選べば Phase 1〜11 を再実行せずここへ戻る
 
 PR 本文には以下を含める:
 

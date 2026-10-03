@@ -4,7 +4,7 @@
 
 ## 配置と命名
 
-- **設計文書は `docs/specs/**/{requirements,design}/` に置き、`REQ-` / `DES-` / `ADR-` で命名する**（plan モードの成果も同じ）
+- **設計文書は `docs/specs/**/{requirements,design,adr}/` に置き、`REQ-` / `DES-` / `ADR-` で命名する**（plan モードの成果も同じ）
 
 ## レビュー
 
