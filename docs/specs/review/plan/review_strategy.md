@@ -43,7 +43,7 @@
 - 所見の自己検証（REQ-013 FNC-1321）: 質問へ分解して独立に検証し、成立するものだけを書き出す。FNC-310（確定してから書き出す）と整合させる
 - code と uxui で、対応する規約が見当たらなければその事実を所見にする（REQ-013 FNC-1320）
 - 削除とリネームの確認項目（`diff` テンプレートの 3 項目。REQ-027 FNC-306 は「変更の一部」とだけ定める）
-- 現 `reviewer.md` / `evaluator.md` にある ADR の棄却理由の確認、比例性チェックの適用条件、`advisor` ツールの禁止、重大度カタログの特定手順（severity は evaluator だけが付けるので evaluator 側へ寄る）
+- 現 `reviewer.md` / `evaluator.md` にある ADR の棄却理由の確認（文言は写さず、現行の `review_priorities_spec.md` §3.8 に従って書く。§3.8 は ADR を根拠にした場合に `ADR-NNN §N` の記録を求め、失効マーカーの規定を持たない。現 `reviewer.md` の「ADR ID を明記」はこれより古い）、比例性チェックの適用条件、`advisor` ツールの禁止、重大度カタログの特定手順（severity は evaluator だけが付けるので evaluator 側へ寄る）
 
 **方針**: 新仕様の実体は「ID だけを運び、JSON は script が書き、agent は script が返したパスを直接読む」という別の構造であり、既存の「本文を組み立てて運び、自由記述を解釈する」構造とは両立しない。そのため agent 定義・受け渡し・解釈系の script は、既存を直すのではなく置き換える。直して使うのは、設計が既存の契約を変えないと明示している `resolve_review_backend.py`、`resolve_doc_structure.py`、本体の引数解釈・修正フェーズ・consult である。実装は隔離した作業コピー（本 worktree）で行うので、新旧を共存させる互換層は作らない（additive_development_spec §3.2）。
 

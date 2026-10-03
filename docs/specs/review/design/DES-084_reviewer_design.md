@@ -190,17 +190,17 @@ flowchart TB
     A["対象 1 件"] --> B["resolve_doc_structure.py に問う"]
     B --> C{"種別が返るか"}
     C -->|"plan"| D["plan とする"]
-    C -->|"requirement / design"| E["ファイルを読む"]
+    C -->|"requirement / design / adr"| E["ファイルを読む"]
     E --> F{"UI を扱う文書か"}
     F -->|"はい"| G["uxui とする"]
-    F -->|"いいえ"| H["返った種別とする"]
+    F -->|"いいえ"| H["返った種別とする（adr は design とする）"]
     C -->|"返らない"| I["ファイルを読む"]
     I --> J{"ソースコードか"}
     J -->|"はい"| K["code とする"]
     J -->|"いいえ"| L["共通の文書だけで見る"]
 ```
 
-- **`resolve_doc_structure.py` の口:** パスを 1 つ受け取り、`.doc_structure.yaml` の specs の宣言から `design` / `plan` / `requirement` を返す。宣言に合わないパスには、種別を返さない。新設せず既存の script を改修するのは、設定を解釈する箇所を 1 つに保つためである（§6.8）。
+- **`resolve_doc_structure.py` の口:** パスを 1 つ受け取り、`.doc_structure.yaml` の specs の宣言から `design` / `plan` / `requirement` / `adr` を返す（宣言の値をそのまま返す）。宣言に合わないパスには、種別を返さない。`adr` を design として扱うこと（REQ-027 FNC-307）は script ではなく reviewer が行う。script は設定の解釈だけを担い、target 種別への読み替えを持たない。新設せず既存の script を改修するのは、設定を解釈する箇所を 1 つに保つためである（§6.8）。
 - **`exclude` は適用しない:** 既存の `match_path_to_doc_type` は `exclude` を適用しない。`exclude` はファイル収集の範囲を決めるものであり（`resolve_doc_structure.py` のファイル収集）、種別を決めるものではない。本リポジトリの設定は `exclude: [plan]` を持つので、適用すると計画書の種別が決まらない。
 - **uxui は設定に区分を持たない:** UI を扱う文書は requirement または design の置き場にあるので、設定で大分類を得た後にファイルを読んで見分ける。
 - **決まらない対象:** REQ-027 FNC-308 の「全 target 種別に共通」の文書だけで見る。所見にもエラーにもしない。名前だけで target 種別を当てない。
@@ -209,7 +209,7 @@ flowchart TB
 
 判定の手順と、種別ごとに上乗せする観点文書の対応は、`plugins/forge/docs/criteria/review_target_types.md` に置く。`reviewer.md` がこの文書を読む（REQ-027 FNC-307・308）。同じ判定と対応を他の主体も使うので、置き場を 1 つにする。
 
-- **書くもの:** 判定の手順と「種別ごとに上乗せする観点文書」、すべての種別に当てる共通の文書。種別ごとの内蔵規範・プロジェクト固有の規約・突き合わせる対象は、各観点文書が持つので写さない。
+- **書くもの:** 判定の手順（`adr` を design として扱うことを含む）と「種別ごとに上乗せする観点文書」、すべての種別に当てる共通の文書。種別ごとの内蔵規範・プロジェクト固有の規約・突き合わせる対象は、各観点文書が持つので写さない。
 - **観点文書の置き場に置く理由:** 種別を判定する目的が、上乗せする観点文書を選ぶことだからである（[forge_document_type_roles.md](../../../rules/forge_document_type_roles.md)）。
 - **参照の記法:** 内蔵文書は `${CLAUDE_PLUGIN_ROOT}/docs/` 配下の固定パスで直接参照する。プロジェクト固有の文書は依頼の `references` が運ぶ（[forge_doc_access_principle.md](../../../rules/forge_doc_access_principle.md)）。
 
@@ -405,7 +405,7 @@ script は `plugins/forge/scripts/review/` に置く。基本の script が処�
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 入力   | `--match-path PATH`。既存の排他の指定に並べる。`PATH` は絶対パス、またはプロジェクトルートからの相対パス。`--category`（省略すると `specs`）と `--project-root` を使う             |
 | 動作   | `PATH` をプロジェクトルートからの相対パスにし、既存の `match_path_to_doc_type` で `doc_types_map` を引く。`exclude` は適用しない。プロジェクトルートの外のパスには、種別を返さない |
-| 出力   | `{"status": "ok", "category": …, "path": <相対パス>, "doc_type": "design" \| "plan" \| "requirement" \| null}`。宣言に合わないパスは `null`                                        |
+| 出力   | `{"status": "ok", "category": …, "path": <相対パス>, "doc_type": "design" \| "plan" \| "requirement" \| "adr" \| null}`。宣言に合わないパスは `null`                               |
 | エラー | `.doc_structure.yaml` が無い、または不正なときは、既存と同じ（`status: error`、終了コード 1）                                                                                      |
 
 ## 7. テスト設計
