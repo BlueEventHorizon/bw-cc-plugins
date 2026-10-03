@@ -9,8 +9,8 @@ ID 採番手順がスキル・文書に明記されておらず、並行ブラ�
 本テストはこの修正が後退しないことを検証する:
 
 - スクリプト挙動: scan_spec_ids が `ADR` プレフィックスを正しく採番する。
-  ADR を設計ディレクトリ配下に置く限り、ADR 専用ディレクトリが scan 対象になくても
-  既存 ADR を検出できること (「ADR-001〜004 使用済み → ADR-005」を再現)。
+  ADR は feature ごとの adr/ ディレクトリに置かれ、複数の feature にまたがっても
+  既存の ADR ファイルを検出できること (「ADR-001〜004 使用済み → ADR-005」を再現)。
 実行:
   python3 -m unittest tests.forge.scripts.test_adr_id_numbering_guide -v
 """
@@ -42,23 +42,23 @@ class TestADRScanBehavior(unittest.TestCase):
     ):
         """ADR-001〜004 使用済みのとき次は ADR-005 を返す。
 
-        ADR は設計ディレクトリ (specs/design/) 配下に置かれ、専用 adr ディレクトリは
-        scan 対象に含まれない。それでも git スキャンが ADR を検出することを確認する。
+        ADR は feature ごとの adr ディレクトリ (specs/<feature>/adr/) に置かれ、
+        feature が複数あっても git スキャンが ADR ファイルを検出することを確認する。
         """
-        # scan 対象は design ディレクトリのみ (ADR 専用ディレクトリは未定義)
-        mock_dirs.return_value = ["specs/design/"]
+        # scan 対象は design ディレクトリと、feature ごとの adr ディレクトリ
+        mock_dirs.return_value = ["specs/**/design/", "specs/**/adr/"]
         mock_base.return_value = "develop"
         mock_branches.return_value = ["develop"]
 
         def git_side_effect(*args, cwd=None):
             if args[0] == "ls-tree":
-                # 設計書と ADR が同じ design ディレクトリに同居している
+                # 設計書は design ディレクトリ、ADR は feature ごとの adr ディレクトリにある
                 return (
-                    "specs/design/DES-001_a_design.md\n"
-                    "specs/design/ADR-001_b.md\n"
-                    "specs/design/ADR-002_c.md\n"
-                    "specs/design/ADR-003_d.md\n"
-                    "specs/design/ADR-004_e.md"
+                    "specs/a/design/DES-001_a_design.md\n"
+                    "specs/a/adr/ADR-001_a.md\n"
+                    "specs/b/adr/ADR-002_b.md\n"
+                    "specs/c/adr/ADR-003_c.md\n"
+                    "specs/d/adr/ADR-004_d.md"
                 )
             return ""
 
@@ -83,7 +83,7 @@ class TestADRScanBehavior(unittest.TestCase):
         これは実際に起きた衝突 (ブランチ A と B が双方 ADR-003 を作成) を
         採番時に警告できることを保証する。
         """
-        mock_dirs.return_value = ["specs/design/"]
+        mock_dirs.return_value = ["specs/**/adr/"]
         mock_base.return_value = "develop"
         mock_branches.return_value = ["feature/a", "feature/b"]
 
@@ -91,9 +91,9 @@ class TestADRScanBehavior(unittest.TestCase):
             if args[0] == "ls-tree":
                 branch = args[3]
                 if branch == "feature/a":
-                    return "specs/design/ADR-003_github_orchestrator.md"
+                    return "specs/foo/adr/ADR-003_foo.md"
                 if branch == "feature/b":
-                    return "specs/design/ADR-003_notification_state.md"
+                    return "specs/bar/adr/ADR-003_bar.md"
             return ""
 
         mock_git.side_effect = git_side_effect

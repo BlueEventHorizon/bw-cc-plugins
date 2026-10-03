@@ -67,12 +67,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/classify_dirs.py
 
 推奨ディレクトリ（スキャンで検出されなかった場合のみ追加）:
 
-| パス              | doc_type  | 説明                                                      |
-| ----------------- | --------- | --------------------------------------------------------- |
-| `docs/specs/`     | —         | 仕様書ベースディレクトリ（requirements/design/plan の親） |
-| `docs/rules/`     | rule      | 開発ルール・規約                                          |
-| `docs/reference/` | reference | 参考文献・技術調査メモ（今後利用予定）                    |
-| `docs/adr/`       | —         | Architecture Decision Record（今後利用予定）              |
+| パス                 | doc_type  | 説明                                                      |
+| -------------------- | --------- | --------------------------------------------------------- |
+| `docs/specs/`        | —         | 仕様書ベースディレクトリ（requirements/design/plan の親） |
+| `docs/rules/`        | rule      | 開発ルール・規約                                          |
+| `docs/reference/`    | reference | 参考文献・技術調査メモ（今後利用予定）                    |
+| `docs/specs/**/adr/` | adr       | Architecture Decision Record（feature ごとに 1 ファイル） |
 
 > スキャンで類似ディレクトリが検出済みの場合（例: `rules/` が既にある場合に `docs/rules/` は推奨しない）、重複する推奨は追加しない。
 
@@ -100,7 +100,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/classify_dirs.py
 未検出（推奨）:
   4. ☐ docs/specs/**/plan/               — 計画書
   5. ☐ docs/reference/                   — 参考文献（今後利用予定）
-  6. ☐ docs/adr/                         — Architecture Decision Record（今後利用予定）
+  6. ☐ docs/specs/**/adr/                — Architecture Decision Record
 ```
 
 AskUserQuestion を使用して方針を確認する:
@@ -125,14 +125,14 @@ AskUserQuestion を使用して方針を確認する:
   ☐ docs/specs/      — 仕様書ベースディレクトリ（requirements/design/plan の親）
   ☐ docs/rules/      — 開発ルール・規約
   ☐ docs/reference/  — 参考文献（今後利用予定）
-  ☐ docs/adr/        — Architecture Decision Record（今後利用予定）
+  ☐ docs/specs/**/adr/ — Architecture Decision Record（feature ごとに 1 ファイル）
 ```
 
 AskUserQuestion を使用して方針を確認する:
 
 | 選択肢             | 説明                                                           |
 | ------------------ | -------------------------------------------------------------- |
-| 推奨構成を全て作成 | specs/ + rules/ + reference/ + adr/ を .gitkeep 付きで作成     |
+| 推奨構成を全て作成 | specs/ + rules/ + reference/ を .gitkeep 付きで作成            |
 | 選択して作成       | 作成するディレクトリを個別に選択                               |
 | 作成しない         | ディレクトリ作成をスキップ（.doc_structure.yaml も生成しない） |
 | （Other）          | 自分でパスを指定したい等 — 自動提供                            |
@@ -275,6 +275,7 @@ glob パターン（`*` または `**`）を使う場合、root_dirs と doc_typ
 | specs    | requirement | 「何を実現するか」のゴール定義         | ユーザーストーリー、機能要件、非機能要件、ビジネスルール、受入条件                    |
 | specs    | design      | 「どう構成するか」の技術的構造         | アーキテクチャ設計、DB スキーマ設計、画面設計、シーケンス図、状態遷移図               |
 | specs    | plan        | 「どの順で作るか」の作業計画           | タスク分割、実装順序、マイルストーン、スプリント計画、移行計画                        |
+| specs    | adr         | 採らなかった案とその理由の決定記録     | 優れた方式がありそうなのに採らなかった決定（feature ごとに 1 ファイル）               |
 | specs    | api         | 外部インターフェースの契約             | REST エンドポイント定義、リクエスト/レスポンス仕様、OpenAPI/Swagger、GraphQL スキーマ |
 | specs    | reference   | 判断の根拠となる補助文書               | 技術調査メモ、比較検討資料、外部仕様の要約、議事録、用語集                            |
 | specs    | spec        | 上記に該当しない仕様文書（デフォルト） | 分類不明な仕様文書の一時的な受け皿                                                    |

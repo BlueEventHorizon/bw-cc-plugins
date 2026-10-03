@@ -156,7 +156,7 @@ Mermaid 構文リファレンス:
 ### 更新時のルール
 
 - 設計意図（なぜそう変えたか）を記述する。コードの転記は不要
-- ADR の書式は [adr_format.md](adr_format.md)、運用（目的・可変性・失効の扱い・棄却理由の書き方・配置と ID 採番）は [adr_principles_spec.md](adr_principles_spec.md) に従う
+- ADR の書式は [adr_format.md](adr_format.md)、運用（目的・書く対象・吟味の基準・可変性・否決の書き方・配置と ID 採番）は [adr_principles_spec.md](adr_principles_spec.md) に従う
 
 ---
 

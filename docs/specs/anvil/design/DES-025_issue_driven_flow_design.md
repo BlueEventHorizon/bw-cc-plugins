@@ -98,18 +98,18 @@ flowchart LR
 
 **impl-issue**
 
-| Phase | 内容                                                                                               |
-| ----- | -------------------------------------------------------------------------------------------------- |
-| 0     | 0-1 リポジトリ解決と URL 整合、0-2 Issue 取得と再開判定、0-3 ブランチ確認・作成                    |
-| 1     | 実装内容の把握、UI Issue 判定（表。割れたら AskUserQuestion）                                      |
-| 2〜5  | 仕様書 / ルール / 類似 PR（3 件以上）/ 既存コードの調査（修正のため。全件 Read、該当なしを記録）   |
-| 6     | UI Issue のみ: `anvil:impl-ui --stage design`                                                      |
-| 7     | 実装計画策定（スコープ・順序・スコープ外・参考 PR）                                                |
-| 8     | Issue 更新（既存本文取得 → 検証 → 末尾結合 → `gh issue edit --body-file` → 検証）                  |
-| 9     | 実装開始確認（AskUserQuestion）                                                                    |
-| 10    | 実装。UI Issue は `anvil:impl-ui --stage implement`（レビューを含む）、非 UI は TODO 順に実装      |
-| 11    | 非 UI のみ: `/forge:review code --auto`                                                            |
-| 12    | 12-1 `/anvil:commit`（`Closes #N`）、12-2 `/anvil:create-pr`（PR 本文の `Closes #N` を確認・追記） |
+| Phase | 内容                                                                                             |
+| ----- | ------------------------------------------------------------------------------------------------ |
+| 0     | 0-1 リポジトリ解決と URL 整合、0-2 Issue 取得と再開判定、0-3 ブランチ確認・作成                  |
+| 1     | 実装内容の把握、UI Issue 判定（表。割れたら AskUserQuestion）                                    |
+| 2〜5  | 仕様書 / ルール / 類似 PR（3 件以上）/ 既存コードの調査（修正のため。全件 Read、該当なしを記録） |
+| 6     | UI Issue のみ: `anvil:impl-ui --stage design`                                                    |
+| 7     | 実装計画策定（スコープ・順序・スコープ外・参考 PR）                                              |
+| 8     | Issue 更新（既存本文取得 → 検証 → 末尾結合 → `gh issue edit --body-file` → 検証）                |
+| 9     | 実装開始確認（AskUserQuestion）                                                                  |
+| 10    | 実装。UI Issue は `anvil:impl-ui --stage implement`（レビューを含む）、非 UI は TODO 順に実装    |
+| 11    | 非 UI のみ: `/forge:review code --auto`                                                          |
+| 12    | 12-1 `/anvil:commit`、12-2 `/anvil:create-pr`（PR 本文の `Closes #N` を確認・追記）              |
 
 **impl-ui**
 
@@ -235,7 +235,7 @@ sequenceDiagram
     II ->> II: TODO 順に実装
     II ->> RV: Skill ツールで /forge:review code --auto
     RV -->> II: 所見 / 承認
-    II ->> CM: Skill ツールで /anvil:commit（Closes #N）
+    II ->> CM: Skill ツールで /anvil:commit
     II ->> PR: Skill ツールで /anvil:create-pr <base>
     II ->> GH: PR 本文の Closes #N を確認、無ければ gh pr edit
 ```
