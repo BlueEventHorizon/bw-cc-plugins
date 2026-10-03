@@ -89,7 +89,8 @@
       "requirement_id": "REQ-029 FNC-312",
       "title": "本体はレビューを進行させる",
       "task_ids": [
-        "TASK-013"
+        "TASK-013",
+        "TASK-017"
       ],
       "status": "pending"
     },
@@ -117,7 +118,8 @@
       "title": "レビューは対応を要するものが尽きるか、利用者が終えると決めたときに終わる",
       "task_ids": [
         "TASK-009",
-        "TASK-013"
+        "TASK-013",
+        "TASK-017"
       ],
       "status": "pending"
     },
@@ -342,7 +344,8 @@
         "TASK-013",
         "TASK-014",
         "TASK-015",
-        "TASK-016"
+        "TASK-016",
+        "TASK-017"
       ]
     }
   ],
@@ -627,14 +630,15 @@
       ],
       "group_id": null,
       "build_check": "per_task",
-      "description": "(1) evaluator_resolve_inputs / evaluator_add_evaluation / evaluator_finish の 3 本（DES-083 §6.1）(2) plugins/forge/agents/evaluator.md を削除して新規作成する（パスは変えない）。REQ-026 FNC-208 の項目、FNC-201 の 5 つのメタ観点、disposition の 5 値、reason の書き方（DES-083 §4.1 の各場面）、severity と確信度の付け方、新規指摘（--new）、確定してから書き出すこと、書き終えの手順を含む (3) tests/forge/agent-review/test_agent_review_contract.py の test_evaluator_role_prohibits_mutation_and_delegation を直す。禁止条文のうち新仕様でも残るもの（他の Agent または Skill を起動しない・advisor ツールを呼ばない・外部サービスへ書き込まない・修正、commit、push を行わない）の検査は維持し、「ファイルを作成、編集、削除しない」「成果物を変更し得るコマンドを実行しない」は、evaluator が評価を書く script を呼ぶ新仕様に合わせた文言に改めて、検査も同じに直す。tests/forge/agents/test_agent_frontmatter.py が固定する evaluator の frontmatter（tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）は保つ。",
+      "description": "(1) evaluator_resolve_inputs / evaluator_add_evaluation / evaluator_finish の 3 本（DES-083 §6.1）(2) plugins/forge/agents/evaluator.md を削除して新規作成する（パスは変えない）。REQ-026 FNC-208 の項目、FNC-201 の 5 つのメタ観点、disposition の 5 値、reason の書き方（DES-083 §4.1 の各場面）、severity と確信度の付け方、新規指摘（--new）、戦略書「移し替え」のうち evaluator 側へ寄る項目（重大度カタログの特定手順・ADR の棄却理由の確認・比例性チェックの適用条件・advisor ツールの禁止）、確定してから書き出すこと、書き終えの手順を含む (3) tests/forge/agent-review/test_agent_review_contract.py の test_evaluator_role_prohibits_mutation_and_delegation を直す。禁止条文のうち新仕様でも残るもの（他の Agent または Skill を起動しない・advisor ツールを呼ばない・外部サービスへ書き込まない・修正、commit、push を行わない）の検査は維持し、「ファイルを作成、編集、削除しない」「成果物を変更し得るコマンドを実行しない」は、evaluator が評価を書く script を呼ぶ新仕様に合わせた文言に改めて、検査も同じに直す。tests/forge/agents/test_agent_frontmatter.py が固定する evaluator の frontmatter（tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）は保つ。",
       "acceptance_criteria": [
         "DES-083 §7 の契約テスト（evaluator.md の script の呼び方がラッパーの実際の引数と一致する、evaluator.md に reviewer_* と body_* が現れない、review_target_types.md を読む指示を持つ、REQ-026 FNC-208 の項目・5 つのメタ観点・disposition の 5 値・reason の書き方を持つ）が通る",
         "evaluator_* のラッパーで所見を書けない",
         "evaluator.md に、所見配列を依頼に載せる旧い形と、最終応答の JSON を返す旧い形の記述が残っていない",
         "python3 -m unittest discover -s tests -p 'test_*.py' と dprint check が通る",
         "plugins/forge/ 配下の .py の、docstring とコメント以外の文字列に /forge:xxx・/anvil:xxx 形式を書かない。新しく作るテストディレクトリには __init__.py を置く（tests/common/test_plugin_integrity.py と tests/common/test_test_discovery.py が検査する）",
-        "tests/forge/agents/test_agent_frontmatter.py が通る（evaluator の tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）"
+        "tests/forge/agents/test_agent_frontmatter.py が通る（evaluator の tools = Read, Grep, Glob, Bash、model: inherit、permissionMode: plan）",
+        "戦略書「移し替え」のうち evaluator 側へ寄る項目（重大度カタログの特定手順、ADR の棄却理由の確認、比例性チェックの適用条件、advisor ツールの禁止）が evaluator.md に存在する。不要とした項目は、その理由が作業報告に記載されている"
       ],
       "required_reading": [
         "docs/specs/review/plan/review_strategy.md",
@@ -710,8 +714,8 @@
       "depends_on": [
         "TASK-012"
       ],
-      "group_id": "GROUP-001 (1/4)",
-      "build_check": "skip",
+      "group_id": null,
+      "build_check": "per_task",
       "description": "plugins/forge/skills/review/SKILL.md の Step 1.5〜8 を、DES-084 §4.1 と DES-083 §4.2 に従って書き換える。(1) resolve_review_backend.py で retains_context を得る (2) 依頼の値をそろえ、focus / scope を .claude/.temp/ に書き、相対パスの対象と references に ${CLAUDE_PROJECT_DIR}/ を前置して publish_request.py に渡す (3) reviewer と evaluator を review_id と round_number だけで起動する (4) body_resolve_* で所見と評価のパスを得て直接読み、吟味する（disposition などの値にそのまま従わない。flawed_premise は常に提示）(5) count_actionable.py の件数を材料に終端を判断する (6) advance_round.py と delete_review.py。位置引数（code|design|...）を廃止し、渡されたら廃止を明示してエラー終了する。--secrets の記述には触れない（Issue #62 の範囲）。",
       "acceptance_criteria": [
         "SKILL.md に旧い script（build_review_request.py・parse_findings.py・parse_evaluation.py・combine_findings_and_evaluations.py）の呼び出しが残っていない（--secrets 節を除く）",
@@ -742,8 +746,8 @@
       "depends_on": [
         "TASK-013"
       ],
-      "group_id": "GROUP-001 (2/4)",
-      "build_check": "skip",
+      "group_id": null,
+      "build_check": "per_task",
       "description": "(1) plugins/forge/skills/agent-review/SKILL.md を可用性検査だけに縮小する（ラウンド実行と終了通知を外し、可用性検査の条件を新 reviewer に合わせる。REVIEW_RESULT 宣言の要求を外す）。tests/forge/agent-review/test_agent_review_contract.py の agent-review/SKILL.md を検査するテスト（allowed-tools・parse_findings.py のパス・ラウンド実行・ワイヤヘッダ・retains_context の各検査）を、可用性検査だけの契約に直す。SharedParserIntegrationTest は parse_findings.py ごと TASK-016 で削除する (2) plugins/forge/skills/consult/SKILL.md を DES-083 §4.3 の暫定措置にする（agenda に記録せず、状態をコンテキストに持つ）(3) split_by_location.py を新しい位置の形（文字列配列、位置未確定だけを要素とする形）に合わせて直し、テストを直す。",
       "acceptance_criteria": [
         "agent-review/SKILL.md にラウンド実行・終了通知・REVIEW_RESULT 宣言の記述が残っていない",
@@ -751,7 +755,8 @@
         "consult/SKILL.md が agenda_wrapper.py を呼ぶ記述を持たない",
         "split_by_location.py が、位置未確定だけを要素とする配列を unlocated に分ける。対応するテストが通る",
         "SKILL.md を検査する横断テスト（test_plugin_integrity の /plugin:skill 参照、test_agent_allowedtools_consistency、test_skill_allowedtools_consistency、test_slash_command_launch_context の baseline 43 件以下、test_subagent_term_usage、test_changed_lines_policy）が通る。追加した行に旧 `/forge:review <種別> <対象>` 構文を書かない。追加した `/forge:xxx` の行は、近傍 5 行以内に起動経路の語（Skill ツール等）か、25 行以内にユーザー入力例の語（使い方・Example 等）を置く。本文に Agent ツール・/forge:xxx の呼び出しを書くなら allowed-tools に Agent・Skill を残す",
-        "test_agent_review_contract.py の agent-review/SKILL.md 関係のテストが、可用性検査だけの契約に直され、ラウンド実行・終了通知・ワイヤヘッダの検査が残っていない"
+        "test_agent_review_contract.py の agent-review/SKILL.md 関係のテストが、可用性検査だけの契約に直され、ラウンド実行・終了通知・ワイヤヘッダの検査が残っていない",
+        "resolve_review_backend.py の出力の order にある各候補（agent-review）に対して、可用性検査を実際に実行し、available: true が返る（実行結果を作業報告に記載）"
       ],
       "required_reading": [
         "docs/specs/review/plan/review_strategy.md",
@@ -776,8 +781,8 @@
       "depends_on": [
         "TASK-013"
       ],
-      "group_id": "GROUP-001 (3/4)",
-      "build_check": "skip",
+      "group_id": null,
+      "build_check": "per_task",
       "description": "/forge:review に位置引数（code|design|requirement|plan|uxui）を渡している箇所から、位置引数を取り除く。対象は plugins/anvil/skills/impl-issue/SKILL.md、plugins/forge/skills/{help,start-design,start-implement,start-plan,start-uxui-design}/SKILL.md、plugins/forge/skills/start-requirements/docs/ の 3 文書、plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md、README.md、docs/readme/ の利用例。直す前に grep で全出現箇所を列挙し、直した後に同じ検索で 0 件を確かめる（検索語と範囲を作業報告に残す）。plugins/forge/skills/*/docs/ の文書を直すので、内蔵文書の索引を更新する（update-forge-toc）。",
       "acceptance_criteria": [
         "「/forge:review code」「/forge:review design」「/forge:review requirement」「/forge:review plan」「/forge:review uxui」に一致する記述が plugins/・README.md・docs/readme/ に残っていない",
@@ -804,21 +809,19 @@
       "status": "pending",
       "design_id": "DES-083",
       "depends_on": [
-        "TASK-014",
-        "TASK-015"
+        "TASK-015",
+        "TASK-017"
       ],
-      "group_id": "GROUP-001 (4/4)",
-      "build_check": "on_group_complete",
-      "description": "削除: plugins/forge/skills/review/templates/ のテンプレート 7 本（--secrets 用の secrets_review_request_template.md は Issue #62 の範囲なので残す）、build_review_request.py（ファイルごと。--secrets は #62 のマージまで動かないが許容する。戦略書 決定事項 1）、parse_findings.py、parse_evaluation.py、combine_findings_and_evaluations.py、およびそれらのテスト。tests/forge/agenda/test_agenda_integration.py の _combined_stdin は結合 script の出力（status と combined を持つ JSON）を作っている。結合 script を import せず、同じ形の固定の辞書に置き換える（agenda の機構と他のテストは変えない）。tests/forge/agent-review/test_agent_review_contract.py の SharedParserIntegrationTest は parse_findings.py と一緒に削除する。tests/forge/review/test_resolve_targets.py の docstring が、削除するテスト（test_build_review_request.DirsScopeTest）を指す箇所を直す。配布物の文書で古くなる記述（help・start-* の SKILL、review_priorities_spec.md、forge_anti_patterns.md、additive_development_spec.md の、これらの script を指す記述）を直し、内蔵文書の索引を更新する。#62 のブランチ feature/62-feature-secret-linter と同じファイルを触る箇所を git diff で洗い出し、担当者へ共有する内容を作業報告に載せる。",
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "TASK-017 で新しい review が動くことを確かめた後に行う。削除: plugins/forge/skills/review/templates/ のテンプレート 7 本（--secrets 用の secrets_review_request_template.md は Issue #62 の範囲なので残す）、build_review_request.py（ファイルごと。--secrets は #62 のマージまで動かないが許容する。戦略書 決定事項 1）、parse_findings.py、parse_evaluation.py、combine_findings_and_evaluations.py、およびそれらのテスト。tests/forge/agenda/test_agenda_integration.py の _combined_stdin は結合 script の出力（status と combined を持つ JSON）を作っている。結合 script を import せず、同じ形の固定の辞書に置き換える（agenda の機構と他のテストは変えない）。tests/forge/agent-review/test_agent_review_contract.py の SharedParserIntegrationTest は parse_findings.py と一緒に削除する。tests/forge/review/test_resolve_targets.py の docstring が、削除するテスト（test_build_review_request.DirsScopeTest）を指す箇所を直す。配布物の文書で古くなる記述（help・start-* の SKILL、review_priorities_spec.md、forge_anti_patterns.md、additive_development_spec.md の、これらの script を指す記述）を直し、内蔵文書の索引を更新する。削除の前に、戦略書「移し替え」の全項目が reviewer.md・evaluator.md・review_target_types.md のいずれかに存在することを再確認する。",
       "acceptance_criteria": [
         "削除した script・テンプレートの名前、別名、形式の呼び名を plugins/・tests/・docs/ で検索して、残りが 0 件（検索語と範囲を作業報告に記載）。ただし --secrets に関する資産（scan_secrets.py とそのテスト、review_criteria_secrets.md、secrets_review_request_template.md）の中の言及は、Issue #62 の範囲として残す",
         "tests/forge/agenda/test_agenda_integration.py が結合 script を import せず、通る",
         "--secrets に関する記述と資産（SKILL.md の --secrets 節、scan_secrets.py、review_criteria_secrets.md、sensitive_information_spec.md のマスク規定）を変更していない",
-        "--diff・--files・--dirs・--branch の各対象軸と --interactive / --auto で、小さな対象に対して /forge:review を実際に通せた",
-        "終端の 3 経路（対応を要するものが尽きる・利用者が終える・agent 失敗で止まる）で delete_review.py が走り、保持物が消える",
-        "#62 のブランチと同じファイルを触る箇所の一覧が作業報告に記載されている",
         "python3 -m unittest discover -s tests -p 'test_*.py' が全件通り、dprint check が通る",
-        "test_agent_review_contract.py に parse_findings.py を呼ぶテストが残っていない"
+        "test_agent_review_contract.py に parse_findings.py を呼ぶテストが残っていない",
+        "テンプレートの削除前に、戦略書「移し替え」の全項目が reviewer.md・evaluator.md・review_target_types.md のいずれかに存在する（不要とした項目は理由が記録されている）ことを再確認し、その結果が作業報告に記載されている"
       ],
       "required_reading": [
         "docs/specs/review/plan/review_strategy.md",
@@ -828,6 +831,34 @@
         "tests/forge/agenda/test_agenda_integration.py",
         "tests/forge/agent-review/test_agent_review_contract.py",
         "tests/forge/review/test_resolve_targets.py"
+      ]
+    },
+    {
+      "task_id": "TASK-017",
+      "title": "新しい review を実際に通して確認し、#62 との衝突箇所を洗い出す",
+      "priority": 47,
+      "status": "pending",
+      "design_id": "DES-083",
+      "depends_on": [
+        "TASK-013",
+        "TASK-014"
+      ],
+      "group_id": null,
+      "build_check": "per_task",
+      "description": "コードは書かない。新しい SKILL.md・agent・script が揃い、旧実装がまだ残っている状態で、/forge:review を実際に通して確認する（削除の前に確かめる。失敗しても旧実装が残っている）。(1) --diff・--files・--dirs・--branch の各対象軸と --interactive / --auto を、小さな対象で実行する (2) 終端の 3 経路（対応を要するものが尽きる・利用者が終える・agent 失敗で止まる）で delete_review.py が走り、保持物が消えることを確かめる (3) resolve_review_backend.py → 可用性検査 → ラウンドの通しが動くことを確かめる（可用性検査が常に不可になっていないこと）(4) #62 のブランチ feature/62-feature-secret-linter と同じファイルを触る箇所を git diff で洗い出し、担当者へ共有する内容を作業報告に載せる。失敗した場合は、原因となるタスクへ戻して報告する。",
+      "acceptance_criteria": [
+        "--diff・--files・--dirs・--branch の各対象軸と、--interactive / --auto の組み合わせで、小さな対象に対して /forge:review が終端まで動いた（実行した対象と結果を作業報告に記載）",
+        "終端の 3 経路で delete_review.py が走り、<review_id>/ が存在しなくなった",
+        "resolve_review_backend.py → 可用性検査 → ラウンドの通しが動き、可用性検査が available: true を返した",
+        "#62 のブランチと同じファイルを触る箇所の一覧が作業報告に記載されている",
+        "python3 -m unittest discover -s tests -p 'test_*.py' が全件通り、dprint check が通る",
+        "確認の結果（成功または失敗とその事実）が作業報告に記載されている。失敗した場合は、削除 TASK-016 へ進まず、原因のタスクへ戻して報告している"
+      ],
+      "required_reading": [
+        "docs/specs/review/plan/review_strategy.md",
+        "docs/specs/review/design/DES-083_evaluator_perspective_design.md",
+        "docs/specs/review/design/DES-084_reviewer_design.md",
+        "plugins/forge/skills/review/SKILL.md"
       ]
     }
   ]
