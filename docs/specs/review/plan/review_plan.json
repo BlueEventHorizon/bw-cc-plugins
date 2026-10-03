@@ -784,9 +784,11 @@
       ],
       "group_id": null,
       "build_check": "per_task",
-      "description": "/forge:review に位置引数（code|design|requirement|plan|uxui）を渡している箇所から、位置引数を取り除く。対象は plugins/anvil/skills/impl-issue/SKILL.md、plugins/forge/skills/{help,start-design,start-implement,start-plan,start-uxui-design}/SKILL.md、plugins/forge/skills/start-requirements/docs/ の 3 文書、plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md、README.md、docs/readme/ の利用例。直す前に grep で全出現箇所を列挙し、直した後に同じ検索で 0 件を確かめる（検索語と範囲を作業報告に残す）。plugins/forge/skills/*/docs/ の文書を直すので、内蔵文書の索引を更新する（update-forge-toc）。",
+      "description": "/forge:review に位置引数（code|design|requirement|plan|uxui）を渡している箇所から、位置引数を取り除く。対象は plugins/anvil/skills/impl-issue/SKILL.md、plugins/forge/skills/{help,start-design,start-implement,start-plan,start-uxui-design,write-adr}/SKILL.md、plugins/forge/skills/start-requirements/docs/ の 3 文書、plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md、README.md、docs/readme/ の利用例。あわせて、同じ記述を持つテストと project 文書を同じ変更の中で直す: tests/forge/adr/test_adr_writer_contract.py（69 行目が write-adr の SKILL.md に /forge:review design があることを検査している。位置引数を持たない新しい起動形を検査する文面に直す）、docs/specs/adr-writer/design/DES-085_adr_writer_design.md（完了処理の記述）、docs/specs/forge/design/ の DES-010・DES-017・DES-018・DES-019、docs/specs/anvil/design/DES-025（呼び出し元の流れの記述。docs/specs/ 全体を検索して漏れを確かめる）。DES-055・DES-066 は差分開発で置き換わる旧仕様なので書き換えない。直す前に grep で全出現箇所を列挙し、直した後に同じ検索で 0 件を確かめる（検索語と範囲を作業報告に残す）。plugins/forge/skills/*/docs/ の文書を直すので、内蔵文書の索引を更新する（update-forge-toc）。",
       "acceptance_criteria": [
         "「/forge:review code」「/forge:review design」「/forge:review requirement」「/forge:review plan」「/forge:review uxui」に一致する記述が plugins/・README.md・docs/readme/ に残っていない",
+        "docs/specs/ のうち DES-055・DES-066 と docs/specs/review/ を除く文書に、位置引数付きの /forge:review の記述が残っていない",
+        "tests/forge/adr/test_adr_writer_contract.py が、位置引数を持たない write-adr の起動形を検査していて通る",
         "直した箇所の対象軸（--files・--dirs・--branch・--diff）と --auto の指定が変わっていない",
         "検索語と範囲が作業報告に記載されている",
         "SKILL.md を検査する横断テスト（test_plugin_integrity の /plugin:skill 参照、test_agent_allowedtools_consistency、test_skill_allowedtools_consistency、test_slash_command_launch_context の baseline 43 件以下、test_subagent_term_usage、test_changed_lines_policy）が通る。追加した行に旧 `/forge:review <種別> <対象>` 構文を書かない。追加した `/forge:xxx` の行は、近傍 5 行以内に起動経路の語（Skill ツール等）か、25 行以内にユーザー入力例の語（使い方・Example 等）を置く。本文に Agent ツール・/forge:xxx の呼び出しを書くなら allowed-tools に Agent・Skill を残す",
@@ -800,7 +802,9 @@
         "tests/forge/subagent/test_agent_allowedtools_consistency.py",
         "tests/forge/subagent/test_skill_allowedtools_consistency.py",
         "tests/forge/subagent/test_slash_command_launch_context.py",
-        "tests/forge/doc_structure/test_forge_toc_freshness.py"
+        "tests/forge/doc_structure/test_forge_toc_freshness.py",
+        "tests/forge/adr/test_adr_writer_contract.py",
+        "docs/specs/adr-writer/design/DES-085_adr_writer_design.md"
       ]
     },
     {
