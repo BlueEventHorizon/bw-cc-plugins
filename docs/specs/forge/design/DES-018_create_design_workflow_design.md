@@ -36,7 +36,7 @@ flowchart TD
 
     CHECK["Phase 5: 整合性の確認<br>design_method Step 6"] --> REVIEW
 
-    REVIEW["Phase 6: /forge:review design --auto<br>→ ユーザーレビュー"] --> FINISH
+    REVIEW["Phase 6: 自分でのレビュー<br>→ /forge:review design --auto<br>→ ユーザーレビュー"] --> FINISH
 
     FINISH["完了処理<br>/forge:update-db-specs<br>commit/push 確認"] --> Done([完了])
 ```
@@ -119,8 +119,9 @@ flowchart TD
 
 | Step | 内容                                                                      | 実行者              |
 | ---- | ------------------------------------------------------------------------- | ------------------- |
-| 6.1  | `/forge:review design --files {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
-| 6.2  | AskUserQuestion による設計全体の承認                                      | orchestrator        |
+| 6.1  | 作成・変更した設計書を最初から最後まで自分で読み、誤りを直す              | orchestrator        |
+| 6.2  | `/forge:review design --files {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| 6.3  | AskUserQuestion による設計全体の承認                                      | orchestrator        |
 
 ### 完了処理
 
