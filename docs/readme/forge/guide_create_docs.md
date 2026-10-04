@@ -130,7 +130,7 @@ Generates design documents (Markdown) in `specs/{feature}/design/`. ID scheme: `
 
 ### Reference Documents
 
-- `plugins/forge/docs/design_format.md` — Design document template
+- `plugins/forge/docs/design_method.md` — Design procedure and deliverables
 - `plugins/forge/docs/design_principles_spec.md` — Design principles guide
 - `plugins/forge/docs/spec_design_boundary_spec.md` — What/How boundary
 
@@ -234,7 +234,7 @@ The top level has exactly three keys: `requirements_traceability` / `design_trac
 ### Output
 
 Generates the plan (JSON) at `specs/{feature}/plan/{feature}_plan.json`. **A Markdown plan is never emitted.**
-A Claude Code plan-mode Markdown plan is a different artifact; if you want to derive requirements and design from one, use `/forge:create-feature-from-markdown-plan`.
+A Claude Code plan-mode Markdown plan is a different artifact; if you want to derive a requirements document from one, use `/forge:create-requirements-from-plan-mode`.
 
 ### Reference Documents
 

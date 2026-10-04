@@ -177,29 +177,5 @@ class TestNoMarkdownInducers(unittest.TestCase):
         return None
 
 
-class TestRenamedSkillExists(unittest.TestCase):
-    """rename 済みの create-feature-from-markdown-plan が存在し、旧名 wrapper が残っていないこと"""
-
-    def test_renamed_skill_present(self):
-        renamed = (
-            REPO_ROOT
-            / "plugins"
-            / "forge"
-            / "skills"
-            / "create-feature-from-markdown-plan"
-            / "SKILL.md"
-        )
-        self.assertTrue(renamed.exists(), f"rename 後の skill が見当たらない: {renamed}")
-        text = renamed.read_text(encoding="utf-8")
-        self.assertIn("name: create-feature-from-markdown-plan", text)
-
-    def test_old_skill_dir_absent(self):
-        old = REPO_ROOT / "plugins" / "forge" / "skills" / "create-feature-from-plan"
-        self.assertFalse(
-            old.exists(),
-            f"旧 skill ディレクトリが残っている (互換 wrapper は採用していない): {old}",
-        )
-
-
 if __name__ == "__main__":
     unittest.main()

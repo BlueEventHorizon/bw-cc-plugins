@@ -62,7 +62,7 @@ target ブランチ: `{{TARGET_BRANCH}}`
 ### 文書フォーマット
 
 - `{{PLUGIN_ROOT}}/docs/requirement_format.md`
-- `{{PLUGIN_ROOT}}/docs/design_format.md`
+- `{{PLUGIN_ROOT}}/docs/design_method.md`
 - `{{PLUGIN_ROOT}}/docs/adr_format.md`
 - `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md`
 - `{{PLUGIN_ROOT}}/docs/document_style_guide.md`

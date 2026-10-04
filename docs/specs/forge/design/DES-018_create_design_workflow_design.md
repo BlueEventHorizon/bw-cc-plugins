@@ -3,17 +3,9 @@
 ## 1. 概要
 
 `/forge:start-design` は要件定義書から設計書を作成するオーケストレータスキル。
-要件定義書の分析 → 既存実装資産の確認 → 設計書作成 → 品質保証の流れで動作する。
+要件だけで上流の設計 → 既存の実装・設計パターンとの照合と再設計 → 詳細設計 → 整合性の確認 → レビュー → commit の流れで動作する。
 
-### 現状の課題
-
-現在は全工程をオーケストレータ自身が単一コンテキストで実行している。
-オーケストレータパターン要件（`REQ-001_orchestrator_pattern.md`）に基づき、
-以下の工程は汎用 Agent (general-purpose) への委譲が望ましい:
-
-- 要件定義書・ルールの収集（コンテキスト収集 Agent）
-- 既存実装資産の探索（コード探索 Agent）
-- 設計書のドラフト作成（作成 Agent）
+設計の手順と成果物は `design_method.md` に従う。上流の設計は要件から組み立て、既存の実装・設計パターンは上流の設計の後に、その観点から読む。詳細設計は照合の後に、修正せずに使える既存の実装を手段として使って行う。既存の実装をどう修正・削除・統合・分割するかは、設計ではなく実装戦略書の責務である。
 
 ---
 
@@ -21,106 +13,138 @@
 
 ```mermaid
 flowchart TD
-    User([ユーザー]) --> ORCHESTRATOR
+    User([ユーザー]) --> PREREQ
 
-    ORCHESTRATOR["/forge:start-design<br>オーケストレーター"] --> PREREQ
+    PREREQ["事前準備<br>Feature名・出力先<br>モード判定<br>規範文書の読み込み"] --> COLLECT
 
-    PREREQ["前提確認<br>.doc_structure.yaml<br>Feature名<br>出力先<br>モード判定"] --> CONTEXT
-
-    CONTEXT["コンテキスト収集<br>（並列）"] --> DESIGN
-
-    subgraph CONTEXT_AGENTS["コンテキスト収集 agent"]
-        A1["specs agent<br>要件定義書取得"] --> RV_SPECS["return value<br>（仕様書リスト）"]
-        A2["rules agent<br>ルール取得"] --> RV_RULES["return value<br>（ルールリスト）"]
-        A3["code agent<br>既存実装探索"] --> RV_CODE["return value<br>（既存実装リスト）"]
+    subgraph COLLECT["Phase 1: 入力の収集（並列）"]
+        A1["specs agent<br>要件定義書"]
+        A2["rules agent<br>プロジェクトのルール"]
     end
 
-    DESIGN["設計書作成<br>（ファイルごと）"] --> REVIEW_ASK
+    COLLECT --> DESIGN
 
-    REVIEW_ASK{"人間レビュー<br>（AskUserQuestion）"} -->|"OK"| NEXT_FILE
-    REVIEW_ASK -->|"修正"| DESIGN
+    DESIGN["Phase 2: 上流の設計（要件だけで）<br>design_method Step 0〜4"] --> MATCH
 
-    NEXT_FILE{次のファイル?} -->|"あり"| DESIGN
-    NEXT_FILE -->|"なし"| AI_REVIEW
+    MATCH["Phase 3: 既存の実装・設計パターンとの照合"] --> FOUND{使えるものがあるか}
+    FOUND -->|"ある"| REDESIGN["design_method に従って再設計"]
+    REDESIGN --> MATCH
+    FOUND -->|"ない"| DETAIL
 
-    AI_REVIEW["/forge:review design --auto<br>AIレビュー+自動修正<br>（差分のみ対象）"] --> QA
+    DETAIL["Phase 4: 詳細設計<br>design_method Step 5<br>既存の実装を手段として使う"] --> CHECK
+    DETAIL -.->|"新しく探すものが出た"| MATCH
 
-    QA["品質保証<br>完全性チェック<br>/forge:update-db-specs"] --> COMMIT
+    CHECK["Phase 5: 整合性の確認<br>design_method Step 6"] --> REVIEW
 
-    COMMIT["/anvil:commit<br>commit/push 確認"] --> End([完了])
+    REVIEW["Phase 6: 自分でのレビュー<br>→ /forge:review design --auto<br>→ ユーザーレビュー"] --> FINISH
+
+    FINISH["完了処理<br>/forge:update-db-specs<br>commit/push 確認"] --> Done([完了])
 ```
 
 ---
 
 ## 3. フェーズ詳細
 
-### 前提確認フェーズ [MANDATORY]
+### 事前準備 [MANDATORY]
 
-| Step | 内容                                        | 実行者       |
-| ---- | ------------------------------------------- | ------------ |
-| 1    | `.doc_structure.yaml` の確認                | orchestrator |
-| 2    | Feature 名の確定（引数 or AskUserQuestion） | orchestrator |
-| 3    | 出力先ディレクトリの解決                    | orchestrator |
-| 4    | モード判定（新規作成 / 既存修正）           | orchestrator |
-| 5    | defaults 読み込み                           | orchestrator |
+| Step | 内容                                                                  |
+| ---- | --------------------------------------------------------------------- |
+| 1    | Feature 名の確定（引数 or AskUserQuestion）                           |
+| 2    | 出力先ディレクトリの解決                                              |
+| 3    | モード判定（新規作成 / 既存設計書がある場合は追加作成かレビューのみ） |
+| 4    | 規範文書の読み込み                                                    |
 
-**読み込む defaults:**
+**読み込む規範文書:**
 
-- `design_format.md` — 設計書テンプレート・設計ID
-- `design_format.md` — 設計書テンプレート
-- `design_principles_spec.md` — 設計原則ガイド
+- `design_method.md` — 設計の手順と成果物
+- `design_principles_spec.md` — 設計書の判断基準・禁止事項・重大度
+- `strategy_principles_spec.md` — 実装戦略書の原則（既存の実装の扱いは設計ではなく実装戦略書の責務）
 - `spec_design_boundary_spec.md` — 要件/設計の境界ガイド
 
-### Phase 1: コンテキスト収集
+### Phase 1: 入力の収集
 
-要件定義書・ルール・既存実装を収集する。
+要件定義書とプロジェクトのルールを収集する。既存の実装・設計パターンは、ここでは集めない。
 
-| 収集対象     | 手段                    | 出力                           |
-| ------------ | ----------------------- | ------------------------------ |
-| 要件定義書   | `/forge:query-db-specs` | return value（仕様書リスト）   |
-| 実装ルール   | `/forge:query-db-rules` | return value（ルールリスト）   |
-| 既存実装資産 | Glob / Grep 直接探索    | return value（既存実装リスト） |
+| 収集対象             | 手段                    | 出力                         |
+| -------------------- | ----------------------- | ---------------------------- |
+| 要件定義書           | `/forge:query-db-specs` | return value（仕様書リスト） |
+| プロジェクトのルール | `/forge:query-db-rules` | return value（ルールリスト） |
 
-**既存実装資産の確認 [MANDATORY]:**
+要件定義書が見つからない場合は、パスの指定を求めるか中止する。要件定義書なしでは設計しない。
 
-- 類似コンポーネント・モジュールが既存コードに存在するか探索
-- 見つかった場合は**再利用を前提**に設計する（新規作成禁止）
+差分開発かどうかは引数で指定しない。入力の要件定義書が `feature_type: temporary-feature` frontmatter を持つかを出発点にし、設計の後に既存の仕様と突き合わせて設計書について確かめる（Phase 3）。要件の上では既存と重ならなくても、設計が既存の設計書を変える・重なる場合があるためである。
 
-### Phase 2: 設計書の作成
+### Phase 2: 上流の設計（要件だけで）
 
-| Step | 内容                                                                 |
-| ---- | -------------------------------------------------------------------- |
-| 2.1  | 収集結果（各 agent の return value）を統合し、設計書のドラフトを作成 |
-| 2.2  | フォーマット適用（`design_format.md` に準拠）                        |
-| 2.3  | 設計ID体系の確認（`design_format.md` の DES-xxx）                    |
-| 2.4  | **各ファイル完成ごとに AskUserQuestion で人間レビュー** [MANDATORY]  |
+| Step | 内容                                                                                                 |
+| ---- | ---------------------------------------------------------------------------------------------------- |
+| 2.1  | 要件定義書とプロジェクトのルールだけを使い、`design_method.md` の Step 0〜4 に従って上流の設計を作る |
+| 2.2  | Step 1 の終わり（シナリオ表と入力への質問）で AskUserQuestion による承認                             |
+| 2.3  | Step 1 の承認後に設計 ID を採番し（`next-spec-id` の採番スクリプト）、設計書ファイルを作る           |
+| 2.4  | Step 4 の終わり（上流の設計）で AskUserQuestion による承認                                           |
 
-### Phase 3: AIレビュー
+### Phase 3: 既存の実装・設計パターンとの照合と再設計
+
+| Step | 内容                                                                                                                                     |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1  | 上流の設計の責務・契約・共有データを手がかりに、既存の実装と設計パターンを探す                                                           |
+| 3.2  | 採るべき設計パターンで構造が変わるなら、Step 2〜4 から上流の設計を直す。修正せずに使える実装は、Phase 4 で手段として使うために覚えておく |
+| 3.3  | 新しく使えるものが見つからなくなるまで 3.1〜3.2 を繰り返す                                                                               |
+| 3.4  | 再設計で上流の設計が変わったら、上流の設計を再承認にかける                                                                               |
+| 3.5  | 設計が触れる範囲の既存の要件定義書・設計書を `/forge:query-db-specs` で探し、新しい設計と突き合わせる                                    |
+
+完全新規の機能では、通常は何も見つからずに Phase 4 へ進む。
+
+3.5 の結果の扱い:
+
+- 新しい設計が既存の設計書の記述を変える・範囲が重なる → 設計書を差分開発として扱い、一時 frontmatter を付ける（要件定義書には付けない）
+- 既存の要件定義書の内容まで変える必要がある → 設計を止めて要件定義に戻す
+- どちらにも当たらない → Phase 4 へ進む
+
+### Phase 4: 詳細設計
+
+| Step | 内容                                                                               |
+| ---- | ---------------------------------------------------------------------------------- |
+| 4.1  | `design_method.md` の Step 5 に従い、上流の設計を実装できる厳密さまで詰める        |
+| 4.2  | Phase 3 で覚えておいた、修正せずに使える既存の実装を手段として使い、そのパスを書く |
+| 4.3  | 詳細化の中で新しく探すべき既存が出たら、Phase 3 に戻る                             |
+
+### Phase 5: 整合性の確認
+
+| Step | 内容                                                                            |
+| ---- | ------------------------------------------------------------------------------- |
+| 5.1  | `design_method.md` の Step 6 に従い、追跡表を作り、チェック項目を満たすまで直す |
+
+### Phase 6: AI レビューとユーザーレビュー
 
 | Step | 内容                                                                      | 実行者              |
 | ---- | ------------------------------------------------------------------------- | ------------------- |
-| 3.1  | `/forge:review design --files {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| 6.1  | 作成・変更した設計書を最初から最後まで自分で読み、誤りを直す              | orchestrator        |
+| 6.2  | `/forge:review design --files {作成ファイル} --auto` 実行（差分のみ対象） | review ワークフロー |
+| 6.3  | AskUserQuestion による設計全体の承認                                      | orchestrator        |
 
-### Phase 4: 品質保証
+### 完了処理
 
-| Step | 内容                                                   |
-| ---- | ------------------------------------------------------ |
-| 4.1  | 完全性チェック（要件反映漏れ、ID一意性、既存資産活用） |
-| 4.2  | `/forge:update-db-specs` 実行（利用可能な場合）        |
-| 4.3  | `/anvil:commit` による commit/push 確認                |
+| Step | 内容                                            |
+| ---- | ----------------------------------------------- |
+| 1    | `/forge:update-db-specs` 実行（利用可能な場合） |
+| 2    | `/anvil:commit` による commit/push 確認         |
 
 ---
 
 ## 4. 設計原則
 
+### 要件から組み立てる [MANDATORY]
+
+設計は要件定義書とプロジェクトのルールだけから組み立てる。既存の実装・設計パターンを出発点にせず、それらに合わせて設計を曲げない（`additive_development_spec.md` §2「設計は要件から組み立てる」）。
+
+### 既存の実装・設計パターンの活用 [MANDATORY]
+
+上流の設計の後に、その観点から既存の実装と設計パターンを読む。修正せずにそのまま使える既存コンポーネントがあれば再利用し（新規作成禁止）、そのパスを設計書に書く。設計に合わせて修正するものは再利用の対象ではない。
+
 ### 要件定義書の全件反映
 
-設計書は要件定義書の全要件をカバーする。未反映の要件がないことを Phase 4 で検証する。
-
-### 既存実装資産の再利用 [MANDATORY]
-
-既存コードに類似コンポーネントが存在する場合、新規作成ではなく再利用を前提に設計する。
-Phase 1 の探索で見つかった資産は設計書内で明示的に参照する。
+設計書は要件定義書の全要件をカバーする。未反映の要件がないことを Phase 5（追跡表）で検証する。
 
 ### What/How の境界
 
@@ -142,6 +166,6 @@ Phase 1 の探索で見つかった資産は設計書内で明示的に参照す
 | ファイル                                          | 説明                  |
 | ------------------------------------------------- | --------------------- |
 | `plugins/forge/skills/start-design/SKILL.md`      | スキル仕様            |
-| `plugins/forge/docs/design_format.md`             | 設計書テンプレート    |
+| `plugins/forge/docs/design_method.md`             | 設計の手順と成果物    |
 | `plugins/forge/docs/design_principles_spec.md`    | 設計原則ガイド        |
 | `plugins/forge/docs/spec_design_boundary_spec.md` | 要件/設計の境界ガイド |

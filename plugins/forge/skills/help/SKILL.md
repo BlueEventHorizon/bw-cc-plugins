@@ -27,7 +27,7 @@ forge スキルの使い方をガイドし、そのまま実行できる。
   start-plan                       : 計画書の作成。レビュー+自動修正→commit
   start-implement                  : 計画書から実装・レビュー・計画更新
   start-uxui-design                : デザイントークン・UI 視覚仕様を創造
-  create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
+  create-requirements-from-plan-mode: plan mode の Markdown plan から要件定義書を作成
   merge-specs                      : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
   onboarding                       : プロジェクトを調査し CLAUDE.md へ規範ブロックを生成
   query-db-rules                   : プロジェクトのルール文書を検索
@@ -188,7 +188,7 @@ AskUserQuestion:
 
 ---
 
-### create-feature-from-markdown-plan
+### create-requirements-from-plan-mode
 
 引数: Markdown plan のファイルパス（省略時は対話で決定）。
 入力は Claude Code plan mode が生成した Markdown plan。forge 実装計画書 `{feature}_plan.json`（JSON、`/forge:start-plan` が作成）とは別物。

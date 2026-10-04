@@ -130,7 +130,7 @@ start-requirements → start-design → start-plan → start-implement
 
 ### 参考ドキュメント
 
-- `plugins/forge/docs/design_format.md` — 設計書テンプレート
+- `plugins/forge/docs/design_method.md` — 設計の手順と成果物
 - `plugins/forge/docs/design_principles_spec.md` — 設計原則ガイド
 - `plugins/forge/docs/spec_design_boundary_spec.md` — What/How の境界
 
@@ -234,7 +234,7 @@ top-level は `requirements_traceability` / `design_traceability` / `tasks` の 
 ### 出力
 
 `specs/{feature}/plan/{feature}_plan.json` に計画書（JSON）を生成。**Markdown 形式の計画書は出力しない**。
-Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件・設計を作る場合は `/forge:create-feature-from-markdown-plan` を使う）。
+Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件定義書を作る場合は `/forge:create-requirements-from-plan-mode` を使う）。
 
 ### 参考ドキュメント
 

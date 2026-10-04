@@ -56,7 +56,7 @@ def adr_files() -> list[Path]:
 def strip_code(text: str) -> str:
     """フェンス済みコードブロックとインラインコードを空行・空文字へ潰す。
 
-    記法の説明でリンク構文そのものを例示することがあり（`[design_format.md](design_format.md)`
+    記法の説明でリンク構文そのものを例示することがあり（`[foo_format.md](foo_format.md)`
     のような例）、これを実リンクとして扱うと存在しないファイルを指しているように
     見える。行番号を保つため、フェンス内は行ごと空行に置き換える。
     """
