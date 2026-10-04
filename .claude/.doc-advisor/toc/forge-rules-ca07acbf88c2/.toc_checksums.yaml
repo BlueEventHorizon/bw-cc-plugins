@@ -1,6 +1,6 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-10-03T17:06:09Z
+generated_at: 2026-10-04T10:58:17Z
 file_count: 42
 checksums:
   plugins/forge/docs/additive_development_spec.md: f3eae7f662c4ff572732c08de6441aa580bbbf649f870234b93b77fe5de3db29
@@ -15,7 +15,7 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_requirement.md: c90316b33bae9f9505e80b9a06f13854e123da2c27142f637345edaeec9bfc04
   plugins/forge/docs/criteria/review_criteria_secrets.md: 0f248f092c9ebbbdc44a6f8d3a267cf4d76a282b009c27950055f3ef76059365
   plugins/forge/docs/criteria/review_criteria_uxui.md: a236b55548f4558a0db4bdea1e180913fe97893c4380e9b343f4538da6b028de
-  plugins/forge/docs/design_method.md: 376fc3874ce390ae8a8cff4a085b8755145f3a1360966726c35b2a3b6269c007
+  plugins/forge/docs/design_method.md: aaa41f3da331445a2c1e8daa5892917a7f1f6427fd95dfaaef89e058ee4d14f2
   plugins/forge/docs/design_principles_spec.md: 80a4513b1fe21988e81fd9d58fe125a9479af2fa2aa1aeeeab619da739a623e9
   plugins/forge/docs/deterministic_generation_spec.md: b0eacd7205bb92c652345f5a7f44997c813307d88c450a1e4c0a64823c16718e
   plugins/forge/docs/doc_structure_format.md: 3dd9abc721f69eb7b258514abdd28d662ffe9fefe6291c691fd71957145408ff

@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-03T17:06:09Z
+  generated_at: 2026-10-04T10:58:17Z
   file_count: 42
 
 docs:
@@ -370,36 +370,38 @@ docs:
       - severity judgment
   plugins/forge/docs/design_method.md:
     title: Design Method
-    purpose: Describes a systematic 6-step methodology for converting requirements into design by defining responsibilities, behaviors, contracts, and maturity levels, with detailed templates and verification checklists.
+    purpose: Defines a systematic process for developing design from requirements through responsibility assignment, actor collaboration, and four design perspectives
     content_details:
-      - "Four design perspectives: responsibility/structure, behavior, contracts, maturity level"
-      - EARS notation patterns for requirement interpretation (event, state, abnormal, optional)
-      - Six-step design procedure from input analysis to consistency verification
-      - Class definition template with responsibility name, data, methods, collaborators
-      - Sequence diagram construction with actor selection and self-message rules
-      - Shared data definition and module table specifications for contracts
-      - Detailed design phase covering implementation means, data structures, algorithms
-      - Traceability table and consistency verification checklist
+      - "Four design perspectives: structure, behavior, contract, and maturity level"
+      - Scenario table creation using EARS notation to interpret requirements
+      - Class definition with responsibility name, held data, methods, and collaborators
+      - Sequence diagram creation and system structure verification
+      - Shared data definition with semantics, source of truth, writer, reader, and lifecycle
+      - Module table defining actor contracts with input, output, preconditions, and postconditions
+      - Detailed design with concrete means, data structures, libraries, and algorithms
+      - Traceability matrix matching requirements to design elements
+      - Design verification checklist for requirement-to-design and internal consistency
+      - Design input assumptions including requirements, glossary, non-functional requirements, and project rules
     applicable_tasks:
-      - Requirement analysis and scenario decomposition with EARS notation
-      - Responsibility-driven class definition and structural design
-      - Behavioral design using sequence diagrams
-      - Contract definition through shared data and module specifications
-      - Detailed design phase with implementation means selection
-      - Design consistency verification and traceability checking
-      - Design artifact review and validation
-      - Requirements-to-design mapping verification
+      - Design creation from requirements
+      - Design review and verification
+      - Architecture design specification
+      - Actor collaboration definition
+      - Traceability matrix creation
+      - Detailed design specification
+      - Design methodology guidance
+      - Design quality assurance
     keywords:
+      - responsibility
+      - scenario table
+      - sequence diagram
+      - actor collaboration
+      - contract
+      - shared data
+      - module table
+      - traceability matrix
       - EARS notation
-      - Responsibility-driven design
-      - Sequence diagram
-      - Class diagram
-      - Shared data definition
-      - Module table
-      - Traceability verification
-      - Contract specification
-      - Design artifacts
-      - Requirements decomposition
+      - class diagram
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Defines generic design document creation principles applicable when project-specific rules are absent, covering scope boundaries, content requirements, judgment criteria, and violation severity standards.
