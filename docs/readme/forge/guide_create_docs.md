@@ -19,6 +19,8 @@ All three skills share a common context-gathering pattern. Before document creat
 | rules agent | Project rule documents                     | `/forge:query-db-rules` |
 | code agent  | Existing implementations                   | Direct `Grep` / `Glob`  |
 
+The agents launched differ by skill. start-design identifies the requirements document from its location and gathers only the project rules with an agent (existing implementations are read after the design, during matching).
+
 ### Completion Flow
 
 After document creation, the following steps execute sequentially:
@@ -92,7 +94,7 @@ Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. 
 
 ## start-design
 
-Create design documents from requirements. Emphasizes reuse of existing implementation assets.
+Create design documents from requirements. Builds the upstream design from the requirements document alone, then matches it against existing implementations and design patterns and reuses existing implementations that can be used without modification.
 
 ```
 /forge:start-design [feature]
@@ -110,17 +112,19 @@ Create design documents from requirements. Emphasizes reuse of existing implemen
 ### Execution Flow
 
 1. Confirm Feature name
-2. **Context gathering** (3 agents in parallel)
-   - Retrieve requirements docs (`/forge:query-db-specs`)
+2. **Gather inputs**
+   - Identify the requirements document (list the feature's `requirements/`; choose when there are several; with none, point to `/forge:start-requirements` and stop)
    - Collect project design rules (`/forge:query-db-rules`)
-   - Explore existing implementation assets (codebase scan)
-3. Detailed requirements analysis
-4. Create design document (ID assignment, format application)
-5. Completion flow (review → search-index update → commit)
+3. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
+4. **Matching against existing implementations and design patterns**, and redesign
+5. **Detailed design** and consistency check (traceability table)
+6. **Review** (self-review → `/forge:review --auto` → user review)
+7. Completion flow (search-index update → commit)
 
 ### Design Principles
 
-- **Existing assets first**: Reuse available components instead of creating new ones
+- **Build from the requirements**: Do not start from existing implementations or design patterns; build the upstream design from the requirements document and the project rules alone
+- **Reuse existing assets**: After the upstream design, read the existing code and reuse components that can be used without modification instead of creating new ones
 - **What/How boundary**: Clearly separate requirements (what) from design (how)
 - **Traceability**: Every requirement must be traceable to a design section
 

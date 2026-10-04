@@ -5,37 +5,39 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-04T04:09:25Z
+  generated_at: 2026-10-04T17:18:25Z
   file_count: 39
 
 docs:
   docs/specs/adr-writer/design/DES-085_adr_writer_design.md:
-    title: ADR Writer Design
-    purpose: Defines the design of the ADR Writer system, comprising a SKILL entry point, a custom Agent for isolated context, and exchange scripts for deterministic identification and recording.
+    title: DES-085 ADR Writer Design
+    purpose: "Specifies the design of the ADR writer system comprising three components: the write-adr SKILL entry point, adr-writer Agent for content creation, and adr_exchange.py script for identification and workflow management"
     content_details:
-      - "3-component architecture: write-adr SKILL, adr-writer Agent, adr_exchange.py script"
-      - "adr_exchange.py subcommands: open, request-path, finish, check with deterministic placement logic"
-      - "Feature-per-ADR-file design decision: one file per feature, all decisions grouped in single file"
-      - "adr-writer Agent isolation: bounded write access (ADR file only), no parent context inheritance"
-      - "write-adr SKILL workflow: 7 steps including resolution, composition, numbering, publication, agent launch, judgment retrieval, branching"
-      - "Request field definitions: kind, feature, adr_dir, adr_path, baseline_sha256, decision, context, alternatives, approval_quote, change, related_docs"
-      - Use cases UC-01 to UC-06 with normal flows and error handling
-      - Test strategy for exchange script and agent contract validation
+      - Architecture overview with three main components and their responsibilities
+      - adr_exchange.py subcommands (open, request-path, finish, check) and their operations
+      - adr-writer Agent design with tools, writing scope (ADR files only), and required reading materials
+      - "write-adr SKILL workflow: output resolution, content organization, numbering, request publishing, Agent launching, branching"
+      - "Handling of three decision types: approval-record, judgement, update with distinct evaluation criteria"
+      - Request field definitions and validation rules for request/result files
+      - Module dependencies and required normative documents (adr_principles_spec.md, adr_format.md, adr_usage_spec.md)
+      - Test design including unit tests for adr_exchange.py, contract tests, and evaluation tests
+      - Sequence diagram and error flows covering normal operation and failure cases
+      - Integration with doc-structure SKILL for output resolution and next-spec-id for ADR numbering
     applicable_tasks:
-      - Implementing ADR Writer feature and its three components
-      - Creating and managing approval records in ADR documents
-      - Documenting design decisions and judgments in ADR
-      - Updating existing ADR decisions with new evaluations
-      - Designing and validating exchange script contracts
+      - ADR writer system implementation and development
+      - ADR writer design review and validation
+      - Decision recording and approval workflow design
+      - ADR file management architecture design
+      - Feature request processing system design
     keywords:
       - adr-writer
       - write-adr
       - adr_exchange.py
-      - request_id
       - approval-record
-      - deterministic identification
-      - isolated context
-      - exchange pattern
+      - judgement
+      - request_id
+      - adr_principles_spec
+      - adr_format
   docs/specs/adr-writer/requirements/REQ-030_adr_writer.md:
     title: REQ-030 ADR Writer Requirements Definition
     purpose: Defines the behavior of an ADR Writer entity that judges, examines, and records Architecture Decision Records separate from design progression, ensuring proper documentation standards and context isolation.
@@ -523,69 +525,68 @@ docs:
       - query wrapper
       - update wrapper
   docs/specs/forge/design/DES-001_forge_query_abstraction_design.md:
-    title: DES-001 Document Search Wrapper Design (forge → document search backend)
-    purpose: "Defines the architecture for forge's delegation of document search and index updates to external backends (doc-advisor and doc-db), including wrapper SKILL selection logic and communication contracts."
+    title: DES-001 Document search wrapper design
+    purpose: Defines forge document search wrapper design including skill abstractions, backend selection mechanism (doc-advisor or doc-db), and query/update execution flows with inherited SKILL contracts
     content_details:
-      - Backend selection mechanism based on doc_backend.prefer ordering
-      - "Four wrapper SKILLs: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
-      - "Query execution flow: backend availability check, search delegation, no index modification"
-      - "Query output contract: Required documents path list (project-root relative)"
-      - "SKILL contract for query: inherited-type dispatcher with read-only isolation"
-      - "Update execution flow: prepare_advisor_index.py wrapper, Skill tool delegation"
-      - Desired-state concept for target document collection
-      - "doc-advisor contract: dirs/exclude JSON parameters for index updates"
-      - "Backend fallback logic: try first available backend, fail only if both unavailable"
+      - Backend delegation overview (doc-advisor and doc-db)
+      - "4 wrapper skills: query-db-rules, query-db-specs, update-db-rules, update-db-specs"
+      - Query execution flow with backend selection and availability judgment
+      - Query output contract and SKILL inheritance model
+      - Update execution flow with desired-state sync and backend specification
+      - Index preparation wrapper with directory resolution
+      - "Tool restrictions: Skill, Read, Bash, AskUserQuestion (no Grep fallback)"
+      - Test coverage for backend selection and doc-advisor contract
     applicable_tasks:
-      - Implementing document search backend integration in forge
-      - Adding or modifying query-db-rules or query-db-specs SKILL
-      - Updating document search index strategy
-      - Validating backend selection and fallback logic
-      - Implementing update-db-rules or update-db-specs SKILL
-      - Backend API contract modification
-      - Testing document search integration
+      - Document search backend integration
+      - Query SKILL wrapper design
+      - Index update SKILL design
+      - Backend selection and availability management
+      - Semantic search index synchronization
+      - SKILL contract definition
+      - Directory expansion and doc structure resolution
     keywords:
-      - query-db-rules
-      - query-db-specs
-      - update-db-rules
-      - update-db-specs
       - doc-advisor
       - doc-db
-      - resolve_backend_order.py
-      - prepare_advisor_index.py
-      - desired-state
-      - doc_structure.yaml
+      - query-docs
+      - index-docs
+      - backend selection
+      - wrapper SKILL
+      - semantic search
+      - key mapping
+      - inheritance model
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
-    title: DES-010 Orchestrator Design for Create-* Skills
-    purpose: Defines orchestrator pattern architecture for create-design, create-plan, and create-requirements skills with common context collection framework and skill-specific phase structures
+    title: DES-010 Create-* skill orchestrator design
+    purpose: Defines orchestrator pattern architecture for create-* skills (start-design, start-plan, start-requirements) with shared context collection framework, parallel agent execution, and return value contract
     content_details:
-      - Orchestrator pattern architecture with parallel agent execution
-      - Common context collection framework for specs, rules, and code agents
-      - Return value contract using markdown bullet lists (DES-022 aligned)
-      - Phase structures for start-design with context collection, analysis, creation, review, and assurance
-      - Phase structures for start-plan with collection, reading, strategy, creation, and review
-      - "Phase structures for start-requirements with three modes: interactive, reverse-engineering, from-figma"
-      - Context collection agent application matrix per skill showing mandatory vs. optional roles
-      - Parallel execution of specs, rules, and code agents with independent failure handling
-      - Progress reporting convention for 5 items or less shown fully, 6+ show first 3 plus omission
-      - Session-less design decision for intermediate result handling via return value
+      - Orchestrator structure and phase composition
+      - "Task distribution: orchestrator, context collection agents, document creation, review, post-processing"
+      - Common context collection framework and standardized pattern
+      - Return value contract for markdown bullet list format from agents
+      - Inline prompt instructions for agent self-sufficiency (FNC-003 compliance)
+      - Parallel execution and integration of multiple collection agents (specs/rules/code)
+      - Failure handling and progress reporting rules (5 items all, 6+ items first 3 + omit)
+      - "start-design: deterministic requirements enumeration plus rules agent search"
+      - "start-plan: multi-phase structure with optional specs/rules agent collection"
+      - "start-requirements: mode selection (interactive, reverse-engineering, from-figma) with agent matrix"
     applicable_tasks:
-      - Designing orchestrator patterns for multi-phase skills
-      - Planning context collection strategies for requirement/design/planning workflows
-      - Implementing parallel agent coordination and error handling
-      - Defining skill-specific phase structures and transitions
-      - Creating agent instruction templates and return value contracts
-      - Reviewing and validating create-* skill architecture
+      - Orchestrator pattern implementation for create-* skills
+      - Context collection framework design
+      - Parallel agent coordination architecture
+      - Return value contract definition
+      - Progress reporting template design
+      - start-design phase composition
+      - start-plan workflow planning
+      - start-requirements multi-mode support
     keywords:
       - orchestrator pattern
       - context collection
-      - parallel execution
+      - parallel agents
       - return value contract
+      - create-skills
       - start-design
       - start-plan
       - start-requirements
-      - agent coordination
-      - phase structure
-      - markdown bullet list
+      - phase composition
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     title: DES-013 Context Gathering Task Specification
     purpose: Defines context gathering task specification for create-* and start-implement SKILLs, including 3 task types, parallel agent execution method, and SKILL-specific task matrices
@@ -681,34 +682,40 @@ docs:
       - What vs. How principle
       - spec/design boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: forge design workflow design
-    purpose: Orchestrates the /forge:start-design skill workflow to create design documents from requirements, defining phases, process flow, design principles, and mandatory prerequisites for building designs from requirements only.
+    title: DES-018 Forge design workflow design
+    purpose: Defines start-design skill workflow for creating design documents from requirements including upstream design, matching with existing implementations, detailed design, consistency verification, and review process
     content_details:
-      - "Five workflow phases: requirements collection, design creation, pattern matching, consistency verification, review"
-      - Orchestrator skill initialization with Feature name and mode determination
-      - Design method step-by-step execution (Steps 0-6) per design_method.md
-      - Existing implementation and pattern matching for reuse decisions
-      - Consistency verification using traceability matrix and requirement coverage
-      - AI and user review workflow with /forge:review design --auto
-      - "Design principles: build from requirements only, leverage patterns after design"
-      - "Prerequisite documents: design_method.md, design_principles_spec.md, strategy_principles_spec.md"
-      - Re-design loop for found patterns and upstream design re-approval
+      - Flowchart with 7 main phases from preprocessing to completion
+      - "Preprocessing: feature name, output directory, mode judgment, regulatory document loading (design_method, design_principles, strategy_principles, spec_design_boundary, spec_priorities, document_style_guide)"
+      - "Phase 1: Input collection (requirements enumeration, rules agent search)"
+      - "Phase 2: Upstream design using only requirements (design_method Step 0-4, with AskUserQuestion approval)"
+      - "Phase 3: Matching with existing implementations and design patterns, with redesign loops"
+      - "Phase 4: Detailed design with existing implementations as means (design_method Step 5)"
+      - "Phase 5: Consistency verification with traceability table (design_method Step 6)"
+      - "Phase 6: AI self-review, /forge:review design --auto, user approval"
+      - "Design principles: build from requirements only, reuse existing implementations without modification, full requirements coverage, What/How boundary"
+      - Handling new requirements discovered during phases and completion processing
     applicable_tasks:
-      - Design workflow orchestration and execution
-      - Feature design document creation
-      - Existing implementation reuse assessment
-      - Design consistency verification
-      - Design review initiation
-      - Design phase progression validation
+      - Design document creation from requirements
+      - Upstream design phase execution
+      - Existing implementation and pattern matching
+      - Detailed design development
+      - Consistency verification and traceability
+      - AI design review and self-assessment
+      - Requirement to design mapping verification
+      - Temporary feature (diff) design handling
+      - Design workflow implementation
+      - start-design orchestrator skill execution
     keywords:
-      - forge:start-design
-      - design_method.md
-      - requirements-driven design
+      - start-design
+      - design workflow
+      - upstream design
       - pattern matching
-      - traceability matrix
-      - design consistency
-      - orchestrator skill
-      - spec_design_boundary_spec.md
+      - detailed design
+      - consistency verification
+      - traceability table
+      - design_method
+      - requirement to design mapping
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     title: Plan Creation Workflow Design
     purpose: Defines the architecture and workflow design for forge plan creation, including orchestration patterns, agent responsibilities, data exchange rules, and task derivation process.
@@ -738,38 +745,32 @@ docs:
       - traceability matrix
       - plan creation
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md:
-    title: DES-022 Parallel Agent Output Contract Pattern Design
-    purpose: Defines output contract patterns for parallel Agent execution to prevent write conflicts on shared resources by requiring agents to return results as return values instead of writing to files.
+    title: Parallel Agent Output Contract Pattern Design
+    purpose: Defines output contract patterns for parallel agent execution to prevent race conditions; specifies that agents return results via return values to orchestrator rather than writing to shared resources
     content_details:
-      - "Parallel write conflict problem: same file written by multiple agents, last write wins"
-      - "Claude Code Agent environment constraints: independent subprocesses, no file locking, message passing via return values only"
-      - "Basic principle: agents return results via return values, orchestrators handle aggregation"
-      - "Orchestrator responsibilities: wait for all agents, merge results in main context, write to artifacts only"
-      - "Agent responsibilities: return results via return value, self-contained results, read is unrestricted"
-      - "Shared file direct write antipattern: competing agents overwriting same file"
-      - "Read-Modify-Write antipattern: agent reading shared resource then writing creates race condition"
-      - "File locking antipattern: unreliable in Claude Code environment"
-      - "Intermediate file antipattern: avoids result passing file burden, overhead, and cleanup"
-      - "Applicability scope: returns to orchestrator in parallel Agent patterns"
+      - Parallel write conflict problem in agent execution
+      - Constraints in Claude Code environment (lack of file locking)
+      - Output contract principle (agents return results via return values)
+      - Agent responsibilities (return values, self-contained results, unrestricted reads)
+      - Orchestrator responsibilities (wait for completion, merge results, write artifacts, handle partial failures)
+      - Application examples for context collection (start-requirements, start-design, start-plan, start-implement)
+      - Anti-patterns (direct writes to shared files, read-modify-write, file locking, intermediate files for result passing)
+      - Checklist for designing new parallel agents
     applicable_tasks:
-      - Designing parallel Agent orchestration systems
-      - Implementing context collection in start-requirements, start-design, start-plan, start-implement SKILLs
-      - Defining Agent output contracts for parallel execution
-      - Reviewing parallel Agent designs for race condition safety
-      - Implementing orchestrator result aggregation logic
-      - Enforcing write safety in multi-Agent workflows
-      - Adding new parallel agents to forge
+      - Parallel agent orchestration design
+      - Race condition prevention in multi-agent systems
+      - Agent output contract specification
+      - Parallel context collection implementation
+      - Multi-agent architecture review
     keywords:
       - parallel agent
-      - output contract
+      - race condition
       - return value
       - orchestrator
-      - race condition
       - shared resource
-      - start-requirements
-      - start-design
-      - start-plan
-      - start-implement
+      - output contract
+      - read-modify-write
+      - file locking
   docs/specs/forge/design/DES-023_version_management_workflow_design.md:
     title: DES-023 Version Management Workflow Design
     purpose: Defines the version management workflow for multi-plugin repositories, centralizing version updates through .version-config.yaml to prevent inconsistencies across multiple metadata files

@@ -56,7 +56,7 @@ doc_type `design`（feature 未指定）で既存ファイルの有無を確認�
 
 ### 出力先の解決
 
-設計書の出力先ディレクトリを特定する。入力文書（要件定義書）は Phase 1 で agent が特定する。
+設計書の出力先ディレクトリを特定する。入力文書（要件定義書）は Phase 1.1 で特定する。
 
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
 doc_type `design`、feature `{feature}` で出力先ディレクトリを求める。
@@ -92,27 +92,24 @@ doc_type `design`、feature `{feature}` で出力先ディレクトリを求め�
 
 ## Phase 1: 入力の収集
 
-以下の 2 つを **Agent ツールで並列起動** し、各 agent の **return value** を main AI コンテキストに直接保持する。各 agent は markdown bullet list で返却し、エラー時は該当カテゴリなしで後続工程に進む。
+入力は 2 つ集める。要件定義書は置き場から決定論的に特定し（1.1）、プロジェクトのルールは Agent ツールで検索する（1.2）。
 
 既存の実装・設計パターンは、ここでは集めない。設計は要件だけから組み立て、既存との照合は設計の後（Phase 3）に行う。
 
-### 1.1 要件定義書の収集
+### 1.1 要件定義書の特定
 
-```
-Agent ツール起動: 要件定義書収集
-prompt:
-  Feature "{feature}" に関連する要件定義書を検索する。
+入力の要件定義書は feature の置き場から特定する。検索は使わない。意味検索は、他の feature の仕様や設計書のように入力でない文書を混ぜ、設計の出発点を汚すためである。
 
-  `/forge:query-db-specs {feature}` を呼ぶ。
-
-  各文書のタイトル行を Read で確認し、関連性を判断する。最大 10 件。
-  return value として以下の markdown 形式で返す:
-
-  ## 仕様書 (N 件)
-  - `path/to/spec.md` — 関連理由を 1 行で
-```
+1. `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、doc_type `requirement`、feature `{feature}` で要件定義書のディレクトリを求め、直下の `*.md` を Glob で列挙する。feature が無い（初回立ち上げ）場合は、同手順の feature 未指定の方法（エントリのキーを Glob パターンとして使う）で列挙する
+2. 列挙した各ファイルのタイトル行（先頭の見出し）を Read で確認する
+3. 件数で分岐する:
+   - **0 件**: 「要件定義書がありません。`/forge:start-requirements` で作成してください」と案内して終了する。要件定義書なしでは設計しない
+   - **1 件**: その 1 件を入力にする
+   - **2 件以上**: AskUserQuestion で設計する要件定義書を選ばせる（複数選択可。選択肢にはパスとタイトル行を示す。選択肢に収まらない件数のときは、タイトル行の一覧を示し、Other で指定させる）
 
 ### 1.2 プロジェクトのルールの収集
+
+agent は markdown bullet list で **return value** を返し、main AI コンテキストに直接保持する。エラー時はプロジェクトのルールなしで後続工程に進む。
 
 ```
 Agent ツール起動: 設計ルール収集
@@ -129,18 +126,11 @@ prompt:
 
 ### 1.3 収集結果の確認
 
-全 agent 完了後、2 つの return value をそのままユーザーに表示する。5 件以下は全件表示、6 件以上は先頭 3 件 + `... 他 N 件` で省略。
-
-**要件定義書 return value が空 (0 件) の場合** → AskUserQuestion:
-
-- 要件定義書のパスを手動で指定する
-- 中止する（要件定義書は `/forge:start-requirements` で作成する）
-
-本スキルは要件定義書を入力にする。要件定義書なしでは設計しない。
+1.1 で特定した要件定義書と、1.2 の agent の return value（プロジェクトのルール）を、そのままユーザーに表示する。5 件以下は全件表示、6 件以上は先頭 3 件 + `... 他 N 件` で省略。
 
 ### 1.4 差分開発かどうかの確認
 
-入力の要件定義書が `feature_type: temporary-feature` frontmatter を持つかを、判定の出発点にする。要件の上では既存と重ならなくても、設計してみると既存の設計書を変える・重なることがあるため、Phase 3 で設計書について確かめ直す。
+入力の要件定義書のいずれかが `feature_type: temporary-feature` frontmatter を持つかを、判定の出発点にする。要件の上では既存と重ならなくても、設計してみると既存の設計書を変える・重なることがあるため、Phase 3 で設計書について確かめ直す。
 
 - **持つ（差分開発）**: 以下を Read し、旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。設計書にも同じ frontmatter を付ける（2.2）
   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§2「設計は要件から組み立てる」を含む）
@@ -260,7 +250,7 @@ ADR の作成は、Skill ツールで `/forge:write-adr approval-record {feature
 
 ### specs ToC 更新
 
-設計書の作成・更新後、`/forge:update-db-specs` が利用可能であれば実行すること（利用不可の場合はスキップ）。
+設計書の作成・更新後、`/forge:update-db-specs` が利用可能であれば Skill ツールで起動すること（利用不可の場合はスキップ）。
 
 ### commit/push 確認
 

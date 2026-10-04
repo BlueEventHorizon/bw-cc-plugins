@@ -14,9 +14,8 @@ start-design / start-plan / start-requirements の 3 スキルは、review ス�
 ┌──────────────────────────────────────┐
 │ start-design (オーケストレータ)       │
 │  ├ 事前準備（前提確認）                │
-│  ├ コンテキスト収集 ──┬── specs agent │  ← 並列（return value 収集）
-│  │                     ├── rules agent │
-│  │                     └── code agent  │
+│  ├ 入力の収集 ──┬── 要件定義書の特定    │  ← 置き場の列挙（agent を使わない）
+│  │               └── rules agent        │  ← return value 収集
 │  ├ 収集結果の統合・表示                │
 │  ├ 文書作成（メインコンテキスト）         │
 │  ├ /forge:review → AIレビュー         │
@@ -44,6 +43,8 @@ start-design / start-plan / start-requirements の 3 スキルは、review ス�
 
 3 スキルに共通する「参考文書の収集」処理を標準化する。
 review スキルの Phase 2 (Step 3~7) を汎用化し、create-* スキルでも同じパターンを使用する。
+
+起動する agent の組み合わせはスキルごとに異なる（§4）。start-design は、要件定義書を置き場から決定論的に特定するため、agent で集めるのはプロジェクトのルールだけである。
 
 ### 3.2 収集結果の受け渡し（return value 契約）
 
@@ -125,51 +126,16 @@ sequenceDiagram
 
 ### 4.1 start-design
 
-#### フェーズ構成
+フェーズ構成は [DES-018](DES-018_create_design_workflow_design.md) を正本とする。入力の収集は次のとおり。
 
-```
-事前準備 [MANDATORY]
-├── Step 1: .doc_structure.yaml の確認
-├── Step 2: Feature 名の確定
-├── Step 3: 出力先ディレクトリの解決
-├── Step 4: モード判定（新規/既存）
-└── Step 5: defaults 読み込み
+#### 入力の収集
 
-Phase 1: コンテキスト収集 [MANDATORY]（汎用 Agent 並列・return value 収集）
-├── 1.1: specs agent → 要件定義書リスト
-├── 1.2: rules agent → 設計ルールリスト
-├── 1.3: code agent  → 既存実装リスト
-└── 1.4: 収集結果の確認・表示
+| 入力                 | 必須 | 取得方法                                                                                          |
+| -------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| 要件定義書           | ○    | feature の `requirements/` を列挙する（agent を使わない）。複数件なら選択、0 件は案内して終了する |
+| プロジェクトのルール | ○    | rules agent（汎用 Agent）が `/forge:query-db-rules` で検索し、return value で返す                 |
 
-Phase 2: 要件定義書の分析 [MANDATORY]
-├── 収集済みの要件定義書を Read・徹底確認
-├── 不明点の整理（AskUserQuestion）
-└── 収集済みの既存実装を Read
-
-Phase 3: 設計書の作成 [MANDATORY]
-├── フォーマット適用
-├── 設計ID体系の確認
-└── 設計書の作成（ファイルごとに AskUserQuestion [MANDATORY]）
-
-Phase 4: AIレビュー（FNC-006 準拠）
-└── /forge:review design --files {差分ファイル} --auto
-
-Phase 5: 品質保証
-└── 完全性チェック
-
-完了処理
-├── /forge:update-db-specs（利用可能な場合）
-├── /anvil:commit
-└── 完了案内
-```
-
-#### コンテキスト収集の適用マトリクス
-
-| agent | 必須 | 収集内容                             |
-| ----- | ---- | ------------------------------------ |
-| specs | ○    | 要件定義書（対象 Feature）           |
-| rules | ○    | 設計書フォーマット、設計ワークフロー |
-| code  | ○    | 既存実装資産（再利用候補）           |
+既存の実装は、ここでは集めない。上流の設計の後の照合（Phase 3）で、設計の観点から探す。
 
 ---
 

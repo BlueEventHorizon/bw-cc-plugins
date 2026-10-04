@@ -95,7 +95,7 @@ orchestrator
   orchestrator が return value を統合し、必要なファイルを Read して後続工程へ進む
 ```
 
-タスクの内容・返却形式は DES-013 が定める。
+起動する agent の組み合わせはスキルごとに異なり、[DES-010](DES-010_create_skills_orchestrator_design.md) §4 が定める。タスクの内容・返却形式は DES-013 が定める。
 
 ---
 
