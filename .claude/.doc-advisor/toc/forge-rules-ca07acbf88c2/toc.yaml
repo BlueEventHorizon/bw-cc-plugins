@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-04T10:58:17Z
+  generated_at: 2026-10-04T17:15:33Z
   file_count: 42
 
 docs:
@@ -370,38 +370,38 @@ docs:
       - severity judgment
   plugins/forge/docs/design_method.md:
     title: Design Method
-    purpose: Defines a systematic process for developing design from requirements through responsibility assignment, actor collaboration, and four design perspectives
+    purpose: Describes a systematic methodology for transforming requirements into architecture by decomposing responsibilities across actors, defining their contracts and interactions, and progressively detailing design through six procedural steps
     content_details:
-      - "Four design perspectives: structure, behavior, contract, and maturity level"
-      - Scenario table creation using EARS notation to interpret requirements
-      - Class definition with responsibility name, held data, methods, and collaborators
-      - Sequence diagram creation and system structure verification
-      - Shared data definition with semantics, source of truth, writer, reader, and lifecycle
-      - Module table defining actor contracts with input, output, preconditions, and postconditions
-      - Detailed design with concrete means, data structures, libraries, and algorithms
-      - Traceability matrix matching requirements to design elements
-      - Design verification checklist for requirement-to-design and internal consistency
-      - Design input assumptions including requirements, glossary, non-functional requirements, and project rules
+      - Four design perspectives (responsibility structure, behavior, contracts, maturity) and their corresponding artifacts
+      - Conceptual foundation explaining why requirements can become design through responsibility assignment and actor collaboration
+      - Input prerequisites (requirements, glossary, non-functional requirements, project rules) and quality expectations
+      - Six-step procedure from requirement interpretation through traceability verification
+      - Class definition elements (responsibility name, held data, methods, collaborators) with naming conventions
+      - Scenario interpretation using EARS notation (constant, event, state, abnormal, optional patterns)
+      - Sequence diagram generation with actor selection rules and self-message usage patterns
+      - Contract specification through shared data definitions and module tables with pre/post-conditions
+      - Detailed design phase including implementation method selection, data structure definition, library choices, and algorithm specification
+      - Traceability verification checklist connecting requirements to design elements
     applicable_tasks:
-      - Design creation from requirements
-      - Design review and verification
-      - Architecture design specification
-      - Actor collaboration definition
-      - Traceability matrix creation
-      - Detailed design specification
-      - Design methodology guidance
-      - Design quality assurance
+      - Architectural design creation from requirements
+      - Requirements decomposition and scenario analysis
+      - Responsibility identification and class hierarchy definition
+      - Design review and structural validation
+      - Contract and interface specification
+      - Sequence diagram and interaction pattern definition
+      - Design traceability verification
+      - Integration of non-functional requirements into design
     keywords:
-      - responsibility
-      - scenario table
+      - responsibility-driven design
+      - class definition
       - sequence diagram
-      - actor collaboration
-      - contract
-      - shared data
+      - contract specification
       - module table
+      - actor collaboration
       - traceability matrix
+      - shared data definition
+      - detailed design
       - EARS notation
-      - class diagram
   plugins/forge/docs/design_principles_spec.md:
     title: Design Document Creation Principles
     purpose: Defines generic design document creation principles applicable when project-specific rules are absent, covering scope boundaries, content requirements, judgment criteria, and violation severity standards.
