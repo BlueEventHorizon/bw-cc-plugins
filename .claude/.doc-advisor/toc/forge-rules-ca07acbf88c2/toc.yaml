@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-04T17:15:33Z
+  generated_at: 2026-10-05T06:45:05Z
   file_count: 42
 
 docs:
@@ -36,60 +36,58 @@ docs:
       - scope judgment
       - implementation isolation
   plugins/forge/docs/adr_format.md:
-    title: ADR Default Format
-    purpose: Defines the default format for Architecture Decision Records (ADRs), specifying file naming, structure, section numbering, optional scope definition, and procedures for revision and rejection
+    title: ADR (Architecture Decision Record) Default Format
+    purpose: Specifies the standard format for ADR files including naming conventions, file structure, scope declarations, rejection handling, and decision templates.
     content_details:
-      - ADR file naming convention (ADR-NNN_feature.md with persistent numbering)
-      - File structure (H1 title, numbered decision sections with fixed subsections)
-      - Decision subsections (Context, Decision, Alternatives with rejection reasons, Impact)
-      - Scope block (optional, defines decided vs. non-decided boundaries)
-      - Revision and rejection procedures (rewrite decision section, move rejected option to alternatives table)
-      - Template structure with guidance for writing premise-aware alternative rejection reasons
-      - Impact section constraints (no specific file paths, component-level abstraction only)
+      - "File naming convention: ADR-{NNN}_{feature}.md with persistent numbering"
+      - "Fixed file structure: H1 title and sequentially numbered decision sections"
+      - "Four mandatory subsections per decision: Context, Decision, Alternatives, Impact"
+      - Optional scope section in blockquote format between H1 and first decision
+      - Rejection handling through section rewriting with alternative table updates
+      - Section numbering immutability to preserve external references (ADR-NNN §N format)
+      - Template structure with detailed guidance on context, decision, alternatives, and impact
+      - Rules against metadata tables and status history sections
     applicable_tasks:
-      - ADR file creation and initialization
-      - Architecture decision documentation
-      - Decision revision and rejection handling
-      - Cross-project ADR format standardization
+      - ADR file creation and formatting
+      - Architecture decision documentation and recording
+      - ADR format standardization for projects
+      - ADR rejection and amendment handling
+      - Section reference preservation and management
     keywords:
       - ADR
-      - architecture decision record
-      - template
+      - adr_format
+      - adr_principles_spec
+      - adr_usage_spec
+      - Context-Decision-Alternatives-Impact
+      - scope section
       - section numbering
-      - scope definition
-      - alternatives
-      - context
-      - revision
   plugins/forge/docs/adr_principles_spec.md:
-    title: Architecture Decision Record Operating Principles
-    purpose: Defines the operational principles for creating and maintaining Architecture Decision Records, specifying which decisions should be documented, scope definition conditions, review criteria, and procedures for revising decisions
+    title: ADR (Architecture Decision Record) Operational Principles
+    purpose: Defines operational principles for ADR creation and maintenance including criteria for when to document decisions, review standards, scope declaration rules, and severity classification of violations.
     content_details:
-      - ADR definition and responsibility (recoverable decisions with non-obvious rationale)
-      - Write/no-write scope (decisions with alternatives, premise clarity, when to omit)
-      - Primary beneficiary identification (proposing AI as main stakeholder)
-      - Scope block conditions (when parallel requirements/designs exist and boundaries need clarification)
-      - Review criteria table (rejection conditions, correction requirements, insufficiencies)
-      - Mutable document procedures (section rewrites allowed, permanent section numbers, no history sections)
-      - Decision rejection/revocation procedure (same-section rewrite, move old option to alternatives)
-      - File placement and ID numbering (per-feature ADR file, shared numbering with DES)
-      - Gray zone tolerance table (allowed vs. disallowed variations)
-      - Severity catalog for violations (critical, major, minor)
+      - "ADR definition: records why better methods were not chosen when logic is not evident from code/specs"
+      - "Content boundary: ADR is not for specification details (true source is in requirements/design docs)"
+      - "Writing targets and non-targets: defined by 2 simultaneous conditions (plausible proposal + not derivable from code/specs)"
+      - "Scope section writing conditions: required when parallel requirements/designs exist and boundaries are ambiguous"
+      - "Review criteria table: conditions for rejection, modification, and missing information"
+      - "Approval record handling: never reject approval records, check for explanation and user quotes"
+      - "Decision rejection handling: rewrite same section, move old decision to alternatives, preserve section numbering"
+      - "File placement and numbering: one ADR file per feature, shared numbering between ADR and DES prefixes"
+      - Severity catalog with major/critical violations for specification duplication and section numbering changes
     applicable_tasks:
-      - ADR creation and assessment
-      - Decision revision and rejection handling
-      - ADR review and evaluation
-      - Cross-project ADR operating standardization
-      - Architecture decision documentation guidelines
+      - ADR governance and policy definition
+      - Decision documentation criteria and review standards
+      - ADR rejection and amendment procedures
+      - Approval record management and documentation
+      - ADR severity violation assessment and enforcement
     keywords:
-      - ADR principles
-      - architecture decision
-      - scope block
-      - rejection reason
-      - alternatives
-      - severity
-      - mutable document
-      - premise clarity
-      - review criteria
+      - ADR
+      - adr_principles_spec
+      - adr_format
+      - adr_usage_spec
+      - spec_design_boundary_spec
+      - document_style_guide
+      - true source
   plugins/forge/docs/adr_usage_spec.md:
     title: Architecture Decision Record Usage Principles
     purpose: Defines the obligations of those who use Architecture Decision Records as a basis for decision-making, specifying how to evaluate rejection reasons, verify underlying premises, and document decision basis

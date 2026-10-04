@@ -1,11 +1,11 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-10-04T17:15:33Z
+generated_at: 2026-10-05T06:45:05Z
 file_count: 42
 checksums:
   plugins/forge/docs/additive_development_spec.md: f3eae7f662c4ff572732c08de6441aa580bbbf649f870234b93b77fe5de3db29
-  plugins/forge/docs/adr_format.md: d9df6f83fa6c3ddee5e4b5c78eb0959d3eafa6e9286d90f667a042c0fc326486
-  plugins/forge/docs/adr_principles_spec.md: 047650f1cd3195e06d876c59a5ce09e766f65c6d1ed7bf9b07fd8018ec80131c
+  plugins/forge/docs/adr_format.md: cf247dbcde20de52060d3d158dd8ac767da6e0a784a290061036eb5f8fbaf764
+  plugins/forge/docs/adr_principles_spec.md: bacd592a1ef6d30b957352646816df00c04ee24f76568b38868614147ebc71c5
   plugins/forge/docs/adr_usage_spec.md: 65a6060d6b36fc9a1da11c2c578e7dab52d73a13ca746760a1cd1d2ec2b3eafc
   plugins/forge/docs/consult_principles_spec.md: db230680c0ed32fe8fbd16005d9943ee2096eeeecd1cc8fdb41042ae27faf175
   plugins/forge/docs/criteria/review_criteria_code.md: db0142cb94dff160544afdcb79e15ddd7ba3c1165caa0677294e100fbb1ed471
