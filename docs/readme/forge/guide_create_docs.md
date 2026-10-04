@@ -234,7 +234,7 @@ The top level has exactly three keys: `requirements_traceability` / `design_trac
 ### Output
 
 Generates the plan (JSON) at `specs/{feature}/plan/{feature}_plan.json`. **A Markdown plan is never emitted.**
-A Claude Code plan-mode Markdown plan is a different artifact; if you want to derive requirements and design from one, use `/forge:create-feature-from-markdown-plan`.
+A Claude Code plan-mode Markdown plan is a different artifact; if you want to derive a requirements document from one, use `/forge:create-requirements-from-plan-mode`.
 
 ### Reference Documents
 

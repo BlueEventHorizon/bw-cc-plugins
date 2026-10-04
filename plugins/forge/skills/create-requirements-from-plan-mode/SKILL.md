@@ -1,22 +1,22 @@
 ---
-name: create-feature-from-markdown-plan
+name: create-requirements-from-plan-mode
 description: |
-  Claude Code plan mode で書いた **Markdown plan** から、要件定義書と設計書を一気通貫で作成する。
+  Claude Code plan mode で書いた **Markdown plan** から、要件定義書を作成する。plan の内容は詳細設計も含めてすべて要件定義書に取り込む。
   本 skill が入力にするのは **Claude Code plan mode の Markdown plan** であり、
   forge の実装計画書 `{feature}_plan.json`（JSON、`/forge:start-plan` が作成）とは別物。
-  Markdown plan を起点にゼロから feature の仕様化を始めたいときに使う。
-  トリガー: "markdown plan から feature 作成", "plan mode から要件作成", "create feature from markdown plan"
+  Markdown plan を起点に feature の仕様化を始めたいときに使う。設計書は作らない（続けて `/forge:start-design` を使う）。
+  トリガー: "plan mode から要件作成", "markdown plan から要件定義", "create requirements from plan mode"
 user-invocable: true
 argument-hint: "[plan-file-path]"
 allowed-tools: Bash, Read, Skill, AskUserQuestion, Glob
 ---
 
-# /forge:create-feature-from-markdown-plan
+# /forge:create-requirements-from-plan-mode
 
-Claude Code の plan mode で生成された **Markdown plan** を入口に、要件定義書と設計書を一気通貫で作成する薄いオーケストレーション skill。
+Claude Code の plan mode で生成された **Markdown plan** を入口に、要件定義書を作成する薄いオーケストレーション skill。
 
 - 入力: **Markdown plan**（`~/.claude/plans/*.md` 形式を想定。任意のパスも可）
-- 出力: 要件定義書 + 設計書（`forge:start-requirements` / `forge:start-design` の出力）
+- 出力: 要件定義書（`forge:start-requirements` の出力）。設計書は作らない
 - 対象外: forge の実装計画書 `{feature}_plan.json`（JSON 構造の計画書） — こちらは `/forge:start-plan` が作成・更新する
 
 > ⚠️ **「plan」の語の使い分け** [MANDATORY]
@@ -40,7 +40,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 使い方:
 
 ```
-/forge:create-feature-from-markdown-plan [plan-file-path]
+/forge:create-requirements-from-plan-mode [plan-file-path]
 ```
 
 | 引数           | 内容                                                                               |
@@ -216,36 +216,13 @@ Skill ツールで `/forge:start-requirements` を起動する:
 
 plan に該当情報がない場合のみ、workflow の元の Q&A をユーザーに提示する。「plan に記載がないため確認させてください」と前置きする。
 
+#### 5.3.4 plan の内容はすべて取り込む
+
+plan の内容は、詳細設計（実装の手順、既存ファイルの変更箇所、データ構造など）も含めて、すべて要件定義書に取り込む。workflow の Q&A に対応する項目が無い内容も落とさない。
+
 ### 5.4 完了
 
-`/forge:start-requirements` の自己完結フロー（AI レビュー・ToC 更新・commit 確認）に従って完了まで進める。完了後は **必ず** Phase 6 に進み、その合図として以下を出力する:
-
-```
-### ✅ 要件定義書フェーズ完了 → Phase 6（設計書作成）へ進みます
-```
-
----
-
-## Phase 6: 設計書の作成（forge:start-design 呼び出し）
-
-### 6.1 引き継ぎ表示
-
-要件定義書作成完了後、以下を表示してから設計書フェーズへ進む:
-
-```
-要件定義書: {作成された REQ ファイルパス}
-plan: {plan-path}
-これから plan + 要件定義書を context として設計書を作成します。
-```
-
-### 6.2 forge:start-design の起動
-
-Skill ツールで `/forge:start-design` を起動する:
-
-- skill: `forge:start-design`
-- args: `{feature}`
-
-`/forge:start-design` の自己完結フロー（コンテキスト収集・AI レビュー・commit 確認）に従って完了まで進める。設計書の各設計判断は **要件定義書を一次情報、plan を補足情報** として位置づける（plan の内容と要件が矛盾する場合は要件定義書を優先）。
+`/forge:start-requirements` の自己完結フロー（AI レビュー・ToC 更新・commit 確認）に従って完了まで進める。
 
 ---
 
@@ -256,13 +233,12 @@ Skill ツールで `/forge:start-design` を起動する:
 作成されたファイルを表示し、ユーザーが次に実行するコマンド例を案内する:
 
 ```
-Markdown plan から feature を作成しました:
+Markdown plan から要件定義書を作成しました:
   Markdown plan: {plan-path}
   REQ:           {要件定義書パス}
-  DES:           {設計書パス}
 
 次のステップ:
-  /forge:start-plan {feature}    # forge 実装計画書 {feature}_plan.json の作成へ進む
+  /forge:start-design {feature}    # 設計書の作成へ進む
 ```
 
 ---
@@ -270,5 +246,6 @@ Markdown plan から feature を作成しました:
 ## 制約事項
 
 - **forge 実装計画書 `{feature}_plan.json` は対象外**: forge の JSON 計画書は `/forge:start-plan` が作成・更新する。本 skill は Markdown plan のみを入力とする
-- **既存テンプレートを尊重**: 要件定義書は `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`、設計書は `${CLAUDE_PLUGIN_ROOT}/docs/design_method.md` の手順と成果物に従う。本 skill は独自テンプレートを持たない
-- **forge:start-requirements / forge:start-design を改変しない**: 本 skill は薄いオーケストレーション層であり、各 skill の品質保証フロー（AI レビュー・ToC 更新・commit）はそのまま流用する
+- **既存テンプレートを尊重**: 要件定義書は `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` に従う。本 skill は独自テンプレートを持たない
+- **設計書は作らない**: 設計は `/forge:start-design` が要件定義書から行う
+- **forge:start-requirements を改変しない**: 本 skill は薄いオーケストレーション層であり、start-requirements の品質保証フロー（AI レビュー・ToC 更新・commit）はそのまま流用する

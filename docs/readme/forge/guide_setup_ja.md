@@ -117,7 +117,7 @@ forge スキル一覧を表示し、選択したスキルの引数をガイド�
   start-plan          : 計画書の作成。レビュー+自動修正→commit
   start-implement     : 計画書から実装・レビュー・計画更新
   start-uxui-design    : デザイントークン・UI 視覚仕様を創造
-  create-feature-from-markdown-plan: Markdown plan から要件定義→設計書へ展開
+  create-requirements-from-plan-mode: plan mode の Markdown plan から要件定義書を作成
   merge-specs          : 2 つの仕様 DIR（基本 / 追加）の齟齬を内容単位で解消
   setup-doc-structure : .doc_structure.yaml を対話的に生成
   setup-version-config: .version-config.yaml を対話的に生成

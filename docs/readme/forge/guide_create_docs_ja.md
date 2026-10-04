@@ -234,7 +234,7 @@ top-level は `requirements_traceability` / `design_traceability` / `tasks` の 
 ### 出力
 
 `specs/{feature}/plan/{feature}_plan.json` に計画書（JSON）を生成。**Markdown 形式の計画書は出力しない**。
-Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件・設計を作る場合は `/forge:create-feature-from-markdown-plan` を使う）。
+Claude Code plan mode が生成する Markdown plan とは別物（Markdown plan を入力に要件定義書を作る場合は `/forge:create-requirements-from-plan-mode` を使う）。
 
 ### 参考ドキュメント
 
