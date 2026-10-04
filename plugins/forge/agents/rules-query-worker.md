@@ -78,4 +78,4 @@ Required documents:
 ## Notes
 
 - false negative は厳禁。迷ったら含める
-- ToC 内のパスは `plugins/forge/...` 形式だが、ファイルを Read する際は `plugins/forge/` の部分を `${CLAUDE_PLUGIN_ROOT}` に置き換えて解決する（例: `plugins/forge/docs/design_format.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`）。返すパスは置き換え前の形式に戻す
+- ToC 内のパスは `plugins/forge/...` 形式だが、ファイルを Read する際は `plugins/forge/` の部分を `${CLAUDE_PLUGIN_ROOT}` に置き換えて解決する（例: `plugins/forge/docs/design_method.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_method.md`）。返すパスは置き換え前の形式に戻す

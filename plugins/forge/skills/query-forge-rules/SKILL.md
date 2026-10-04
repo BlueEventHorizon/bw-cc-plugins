@@ -89,4 +89,4 @@ Required documents:
 
 - false negative は厳禁。関連判断は worker が ToC 全エントリを読んで行う
 - 返されるパスは `plugins/forge/...` 形式（project-root-relative）。呼び出し元がファイルを Read する際は `plugins/forge/` の部分を `${CLAUDE_PLUGIN_ROOT}` に置き換えて解決する
-  （例: `plugins/forge/docs/design_format.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md`）
+  （例: `plugins/forge/docs/design_method.md` → `${CLAUDE_PLUGIN_ROOT}/docs/design_method.md`）

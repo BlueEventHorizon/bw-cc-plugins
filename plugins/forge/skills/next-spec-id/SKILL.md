@@ -109,7 +109,7 @@ python3 "$SCRIPT" ADR --share-prefixes ADR,DES
 どのプレフィックスを使うかは **呼び出し側のスキル** が決定する:
 
 1. プロジェクト固有のルールがあればそれに従う
-2. なければ forge の各文書型の format / principles をフォールバック参照（要件 → `requirement_format.md`、設計 → `design_format.md`、ADR → `adr_format.md`、タスク → `plan_principles_spec.md`）
+2. なければ forge の各文書型の format / principles をフォールバック参照（要件 → `requirement_format.md`、設計 → `DES`（設計書を作る `/forge:start-design` の既定）、ADR → `adr_format.md`、タスク → `plan_principles_spec.md`）
 
 ## 他スキルからの呼び出し方
 

@@ -130,7 +130,7 @@ start-requirements → start-design → start-plan → start-implement
 
 ### 参考ドキュメント
 
-- `plugins/forge/docs/design_format.md` — 設計書テンプレート
+- `plugins/forge/docs/design_method.md` — 設計の手順と成果物
 - `plugins/forge/docs/design_principles_spec.md` — 設計原則ガイド
 - `plugins/forge/docs/spec_design_boundary_spec.md` — What/How の境界
 

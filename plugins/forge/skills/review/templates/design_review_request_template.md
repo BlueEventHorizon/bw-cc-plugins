@@ -42,7 +42,7 @@
 
 ### 規範（違反を検出する対象）
 
-- `{{PLUGIN_ROOT}}/docs/design_format.md` — 設計書の構成・必須項目
+- `{{PLUGIN_ROOT}}/docs/design_method.md` — 設計の手順と成果物
 - `{{PLUGIN_ROOT}}/docs/adr_format.md` — ADR の構成・必須項目（対象が ADR の場合）
 - `{{PLUGIN_ROOT}}/docs/adr_principles_spec.md` — ADR の運用・重大度（対象が ADR の場合）
 - `{{PLUGIN_ROOT}}/docs/design_principles_spec.md` — 設計原則

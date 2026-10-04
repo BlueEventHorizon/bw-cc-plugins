@@ -130,7 +130,7 @@ Generates design documents (Markdown) in `specs/{feature}/design/`. ID scheme: `
 
 ### Reference Documents
 
-- `plugins/forge/docs/design_format.md` — Design document template
+- `plugins/forge/docs/design_method.md` — Design procedure and deliverables
 - `plugins/forge/docs/design_principles_spec.md` — Design principles guide
 - `plugins/forge/docs/spec_design_boundary_spec.md` — What/How boundary
 

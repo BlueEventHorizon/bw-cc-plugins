@@ -270,5 +270,5 @@ Markdown plan から feature を作成しました:
 ## 制約事項
 
 - **forge 実装計画書 `{feature}_plan.json` は対象外**: forge の JSON 計画書は `/forge:start-plan` が作成・更新する。本 skill は Markdown plan のみを入力とする
-- **既存テンプレートを尊重**: 要件定義書は `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`、設計書は `${CLAUDE_PLUGIN_ROOT}/docs/design_format.md` をそのまま使用する。本 skill は独自テンプレートを持たない
+- **既存テンプレートを尊重**: 要件定義書は `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md`、設計書は `${CLAUDE_PLUGIN_ROOT}/docs/design_method.md` の手順と成果物に従う。本 skill は独自テンプレートを持たない
 - **forge:start-requirements / forge:start-design を改変しない**: 本 skill は薄いオーケストレーション層であり、各 skill の品質保証フロー（AI レビュー・ToC 更新・commit）はそのまま流用する

@@ -5,10 +5,68 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-09-28T12:36:18Z
-  file_count: 37
+  generated_at: 2026-10-04T04:09:25Z
+  file_count: 39
 
 docs:
+  docs/specs/adr-writer/design/DES-085_adr_writer_design.md:
+    title: ADR Writer Design
+    purpose: Defines the design of the ADR Writer system, comprising a SKILL entry point, a custom Agent for isolated context, and exchange scripts for deterministic identification and recording.
+    content_details:
+      - "3-component architecture: write-adr SKILL, adr-writer Agent, adr_exchange.py script"
+      - "adr_exchange.py subcommands: open, request-path, finish, check with deterministic placement logic"
+      - "Feature-per-ADR-file design decision: one file per feature, all decisions grouped in single file"
+      - "adr-writer Agent isolation: bounded write access (ADR file only), no parent context inheritance"
+      - "write-adr SKILL workflow: 7 steps including resolution, composition, numbering, publication, agent launch, judgment retrieval, branching"
+      - "Request field definitions: kind, feature, adr_dir, adr_path, baseline_sha256, decision, context, alternatives, approval_quote, change, related_docs"
+      - Use cases UC-01 to UC-06 with normal flows and error handling
+      - Test strategy for exchange script and agent contract validation
+    applicable_tasks:
+      - Implementing ADR Writer feature and its three components
+      - Creating and managing approval records in ADR documents
+      - Documenting design decisions and judgments in ADR
+      - Updating existing ADR decisions with new evaluations
+      - Designing and validating exchange script contracts
+    keywords:
+      - adr-writer
+      - write-adr
+      - adr_exchange.py
+      - request_id
+      - approval-record
+      - deterministic identification
+      - isolated context
+      - exchange pattern
+  docs/specs/adr-writer/requirements/REQ-030_adr_writer.md:
+    title: REQ-030 ADR Writer Requirements Definition
+    purpose: Defines the behavior of an ADR Writer entity that judges, examines, and records Architecture Decision Records separate from design progression, ensuring proper documentation standards and context isolation.
+    content_details:
+      - ADR Writer definition and core responsibilities (examining requests and determining judgment outcomes)
+      - Request types and intake requirements (approval records, judgment records, decision updates with context)
+      - Rejection criteria for judgment records (undecided decisions, obviously correct choices, deducible from code/rules, work progression records)
+      - Correction and recording procedures (removing implementation details, avoiding spec verbatim copying, refining rejection reasoning)
+      - Incomplete information handling and feedback return process
+      - Approval record validation (checking authorization rationale and user consent citations)
+      - Decision update handling and rewriting rules (new decision, moving old options to alternatives, removing outdated reasoning)
+      - Judgment return format (creation/rejection/insufficient with mandatory reasons)
+      - ADR file organization and naming (feature-based ADR directories, single file per feature, fixed numbering via adoption skill)
+      - Writing scope limitations (ADR files only, no modifications to other documents/code)
+    applicable_tasks:
+      - ADR creation and judgment determination
+      - Design decision documentation and recording
+      - Approval recording for requirements-exceeding design choices
+      - ADR content validation and form correction
+      - Decision update handling and reversal documentation
+      - ADR file management and organization
+    keywords:
+      - ADR
+      - ADR Writer
+      - decision judgment
+      - approval recording
+      - rejection criteria
+      - decision update
+      - ADR file organization
+      - architecture decision
+      - design context isolation
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
     title: agent-review Backend Design
     purpose: Defines the design of the agent-review backend that launches a fresh read-only reviewer custom Agent per round and converts its response into the common review result
@@ -66,68 +124,70 @@ docs:
       - FNC-1603
       - backend contract
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
-    title: DES-025 Issue-Driven Development Flow Design
-    purpose: Specifies the issue-driven development flow design in anvil, including 4 SKILLs (create, triage, implementation, UI), architecture, module design, use cases, data structures, and error handling strategies
+    title: Issue-Driven Development Flow Design
+    purpose: Specifies the issue-driven development workflow for anvil plugin, including skill phases (create-issue, triage-issue, impl-issue, impl-ui), task enumeration logic, and error handling procedures
     content_details:
-      - Architecture with 4 inherited SKILLs and Phase structures
-      - triage-issue 8-phase model (repo resolution, issue retrieval, specs search, rules search, code investigation, correctness judgment with 5 categories, impact analysis, routing with audit comment)
-      - impl-issue 12-phase model (repo resolution, UI judgment, investigation, planning, issue update, implementation start confirmation, implementation, code review, commit and PR creation)
-      - impl-ui design and implement stages with Figma verification, specification generation, visual comparison, implementation design with Typography mapping, three-point review
-      - Decision logic for correctness judgment (5 categories), TASK formation (target, content, confirmation), routing (single-shot vs requirements definition)
-      - UI Issue identification criteria table with observation points (implementation target, Figma URL, design document, labels, domain layer)
-      - Issue body structure with marker pairs for user content preservation and implementation plan appending, audit comment schema
-      - Data artifacts including design specifications at specs/design/{screen-id}/ with images, previews, implementation design, captures; .git_information.yaml with metadata
-      - Error handling behaviors for gh auth failures, repo mismatch, Figma connectivity, MCP failures, PR creation failures
+      - "triage-issue 9-phase workflow: Issue validation, specification/rule research, 5-classification correctness judgment, TASK enumeration, one-shot vs requirements-first routing"
+      - "impl-issue 13-phase workflow: branch creation with label-based prefix, UI issue judgment, investigation, planning with template, issue update, code review, commit, PR"
+      - "impl-ui 2-stage workflow (design/implement): design specification via prepare-figma, visual comparison approval, implementation design, Typography mapping, three-point review"
+      - "Architecture: 6 anvil skills (create-issue, triage-issue, impl-issue, impl-ui, prepare-figma, resolve-figma-node) with dependencies on forge skills (query-db-specs/rules, start-requirements, review)"
+      - "UI issue judgment table: criteria based on implementation target directory, Figma URL/design spec references, label keywords (UI vs data/domain/infrastructure)"
+      - "Branch naming: <prefix>/<issue-number>-<slug> with prefix derived from label keywords (fix/feature/refactor/docs/chore)"
+      - "Issue body structure: user-content markers (start/end), implementation plan template, GitHub references with percent-encoded URLs"
+      - "Audit comment template: correctness judgment, TASK list or non-taskable item classification, investigation results (specs/rules/code)"
+      - "Error handling: 13 scenarios (gh auth, repository mismatch, Figma connectivity, capture failure, PR creation) with recovery procedures"
     applicable_tasks:
-      - triage-issue SKILL implementation
-      - impl-issue SKILL implementation
-      - impl-ui SKILL implementation with design and implement stages
-      - Correctness judgment decision logic design
-      - Routing decision logic design
-      - TASK formation logic design
-      - Figma integration workflow design
-      - Error handling strategy implementation
-      - GitHub Issue structure design
-      - Repository workflow design
+      - Issue-driven development flow implementation in anvil plugin
+      - triage-issue skill implementation and testing
+      - impl-issue skill implementation and testing
+      - impl-ui skill implementation with Figma integration
+      - UI issue detection and routing logic implementation
+      - Issue body structure and marker coordination
+      - Audit comment generation for workflow coordination
+      - Error handling implementation for workflow phases
+      - prepare-figma and resolve-figma-node skill implementation
     keywords:
-      - issue-driven flow
+      - issue-driven-flow
       - triage-issue
       - impl-issue
       - impl-ui
-      - correctness judgment
-      - TASK formation
-      - Figma integration
-      - Phase structure
+      - prepare-figma
+      - resolve-figma-node
+      - TASK enumeration
+      - UI issue judgment
       - audit comment
-      - routing
   docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
-    title: Issue-driven Development Flow Requirements Definition
-    purpose: Defines requirements for GitHub Issue-driven development workflow from issue creation through triage, implementation, and PR creation. Includes scope boundaries, terminology, and workflow requirements for standard and UI issues with Figma integration.
+    title: Issue-Driven Development Flow Requirements
+    purpose: Specifies the issue-driven development workflow from GitHub Issue creation through triage, implementation routing (one-shot vs. requirements-first), and UI design with Figma integration.
     content_details:
-      - Issue creation requirements with Bug Report and Feature Request templates and mandatory sections
-      - Triage workflow for fact validation and routing to one-shot implementation or requirements definition
-      - Implementation workflow stages including investigation, planning, implementation, review, and PR creation
-      - UI issue design and implementation flow with Figma as information source
-      - Figma information extraction with frame identification and design tokens
-      - Scope definition covering included workflows and excluded processes
-      - Terminology for Issue types, triage, task determination, and workflow stages
-      - Cross-functional invariants for user content preservation and approval requirements
+      - Bug Report and Feature Request template structure with mandatory sections and closure set expressions
+      - Triage investigation with fact verification against specs, rules, and code
+      - TASK enumeration and routing decision between one-shot implementation and requirements definition
+      - Implementation planning and execution from investigation through commit and PR creation
+      - Design specification creation from Figma with frame identification and design tokens
+      - Implementation design specification with Typography mapping and action implementation plan
+      - Three-point alignment review comparing Figma screenshot, implementation screenshot, and design specification code
+      - Branch naming by issue label (fix, feature, refactor, docs, chore prefixes)
+      - Issue body mutation rules preserving user-written ranges and appending implementation plan
+      - Prerequisite condition checks for authentication, git repository, and Figma access
     applicable_tasks:
-      - Issue workflow engine implementation
-      - Issue triage logic design for fact validation
-      - Implementation routing logic design for one-shot vs requirements definition
-      - UI issue workflow with Figma integration design
-      - Issue creation interface with template validation
-      - Commit and PR creation orchestration
+      - GitHub Issue creation and triage decision making
+      - Implementation workflow execution with code review
+      - Design specification creation from Figma
+      - UI Issue design and implementation with three-point alignment review
+      - PR creation with issue closure references
+      - Issue reopening and PR creation retry handling
     keywords:
       - Issue-driven development
-      - triage
-      - one-shot implementation
+      - Triage
+      - One-shot implementation
+      - Requirements definition
       - Figma
-      - UI workflow
-      - task determination
-      - requirement definition
-      - Issue template
+      - Design specification
+      - TASK enumeration
+      - Three-point alignment
+      - Bug Report
+      - Feature Request
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -621,37 +681,34 @@ docs:
       - What vs. How principle
       - spec/design boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: DES-018 Create-Design Workflow Design
-    purpose: Defines orchestrator workflow for start-design skill with parallel context collection agents, design document creation with mandatory human review, AI review, and quality assurance phases emphasizing existing asset reuse and requirement coverage
+    title: forge design workflow design
+    purpose: Orchestrates the /forge:start-design skill workflow to create design documents from requirements, defining phases, process flow, design principles, and mandatory prerequisites for building designs from requirements only.
     content_details:
-      - Orchestrator pattern for start-design with parallel context collection from specs, rules, and code agents
-      - Prerequisite phase with doc_structure.yaml confirmation, feature name, output directory resolution, mode detection, and defaults loading
-      - "Phase 1: Context collection using parallel agents via /forge:query-db-specs, /forge:query-db-rules, and Glob/Grep for existing assets"
-      - Return value contract for context agents returning markdown bullet lists of collected items
-      - "Phase 2: Design document creation with format application, ID system validation (DES-xxx), and mandatory human review per file via AskUserQuestion"
-      - "Phase 3: AI review via /forge:review design --auto targeting diff-only modifications"
-      - "Phase 4: Quality assurance with completeness check (requirement coverage, ID uniqueness, asset reuse), ToC update, and commit/push confirmation"
-      - "Design principle: mandatory existing asset reuse - similar components must be reused, not created new"
-      - "What/How boundary: design focuses on HOW (structure/composition), not What (requirements) which is specification responsibility"
-      - "Requirement completeness: design must fully cover all requirements from requirement definition document"
+      - "Five workflow phases: requirements collection, design creation, pattern matching, consistency verification, review"
+      - Orchestrator skill initialization with Feature name and mode determination
+      - Design method step-by-step execution (Steps 0-6) per design_method.md
+      - Existing implementation and pattern matching for reuse decisions
+      - Consistency verification using traceability matrix and requirement coverage
+      - AI and user review workflow with /forge:review design --auto
+      - "Design principles: build from requirements only, leverage patterns after design"
+      - "Prerequisite documents: design_method.md, design_principles_spec.md, strategy_principles_spec.md"
+      - Re-design loop for found patterns and upstream design re-approval
     applicable_tasks:
-      - Designing orchestrator workflows with parallel context collection
-      - Implementing requirement document analysis and coverage validation
-      - Planning existing asset discovery and reuse strategies
-      - Creating design documents with format consistency checks
-      - Implementing human review feedback loops in document creation
-      - Validating design/requirement boundary alignment
+      - Design workflow orchestration and execution
+      - Feature design document creation
+      - Existing implementation reuse assessment
+      - Design consistency verification
+      - Design review initiation
+      - Design phase progression validation
     keywords:
-      - orchestrator workflow
-      - parallel context collection
-      - design creation
-      - existing asset reuse
-      - What vs How boundary
-      - requirement coverage
-      - design principles
-      - human review loop
-      - format consistency
-      - completeness check
+      - forge:start-design
+      - design_method.md
+      - requirements-driven design
+      - pattern matching
+      - traceability matrix
+      - design consistency
+      - orchestrator skill
+      - spec_design_boundary_spec.md
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     title: Plan Creation Workflow Design
     purpose: Defines the architecture and workflow design for forge plan creation, including orchestration patterns, agent responsibilities, data exchange rules, and task derivation process.
@@ -826,28 +883,35 @@ docs:
       - allowlist
       - syntax validation
   docs/specs/forge/design/DES-055_review_request_template_design.md:
-    title: Review Request Template Design
-    purpose: Specifies design for pattern-specific review request templates where scripts handle dynamic data embedding and validation, enabling templates as specifications for reviewers while maintaining backend-neutral common bodies.
+    title: review request template design
+    purpose: Defines template-based design for review requests where each pattern has one natural language template and scripts handle data embedding and validation, with backend-neutral content and complete placeholder contract.
     content_details:
-      - Template overview with single natural language template per review pattern
-      - Design constraints - no prose in scripts, no condition branching per target axis, no wire protocol
-      - Template list - 8 patterns (diff, branch, code, requirement, design, plan, uxui, secrets) with target axes
-      - Placeholder contract - {{TOKEN}} notation with global and pattern-specific tokens (REVIEW_TYPE, PLUGIN_ROOT, PROJECT_ROOT, TARGET_PATHS, FOCUS, SCOPE)
-      - Placeholder validation (fail-closed) - uneaten tokens, unknown tokens, newline injection, absolute paths, double target axis
-      - Script responsibilities - build_review_request.py for token replacement and validation, scan_secrets.py for deterministic detection
-      - Template selection logic - mapping review invocation patterns to selected templates
-      - Test design - token replacement, backend neutrality verification, absolute path resolution, template completeness contracts
+      - "Eight review request templates by pattern: diff, branch, code, requirement, design, plan, uxui, secrets"
+      - Token placeholder contract with {{TOKEN}} notation and complete token list for dynamic substitution
+      - Template selection logic based on review type and target axis combinations (files/dirs/branch)
+      - "Built-in perspective documents referenced by each template: criteria documents, design principles, spec boundaries"
+      - "Placeholder validation rules: no undigested tokens, no unknown tokens, no newlines, absolute paths only"
+      - "Script responsibilities: template reading, token replacement, validation, JSON envelope output with review_id"
+      - "Backend-neutral design: no backend identifiers, session info, or wire protocol headers in common templates"
+      - Self-validation procedure in all templates requiring decomposition into verification questions
+      - "Scope and focus distinction: evaluation criteria vs target specification are separate axes"
     applicable_tasks:
-      - Review request generation and template building
-      - Template placeholder embedding and validation
-      - Pattern-specific review body configuration
-      - Backend-neutral protocol implementation
+      - Review request template creation and pattern selection
+      - Dynamic value embedding in templates
+      - Template consistency and completeness validation
+      - Perspective document linkage for review criteria
+      - Secrets detection and masking in review
+      - Review backend integration with template dispatch
+      - Verification procedure specification for reviewers
     keywords:
       - review request template
-      - placeholder embedding
-      - "{{TOKEN}} notation"
-      - backend neutral
-      - template pattern
+      - token placeholder
+      - backend-neutral design
+      - build_review_request.py
+      - template validation
+      - review_criteria_*
+      - diff/branch/code/design patterns
+      - FOCUS and SCOPE distinction
   docs/specs/forge/design/DES-061_forge_settings_file_design.md:
     title: DES-061 forge Project Settings File Design
     purpose: Defines the design of a universal settings file (.claude/.forge.yaml) for adjusting forge behavior per project, establishing file placement, structure, reading, and error handling conventions.

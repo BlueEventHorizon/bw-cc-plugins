@@ -5,38 +5,36 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-02T14:37:47Z
+  generated_at: 2026-10-03T17:06:09Z
   file_count: 42
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines decision criteria, procedures, and rules for managing additive development features when extending existing projects, including feature classification, specification handling during implementation, and merge strategies.
+    purpose: Defines judgment criteria and procedures for adding features to existing projects, including feature namespace concepts, differential vs. additive development classification, specification management during implementation, and merge procedures.
     content_details:
-      - Feature namespace concept and classification (pure addition vs differential development)
-      - Applicability criteria for differential development
-      - Specification replacement rules during implementation (differential documents become current specifications)
-      - Restrictions on modifying old specifications during implementation (merge timing requirement)
-      - Work isolation requirement (dedicated worktree for implementation)
-      - Merge definition as semantic integration and reconciliation of specifications
-      - Scope-based merge decision (contradictions, scope overlap, independent content)
-      - Feature classification by temporal nature and frontmatter for tracking
+      - Feature namespace concept and two types (pure addition vs. differential)
+      - Application conditions for differential feature development
+      - Old specification replacement rules and principles during implementation
+      - Code isolation using git worktree
+      - Merge definition as semantic unification
+      - Scope judgment criteria for merge decisions
+      - Five-step merge procedure with specification updates
     applicable_tasks:
-      - Planning additive development features
-      - Creating requirements for feature modifications
-      - Determining feature classification and namespace strategy
-      - Planning specification merge and reconciliation
-      - Validating differential vs pure-addition classification
+      - Differential feature development planning
+      - Existing specification management during implementation
+      - Feature scope and merge strategy determination
+      - Specification update and merge execution
+      - Implementation review before merge
+      - Code isolation with worktree management
     keywords:
+      - additive development
       - feature namespace
       - differential development
-      - pure addition
-      - merge
-      - specification
-      - applicability
-      - scope
-      - frontmatter
-      - feature_type
+      - specification merge
+      - git worktree
+      - scope judgment
+      - implementation isolation
   plugins/forge/docs/adr_format.md:
     title: ADR Default Format
     purpose: Defines the default format for Architecture Decision Records (ADRs), specifying file naming, structure, section numbering, optional scope definition, and procedures for revision and rejection
@@ -177,36 +175,38 @@ docs:
       - review criteria
   plugins/forge/docs/criteria/review_criteria_design.md:
     title: Design Review Criteria
-    purpose: Specifies design review criteria for evaluating design documents against principles, formats, and project-specific rules, with priority-ordered SSOT references and judgment rules
+    purpose: Defines design review criteria by priority level (P1/P2/P3), references to SSOT delegate documents, checking order, and judgment rules for design review recommendations
     content_details:
-      - SSOT reference list with P1-P3 priority order
-      - Check sequence for P1 rule compliance, P2 contradictions, and P3 unnecessary complexity
-      - "Frontmatter requirement for additional feature documents (feature_type: temporary-feature)"
-      - Documentation reference validation against document style guide
-      - ADR operational requirements and file structure validation
-      - Internal contradiction detection in target files and related specifications
-      - Compatibility checking against related requirement definition documents
-      - Temporary feature exemption rules for P2 contradiction detection
-      - doc_status exemption rules for draft and not_implemented documents
-      - Recommendation rules (fix, create_issue, skip) with three condition thresholds
+      - SSOT reference table with P1 priorities (spec_design_boundary_spec, design_principles_spec, design_method, additive_development_spec, frontmatter_format, adr_format, adr_principles_spec, document_style_guide, deterministic_generation_spec)
+      - "P1 checking order: boundary spec → principles spec → design method → project-specific rules"
+      - "feature_type: temporary-feature frontmatter validation requirement for additional feature documents"
+      - Document reference notation check against document_style_guide §5 and §8
+      - "ADR structure validation (## N. sections with ### N.1-N.4 subsections: context, decision, alternatives)"
+      - ADR coordination checks (rejection handling, decision changes, feature distribution across files)
+      - P2 contradiction detection between internal design elements (component definitions, data flows, interfaces)
+      - Temporary feature exclusion from P2 (intentional differences from old specs)
+      - "doc_status: not_implemented and doc_status: draft exemption rules"
+      - P3 complexity check against spec_priorities_spec §3.4 and §4 (numerical values prohibition, reversion patterns)
     applicable_tasks:
-      - Design document review execution
-      - Requirement and design boundary validation
-      - Frontmatter requirement enforcement for temporary features
-      - ADR consistency and structure checking
-      - Internal contradiction detection in design documents
-      - Recommendation determination for design issues
-      - Project-specific architecture rule enforcement
-      - Design format compliance verification
+      - Design document review against SSOT references
+      - P1/P2/P3 rule matching and validation
+      - ADR structure and coordination validation
+      - Contradiction detection in design specifications
+      - Temporary feature frontmatter validation
+      - Document reference notation review
+      - Unnecessary complexity identification in design
+      - Design review recommendation judgment
     keywords:
-      - design review
       - SSOT
-      - P1 P2 P3 priority
-      - temporary-feature
       - ADR
-      - doc_status
-      - contradiction detection
+      - feature_type
+      - spec_design_boundary_spec
+      - design_principles_spec
+      - design_method
+      - additive_development_spec
       - frontmatter validation
+      - contradiction detection
+      - doc_status
   plugins/forge/docs/criteria/review_criteria_generic.md:
     title: Generic Review Criteria
     purpose: Defines the criteria and procedures for general document reviews, covering SSOT reference hierarchy, document style verification, consistency checks, and recommendation judgment rules.
@@ -368,67 +368,74 @@ docs:
       - create_issue
       - recommendation rule
       - severity judgment
-  plugins/forge/docs/design_format.md:
-    title: Design Document Default Format
-    purpose: Specifies the standard format for design documents when project-specific format is not defined, including frontmatter requirements for additive features, design ID conventions, section templates, and architectural design elements.
+  plugins/forge/docs/design_method.md:
+    title: Design Method
+    purpose: Describes a systematic 6-step methodology for converting requirements into design by defining responsibilities, behaviors, contracts, and maturity levels, with detailed templates and verification checklists.
     content_details:
-      - "Additive feature frontmatter (feature_type: temporary-feature) declaring current specification status"
-      - Frontmatter content covering specification replacement, old document preservation, merge procedures, and scope handling
-      - Design ID convention (DES-xxx prefix) for general design documents
-      - Fixed section structure (Overview, Architecture Overview, Module Design, Use Cases, Existing Components, Test Design)
-      - Module design with module list table and Mermaid class diagrams
-      - Use case design with use case list and sequence diagrams including prerequisites, normal flows, and error flows
-      - Existing component reference table documenting dependencies and usage
-      - Test design specification for unit tests and integration test targets
+      - "Four design perspectives: responsibility/structure, behavior, contracts, maturity level"
+      - EARS notation patterns for requirement interpretation (event, state, abnormal, optional)
+      - Six-step design procedure from input analysis to consistency verification
+      - Class definition template with responsibility name, data, methods, collaborators
+      - Sequence diagram construction with actor selection and self-message rules
+      - Shared data definition and module table specifications for contracts
+      - Detailed design phase covering implementation means, data structures, algorithms
+      - Traceability table and consistency verification checklist
     applicable_tasks:
-      - Creating or updating design documents
-      - Writing frontmatter for additive feature design documents
-      - Designing module architecture and class structure
-      - Creating use case scenarios and sequence diagrams
-      - Specifying test strategy and coverage
-      - Managing design scope and dependencies
+      - Requirement analysis and scenario decomposition with EARS notation
+      - Responsibility-driven class definition and structural design
+      - Behavioral design using sequence diagrams
+      - Contract definition through shared data and module specifications
+      - Detailed design phase with implementation means selection
+      - Design consistency verification and traceability checking
+      - Design artifact review and validation
+      - Requirements-to-design mapping verification
+    keywords:
+      - EARS notation
+      - Responsibility-driven design
+      - Sequence diagram
+      - Class diagram
+      - Shared data definition
+      - Module table
+      - Traceability verification
+      - Contract specification
+      - Design artifacts
+      - Requirements decomposition
+  plugins/forge/docs/design_principles_spec.md:
+    title: Design Document Creation Principles
+    purpose: Defines generic design document creation principles applicable when project-specific rules are absent, covering scope boundaries, content requirements, judgment criteria, and violation severity standards.
+    content_details:
+      - Design document scope definition and responsibility boundaries (How vs What distinction)
+      - "Prohibited content types: source code, unjustified technology choices, unapproved features, quantitative guarantees"
+      - Quantitative goal handling and performance target restrictions
+      - Implementer feasibility judgment as primary decision rule
+      - Hierarchical design structure guidelines and 500-line splitting threshold
+      - Optional design sections and Mermaid diagram usage guidelines
+      - Design maintenance and update procedures with ADR linkage
+      - Architecture dependency rules and pattern compliance requirements
+      - Module responsibility allocation and cohesion standards
+      - Severity catalog for violations and failure pattern examples
+    applicable_tasks:
+      - Design document creation and quality review
+      - Requirements-to-design scope boundary determination
+      - Design adequacy assessment for implementation feasibility
+      - Design document update and maintenance planning
+      - Architecture pattern compliance and dependency rule verification
+      - Module responsibility division and cohesion assessment
+      - Design violation severity classification and assessment
+      - Hierarchical design structure planning for large features
+      - Design content compliance verification
+      - Failure pattern identification and correction
     keywords:
       - design document
-      - DES-xxx
-      - architecture
-      - module design
-      - use case
-      - sequence diagram
-      - class diagram
-      - test design
-      - frontmatter
-      - temporary-feature
-  plugins/forge/docs/design_principles_spec.md:
-    title: Design Principles Specification
-    purpose: Defines principles and standards for writing design documents, covering required structural elements, content guidelines, and common pitfalls in design documentation.
-    content_details:
-      - "Mandatory structural elements: module list, component/class diagrams, use case table, sequence diagrams using Mermaid"
-      - "Required content: implementation methods (class names, method names, design patterns), technical details, process/data flow, test case design, existing component file paths"
-      - "Prohibited content: large source code blocks (>10 lines), framework selection without rationale, unapproved feature additions, quantitative performance guarantees"
-      - "Quantitative target handling: allowed (cache layer, debounce, async architecture) vs disallowed (performance guarantees), verified through load testing"
-      - "Decision criteria for content inclusion: implementability test (can implementer code from this design?)"
-      - "Hierarchy structure guidelines: parent and child design documents, splitting at 500+ line threshold, child documents reference parent ID"
-      - "Architecture dependency direction rules: no circular dependencies, respect adopted pattern (Clean Architecture, Layered, Hexagonal)"
-      - "Single responsibility and cohesion rules: YAGNI principle, no tight coupling, one component one responsibility, asset placement aligned with responsibility"
-      - "Availability and SPOF handling: redundancy or alternative paths required, retry/timeout/fallback for external API, abnormal data flow handling"
-      - "Design maintenance rules: alignment with implementation checked at code review, ADR records design rationale, differential development strategy during concurrent branches"
-    applicable_tasks:
-      - Design document structure planning and writing
-      - Design document review and validation
-      - Architecture pattern consistency review
-      - Module responsibility and dependency analysis
-      - Technical specification documentation
-    keywords:
-      - design principles
-      - architecture dependency
-      - module responsibility
-      - class diagram
-      - sequence diagram
-      - single responsibility
-      - YAGNI principle
-      - data flow
-      - design patterns
-      - process flow
+      - responsibility allocation
+      - architecture pattern
+      - dependency rule
+      - cohesion
+      - scope boundary
+      - severity catalog
+      - failure pattern
+      - design hierarchy
+      - Mermaid
   plugins/forge/docs/deterministic_generation_spec.md:
     title: Deterministic Generation Should Not Be Done by AI
     purpose: Defines the principle that deterministically-created artifacts (data structures, file placement, identifiers) should be generated by deterministic systems rather than AI to prevent error chains from generation through silent data loss
