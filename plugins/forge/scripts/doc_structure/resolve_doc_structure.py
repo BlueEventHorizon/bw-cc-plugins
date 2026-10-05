@@ -14,6 +14,11 @@ doc-advisor の toc_utils.py 互換ロジックで実装。
     python3 resolve_doc_structure.py --features
     python3 resolve_doc_structure.py --doc-type design
     python3 resolve_doc_structure.py --version
+    python3 resolve_doc_structure.py --dir-of design --feature forge
+    python3 resolve_doc_structure.py --dir-of design
+    python3 resolve_doc_structure.py --feature-of docs/specs/forge/requirements/REQ-001_x.md
+    python3 resolve_doc_structure.py --decide-feature-for design --source-path docs/specs/forge/requirements/REQ-001_x.md
+    python3 resolve_doc_structure.py --find-in requirement --name REQ-001
 """
 
 import argparse
@@ -703,6 +708,335 @@ def resolve_files_by_doc_type(config, category, doc_type, project_root):
 
 
 # ---------------------------------------------------------------------------
+# 置き場ディレクトリ・Feature の解決
+# ---------------------------------------------------------------------------
+
+_WILDCARD_SEGMENTS = ('*', '**')
+_GLOB_CHARS = '*?['
+
+
+def _key_parts(key):
+    return [p for p in normalize_path(key).split('/') if p]
+
+
+def _key_problem(key, parts):
+    """キーの書き方が、置き場・feature の解決に使えない理由。使えるなら None。"""
+    for part in parts:
+        if part not in _WILDCARD_SEGMENTS and any(c in part for c in _GLOB_CHARS):
+            return (
+                f"キー `{key}` に、ワイルドカード（`*` `**` だけのセグメント）以外の"
+                f" glob 文字を含むセグメントがあり、置き場・feature を一意に決められません"
+            )
+    return None
+
+
+def _error(message, **extra):
+    result = {'status': 'error', 'message': message}
+    result.update(extra)
+    return result
+
+
+def resolve_doc_type_dir(config, category, doc_type, feature=None):
+    """doc_type のエントリのキーから、置き場のディレクトリを求める。
+
+    - feature あり: キーのワイルドカードセグメント（`*` / `**` だけのセグメント）を
+      feature に置換する。キーにワイルドカードが無ければキーそのものを返し、
+      feature を置く場所が無かったことを `feature_applied: false` で示す
+    - feature なし: ワイルドカードセグメントを除く。ワイルドカードが無いキーは
+      キーそのもの
+
+    次の場合は、置き場を一意に決められないため、推測せずエラーにする。
+    - 同じ doc_type に複数のキーがある
+    - キーに、ワイルドカード以外の glob 文字（`?` `[`、セグメントの一部の `*`）がある
+    - feature を渡したが、キーに `*` / `**` セグメントが複数あり、置く位置が一意でない
+    - 求めた置き場が、キー自身に含まれない（`*` を含むキーで feature なし、
+      `*` に複数階層の feature を置く、など。索引の対象外になる）
+
+    Args:
+        config: parse_config() の戻り値
+        category: 'rules' または 'specs'
+        doc_type: ドキュメント種別（例: 'design', 'requirement'）
+        feature: Feature 名（省略時は feature なし）
+
+    Returns:
+        dict: status='ok' のとき doc_type / feature / dir / feature_applied、
+              status='error' のとき message
+    """
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    keys = invert_doc_types_map(doc_types_map).get(doc_type, [])
+    if not keys:
+        return _error(
+            f"{category} の doc_types_map に doc_type `{doc_type}` のエントリがありません"
+        )
+    if len(keys) > 1:
+        return _error(
+            f"doc_type `{doc_type}` に複数のエントリ（{', '.join(keys)}）があり、"
+            f"置き場を一意に決められません"
+        )
+
+    key = keys[0]
+    parts = _key_parts(key)
+    problem = _key_problem(key, parts)
+    if problem:
+        return _error(problem)
+
+    wildcard_count = sum(1 for p in parts if p in _WILDCARD_SEGMENTS)
+
+    if feature is None:
+        resolved = [p for p in parts if p not in _WILDCARD_SEGMENTS]
+        feature_applied = None
+    else:
+        feature = normalize_path(feature).strip('/')
+        feature_parts = feature.split('/') if feature else []
+        if not feature_parts or any(p in ('', '.', '..') for p in feature_parts):
+            return _error(f"feature `{feature}` はディレクトリ名として使えません")
+        if wildcard_count == 0:
+            resolved = parts
+            feature_applied = False
+        elif wildcard_count == 1:
+            resolved = []
+            for p in parts:
+                if p in _WILDCARD_SEGMENTS:
+                    resolved.extend(feature_parts)
+                else:
+                    resolved.append(p)
+            feature_applied = True
+        else:
+            return _error(
+                f"キー `{key}` に `*` / `**` セグメントが複数あり、"
+                f"feature を置く位置を一意に決められません"
+            )
+
+    if not _segments_match(parts, resolved):
+        resolved_dir = '/'.join(resolved) + '/'
+        if feature is None:
+            return _error(
+                f"feature なしの置き場 `{resolved_dir}` は、キー `{key}` に含まれません"
+                f"（この構成では feature が必要です）"
+            )
+        return _error(
+            f"feature `{feature}` を置いた `{resolved_dir}` は、キー `{key}` に含まれません"
+        )
+
+    return {
+        'status': 'ok',
+        'category': category,
+        'doc_type': doc_type,
+        'feature': feature,
+        'dir': '/'.join(resolved) + '/',
+        'feature_applied': feature_applied,
+    }
+
+
+def _segments_match(pattern_parts, dir_parts):
+    """キーのセグメント列とディレクトリのセグメント列が一致するか。
+
+    `**` は 0 個以上のセグメントに、それ以外は fnmatch（`*` は 1 セグメント内）に一致する。
+    """
+    if not pattern_parts:
+        return not dir_parts
+    head = pattern_parts[0]
+    if head == '**':
+        rest = pattern_parts[1:]
+        return any(
+            _segments_match(rest, dir_parts[i:]) for i in range(len(dir_parts) + 1)
+        )
+    if not dir_parts:
+        return False
+    return fnmatch.fnmatchcase(dir_parts[0], head) and _segments_match(
+        pattern_parts[1:], dir_parts[1:]
+    )
+
+
+def feature_of_path(config, category, path, project_root):
+    """ファイルのパスから、置き場のエントリ（doc_type）と feature を求める。
+
+    ファイルの親ディレクトリから上位へ順に、doc_types_map のキーに一致する
+    ディレクトリを探し、最初に見つかったものを採る。feature は
+    `_extract_feature_from_match` の規則で求める（`**` が 0 セグメントなら feature なし）。
+
+    次の場合は、feature を求められないため、「feature なし」にせずエラーにする。
+    - 一致したキーに、ワイルドカード以外の glob 文字がある
+    - 一致したキーに `**` が複数あり、いずれかが 1 セグメント以上を捕えている
+
+    Args:
+        config: parse_config() の戻り値
+        category: 'rules' または 'specs'
+        path: ファイルのパス（project_root からの相対、または絶対）
+        project_root: プロジェクトルートの絶対パス
+
+    Returns:
+        dict: status='ok' のとき path / doc_type / feature / key（feature なしは None）、
+              status='error' のとき message
+    """
+    if os.path.isabs(path):
+        rel = os.path.relpath(path, project_root)
+    else:
+        rel = path
+    rel = normalize_path(rel)
+    if rel == '..' or rel.startswith('../'):
+        return _error(f"パス `{path}` はプロジェクトルートの外です")
+
+    parts = [p for p in rel.split('/') if p and p != '.']
+    dir_parts = parts if rel.endswith('/') else parts[:-1]
+
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    for depth in range(len(dir_parts), 0, -1):
+        candidate = dir_parts[:depth]
+        for key, doc_type in doc_types_map.items():
+            pattern_parts = _key_parts(key)
+            if not _segments_match(pattern_parts, candidate):
+                continue
+            problem = _key_problem(key, pattern_parts)
+            if problem:
+                return _error(problem)
+            doublestars = pattern_parts.count('**')
+            if doublestars > 1:
+                captured = len(candidate) - (len(pattern_parts) - doublestars)
+                if captured > 0:
+                    return _error(
+                        f"キー `{key}` に `**` が複数あり、feature を求められません（未対応）"
+                    )
+                feature = None
+            else:
+                feature = _extract_feature_from_match(
+                    '/'.join(pattern_parts), '/'.join(candidate)
+                )
+            return {
+                'status': 'ok',
+                'category': category,
+                'path': '/'.join(parts),
+                'doc_type': doc_type,
+                'feature': feature,
+                'key': key,
+            }
+
+    return _error(
+        f"パス `{path}` は、{category} の doc_types_map のどのエントリにも一致しません"
+    )
+
+
+def decide_feature(config, category, doc_type, project_root,
+                   feature=None, source_path=None):
+    """作る文書（doc_type）の feature を、決定論的な順序で決める。
+
+    決定（`decision`）は次のいずれかである。
+    - `argument`: feature が引数で渡された。そのまま使う（置き換えない）
+    - `path`: 入力の文書のパス（source_path）から feature を求めた（feature なしの場合もある）
+    - `no-existing`: 引数もパスも無く、その doc_type の既存ファイルが 1 つも無い
+      （完全新規）。feature なし
+    - `ask`: 決められない。利用者に尋ねる。`reason` に理由、`features` に既知の feature、
+      `existing_count` に既存ファイル数を載せる
+
+    Returns:
+        dict: status='ok' のとき decision / feature / dir / reason（ask のときは dir なし）、
+              status='error' のとき message（doc_type のエントリが無い等）
+    """
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    if not invert_doc_types_map(doc_types_map).get(doc_type):
+        return _error(
+            f"{category} の doc_types_map に doc_type `{doc_type}` のエントリがありません"
+        )
+
+    def ask(reason, existing_count=None):
+        return {
+            'status': 'ok',
+            'decision': 'ask',
+            'reason': reason,
+            'existing_count': existing_count,
+            'features': detect_features(config, project_root),
+        }
+
+    def decided(decision, feature_value, reason):
+        located = resolve_doc_type_dir(config, category, doc_type, feature_value)
+        if located['status'] != 'ok':
+            return located
+        return {
+            'status': 'ok',
+            'decision': decision,
+            'feature': located['feature'],
+            'dir': located['dir'],
+            'feature_applied': located['feature_applied'],
+            'reason': reason,
+        }
+
+    if feature is not None:
+        return decided('argument', feature, '引数で feature が渡された')
+
+    if source_path is not None:
+        located = feature_of_path(config, category, source_path, project_root)
+        if located['status'] == 'ok':
+            result = decided(
+                'path', located['feature'], f"入力の文書 `{located['path']}` のパスから求めた"
+            )
+            if result['status'] == 'ok':
+                return result
+            return ask(result['message'])
+        return ask(located['message'])
+
+    files = resolve_files_by_doc_type(config, category, doc_type, project_root)
+    if not files:
+        result = decided(
+            'no-existing', None, f"doc_type `{doc_type}` の既存ファイルが無い（完全新規）"
+        )
+        if result['status'] == 'ok':
+            return result
+        return ask(result['message'], 0)
+
+    return ask(
+        f"doc_type `{doc_type}` の既存ファイルがあり、feature を決められない", len(files)
+    )
+
+
+def find_doc(config, category, doc_type, name, project_root):
+    """パス・ファイル名・ID（`REQ-032` など）から、doc_type の文書を探す。
+
+    次の順に探し、最初に見つかった段階の全件を返す。
+    1. プロジェクトルートからのパスが完全一致
+    2. パスの末尾が一致（`foo/requirements/REQ-001_x.md` の一部など）
+    3. ファイル名が一致（`.md` の有無は問わない）
+    4. ファイル名が `ID_` で始まる（ID は `{ID}_{名前}.md` の `{ID}`）
+
+    Returns:
+        dict: status='ok' のとき count / matches（0 件も正常）、
+              status='error' のとき message
+    """
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    if not invert_doc_types_map(doc_types_map).get(doc_type):
+        return _error(
+            f"{category} の doc_types_map に doc_type `{doc_type}` のエントリがありません"
+        )
+
+    files = [normalize_path(f) for f in
+             resolve_files_by_doc_type(config, category, doc_type, project_root)]
+
+    target = normalize_path(name)
+    if os.path.isabs(target):
+        target = normalize_path(os.path.relpath(target, project_root))
+    target = target.strip('/')
+    base = target.split('/')[-1]
+    stem = base[:-3] if base.endswith('.md') else base
+
+    stages = [
+        [f for f in files if f == target],
+        [f for f in files if f.endswith('/' + target)] if '/' in target else [],
+        [f for f in files
+         if f.split('/')[-1] in (base, base + '.md')] if '/' not in target else [],
+        [f for f in files
+         if f.split('/')[-1].startswith(stem + '_')] if '/' not in target else [],
+    ]
+    matches = next((s for s in stages if s), [])
+    return {
+        'status': 'ok',
+        'category': category,
+        'doc_type': doc_type,
+        'name': name,
+        'count': len(matches),
+        'matches': matches,
+    }
+
+
+# ---------------------------------------------------------------------------
 # CLI エントリポイント
 # ---------------------------------------------------------------------------
 
@@ -728,9 +1062,44 @@ def parse_args():
         help='特定 doc_type のファイルを解決する（例: design, plan, requirement）',
     )
     group.add_argument(
+        '--dir-of',
+        metavar='DOC_TYPE',
+        help='doc_type の置き場ディレクトリを求める（--feature で feature を指定。省略時は feature なしの置き場）',
+    )
+    group.add_argument(
+        '--feature-of',
+        metavar='PATH',
+        help='ファイルのパスから doc_type と feature を求める',
+    )
+    group.add_argument(
+        '--decide-feature-for',
+        metavar='DOC_TYPE',
+        help='作る文書（doc_type）の feature を決める（--feature / --source-path を考慮）',
+    )
+    group.add_argument(
+        '--find-in',
+        metavar='DOC_TYPE',
+        help='doc_type の文書を、パス・ファイル名・ID から探す（--name で指定）',
+    )
+    group.add_argument(
         '--version',
         action='store_true',
         help='.doc_structure.yaml のバージョンを出力する',
+    )
+    parser.add_argument(
+        '--feature',
+        default=None,
+        help='--dir-of / --decide-feature-for 使用時の feature 名',
+    )
+    parser.add_argument(
+        '--source-path',
+        default=None,
+        help='--decide-feature-for 使用時の、入力の文書のパス（feature を求める手掛かり）',
+    )
+    parser.add_argument(
+        '--name',
+        default=None,
+        help='--find-in 使用時の、探す文書のパス・ファイル名・ID',
     )
     parser.add_argument(
         '--project-root',
@@ -746,10 +1115,19 @@ def parse_args():
         '--category',
         choices=['rules', 'specs'],
         default='specs',
-        help='--doc-type 使用時のカテゴリ（デフォルト: specs）',
+        help='--doc-type / --dir-of / --feature-of 使用時のカテゴリ（デフォルト: specs）',
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.feature is not None and not (args.dir_of or args.decide_feature_for):
+        parser.error('--feature は --dir-of / --decide-feature-for と併用する')
+    if args.source_path is not None and not args.decide_feature_for:
+        parser.error('--source-path は --decide-feature-for と併用する')
+    if args.find_in and args.name is None:
+        parser.error('--find-in には --name が必要')
+    if args.name is not None and not args.find_in:
+        parser.error('--name は --find-in と併用する')
+    return args
 
 
 def main():
@@ -807,6 +1185,23 @@ def main():
                 'status': 'ok',
                 'features': features,
             }
+        elif args.dir_of:
+            result = resolve_doc_type_dir(
+                config, args.category, args.dir_of, args.feature
+            )
+        elif args.feature_of:
+            result = feature_of_path(
+                config, args.category, args.feature_of, project_root
+            )
+        elif args.decide_feature_for:
+            result = decide_feature(
+                config, args.category, args.decide_feature_for, project_root,
+                feature=args.feature, source_path=args.source_path,
+            )
+        elif args.find_in:
+            result = find_doc(
+                config, args.category, args.find_in, args.name, project_root
+            )
         elif args.doc_type:
             files = resolve_files_by_doc_type(
                 config, args.category, args.doc_type, project_root
@@ -829,7 +1224,7 @@ def main():
                 result['specs'] = resolve_files(config, 'specs', project_root)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 0
+    return 0 if result.get('status') == 'ok' else 1
 
 
 if __name__ == '__main__':

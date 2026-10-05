@@ -90,7 +90,7 @@ python3 "$SCRIPT" finish --output-dir "{output_dir}" --feature "{feature}"
 - 技術的な複雑度（詳細設計で決めた手段・利用ライブラリ、外部サービス連携等）
 - テストの観点（モジュール表の事前条件・事後条件、追跡表）
 
-あわせて、**この feature が差分開発型か純粋追加型かを判定する**。要件定義書・設計書の frontmatter に `feature_type: temporary-feature` があれば差分開発型である。判定基準は `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 に従う。
+あわせて、**この feature が差分開発型か純粋追加型かを判定する**。要件定義書・設計書のいずれかの frontmatter に `feature_type: temporary-feature` があれば差分開発型である（型は文書ごとに判定され、設計だけが差分開発型のこともある）。判定基準は `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 に従う。
 
 #### 1.2 関連する既存の仕様書
 

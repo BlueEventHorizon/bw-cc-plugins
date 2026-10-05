@@ -113,7 +113,7 @@ start-requirements → start-design → start-plan → start-implement
 
 1. Feature 名の確定
 2. **入力の収集**
-   - 要件定義書の特定（feature の `requirements/` を列挙。複数件なら選択、0 件は `/forge:start-requirements` を案内して終了）
+   - 要件定義書の特定（会話の文脈から特定し、分からなければ尋ねる。置き場に 1 件も無ければ `/forge:start-requirements` を案内して終了）
    - プロジェクト設計ルールの収集（`/forge:query-db-rules`）
 3. **上流の設計**（要件だけで）: シナリオ表と上流の設計でユーザーが承認する
 4. **既存の実装・設計パターンとの照合と再設計**
