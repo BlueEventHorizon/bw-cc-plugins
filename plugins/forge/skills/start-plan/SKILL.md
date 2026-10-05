@@ -56,7 +56,11 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 - `--new` 指定 → 新規アプリ・新規 feature として処理
 - `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（`feature_type: temporary-feature` frontmatter を持つ）かで推定し、判断がつかなければ AskUserQuestion で確認する
+- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（一時マーカー `feature_type: temporary-feature` を持つ）かを、次の script で判定する。`any_marker` が `true` なら追加開発、`false` なら新規として処理する。終了コード 1（判定できない文書がある）のときは、`errors` をそのままユーザーに伝え、AskUserQuestion で確認する
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/feature_marker.py" --paths {設計書・要件定義書のパス}...
+  ```
 
 **`--add`（追加開発）の場合**: 以下を Read し、判定基準・旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
 
@@ -260,7 +264,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **候補 JSON の組み立てと書き込み**:
 
-1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` の 3 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` の 3 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書、または `design_traceability` が参照する設計書の、いずれかの `feature_type: temporary-feature` で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
 3. **生成 script を 1 回実行する**。script が構造検証（3 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 

@@ -144,12 +144,14 @@ git rev-parse --abbrev-ref HEAD
 
 本 skill は forge の **追加開発ワークフロー**（`${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §4「merge タイミングと手順」）の merge ステップを担う。追加開発で作られた一時文書（要件定義書・設計書）は frontmatter に `feature_type: temporary-feature` を持つ。
 
-追加 DIR (B) の各 `*.md` 先頭 frontmatter を確認し、判定する:
+追加 DIR (B) の各 `*.md` 先頭 frontmatter を、次の script で判定する:
 
 ```bash
-# 追加 DIR 内に temporary-feature 文書が含まれるか
-grep -rlE '^feature_type:[[:space:]]*temporary-feature$' "$additional_dir" 2>/dev/null
+# 追加 DIR 内に一時マーカー（feature_type: temporary-feature）を持つ文書が含まれるか
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/feature_marker.py" --dirs "$additional_dir"
 ```
+
+JSON の `any_marker` と `marker_paths` を使う。終了コード 1（ディレクトリが無い、または判定できない文書がある）のときは、`errors` をそのままユーザーに伝え、モードは判定できないものとして進める（確認は Phase 8.2 で行う）。
 
 - **検出された場合（追加開発モード）**: 追加 DIR は差分開発の文書である可能性が高い。`additive_development_spec.md` §2（差分開発側の文書がその対象範囲における現在の仕様である）と本 skill の「追加側が正」原則は一致する。Phase 8 の後始末も §4.3 と整合する。安心して進めてよい。
 - **検出されない場合（汎用マージモード）**: frontmatter による裏付けは無いが、これは異常ではない。汎用的な仕様間の齟齬解消として、ユーザー指定の「追加側を正」の前提でそのまま進める。

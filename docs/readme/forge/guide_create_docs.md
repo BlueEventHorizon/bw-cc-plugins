@@ -97,12 +97,13 @@ Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. 
 Create design documents from requirements. Builds the upstream design from the requirements document alone, then matches it against existing implementations and design patterns and reuses existing implementations that can be used without modification.
 
 ```
-/forge:start-design [feature]
+/forge:start-design [feature] [--requirement <path|ID|name>]
 ```
 
-| Argument  | Description                         |
-| --------- | ----------------------------------- |
-| `feature` | Feature name (omit for interactive) |
+| Argument        | Description                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature`       | Feature name (omit to decide from the path of the requirements document)                                                              |
+| `--requirement` | Requirements document to design from (path, ID or file name; omit to identify it from the conversation context, and ask when unclear) |
 
 ### When to Use
 
@@ -111,15 +112,14 @@ Create design documents from requirements. Builds the upstream design from the r
 
 ### Execution Flow
 
-1. Confirm Feature name
-2. **Gather inputs**
-   - Identify the requirements document (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
-   - Collect project design rules (`/forge:query-db-rules`)
-3. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
-4. **Matching against existing implementations and design patterns**, and redesign
-5. **Detailed design** and consistency check (traceability table)
-6. **Review** (self-review → `/forge:review --auto` → user review)
-7. Completion flow (search-index update → commit)
+1. **Identify the requirements document** (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
+2. Confirm Feature name (decided from the path of the identified requirements document; confirm when it conflicts with the argument)
+3. Collect project design rules (`/forge:query-db-rules`)
+4. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
+5. **Matching against existing implementations and design patterns**, and redesign
+6. **Detailed design** and consistency check (traceability table)
+7. **Review** (self-review → `/forge:review --auto` → user review)
+8. Completion flow (search-index update → commit)
 
 ### Design Principles
 
@@ -179,7 +179,7 @@ Extract tasks from design documents and create a JSON plan.
 ### Plan Structure (Minimal Complete JSON)
 
 The plan is a JSON file named `{feature}_plan.json`. **It is not Markdown.**
-The top level has exactly three keys: `requirements_traceability` / `design_traceability` / `tasks`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document's `feature_type: temporary-feature` frontmatter. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
+The top level has exactly three keys: `requirements_traceability` / `design_traceability` / `tasks`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document, or `design_traceability` to the design document: either one carrying `feature_type: temporary-feature` makes it an additive feature's plan. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
 
 ```json
 {

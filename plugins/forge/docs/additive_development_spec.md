@@ -125,7 +125,7 @@ specs/
 - 実装のみを修正し、文書側は一切変更しない場合（バグ修正で仕様自体は正しかったケースを含む）
 - **純粋追加型の feature（§0）**: 既存の要件定義書・設計書と一切重複・矛盾せず、既存仕様への merge を予定しない新規 feature namespace。この場合、当該 feature 配下の要件定義書・設計書・計画書は §6 の一時 frontmatter を付与しない（frontmatter の意味論「旧仕様が現在の仕様より古い状態にあり、実装完了後に齟齬を解消する必要がある」が成立しないため）。**判定は配置ではなく、既存仕様との重複・矛盾の有無で行う**（§0）。トップレベル namespace の新設でも既存仕様の一部を変更するなら差分開発型であり、既存 namespace 配下のサブ機能でも既存仕様と齟齬が無いなら純粋追加型である。なお frontmatter の付与は「いずれこの文書が消える」ことを意味しない。齟齬の解消後にその文書を残すか否かは §4.2 のスコープ判断で決まる
 
-差分開発に該当する場合は、**該当する文書（要件定義書・設計書）の先頭に差分 feature 用 frontmatter を付与する**。要件定義書と設計書は、文書ごとに判定する（§0）。各種別の frontmatter 定義は [frontmatter_format.md](frontmatter_format.md) に集約する。計画書には付与しない（同文書 §1.3 参照。`requirements_traceability` 経由で辿れるため不要）。
+差分開発に該当する場合は、**該当する文書（要件定義書・設計書）の先頭に差分 feature 用 frontmatter を付与する**。要件定義書と設計書は、文書ごとに判定する（§0）。各種別の frontmatter 定義は [frontmatter_format.md](frontmatter_format.md) に集約する。計画書には付与しない（同文書 §1.3 参照。`requirements_traceability` 先の要件定義書、または `design_traceability` 先の設計書を辿れるため不要）。
 
 ---
 

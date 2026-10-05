@@ -1248,12 +1248,47 @@ class TestDecideFeature(unittest.TestCase):
         self.assertEqual(result['feature'], 'forge')
         self.assertEqual(result['dir'], 'docs/specs/forge/design/')
 
-    def test_argument_wins_over_source_path(self):
+    def test_argument_matching_source_path_is_used(self):
+        result = self._run(
+            [], feature='auth',
+            source_path='docs/specs/auth/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'argument')
+        self.assertEqual(result['feature'], 'auth')
+
+    def test_argument_conflicting_with_source_path_asks(self):
         result = self._run(
             [], feature='forge',
-            source_path='docs/specs/other/requirements/REQ-001_x.md')
+            source_path='docs/specs/auth/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'ask')
+        self.assertIn('食い違う', result['reason'])
+
+    def test_argument_with_top_level_source_path_asks(self):
+        """要件定義書がトップのディレクトリ（feature なし）なのに、feature が渡された"""
+        result = self._run(
+            [], feature='forge',
+            source_path='docs/specs/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'ask')
+        self.assertIn('食い違う', result['reason'])
+
+    def test_sub_feature_argument_under_path_feature_is_consistent(self):
+        result = self._run(
+            [], feature='forge/review-PR',
+            source_path='docs/specs/forge/review-PR/requirements/REQ-001_x.md')
         self.assertEqual(result['decision'], 'argument')
-        self.assertEqual(result['feature'], 'forge')
+
+    def test_argument_with_unresolvable_source_path_is_used(self):
+        result = self._run([], feature='forge', source_path='docs/other/x.md')
+        self.assertEqual(result['decision'], 'argument')
+
+    def test_argument_unused_by_key_is_not_a_conflict(self):
+        """キーに feature を置く場所が無いとき、feature は使われないため食い違いにしない"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [])
+            config = rds.parse_config(BASIC_CONFIG)
+            result = rds.decide_feature(
+                config, 'specs', 'design', tmpdir, feature='forge',
+                source_path='docs/specs/design/DES-001_x.md')
+            self.assertEqual(result['decision'], 'argument')
 
     def test_source_path_in_feature_directory(self):
         result = self._run(

@@ -97,12 +97,13 @@ start-requirements → start-design → start-plan → start-implement
 要件定義書から設計書を作成する。要件定義書だけから上流の設計を組み立て、その後に既存の実装・設計パターンと照合して、修正せずに使える既存の実装を再利用する。
 
 ```
-/forge:start-design [feature]
+/forge:start-design [feature] [--requirement <path|ID|name>]
 ```
 
-| 引数      | 説明                             |
-| --------- | -------------------------------- |
-| `feature` | Feature 名（省略時は対話で確定） |
+| 引数            | 説明                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `feature`       | Feature 名（省略時は、要件定義書のパスから決める）                                             |
+| `--requirement` | 設計する要件定義書（パス・ID・ファイル名。省略時は会話の文脈から特定し、分からなければ尋ねる） |
 
 ### いつ使うか
 
@@ -111,15 +112,14 @@ start-requirements → start-design → start-plan → start-implement
 
 ### 実行フロー
 
-1. Feature 名の確定
-2. **入力の収集**
-   - 要件定義書の特定（会話の文脈から特定し、分からなければ尋ねる。置き場に 1 件も無ければ `/forge:start-requirements` を案内して終了）
-   - プロジェクト設計ルールの収集（`/forge:query-db-rules`）
-3. **上流の設計**（要件だけで）: シナリオ表と上流の設計でユーザーが承認する
-4. **既存の実装・設計パターンとの照合と再設計**
-5. **詳細設計**と整合性の確認（追跡表）
-6. **レビュー**（自己レビュー → `/forge:review --auto` → ユーザーレビュー）
-7. 完了処理（検索インデックス更新 → commit）
+1. **要件定義書の特定**（会話の文脈から特定し、分からなければ尋ねる。置き場に 1 件も無ければ `/forge:start-requirements` を案内して終了）
+2. Feature 名の確定（特定した要件定義書のパスから決める。引数と食い違えば確認する）
+3. プロジェクト設計ルールの収集（`/forge:query-db-rules`）
+4. **上流の設計**（要件だけで）: シナリオ表と上流の設計でユーザーが承認する
+5. **既存の実装・設計パターンとの照合と再設計**
+6. **詳細設計**と整合性の確認（追跡表）
+7. **レビュー**（自己レビュー → `/forge:review --auto` → ユーザーレビュー）
+8. 完了処理（検索インデックス更新 → commit）
 
 ### 設計原則
 
@@ -179,7 +179,7 @@ start-requirements → start-design → start-plan → start-implement
 ### 計画書の構造（最小完全 JSON）
 
 計画書は JSON 形式の `{feature}_plan.json`。**Markdown ではない**。
-top-level は `requirements_traceability` / `design_traceability` / `tasks` の 3 キーのみ。計画書には追加開発時も frontmatter を付与しない（追加 feature の計画書かは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する）。計画書ファイルへの書き込みと構造検証は script（`write_plan.py` 等）が行うため、AI はファイル形式そのものを意識する必要はない。
+top-level は `requirements_traceability` / `design_traceability` / `tasks` の 3 キーのみ。計画書には追加開発時も frontmatter を付与しない（追加 feature の計画書かは、`requirements_traceability` が参照する要件定義書、または `design_traceability` が参照する設計書の、いずれかの `feature_type: temporary-feature` で判定する）。計画書ファイルへの書き込みと構造検証は script（`write_plan.py` 等）が行うため、AI はファイル形式そのものを意識する必要はない。
 
 ```json
 {

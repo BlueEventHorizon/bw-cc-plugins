@@ -337,4 +337,4 @@
 
 ### 追加 feature の計画書
 
-計画書には frontmatter を付与しない。追加 feature の計画書かどうかは `requirements_traceability` が参照する要件定義書の `feature_type: temporary-feature` frontmatter で判定する（[frontmatter_format.md](frontmatter_format.md) §1.3）。
+計画書には frontmatter を付与しない。追加 feature の計画書かどうかは、`requirements_traceability` が参照する要件定義書、または `design_traceability` が参照する設計書の、**いずれか**が `feature_type: temporary-feature` を持つかで判定する（[frontmatter_format.md](frontmatter_format.md) §1.3）。
