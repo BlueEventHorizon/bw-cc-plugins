@@ -125,7 +125,12 @@ forge の文書検索は doc-advisor / doc-db の 2 backend 構成で、**どち
 
 ## Development
 
-ビルド・パッケージ管理のシステムは無い。**Python スクリプトは標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）**。`makefile` は MCP サーバーの接続・切断用であり、プラグインのインストールには使わない。
+ビルド・パッケージ管理のシステムは無い。**外部依存の可否は、配布物かどうかではなく、プラグインのランタイムとして実行されるコードかどうかで区切る**。リポジトリ全体は git 経由で配布されうるが、利用者がそれを開発環境として使わない限り、ランタイムが import しないライブラリはインストールされない。
+
+- **`plugins/` 配下**（ランタイム。SKILL.md がスキル実行時に呼び、利用者環境で動く）: 標準ライブラリのみ使用する（外部依存禁止。例外として PyYAML のみ許容し、他の外部ライブラリへは拡張しない）
+- **`tests/` 配下**（非ランタイム。スキル実行の経路から呼ばれず、開発・CI でのみ動く）: 外部ライブラリの追加を許容する。追加時は CI（`.github/workflows/ci.yml`）にインストール手順を足し、依存を `requirements*.txt` 等で明示する
+
+`makefile` は MCP サーバーの接続・切断用であり、プラグインのインストールには使わない。
 
 - **Python 3.11 以上をサポート対象とする**。Python 3.10 以下は対象外
 - **CI（`.github/workflows/ci.yml`）のゲートは 2 つ**: `python3 -m unittest discover -s tests -p 'test_*.py'` と `dprint check`。JSON / TOML / Markdown / YAML を編集したら [dprint](https://dprint.dev/) で `dprint fmt` を通す（設定は `dprint.jsonc`）。通さないと CI が落ちる
