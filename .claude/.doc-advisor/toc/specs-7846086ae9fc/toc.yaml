@@ -5,70 +5,67 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-04T17:18:25Z
+  generated_at: 2026-10-05T07:37:44Z
   file_count: 39
 
 docs:
   docs/specs/adr-writer/design/DES-085_adr_writer_design.md:
     title: DES-085 ADR Writer Design
-    purpose: "Specifies the design of the ADR writer system comprising three components: the write-adr SKILL entry point, adr-writer Agent for content creation, and adr_exchange.py script for identification and workflow management"
+    purpose: Defines the design for the ADR Writer component, which enables recording architectural decisions through a three-part architecture (write-adr SKILL, adr-writer Agent, and adr_exchange.py script).
     content_details:
-      - Architecture overview with three main components and their responsibilities
-      - adr_exchange.py subcommands (open, request-path, finish, check) and their operations
-      - adr-writer Agent design with tools, writing scope (ADR files only), and required reading materials
-      - "write-adr SKILL workflow: output resolution, content organization, numbering, request publishing, Agent launching, branching"
-      - "Handling of three decision types: approval-record, judgement, update with distinct evaluation criteria"
-      - Request field definitions and validation rules for request/result files
-      - Module dependencies and required normative documents (adr_principles_spec.md, adr_format.md, adr_usage_spec.md)
-      - Test design including unit tests for adr_exchange.py, contract tests, and evaluation tests
-      - Sequence diagram and error flows covering normal operation and failure cases
-      - Integration with doc-structure SKILL for output resolution and next-spec-id for ADR numbering
+      - "Three-part architecture: write-adr SKILL, adr-writer Agent, adr_exchange.py"
+      - Component responsibilities (SKILL, Agent, script, norm documents)
+      - "adr_exchange.py subcommands: open, request-path, finish, check"
+      - adr-writer Agent requirements (tools, writing scope, input/output contracts)
+      - "write-adr SKILL workflow: output resolution, content preparation, numbering, Agent launch, branching"
+      - Request and judgment file formats (adr_request_{request_id}.json, adr_result_{request_id}.json)
+      - One ADR file per feature (not per decision), with feature-based ID numbering
+      - "Three judgment types: created, rejected, insufficient, with validation of state correspondence"
     applicable_tasks:
-      - ADR writer system implementation and development
-      - ADR writer design review and validation
-      - Decision recording and approval workflow design
-      - ADR file management architecture design
-      - Feature request processing system design
-    keywords:
-      - adr-writer
-      - write-adr
-      - adr_exchange.py
-      - approval-record
-      - judgement
-      - request_id
-      - adr_principles_spec
-      - adr_format
-  docs/specs/adr-writer/requirements/REQ-030_adr_writer.md:
-    title: REQ-030 ADR Writer Requirements Definition
-    purpose: Defines the behavior of an ADR Writer entity that judges, examines, and records Architecture Decision Records separate from design progression, ensuring proper documentation standards and context isolation.
-    content_details:
-      - ADR Writer definition and core responsibilities (examining requests and determining judgment outcomes)
-      - Request types and intake requirements (approval records, judgment records, decision updates with context)
-      - Rejection criteria for judgment records (undecided decisions, obviously correct choices, deducible from code/rules, work progression records)
-      - Correction and recording procedures (removing implementation details, avoiding spec verbatim copying, refining rejection reasoning)
-      - Incomplete information handling and feedback return process
-      - Approval record validation (checking authorization rationale and user consent citations)
-      - Decision update handling and rewriting rules (new decision, moving old options to alternatives, removing outdated reasoning)
-      - Judgment return format (creation/rejection/insufficient with mandatory reasons)
-      - ADR file organization and naming (feature-based ADR directories, single file per feature, fixed numbering via adoption skill)
-      - Writing scope limitations (ADR files only, no modifications to other documents/code)
-    applicable_tasks:
-      - ADR creation and judgment determination
-      - Design decision documentation and recording
-      - Approval recording for requirements-exceeding design choices
-      - ADR content validation and form correction
-      - Decision update handling and reversal documentation
-      - ADR file management and organization
+      - Implementation of ADR Writer feature
+      - Architecture design and review of ADR handling
+      - Integration of adr_exchange.py script with adr-writer Agent
+      - ADR workflow implementation and decision recording system design
     keywords:
       - ADR
-      - ADR Writer
-      - decision judgment
-      - approval recording
-      - rejection criteria
-      - decision update
-      - ADR file organization
-      - architecture decision
-      - design context isolation
+      - write-adr SKILL
+      - adr-writer Agent
+      - adr_exchange.py
+      - request_id
+      - judgment types
+      - feature-based organization
+  docs/specs/adr-writer/requirements/REQ-030_adr_writer.md:
+    title: REQ-030 ADR Writer Requirements Specification
+    purpose: Defines the behavior and responsibilities of the ADR Writer to review, validate, and document architectural decisions independently from the design process, ensuring proper formatting and compliance with ADR standards.
+    content_details:
+      - "Three request types with specific required information: approval records, judgment records, and updates"
+      - Five judgment record rejection criteria based on decision maturity and reasoning visibility
+      - Content correction operations including timeline removal and specification quotation prohibition
+      - Insufficient information handling by returning what is missing without inference
+      - Approval record handling requiring evidence of requirement backtrack reason or user quote
+      - Existing decision updates with decision rewriting and alternative relocation in same section
+      - ADR file organization with single file per feature and naming convention ADR-{NNN}_{feature}.md
+      - Write scope limitation to ADR files only with no modifications to other documents
+      - Single user-facing entry point as unified launch pathway
+      - "Non-functional requirements: context isolation and failure visibility"
+    applicable_tasks:
+      - ADR creation and documentation
+      - ADR writer implementation and development
+      - Architectural decision validation and review
+      - Rejection determination and reasoning
+      - Existing decision updates and revisions
+      - Approval record documentation
+      - ADR scope limitation enforcement
+      - ADR writer context isolation setup
+    keywords:
+      - ADR
+      - ADRWriter
+      - approval-record
+      - judgment-record
+      - decision-section
+      - determination
+      - rejection-criteria
+      - feature-scope
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md:
     title: agent-review Backend Design
     purpose: Defines the design of the agent-review backend that launches a fresh read-only reviewer custom Agent per round and converts its response into the common review result
@@ -555,38 +552,33 @@ docs:
       - key mapping
       - inheritance model
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
-    title: DES-010 Create-* skill orchestrator design
-    purpose: Defines orchestrator pattern architecture for create-* skills (start-design, start-plan, start-requirements) with shared context collection framework, parallel agent execution, and return value contract
+    title: DES-010 create-* Skills Orchestrator Design
+    purpose: Specifies the orchestrator architecture for create-* skills, including context gathering framework, phase structure, and agent coordination patterns
     content_details:
-      - Orchestrator structure and phase composition
-      - "Task distribution: orchestrator, context collection agents, document creation, review, post-processing"
-      - Common context collection framework and standardized pattern
-      - Return value contract for markdown bullet list format from agents
-      - Inline prompt instructions for agent self-sufficiency (FNC-003 compliance)
-      - Parallel execution and integration of multiple collection agents (specs/rules/code)
-      - Failure handling and progress reporting rules (5 items all, 6+ items first 3 + omit)
-      - "start-design: deterministic requirements enumeration plus rules agent search"
-      - "start-plan: multi-phase structure with optional specs/rules agent collection"
-      - "start-requirements: mode selection (interactive, reverse-engineering, from-figma) with agent matrix"
+      - Orchestrator pattern with responsibility distribution
+      - Common context gathering framework shared across 3 create-* skills
+      - Parallel agent execution and return value contract (markdown bullet lists)
+      - Skill-specific phase definitions for start-design, start-plan, start-requirements
+      - Agent failure handling and fallback behavior in parallel collection
+      - Context collection matrix showing required agents per skill (specs, rules, code)
+      - Session-less design and inter-phase communication patterns
     applicable_tasks:
-      - Orchestrator pattern implementation for create-* skills
-      - Context collection framework design
-      - Parallel agent coordination architecture
-      - Return value contract definition
-      - Progress reporting template design
-      - start-design phase composition
-      - start-plan workflow planning
-      - start-requirements multi-mode support
+      - Design of create-* SKILL orchestrator workflows
+      - Implementation of context gathering agents and return value contracts
+      - Parallel agent execution and error handling
+      - Phase definition and sequencing for create-* skills
+      - Agent coordination architecture design
+      - Code review for orchestrator pattern compliance
     keywords:
-      - orchestrator pattern
-      - context collection
-      - parallel agents
+      - orchestrator
+      - context gathering
+      - agent coordination
       - return value contract
-      - create-skills
-      - start-design
+      - parallel execution
+      - create-design
       - start-plan
       - start-requirements
-      - phase composition
+      - phase structure
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     title: DES-013 Context Gathering Task Specification
     purpose: Defines context gathering task specification for create-* and start-implement SKILLs, including 3 task types, parallel agent execution method, and SKILL-specific task matrices
@@ -682,40 +674,34 @@ docs:
       - What vs. How principle
       - spec/design boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: DES-018 Forge design workflow design
-    purpose: Defines start-design skill workflow for creating design documents from requirements including upstream design, matching with existing implementations, detailed design, consistency verification, and review process
+    title: DES-018 Design Book Creation Workflow Design
+    purpose: Defines the workflow and phases for creating design books from requirements documents, including upstream design, pattern matching, detailed design verification, review procedures, and design principles
     content_details:
-      - Flowchart with 7 main phases from preprocessing to completion
-      - "Preprocessing: feature name, output directory, mode judgment, regulatory document loading (design_method, design_principles, strategy_principles, spec_design_boundary, spec_priorities, document_style_guide)"
-      - "Phase 1: Input collection (requirements enumeration, rules agent search)"
-      - "Phase 2: Upstream design using only requirements (design_method Step 0-4, with AskUserQuestion approval)"
-      - "Phase 3: Matching with existing implementations and design patterns, with redesign loops"
-      - "Phase 4: Detailed design with existing implementations as means (design_method Step 5)"
-      - "Phase 5: Consistency verification with traceability table (design_method Step 6)"
-      - "Phase 6: AI self-review, /forge:review design --auto, user approval"
-      - "Design principles: build from requirements only, reuse existing implementations without modification, full requirements coverage, What/How boundary"
-      - Handling new requirements discovered during phases and completion processing
+      - "Workflow phases: pre-setup, input collection, upstream design, pattern matching, detailed design, consistency verification, review"
+      - Input collection from requirements documents and project rules
+      - Upstream design using only requirements and project rules (design_method steps 0-4)
+      - Existing implementation and design pattern matching with re-design iteration cycles
+      - Detailed design using existing implementations as tools
+      - Consistency verification using traceability matrices
+      - "Design principles: build from requirements, leverage existing patterns, all-requirement coverage, What/How boundary"
     applicable_tasks:
-      - Design document creation from requirements
-      - Upstream design phase execution
-      - Existing implementation and pattern matching
-      - Detailed design development
-      - Consistency verification and traceability
-      - AI design review and self-assessment
-      - Requirement to design mapping verification
-      - Temporary feature (diff) design handling
-      - Design workflow implementation
-      - start-design orchestrator skill execution
+      - Design book creation workflow for new features
+      - Upstream design derivation from requirements specifications
+      - Design pattern matching and re-design iteration
+      - Detailed design specification and implementation guidance
+      - Consistency verification and traceability validation
+      - Design review approval and finalization
+      - Differential feature handling
+      - Feature implementation planning from completed design
     keywords:
       - start-design
-      - design workflow
       - upstream design
+      - design workflow
       - pattern matching
       - detailed design
       - consistency verification
-      - traceability table
-      - design_method
-      - requirement to design mapping
+      - design principles
+      - traceability matrix
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     title: Plan Creation Workflow Design
     purpose: Defines the architecture and workflow design for forge plan creation, including orchestration patterns, agent responsibilities, data exchange rules, and task derivation process.
