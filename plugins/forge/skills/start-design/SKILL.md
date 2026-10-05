@@ -122,7 +122,16 @@ prompt:
 
 ### 1.3 差分開発かどうかの確認
 
-入力の要件定義書のいずれかが、差分 feature の一時マーカー（`feature_type: temporary-feature`）を持つかを、判定の出発点にする。型は文書ごとに判定するため（`additive_development_spec.md` §0）、要件の上では既存と重ならなくても、設計してみると既存の設計書を変える・重なることがある。Phase 3 で設計書について確かめ直す。
+事前準備で特定した要件定義書が、差分 feature の一時マーカー（`feature_type: temporary-feature`）を持つかを、次の script で判定し、判定の出発点にする。
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/feature_marker.py" --paths {要件定義書のパス}...
+```
+
+- **終了コード 0**: JSON の `any_marker` が `true` なら「持つ」、`false` なら「持たない」
+- **終了コード 1**: JSON の `errors` をそのままユーザーに伝える。推測で「持たない」としない。原因は文書の frontmatter の書式なので、その修正を促す
+
+型は文書ごとに判定するため（`additive_development_spec.md` §0）、要件の上では既存と重ならなくても、設計してみると既存の設計書を変える・重なることがある。Phase 3 で設計書について確かめ直す。
 
 - **持つ（差分開発）**: 以下を Read し、旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。設計書にも同じ一時マーカーを付ける（2.2）
   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§2「設計は要件から組み立てる」を含む）
@@ -160,7 +169,7 @@ JSON 出力の `next_id` をファイル名・設計 ID として使用する。
 - **作成場所**: 事前準備「出力先の解決」で確定した出力先ディレクトリ
 - **フォーマット**: Markdown (.md) ファイル
 - **ファイル名**: `{設計ID}_{対象名}_design.md`（例: `DES-001_session_expiry_design.md`）。`{対象名}` は英語のスネークケースで、**その設計が扱う対象を表す名前**とする。一覧を見た人が中身を推測できること。`impl` `detail` 等の内容を示さない名前を使わない
-- **差分開発の場合（1.3 で要件定義書が一時マーカーを持つ、または Phase 3 で設計が差分開発と分かった）**: `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.2 が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note は本設計書が対象範囲における現在の設計であることを述べ、対応する追加 feature 要件定義書（REQ-xxx）と食い違う場合は要件定義書に従うと添える。どちらにも当たらない場合は付与しない。
+- **差分開発の場合（1.3 で要件定義書が一時マーカーを持つ、または Phase 3 で設計が差分開発と分かった）**: `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.2 が定義する `feature_type: temporary-feature` frontmatter を文書先頭（`# {設計ID} ...` 見出しより前）に付与する。feature_note は本設計書が対象範囲における現在の設計であることを述べ、対応する要件定義書（REQ-xxx。差分 feature のものがあればそれ）と食い違う場合は要件定義書に従うと添える。どちらにも当たらない場合は付与しない。
 
 **禁止事項・よくある失敗パターン**: `design_principles_spec.md`「記載してはいけない内容」「よくある失敗パターン」節に従う（事前準備で読み込み済み）。
 

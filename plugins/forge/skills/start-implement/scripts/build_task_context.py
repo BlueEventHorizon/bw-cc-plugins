@@ -6,7 +6,9 @@
 低レベル script ではない。
 
 必読文書のうちどれが並行状態（差分 feature）にあるかを frontmatter から判定し、
-`spec_authority` として実装者へ渡す（REQ-025 FNC-003 / DES-074）。
+`spec_authority` として実装者へ渡す（REQ-025 FNC-003 / DES-074）。判定そのものは、
+複数 SKILL が再利用する共有低レベル script（`plugins/forge/scripts/doc_structure/feature_marker.py`）
+に置く。
 """
 
 import argparse
@@ -21,6 +23,9 @@ from plan_contract import (  # noqa: E402
     PlanContractError,
     read_and_consume_candidate_input as _read_and_consume_input,
 )
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "doc_structure"))
+from feature_marker import classify_feature_marker as _classify_parallel_state  # noqa: E402
 
 
 TEMPLATE_PATH = (
@@ -40,57 +45,11 @@ TESTS_STATES = {"required", "optional", "skipped"}
 _STRUCTURE_LINE_RE = re.compile(r"^ {0,3}(?:#{1,6}(?:\s|$)|```|~~~)")
 
 # 並行状態（差分 feature）にある文書の識別。契約は DES-074
-# 「build_task_context.py の並行状態文書の分類契約」が定める。
-_FRONTMATTER_DELIMITER = "---"
-# インデントの無いトップレベルキーだけを拾う（`feature_note` 配下の行は拾わない）。
-# キーの順序で結果が変わらないよう、frontmatter ブロック全体を走査してから判定する。
-_FEATURE_TYPE_RE = re.compile(r"^feature_type:(.*)$")
-_PARALLEL_FEATURE_TYPE = "temporary-feature"
+# 「build_task_context.py の並行状態文書の分類契約」が定める（判定の実装は feature_marker.py）。
 # 並行状態の識別対象。`additional` は文書種別ではなく「上記に分類されない残り」の受け皿で
 # あり、要件定義書・設計書が入りうるため含める（契約は DES-074）。
 # `strategy_doc` / `rule_docs` / `reference_code` は種別が固定で識別子を持たないため除く。
 _SPEC_AUTHORITY_SOURCES = ("requirement_docs", "design_docs", "additional")
-
-
-def _classify_parallel_state(path):
-    """`(並行状態にあるか, 解析失敗の理由)` を返す。理由が None でなければ判定不能。"""
-    try:
-        text = Path(path).read_text(encoding="utf-8")
-    except OSError as exc:
-        return None, f"{path}: 並行状態を判定できません（読み取りに失敗: {exc.strerror or exc}）"
-    except UnicodeDecodeError:
-        return None, f"{path}: 並行状態を判定できません（UTF-8 として読めません）"
-
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
-        return False, None
-
-    values = []
-    closed = False
-    for line in lines[1:]:
-        if line.strip() == _FRONTMATTER_DELIMITER:
-            closed = True
-            break
-        match = _FEATURE_TYPE_RE.match(line)
-        if match:
-            values.append(match.group(1).strip())
-
-    if not closed:
-        return None, f"{path}: 並行状態を判定できません（frontmatter の終端 '---' がありません）"
-    if not values:
-        return False, None
-    if len(values) > 1:
-        return None, (
-            f"{path}: 並行状態を判定できません"
-            f"（feature_type が {len(values)} 回現れ、値を一意に決められません）"
-        )
-    if values[0] != _PARALLEL_FEATURE_TYPE:
-        return None, (
-            f"{path}: 並行状態を判定できません"
-            f"（feature_type の値 {values[0]!r} は未定義です。"
-            f"定義されている値は {_PARALLEL_FEATURE_TYPE!r} のみ）"
-        )
-    return True, None
 
 
 def _resolve_spec_authority(required_reading):

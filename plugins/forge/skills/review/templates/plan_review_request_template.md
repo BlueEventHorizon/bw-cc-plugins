@@ -43,7 +43,7 @@
 ### 規範（違反を検出する対象）
 
 - `{{PLUGIN_ROOT}}/docs/plan_principles_spec.md` — 計画策定の原則
-- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`requirements_traceability` 先の要件定義書の `feature_type` による追加 feature 判定・旧仕様の置き換え
+- `{{PLUGIN_ROOT}}/docs/additive_development_spec.md` — 追加開発ワークフロー。`requirements_traceability` 先の要件定義書、または `design_traceability` 先の設計書の、いずれかの `feature_type` による追加 feature 判定・旧仕様の置き換え
 - `{{PLUGIN_ROOT}}/docs/spec_priorities_spec.md` — 構造品質の直接数値化禁止・倒錯パターン
 - `{{PLUGIN_ROOT}}/docs/scope_proportionality_spec.md` — 比例性の原則。目的に対して過剰な構造・ステップ数になっていないか
 

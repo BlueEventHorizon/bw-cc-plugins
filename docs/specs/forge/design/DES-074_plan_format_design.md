@@ -152,7 +152,7 @@ pending → in_progress → completed
 
 ### frontmatter の解析
 
-文書先頭の YAML frontmatter（`---` で囲まれたブロック）から `feature_type` の値を取り出す。標準ライブラリのみで実装する（PyYAML 禁止）。
+文書先頭の YAML frontmatter（`---` で囲まれたブロック）から `feature_type` の値を取り出す。標準ライブラリのみで実装する（PyYAML 禁止）。この解析は複数の SKILL が再利用する汎用処理のため、共有低レベル script（`plugins/forge/scripts/doc_structure/feature_marker.py`）に置く。`build_task_context.py` はそれを使い、`/forge:start-design` も同じ script で入力の要件定義書の一時マーカーの有無を判定する。
 
 判定は次の 3 値のいずれかになる。
 

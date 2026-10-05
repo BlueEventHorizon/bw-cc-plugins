@@ -5,39 +5,42 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-05T07:36:13Z
+  generated_at: 2026-10-05T09:18:34Z
   file_count: 42
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines criteria and procedures for the additive development workflow when adding features to existing projects, including feature type determination and specification merge process
+    purpose: Defines criteria and procedures for additive development workflows, covering feature classification, specification management during implementation, and merge procedures for specification reconciliation.
     content_details:
-      - Three feature types (completely new, purely additive, differential development) based on relationship to existing specifications
-      - Differential development application conditions - when implementation changes require document modifications
-      - Feature type determination per document kind - distinguishing type between requirements and design separately
-      - Current specification precedence during implementation - differential development documents supersede old specifications
-      - Implementation isolation via git worktree - preventing main branch breakage during feature implementation
-      - Merge timing requirements - complete implementation, pass code review, and all tests passing
-      - Scope-based merge decisions - moving content by meaning relationship, not physical location
-      - Exclusion conditions for feature requirement - small changes with no red flags can modify existing documents
+      - "Three feature types: complete new, pure addition, differential development"
+      - Feature namespace requirements and naming conventions
+      - Specification replacement rule during implementation without conditions
+      - Document modification restrictions during implementation phase
+      - Implementation performed in isolated working copy using git worktree
+      - Merge procedures for old and new specification reconciliation
+      - Feature frontmatter markers for differential development features
+      - Scope-based decision criteria for content migration during merge
     applicable_tasks:
-      - Planning additive feature workflows - determining feature type and document structure
-      - Implementation phase specification management - understanding which specifications are current
-      - Differential feature document identification - applying feature type criteria to new documents
-      - Merge phase specification reconciliation - integrating new specifications with existing ones
-      - Feature namespace design - deciding when features need separate specification directories
+      - Feature classification determination
+      - Additive development workflow execution
+      - Feature namespace decision
+      - Differential development identification
+      - Specification management during implementation
+      - Implementation isolation and working copy setup
+      - Specification merge and reconciliation
+      - Document status marker application
     keywords:
-      - additive development
-      - differential development
-      - feature type
-      - specification merge
-      - git worktree
-      - feature namespace
+      - feature-type
+      - feature-namespace
+      - differential-development
+      - specification-replacement
+      - merge-procedure
+      - git-worktree
+      - additive-development
       - frontmatter
-      - current specification
-      - scope determination
-      - implementation isolation
+      - feature-classification
+      - feature-naming
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format
     purpose: Specifies the standard format for ADR files including naming conventions, file structure, scope declarations, rejection handling, and decision templates.
@@ -241,36 +244,40 @@ docs:
       - recommendation judgment
   plugins/forge/docs/criteria/review_criteria_plan.md:
     title: Plan Review Criteria
-    purpose: Establishes plan document review criteria covering task principles, traceability validation, internal task contradiction detection, and complexity assessment
+    purpose: Guidelines for reviewing plan documents against single-source-of-truth specifications, with rules for checking compliance, detecting contradictions, and making recommendations.
     content_details:
-      - P1 SSOT reference list for plan review
-      - Task granularity and acceptance criteria rules
-      - Required reading field specification
-      - Task grouping and parallel execution principles
-      - Implicit dependency detection procedures
-      - Traceability and requirements mapping rules
-      - Additive feature identification via requirements_traceability
-      - Task-level contradiction detection between plan and requirements/design
-      - Additive feature exclusion rule for P2 checks
-      - Unnecessary complexity and antipattern detection
+      - SSOT reference documents and priority levels (P1/P2/P3) for plan review
+      - "Check order sequence: P1 rule matching, P2 contradiction detection, P3 complexity evaluation"
+      - Recommendation types (fix, create_issue, skip) and adoption conditions
+      - "Three conditions for create_issue recommendation: no applicable rule, recurrence/objectivity, explicit documentation capability"
+      - Detection of additional features via frontmatter of referenced requirement/design documents
+      - Contradiction detection between plan tasks and linked specifications
+      - Complexity evaluation using Yes/No judgment principles
+      - Plan principles specification covering task granularity and acceptance criteria
+      - Additive development workflow handling with temporary-feature designation
+      - Project-specific dependency and workflow rules via query-db-rules
     applicable_tasks:
-      - Plan document review
-      - Task principle compliance checking
-      - Traceability validation
-      - Plan-design-requirements alignment checking
-      - Task dependency contradiction detection
-      - Plan complexity assessment
+      - Plan document review and quality assurance
+      - Plan specification compliance checking
+      - Contradiction detection between plan and related specifications
+      - Plan recommendation generation (fix/create_issue/skip)
+      - Feature type determination (standard vs. temporary-feature)
+      - Plan complexity evaluation
+      - Traceability validation (requirements/design references)
+      - Project-specific rule application
     keywords:
-      - plan-review
-      - task-principles
-      - required-reading
+      - plan review
+      - criteria
+      - SSOT
+      - single source of truth
+      - principles specification
+      - contradiction detection
+      - recommendation
+      - temporary feature
+      - additive development
+      - task granularity
       - traceability
-      - additive-feature
-      - dependency
-      - acceptance-criteria
-      - task-granularity
-      - contradiction
-      - complexity
+      - project rules
   plugins/forge/docs/criteria/review_criteria_requirement.md:
     title: Requirement Review Criteria
     purpose: Defines review criteria for requirement definition documents, specifying SoT reference priorities, sequential check order (P1/P2/P3), and recommendation judgment rules
@@ -596,72 +603,69 @@ docs:
       - code review
       - design patterns
   plugins/forge/docs/frontmatter_format.md:
-    title: Frontmatter Format Definition for Additive Features
-    purpose: Defines frontmatter keys (feature_type, doc_status, feature_note) for marking temporary features and document lifecycle status in requirements and design documents during additive feature development.
+    title: Additive Feature Frontmatter Definition
+    purpose: Single source of truth for frontmatter keys applied to requirements and design documents in differential feature operations, defining feature_type and doc_status markers and their application rules.
     content_details:
-      - feature_type key definition and judgment criteria for temporary features
-      - feature_type frontmatter for requirements documents with feature_note guidance
-      - feature_type frontmatter for design documents with feature_note guidance
-      - feature_type not applied to plan documents and rationale
-      - doc_status key definition for lifecycle states (draft, not_implemented)
-      - doc_status values and their meanings
-      - doc_status application scope (requirements and design only)
-      - doc_status notation and syntax rules
-      - doc_status release and deletion conditions
+      - feature_type key with temporary-feature value for differential feature documents
+      - Application rules for requirements documents, design documents, and exclusion of plan documents
+      - feature_note field containing operational guidance for documents with feature_type marker
+      - doc_status lifecycle state marker for document completion status
+      - "doc_status values: draft (incomplete review status) and not_implemented (dependency not yet implemented)"
+      - Removal conditions for doc_status key on review completion or dependency implementation
       - Collision avoidance with doc-advisor reserved keys
     applicable_tasks:
-      - Additive feature development workflow setup
-      - Temporary feature document creation
-      - Feature document frontmatter configuration
-      - Document lifecycle status management
-      - Frontmatter validation and review
-      - Feature completeness tracking
+      - Frontmatter key definition for differential features
+      - Feature type marker application to specifications
+      - Document status tracking during implementation
+      - Document lifecycle state management
+      - Specification completion status monitoring
+      - Frontmatter block composition
+      - Reserved key conflict identification
     keywords:
       - frontmatter
       - feature_type
       - temporary-feature
       - doc_status
-      - additive development
       - feature_note
       - draft
       - not_implemented
+      - lifecycle-state
       - doc-advisor
-      - metadata
+      - specification-marker
   plugins/forge/docs/plan_principles_spec.md:
-    title: Plan Principles Specification
-    purpose: Specifies principles and guidelines for creating implementation plans, including task granularity, traceability rules, acceptance criteria, dependency management, and severity levels for violations.
+    title: Plan Creation Principles
+    purpose: Defines generic principles for plan document creation including task design guidelines, composition rules, traceability requirements, and severity catalog for validation violations.
     content_details:
-      - Plan definition and responsibilities (tasks, priorities, dependencies, traceability)
-      - Task ID naming and priority ranges (70-99 high, 40-69 medium, 1-39 low)
-      - Plan composition rules (JSON format with requirements_traceability, design_traceability, tasks sections)
-      - Task granularity standards (5-10 items per task, single Agent execution)
-      - required_reading field specification and path format rules
-      - Task grouping criteria and build_check mechanics (per_task, skip, on_group_complete)
-      - Task acceptance criteria specification (Yes/No judgment required, not subjective)
-      - Test task mandatory rule for main features
-      - Implicit dependency detection patterns (frontend/API, integration, migrations, deployment)
-      - Traceability matrix rules and requirement exclusion documentation
-      - Circular dependency prevention and dependency order management
+      - "Plan definition and responsibilities: task set, priority, dependency, and traceability"
+      - Task ID prefixes and priority ranges (70-99 high, 40-69 medium, 1-39 low)
+      - "Plan composition rules: requirements_traceability, design_traceability, and tasks sections only"
+      - Mandatory design_traceability requirement_ids field for requirement status updates
+      - "Task granularity criteria: 1 Agent execution unit, 5-10 items, build/test success on completion"
+      - Implementation details exclusion principle; refer to design document instead
+      - required_reading field specification with project-root-relative paths
+      - Task grouping and build_check field specification (per_task, skip, on_group_complete)
+      - Prohibition on compatibility code for intermediate broken states during group execution
     applicable_tasks:
-      - Implementation plan creation and refinement
-      - Task granularity design
-      - Traceability matrix definition
-      - Dependency management setup
-      - Acceptance criteria specification
-      - Test plan design
-      - Task grouping configuration
-      - Plan review and validation
+      - Plan document creation and composition
+      - Task design and granularity determination
+      - Task dependency identification and circular dependency detection
+      - Acceptance criteria definition for tasks
+      - Test task planning for feature implementation
+      - Traceability mapping between requirements, design, and tasks
+      - Task grouping and build validation strategy
+      - Implicit dependency pattern identification
+      - Severity assessment for plan violations
     keywords:
-      - plan principles
-      - task granularity
-      - traceability
-      - dependency management
-      - acceptance criteria
-      - task grouping
-      - JSON format
+      - requirements_traceability
+      - design_traceability
+      - build_check
       - required_reading
-      - test task
-      - implicit dependency
+      - task-dependency
+      - task-granularity
+      - acceptance-criteria
+      - implicit-dependency
+      - parallel-execution
+      - severity-catalog
   plugins/forge/docs/requirement_format.md:
     title: Default Requirement Definition Format
     purpose: Provides the default format specification for requirement definition documents, including structure templates, requirement ID catalogs, frontmatter rules for additive features, and review severity criteria.
@@ -795,37 +799,37 @@ docs:
       - authentication secret
       - connection string
   plugins/forge/docs/spec_design_boundary_spec.md:
-    title: Spec and Design Boundary Specification
-    purpose: Clarifies the boundary between requirements (What) and design (How) to guide content allocation decisions. Provides judgment criteria and category-specific guidance for document authoring and review.
+    title: Requirement and Design Boundary Clarification Guide
+    purpose: Clarifies the boundary between requirement documents (What) and design documents (How) to support judgment on content placement and document structure decisions
     content_details:
-      - "Basic principles: requirements define what/user viewpoint, design defines how/developer viewpoint"
-      - "Primary judgment criterion: Is it already decided with no choice?"
-      - "Secondary judgment criterion: Would it appear in user manual?"
-      - "Category guidance for quantitative goals: declared targets vs. achievement structure vs. guarantee expressions"
-      - Category guidance for feature rationale and value in requirements only
-      - "Gray zone tolerance: data model types (concept/implementation permitted, detailed Generic constraints not)"
-      - "Diagrams: navigation yes, sequence/dataflow/class no"
-      - "Traceability rules: requirement ID validation and design additions requiring approval"
-      - ADR requirements for design decisions without requirement basis
-      - Severity catalog for What/How boundary violations
+      - Basic principles for requirement vs design document responsibilities
+      - Primary judgment criteria using user manual test
+      - Decision framework for disputed boundary cases
+      - Quantitative goals guidance and prohibition on unfounded targets
+      - Feature rationale and value preservation rules
+      - Severity catalog for boundary violations with examples
+      - Gray zone tolerance patterns for types and diagrams
+      - Data model type representation (conceptual vs implementation)
+      - Diagram usage rules (flow/structure/class diagrams forbidden in requirements)
+      - Lightweight traceability norms and requirement linking rules
     applicable_tasks:
-      - Requirements document authoring and review
-      - Design document authoring and review
-      - What/How boundary violation detection
-      - Content allocation guidance between documents
-      - Traceability verification for design
-      - ADR creation for design decisions
+      - Writing requirement specifications
+      - Writing design specifications
+      - Reviewing requirement documents
+      - Reviewing design documents
+      - Clarifying specification boundaries
+      - Training teams on requirement/design separation
     keywords:
-      - requirements
-      - What
-      - design
-      - How
-      - boundary
-      - spec
-      - criteria
-      - traceability
-      - ADR
-      - gray_zone
+      - requirements boundary
+      - design boundary
+      - what versus how
+      - judgment criteria
+      - specification placement
+      - gray zone tolerance
+      - traceability norms
+      - violation patterns
+      - document structure
+      - content placement rules
   plugins/forge/docs/spec_priorities_spec.md:
     title: Specification and Design Document Priorities
     purpose: Defines structural design principles (responsibility separation, boundary setting, dependency direction) that must be prioritized in requirements and design documents, and prohibits inappropriate focuses including quantifying structural quality and fabricating unconfirmed metrics.

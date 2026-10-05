@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-05T07:37:44Z
+  generated_at: 2026-10-05T09:32:09Z
   file_count: 39
 
 docs:
@@ -674,34 +674,34 @@ docs:
       - What vs. How principle
       - spec/design boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: DES-018 Design Book Creation Workflow Design
-    purpose: Defines the workflow and phases for creating design books from requirements documents, including upstream design, pattern matching, detailed design verification, review procedures, and design principles
+    title: Forge Design Workflow Design Specification
+    purpose: Specifies the workflow and phases for creating design documents from requirements specifications, including upstream design, pattern matching, detailed design, consistency checks, and review
     content_details:
-      - "Workflow phases: pre-setup, input collection, upstream design, pattern matching, detailed design, consistency verification, review"
-      - Input collection from requirements documents and project rules
-      - Upstream design using only requirements and project rules (design_method steps 0-4)
-      - Existing implementation and design pattern matching with re-design iteration cycles
-      - Detailed design using existing implementations as tools
-      - Consistency verification using traceability matrices
-      - "Design principles: build from requirements, leverage existing patterns, all-requirement coverage, What/How boundary"
+      - "Design workflow phases (Phase 1-6): input collection, upstream design, pattern matching, detailed design, consistency verification, review"
+      - "Pre-preparation steps: requirement identification, feature naming, output directory resolution, mode determination, normative documents reading"
+      - Phase 1 input collection from project rules using query-db-rules agent
+      - Phase 2 upstream design using requirements and rules only, with user approval gates
+      - Phase 3 existing implementation and design pattern matching with re-design cycles
+      - Phase 4 detailed design refinement using existing implementations as tools
+      - Phase 5 consistency verification with traceability table methodology
+      - Phase 6 self-review and automated review via /forge:review design --auto with user approval
+      - "Design principles: build from requirements only, reuse existing implementations, full requirement coverage, What/How boundary adherence"
     applicable_tasks:
-      - Design book creation workflow for new features
-      - Upstream design derivation from requirements specifications
-      - Design pattern matching and re-design iteration
-      - Detailed design specification and implementation guidance
-      - Consistency verification and traceability validation
-      - Design review approval and finalization
-      - Differential feature handling
-      - Feature implementation planning from completed design
+      - Design workflow orchestration implementation
+      - Design specification creation from requirements
+      - Existing design pattern and implementation matching
+      - Design consistency verification and traceability validation
+      - Design review process execution
+      - Feature type determination (complete new vs append vs review-only)
     keywords:
       - start-design
-      - upstream design
       - design workflow
+      - upstream design
       - pattern matching
-      - detailed design
-      - consistency verification
+      - traceability verification
       - design principles
-      - traceability matrix
+      - design phases
+      - consistency verification
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     title: Plan Creation Workflow Design
     purpose: Defines the architecture and workflow design for forge plan creation, including orchestration patterns, agent responsibilities, data exchange rules, and task derivation process.
@@ -953,31 +953,36 @@ docs:
       - fix safety verification
       - multi-round review
   docs/specs/forge/design/DES-074_plan_format_design.md:
-    title: Implementation Plan Default Format
-    purpose: Specifies the JSON schema and field structure for implementation plans that encode requirements traceability, design mapping, and task definitions for the forge build system.
+    title: Plan Default Format
+    purpose: Defines the JSON schema and format for implementation plan files, including requirements and design traceability, task specifications, and status/priority management for forge scripts and the start-implement skill
     content_details:
-      - JSON schema with requirements_traceability, design_traceability, and tasks objects
-      - Task field definitions including task_id, title, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading
-      - "Status transitions: pending, in_progress, completed"
-      - "Priority level guidelines: 70-99 high (core logic/blockers), 40-69 medium (main features), 1-39 low (UI/auxiliary)"
-      - Feature type detection via frontmatter analysis for temporary-feature identification
-      - spec_authority field for documenting parallel state documents in task context
+      - Format selection rationale—why JSON is used instead of Markdown for plan files
+      - JSON schema structure with requirements_traceability, design_traceability, and tasks sections
+      - Field definitions for requirements traceability (requirement_id, title, design_id, status)
+      - Field definitions for design traceability (design_id, title, requirement_ids, task_ids)
+      - Field definitions for tasks (task_id, title, priority, status, design_id, depends_on, group_id, build_check, description, acceptance_criteria, required_reading)
+      - Task status transitions (pending → in_progress → completed)
+      - Priority guidelines with ranges (70-99 high, 40-69 medium, 1-39 low)
+      - Parallel state document classification contract and feature_type identification from frontmatter
+      - Handling of additive features and no frontmatter requirement for plan files
+      - Specification of spec_authority field for concurrent document versions in task context
     applicable_tasks:
-      - Implementation task planning with priority and dependency tracking
-      - Task context construction for start-implement skill
-      - Parallel feature development scope identification
-      - Plan format validation and script contract definition
+      - Implementation plan creation and format validation
+      - Task dependency management and priority assignment
+      - Requirement and design traceability tracking in plans
+      - Additive feature development planning
+      - Task status lifecycle management
     keywords:
-      - implementation plan
-      - JSON schema
+      - plan.json
+      - requirements_traceability
+      - design_traceability
       - task_id
-      - priority
-      - status
-      - design_id
+      - build_task_context
       - feature_type
       - temporary-feature
-      - spec_authority
-      - build_task_context.py
+      - dependency
+      - acceptance_criteria
+      - priority
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md:
     title: Orchestrator Pattern Requirements
     purpose: Defines requirements for the orchestrator pattern architecture in forge skills, addressing context consumption, scalability, and parallel execution needs

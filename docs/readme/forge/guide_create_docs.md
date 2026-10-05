@@ -179,7 +179,7 @@ Extract tasks from design documents and create a JSON plan.
 ### Plan Structure (Minimal Complete JSON)
 
 The plan is a JSON file named `{feature}_plan.json`. **It is not Markdown.**
-The top level has exactly three keys: `requirements_traceability` / `design_traceability` / `tasks`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document's `feature_type: temporary-feature` frontmatter. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
+The top level has exactly three keys: `requirements_traceability` / `design_traceability` / `tasks`. Plans carry no frontmatter, even for additive-development features — whether a plan belongs to an additive feature is determined by following `requirements_traceability` to the requirement document, or `design_traceability` to the design document: either one carrying `feature_type: temporary-feature` makes it an additive feature's plan. A script (`write_plan.py`, etc.) writes and validates the file, so the AI does not need to know the file format itself.
 
 ```json
 {
