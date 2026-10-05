@@ -80,12 +80,12 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/resolve_doc_structure.py" \
 
 - **終了コード 0**: JSON の `decision` に従う。
 
-  | `decision`    | 意味                                                              | 呼び出し元の動作                                                                                                                                           |
-  | ------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `argument`    | 引数の feature                                                    | `feature` と `dir`（出力先）を使う                                                                                                                         |
-  | `path`        | `source_path` から求めた（`feature` が `null` なら feature なし） | `feature` と `dir` を使う                                                                                                                                  |
-  | `no-existing` | その doc_type の既存ファイルが無い（完全新規）。feature なし      | `dir` を使う                                                                                                                                               |
-  | `ask`         | 決められない                                                      | `reason` を添えて、AskUserQuestion で feature を確認する。`features` に既知の feature、`existing_count` に既存の件数がある。件数が多いときは全件を並べない |
+  | `decision`    | 意味                                                                                                                | 呼び出し元の動作                                                                                                                                           |
+  | ------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `argument`    | 引数の feature（`source_path` も渡されたときは、パスから求めた feature と食い違わない場合に限る。食い違えば `ask`） | `feature` と `dir`（出力先）を使う                                                                                                                         |
+  | `path`        | `source_path` から求めた（`feature` が `null` なら feature なし）                                                   | `feature` と `dir` を使う                                                                                                                                  |
+  | `no-existing` | その doc_type の既存ファイルが無い（完全新規）。feature なし                                                        | `dir` を使う                                                                                                                                               |
+  | `ask`         | 決められない                                                                                                        | `reason` を添えて、AskUserQuestion で feature を確認する。`features` に既知の feature、`existing_count` に既存の件数がある。件数が多いときは全件を並べない |
 
   `feature_applied` が `false` のときは、キーに feature を置く場所が無く、feature は使われていない。呼び出し元へそのことを伝える。
 - **終了コード 1**: JSON の `message` に従う。

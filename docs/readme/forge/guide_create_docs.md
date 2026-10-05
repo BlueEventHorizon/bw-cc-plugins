@@ -111,15 +111,14 @@ Create design documents from requirements. Builds the upstream design from the r
 
 ### Execution Flow
 
-1. Confirm Feature name
-2. **Gather inputs**
-   - Identify the requirements document (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
-   - Collect project design rules (`/forge:query-db-rules`)
-3. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
-4. **Matching against existing implementations and design patterns**, and redesign
-5. **Detailed design** and consistency check (traceability table)
-6. **Review** (self-review → `/forge:review --auto` → user review)
-7. Completion flow (search-index update → commit)
+1. **Identify the requirements document** (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
+2. Confirm Feature name (decided from the path of the identified requirements document; confirm when it conflicts with the argument)
+3. Collect project design rules (`/forge:query-db-rules`)
+4. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
+5. **Matching against existing implementations and design patterns**, and redesign
+6. **Detailed design** and consistency check (traceability table)
+7. **Review** (self-review → `/forge:review --auto` → user review)
+8. Completion flow (search-index update → commit)
 
 ### Design Principles
 

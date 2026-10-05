@@ -916,6 +916,34 @@ def feature_of_path(config, category, path, project_root):
     )
 
 
+def _argument_conflicts_with_path(config, category, doc_type, project_root,
+                                  feature, source_path):
+    """引数の feature が、入力の文書のパスから求めた feature と食い違うときの理由。無ければ None。
+
+    次の場合は、食い違いとみなさない（None）。
+    - 入力の文書のパスから feature を求められない（求められないことは、ここでは判定しない）
+    - doc_type のキーに feature を置く場所が無く、feature が使われない
+    - 引数がサブ feature（`forge/review-PR`）で、パスから求めた最上位の feature（`forge`）の配下
+    """
+    located = feature_of_path(config, category, source_path, project_root)
+    if located['status'] != 'ok':
+        return None
+    resolved = resolve_doc_type_dir(config, category, doc_type, feature)
+    if resolved['status'] == 'ok' and resolved['feature_applied'] is False:
+        return None
+    normalized = normalize_path(feature).strip('/')
+    path_feature = located['feature']
+    if path_feature is not None and (
+        normalized == path_feature or normalized.startswith(path_feature + '/')
+    ):
+        return None
+    shown = path_feature if path_feature is not None else 'なし（トップのディレクトリ）'
+    return (
+        f"引数の feature `{feature}` が、入力の文書 `{located['path']}` のパスから求めた "
+        f"feature {shown} と食い違う"
+    )
+
+
 def decide_feature(config, category, doc_type, project_root,
                    feature=None, source_path=None):
     """作る文書（doc_type）の feature を、決定論的な順序で決める。
@@ -961,6 +989,12 @@ def decide_feature(config, category, doc_type, project_root,
         }
 
     if feature is not None:
+        if source_path is not None:
+            conflict = _argument_conflicts_with_path(
+                config, category, doc_type, project_root, feature, source_path
+            )
+            if conflict:
+                return ask(conflict)
         return decided('argument', feature, '引数で feature が渡された')
 
     if source_path is not None:
