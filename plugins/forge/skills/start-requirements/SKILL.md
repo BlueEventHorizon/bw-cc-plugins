@@ -83,13 +83,9 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 2. **Feature 名の確定**:
 
-   `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
-   doc_type `requirement`（feature 未指定）で既存ファイルの有無を確認し、以下の3分岐で確定する:
-
-   - 引数で指定済み → **変更せずそのまま使用**（AI による置き換え禁止）
-   - 未指定かつ既存ファイルが存在しない（初回立ち上げ）→ フィーチャー名不要。同手順の対象ディレクトリに
-     直接配置する（`additive_development_spec.md` §0 参照）
-   - 未指定かつ既存ファイルが存在する → AskUserQuestion でフィーチャー名を確認する
+   `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「feature の決定」手順に従い、doc_type `requirement` で決める。
+   引数で feature が指定されていれば `--feature` に渡す（変更せずそのまま使用。AI による置き換え禁止）。
+   `decision` の扱いは同手順が定める（決められなければ AskUserQuestion でフィーチャー名を確認する）。
 
 3. **出力先ディレクトリの解決**:
 

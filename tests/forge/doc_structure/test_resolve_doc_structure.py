@@ -916,5 +916,568 @@ class TestValidateDocStructure(unittest.TestCase):
             self.assertIn('suggestion', data)
 
 
+# ---------------------------------------------------------------------------
+# 置き場ディレクトリ・Feature の解決
+# ---------------------------------------------------------------------------
+
+DIR_OF_CONFIG = """\
+# doc_structure_version: 3.0
+
+rules:
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+
+specs:
+  root_dirs:
+    - docs/specs/**/requirements/
+    - docs/specs/**/design/
+  doc_types_map:
+    docs/specs/**/requirements/: requirement
+    docs/specs/**/design/: design
+"""
+
+SINGLE_STAR_CONFIG = """\
+# doc_structure_version: 3.0
+
+specs:
+  root_dirs:
+    - docs/specs/*/design/
+  doc_types_map:
+    docs/specs/*/design/: design
+"""
+
+PARTIAL_WILDCARD_CONFIG = """\
+# doc_structure_version: 3.0
+
+specs:
+  root_dirs:
+    - docs/specs/feat-*/design/
+  doc_types_map:
+    docs/specs/feat-*/design/: design
+"""
+
+
+class TestResolveDocTypeDir(unittest.TestCase):
+    """置き場ディレクトリの解決のテスト"""
+
+    def setUp(self):
+        self.config = rds.parse_config(DIR_OF_CONFIG)
+
+    def test_with_feature_replaces_doublestar(self):
+        result = rds.resolve_doc_type_dir(self.config, 'specs', 'design', 'forge')
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['dir'], 'docs/specs/forge/design/')
+        self.assertEqual(result['feature'], 'forge')
+        self.assertTrue(result['feature_applied'])
+
+    def test_with_sub_feature_path(self):
+        """feature がスラッシュを含んでも、そのままの階層として置換する"""
+        result = rds.resolve_doc_type_dir(
+            self.config, 'specs', 'design', 'forge/review-PR'
+        )
+        self.assertEqual(result['dir'], 'docs/specs/forge/review-PR/design/')
+
+    def test_without_feature_removes_doublestar(self):
+        result = rds.resolve_doc_type_dir(self.config, 'specs', 'design')
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['dir'], 'docs/specs/design/')
+        self.assertIsNone(result['feature'])
+        self.assertIsNone(result['feature_applied'])
+
+    def test_requirement_without_feature(self):
+        result = rds.resolve_doc_type_dir(self.config, 'specs', 'requirement')
+        self.assertEqual(result['dir'], 'docs/specs/requirements/')
+
+    def test_single_star(self):
+        config = rds.parse_config(SINGLE_STAR_CONFIG)
+        with_feature = rds.resolve_doc_type_dir(config, 'specs', 'design', 'auth')
+        self.assertEqual(with_feature['dir'], 'docs/specs/auth/design/')
+
+    def test_single_star_without_feature_is_error(self):
+        """`*` は 1 セグメントに必ず当たる。feature なしの置き場はキーに含まれず、索引の対象外になる"""
+        config = rds.parse_config(SINGLE_STAR_CONFIG)
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design')
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('feature が必要', result['message'])
+
+    def test_single_star_rejects_multi_level_feature(self):
+        config = rds.parse_config(SINGLE_STAR_CONFIG)
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design', 'forge/review-PR')
+        self.assertEqual(result['status'], 'error')
+
+    def test_key_without_wildcard_is_the_key_itself(self):
+        config = rds.parse_config(BASIC_CONFIG)
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design')
+        self.assertEqual(result['dir'], 'docs/specs/design/')
+
+    def test_key_without_wildcard_reports_feature_not_applied(self):
+        """feature を置く場所が無いキーでは、feature が使われなかったことを示す"""
+        config = rds.parse_config(BASIC_CONFIG)
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design', 'forge')
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['dir'], 'docs/specs/design/')
+        self.assertFalse(result['feature_applied'])
+
+    def test_partial_segment_wildcard_is_error(self):
+        """ワイルドカード以外の glob 文字を含むセグメントは、置き場を決められない"""
+        config = rds.parse_config(PARTIAL_WILDCARD_CONFIG)
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design')
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('feat-*', result['message'])
+
+    def test_unknown_doc_type_is_error(self):
+        result = rds.resolve_doc_type_dir(self.config, 'specs', 'api')
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('api', result['message'])
+
+    def test_invalid_feature_is_error(self):
+        for bad in ('', '..', '../x', 'a/../b'):
+            result = rds.resolve_doc_type_dir(self.config, 'specs', 'design', bad)
+            self.assertEqual(result['status'], 'error', bad)
+
+
+class TestFeatureOfPath(unittest.TestCase):
+    """パスから doc_type と feature を求めるテスト"""
+
+    def setUp(self):
+        self.config = rds.parse_config(DIR_OF_CONFIG)
+        self.root = '/project'
+
+    def test_feature_directory(self):
+        result = rds.feature_of_path(
+            self.config, 'specs',
+            'docs/specs/forge/requirements/REQ-001_x.md', self.root,
+        )
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['doc_type'], 'requirement')
+        self.assertEqual(result['feature'], 'forge')
+
+    def test_top_level_directory_has_no_feature(self):
+        """** が 0 階層に当たる置き場（トップのディレクトリ）は feature なし"""
+        result = rds.feature_of_path(
+            self.config, 'specs',
+            'docs/specs/requirements/REQ-001_x.md', self.root,
+        )
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['doc_type'], 'requirement')
+        self.assertIsNone(result['feature'])
+
+    def test_sub_feature_maps_to_first_segment(self):
+        result = rds.feature_of_path(
+            self.config, 'specs',
+            'docs/specs/forge/review-PR/design/DES-001_x.md', self.root,
+        )
+        self.assertEqual(result['doc_type'], 'design')
+        self.assertEqual(result['feature'], 'forge')
+
+    def test_file_in_subdirectory_of_the_entry(self):
+        result = rds.feature_of_path(
+            self.config, 'specs',
+            'docs/specs/forge/design/sub/DES-001_x.md', self.root,
+        )
+        self.assertEqual(result['doc_type'], 'design')
+        self.assertEqual(result['feature'], 'forge')
+
+    def test_absolute_path_inside_project(self):
+        result = rds.feature_of_path(
+            self.config, 'specs',
+            '/project/docs/specs/forge/design/DES-001_x.md', self.root,
+        )
+        self.assertEqual(result['feature'], 'forge')
+        self.assertEqual(result['path'], 'docs/specs/forge/design/DES-001_x.md')
+
+    def test_directory_path_with_trailing_slash(self):
+        result = rds.feature_of_path(
+            self.config, 'specs', 'docs/specs/forge/design/', self.root,
+        )
+        self.assertEqual(result['doc_type'], 'design')
+        self.assertEqual(result['feature'], 'forge')
+
+    def test_single_star_key(self):
+        config = rds.parse_config(SINGLE_STAR_CONFIG)
+        result = rds.feature_of_path(
+            config, 'specs', 'docs/specs/auth/design/a.md', self.root,
+        )
+        self.assertEqual(result['feature'], 'auth')
+
+    def test_key_without_wildcard_has_no_feature(self):
+        config = rds.parse_config(BASIC_CONFIG)
+        result = rds.feature_of_path(
+            config, 'specs', 'docs/specs/design/a.md', self.root,
+        )
+        self.assertEqual(result['status'], 'ok')
+        self.assertIsNone(result['feature'])
+
+    def test_no_matching_entry_is_error(self):
+        result = rds.feature_of_path(
+            self.config, 'specs', 'docs/other/x.md', self.root,
+        )
+        self.assertEqual(result['status'], 'error')
+
+    def test_path_outside_project_is_error(self):
+        result = rds.feature_of_path(
+            self.config, 'specs', '/elsewhere/docs/specs/forge/design/a.md',
+            self.root,
+        )
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('プロジェクトルートの外', result['message'])
+
+
+# ---------------------------------------------------------------------------
+# キーの書き方の網羅（性質のテスト）
+# ---------------------------------------------------------------------------
+
+# (キー, feature なしの置き場, feature=auth の置き場)。None はエラーになるべきもの
+KEY_PATTERNS = [
+    ('docs/specs/design/',        'docs/specs/design/', 'docs/specs/design/'),
+    ('docs/specs/*/design/',      None,                 'docs/specs/auth/design/'),
+    ('docs/specs/**/design/',     'docs/specs/design/', 'docs/specs/auth/design/'),
+    ('docs/**/design/',           'docs/design/',       'docs/auth/design/'),
+    ('**/design/',                'design/',            'auth/design/'),
+    ('docs/specs/design/**/',     'docs/specs/design/', 'docs/specs/design/auth/'),
+    ('docs/*/specs/design/',      None,                 'docs/auth/specs/design/'),
+    ('docs/specs/**/*/design/',   None,                 None),
+    ('docs/**/specs/**/design/',  'docs/specs/design/', None),
+    ('docs/specs/feat-*/design/', None,                 None),
+]
+
+
+def _config_for_key(key):
+    return rds.parse_config(
+        '# doc_structure_version: 3.0\n'
+        'specs:\n'
+        '  root_dirs:\n'
+        f'    - {key}\n'
+        '  doc_types_map:\n'
+        f'    {key}: design\n'
+    )
+
+
+class TestKeyPatternCoverage(unittest.TestCase):
+    """キーの書き方ごとに、置き場と feature が一貫すること"""
+
+    def test_dir_of_expected_for_every_pattern(self):
+        for key, expected_none, expected_auth in KEY_PATTERNS:
+            config = _config_for_key(key)
+            without = rds.resolve_doc_type_dir(config, 'specs', 'design')
+            with_auth = rds.resolve_doc_type_dir(config, 'specs', 'design', 'auth')
+            if expected_none is None:
+                self.assertEqual(without['status'], 'error', key)
+            else:
+                self.assertEqual(without['dir'], expected_none, key)
+            if expected_auth is None:
+                self.assertEqual(with_auth['status'], 'error', key)
+            else:
+                self.assertEqual(with_auth['dir'], expected_auth, key)
+
+    def test_resolved_dir_is_always_covered_by_the_key(self):
+        """求めた置き場は、必ずキー自身に含まれる（索引の対象外の場所を返さない）"""
+        for key, _, _ in KEY_PATTERNS:
+            config = _config_for_key(key)
+            parts = rds._key_parts(key)
+            for feature in (None, 'auth'):
+                result = rds.resolve_doc_type_dir(config, 'specs', 'design', feature)
+                if result['status'] != 'ok':
+                    continue
+                dir_parts = [p for p in result['dir'].split('/') if p]
+                self.assertTrue(rds._segments_match(parts, dir_parts), (key, feature))
+
+    def test_round_trip_feature_of_dir_of(self):
+        """dir-of で求めた置き場のファイルから、同じ feature が求まる"""
+        for key, expected_none, expected_auth in KEY_PATTERNS:
+            config = _config_for_key(key)
+            if expected_none is not None:
+                located = rds.feature_of_path(
+                    config, 'specs', expected_none + 'x.md', '/p')
+                self.assertEqual(located['status'], 'ok', key)
+                self.assertIsNone(located['feature'], key)
+            if expected_auth is not None and 'auth' in expected_auth:
+                located = rds.feature_of_path(
+                    config, 'specs', expected_auth + 'x.md', '/p')
+                feature_applied = rds.resolve_doc_type_dir(
+                    config, 'specs', 'design', 'auth')['feature_applied']
+                self.assertEqual(located['status'], 'ok', key)
+                if feature_applied:
+                    self.assertEqual(located['feature'], 'auth', key)
+
+    def test_feature_of_never_silently_returns_none_for_unsupported_keys(self):
+        """求められない書き方は、「feature なし」にせずエラーにする"""
+        multi = _config_for_key('docs/**/specs/**/design/')
+        result = rds.feature_of_path(multi, 'specs', 'docs/a/specs/b/design/x.md', '/p')
+        self.assertEqual(result['status'], 'error')
+        partial = _config_for_key('docs/specs/feat-*/design/')
+        result = rds.feature_of_path(partial, 'specs', 'docs/specs/feat-a/design/x.md', '/p')
+        self.assertEqual(result['status'], 'error')
+
+    def test_multiple_doublestar_with_no_capture_is_no_feature(self):
+        multi = _config_for_key('docs/**/specs/**/design/')
+        result = rds.feature_of_path(multi, 'specs', 'docs/specs/design/x.md', '/p')
+        self.assertEqual(result['status'], 'ok')
+        self.assertIsNone(result['feature'])
+
+    def test_multiple_entries_for_one_doc_type_is_error(self):
+        config = rds.parse_config(
+            '# doc_structure_version: 3.0\n'
+            'specs:\n'
+            '  root_dirs:\n'
+            '    - docs/specs/**/design/\n'
+            '    - docs/legacy/design/\n'
+            '  doc_types_map:\n'
+            '    docs/specs/**/design/: design\n'
+            '    docs/legacy/design/: design\n'
+        )
+        result = rds.resolve_doc_type_dir(config, 'specs', 'design')
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('複数のエントリ', result['message'])
+
+
+class TestDecideFeature(unittest.TestCase):
+    """feature の決定（引数 / パス / 既存ファイルの有無 / 尋ねる）"""
+
+    def _run(self, files, **kwargs):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, files)
+            config = rds.parse_config(DIR_OF_CONFIG)
+            return rds.decide_feature(config, 'specs', 'design', tmpdir, **kwargs)
+
+    def test_argument_is_used_as_is(self):
+        result = self._run([], feature='forge')
+        self.assertEqual(result['decision'], 'argument')
+        self.assertEqual(result['feature'], 'forge')
+        self.assertEqual(result['dir'], 'docs/specs/forge/design/')
+
+    def test_argument_wins_over_source_path(self):
+        result = self._run(
+            [], feature='forge',
+            source_path='docs/specs/other/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'argument')
+        self.assertEqual(result['feature'], 'forge')
+
+    def test_source_path_in_feature_directory(self):
+        result = self._run(
+            [], source_path='docs/specs/auth/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'path')
+        self.assertEqual(result['feature'], 'auth')
+        self.assertEqual(result['dir'], 'docs/specs/auth/design/')
+
+    def test_source_path_in_top_level_directory_means_no_feature(self):
+        result = self._run(
+            ['docs/specs/design/DES-001_x.md'],
+            source_path='docs/specs/requirements/REQ-001_x.md')
+        self.assertEqual(result['decision'], 'path')
+        self.assertIsNone(result['feature'])
+        self.assertEqual(result['dir'], 'docs/specs/design/')
+
+    def test_unresolvable_source_path_asks(self):
+        result = self._run([], source_path='docs/other/x.md')
+        self.assertEqual(result['decision'], 'ask')
+        self.assertIn('一致しません', result['reason'])
+
+    def test_no_existing_files_is_complete_new(self):
+        result = self._run([])
+        self.assertEqual(result['decision'], 'no-existing')
+        self.assertIsNone(result['feature'])
+        self.assertEqual(result['dir'], 'docs/specs/design/')
+
+    def test_existing_files_ask_with_features(self):
+        result = self._run([
+            'docs/specs/auth/design/a.md',
+            'docs/specs/login/design/b.md',
+        ])
+        self.assertEqual(result['decision'], 'ask')
+        self.assertEqual(result['existing_count'], 2)
+        self.assertEqual(result['features'], ['auth', 'login'])
+
+    def test_no_existing_but_key_requires_feature_asks(self):
+        """`*` のキーは feature が必須。既存ファイルが無くても、feature なしは決められない"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [])
+            config = rds.parse_config(SINGLE_STAR_CONFIG)
+            result = rds.decide_feature(config, 'specs', 'design', tmpdir)
+            self.assertEqual(result['decision'], 'ask')
+            self.assertIn('feature が必要', result['reason'])
+
+    def test_unknown_doc_type_is_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = rds.parse_config(DIR_OF_CONFIG)
+            result = rds.decide_feature(config, 'specs', 'api', tmpdir)
+            self.assertEqual(result['status'], 'error')
+
+
+class TestFindDoc(unittest.TestCase):
+    """パス・ファイル名・ID から文書を探すテスト"""
+
+    FILES = [
+        'docs/specs/forge/requirements/REQ-003_skill_script.md',
+        'docs/specs/secret-linter/requirements/REQ-032_secret-linter.md',
+        'docs/specs/requirements/REQ-001_base.md',
+    ]
+
+    def _find(self, name):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, self.FILES)
+            config = rds.parse_config(DIR_OF_CONFIG)
+            return rds.find_doc(config, 'specs', 'requirement', name, tmpdir)
+
+    def test_by_id(self):
+        result = self._find('REQ-032')
+        self.assertEqual(result['count'], 1)
+        self.assertEqual(result['matches'], [self.FILES[1]])
+
+    def test_id_does_not_match_a_longer_number(self):
+        """REQ-03 は REQ-032 にも REQ-003 にも当たらない"""
+        self.assertEqual(self._find('REQ-03')['count'], 0)
+
+    def test_by_file_name(self):
+        for name in ('REQ-032_secret-linter.md', 'REQ-032_secret-linter'):
+            self.assertEqual(self._find(name)['matches'], [self.FILES[1]], name)
+
+    def test_by_full_path(self):
+        result = self._find(self.FILES[2])
+        self.assertEqual(result['matches'], [self.FILES[2]])
+
+    def test_by_path_suffix(self):
+        result = self._find('secret-linter/requirements/REQ-032_secret-linter.md')
+        self.assertEqual(result['matches'], [self.FILES[1]])
+
+    def test_not_found_is_zero_not_error(self):
+        result = self._find('REQ-999')
+        self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['count'], 0)
+
+    def test_same_id_in_two_places_returns_both(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(tmpdir, [
+                'docs/specs/a/requirements/REQ-001_x.md',
+                'docs/specs/b/requirements/REQ-001_y.md',
+            ])
+            config = rds.parse_config(DIR_OF_CONFIG)
+            result = rds.find_doc(config, 'specs', 'requirement', 'REQ-001', tmpdir)
+            self.assertEqual(result['count'], 2)
+
+    def test_unknown_doc_type_is_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = rds.parse_config(DIR_OF_CONFIG)
+            result = rds.find_doc(config, 'specs', 'api', 'x', tmpdir)
+            self.assertEqual(result['status'], 'error')
+
+
+class TestCliDirOfAndFeatureOf(unittest.TestCase):
+    """--dir-of / --feature-of の CLI テスト（終了コードと JSON）"""
+
+    SCRIPT = os.path.join(
+        os.path.dirname(__file__), '..', '..', '..', 'plugins',
+        'forge', 'scripts', 'doc_structure', 'resolve_doc_structure.py'
+    )
+
+    def _run(self, tmpdir, *args):
+        import subprocess
+        return subprocess.run(
+            [sys.executable, self.SCRIPT, *args, '--project-root', tmpdir],
+            capture_output=True, text=True,
+        )
+
+    def _project(self, tmpdir):
+        with open(os.path.join(tmpdir, '.doc_structure.yaml'), 'w') as f:
+            f.write(DIR_OF_CONFIG)
+        os.makedirs(os.path.join(tmpdir, '.git'))
+
+    def test_dir_of_with_feature(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--dir-of', 'design', '--feature', 'forge')
+            self.assertEqual(proc.returncode, 0)
+            self.assertEqual(json.loads(proc.stdout)['dir'], 'docs/specs/forge/design/')
+
+    def test_dir_of_without_feature(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--dir-of', 'requirement')
+            self.assertEqual(proc.returncode, 0)
+            self.assertEqual(json.loads(proc.stdout)['dir'], 'docs/specs/requirements/')
+
+    def test_dir_of_unknown_doc_type_exits_1(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--dir-of', 'api')
+            self.assertEqual(proc.returncode, 1)
+            self.assertEqual(json.loads(proc.stdout)['status'], 'error')
+
+    def test_feature_of(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(
+                tmpdir, '--feature-of', 'docs/specs/forge/requirements/REQ-001_x.md'
+            )
+            self.assertEqual(proc.returncode, 0)
+            data = json.loads(proc.stdout)
+            self.assertEqual(data['feature'], 'forge')
+            self.assertEqual(data['doc_type'], 'requirement')
+
+    def test_feature_of_top_level_has_null_feature(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(
+                tmpdir, '--feature-of', 'docs/specs/requirements/REQ-001_x.md'
+            )
+            self.assertEqual(proc.returncode, 0)
+            self.assertIsNone(json.loads(proc.stdout)['feature'])
+
+    def test_feature_of_no_match_exits_1(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--feature-of', 'docs/other/x.md')
+            self.assertEqual(proc.returncode, 1)
+            self.assertEqual(json.loads(proc.stdout)['status'], 'error')
+
+    def test_decide_feature_no_existing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--decide-feature-for', 'design')
+            self.assertEqual(proc.returncode, 0)
+            data = json.loads(proc.stdout)
+            self.assertEqual(data['decision'], 'no-existing')
+            self.assertEqual(data['dir'], 'docs/specs/design/')
+
+    def test_decide_feature_from_source_path(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(
+                tmpdir, '--decide-feature-for', 'design',
+                '--source-path', 'docs/specs/forge/requirements/REQ-001_x.md')
+            data = json.loads(proc.stdout)
+            self.assertEqual(data['decision'], 'path')
+            self.assertEqual(data['feature'], 'forge')
+
+    def test_decide_feature_unknown_doc_type_exits_1(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--decide-feature-for', 'api')
+            self.assertEqual(proc.returncode, 1)
+
+    def test_find_in(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            create_test_project(tmpdir, ['docs/specs/forge/requirements/REQ-001_x.md'])
+            proc = self._run(tmpdir, '--find-in', 'requirement', '--name', 'REQ-001')
+            self.assertEqual(proc.returncode, 0)
+            self.assertEqual(json.loads(proc.stdout)['count'], 1)
+
+    def test_find_in_requires_name_exits_2(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--find-in', 'requirement')
+            self.assertEqual(proc.returncode, 2)
+
+    def test_feature_option_without_dir_of_exits_2(self):
+        """--feature は --dir-of と併用する。argparse の引数エラーは終了コード 2"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._project(tmpdir)
+            proc = self._run(tmpdir, '--type', 'specs', '--feature', 'forge')
+            self.assertEqual(proc.returncode, 2)
+
+
 if __name__ == '__main__':
     unittest.main()

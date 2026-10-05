@@ -49,31 +49,126 @@ forge 内の他スキルからの呼び出し専用（`user-invocable: false`）
 2. **はい** → Skill ツールで `/forge:setup-doc-structure` を呼び出す。完了後、呼び出し元が要求した能力の手順を最初からやり直す
 3. **いいえ** → 呼び出し元へ「`{doc_type}` に対応するエントリが無いため解決できません」と報告して終了する
 
+## script のエラーの共通の扱い
+
+script が終了コード 1 を返し、上記の 2 つの共通ハンドオフ（`.doc_structure.yaml` が無い／`doc_type` のエントリが無い）に
+当たらないときは、次に従う。
+
+- JSON の `message` を、そのままユーザーに伝える（AI が読むだけで終わらせない）
+- 原因がキーの書き方（`.doc_structure.yaml`）のとき、ユーザーに回答させても解決しない。キーの修正
+  （プロジェクトの管理者が行う）か、置き場の直接指定を促す
+- 推測で置き場・feature を決めない
+
+## feature の決定 [他スキルから参照する場合 MANDATORY]
+
+作る文書の feature（と出力先）を決めたい他スキル（start-design / start-requirements / start-plan）は、
+決定の分岐を自スキルの SKILL.md に書かず、本節に従う。分岐と、キーの解釈は script が行う。
+
+### 入力
+
+- `doc_type`（作る文書の種別。例: `design` / `requirement` / `plan`）
+- `feature`（任意。引数で渡された feature 名。**渡されたものを置き換えない**）
+- `source_path`（任意。入力の文書のパス。例: 設計書を作るときの要件定義書。分かっていれば渡す）
+- `category`（省略時 `specs`）
+
+### 手順
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/resolve_doc_structure.py" \
+  --decide-feature-for {doc_type} [--feature {feature}] [--source-path {source_path}] [--category {category}]
+```
+
+- **終了コード 0**: JSON の `decision` に従う。
+
+  | `decision`    | 意味                                                              | 呼び出し元の動作                                                                                                                                           |
+  | ------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `argument`    | 引数の feature                                                    | `feature` と `dir`（出力先）を使う                                                                                                                         |
+  | `path`        | `source_path` から求めた（`feature` が `null` なら feature なし） | `feature` と `dir` を使う                                                                                                                                  |
+  | `no-existing` | その doc_type の既存ファイルが無い（完全新規）。feature なし      | `dir` を使う                                                                                                                                               |
+  | `ask`         | 決められない                                                      | `reason` を添えて、AskUserQuestion で feature を確認する。`features` に既知の feature、`existing_count` に既存の件数がある。件数が多いときは全件を並べない |
+
+  `feature_applied` が `false` のときは、キーに feature を置く場所が無く、feature は使われていない。呼び出し元へそのことを伝える。
+- **終了コード 1**: JSON の `message` に従う。
+  - `.doc_structure.yaml` が見つからない → 上記「`.doc_structure.yaml` が無い場合の共通ハンドオフ」
+  - `doc_type` のエントリが無い → 上記「`doc_type` に対応するエントリが無い場合の共通ハンドオフ」
+  - 置き場を一意に決められない（キーの書き方が未対応、複数のエントリ 等）→ 上記「script のエラーの共通の扱い」に従う
+
+## ID・ファイル名から文書を探す [他スキルから参照する場合 MANDATORY]
+
+パス・ファイル名・ID（`REQ-032` など）で示された文書の実体を求めたい他スキルは、本節に従う。
+文書を列挙して選ばせない（件数が多いと成り立たない）。
+
+### 手順
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/resolve_doc_structure.py" \
+  --find-in {doc_type} --name {name} [--category {category}]
+```
+
+- **終了コード 0**: JSON の `count` と `matches` に従う。`count` が 1 ならその文書、0 なら見つからない、
+  2 以上なら、どれかをユーザーに尋ねる（同じ ID が複数の feature にある場合など）
+- **終了コード 1**: `doc_type` のエントリが無い。上記「共通ハンドオフ」に従う
+
 ## 出力先ディレクトリの解決 [他スキルから参照する場合 MANDATORY]
 
 新規ドキュメントの出力先ディレクトリを求めたい他スキル（start-design 等）は、`.doc_structure.yaml`
 の内部スキーマ（`doc_types_map` 等）を自スキルの SKILL.md に書かず、本節を Read して以下の手順に従う。
+キーの解釈（`*`/`**` の置換・除去）は script が行う。AI が組み立てない。
 
 ### 入力
 
 - `doc_type`（抽象カテゴリ名。例: `design` / `plan` / `requirement` / `rule`）
-- `feature`（任意。既知の Feature 名。未指定なら Step 3 の存在確認モードになる）
+- `feature`（任意。既知の Feature 名）
 - `category`（省略時 `specs`。ルール文書を扱う場合のみ `rules`）
 
 ### 手順
 
-1. `.doc_structure.yaml` を `Read` する。存在しない場合は上記「共通ハンドオフ」に従う。
-2. `{category}.doc_types_map` から、値が入力 `doc_type` と一致するエントリ（キー）を1つ探す。
-   見つからない場合は下記「`doc_type` に対応するエントリが無い場合の共通ハンドオフ」に従う。
-3. **`feature` が指定されている場合**: エントリのキー（例: `docs/specs/**/design/`）の `*`/`**`
-   セグメントを `feature` に置換し、解決済みディレクトリとする（例: `docs/specs/{feature}/design/`）。
-4. **`feature` が指定されていない場合**: エントリのキーをそのまま `Glob` パターンとして使い
-   （例: `docs/specs/**/design/*.md`）、一致する既存ファイルの有無を確認する。
+次を実行する（`SCRIPT` は下記「スクリプト」の `resolve_doc_structure.py`）。
+
+```bash
+python3 "$SCRIPT" --dir-of {doc_type} [--feature {feature}] [--category {category}]
+```
+
+- **終了コード 0**: JSON の `dir` が、解決済みの置き場である。`feature` を渡さなければ、feature なしの置き場である。
+  `feature_applied` が `false` のときは、キーに feature を置く場所が無く、feature は使われていない。呼び出し元へそのことを伝える
+- **終了コード 1**: JSON の `message` に従う。
+  - `.doc_structure.yaml` が見つからない → 上記「`.doc_structure.yaml` が無い場合の共通ハンドオフ」
+  - `doc_type` のエントリが無い → 上記「`doc_type` に対応するエントリが無い場合の共通ハンドオフ」
+  - 置き場を一意に決められない → 上記「script のエラーの共通の扱い」に従う
+
+`feature` を指定しないときの、既存ファイルの有無は、次で求める。
+
+```bash
+python3 "$SCRIPT" --doc-type {doc_type} [--category {category}]
+```
+
+JSON の `files` が空なら、既存ファイルは無い。
 
 ### 出力
 
-- `feature` 指定時: 解決済みディレクトリのパス
-- `feature` 未指定時: 既存ファイルの有無（と一致したファイル一覧）
+- 解決済みディレクトリのパス（`feature` 未指定なら、feature なしの置き場）
+- `feature` 未指定時は、既存ファイルの有無（と一致したファイル一覧）
+
+## パスから feature を求める [他スキルから参照する場合 MANDATORY]
+
+ファイルのパス（要件定義書など）から、そのファイルが属する feature を求めたい他スキルは、
+`.doc_structure.yaml` のキーの解釈を自スキルの SKILL.md に書かず、本節に従う。解釈は script が行う。
+
+### 入力
+
+- `path`（ファイルのパス。プロジェクトルートからの相対、または絶対）
+- `category`（省略時 `specs`）
+
+### 手順
+
+```bash
+python3 "$SCRIPT" --feature-of {path} [--category {category}]
+```
+
+- **終了コード 0**: JSON の `doc_type` と `feature` を使う。`feature` が `null` のときは、feature なし
+  （その種別のトップのディレクトリに置かれている）。feature の下にさらに階層がある場合は、最上位の feature を返す
+- **終了コード 1**: `.doc_structure.yaml` が無ければ、上記「共通ハンドオフ」に従う。どのエントリにも一致しない場合は、
+  上記「script のエラーの共通の扱い」に従う
 
 ## 検索対象ディレクトリの解決 [他スキルから参照する場合 MANDATORY]
 
@@ -150,6 +245,13 @@ python3 "$SCRIPT" --doc-type design
 python3 "$SCRIPT" --doc-type design --category specs
 python3 "$SCRIPT" --doc-type rule --category rules
 
+# 置き場ディレクトリ（feature あり / なし）
+python3 "$SCRIPT" --dir-of design --feature forge
+python3 "$SCRIPT" --dir-of design
+
+# ファイルのパスから doc_type と feature
+python3 "$SCRIPT" --feature-of docs/specs/forge/requirements/REQ-001_x.md
+
 # バージョン情報
 python3 "$SCRIPT" --version
 
@@ -190,6 +292,39 @@ python3 "$SCRIPT" --type all --doc-structure /path/to/.doc_structure.yaml
   "files": ["docs/specs/forge/design/some_design.md", "..."]
 }
 ```
+
+#### `--dir-of` の出力
+
+```json
+{
+  "status": "ok",
+  "category": "specs",
+  "doc_type": "design",
+  "feature": "forge",
+  "dir": "docs/specs/forge/design/",
+  "feature_applied": true
+}
+```
+
+`feature` を渡さなければ `feature` と `feature_applied` は `null` で、`dir` は feature なしの置き場になる。
+キーに `*`/`**` セグメントが無いときは、`feature` を渡しても `dir` はキーそのもので、`feature_applied` は `false` になる。
+エントリが無い、または置き場を一意に決められない場合は、`status` が `error` で終了コードは `1` になる。
+
+#### `--feature-of` の出力
+
+```json
+{
+  "status": "ok",
+  "category": "specs",
+  "path": "docs/specs/forge/requirements/REQ-001_x.md",
+  "doc_type": "requirement",
+  "feature": "forge",
+  "key": "docs/specs/**/requirements/"
+}
+```
+
+feature なしの置き場にあるファイルは `feature` が `null` になる。どのキーにも一致しない場合は、
+`status` が `error` で終了コードは `1` になる。
 
 #### `--version` の出力
 

@@ -5,35 +5,38 @@
 metadata:
   name: Document Search Index (forge-rules)
   key: forge-rules
-  generated_at: 2026-10-05T06:45:05Z
+  generated_at: 2026-10-05T07:36:13Z
   file_count: 42
 
 docs:
   plugins/forge/docs/additive_development_spec.md:
     title: Additive Development Workflow Specification
-    purpose: Defines judgment criteria and procedures for adding features to existing projects, including feature namespace concepts, differential vs. additive development classification, specification management during implementation, and merge procedures.
+    purpose: Defines criteria and procedures for the additive development workflow when adding features to existing projects, including feature type determination and specification merge process
     content_details:
-      - Feature namespace concept and two types (pure addition vs. differential)
-      - Application conditions for differential feature development
-      - Old specification replacement rules and principles during implementation
-      - Code isolation using git worktree
-      - Merge definition as semantic unification
-      - Scope judgment criteria for merge decisions
-      - Five-step merge procedure with specification updates
+      - Three feature types (completely new, purely additive, differential development) based on relationship to existing specifications
+      - Differential development application conditions - when implementation changes require document modifications
+      - Feature type determination per document kind - distinguishing type between requirements and design separately
+      - Current specification precedence during implementation - differential development documents supersede old specifications
+      - Implementation isolation via git worktree - preventing main branch breakage during feature implementation
+      - Merge timing requirements - complete implementation, pass code review, and all tests passing
+      - Scope-based merge decisions - moving content by meaning relationship, not physical location
+      - Exclusion conditions for feature requirement - small changes with no red flags can modify existing documents
     applicable_tasks:
-      - Differential feature development planning
-      - Existing specification management during implementation
-      - Feature scope and merge strategy determination
-      - Specification update and merge execution
-      - Implementation review before merge
-      - Code isolation with worktree management
+      - Planning additive feature workflows - determining feature type and document structure
+      - Implementation phase specification management - understanding which specifications are current
+      - Differential feature document identification - applying feature type criteria to new documents
+      - Merge phase specification reconciliation - integrating new specifications with existing ones
+      - Feature namespace design - deciding when features need separate specification directories
     keywords:
       - additive development
-      - feature namespace
       - differential development
+      - feature type
       - specification merge
       - git worktree
-      - scope judgment
+      - feature namespace
+      - frontmatter
+      - current specification
+      - scope determination
       - implementation isolation
   plugins/forge/docs/adr_format.md:
     title: ADR (Architecture Decision Record) Default Format

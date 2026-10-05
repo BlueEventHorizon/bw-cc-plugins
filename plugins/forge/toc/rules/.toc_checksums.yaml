@@ -3,7 +3,7 @@
 # 検証: tests/forge/doc_structure/test_forge_toc_freshness.py
 file_count: 42
 checksums:
-  plugins/forge/docs/additive_development_spec.md: f3eae7f662c4ff572732c08de6441aa580bbbf649f870234b93b77fe5de3db29
+  plugins/forge/docs/additive_development_spec.md: 6a1077bb1ab4961377880af3ca71d28ac4368c123c802c79e70fd349f48dbd97
   plugins/forge/docs/adr_format.md: cf247dbcde20de52060d3d158dd8ac767da6e0a784a290061036eb5f8fbaf764
   plugins/forge/docs/adr_principles_spec.md: bacd592a1ef6d30b957352646816df00c04ee24f76568b38868614147ebc71c5
   plugins/forge/docs/adr_usage_spec.md: 65a6060d6b36fc9a1da11c2c578e7dab52d73a13ca746760a1cd1d2ec2b3eafc

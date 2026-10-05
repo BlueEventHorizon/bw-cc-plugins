@@ -113,7 +113,7 @@ Create design documents from requirements. Builds the upstream design from the r
 
 1. Confirm Feature name
 2. **Gather inputs**
-   - Identify the requirements document (list the feature's `requirements/`; choose when there are several; with none, point to `/forge:start-requirements` and stop)
+   - Identify the requirements document (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
    - Collect project design rules (`/forge:query-db-rules`)
 3. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
 4. **Matching against existing implementations and design patterns**, and redesign
