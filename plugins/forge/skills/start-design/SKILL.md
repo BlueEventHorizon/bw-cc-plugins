@@ -4,7 +4,7 @@ description: |
   要件定義書から設計書を作成する。要件だけで上流の設計→既存の実装・設計パターンとの照合と再設計→詳細設計→整合性の確認→レビュー→commit を一貫実行。
   トリガー: "設計書作成", "設計開始", "start design"
 user-invocable: true
-argument-hint: "<feature>"
+argument-hint: "[feature] [--requirement <path|ID|name>]"
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
@@ -25,12 +25,13 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。立ち止�
 ## コマンド構文
 
 ```
-/forge:start-design [feature]
+/forge:start-design [feature] [--requirement <パス・ID・ファイル名>]
 ```
 
-| 引数    | 内容                             |
-| ------- | -------------------------------- |
-| feature | Feature 名（省略時は対話で確定） |
+| 引数          | 内容                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| feature       | Feature 名（省略時は、要件定義書のパスから決める）                                             |
+| --requirement | 設計する要件定義書（パス・ID・ファイル名。省略時は会話の文脈から特定し、分からなければ尋ねる） |
 
 差分開発かどうかは引数で指定しない。入力の要件定義書を出発点に判定し（Phase 1.3）、設計の後に既存の仕様と突き合わせて確かめる（Phase 3）。
 
@@ -42,7 +43,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。立ち止�
 
 入力の要件定義書は、会話の文脈から特定する。検索はしない。意味検索は、他の feature の仕様や設計書のように入力でない文書を混ぜ、設計の出発点を汚すためである。置き場の文書を全件並べて選ばせることもしない（件数が多いと成り立たない）。feature は入力の要件定義書を決めない（既存のディレクトリに新たに追加した要件定義書など）ため、入力はファイルで特定する。
 
-1. **文脈から分かる場合**（直前に作成した、利用者が名指しした 等）: それを入力にする。パス・ID・ファイル名のいずれで示されていても、`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「ID・ファイル名から文書を探す」手順（doc_type `requirement`）で、実在する文書を求める。複数見つかった場合は、どれかを AskUserQuestion で尋ねる
+1. **文脈から分かる場合**（`--requirement` で渡された、直前に作成した、利用者が名指しした 等）: それを入力にする。パス・ID・ファイル名のいずれで示されていても、`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「ID・ファイル名から文書を探す」手順（doc_type `requirement`）で、実在する文書を求める。複数見つかった場合は、どれかを AskUserQuestion で尋ねる
 2. **文脈から分からない場合**: 列挙せず、AskUserQuestion でどの要件定義書かを尋ねる（パス・ID・ファイル名のいずれでもよい）
 3. **置き場に要件定義書が 1 件も無い場合**: 「要件定義書がありません。`/forge:start-requirements` で作成してください」と案内して終了する。要件定義書なしでは設計しない
 4. 特定した要件定義書のタイトル行（先頭の見出し）を Read で確認し、パスを次の「Feature の確定」に渡す

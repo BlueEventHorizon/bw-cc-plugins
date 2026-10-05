@@ -97,12 +97,13 @@ Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. 
 Create design documents from requirements. Builds the upstream design from the requirements document alone, then matches it against existing implementations and design patterns and reuses existing implementations that can be used without modification.
 
 ```
-/forge:start-design [feature]
+/forge:start-design [feature] [--requirement <path|ID|name>]
 ```
 
-| Argument  | Description                         |
-| --------- | ----------------------------------- |
-| `feature` | Feature name (omit for interactive) |
+| Argument        | Description                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature`       | Feature name (omit to decide from the path of the requirements document)                                                              |
+| `--requirement` | Requirements document to design from (path, ID or file name; omit to identify it from the conversation context, and ask when unclear) |
 
 ### When to Use
 
