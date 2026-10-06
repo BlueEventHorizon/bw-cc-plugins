@@ -4,7 +4,7 @@ description: |
   設計書から実装戦略を策定し、タスクを抽出して計画書を作成・更新する。レビュー+自動修正→commit まで一貫実行。
   トリガー: "計画書作成", "計画開始", "start plan", "start planning"
 user-invocable: true
-argument-hint: "<feature> [--new|--add]"
+argument-hint: "[feature]"
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Skill, AskUserQuestion
 ---
 
@@ -25,14 +25,14 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 ## コマンド構文
 
 ```
-/forge:start-plan [feature] [--new|--add]
+/forge:start-plan [feature]
 ```
 
-| 引数    | 内容                                       |
-| ------- | ------------------------------------------ |
-| feature | Feature 名（省略時は対話で確定）           |
-| --new   | 新規アプリ・新規 feature（追加開発でない） |
-| --add   | 既存アプリへの機能追加（追加開発）         |
+| 引数    | 内容                             |
+| ------- | -------------------------------- |
+| feature | Feature 名（省略時は対話で確定） |
+
+追加開発かどうかは引数で指定しない。入力の設計書・要件定義書の一時マーカーで判定する（Phase 2.2）。
 
 ---
 
@@ -42,30 +42,13 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 対象 Feature を確定する。Feature が決まらないと、入力（どの設計書から計画するか）も出力先も決まらない。
 
-**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: 以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
 `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「feature の決定」手順に従い、doc_type `plan` で決める。
 引数で feature が渡されていれば `--feature` に渡す（変更せずそのまま使用。AI による置き換え禁止）。
 `decision` の扱いは同手順が定める（決められなければ AskUserQuestion で対象 Feature を確認する）。
-
-### 新規/追加の確認
-
-計画書が新規アプリ向けか、既存アプリへの追加開発（additive）向けかを確定する。判定結果によって frontmatter_format.md §1.3 の扱い（frontmatter を付与しない）は変わらないが、後続の要件・設計文書の参照解決に影響するため、計画書作成前に判定する。
-
-- `--new` 指定 → 新規アプリ・新規 feature として処理
-- `--add` 指定 → 既存アプリへの機能追加（追加開発）として処理
-- 未指定 → 入力の設計書・要件定義書が追加 feature 文書（一時マーカー `feature_type: temporary-feature` を持つ）かを、次の script で判定する。`any_marker` が `true` なら追加開発、`false` なら新規として処理する。終了コード 1（判定できない文書がある）のときは、`errors` をそのままユーザーに伝え、AskUserQuestion で確認する
-
-  ```bash
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/feature_marker.py" --paths {設計書・要件定義書のパス}...
-  ```
-
-**`--add`（追加開発）の場合**: 以下を Read し、判定基準・旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。計画書自体には frontmatter を付与しない（`frontmatter_format.md` §1.3）。
-
-- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
-- `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` — frontmatter 定義一覧
 
 ### 出力先の解決
 
@@ -153,6 +136,22 @@ Phase 1 の 2 agent の return value を起点に、必要なファイルを Rea
 ただし **仕様書 return value に設計書が含まれていない場合** → 設計書は実装戦略の前提であり欠かせないため、AskUserQuestion で設計書のパスを手動で指定してもらう。指定できなければ中止する。
 
 要件定義書は任意である。要件定義書を持たないプロジェクトがあるため、見つからなくてもそのまま進む。
+
+### 2.2 追加開発かどうかの判定
+
+2.1 で読んだ設計書と要件定義書（あれば）が、差分 feature の一時マーカー（`feature_type: temporary-feature`）を持つかを、次の script で判定する。引数では指定しない。
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/feature_marker.py" --paths {設計書・要件定義書のパス}...
+```
+
+- **終了コード 0**: JSON の `any_marker` が `true` なら追加開発、`false` なら追加開発ではない
+- **終了コード 1**: 判定できない文書がある。JSON の `errors` をそのままユーザーに伝え、AskUserQuestion で確認する。推測で「追加開発ではない」としない
+
+追加開発のときは、以下を Read し、判定基準・旧仕様の置き換え・merge 手順を把握したうえで Phase 3 に進む:
+
+- `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` — 追加開発ワークフロー仕様（§1 適用条件・対象外）
+- `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` — frontmatter 定義一覧
 
 ---
 
@@ -264,7 +263,7 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 **候補 JSON の組み立てと書き込み**:
 
-1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` の 3 キーを持つ object を組み立てる。追加開発（`--add`）の場合も frontmatter・予約キーは付与しない（`requirements_traceability` が参照する要件定義書、または `design_traceability` が参照する設計書の、いずれかの `feature_type: temporary-feature` で追加 feature の計画書かを辿って判定できる。`frontmatter_format.md` §1.3 参照）
+1. **候補 JSON を組み立てる**: `requirements_traceability` / `design_traceability` / `tasks` の 3 キーを持つ object を組み立てる。計画書には frontmatter・予約キーを付与しない（追加 feature の計画書かは、`requirements_traceability` が参照する要件定義書、または `design_traceability` が参照する設計書の、いずれかの `feature_type: temporary-feature` を辿って判定できる。`frontmatter_format.md` §1.3 参照）
 2. **候補 JSON を一時ファイルへ書く**: `Write` ツールで `.claude/.temp/plan-${CLAUDE_SESSION_ID}-{feature}.candidate.json` へ書く
 3. **生成 script を 1 回実行する**。script が構造検証（3 キーのみ・`tasks[]` 必須フィールド・enum 値等）を行い、`{feature}_plan.json` へ書き出す。候補 JSON 側の入力ファイルは成否に関わらず script が自身で削除する:
 
