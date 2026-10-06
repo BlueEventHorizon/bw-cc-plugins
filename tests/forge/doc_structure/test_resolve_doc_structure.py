@@ -1670,6 +1670,49 @@ class TestMatchPathCli(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(out)['files'], ['docs/specs/feat/design/DES-001.md'])
 
+    def test_path_in_a_directory_that_does_not_exist_is_matched_by_pattern(self):
+        """削除されたファイルなど、ディスクに無いパスにも宣言どおりの種別を返す（ファイルシステムを見ない）"""
+        for path, expected in (
+            ('docs/specs/gone/design/DES-009.md', 'design'),
+            ('docs/specs/gone/requirements/REQ-009.md', 'requirement'),
+            ('docs/specs/gone/adr/ADR-009.md', 'adr'),
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self._match(path)['doc_type'], expected)
+
+    def test_agrees_with_feature_of_wherever_feature_of_succeeds(self):
+        """照合は `--feature-of` と同じ。`--feature-of` が成功するパスでは種別が一致する"""
+        config = rds.parse_config(MATCH_PATH_CONFIG)
+        paths = (
+            'docs/specs/feat/adr/ADR-001.md',
+            'docs/specs/feat/design/DES-001.md',
+            'docs/specs/feat/design/sub/deep/DES-002.md',
+            'docs/specs/feat/plan/plan.md',
+            'docs/specs/feat/requirements/REQ-001.md',
+            'docs/specs/feat/notes/memo.md',
+            'docs/specs/design/DES-003.md',
+            'src/main.py',
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                located = rds.feature_of_path(config, 'specs', path, self.root)
+                _, doc_type = rds.match_path(config, 'specs', path, self.root)
+                if located['status'] == 'ok':
+                    self.assertEqual(doc_type, located['doc_type'])
+                else:
+                    self.assertIsNone(doc_type)
+
+    def test_returns_the_type_even_when_feature_of_cannot_derive_a_feature(self):
+        """feature を求められないキーでも、種別だけは宣言から決まる（`--feature-of` はエラーにする）"""
+        for key, path in (
+            ('docs/**/specs/**/design/', 'docs/a/specs/b/design/x.md'),
+            ('docs/specs/feat-*/design/', 'docs/specs/feat-a/design/x.md'),
+        ):
+            with self.subTest(key=key):
+                config = _config_for_key(key)
+                self.assertEqual(rds.feature_of_path(config, 'specs', path, '/p')['status'], 'error')
+                self.assertEqual(rds.match_path(config, 'specs', path, '/p')[1], 'design')
+
 
 class TestToProjectRelativePath(unittest.TestCase):
     def test_relative_inside(self):

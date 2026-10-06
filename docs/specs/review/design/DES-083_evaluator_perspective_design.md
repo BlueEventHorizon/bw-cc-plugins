@@ -1,12 +1,3 @@
----
-feature_type: temporary-feature
-feature_note:
-  - 本設計書が、本設計書の対象範囲における現在の設計である。旧設計書の記述は現在の設計ではなく、矛盾の有無に関わらず本設計書へ置き換わっている。本設計書と対応する追加 feature 要件定義書（[REQ-026](../requirements/REQ-026_evaluator_perspective.md)・[REQ-029](../requirements/REQ-029_review_exchange.md)）が食い違う場合は要件定義書に従う。
-  - 旧仕様ファイルは本 feature 実装完了まで書き換えない。新規ファイル / 新規ディレクトリへ切り出すこと。
-  - 本 feature 実装完了後、旧設計書との齟齬を解消する（merge）。merge は意味の統合であり、文書の物理的な結合ではない。
-  - 旧設計書と同一スコープの内容は旧設計書側へ移す。スコープが異なる内容は分離したまま維持し、この文書を残す。
----
-
 # DES-083 evaluator の独立評価とメタ観点 設計書
 
 ## 1. 概要

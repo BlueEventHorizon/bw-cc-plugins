@@ -1,20 +1,29 @@
 ---
-title: agent-review バックエンド要件定義
-purpose: 外部依存を持たない read-only カスタム Agent によるレビュー実行主体の振る舞いと境界を定義する
+title: agent-review Backend Requirements
+purpose: "Specifies the agent-review backend requirements: read-only reviewer custom Agent, fresh Agent per round, availability check, retains_context false, and non-persistence without external dependencies"
 content_details:
-  - 1 ラウンド 1 Agent の実行ライフサイクル
-  - 共通バックエンド契約への適合
-  - 非永続性と履歴復元非対応
+  - FNC-1601 read-only reviewer prohibiting file changes, git index changes, external writes, and modifying commands
+  - FNC-1602 one new reviewer Agent per round with no implicit inheritance of previous round context
+  - FNC-1604 availability check covering the reviewer definition, read-only constraints, and reviewer scripts and documents
+  - FNC-1606 no review history persistence and no resume route for an interrupted review
+  - NFR-1601 no DB, history files, resident processes, or reusable sessions
+  - NFR-1602 no external dependency such as terminal multiplexers or messaging infrastructure
+  - NFR-1603 fail closed when availability or read-only constraints cannot be confirmed
 applicable_tasks:
-  - agent-review バックエンドの実装
-  - レビュー本体との接続試験
-  - agent-review の契約レビュー
+  - Implementation of the agent-review availability check
+  - Contract review of agent-review
+  - Verification of reviewer read-only constraints
 keywords:
   - agent-review
   - reviewer
   - read-only
   - review backend
   - stateless
+  - availability check
+  - retains_context
+  - fail closed
+type: doc-advisor
+body_hash: sha256:83151d376d01aa2c60c3b3875541dfd2f4cd851ee5a812f0bda854ae8f0bf0fb
 ---
 
 # REQ-016 agent-review バックエンド
@@ -23,109 +32,81 @@ keywords:
 
 既定のレビューを開始するために、外部ツール、メッセージ DB、常駐セッションを準備する必要があると、プラグイン単体での利用が成立しない。
 
-`agent-review` は、プラグインに同梱した read-only カスタム Agent `reviewer` をレビュー実行主体とし、外部依存なしで共通バックエンド契約を満たす。ラウンドを越える状態を持たず、レビュー対象の変更、履歴の保存、常駐資源の管理を行わない。
+`agent-review` は、プラグインに同梱した read-only カスタム Agent `reviewer` をレビュー実行主体とし、外部依存なしでバックエンドの契約（可用性検査と `retains_context` の宣言。[REQ-013](../../forge/requirements/REQ-013_review_policy.md) FNC-1318）を満たす。ラウンドを越える状態を持たず、レビュー対象の変更、履歴の保存、常駐資源の管理を行わない。
+
+reviewer の起動と所見の受け渡しは、レビュー本体が直接行う（[REQ-029](../../review/requirements/REQ-029_review_exchange.md)）。
 
 ## 2. スコープ
 
 ### 対象
 
-- `reviewer` Agent を用いた 1 ラウンドのレビュー実行
 - 可用性検査
-- 共通依頼本文の受け渡し
-- `approved` / `findings` / `failure` の判定返却
-- 共通所見形式への適合
-- 終了通知の受理
+- `reviewer` Agent が read-only であること（役割定義とツール制約）
+- `retains_context` が `false` であることの申告
 
 ### 対象外
 
+- reviewer の起動、所見の書き出しと受け渡し（レビュー本体と REQ-029 の仕事）
 - 所見を受けた対象ファイルの修正
 - ラウンド間のセッション継続
 - レビュー履歴の保存と復元
-- 人間が常駐レビュアーへ途中介入するための通信経路
+- 人間が常駐レビュアへ途中介入するための通信経路
 - バックエンド間の自動フォールバック
 
 ## 3. 機能要件
 
-### FNC-1601 read-only レビュアー [MANDATORY]
+### FNC-1601 read-only レビュア [MANDATORY]
 
-バックエンドは、レビュー判断だけを役割とするカスタム Agent `reviewer` を起動する。`reviewer` は次の操作を行ってはならない。
+実行主体は、レビュー判断だけを役割とするカスタム Agent `reviewer` である。`reviewer` は次の操作を行ってはならない。
 
 - ファイルの作成、変更、削除
 - git の index、commit、branch、remote の変更
 - レビュー対象プロジェクトまたは外部サービスへの書き込み
 - 修正コマンド、formatter、generator など、成果物を変更し得るコマンドの実行
 
-対象と規範を読むためのファイル参照、検索、read-only な git 照会は許可する。
+対象と規範を読むためのファイル参照、検索、read-only な git 照会は許可する。所見は、`reviewer` 専用の script を介してだけ書き出す。
 
-### FNC-1602 1 ラウンド 1 Agent [MANDATORY]
+### FNC-1602 1 ラウンド 1 Agent [CRITICAL]
 
-バックエンドは、ラウンド要求を受けるたびに新しい `reviewer` Agent を 1 つ起動する。Agent は 1 ラウンドの結果を返した時点で役割を終え、次ラウンドへ再利用しない。
+`reviewer` は、ラウンドごとに新しい Agent として起動される（起動するのはレビュー本体。REQ-029 FNC-302）。Agent は 1 ラウンドの結果を書き出した時点で役割を終え、次ラウンドへ再利用しない。
 
-各ラウンドの `reviewer` は、そのラウンドで渡された依頼本文と、そこから明示的に参照される対象・規範だけを根拠に判定する。前ラウンドの Agent コンテキストを暗黙に継承しない。
-
-### FNC-1603 共通ラウンド結果 [MANDATORY]
-
-バックエンドは、1 ラウンドの結果を次のいずれかとして本体へ返す。
-
-| 判定       | 条件                                                                   |
-| ---------- | ---------------------------------------------------------------------- |
-| `approved` | 対応を要する所見がない                                                 |
-| `findings` | 対応要否を本体が評価すべき所見が 1 件以上ある                          |
-| `failure`  | Agent の起動不能、応答不能、契約違反などによりレビューが成立しなかった |
-
-`findings` は REQ-013 FNC-1318 の共通所見形式に従う所見配列を伴う。各所見は、`severity`、`text`、`location` を持つ。`location` はファイルパスと行番号、または位置未確定の明示を表す。`failure` は利用者が原因を判断できる説明を伴い、`approved` または空の `findings` へ変換しない。
+各ラウンドの `reviewer` は、そのラウンドで読む依頼と、そこから明示的に参照される対象・規範だけを根拠に判定する。前ラウンドの Agent コンテキストを暗黙に継承しない。
 
 ### FNC-1604 可用性検査 [MANDATORY]
 
-バックエンドは依頼送信前に、次の条件を副作用なく検査する。
+バックエンドは依頼を公開する前に、次の条件を副作用なく検査する。
 
 - カスタム Agent `reviewer` の定義を解決できる
-- Agent を起動する機能を現在の実行環境で利用できる
-- `reviewer` が read-only のツール制約を持つ
+- `reviewer` が read-only のツール制約と役割指示を持つ
+- `reviewer` が呼ぶ script と読む文書が、プラグイン内に存在する
 
-全条件を満たす場合だけ利用可能と返す。不足がある場合は、条件ごとに利用者が読める説明を返し、Agent を起動しない。
+全条件を満たす場合だけ利用可能と返し、あわせて `retains_context` が `false` であることを申告する。不足がある場合は、条件ごとに利用者が読める説明を返し、Agent を起動しない。
 
-### FNC-1605 終了通知 [MANDATORY]
+### FNC-1606 履歴非対応 [CRITICAL]
 
-バックエンドは共通契約の終了通知を受理する。解放対象となるプロセス、スレッド、DB レコード、セッションを保持しないため、通知に対する処理は no-op とする。
-
-通知受理時に履歴保存、Agent の探索、追加メッセージ送信を行わない。
-
-### FNC-1606 履歴非対応 [MANDATORY]
-
-バックエンドはレビュー履歴を永続化せず、履歴復元拡張を提供しない。
-
-中断したレビューを同一 `review_id` で再開する要求を受けた場合、復元不能であることを本体へ明示する。空の履歴を返して、往復が存在しなかった状態として扱わせてはならない。利用者がレビューの継続を求める場合、本体は新しい `review_id` で新規レビューを開始する。
-
-### FNC-1607 バックエンド中立な本文 [MANDATORY]
-
-バックエンドは本体が構築した共通依頼本文を、その意味を変えずに `reviewer` へ渡す。他バックエンド固有のワイヤヘッダを付加しない。
+バックエンドはレビュー履歴を永続化しない。中断したレビューを同一 `review_id` で再開する経路を持たない。利用者がレビューの継続を求める場合、本体は新しい `review_id` で新規レビューを開始する。
 
 ## 4. 非機能要件
 
-### NFR-1601 非永続性 [MANDATORY]
+### NFR-1601 非永続性 [CRITICAL]
 
-`agent-review` のラウンド実行は、DB、ファイル上の履歴、常駐プロセス、再利用セッションを作成しない。ラウンド結果の返却後に、バックエンドが所有する終了対象資源を残さない。
+`agent-review` は、DB、ファイル上の履歴、常駐プロセス、再利用セッションを作成しない。可用性検査の後に、バックエンドが所有する資源を残さない。
 
-### NFR-1602 外部依存の排除 [MANDATORY]
+### NFR-1602 外部依存の排除 [CRITICAL]
 
 `agent-review` の成立条件は、forge プラグインとホストが提供するカスタム Agent 実行機能だけとする。端末多重化ツール、メッセージング基盤、常駐セッション、外部デーモンを前提にしない。
 
 ### NFR-1603 fail closed [MANDATORY]
 
-可用性、Agent 応答、出力形式、read-only 制約のいずれかを確認できない場合、レビュー成功として扱わない。理由を伴う利用不可または `failure` として終了する。
+可用性、read-only 制約のいずれかを確認できない場合、利用可能として扱わない。理由を伴う利用不可として返す。
 
 ## 5. 受け入れ基準
 
 1. 連続する 2 ラウンドで異なる `reviewer` Agent が起動され、Agent セッションが再利用されない
 2. `reviewer` の役割定義が、成果物の変更・他の実行主体の起動・外部への書き込みを禁じており、`reviewer` が利用できるツールに編集専用の手段と他の実行主体を起動する手段が含まれていない
-3. 正常応答が `approved` または共通所見配列を伴う `findings` として返る
-4. Agent の起動失敗、応答欠落、不正な判定が理由付き `failure` になる
-5. 可用性検査が `reviewer` の定義、起動機能、read-only の役割指示が**意図どおり書かれていること**を副作用なく確認する
-6. 終了通知を受けても追加の Agent、記録、通信が発生しない
-7. ラウンド完了後に DB、履歴ファイル、常駐セッションが作成されていない
-8. 履歴復元要求が復元不能として返り、新規レビュー以外の継続経路を作らない
-9. `reviewer` へ渡す依頼本文にバックエンド固有のワイヤヘッダが含まれない
+3. 可用性検査が `reviewer` の定義、read-only の役割指示、`reviewer` が呼ぶ script と読む文書が**意図どおり書かれ、揃っていること**を副作用なく確認し、不足を条件ごとに返す
+4. `retains_context` が `false` と申告される
+5. 可用性検査の後に DB、履歴ファイル、常駐セッションが作成されていない
 
 ## 6. 未確定事項
 

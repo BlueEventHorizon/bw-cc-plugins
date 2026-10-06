@@ -108,7 +108,7 @@ flowchart LR
 | 8     | Issue 更新（既存本文取得 → 検証 → 末尾結合 → `gh issue edit --body-file` → 検証）                |
 | 9     | 実装開始確認（AskUserQuestion）                                                                  |
 | 10    | 実装。UI Issue は `anvil:impl-ui --stage implement`（レビューを含む）、非 UI は TODO 順に実装    |
-| 11    | 非 UI のみ: `/forge:review code --auto`                                                          |
+| 11    | 非 UI のみ: `/forge:review --auto`                                                               |
 | 12    | 12-1 `/anvil:commit`、12-2 `/anvil:create-pr`（PR 本文の `Closes #N` を確認・追記）              |
 
 **impl-ui**
@@ -232,7 +232,7 @@ sequenceDiagram
     II ->> User: 実装を開始するか AskUserQuestion
     User -->> II: はい
     II ->> II: TODO 順に実装
-    II ->> RV: Skill ツールで /forge:review code --auto
+    II ->> RV: Skill ツールで /forge:review --auto
     RV -->> II: 所見 / 承認
     II ->> CM: Skill ツールで /anvil:commit
     II ->> PR: Skill ツールで /anvil:create-pr <base>

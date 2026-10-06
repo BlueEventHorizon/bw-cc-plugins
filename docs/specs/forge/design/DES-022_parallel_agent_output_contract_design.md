@@ -36,6 +36,8 @@ Agent A と Agent B が同時に同一ファイルを更新すると、最後に
 
 書き込み系 agent（start-implement の実装 executor 等）が**担当範囲の成果物を編集すること自体は本契約の対象ではない**。その安全性は編集可能ファイルの allowlist・対象を絞った起動・指摘と無関係なリファクタリングの禁止・構文検証が担う（[Claude Code 作成ガイド][authoring-guide]「カスタム Agent」）。並列起動する場合も、allowlist が担当範囲を分離していれば複数 agent が同一リソースを触らないため、§2.1 の競合は成立しない。
 
+順に起動する agent との間で、1 回の処理の間だけ存在するデータ（review の依頼・所見・評価）も、本契約の対象ではない。識別値だけを渡し、script が書いた JSON のパスを読む型は [agent_data_exchange_rules.md](../../../rules/agent_data_exchange_rules.md) が定める。書き手は script であり agent は共有リソースへ直接書かず、並列起動でもないため、§2.1 の競合は成立しない。
+
 ### 3.1 基本原則
 
 **agent は結果の受け渡しに共有リソースを使わない。結果は Agent ツールの return value として orchestrator へ返す。**

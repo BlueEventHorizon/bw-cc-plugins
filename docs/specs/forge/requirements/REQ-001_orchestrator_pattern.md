@@ -16,7 +16,7 @@ forge スキルは多くの作業工程を持つ（文書収集・分析・実�
 
 - `start-design` / `start-plan` / `start-implement` — Agent ツールでカスタム / 汎用 Agent へ委譲し、結果を return value で収集する
 - `start-requirements` — ワークフロー文書側から query スキル・Agent へ委譲する
-- `review` — 1 ターン内で受領・評価・修正・返信まで完結する（専用 Agent を持たない）
+- `review` — 依頼を組み立てて reviewer・evaluator（カスタム Agent）を起動し、返った所見と評価を吟味して、修正・終端判断まで進める
 
 ---
 
@@ -51,6 +51,7 @@ agent に渡す参照文書（ガイド・フォーマット定義等）は自�
 受け渡しの規定:
 
 - **agent の return value 収集で受け渡す**。フェーズ間の中間成果物を共有するための永続領域は設けない
+- **例外**: 順に起動する agent との間で、1 回の処理の間だけ存在するデータ（review の依頼・所見・評価）は、識別値だけを渡し、script が書いた JSON のパスを読む型で受け渡す（[agent_data_exchange_rules.md](../../../rules/agent_data_exchange_rules.md)）。並列に起動する agent の結果の返却は、上記のとおり return value である
 - **プロンプト経由のデータ受け渡しは最小限にする**。渡すのはパス・種別・フラグ等の構造化引数に限り、文書やコードの本文をプロンプトへ貼り付けない（agent は渡されたパスを自ら Read する）
 
 ### FNC-005: 文書フォーマットの選定基準
@@ -72,7 +73,7 @@ Markdown は表現力が高いが、AI によるパースが不確実（テー�
 
 文書生成系オーケストレーター（start-requirements, start-design, start-plan）は成果物作成後に以下の完了処理を実行する。
 
-1. `/forge:review {type} --files {差分ファイル} --auto` — AIレビュー+自動修正（対象はオーケストレーターが作成・変更したファイルのみ）
+1. `/forge:review --files {差分ファイル} --auto` — AIレビュー+自動修正（対象はオーケストレーターが作成・変更したファイルのみ）
 2. `/forge:update-db-specs` — ToC 更新（利用可能な場合のみ）
 3. `/anvil:commit` — commit/push 確認
 
@@ -94,11 +95,11 @@ Markdown は表現力が高いが、AI によるパースが不確実（テー�
 
 ## 3. 適用対象
 
-| スキル                                         | オーケストレータ化 | データの受け渡し方法（FNC-004）                                                              |
-| ---------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------- |
-| review                                         | 済み               | バックエンドのラウンド結果を受領・評価・修正する。履歴復元は対応バックエンドの任意拡張とする |
-| start-design / start-plan / start-requirements | 済み               | query スキルへの委譲 + agent の return value                                                 |
-| start-implement                                | 済み               | executor が結果を return value の JSON で返す                                                |
+| スキル                                         | オーケストレータ化 | データの受け渡し方法（FNC-004）                                                                  |
+| ---------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------ |
+| review                                         | 済み               | reviewer・evaluator が script 経由で書いた所見と評価のパスを得て、本体が直接読み、吟味・修正する |
+| start-design / start-plan / start-requirements | 済み               | query スキルへの委譲 + agent の return value                                                     |
+| start-implement                                | 済み               | executor が結果を return value の JSON で返す                                                    |
 
 ---
 

@@ -183,7 +183,7 @@ Figma MCP 経由でデザインファイルから要件とデザイントーク�
 - コンテキスト収集（モードに適した方式）
 - 要件作成の全手順（「要件定義書を書く直前の決定」を行う位置を含む）
 - 品質確認
-- AI レビュー（`/forge:review requirement --auto`）
+- AI レビュー（`/forge:review --files {作成ファイルパス} --auto`）
 - ToC 更新（`/forge:update-db-specs`）
 - commit 確認（`/anvil:commit`）
 

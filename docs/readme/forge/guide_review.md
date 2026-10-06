@@ -2,11 +2,11 @@
 
 Request a review of your code and documents; whatever runs the skill drives the evaluation, fixing, re-request, and completion decisions.
 
-**What you hand over** is the review target plus the perspectives that apply to it (the plugin-bundled criteria and your project's own rules and specifications). **What comes back** is a verdict (approved / findings / failure) and an array of findings (severity, location, body).
+**What you hand over** is the review target plus the perspectives that apply to it (the plugin-bundled criteria and your project's own rules and specifications). **What comes back** are the findings the reviewer wrote (location, body) and the evaluator's independent assessment of them (validity, severity, confidence).
 
 Findings are **observations, not instructions**. The requesting side decides what to take and what to drop; the reviewer holds no authority over that. Review quality therefore depends not on _who_ reviewed, but on **whether the input you handed over was right**.
 
-The subject that actually performs the review is swappable (see "Review backends"). The criteria documents, the request format, the finding format, the gating, and the fix-safety checks are the same whichever subject you pick.
+The subject that actually performs the review is swappable (see "Review backends"). The criteria documents, the structure of the request and the results, the gating, and the fix-safety checks are the same whichever subject you pick.
 
 ## review
 
@@ -57,7 +57,7 @@ When documents are organized by directory (`docs/specs/*/design/` and the like),
 - **The reviewer receives the directories as given.** forge does not expand them into a file list. Expansion would turn any enumeration gap into a silent gap in review coverage; the reviewer determines the scope itself.
 - Enumeration for the internal allowlist respects `.gitignore`, and untracked new documents are included.
 - It is a target axis, so it cannot be combined with `--diff` / `--branch` / `--files` (specifying two is an error).
-- If a directory does not exist, or contains no reviewable files, the request is not sent.
+- If a directory does not exist, or contains no reviewable files, the request is not published.
 
 ### Emphasis (`--focus`)
 
@@ -67,7 +67,7 @@ Pass "please pay extra attention to X this time" as free text. Stating it conver
 /forge:review --branch --focus "cross-document reference links written in the documents"
 ```
 
-Emphasis **does not replace the built-in criteria**. The review defined by the criteria and normative documents named in the template still runs in full; the emphasis is added on top. It is not a way to narrow the review down to a single concern.
+Emphasis **does not replace the built-in criteria**. The review defined by the criteria and normative documents the reviewer reads for each target type still runs in full; the emphasis is added on top. It is not a way to narrow the review down to a single concern.
 
 Emphasis also never raises severity. Findings that answer the emphasis are still rated 🔴 / 🟡 / 🟢 by the severity catalog in the normative documents.
 
@@ -105,11 +105,11 @@ Names the rule and specification documents to hand to the reviewer. For each axi
 
 The main purpose is to avoid running the same search twice for one task when an upstream skill (such as `/forge:start-implement`) has already done it. If you pass only one axis, only the other one is queried.
 
-An incomplete list does not silently degrade the review. The template instructs the reviewer to report the absence of applicable norms as a finding, so gaps surface as findings.
+An incomplete list does not silently degrade the review. For code and UI/UX, the reviewer reports the absence of applicable norms as a finding, so gaps surface as findings.
 
 ### Review backends (`--backend`)
 
-The review body is **independent of who performs the review**. It resolves targets, builds the request, evaluates and applies findings, and decides completion; the round trip itself (prerequisite checks, sending, waiting, interpreting the reply) is delegated to a **review backend**.
+The review body is **independent of who performs the review**. It resolves targets, publishes the request, launches the reviewer and the evaluator, examines their findings and assessments, applies fixes, and decides completion. What a **review backend** provides is only the availability check before the review starts, and the declaration of whether the reviewer keeps its context across rounds.
 
 | Selection                                 | Behavior                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@ The candidate order itself lives on the design side (`DEFAULT_ORDER` and the des
 
 An explicit choice never falls back, so "I picked one but another ran" cannot happen. **The chosen backend and how it was chosen (argument / setting / candidate order) are always printed in the argument-interpretation output**, because the origin of the findings must be visible.
 
-A failed round is likewise never retried on a different backend. The failure is reported as final, and choosing another subject is the user's call.
+A failure of the reviewer or the evaluator is likewise never retried on a different backend. The failure is reported as final, and choosing another subject is the user's call.
 
 ### Prerequisites
 
@@ -142,7 +142,7 @@ No external tool, resident session, or database is required. It works as install
 
 #### When prerequisites cannot be met
 
-**No request is sent at all.** Availability is probed before the backend is settled; when it cannot be satisfied, the skill reports **what is missing together with the remedy** and stops. You will not be kept waiting ten minutes only to be told it timed out.
+**No request is published at all.** Availability is probed before the backend is settled; when it cannot be satisfied, the skill reports **what is missing together with the remedy** and stops. You will not be kept waiting ten minutes only to be told it timed out.
 
 When resolving by candidate order (no `--backend`, no setting), the next candidate is tried; if every candidate is unavailable, the per-candidate gaps are reported together and the review fails. With an explicit choice, no substitute is chosen and it fails immediately.
 
@@ -155,16 +155,11 @@ When resolving by candidate order (no `--backend`, no setting), the next candida
 | CI-style quality gate           | `--auto` — only confident fixes are applied            |
 | Completion step of other skills | start-design etc. call `--auto` internally             |
 
-### Two Operating Modes
+### How a Review Proceeds
 
-| Mode        | Trigger                                                    | Behavior                                                                                         |
-| ----------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Request** | `/forge:review` invoked by a user or another skill         | Resolve targets → build request → delegate to the backend → evaluate and fix → decide completion |
-| **Resume**  | User asks for status after a round-trip-limit notification | Summarize unresolved findings from the round-trip history                                        |
+When you start `/forge:review`, the body resolves the targets, publishes the request, launches the reviewer and the evaluator, examines their findings and assessments, applies fixes, and decides completion. The reviewer and the evaluator receive only a `review_id` and a `round_number` from the body; scripts write the request, the findings, and the assessments as JSON, and the body reads the JSON at the paths the scripts return.
 
-**Resume is only available on backends that persist the round-trip history.** History restoration is an optional extension, and `agent-review` — the only current backend — does not provide it because it keeps no state. **Resume therefore does not work at present**; a persisting backend is being redesigned separately. A review interrupted on such a backend is not resumed under the same `review_id`; it is re-run as a new review.
-
-The round trip with the reviewer is contained **inside the backend**, where sending, waiting, and interpreting one round complete synchronously. The body receives a verdict (approved / findings / failure) plus the findings array, and holds no transport details.
+**There is no way to resume an interrupted review.** The request, findings, and assessments are deleted when the review ends. Start a new review on the same target if you need to continue.
 
 ### Execution Flow
 
@@ -172,18 +167,21 @@ The round trip with the reviewer is contained **inside the backend**, where send
 flowchart TD
     START([User / other skill]) --> REQ
 
-    REQ["Request mode<br/>resolve targets, collect rules, build request"] --> SEND
+    REQ["Resolve targets, collect rules, publish the request"] --> RV
 
-    SEND["Delegate the round to the backend"] --> WAIT
+    RV["Launch the reviewer<br/>it writes the findings"] --> EV
 
-    WAIT["One round trip with the reviewer,<br/>inside the backend"] --> RESULT
+    EV["Launch the evaluator<br/>it writes an assessment per finding"] --> READ
 
-    RESULT{Verdict returned by the backend}
-    RESULT -->|"Failure"| FAIL["Report a definitive failure<br/>(no fallback)"]
-    RESULT -->|"Approved"| DONE["Done. Summary report"]
-    RESULT -->|"Findings"| EVAL
+    READ{Could the findings and assessments be read?}
+    READ -->|"No"| FAIL["Report a definitive failure<br/>(no fallback)"]
+    READ -->|"Yes"| EXAM
 
-    EVAL["Evaluate each finding<br/>valid / unnecessary / misread"] --> MODE
+    EXAM["The body examines and sorts them<br/>valid / unnecessary / misread"] --> REMAIN
+
+    REMAIN{Anything left that needs action?}
+    REMAIN -->|"Nothing"| DONE["Done. Summary report"]
+    REMAIN -->|"Yes"| MODE
 
     MODE{Intervention axis}
     MODE -->|"--interactive (default)"| TRIAGE
@@ -193,26 +191,26 @@ flowchart TD
     SPLIT -->|"Yes"| CONFIRM
     SPLIT -->|"No"| TRIAGE
 
-    TRIAGE["Write the triage file"] --> STEP
+    TRIAGE["Decide which assessments to present"] --> STEP
 
     STEP["Present one at a time → you decide<br/>(spans turns)"] --> CONFIRM
 
     CONFIRM{Any fix to apply now?}
-    CONFIRM -->|No| DONE2["Complete with unaddressed findings<br/>(reported distinctly from approval)"]
+    CONFIRM -->|No| DONE2["Ask you whether to end, then complete<br/>with unaddressed findings<br/>(reported distinctly from approval)"]
     CONFIRM -->|Yes| FIX
 
     FIX["Fix one at a time → verify → decide"] --> VERIFY
 
-    VERIFY["End-of-round independent check<br/>catches unreported edits"] --> REPLY
+    VERIFY["End-of-round independent check<br/>catches unreported edits"] --> NEXT
 
-    REPLY["Reply with disposition table + re-review request"] --> WAIT
+    NEXT["Next round<br/>(same request, a fresh reviewer)"] --> RV
 ```
 
 ### The Requesting Side Evaluates the Findings
 
-**Findings are observations, not instructions.** The requesting side decides what to take and what to drop; a finding that does not hold up is dropped with the reason recorded, and if none of them hold up, all of them are dropped. The severity the reviewer assigned only bounds the auto-fix candidate set — it carries no authority over the decision.
+**Findings are observations, not instructions.** The requesting side decides what to take and what to drop; a finding that does not hold up is dropped with the reason recorded, and if none of them hold up, all of them are dropped. The severity the evaluator assigned only orders the presentation — it carries no authority over the decision.
 
-Each finding is judged against the **same** `review_criteria_<type>.md` that was sent with the request.
+The body examines each assessment against the **same** `review_criteria_<type>.md` and norm documents the reviewer and the evaluator read. It does not follow the assessment's values as they are: it understands the content and investigates before deciding to fix, drop, or end.
 
 | Verdict             | Action                                                               |
 | ------------------- | -------------------------------------------------------------------- |
@@ -220,7 +218,7 @@ Each finding is judged against the **same** `review_criteria_<type>.md` that was
 | Unnecessary finding | Drop it; record "determined not applicable" in the disposition table |
 | Based on a misread  | Drop it, or ask the reviewer to reconsider in the next round         |
 
-Using the same criteria on both sides prevents both arbitrary rejection under a different standard and unconditional acceptance.
+Using the same criteria prevents both arbitrary rejection under a different standard and unconditional acceptance.
 
 The only lever for better review results is **getting the input right** — the criteria, rules, target, emphasis, and target completeness you hand over determine the outcome.
 
@@ -236,12 +234,14 @@ The verification scripts **only detect**; they never roll back automatically. De
 
 ### Convergence
 
-Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if nothing is to be fixed this round and nothing is queued for presentation, no re-review is requested and the review completes.** Interrupting the step-by-step presentation also completes the review — after applying the fixes already accepted — regardless of how many they were.
+Re-requesting a review while findings remain unaddressed makes the reviewer report the same findings forever. Therefore, **if nothing can be fixed this round and nothing is queued for presentation, no re-review is requested; the skill asks you whether to end.** You decide when to end; the body never cuts the review off by itself. Interrupting the step-by-step presentation completes the review — after applying the fixes already accepted — regardless of how many they were.
+
+The skill also stops when the next round number would be 5 or more, instead of requesting a re-review. Findings that do not go away after four rounds usually mean the first response was headed in the wrong direction. It re-examines the essence, responsibility, and scope, and asks you whether to continue or end.
 
 That completion differs from completing by approval, and the summary distinguishes them:
 
-- **Completed by approval**: the reviewer reported no findings
-- **Completed with unaddressed findings**: the reviewer still reports findings, but none were in scope this round
+- **Completed by approval**: no assessment needing action remains (no valid point and no defect in the norm document)
+- **Completed with unaddressed findings**: assessments needing action remain, but none were in scope this round, or you decided to end
 
 In the latter case every unfixed finding is listed with its reason (you decided not to accept it / location undetermined / dropped during evaluation / reverted by the safety check). This distinction is mandatory so a human does not overlook it.
 
@@ -267,13 +267,13 @@ The type is not a value you specify. The reviewer determines it for each target 
 | 🟡 Major    | Should fix. Conventions, error handling, performance | Presented next   |
 | 🟢 Minor    | Nice to have. Readability, refactoring suggestions   | Presented last   |
 
-Severity never decides whether a finding is fixed without asking — it only orders the presentation. That decision comes from two separate judgements forge makes per finding: whether the reviewer's point is correct (`☑️`), and whether the fix can be carried out responsibly (`✅`). Only `✅` findings are fixed without asking, and `✅` implies `☑️`. Both marks appear in the agenda under `--interactive` too, so you can say "just fix the `✅` ones".
+Severity never decides whether a finding is fixed without asking — it only orders the presentation. That decision comes from two separate judgements forge makes per finding: whether the reviewer's point is correct (`☑️`), and whether the fix can be carried out responsibly (`✅`). Only `✅` findings are fixed without asking, and `✅` implies `☑️`. Both marks appear in the presentation under `--interactive` too, so you can say "just fix the `✅` ones".
 
 Findings whose location cannot be determined are never fixed automatically — there is no place to apply the fix — and are left to human review regardless of severity or confidence.
 
 ### Review Criteria
 
-The request embeds the paths of the type-specific criteria file and the project documents relevant to the target. The reviewer reads them itself.
+The reviewer and the evaluator read the type-specific criteria file themselves. The request carries the paths of the project documents relevant to the target.
 
 | Source                 | Content                                                                         |
 | ---------------------- | ------------------------------------------------------------------------------- |
@@ -304,16 +304,14 @@ Presentation goes from the highest severity down. For each finding the skill sta
 
 Findings are presented as prose and your response is free-form. Whether to accept a finding is a matter of substance, and a choice-list UI has nowhere to put the background.
 
-Findings whose location is undetermined are not put to a decision even under `--interactive`. Accepting one would not pin down what to fix, so a human has to read the finding directly. That count is shown together with the agenda.
+Findings whose location is undetermined are not put to a decision even under `--interactive`. Accepting one would not pin down what to fix, so a human has to read the finding directly. That count is shown together with the list.
 
 To reduce human turns, pass `--auto` explicitly. Note that **`--auto` still asks about anything it is unsure of**, so it does not guarantee an unattended run.
 
 ### How State Is Held
 
-An `--auto` round completes within a single turn — receiving, evaluating, fixing, and replying — and holds no state in files.
+An `--auto` round completes within a single turn — launching, reading, fixing, and replying — and holds no state beyond the round's JSON files.
 
-Only `--interactive` step-by-step presentation spans turns, because it waits on a human. That state (findings, evaluations, decisions) lives in `.claude/.temp/review/triage.md`, whose real path is printed to the console.
+The request, findings, and assessments are written by scripts under `.temp/review/<review_id>/` and deleted when the review ends, whichever way it ends. Only `--interactive` step-by-step presentation spans turns, because it waits on a human; that state (the list, the evaluations, the decisions) is held in the conversation only and is not persisted.
 
-**There is always exactly one such file, and it holds only the round in progress.** If you break off partway, it stays behind with its undecided rows, and the next review asks you whether to delete it and start fresh or pick up where you left off. That question is the resume entry point. Settled outcomes show up in the fixes themselves and in the reply table, so nothing accumulates in the file.
-
-When the round-trip history is needed it is requested from the backend, but **only on backends that provide history restoration** (`agent-review`, the only current backend, keeps no history, so this request cannot succeed today). Restoration happens only when a user or the body asks for it with an explicit `review_id` — never automatically in response to a message arriving or a wait timing out.
+**A review interrupted partway cannot be resumed.** Start a new review on the same target if you need to continue. Settled outcomes show up in the fixes themselves and in the reply table, so nothing is lost.
