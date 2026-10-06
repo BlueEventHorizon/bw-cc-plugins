@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-05T09:32:09Z
+  generated_at: 2026-10-06T06:31:33Z
   file_count: 39
 
 docs:
@@ -123,70 +123,74 @@ docs:
       - FNC-1603
       - backend contract
   docs/specs/anvil/design/DES-025_issue_driven_flow_design.md:
-    title: Issue-Driven Development Flow Design
-    purpose: Specifies the issue-driven development workflow for anvil plugin, including skill phases (create-issue, triage-issue, impl-issue, impl-ui), task enumeration logic, and error handling procedures
+    title: Issue-Driven Flow Design
+    purpose: Defines the architecture, components, skill configuration, module design, use cases, and error handling for an issue-driven development flow implemented through anvil inheritance-type SKILLs integrated with forge search, review, and requirements skills.
     content_details:
-      - "triage-issue 9-phase workflow: Issue validation, specification/rule research, 5-classification correctness judgment, TASK enumeration, one-shot vs requirements-first routing"
-      - "impl-issue 13-phase workflow: branch creation with label-based prefix, UI issue judgment, investigation, planning with template, issue update, code review, commit, PR"
-      - "impl-ui 2-stage workflow (design/implement): design specification via prepare-figma, visual comparison approval, implementation design, Typography mapping, three-point review"
-      - "Architecture: 6 anvil skills (create-issue, triage-issue, impl-issue, impl-ui, prepare-figma, resolve-figma-node) with dependencies on forge skills (query-db-specs/rules, start-requirements, review)"
-      - "UI issue judgment table: criteria based on implementation target directory, Figma URL/design spec references, label keywords (UI vs data/domain/infrastructure)"
-      - "Branch naming: <prefix>/<issue-number>-<slug> with prefix derived from label keywords (fix/feature/refactor/docs/chore)"
-      - "Issue body structure: user-content markers (start/end), implementation plan template, GitHub references with percent-encoded URLs"
-      - "Audit comment template: correctness judgment, TASK list or non-taskable item classification, investigation results (specs/rules/code)"
-      - "Error handling: 13 scenarios (gh auth, repository mismatch, Figma connectivity, capture failure, PR creation) with recovery procedures"
+      - Component architecture and dependency flow (anvil skills, forge integration, GitHub and Figma connections)
+      - Skill list with launch paths and responsibilities (6 anvil skills + forge integration points)
+      - Module design and phase composition (triage-issue 8 phases, impl-issue 12 phases, impl-ui 5 phases)
+      - Judgment logic for correctness, TASK formation, route determination, UI Issue classification, and branch naming
+      - Use cases (UC-01 through UC-05 with sequence diagrams for triage, implementation, and UI workflows)
+      - "Data structures: Issue body with marker pairs, audit comments, UI workflow artifacts, repository information"
+      - "Error handling design (12 error scenarios with responses: authentication, validation, API failures, user interactions)"
+      - Integration with existing components (forge query/review skills, anvil commit/create-pr, dprint formatter)
+      - "Test design: unit tests for Python scripts, SKILL integration tests, common tests for frontmatter and metadata"
+      - Design rationale for Skill tool invocation, marker-based state transitions, and TASK decomposition criteria
     applicable_tasks:
-      - Issue-driven development flow implementation in anvil plugin
-      - triage-issue skill implementation and testing
-      - impl-issue skill implementation and testing
-      - impl-ui skill implementation with Figma integration
-      - UI issue detection and routing logic implementation
-      - Issue body structure and marker coordination
-      - Audit comment generation for workflow coordination
-      - Error handling implementation for workflow phases
-      - prepare-figma and resolve-figma-node skill implementation
+      - Implementing the anvil issue-driven flow system
+      - Creating and extending anvil SKILLs (create-issue, triage-issue, impl-issue, impl-ui, prepare-figma)
+      - Integrating with forge skills (query-db-specs, query-db-rules, review, start-requirements)
+      - Designing multi-phase workflows with state management
+      - Implementing Figma-based UI design and implementation workflows
+      - Setting up GitHub Issue and PR automation with state tracking
+      - Error handling and recovery procedure design
+      - Planning and testing complex skill orchestration flows
     keywords:
-      - issue-driven-flow
-      - triage-issue
-      - impl-issue
-      - impl-ui
-      - prepare-figma
-      - resolve-figma-node
-      - TASK enumeration
-      - UI issue judgment
-      - audit comment
-  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
-    title: Issue-Driven Development Flow Requirements
-    purpose: Specifies the issue-driven development workflow from GitHub Issue creation through triage, implementation routing (one-shot vs. requirements-first), and UI design with Figma integration.
-    content_details:
-      - Bug Report and Feature Request template structure with mandatory sections and closure set expressions
-      - Triage investigation with fact verification against specs, rules, and code
-      - TASK enumeration and routing decision between one-shot implementation and requirements definition
-      - Implementation planning and execution from investigation through commit and PR creation
-      - Design specification creation from Figma with frame identification and design tokens
-      - Implementation design specification with Typography mapping and action implementation plan
-      - Three-point alignment review comparing Figma screenshot, implementation screenshot, and design specification code
-      - Branch naming by issue label (fix, feature, refactor, docs, chore prefixes)
-      - Issue body mutation rules preserving user-written ranges and appending implementation plan
-      - Prerequisite condition checks for authentication, git repository, and Figma access
-    applicable_tasks:
-      - GitHub Issue creation and triage decision making
-      - Implementation workflow execution with code review
-      - Design specification creation from Figma
-      - UI Issue design and implementation with three-point alignment review
-      - PR creation with issue closure references
-      - Issue reopening and PR creation retry handling
-    keywords:
-      - Issue-driven development
-      - Triage
-      - One-shot implementation
-      - Requirements definition
+      - anvil
+      - issue-driven flow
+      - SKILL orchestration
+      - forge integration
       - Figma
+      - GitHub automation
+      - phase-based workflow
+      - error handling
+      - TASK decomposition
+      - UI implementation design
+  docs/specs/anvil/requirements/REQ-005_issue_driven_flow.md:
+    title: REQ-005 Issue-Driven Development Flow Requirements
+    purpose: Defines end-to-end GitHub Issue-driven workflow covering creation, triage with fact verification and routing decision, implementation through PR creation, and UI issues with Figma design verification
+    content_details:
+      - Issue creation with mandatory sections for Bug Report and Feature Request
+      - Issue triage with fact verification against specs/code and correction of errors
+      - Implementation routing decision between one-shot implementation and requirements-first path
+      - Implementation workflow from issue analysis through modification investigation, plan creation, implementation, review, commit, and PR creation
+      - UI issue handling with Figma-derived information extraction and design specification creation
+      - Figma information retrieval including design tokens, layout details, and typography correspondence
+      - Task enumeration criteria based on content clarity independent of change volume
+      - Audit comment recording with triage results, correction summary, and reference locations
+      - Cross-workflow invariant conditions including scope dependencies and reference direction
+      - Prerequisite checks and error handling for GitHub CLI, Figma PAT, git repository, and design tools
+    applicable_tasks:
+      - GitHub Issue integration design and implementation
+      - Triage workflow development for issue-driven projects
+      - Anvil plugin skill development for issue management
+      - Issue routing decision algorithm implementation
+      - UI issue design with Figma integration workflow
+      - Quality gate and audit trail implementation
+      - PR creation automation with issue closure references
+      - Figma-to-code workflow integration
+      - Error handling and prerequisite validation
+    keywords:
+      - Issue
+      - Triage
+      - GitHub
+      - Figma
+      - Workflow
+      - Requirements
+      - Task enumeration
+      - Implementation
+      - Verification
       - Design specification
-      - TASK enumeration
-      - Three-point alignment
-      - Bug Report
-      - Feature Request
   docs/specs/common/requirements/COMMON-REQ-001_versioned_migration.md:
     title: "COMMON-REQ-001: Staged Version Migration Requirements Specification"
     purpose: Defines a framework for staged version migration to ensure backward compatibility of versioned data formats across major version changes
@@ -552,33 +556,36 @@ docs:
       - key mapping
       - inheritance model
   docs/specs/forge/design/DES-010_create_skills_orchestrator_design.md:
-    title: DES-010 create-* Skills Orchestrator Design
-    purpose: Specifies the orchestrator architecture for create-* skills, including context gathering framework, phase structure, and agent coordination patterns
+    title: create-* Skills Orchestrator Design
+    purpose: Specifies the orchestrator pattern architecture for create-* skills, including context collection framework, responsibility distribution, and skill-specific configurations
     content_details:
-      - Orchestrator pattern with responsibility distribution
-      - Common context gathering framework shared across 3 create-* skills
-      - Parallel agent execution and return value contract (markdown bullet lists)
-      - Skill-specific phase definitions for start-design, start-plan, start-requirements
-      - Agent failure handling and fallback behavior in parallel collection
-      - Context collection matrix showing required agents per skill (specs, rules, code)
-      - Session-less design and inter-phase communication patterns
+      - Orchestrator structure and diagram
+      - Responsibility distribution (orchestrator, agents, document creation, review, post-processing)
+      - Common context collection framework and return value contract
+      - Inline prompt instruction method (FNC-003)
+      - Parallel execution and failure handling
+      - start-design configuration with rules agent
+      - start-plan configuration with phase structure and agent matrix
+      - start-requirements configuration with reverse-engineering sequence
+      - Existing components reference
+      - Session-free design rationale
     applicable_tasks:
-      - Design of create-* SKILL orchestrator workflows
-      - Implementation of context gathering agents and return value contracts
-      - Parallel agent execution and error handling
-      - Phase definition and sequencing for create-* skills
-      - Agent coordination architecture design
-      - Code review for orchestrator pattern compliance
+      - Design implementation of create-* orchestrator pattern
+      - Integration of context collection agents into SKILL.md
+      - Orchestrator phase configuration
+      - Code review of create-skills workflow
+      - Documentation of parallel agent execution
     keywords:
-      - orchestrator
-      - context gathering
-      - agent coordination
-      - return value contract
-      - parallel execution
-      - create-design
+      - start-design
       - start-plan
       - start-requirements
-      - phase structure
+      - orchestrator
+      - context collection
+      - return value
+      - agent
+      - FNC-003
+      - phase
+      - parallel
   docs/specs/forge/design/DES-013_context_gathering_design.md:
     title: DES-013 Context Gathering Task Specification
     purpose: Defines context gathering task specification for create-* and start-implement SKILLs, including 3 task types, parallel agent execution method, and SKILL-specific task matrices
@@ -642,37 +649,37 @@ docs:
       - staged migration
       - pure functions
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md:
-    title: DES-017 Create-Requirements Workflow Design
-    purpose: "Defines dispatcher pattern and mode-specific workflows for start-requirements skill with three self-contained workflow implementations: interactive (dialogue-driven), reverse-engineering (source-analysis), and from-figma (design-driven)"
+    title: Requirements Definition Workflow Design
+    purpose: Specifies the workflow architecture for start-requirements orchestrator with three modes (interactive, reverse-engineering, from-figma), dispatcher responsibilities, and mode-specific context collection strategies
     content_details:
-      - Dispatcher pattern in SKILL.md for prerequisite checks, mode selection, and session management
-      - Interactive mode workflow with on-demand context collection during dialogue spanning phases 0-4
-      - Reverse-engineering mode workflow with batch context collection and source code analysis (phases 1-5)
-      - From-figma mode workflow with Figma MCP integration and design system building (phases 1-5)
-      - "Context collection optimization per mode: on-demand for interactive, batch parallel for reverse-engineering and from-figma"
-      - Self-contained workflow principle where each mode includes prerequisite checks, context collection, creation, review, ToC update, commit, and cleanup
-      - Requirement ID system consistency enforced via requirement_format.md
-      - "Design principle What vs. How: requirement documents define WHAT to realize, design defines HOW to implement"
-      - Spec/design boundary guidance in spec_design_boundary_spec.md for disambiguation
-      - "Workflow self-closure design: no return to SKILL.md after delegation to workflow files"
+      - Overview of start-requirements as 3-mode orchestrator
+      - Dispatcher pattern with SKILL.md and self-contained workflows
+      - Draft-driven interactive mode with 6 phases and on-demand context collection
+      - Reverse-engineering mode with source code analysis and parallel agent execution
+      - From-figma mode with design system and MCP integration
+      - Common pre-requirements rules (new vs. differential determination, feature decision, output location, filename)
+      - Design principle of What-focused requirements (separated from implementation)
+      - Context collection optimization (on-demand, batch by mode)
+      - Workflow self-completion requirements (reads, collection, quality, review, ToC, commit)
+      - Requirement ID system consistency and spec/design boundary
     applicable_tasks:
-      - Designing workflow dispatchers with mode-specific branching
-      - Planning on-demand vs. batch context collection strategies
-      - Creating self-contained workflow templates for different input sources
-      - Implementing interactive requirement gathering with user dialogue
-      - Designing reverse-engineering workflows for existing codebases
-      - Implementing Figma design-driven requirement creation
+      - Implement start-requirements orchestrator skill
+      - Create requirement definitions via interactive workflow
+      - Extract requirements through reverse-engineering
+      - Generate requirements from Figma designs
+      - Design mode-specific context collection strategies
+      - Implement dispatcher pattern for multi-mode workflows
     keywords:
-      - workflow dispatcher
-      - interactive mode
+      - start-requirements
+      - interactive
       - reverse-engineering
       - from-figma
-      - self-contained workflow
-      - on-demand collection
-      - batch collection
+      - orchestrator
+      - workflow
       - requirement definition
-      - What vs. How principle
-      - spec/design boundary
+      - context collection
+      - draft-driven
+      - Figma MCP
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
     title: Forge Design Workflow Design Specification
     purpose: Specifies the workflow and phases for creating design documents from requirements specifications, including upstream design, pattern matching, detailed design, consistency checks, and review

@@ -126,41 +126,11 @@ feature 名を確定してください
 
 ---
 
-## Phase 4: `--new` / `--add` モードの判定
+## Phase 4: 要件定義書の作成（forge:start-requirements 呼び出し）
 
-`forge:start-requirements` の `--new` / `--add` は **アプリ単位の判定** であり、ファイル衝突チェックではない:
+同 feature の既存 requirements ファイルの有無の確認と、新規か既存への追加か・差分開発かどうかの判定は、`forge:start-requirements` が行う。本 skill では事前 Glob も判定も行わない。
 
-- `--new`: 新規アプリ全体をゼロから立ち上げる（APP-001 から作成）
-- `--add`: 既存アプリへの機能追加（`feature_type: temporary-feature` frontmatter を付与する分岐に入る）
-
-> **重要**: `--add` を指定しないと `${CLAUDE_PLUGIN_ROOT}/docs/requirement_format.md` の追加 feature frontmatter が付与されない。plan 由来 feature の大半は既存 plugin への追加であり、デフォルトは `--add` とする。
-
-### 4.1 自動判定
-
-| 条件                                                                                 | モード  |
-| ------------------------------------------------------------------------------------ | ------- |
-| Phase 2 で確定した namespace が `docs/specs/` 配下に既存（anvil/forge/common 等）    | `--add` |
-| Phase 2 で「Other」入力された新規 namespace、または `docs/specs/{namespace}/` が不在 | `--new` |
-
-### 4.2 ユーザー確認
-
-自動判定結果を AskUserQuestion で確認する（推定値を先頭に "(Recommended)"）:
-
-```
-モードを確定してください
-- {自動判定結果}  (Recommended)
-- もう一方のモード
-```
-
-### 4.3 ファイル衝突チェックは委譲
-
-同 feature の既存 requirements ファイル有無のチェックは **`forge:start-requirements` 内部に委譲する**（`.doc_structure.yaml` 解決と一貫性を保つため）。本 skill では事前 Glob を行わない。
-
----
-
-## Phase 5: 要件定義書の作成（forge:start-requirements 呼び出し）
-
-### 5.1 plan を context として明示
+### 4.1 plan を context として明示
 
 実行前に以下をユーザーに表示する（**省略不可**。後続 skill が plan を参照する根拠を明示するため）:
 
@@ -168,35 +138,32 @@ feature 名を確定してください
 plan: {plan-path}
 namespace: {namespace}
 feature: {feature}
-mode: {Phase 4 で確定した --new または --add}
 これから plan を context として要件定義書を作成します。
 ```
 
-### 5.2 forge:start-requirements の起動
+### 4.2 forge:start-requirements の起動
 
 Skill ツールで `/forge:start-requirements` を起動する:
 
 - skill: `forge:start-requirements`
-- args: `{feature} --mode interactive {--new または --add}`（Phase 4 の確定値を使用）
+- args: `{feature} --mode interactive`
 
-### 5.3 interactive_workflow の Q&A 自動充填手順
+### 4.3 interactive_workflow の Q&A 自動充填手順
 
-`/forge:start-requirements` は内部で `requirements_interactive_workflow.md` を Read し、Phase 0.1 〜 Phase 4 まで多数の Q&A を [MANDATORY] で実行する。これらは plan を読み込まずに対話する設計のため、本 skill 起動時には **plan の内容で各 Q&A を自動充填し、ユーザーには一括確認のみ求める** ように振る舞いを変更する。
+Skill ツールで起動した `/forge:start-requirements` は内部で `requirements_interactive_workflow.md` を Read し、Phase 0 〜 Phase 4 まで多数の確認・対話を [MANDATORY] で実行する。これらは plan を読み込まずに対話する設計のため、本 skill 起動時には **plan を「壁打ちの内容」として扱い、plan の内容で各 Q&A を自動充填し、ユーザーには一括確認のみ求める** ように振る舞いを変更する。
 
-#### 5.3.1 自動充填の手順
+#### 4.3.1 自動充填の手順
 
-| workflow の Phase           | 既定の対応                                                                                                        |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Phase 0.1（新規/追加判定）  | **スキップ** — Phase 4 で確定した `--new`/`--add` を引数で渡しているため再質問不要                                |
-| Phase 0.2（新規アプリ Q&A） | `--new` のときのみ実行。アプリ概要 / 対象ユーザー / 必須機能 / スコープ外 / 制約 を **plan から抽出して充填**     |
-| Phase 0.3（機能追加 Q&A）   | `--add` のときのみ実行。追加機能の概要 / 関連既存機能 / 新規要素の要否 / 影響範囲 を **plan から抽出して充填**    |
-| Phase 0.5（ルール文書）     | workflow の指示通りに `/forge:query-db-rules` 等を実行（plan で代替不可）                                         |
-| Phase 1（ビジョン・価値）   | 解決する課題 / 提供価値 / 成功の定義 / 主要機能 を **plan から抽出して充填**                                      |
-| Phase 2（体験フロー・構成） | 主要シナリオ / 画面・インターフェース一覧 を **plan から抽出して充填**（plan に記載がない場合のみユーザーに質問） |
-| Phase 3（詳細仕様）         | 各画面の表示要素 / 操作要件 / エラーケース を **plan から抽出して充填**                                           |
-| Phase 4（統合・品質確認）   | workflow の指示通りに実行                                                                                         |
+| workflow の Phase                                 | 既定の対応                                                                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0（事前確認）                               | 変更の概要を plan から抽出して提示し、確認する。**新規か既存への追加かの質問はスキップしない**（plan から推測して埋めず、ユーザーに聞く）。完全新規かどうかの判定は workflow どおり実行 |
+| Phase 1（ルール・既存資産）                       | workflow の指示通りに Skill ツールで `/forge:query-db-rules` 等を実行（plan で代替不可）。既存資産の確認は、workflow が定めるとおり完全新規でないときだけ実行                           |
+| Phase 2（ビジョン・価値・スコープ）               | 解決する課題 / 提供価値 / 成功の定義 / 主要機能 / スコープ外 / 制約（完全新規でないときは、関連する既存機能 / 新規要素の要否 / 影響範囲も）を **plan から抽出して充填**                 |
+| Phase 3（型の判定と承認・置き場の決定・ドラフト） | workflow の指示通りに実行（型の判定と承認は省かない）。ドラフトには plan の内容を取り込む（4.3.4）                                                                                      |
+| Phase 4（ドラフトを前提とした議論と仕上げ）       | 主要シナリオ / 画面・インターフェース一覧 / 各画面の表示要素・操作要件・エラーケースを **plan から抽出してドラフトに反映**（plan に記載がない項目だけユーザーに質問）                   |
+| Phase 5（統合・品質確認・完了処理）               | workflow の指示通りに実行                                                                                                                                                               |
 
-#### 5.3.2 一括確認の方法
+#### 4.3.2 一括確認の方法
 
 各 Phase の充填が終わったら、ユーザーに**まとめて表示してから AskUserQuestion で確認**する:
 
@@ -212,15 +179,15 @@ Skill ツールで `/forge:start-requirements` を起動する:
 - 修正する（指摘箇所を入力）
 ```
 
-#### 5.3.3 plan に記載がない項目の扱い
+#### 4.3.3 plan に記載がない項目の扱い
 
 plan に該当情報がない場合のみ、workflow の元の Q&A をユーザーに提示する。「plan に記載がないため確認させてください」と前置きする。
 
-#### 5.3.4 plan の内容はすべて取り込む
+#### 4.3.4 plan の内容はすべて取り込む
 
-plan の内容は、詳細設計（実装の手順、既存ファイルの変更箇所、データ構造など）も含めて、すべて要件定義書に取り込む。workflow の Q&A に対応する項目が無い内容も落とさない。
+plan の内容は、詳細設計（実装の手順、既存ファイルの変更箇所、データ構造など）も含めて、すべて要件定義書（ドラフトを含む）に取り込む。workflow の Q&A に対応する項目が無い内容も落とさない。
 
-### 5.4 完了
+### 4.4 完了
 
 `/forge:start-requirements` の自己完結フロー（AI レビュー・ToC 更新・commit 確認）に従って完了まで進める。
 
@@ -238,7 +205,7 @@ Markdown plan から要件定義書を作成しました:
   REQ:           {要件定義書パス}
 
 次のステップ:
-  /forge:start-design {feature}    # 設計書の作成へ進む
+  /forge:start-design --requirement {要件定義書パス}    # 設計書の作成へ進む
 ```
 
 ---

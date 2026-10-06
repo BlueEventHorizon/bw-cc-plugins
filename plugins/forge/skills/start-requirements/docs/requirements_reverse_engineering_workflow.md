@@ -70,10 +70,10 @@ Agent ツールで以下を**並列起動**する。各 agent の **return value
 ```
 Agent ツール起動: 実装ルール収集
 prompt:
-  Feature "{feature}" の要件定義書作成に適用するプロジェクト固有ルール (UX / アーキ規約等) を検索する。
+  既存アプリ解析による要件定義書作成に適用するプロジェクト固有ルール (UX / アーキ規約等) を検索する。
 
   検索手順 (優先順):
-  - `/forge:query-db-rules {feature} 要件`
+  - `/forge:query-db-rules 既存アプリ解析による要件定義書作成`
   - 利用不可なら `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/doc_structure/resolve_doc_structure.py --type rules`
   - それも不可なら `Glob: docs/rules/**/*.md`
 
@@ -88,7 +88,7 @@ prompt:
 ```
 Agent ツール起動: 既存コード収集
 prompt:
-  Feature "{feature}" の解析対象として、以下のソースコード周辺の既存実装を探索する。
+  解析対象として、以下のソースコード周辺の既存実装を探索する。
   対象パス: {ソースコードのパス}
 
   検索手順:
@@ -206,9 +206,11 @@ graph LR
 
 ## Phase 4: 要件定義書作成
 
-### 4.1 ID 採番
+### 4.1 置き場の決定と ID 採番
 
-要件定義書の作成前に、使用するプレフィックスごとに次の連番を取得する。手動での番号決定は禁止:
+要件定義書のファイルを書く前に、`start-requirements/SKILL.md` の「要件定義書を書く直前の決定」の手順 3〜5（feature・出力先・ファイル名）に従って決める。このワークフローは、差分開発かどうかの判定（手順 2）を行わない。
+
+続けて、使用するプレフィックスごとに次の連番を取得する。手動での番号決定は禁止:
 
 ```bash
 SCAN_SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/next-spec-id/scripts/scan_spec_ids.py"
@@ -286,10 +288,12 @@ Skill ツールで `/forge:review` を起動する:
 
 ### 5.6 完了案内
 
+作成したファイルパスとともに、ユーザーが次に実行するコマンド例を案内する:
+
 ```
 要件定義書を作成しました:
   → {作成ファイルパス}
 
 次のステップ:
-  /forge:start-design {feature}    # 設計書作成へ進む
+  /forge:start-design --requirement {設計する要件定義書のパス}    # 設計書作成へ進む
 ```

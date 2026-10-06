@@ -129,7 +129,7 @@ SDD 業界では**テストと受け入れ基準 (Acceptance Criteria)** が中�
 
 - 要件定義書に `feature_type: temporary-feature` の frontmatter は**付けない**（この文書は恒久仕様）
 - 既存仕様との整合を気にする必要がない
-- 対応コマンド: `/forge:start-requirements --new`
+- 対応コマンド: `/forge:start-requirements`（既存の要件定義書が 1 件も無いとき、完全新規として扱われる）
 
 **MVP 思考の推奨**: 初期段階で全機能を網羅しようとせず、**最小限の動作仕様 + 主要ユースケース 2〜3 個** に絞る。残りの機能は後続の Feature として「追加開発」（6 章）で拡張すると、仕様の陳腐化を避けやすい。
 
