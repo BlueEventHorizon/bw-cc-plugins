@@ -97,8 +97,8 @@ flowchart LR
 /forge:start-implement my-feature
 
 # 3. レビュー（随時）
-/forge:review code --files src/foo.py,src/bar.py --auto
-/forge:review design --dirs docs/specs/my-feature/design/
+/forge:review --files src/foo.py,src/bar.py --auto
+/forge:review --dirs docs/specs/my-feature/design/
 ```
 
 #### スキル一覧

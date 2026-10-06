@@ -10,7 +10,7 @@
         "TASK-010",
         "TASK-011"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-303",
@@ -19,7 +19,7 @@
         "TASK-001",
         "TASK-003"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-304",
@@ -28,7 +28,7 @@
         "TASK-001",
         "TASK-002"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-305",
@@ -36,7 +36,7 @@
       "task_ids": [
         "TASK-001"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-317",
@@ -45,7 +45,7 @@
         "TASK-001",
         "TASK-013"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-313",
@@ -54,7 +54,7 @@
         "TASK-002",
         "TASK-008"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-310",
@@ -65,7 +65,7 @@
         "TASK-008",
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-311",
@@ -75,7 +75,7 @@
         "TASK-003",
         "TASK-008"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-203",
@@ -83,7 +83,7 @@
       "task_ids": [
         "TASK-008"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-312",
@@ -92,7 +92,7 @@
         "TASK-013",
         "TASK-017"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-314",
@@ -102,7 +102,7 @@
         "TASK-010",
         "TASK-013"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-316",
@@ -111,7 +111,7 @@
         "TASK-004",
         "TASK-013"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-318",
@@ -121,7 +121,7 @@
         "TASK-013",
         "TASK-017"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 FNC-204",
@@ -129,7 +129,7 @@
       "task_ids": [
         "TASK-013"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 DM-301",
@@ -137,7 +137,7 @@
       "task_ids": [
         "TASK-001"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 DM-305",
@@ -146,7 +146,7 @@
         "TASK-002",
         "TASK-008"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 DM-302",
@@ -154,7 +154,7 @@
       "task_ids": [
         "TASK-002"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 DM-201",
@@ -162,7 +162,7 @@
       "task_ids": [
         "TASK-008"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-029 DM-304",
@@ -171,7 +171,7 @@
         "TASK-001",
         "TASK-002"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-301",
@@ -179,7 +179,7 @@
       "task_ids": [
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-306",
@@ -187,7 +187,7 @@
       "task_ids": [
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-307",
@@ -196,7 +196,7 @@
         "TASK-004",
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-308",
@@ -204,16 +204,15 @@
       "task_ids": [
         "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-309",
       "title": "reviewer が所見として返すもの",
       "task_ids": [
-        "TASK-005",
-        "TASK-006"
+        "TASK-005"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-027 FNC-315",
@@ -222,7 +221,7 @@
         "TASK-002",
         "TASK-003"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 FNC-208",
@@ -230,7 +229,7 @@
       "task_ids": [
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 FNC-201",
@@ -238,7 +237,7 @@
       "task_ids": [
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 FNC-206",
@@ -247,7 +246,7 @@
         "TASK-008",
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 FNC-209",
@@ -256,7 +255,7 @@
         "TASK-008",
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 FNC-319",
@@ -265,7 +264,7 @@
         "TASK-008",
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 DM-202",
@@ -274,7 +273,7 @@
         "TASK-008",
         "TASK-010"
       ],
-      "status": "pending"
+      "status": "completed"
     },
     {
       "requirement_id": "REQ-026 TBD-001",
@@ -315,7 +314,6 @@
         "TASK-003",
         "TASK-004",
         "TASK-005",
-        "TASK-006",
         "TASK-007"
       ]
     },
@@ -354,7 +352,7 @@
       "task_id": "TASK-001",
       "title": "publish_request.py と単体テストを作る",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [],
       "group_id": null,
@@ -384,7 +382,7 @@
       "task_id": "TASK-002",
       "title": "append_result.py と seal_result.py（findings）と単体テストを作る",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [],
       "group_id": null,
@@ -413,7 +411,7 @@
       "task_id": "TASK-003",
       "title": "resolve_review_path.py（request / findings）と単体テストを作る",
       "priority": 85,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [
         "TASK-001",
@@ -444,7 +442,7 @@
       "task_id": "TASK-004",
       "title": "resolve_doc_structure.py の --match-path と resolve_review_backend.py の retains_context を足す",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [],
       "group_id": null,
@@ -475,7 +473,7 @@
       "task_id": "TASK-005",
       "title": "reviewer のラッパー・review_target_types.md・新 reviewer.md と契約テストを作る",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [
         "TASK-002",
@@ -513,44 +511,17 @@
       ]
     },
     {
-      "task_id": "TASK-006",
-      "title": "本物の reviewer で先行確認する",
-      "priority": 78,
-      "status": "pending",
+      "task_id": "TASK-007",
+      "title": "フェーズ 1 の全体確認",
+      "priority": 75,
+      "status": "completed",
       "design_id": "DES-084",
       "depends_on": [
         "TASK-005"
       ],
       "group_id": null,
       "build_check": "per_task",
-      "description": "戦略書フェーズ 1 の先行確認。コードは書かない。TASK-005 で作った reviewer を、小さな対象（paths のファイル 1 つ）で実際に起動し、次の 2 点を確かめる。(1) permissionMode: plan のまま Bash で reviewer_add_finding と reviewer_finish が実際に書き込めるか (2) agent 定義の中で ${CLAUDE_PROJECT_DIR} が置換されるか。公式ドキュメントで確かめきれない事項は推測で補わず、実際に動かして観測する。どちらかが失敗したら、先へ進まず作業を止めて報告する。",
-      "acceptance_criteria": [
-        "reviewer_add_finding が review_result.json に所見を書き込んだ（ファイルの存在と内容で判定）",
-        "reviewer_finish が exit に \"0\" を書き、resolve_review_path.py が findings のパスを返す",
-        "agent 定義内の ${CLAUDE_PROJECT_DIR} が実パスに置換されていることを、実行結果で確認した",
-        "確認の結果（成功または失敗とその事実）が作業報告に記載されている。失敗した場合は後続のタスクへ進まず報告している",
-        "permissionMode: plan のままでは書き込めない場合は、frontmatter を変えずに作業を止めて報告している（tests/forge/agents/test_agent_frontmatter.py が固定している値を変える設計判断になるため）"
-      ],
-      "required_reading": [
-        "docs/specs/review/plan/review_strategy.md",
-        "docs/specs/review/design/DES-084_reviewer_design.md",
-        "docs/rules/claude_code_reference.md",
-        "docs/rules/claude_code_authoring_guide.md",
-        "tests/forge/agents/test_agent_frontmatter.py"
-      ]
-    },
-    {
-      "task_id": "TASK-007",
-      "title": "フェーズ 1 の全体確認",
-      "priority": 75,
-      "status": "pending",
-      "design_id": "DES-084",
-      "depends_on": [
-        "TASK-006"
-      ],
-      "group_id": null,
-      "build_check": "per_task",
-      "description": "TASK-001〜006 の成果を通しで確認する。DES-084 §7 の単体・契約・統合テスト（targets の 3 形で、review_id の生成から依頼の公開、パスによる直接読み出し、所見の書き出しと封緘まで。target_unreadable と書き出さずに終えた場合に resolve_review_path.py が失敗すること）を実行して通す。テストが不足していれば足す。",
+      "description": "TASK-001〜005 の成果を通しで確認する。DES-084 §7 の単体・契約・統合テスト（targets の 3 形で、review_id の生成から依頼の公開、パスによる直接読み出し、所見の書き出しと封緘まで。target_unreadable と書き出さずに終えた場合に resolve_review_path.py が失敗すること）を実行して通す。テストが不足していれば足す。",
       "acceptance_criteria": [
         "DES-084 §7 の統合テスト 3 項目に対応するテストが存在し、通る",
         "python3 -m unittest discover -s tests -p 'test_*.py' が全件通る",
@@ -565,7 +536,7 @@
       "task_id": "TASK-008",
       "title": "append_result.py / seal_result.py / resolve_review_path.py の evaluations と inputs 対応",
       "priority": 70,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-007"
@@ -595,7 +566,7 @@
       "task_id": "TASK-009",
       "title": "count_actionable.py・advance_round.py・delete_review.py と単体テストを作る",
       "priority": 65,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-008"
@@ -624,7 +595,7 @@
       "task_id": "TASK-010",
       "title": "evaluator のラッパーと新 evaluator.md と契約テストを作る",
       "priority": 65,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-008"
@@ -658,7 +629,7 @@
       "task_id": "TASK-011",
       "title": "本体のラッパー body_resolve_* を作る",
       "priority": 65,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-008"
@@ -684,7 +655,7 @@
       "task_id": "TASK-012",
       "title": "reviewer から evaluator までを 1 ラウンド手動で通す",
       "priority": 60,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-009",
@@ -710,7 +681,7 @@
       "task_id": "TASK-013",
       "title": "本体 SKILL.md を新しい仕組みに書き換える（位置引数の廃止を含む）",
       "priority": 50,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-012"
@@ -742,7 +713,7 @@
       "task_id": "TASK-014",
       "title": "agent-review の縮小・consult の暫定措置・split_by_location.py の修正",
       "priority": 48,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-013"
@@ -777,7 +748,7 @@
       "task_id": "TASK-015",
       "title": "位置引数を渡している呼び出し元と利用例を直す",
       "priority": 46,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-013"
@@ -811,7 +782,7 @@
       "task_id": "TASK-016",
       "title": "旧実装・旧テスト・テンプレートを削除し、全体を検証する",
       "priority": 44,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-015",
@@ -842,7 +813,7 @@
       "task_id": "TASK-017",
       "title": "新しい review を実際に通して確認し、#62 との衝突箇所を洗い出す",
       "priority": 47,
-      "status": "pending",
+      "status": "completed",
       "design_id": "DES-083",
       "depends_on": [
         "TASK-013",

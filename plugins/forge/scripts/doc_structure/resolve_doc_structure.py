@@ -19,6 +19,8 @@ doc-advisor の toc_utils.py 互換ロジックで実装。
     python3 resolve_doc_structure.py --feature-of docs/specs/forge/requirements/REQ-001_x.md
     python3 resolve_doc_structure.py --decide-feature-for design --source-path docs/specs/forge/requirements/REQ-001_x.md
     python3 resolve_doc_structure.py --find-in requirement --name REQ-001
+    python3 resolve_doc_structure.py --match-path docs/specs/forge/design/DES-001.md
+    python3 resolve_doc_structure.py --match-path /abs/path/to/file.md --category rules
 """
 
 import argparse
@@ -433,6 +435,58 @@ def match_path_to_doc_type(file_path, doc_types_map, project_root):
                 return doc_type
 
     return None
+
+
+def to_project_relative_path(path_str, project_root):
+    """パスをプロジェクトルートからの相対パス（`/` 区切り）にする。
+
+    絶対パスとプロジェクトルートからの相対パスのどちらも受け付ける。
+    プロジェクトルートの外を指すパスには None を返す。
+
+    Args:
+        path_str: 絶対パス、またはプロジェクトルートからの相対パス
+        project_root: プロジェクトルートの絶対パス
+
+    Returns:
+        str | None: 相対パス。プロジェクトルートの外なら None
+    """
+    root = os.path.abspath(project_root)
+    candidate = os.path.normpath(os.path.join(root, str(path_str)))
+    candidates = [(root, candidate)]
+    # シンボリックリンク（macOS の /tmp 等）で root と path の表記が食い違う場合の補正
+    candidates.append((os.path.realpath(root), os.path.realpath(candidate)))
+
+    for base, target in candidates:
+        rel = os.path.relpath(target, base)
+        if rel == os.pardir or rel.startswith(os.pardir + os.sep):
+            continue
+        return Path(rel).as_posix()
+    return None
+
+
+def match_path(config, category, path_str, project_root):
+    """パスを 1 つ受け取り、doc_types_map の宣言から種別を返す。
+
+    宣言の値をそのまま返す（adr を design へ読み替えない）。
+    exclude は適用しない（exclude はファイル収集の範囲を決めるもので、
+    種別を決めるものではない）。
+
+    Args:
+        config: parse_config() の戻り値
+        category: 'rules' または 'specs'
+        path_str: 絶対パス、またはプロジェクトルートからの相対パス
+        project_root: プロジェクトルートの絶対パス
+
+    Returns:
+        tuple: (プロジェクトルートからの相対パス | 入力そのまま, doc_type | None)
+               プロジェクトルートの外のパスの doc_type は None
+    """
+    rel = to_project_relative_path(path_str, project_root)
+    if rel is None:
+        return normalize_path(path_str), None
+
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    return rel, match_path_to_doc_type(rel, doc_types_map, project_root)
 
 
 # ---------------------------------------------------------------------------
@@ -1120,6 +1174,14 @@ def parse_args():
         action='store_true',
         help='.doc_structure.yaml のバージョンを出力する',
     )
+    group.add_argument(
+        '--match-path',
+        metavar='PATH',
+        help=(
+            'パスを 1 つ受け取り、doc_types_map の宣言から種別を返す'
+            '（絶対パス、またはプロジェクトルートからの相対パス。exclude は適用しない）'
+        ),
+    )
     parser.add_argument(
         '--feature',
         default=None,
@@ -1149,7 +1211,7 @@ def parse_args():
         '--category',
         choices=['rules', 'specs'],
         default='specs',
-        help='--doc-type / --dir-of / --feature-of 使用時のカテゴリ（デフォルト: specs）',
+        help='--doc-type / --dir-of / --feature-of / --match-path 使用時のカテゴリ（デフォルト: specs）',
     )
 
     args = parser.parse_args()
@@ -1202,7 +1264,7 @@ def main():
             'major_version': get_major_version(raw_content),
         }
     else:
-        # --type / --features / --doc-type はバリデーション必須
+        # --type / --features / --doc-type / --match-path はバリデーション必須
         validation = validate_doc_structure(config, raw_content)
         if not validation.get('valid'):
             error_result = {
@@ -1236,6 +1298,16 @@ def main():
             result = find_doc(
                 config, args.category, args.find_in, args.name, project_root
             )
+        elif args.match_path is not None:
+            rel_path, doc_type = match_path(
+                config, args.category, args.match_path, project_root
+            )
+            result = {
+                'status': 'ok',
+                'category': args.category,
+                'path': rel_path,
+                'doc_type': doc_type,
+            }
         elif args.doc_type:
             files = resolve_files_by_doc_type(
                 config, args.category, args.doc_type, project_root

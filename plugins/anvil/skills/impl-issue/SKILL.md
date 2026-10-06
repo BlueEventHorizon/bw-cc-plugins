@@ -278,7 +278,7 @@ Issue へ記載する形式は [`assets/TEMPLATE.md`](assets/TEMPLATE.md) に従
 
 ## Phase 11: 実装レビューを行う（非 UI Issue のみ） [MANDATORY]
 
-サイレントスキップ禁止。`Skill` ツールで `/forge:review code --auto` を起動する（対象は既定の差分。エンジン軸フラグは `/forge:review` が持たないため付けない）。
+サイレントスキップ禁止。`Skill` ツールで `/forge:review --auto` を起動する（対象は既定の差分。エンジン軸フラグは `/forge:review` が持たないため付けない）。
 
 - 指摘発生時: 確信のある所見は自動で修正される。確信の無い所見は 1 件ずつ提示されるので採否を判断する
 - 指摘なし: そのまま Phase 12 へ

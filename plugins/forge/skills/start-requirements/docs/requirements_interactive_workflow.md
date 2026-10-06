@@ -375,7 +375,7 @@ graph LR
 作成した要件定義書に対して Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
 ```
-/forge:review requirement --files {作成ファイルパス} --auto
+/forge:review --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

@@ -11,12 +11,11 @@ The subject that actually performs the review is swappable (see "Review backends
 ## review
 
 ```
-/forge:review <type> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto] [--focus "<emphasis>"] [--scope "<target completeness>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
+/forge:review [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto] [--focus "<emphasis>"] [--scope "<target completeness>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
 ```
 
 | Argument          | Description                                                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `type`            | `code` / `requirement` / `design` / `plan` / `uxui`                                                                            |
 | `--diff`          | Uncommitted changes on the current branch (default)                                                                            |
 | `--branch`        | All changes since the base-branch divergence point                                                                             |
 | `--files`         | Explicit comma-separated file list                                                                                             |
@@ -37,13 +36,13 @@ The subject that actually performs the review is swappable (see "Review backends
 The user types one of these to start:
 
 ```bash
-/forge:review code                                        # Uncommitted diff (default)
-/forge:review code --branch --auto                        # All branch changes, auto-fix critical+major
-/forge:review code --files src/foo.py,src/bar.py --auto    # Explicit files
-/forge:review requirement --files docs/specs/login_req.md  # Requirement doc
-/forge:review design --files specs/login/design.md         # Design doc
-/forge:review design --dirs docs/specs/forge/design/       # Every design doc under a directory
-/forge:review code --files src/a.py --scope "Creating a.py only"  # State the target completeness of a staged change
+/forge:review                                             # Uncommitted diff (default)
+/forge:review --branch --auto                             # All branch changes, auto-fix critical+major
+/forge:review --files src/foo.py,src/bar.py --auto         # Explicit files
+/forge:review --files docs/specs/login_req.md              # Requirement doc
+/forge:review --files specs/login/design.md                # Design doc
+/forge:review --dirs docs/specs/forge/design/              # Every design doc under a directory
+/forge:review --files src/a.py --scope "Creating a.py only"  # State the target completeness of a staged change
 ```
 
 ### Directory scope (`--dirs`)
@@ -51,11 +50,11 @@ The user types one of these to start:
 When documents are organized by directory (`docs/specs/*/design/` and the like), you can review a whole directory at once.
 
 ```bash
-/forge:review design --dirs docs/specs/forge/design/
-/forge:review requirement --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
+/forge:review --dirs docs/specs/forge/design/
+/forge:review --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
 ```
 
-- **The type is required.** The type (and therefore which review criteria apply) is never inferred from the directory name. A wrong inference would hide why a given set of criteria was applied.
+- **You do not specify a type.** The type (and therefore which review criteria apply) is determined by the reviewer for each target. Passing a type as a positional argument ends the run with an error that states the argument was removed.
 - **The reviewer receives the directories as given.** forge does not expand them into a file list. Expansion would turn any enumeration gap into a silent gap in review coverage; the reviewer determines the scope itself.
 - Enumeration for the internal allowlist respects `.gitignore`, and untracked new documents are included.
 - It is a target axis, so it cannot be combined with `--diff` / `--branch` / `--files` (specifying two is an error).
@@ -69,7 +68,7 @@ A standalone review that targets leaked secrets only — tokens, private keys, c
 /forge:review --secrets
 ```
 
-- **The target is the whole repository.** It cannot be combined with a type or a target axis (`--diff` / `--branch` / `--files` / `--dirs`). A secret committed earlier does not appear in today's diff but is still in the repository, so narrowing to a diff defeats the purpose.
+- **The target is the whole repository.** It cannot be combined with a target axis (`--diff` / `--branch` / `--files` / `--dirs`). A secret committed earlier does not appear in today's diff but is still in the repository, so narrowing to a diff defeats the purpose.
 - **Deterministic scan plus AI, in that order.** `scan_secrets.py` first matches known shapes (AWS / GitHub / Slack tokens, private key blocks, credentialed connection strings, JWTs, high-entropy strings), and its results are attached to the request. The reviewer judges each hit and, separately, hunts for what the scanner cannot match — credentials buried in prose, internal endpoints with no fixed shape.
 - **Detected values never appear in the request.** Only position, kind, length, and a short prefix are passed, masked. The request goes to a separate process and a separate AI, and some backends persist it, so including real values would make detection itself a copying channel.
 - **Nothing is auto-fixed.** Even with `--auto`, the run completes as "findings left unaddressed". A committed secret survives deletion in history, so remediation means revoking and reissuing it — a human decision.
@@ -95,7 +94,7 @@ Emphasis also never raises severity. Findings that answer the emphasis are still
 Tells the reviewer how complete this change is meant to be, and which items were deliberately left out. Multiple lines are allowed:
 
 ```bash
-/forge:review code --files src/fm_to_pending.py --scope "Creating fm_to_pending.py and its tests only.
+/forge:review --files src/fm_to_pending.py --scope "Creating fm_to_pending.py and its tests only.
 
 The following are out of scope for this change.
 
@@ -117,7 +116,7 @@ You need it when an implementation is split into stages. Reviewing one stage in 
 Names the rule and specification documents to hand to the reviewer. For each axis you pass, the skill does not run `/forge:query-db-rules` / `/forge:query-db-specs` itself:
 
 ```bash
-/forge:review code --files src/foo.py --project-rules docs/rules/implementation_guidelines.md
+/forge:review --files src/foo.py --project-rules docs/rules/implementation_guidelines.md
 ```
 
 The main purpose is to avoid running the same search twice for one task when an upstream skill (such as `/forge:start-implement`) has already done it. If you pass only one axis, only the other one is queried.
@@ -264,6 +263,8 @@ In the latter case every unfixed finding is listed with its reason (you decided 
 
 ### Review Types
 
+The type is not a value you specify. The reviewer determines it for each target and applies the matching criteria.
+
 | Type          | Target                   | Main perspectives                             |
 | ------------- | ------------------------ | --------------------------------------------- |
 | `code`        | Source code              | Correctness, robustness, maintainability      |
@@ -272,7 +273,7 @@ In the latter case every unfixed finding is listed with its reason (you decided 
 | `plan`        | Plan docs                | Task granularity, dependencies, traceability  |
 | `uxui`        | Design tokens & UI specs | HIG compliance, usability, visual consistency |
 
-> `--diff` / `--branch` take no type (a diff mixes code, docs, and config). For files matching none of the rows above, the reviewer applies `review_criteria_generic.md` (structure, clarity, completeness). `generic` is **not a selectable type**.
+> A request takes no type, because the target of one request can mix code, docs, and config (a diff especially); the reviewer determines the type for each target and applies the matching criteria (ADRs are treated as design). For files matching none of the rows above, the reviewer applies `review_criteria_generic.md` (structure, clarity, completeness). `generic` is **not a selectable type**.
 
 ### Severity Levels
 

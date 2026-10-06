@@ -123,10 +123,10 @@ flowchart LR
 
 #### 定義が持つもの
 
-| 持つもの        | 内容                                                                                          |
-| --------------- | --------------------------------------------------------------------------------------------- |
-| script の呼び方 | `publish_request.py`、`resolve_review_backend.py`。第 1 引数に `${CLAUDE_PROJECT_DIR}` を置く |
-| 本体の判断      | 下記                                                                                          |
+| 持つもの        | 内容                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| script の呼び方 | `publish_request.py`（第 1 引数に `${CLAUDE_PROJECT_DIR}`）、`resolve_review_backend.py`（`--project-root "${CLAUDE_PROJECT_DIR}"`） |
+| 本体の判断      | 下記                                                                                                                                 |
 
 #### 本体の仕事
 
@@ -295,6 +295,7 @@ script は `plugins/forge/scripts/review/` に置く。基本の script が処�
 - **標準入力:** 自由記述は標準入力の全体を 1 つの値として、加工せずに受け取る。値の内容を理由に拒まない（REQ-029 FNC-304）。`focus` / `scope` だけは、2 つの自由記述を 1 回の操作で渡すため、本体が Write ツールで `<project_root>/.claude/.temp/review_focus.txt`・`review_scope.txt` に書いたファイルで受け取り、`publish_request.py` が読んで削除する（[implementation_guidelines.md](../../../rules/implementation_guidelines.md) の受け渡しファイルの例外）。
 - **書き込み:** JSON は、同じディレクトリの一時ファイルへ書いてから置き換える。読み手が途中の状態を読まない。文字コードは UTF-8 とする。
 - **絶対パス:** 依頼と結果が持つパスと位置は、すべて絶対パスである（REQ-029 DM-304）。
+- **共通の部品:** 上の約束を実現する部品（JSON の出力、失敗の返し方、一時ファイルを経由した公開、絶対パスの検査）は、`plugins/forge/scripts/review/review_common.py` に 1 つだけ置き、各 script が import する。script ごとに複製しない。後続の script が必要とする部品は、必要になったときにここへ足す。
 
 ### 6.2 `publish_request.py`
 
@@ -415,6 +416,7 @@ script は `plugins/forge/scripts/review/` に置く。基本の script が処�
 対象は、基本の script のうち本書が定めるもの（`publish_request.py`・`append_result.py`・`seal_result.py`・`resolve_review_path.py`）、reviewer のラッパー、改修する 2 本である。それぞれ、§6 の責務・入出力・動作・エラーを確かめる。全体として、次を確かめる。
 
 - 標準出力が JSON object であり、成果物の本文を含まないこと。失敗が終了コード `1` と `errors` であること。作業ディレクトリを変えても、同じパスが得られること。
+- `review_common.py`: JSON が `ensure_ascii` なしで 1 行に出力されること。失敗が終了コード `1` と `errors` の配列で返ること。公開が 1 回の操作であり、失敗したときに一時ファイルを残さないこと。絶対パスでない値だけが検出されること。
 - `publish_request.py`: 種類をまたいで渡した target が、渡した順に `targets` の要素になること。`paths` のディレクトリが展開されないこと。絶対パスでない `--paths`・`--references` が拒まれること。`--references` の重複が除かれること。`focus` / `scope` の値が、改行・引用符・バッククォート・非 ASCII を含めて同一に保持されること。公開前は読み出せず、公開後は書き換えられないこと。
 - `append_result.py` / `seal_result.py`: `finding_id` が 1 つのレビューで連番になること（第 2 ラウンド以降、reviewer が 0 件のラウンドを挟んだ場合を含む）。封緘後の追記が拒まれること。0 件でも空配列の結果が作られること。エラー値の集合が閉じていること。
 - `resolve_review_path.py`: 正常でない結果（エラー値、`exit` が無い、結果が無い）で失敗し、`errors` に理由が入ること。

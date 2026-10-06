@@ -37,7 +37,7 @@ flowchart TD
 
     P4["Phase 4: Implementation<br/>Delegate to executor agent"] --> P5
 
-    P5["Phase 5: AI review<br/>/forge:review code --auto"] --> DONE
+    P5["Phase 5: AI review<br/>/forge:review --auto"] --> DONE
 
     DONE["Completion<br/>Update plan → commit"]
 ```
@@ -100,7 +100,7 @@ When `-n N` selects multiple tasks and the executable group contains more than o
 
 ### Phase 5: AI Review
 
-Runs `/forge:review code --auto` on the implementation diff. Fix-induced issues are also auto-detected and fixed.
+Runs `/forge:review --auto` on the implementation diff. Fix-induced issues are also auto-detected and fixed.
 
 **The target completeness is handed to the reviewer.** The scope this task must reach, and the out-of-scope items owned by later tasks (with their task IDs), are derived from the implementation plan and passed to both the executor and the reviewer. Reviewing a staged task in isolation makes the reviewer report items planned for later tasks as defects, costing a round trip on every review to explain the scope.
 

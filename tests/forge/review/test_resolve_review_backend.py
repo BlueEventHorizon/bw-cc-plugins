@@ -11,6 +11,7 @@
 """
 
 import importlib.util
+import json
 import subprocess
 import sys
 import unittest
@@ -76,35 +77,35 @@ class NoSettingTest(unittest.TestCase):
 class ArgumentTakesPrecedenceTest(unittest.TestCase):
     def test_backend_argument_is_explicit(self):
         code, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="not-implemented-backend", settings=_FakeSettings()
+            _PROJECT_ROOT, backend_argument="agent-review", settings=_FakeSettings()
         )
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
         self.assertEqual(payload["mode"], resolve_mod.MODE_EXPLICIT)
-        self.assertEqual(payload["order"], ["not-implemented-backend"])
+        self.assertEqual(payload["order"], ["agent-review"])
         self.assertEqual(payload["source"], resolve_mod.SOURCE_ARGUMENT)
 
     def test_argument_beats_setting(self):
-        settings = _FakeSettings({"backend": "from-setting"})
+        settings = _FakeSettings({"backend": "undeclared-setting-name"})
         _, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="from-argument", settings=settings
+            _PROJECT_ROOT, backend_argument="agent-review", settings=settings
         )
-        self.assertEqual(payload["order"], ["from-argument"])
+        self.assertEqual(payload["order"], ["agent-review"])
 
     def test_argument_is_honored_even_when_settings_are_broken(self):
         """今まさに与えられた指定を、無関係な設定不正で妨げない。"""
         settings = _FakeSettings(raises=resolve_mod.forge_settings.SettingsError("壊れています"))
         code, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="example-backend", settings=settings
+            _PROJECT_ROOT, backend_argument="agent-review", settings=settings
         )
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
-        self.assertEqual(payload["order"], ["example-backend"])
+        self.assertEqual(payload["order"], ["agent-review"])
         self.assertEqual(settings.calls, [])
 
     def test_argument_is_trimmed(self):
         _, payload = resolve_mod.run(
-            _PROJECT_ROOT, backend_argument="  example-backend  ", settings=_FakeSettings()
+            _PROJECT_ROOT, backend_argument="  agent-review  ", settings=_FakeSettings()
         )
-        self.assertEqual(payload["order"], ["example-backend"])
+        self.assertEqual(payload["order"], ["agent-review"])
 
     def test_blank_argument_is_an_error(self):
         code, payload = resolve_mod.run(
@@ -116,12 +117,91 @@ class ArgumentTakesPrecedenceTest(unittest.TestCase):
 
 class SettingBackendTest(unittest.TestCase):
     def test_setting_backend_is_explicit(self):
-        settings = _FakeSettings({"backend": "example-backend"})
+        settings = _FakeSettings({"backend": "agent-review"})
         code, payload = resolve_mod.run(_PROJECT_ROOT, settings=settings)
         self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
         self.assertEqual(payload["mode"], resolve_mod.MODE_EXPLICIT)
-        self.assertEqual(payload["order"], ["example-backend"])
+        self.assertEqual(payload["order"], ["agent-review"])
         self.assertEqual(payload["source"], resolve_mod.SOURCE_SETTING)
+
+
+class RetainsContextTest(unittest.TestCase):
+    """候補ごとの `retains_context`（DES-084 §6.7）。"""
+
+    def test_default_order_returns_retains_context_per_candidate(self):
+        code, payload = resolve_mod.run(_PROJECT_ROOT, settings=_FakeSettings())
+        self.assertEqual(code, resolve_mod.EXIT_SUCCESS)
+        self.assertEqual(set(payload["retains_context"]), set(payload["order"]))
+
+    def test_agent_review_does_not_retain_context(self):
+        _, payload = resolve_mod.run(_PROJECT_ROOT, settings=_FakeSettings())
+        self.assertIs(payload["retains_context"]["agent-review"], False)
+
+    def test_explicit_argument_returns_retains_context(self):
+        _, payload = resolve_mod.run(
+            _PROJECT_ROOT, backend_argument="agent-review", settings=_FakeSettings()
+        )
+        self.assertEqual(payload["retains_context"], {"agent-review": False})
+
+    def test_explicit_setting_returns_retains_context(self):
+        _, payload = resolve_mod.run(
+            _PROJECT_ROOT, settings=_FakeSettings({"backend": "agent-review"})
+        )
+        self.assertEqual(payload["retains_context"], {"agent-review": False})
+
+    def test_every_default_candidate_is_declared(self):
+        """既定の候補が宣言から漏れると、既定のままで常に失敗する。"""
+        for name in resolve_mod.DEFAULT_ORDER:
+            self.assertIn(name, resolve_mod.RETAINS_CONTEXT)
+
+    def test_declared_values_are_booleans(self):
+        for value in resolve_mod.RETAINS_CONTEXT.values():
+            self.assertIsInstance(value, bool)
+
+
+class BackendUndeclaredTest(unittest.TestCase):
+    """値の宣言が無い名前は拒む（値を補わない）。"""
+
+    _UNDECLARED_NAME = "undeclared-backend-name"
+
+    def _assert_undeclared(self, code, payload):
+        self.assertEqual(code, resolve_mod.EXIT_OPERATION_ERROR)
+        self.assertEqual(payload["status"], resolve_mod.STATUS_OPERATION_ERROR)
+        self.assertEqual(payload["reason_code"], resolve_mod.REASON_BACKEND_UNDECLARED)
+        self.assertEqual(payload["reason_code"], "backend_undeclared")
+        self.assertIsNone(payload["mode"])
+        self.assertIsNone(payload["order"])
+        self.assertIsNone(payload["source"])
+        self.assertNotIn("retains_context", payload)
+        self.assertTrue(payload["message"])
+        # 指定された値そのものを載せない
+        self.assertNotIn(self._UNDECLARED_NAME, payload["message"])
+
+    def test_undeclared_argument_is_rejected(self):
+        code, payload = resolve_mod.run(
+            _PROJECT_ROOT, backend_argument=self._UNDECLARED_NAME, settings=_FakeSettings()
+        )
+        self._assert_undeclared(code, payload)
+
+    def test_undeclared_setting_is_rejected(self):
+        code, payload = resolve_mod.run(
+            _PROJECT_ROOT, settings=_FakeSettings({"backend": self._UNDECLARED_NAME})
+        )
+        self._assert_undeclared(code, payload)
+
+    def test_undeclared_candidate_in_default_order_is_rejected(self):
+        with mock.patch.object(
+            resolve_mod, "DEFAULT_ORDER", ("agent-review", self._UNDECLARED_NAME)
+        ):
+            code, payload = resolve_mod.run(_PROJECT_ROOT, settings=_FakeSettings())
+        self._assert_undeclared(code, payload)
+
+    def test_settings_invalid_keeps_its_reason_code(self):
+        code, payload = resolve_mod.run(
+            _PROJECT_ROOT, settings=_FakeSettings({"backned": "agent-review"})
+        )
+        self.assertEqual(code, resolve_mod.EXIT_OPERATION_ERROR)
+        self.assertEqual(payload["reason_code"], resolve_mod.REASON_SETTINGS_INVALID)
 
 
 class SettingsMayNotDefineTheOrderTest(unittest.TestCase):
@@ -177,12 +257,12 @@ class SettingsInvalidTest(unittest.TestCase):
         self._assert_invalid(raises=resolve_mod.forge_settings.SettingsError("3 行目付近"))
 
     def test_unknown_key(self):
-        payload = self._assert_invalid({"backned": "example-backend"})
+        payload = self._assert_invalid({"backned": "agent-review"})
         # 綴り誤りを発見できるようキー名は載せる（値は載せない）
         self.assertIn("backned", payload["message"])
 
     def test_backend_is_not_a_string(self):
-        self._assert_invalid({"backend": ["example-backend"]})
+        self._assert_invalid({"backend": ["agent-review"]})
 
     def test_backend_is_blank(self):
         self._assert_invalid({"backend": "   "})
@@ -199,7 +279,7 @@ class NoAvailabilityProbeTest(unittest.TestCase):
         with mock.patch.object(subprocess, "run") as run_mock:
             resolve_mod.run(_PROJECT_ROOT, settings=_FakeSettings())
             resolve_mod.run(
-                _PROJECT_ROOT, backend_argument="example-backend", settings=_FakeSettings()
+                _PROJECT_ROOT, backend_argument="agent-review", settings=_FakeSettings()
             )
         run_mock.assert_not_called()
 
@@ -219,12 +299,29 @@ class CliTest(unittest.TestCase):
 
     def test_cli_accepts_backend_argument(self):
         proc = subprocess.run(
-            [sys.executable, str(_SCRIPT_PATH), "--backend", "example-backend"],
+            [sys.executable, str(_SCRIPT_PATH), "--backend", "agent-review"],
             capture_output=True,
             text=True,
         )
         self.assertEqual(proc.returncode, resolve_mod.EXIT_SUCCESS)
         self.assertIn(resolve_mod.MODE_EXPLICIT, proc.stdout)
+
+    def test_cli_returns_retains_context(self):
+        proc = subprocess.run(
+            [sys.executable, str(_SCRIPT_PATH), "--project-root", "/tmp/nonexistent-forge-root"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(proc.stdout)["retains_context"], {"agent-review": False})
+
+    def test_cli_undeclared_backend_exits_20(self):
+        proc = subprocess.run(
+            [sys.executable, str(_SCRIPT_PATH), "--backend", "undeclared-name"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, resolve_mod.EXIT_OPERATION_ERROR)
+        self.assertEqual(json.loads(proc.stdout)["reason_code"], "backend_undeclared")
 
 
 if __name__ == "__main__":

@@ -149,7 +149,7 @@ python3 "$SCRIPT" check --adr-dir "{adr_dir}" --request-id "{request_id}"
 
 ### レビュー
 
-Skill ツールで `/forge:review design --files {ADR ファイル} --auto` を起動する。対象は、このワークフローで作成・変更した ADR ファイルだけである。
+Skill ツールで `/forge:review --files {ADR ファイル} --auto` を起動する。対象は、このワークフローで作成・変更した ADR ファイルだけである。
 
 ### specs ToC 更新
 

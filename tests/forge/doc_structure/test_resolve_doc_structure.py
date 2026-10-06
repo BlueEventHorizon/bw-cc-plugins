@@ -1514,5 +1514,178 @@ class TestCliDirOfAndFeatureOf(unittest.TestCase):
             self.assertEqual(proc.returncode, 2)
 
 
+MATCH_PATH_CONFIG = """\
+# doc_structure_version: 3.0
+
+rules:
+  root_dirs:
+    - docs/rules/
+  doc_types_map:
+    docs/rules/: rule
+  patterns:
+    target_glob: "**/*.md"
+    exclude: []
+
+specs:
+  root_dirs:
+    - "docs/specs/**/adr/"
+    - "docs/specs/**/design/"
+    - "docs/specs/**/plan/"
+    - "docs/specs/**/requirements/"
+  doc_types_map:
+    "docs/specs/**/adr/": adr
+    "docs/specs/**/design/": design
+    "docs/specs/**/plan/": plan
+    "docs/specs/**/requirements/": requirement
+  patterns:
+    target_glob: "**/*.md"
+    exclude: [plan]
+"""
+
+
+class TestMatchPathCli(unittest.TestCase):
+    """--match-path（DES-084 §6.8）。"""
+
+    SCRIPT = os.path.join(
+        os.path.dirname(__file__), '..', '..', '..', 'plugins',
+        'forge', 'scripts', 'doc_structure', 'resolve_doc_structure.py'
+    )
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = self._tmp.name
+        with open(os.path.join(self.root, '.doc_structure.yaml'), 'w') as f:
+            f.write(MATCH_PATH_CONFIG)
+        create_test_project(self.root, [
+            'docs/specs/feat/adr/ADR-001.md',
+            'docs/specs/feat/design/DES-001.md',
+            'docs/specs/feat/plan/plan.md',
+            'docs/specs/feat/requirements/REQ-001.md',
+            'docs/specs/feat/notes/memo.md',
+            'docs/rules/rule.md',
+            'src/main.py',
+        ])
+
+    def _run(self, *args, root=None):
+        import subprocess
+        proc = subprocess.run(
+            [sys.executable, self.SCRIPT, '--project-root', root or self.root, *args],
+            capture_output=True, text=True,
+        )
+        return proc.returncode, proc.stdout
+
+    def _match(self, path, *extra):
+        code, out = self._run('--match-path', path, *extra)
+        self.assertEqual(code, 0, out)
+        return json.loads(out)
+
+    def test_each_declared_doc_type(self):
+        cases = {
+            'docs/specs/feat/adr/ADR-001.md': 'adr',
+            'docs/specs/feat/design/DES-001.md': 'design',
+            'docs/specs/feat/plan/plan.md': 'plan',
+            'docs/specs/feat/requirements/REQ-001.md': 'requirement',
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                self.assertEqual(self._match(path)['doc_type'], expected)
+
+    def test_plan_is_returned_despite_exclude_plan(self):
+        """exclude: [plan] でも計画書の種別が決まる（exclude は適用しない）。"""
+        data = self._match('docs/specs/feat/plan/plan.md')
+        self.assertEqual(data['doc_type'], 'plan')
+        # 同じ設定でファイル収集からは plan が除外されている（exclude 自体は有効）
+        config, _ = rds.load_doc_structure(self.root)
+        self.assertEqual(rds.resolve_files_by_doc_type(config, 'specs', 'plan', self.root), [])
+
+    def test_adr_is_returned_as_is(self):
+        """adr を design へ読み替えない。"""
+        self.assertEqual(self._match('docs/specs/feat/adr/ADR-001.md')['doc_type'], 'adr')
+
+    def test_output_shape(self):
+        data = self._match('docs/specs/feat/design/DES-001.md')
+        self.assertEqual(data, {
+            'status': 'ok',
+            'category': 'specs',
+            'path': 'docs/specs/feat/design/DES-001.md',
+            'doc_type': 'design',
+        })
+
+    def test_absolute_path_is_made_relative(self):
+        absolute = os.path.join(self.root, 'docs/specs/feat/design/DES-001.md')
+        data = self._match(absolute)
+        self.assertEqual(data['path'], 'docs/specs/feat/design/DES-001.md')
+        self.assertEqual(data['doc_type'], 'design')
+
+    def test_undeclared_path_is_null(self):
+        for path in ('docs/specs/feat/notes/memo.md', 'src/main.py', 'docs/rules/rule.md'):
+            with self.subTest(path=path):
+                data = self._match(path)
+                self.assertEqual(data['status'], 'ok')
+                self.assertIsNone(data['doc_type'])
+
+    def test_path_outside_project_root_is_null(self):
+        with tempfile.TemporaryDirectory() as outside:
+            create_test_project(outside, ['docs/specs/feat/design/DES-001.md'])
+            data = self._match(os.path.join(outside, 'docs/specs/feat/design/DES-001.md'))
+        self.assertIsNone(data['doc_type'])
+
+    def test_relative_path_escaping_root_is_null(self):
+        data = self._match('../docs/specs/feat/design/DES-001.md')
+        self.assertIsNone(data['doc_type'])
+
+    def test_category_rules(self):
+        data = self._match('docs/rules/rule.md', '--category', 'rules')
+        self.assertEqual(data['category'], 'rules')
+        self.assertEqual(data['doc_type'], 'rule')
+
+    def test_default_category_is_specs(self):
+        data = self._match('docs/rules/rule.md')
+        self.assertEqual(data['category'], 'specs')
+        self.assertIsNone(data['doc_type'])
+
+    def test_missing_doc_structure_is_error(self):
+        with tempfile.TemporaryDirectory() as empty:
+            code, out = self._run('--match-path', 'a.md', root=empty)
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads(out)['status'], 'error')
+
+    def test_invalid_doc_structure_is_error(self):
+        with tempfile.TemporaryDirectory() as bad:
+            with open(os.path.join(bad, '.doc_structure.yaml'), 'w') as f:
+                f.write(V1_CONFIG)
+            code, out = self._run('--match-path', 'a.md', root=bad)
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads(out)['status'], 'error')
+
+    def test_exclusive_with_existing_options(self):
+        for other in (['--type', 'all'], ['--features'], ['--doc-type', 'design'], ['--version']):
+            with self.subTest(other=other):
+                code, _ = self._run('--match-path', 'a.md', *other)
+                self.assertEqual(code, 2)
+
+    def test_existing_options_still_work(self):
+        code, out = self._run('--doc-type', 'design')
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out)['files'], ['docs/specs/feat/design/DES-001.md'])
+
+
+class TestToProjectRelativePath(unittest.TestCase):
+    def test_relative_inside(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(rds.to_project_relative_path('a/b.md', root), 'a/b.md')
+
+    def test_absolute_inside(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(
+                rds.to_project_relative_path(os.path.join(root, 'a', 'b.md'), root), 'a/b.md')
+
+    def test_outside_is_none(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertIsNone(rds.to_project_relative_path('../x.md', root))
+            self.assertIsNone(rds.to_project_relative_path('/etc/hosts', root))
+
+
 if __name__ == '__main__':
     unittest.main()

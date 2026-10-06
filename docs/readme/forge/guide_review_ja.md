@@ -11,12 +11,11 @@
 ## review
 
 ```
-/forge:review <種別> [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto] [--focus "<重点観点>"] [--scope "<到達目標>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
+/forge:review [--diff | --branch | --files a.md,b.py,... | --dirs d1/,d2/,...] [--interactive | --auto] [--focus "<重点観点>"] [--scope "<到達目標>"] [--project-rules a.md,b.md] [--project-specs c.md] [--backend <name>]
 ```
 
 | 引数              | 説明                                                                           |
 | ----------------- | ------------------------------------------------------------------------------ |
-| `種別`            | `code` / `requirement` / `design` / `plan` / `uxui`                            |
 | `--diff`          | 現ブランチの未 commit 差分（デフォルト）                                       |
 | `--branch`        | base ブランチ分岐以降の全変更                                                  |
 | `--files`         | 明示指定したファイル群（カンマ区切り）                                         |
@@ -37,13 +36,13 @@
 利用者が以下をタイプして起動する:
 
 ```bash
-/forge:review code                                        # 未 commit 差分（デフォルト）
-/forge:review code --branch --auto                        # 分岐以降の全変更を critical+major 自動修正
-/forge:review code --files src/foo.py,src/bar.py --auto    # ファイル指定
-/forge:review requirement --files docs/specs/login_req.md  # 要件定義書
-/forge:review design --files specs/login/design.md         # 設計書
-/forge:review design --dirs docs/specs/forge/design/       # ディレクトリ配下の設計書すべて
-/forge:review code --files src/a.py --scope "a.py の新規作成まで"  # 段階分割した実装の到達目標を伝える
+/forge:review                                             # 未 commit 差分（デフォルト）
+/forge:review --branch --auto                             # 分岐以降の全変更を critical+major 自動修正
+/forge:review --files src/foo.py,src/bar.py --auto         # ファイル指定
+/forge:review --files docs/specs/login_req.md              # 要件定義書
+/forge:review --files specs/login/design.md                # 設計書
+/forge:review --dirs docs/specs/forge/design/              # ディレクトリ配下の設計書すべて
+/forge:review --files src/a.py --scope "a.py の新規作成まで"  # 段階分割した実装の到達目標を伝える
 ```
 
 ### ディレクトリ指定（`--dirs`）
@@ -51,11 +50,11 @@
 文書がディレクトリで分類されている場合（`docs/specs/*/design/` など）、配下をまとめてレビューできます。
 
 ```bash
-/forge:review design --dirs docs/specs/forge/design/
-/forge:review requirement --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
+/forge:review --dirs docs/specs/forge/design/
+/forge:review --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
 ```
 
-- **種別は必須です**。ディレクトリ名から種別（適用するレビュー観点）を推定しません。推定を誤ると、なぜその観点が適用されたのかが分からなくなるためです
+- **種別は指定しません**。種別（適用するレビュー観点）は、対象ごとにレビュアーが判定します。位置引数で種別を渡すと、廃止を明示してエラー終了します
 - **レビュアーへはディレクトリのまま渡します**。forge 側で配下のファイル一覧に展開しません。展開すると列挙漏れがそのままレビュー範囲の欠落になり、欠落した事実が誰にも見えなくなるためです。対象の確定はレビュアー自身が行います
 - 配下の列挙は `.gitignore` を尊重します。未追跡の新規文書も対象に含まれます
 - 対象軸なので `--diff` / `--branch` / `--files` とは併用できません（同時指定はエラー）
@@ -69,7 +68,7 @@
 /forge:review --secrets
 ```
 
-- **対象はリポジトリ全体**。種別・対象軸（`--diff` / `--branch` / `--files` / `--dirs`）とは併用できません。過去のコミットで混入した秘密は今回の差分に現れないため、差分に絞ると目的を達成できないからです
+- **対象はリポジトリ全体**。対象軸（`--diff` / `--branch` / `--files` / `--dirs`）とは併用できません。過去のコミットで混入した秘密は今回の差分に現れないため、差分に絞ると目的を達成できないからです
 - **決定論的スキャンと AI の二段構え**。まず `scan_secrets.py` が既知形式（AWS / GitHub / Slack トークン、秘密鍵ブロック、資格情報付き接続文字列、JWT、高エントロピー文字列など）を機械的に検出し、その結果を添えてレビューを依頼します。レビュアーは検出結果の真偽判定に加えて、**スキャンが拾えない混入**（形式を持たない内部エンドポイント、散文に埋もれた資格情報など）を自力で探します
 - **検出値は本文に載りません**。位置・種別・長さ・先頭数文字だけがマスクして渡されます。依頼は別プロセス・別 AI のレビュアーへ渡り、バックエンドによっては永続化されるため、実値を載せると検出行為そのものが複製経路になるからです
 - **自動修正しません**。`--auto` を付けても未対応所見を残した完了として報告します。commit 済みの秘密は削除しても履歴に残るため、修正は該当する秘密の失効・再発行を伴い、人間の判断が要るからです
@@ -99,7 +98,7 @@
 「今回の変更はどこまで到達していればよいか」と「意図的に含めなかった項目」を渡せる。複数行を書ける:
 
 ```bash
-/forge:review code --files src/fm_to_pending.py --scope "fm_to_pending.py の新規作成とテストまで。
+/forge:review --files src/fm_to_pending.py --scope "fm_to_pending.py の新規作成とテストまで。
 
 以下は今回の範囲外である。
 
@@ -121,7 +120,7 @@
 レビュアーへ渡すルール文書・仕様書を明示指定する。指定した軸については、スキルが自前で `/forge:query-db-rules` / `/forge:query-db-specs` を実行しない:
 
 ```bash
-/forge:review code --files src/foo.py --project-rules docs/rules/implementation_guidelines.md
+/forge:review --files src/foo.py --project-rules docs/rules/implementation_guidelines.md
 ```
 
 主な用途は、上流のスキル（`/forge:start-implement` 等）が既に同じ検索を済ませている場合に、**同一タスクに対して同じ検索が 2 回走るのを避ける**ことである。片方だけ渡した場合、渡さなかった軸だけがクエリされる。
@@ -247,6 +246,8 @@ flowchart TD
 
 ### レビュー種別
 
+種別は指定する値ではない。レビュアーが対象 1 件ごとに判定し、種別に対応する観点文書を適用する（ADR は design として扱う）。
+
 | 種別          | 対象                      | 主な観点                               |
 | ------------- | ------------------------- | -------------------------------------- |
 | `code`        | ソースコード              | 正確性、堅牢性、保守性                 |
@@ -255,7 +256,7 @@ flowchart TD
 | `plan`        | 計画書                    | タスク粒度、依存関係、トレーサビリティ |
 | `uxui`        | デザイントークン・UI 仕様 | HIG 準拠、ユーザビリティ、視覚的一貫性 |
 
-> `--diff` / `--branch` では種別を指定しない（差分にはコード・文書・設定が混在するため）。上表のいずれにも当てはまらないファイルには、レビュアーが `review_criteria_generic.md`（構造・明確さ・完全性）を適用する。`generic` は**種別として指定できる値ではない**。
+> 1 つの依頼が指す対象には、コード・文書・設定が混在しうる（`--diff` / `--branch` では特に）。そのため種別は依頼に持たせない。上表のいずれにも当てはまらないファイルには、レビュアーが `review_criteria_generic.md`（構造・明確さ・完全性）を適用する。`generic` は**種別として指定できる値ではない**。
 
 ### 重大度レベル
 

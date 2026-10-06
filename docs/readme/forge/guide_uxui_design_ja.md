@@ -62,7 +62,7 @@ start-uxui-design はオプション。デザイントークンが不要な場�
 | 3     | デザイントークン創造（色彩・タイポグラフィ・スペーシング・署名ルール）        | apple_design_principles.md、プラットフォームガイド |
 | 4     | コンポーネント視覚設計（ASCII → HIG 準拠コンポーネント）                      | プラットフォームガイド、テンプレート               |
 | 5     | UX 自己評価（3 層フレームワーク + Distinctiveness / Memorability、条件付き）  | design_philosophy.md                               |
-| 6     | 文書生成・品質確認（`/forge:review uxui --auto`）                             | review_criteria_uxui.md                            |
+| 6     | 文書生成・品質確認（`/forge:review --auto`）                                  | review_criteria_uxui.md                            |
 
 ### Design Intent 駆動の分岐
 
@@ -91,7 +91,7 @@ Phase 2.0 で以下を構造化して取得する（ユーザー体験・緊張�
 
 ## UX レビュー
 
-`/forge:review uxui` で独立レビューも可能。4 つの perspectives を優先順位付きで検証する（上位が下位を侵す場合は上位優先）:
+`/forge:review --files {デザイン文書のパス}` で独立レビューも可能。4 つの perspectives を優先順位付きで検証する（上位が下位を侵す場合は上位優先）:
 
 | # | Perspective         | 観点                                         | 適用                                                                   |
 | - | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------- |
@@ -100,14 +100,14 @@ Phase 2.0 で以下を構造化して取得する（ユーザー体験・緊張�
 | 3 | **visual_system**   | トークンの一貫性、Gestalt 原則               | 常時                                                                   |
 | 4 | **distinctiveness** | 差別化、記憶残存、署名要素、禁止事項の順守   | Design Intent に応じて適用強度を調整（未取得 or 低優先度では 🟢 降格） |
 
-`/forge:review uxui` が start-uxui-design を経ずに呼ばれた場合、Design Intent は対象文書から推定し、レビュー結果の前置きに表示する。distinctiveness の判定基準は AI 検証可能な形式（「5 秒ルック」「競合 5 つ比較」等の人間テスト前提指標は使用しない）。
+`/forge:review` が UI 文書に対して start-uxui-design を経ずに呼ばれた場合、Design Intent は対象文書から推定し、レビュー結果の前置きに表示する。distinctiveness の判定基準は AI 検証可能な形式（「5 秒ルック」「競合 5 つ比較」等の人間テスト前提指標は使用しない）。
 
 ```bash
 # デザイントークンとコンポーネント仕様をレビュー
-/forge:review uxui --files specs/user-auth/design/
+/forge:review --dirs specs/user-auth/design/
 
 # 自動修正付き
-/forge:review uxui --files specs/user-auth/design/ --auto
+/forge:review --dirs specs/user-auth/design/ --auto
 ```
 
 ---

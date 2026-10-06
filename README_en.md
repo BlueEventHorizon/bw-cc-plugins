@@ -93,7 +93,7 @@ flowchart LR
 /forge:start-implement my-feature
 
 # 3. Review (anytime)
-/forge:review code --files src/foo.py,src/bar.py --auto
+/forge:review --files src/foo.py,src/bar.py --auto
 ```
 
 #### Skills

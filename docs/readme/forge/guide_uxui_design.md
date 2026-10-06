@@ -62,7 +62,7 @@ The foundation for all design decisions. Applied bottom-up; upper layers cannot 
 | 3     | Design token creation (color, typography, spacing, signature rules)                                | apple_design_principles.md, platform guide |
 | 4     | Component visual design (ASCII → HIG-compliant components)                                         | Platform guide, templates                  |
 | 5     | UX self-evaluation (3-layer framework + distinctiveness / memorability, conditional)               | design_philosophy.md                       |
-| 6     | Document generation & quality check (`/forge:review uxui --auto`)                                  | review_criteria_uxui.md                    |
+| 6     | Document generation & quality check (`/forge:review --auto`)                                       | review_criteria_uxui.md                    |
 
 ### Design Intent-driven branching
 
@@ -91,7 +91,7 @@ Competitor screenshots and mood-board images can be placed under `{specs_root}/{
 
 ## UX Review
 
-Standalone review via `/forge:review uxui` is also available. Verifies against 4 perspectives in this priority order (higher overrides lower when they conflict):
+Standalone review via `/forge:review --files {design document path}` is also available. Verifies against 4 perspectives in this priority order (higher overrides lower when they conflict):
 
 | # | Perspective         | Focus                                                                  | Application                                                                                    |
 | - | ------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -100,14 +100,14 @@ Standalone review via `/forge:review uxui` is also available. Verifies against 4
 | 3 | **visual_system**   | Token consistency, Gestalt principles                                  | Always                                                                                         |
 | 4 | **distinctiveness** | Differentiation, memorability, signature elements, anti-goal adherence | Conditional on Design Intent (auto-demoted to 🟢 when not specified or when importance is low) |
 
-When `/forge:review uxui` runs without prior start-uxui-design output, Design Intent is inferred from the target document and shown as a prefix before findings. Distinctiveness criteria are AI-verifiable (no "5-second look" / "compare 5 competitors" style checks).
+When `/forge:review` runs on a UI document without prior start-uxui-design output, Design Intent is inferred from the target document and shown as a prefix before findings. Distinctiveness criteria are AI-verifiable (no "5-second look" / "compare 5 competitors" style checks).
 
 ```bash
 # Review design tokens and component specs
-/forge:review uxui --files specs/user-auth/design/
+/forge:review --dirs specs/user-auth/design/
 
 # With auto-fix
-/forge:review uxui --files specs/user-auth/design/ --auto
+/forge:review --dirs specs/user-auth/design/ --auto
 ```
 
 ---

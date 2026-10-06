@@ -55,32 +55,11 @@ AskUserQuestion:
 
 ### review
 
-#### 2-1. 種別
-
-以下のリストをテキストで出力してから AskUserQuestion を呼ぶ。**載せるのは利用者が起動できるスキル（frontmatter が `user-invocable: true`）だけである**——起動できないものを選択肢に出すと、選んだ先で止まる:
-
-```
-レビュー種別:
-
-  1. code        : ソースコード
-  2. requirement : 要件定義書
-  3. design      : 設計書
-  4. plan        : 計画書
-  5. uxui        : UX/UI デザイン（デザイントークン・コンポーネント）
-  6. generic     : 任意の文書（README 等）
-```
-
-AskUserQuestion:
-
-- question: "種別番号を入力してください（1〜6）"
-- options: ["1 (code)", "2 (requirement)", "3 (design)", "4 (plan)"]
-- ※ 5〜6 は Other で入力する
-
-#### 2-2. 対象
+#### 2-1. 対象
 
 ```
 レビュー対象を選択してください:
-- ブランチ差分（対象を省略）
+- 未 commit 差分（対象を省略）
 - ファイルを指定する
 - ディレクトリを指定する（配下すべて）
 ```
@@ -93,7 +72,7 @@ AskUserQuestion:
 例（ディレクトリ）: src/services/,docs/specs/my-feature/design/
 ```
 
-#### 2-3. 修正モード
+#### 2-2. 修正モード
 
 ```
 修正モードを選択してください:
@@ -244,7 +223,7 @@ AskUserQuestion:
 ```
 以下のコマンドを実行します:
 
-  /forge:review code --files src/foo.py,src/bar.py --auto
+  /forge:review --files src/foo.py,src/bar.py --auto
 
 実行しますか？
 - 実行する

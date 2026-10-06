@@ -579,9 +579,8 @@ class FilesModeTest(unittest.TestCase):
 class DirsModeTest(unittest.TestCase):
     """dirs モード: ディレクトリの実在検証と配下ファイルの列挙。
 
-    返る `files` は修正フェーズの allowlist 専用であり、依頼本文へは `dirs` を
-    そのまま渡す（REQ-013 FNC-1312。本文側の契約は
-    `test_build_review_request.DirsScopeTest` が検証する）。
+    返る `files` は修正フェーズの allowlist 専用であり、依頼の対象へは `dirs` を
+    そのまま渡す（REQ-013 FNC-1312）。
     """
 
     def test_existing_dirs_list_their_files(self):

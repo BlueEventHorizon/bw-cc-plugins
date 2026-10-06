@@ -441,7 +441,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/group_review_batch.py" \
 
 ```
 # Skill ツールで起動する（kind 問わず同一構文）
-/forge:review code --files {ファイル一覧(カンマ区切り)} --auto \
+/forge:review --files {ファイル一覧(カンマ区切り)} --auto \
   --scope "{当該バッチの scope_text}（該当タスクの acceptance_criteria が null でなければ、その内容を追記する）" \
   --project-rules {Phase 3 で収集したルール文書(カンマ区切り)} \
   --project-specs {設計書・要件定義書(カンマ区切り)}

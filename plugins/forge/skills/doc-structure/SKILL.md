@@ -252,6 +252,10 @@ python3 "$SCRIPT" --dir-of design
 # ファイルのパスから doc_type と feature
 python3 "$SCRIPT" --feature-of docs/specs/forge/requirements/REQ-001_x.md
 
+# パスを 1 つ受け取り、doc_types_map の宣言から種別を返す（exclude は適用しない）
+python3 "$SCRIPT" --match-path docs/specs/forge/design/DES-001.md
+python3 "$SCRIPT" --match-path docs/rules/coding_standards.md --category rules
+
 # バージョン情報
 python3 "$SCRIPT" --version
 
@@ -325,6 +329,19 @@ python3 "$SCRIPT" --type all --doc-structure /path/to/.doc_structure.yaml
 
 feature なしの置き場にあるファイルは `feature` が `null` になる。どのキーにも一致しない場合は、
 `status` が `error` で終了コードは `1` になる。
+
+#### `--match-path` の出力
+
+```json
+{
+  "status": "ok",
+  "category": "specs",
+  "path": "docs/specs/forge/design/some_design.md",
+  "doc_type": "design"
+}
+```
+
+`doc_type` は宣言の値（`design` / `plan` / `requirement` / `adr` 等）をそのまま返す。宣言に合わないパスと、プロジェクトルート外のパスは `null`（`--feature-of` はこの 2 つをエラーにする）。
 
 #### `--version` の出力
 

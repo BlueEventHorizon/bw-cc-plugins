@@ -7,6 +7,9 @@
 # doc-advisor embedding index は派生物 (API キー/モデルバージョン依存) のため非追跡
 .claude/doc-advisor/index/
 
+# レビューの依頼・結果の置き場（<project_root>/.temp/review/）。実行ごとに作られる一時物
+.temp/
+
 # テスト用一時ディレクトリ（tempfile.mkdtemp の出力先・/tmp 不可環境のフォールバック）
 tests/**/.temp/
 

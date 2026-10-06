@@ -249,7 +249,7 @@ ADR ライターは独立した書き手であり、「作成」は、できた�
 | 棄却 | 理由を利用者へ提示して終える。ADR ファイルには何も書かれていない                                          |
 | 不足 | 理由（足りない情報）を利用者に確認して補い、2 からやり直す                                                |
 
-8. **完了処理**（`--defer-finish` が無いとき）: `/forge:review design --files {ADR ファイル} --auto`、`/forge:update-db-specs`、commit の確認（`anvil:commit`）の順に行う
+8. **完了処理**（`--defer-finish` が無いとき）: `/forge:review --files {ADR ファイル} --auto`、`/forge:update-db-specs`、commit の確認（`anvil:commit`）の順に行う
 
 呼び出し元（`start-design`）は、`--defer-finish` を固定の値として、起動箇所にリテラルで書く（[REQ-003](../../forge/requirements/REQ-003_skill_script_separation.md) FNC-006）。
 
