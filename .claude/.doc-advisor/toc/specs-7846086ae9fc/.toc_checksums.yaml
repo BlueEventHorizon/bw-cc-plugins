@@ -1,9 +1,9 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-10-06T07:32:32Z
-file_count: 39
+generated_at: 2026-10-06T08:10:38Z
+file_count: 44
 checksums:
-  docs/specs/adr-writer/design/DES-085_adr_writer_design.md: c1127200e4ebcd3d5008e01994dbb18c2f201bb156a19459d52ae5779b13f110
+  docs/specs/adr-writer/design/DES-085_adr_writer_design.md: 7f5d5605685d2c96f8fdd2abbee3d3413bb0876ebac06e7ca34a37b147de8fd8
   docs/specs/adr-writer/requirements/REQ-030_adr_writer.md: 2ff67c9a2a7c82456d7596c3a16f6566344530c61b645416f55de1e7caa4da18
   docs/specs/agent-review/design/DES-072_agent_review_backend_design.md: b6b0ecbf63dd4debf0436bcffd2a6e40fec4c9dee3bd5ab00ee48a6f0476d628
   docs/specs/agent-review/requirements/REQ-016_agent_review_backend.md: a06c45b1cd8c1a4ceb030ab48979ebca79ef34615cdae9587127843d84ef7cac
@@ -42,3 +42,8 @@ checksums:
   docs/specs/forge/requirements/REQ-024_implementation_plan_spec.md: a415f2b54328f23255ca89eb21c48b5de84c926114fbc33c137e28cfd75f373c
   docs/specs/forge/requirements/REQ-025_additive_development_spec.md: 41d3c40499f6d36e4a4cf95a24d382570dfaac59f6c2d3563fd53c2ea8c78910
   docs/specs/forge/requirements/REQ-028_document_system.md: c3a0945242a0bd29af30e07481a8e7d2b3937c487eb91f83138f3cbb66199ded
+  docs/specs/review/design/DES-083_evaluator_perspective_design.md: 62657ce2d8e8cc6a7e7c74c9ff6b84e89c701303b9b3ce4371540bf2947479e9
+  docs/specs/review/design/DES-084_reviewer_design.md: 3ab602be4721fab4fa90008e24cb99cad2d0cfe2b665783f78480625fd57d551
+  docs/specs/review/requirements/REQ-026_evaluator_perspective.md: 11dc8315413de13dab881aa2c690247fa85832a402568d03b0c6a6e0793d33e4
+  docs/specs/review/requirements/REQ-027_reviewer.md: 4c243a47c2d1e9077836f22614b6c162cc2809bdaf4491bcdde6972dded63c38
+  docs/specs/review/requirements/REQ-029_review_exchange.md: 4c48b7409426426afaaa3689ec79371c1666d7579c2f114ac31673124c5053a6

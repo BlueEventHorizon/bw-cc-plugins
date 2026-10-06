@@ -5,35 +5,39 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-06T07:32:32Z
-  file_count: 39
+  generated_at: 2026-10-06T08:10:38Z
+  file_count: 44
 
 docs:
   docs/specs/adr-writer/design/DES-085_adr_writer_design.md:
-    title: DES-085 ADR Writer Design
-    purpose: Defines the design for the ADR Writer component, which enables recording architectural decisions through a three-part architecture (write-adr SKILL, adr-writer Agent, and adr_exchange.py script).
+    title: ADR Writer Design
+    purpose: Specifies the architecture, module responsibilities, and script interfaces for the ADR writer feature, defining how design decisions and approval records are systematically recorded and validated.
     content_details:
-      - "Three-part architecture: write-adr SKILL, adr-writer Agent, adr_exchange.py"
-      - Component responsibilities (SKILL, Agent, script, norm documents)
-      - "adr_exchange.py subcommands: open, request-path, finish, check"
-      - adr-writer Agent requirements (tools, writing scope, input/output contracts)
-      - "write-adr SKILL workflow: output resolution, content preparation, numbering, Agent launch, branching"
-      - Request and judgment file formats (adr_request_{request_id}.json, adr_result_{request_id}.json)
-      - One ADR file per feature (not per decision), with feature-based ID numbering
-      - "Three judgment types: created, rejected, insufficient, with validation of state correspondence"
+      - "3-component architecture: write-adr SKILL, adr-writer Agent, adr_exchange.py"
+      - "4 subcommands for data exchange: open, request-path, finish, check"
+      - "3 ADR record types and type-specific examination criteria: approval-record, judgement, update"
+      - 8-step write-adr SKILL workflow from input resolution to completion and review
+      - Request field structure with decision, context, alternatives, approval quote, and related docs
+      - "Location decision logic for ADR files: 1 file reuse, 0 files create new, 2+ fail"
+      - Agent input/output contract with identification values only as input and judgement results as output
+      - Test design including unit tests, contract tests, and evaluation tests
     applicable_tasks:
-      - Implementation of ADR Writer feature
-      - Architecture design and review of ADR handling
-      - Integration of adr_exchange.py script with adr-writer Agent
-      - ADR workflow implementation and decision recording system design
+      - Implementing the ADR writer feature
+      - Designing decision recording and validation workflows
+      - Understanding ADR storage and update mechanisms
+      - Building isolated Agent components for sensitive operations
+      - Integrating with spec ID numbering systems
     keywords:
+      - adr-writer
+      - write-adr
       - ADR
-      - write-adr SKILL
-      - adr-writer Agent
       - adr_exchange.py
-      - request_id
-      - judgment types
+      - approval-record
+      - decision workflow
+      - Agent context isolation
+      - judgement
       - feature-based organization
+      - request_id
   docs/specs/adr-writer/requirements/REQ-030_adr_writer.md:
     title: REQ-030 ADR Writer Requirements Specification
     purpose: Defines the behavior and responsibilities of the ADR Writer to review, validate, and document architectural decisions independently from the design process, ensuring proper formatting and compliance with ADR standards.
@@ -1151,3 +1155,163 @@ docs:
       - document-placement
       - specification-ownership
       - PREFIX-NNN
+  docs/specs/review/design/DES-083_evaluator_perspective_design.md:
+    title: DES-083 Evaluator Independent Evaluation and Meta-perspective Design
+    purpose: "Defines the evaluator's independent evaluation process, including assessment of reviewer findings, judgment of validity and severity, identification of new findings, and integration of evaluation results with the body's review workflow."
+    content_details:
+      - "Evaluator workflow sequence: input resolution, finding assessment, evaluation writing, finalization (S10-S14)"
+      - "Reading approach: finding-driven reading and judgment based on reviewer findings and source evidence"
+      - "Five disposition types: valid, invalid, misunderstanding, out_of_scope, flawed_premise"
+      - "Five meta-perspectives: essence questioning, target information skepticism, decision validation, interpretation strength, reverse verification"
+      - "Evaluation structure: finding_ids (variable length array), disposition, severity, reason, confidence, fix_confident, location"
+      - "New finding adoption: evaluator_add_evaluation --new with automatic finding_id assignment"
+      - "Script specifications: append_result.py, seal_result.py, resolve_review_path.py, count_actionable.py, advance_round.py, delete_review.py"
+      - "Body workflow: finding and evaluation resolution (S15), actionable count (S16), examination (S17), end judgment (S18), round advancement (S19), cleanup (S20)"
+      - "Consult special handling during feature implementation: context-based state retention, no agenda recording"
+      - "Test design: unit tests for evaluation scripts, contract tests for definitions, integration tests for workflows"
+    applicable_tasks:
+      - Implementing evaluator agent with independent evaluation logic
+      - Writing evaluation judgment code and reason documentation
+      - Designing evaluator workflow integration with reviewer
+      - Test planning and implementation for evaluation scripts
+      - Implementing body workflow for evaluation handling
+      - Understanding and validating meta-perspective application
+      - Reviewing design contracts between evaluator and body
+      - Implementing finding_id adoption for new findings
+    keywords:
+      - evaluator
+      - disposition
+      - finding_id
+      - evaluate_result.json
+      - append_result.py
+      - seal_result.py
+      - count_actionable.py
+      - severity
+      - confidence
+      - fix_confident
+      - meta-perspective
+  docs/specs/review/design/DES-084_reviewer_design.md:
+    title: DES-084 Reviewer and Handoff Mechanism Design
+    purpose: "Defines the reviewer's workflow for independent review of specified targets, including request assembly, target reading approach, finding extraction and output, and integration with the body's review orchestration mechanism."
+    content_details:
+      - "Review sequence flow: backend selection and availability check (S1), request assembly and publication (S2-S3), retains_context branching (S4), reviewer activation and completion (S5-S9)"
+      - "Body workflow: deciding reviewer backend with retains_context flag, assembling request dependencies (targets, focus, scope, references), publishing request and obtaining review_id"
+      - "Reviewer workflow: reading request, determining target type via resolve_doc_structure.py, reading targets by type (paths/base_branch/diff), extracting findings, calling reviewer_finish or reviewer_abort"
+      - "Target type judgment: using resolve_doc_structure.py with criteria/review_target_types.md, distinguishing uxui documents, handling undetermined types"
+      - "Request structure: targets array (paths/base_branch/diff variants), optional focus and scope fields, references array"
+      - "Finding result structure: findings array with finding_id (script-adopted), location (1+ items), body text; exit values (0 or target_unreadable)"
+      - "Finding_id adoption: sequential numbering across all review rounds, no state file, one adoption per operation"
+      - "Script specifications: publish_request.py, append_result.py --kind findings, seal_result.py --kind findings, resolve_review_path.py"
+      - "Reviewer wrappers: reviewer_resolve_request.py, reviewer_add_finding.py, reviewer_finish.py, reviewer_abort.py"
+      - "Error handling: target_unreadable, result unsealed, missing results, absolute path validation"
+    applicable_tasks:
+      - Implementing reviewer agent with target reading and finding extraction
+      - Designing review request assembly and publication logic
+      - Test planning and implementation for review workflow scripts
+      - Implementing target type judgment with doc_structure integration
+      - Understanding and validating finding_id adoption across rounds
+      - Reviewing contract between body and reviewer
+      - Implementing reviewer wrapper scripts
+      - Error handling for unreadable targets and result states
+    keywords:
+      - reviewer
+      - finding_id
+      - review_request.json
+      - review_result.json
+      - publish_request.py
+      - append_result.py
+      - seal_result.py
+      - resolve_review_path.py
+      - target type
+      - location
+  docs/specs/review/requirements/REQ-026_evaluator_perspective.md:
+    title: Evaluator Independent Evaluation and Meta Perspective Requirements
+    purpose: "Defines requirements for evaluator's independent verification of reviewer findings, including meta perspectives for disposition determination and procedures for rejecting incorrect findings."
+    content_details:
+      - Evaluator definition and contained elements (FNC-208)
+      - Five meta perspective dimensions for disposition determination (FNC-201)
+      - "Evaluator reading approach: findings-first with contextual scope"
+      - Target type classification and document mapping
+      - New finding identification and ID numbering procedures (FNC-206)
+      - Evaluation output format and reason documentation rules
+      - "Error value handling: no error states defined (FNC-319)"
+    applicable_tasks:
+      - Evaluator agent implementation and testing
+      - Reviewer finding validation and disposition setting
+      - Root cause analysis in code review
+      - Review finding quality assurance
+      - Meta perspective evaluation guidelines definition
+    keywords:
+      - evaluator
+      - disposition
+      - meta perspective
+      - finding validation
+      - root cause analysis
+      - reviewer
+      - finding_id
+      - location
+      - independent evaluation
+      - flawed_premise
+  docs/specs/review/requirements/REQ-027_reviewer.md:
+    title: Reviewer Input Work and Output Contract Requirements
+    purpose: "Defines requirements for reviewer's contract including target reading, type determination, perspective document reading, and finding identification procedures."
+    content_details:
+      - Reviewer definition and contained elements (FNC-301)
+      - "Target reading approaches: paths, base_branch, diff formats (FNC-306)"
+      - "Target type determination: code, requirement, design, plan, uxui (FNC-307)"
+      - Target type classification using .doc_structure.yaml configuration and file analysis
+      - "Target-specific documents by type: common criteria, built-in standards, project references (FNC-308)"
+      - Review perspective documents for each target type
+      - "Output requirements: findings return procedure and no findings case (FNC-309)"
+      - "Error values: target_unreadable only, reading errors excluded (FNC-315)"
+    applicable_tasks:
+      - Code review execution and finding identification
+      - Requirement document review and validation
+      - Design and ADR review procedures
+      - Plan document review and analysis
+      - Target type classification and scope determination
+      - Review perspective application and criteria mapping
+    keywords:
+      - reviewer
+      - target type
+      - finding
+      - review criteria
+      - code review
+      - requirement review
+      - design review
+      - perspective document
+      - FNC-307
+      - doc_structure
+  docs/specs/review/requirements/REQ-029_review_exchange.md:
+    title: Review Mechanism Common Contract Requirements
+    purpose: Defines the common contract governing review mechanism including progression flow, data exchange between reviewer and evaluator, finding ID numbering, output and exit values.
+    content_details:
+      - "Common contract definition: review progression, agent exchange, finding numbering, output values, data structure"
+      - "Review progression flow: backend selection, review_id generation, round sequence with reviewer and evaluator"
+      - "Input exchange: review_id and round_number identification, request assembly by script"
+      - "Value preservation: no transformation or modification during exchange"
+      - "Request structure: targets, focus, scope, references fields (DM-301)"
+      - "Finding_id numbering: script-based sequential numbering across all rounds (FNC-313)"
+      - "Output and exit values: exit code for success and error indication (FNC-311)"
+      - "Body responsibilities: generate review_id, assemble request, launch agents, manage rounds"
+      - "Result structure: reviewer findings and evaluator evaluations with exit code (DM-305)"
+      - "Termination conditions: valid disposition present or user decision (FNC-318)"
+    applicable_tasks:
+      - Review mechanism implementation and coordination
+      - Reviewer and evaluator agent integration
+      - Finding identification and numbering procedures
+      - Review round management and progression
+      - Data exchange and result processing
+      - Review termination determination
+      - Request assembly and validation
+    keywords:
+      - review mechanism
+      - review_id
+      - round_number
+      - finding_id
+      - disposition
+      - findings
+      - evaluations
+      - FNC-302
+      - FNC-313
+      - FNC-311

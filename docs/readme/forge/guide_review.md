@@ -26,7 +26,6 @@ The subject that actually performs the review is swappable (see "Review backends
 | `--scope`         | How complete this change is meant to be, plus deliberate omissions (multi-line, optional; see below)                           |
 | `--project-rules` | Rule documents to hand to the reviewer (comma-separated, optional; see below)                                                  |
 | `--project-specs` | Specification documents to hand to the reviewer (comma-separated, optional; see below)                                         |
-| `--secrets`       | Standalone review for leaked secrets only (see below)                                                                          |
 | `--backend`       | Which subject actually performs the review (optional; see "Review backends")                                                   |
 
 > **There is no engine axis (`--codex` / `--claude`).** The performing subject is selected only via `--backend`. Passing these legacy flags logs a warning and continues with the default behavior (so existing callers migrated from the legacy pipeline keep working). **`--codex` is never reinterpreted as `--backend codex`.**
@@ -54,26 +53,11 @@ When documents are organized by directory (`docs/specs/*/design/` and the like),
 /forge:review --dirs docs/specs/forge/requirements/,docs/specs/anvil/requirements/
 ```
 
-- **You do not specify a type.** The type (and therefore which review criteria apply) is determined by the reviewer for each target. Passing a type as a positional argument ends the run with an error that states the argument was removed.
+- **You do not specify a type.** The type (and therefore which review criteria apply) is determined by the reviewer for each target.
 - **The reviewer receives the directories as given.** forge does not expand them into a file list. Expansion would turn any enumeration gap into a silent gap in review coverage; the reviewer determines the scope itself.
 - Enumeration for the internal allowlist respects `.gitignore`, and untracked new documents are included.
 - It is a target axis, so it cannot be combined with `--diff` / `--branch` / `--files` (specifying two is an error).
 - If a directory does not exist, or contains no reviewable files, the request is not sent.
-
-### Secret scanning (`--secrets`)
-
-A standalone review that targets leaked secrets only — tokens, private keys, connection strings.
-
-```bash
-/forge:review --secrets
-```
-
-- **The target is the whole repository.** It cannot be combined with a target axis (`--diff` / `--branch` / `--files` / `--dirs`). A secret committed earlier does not appear in today's diff but is still in the repository, so narrowing to a diff defeats the purpose.
-- **Deterministic scan plus AI, in that order.** `scan_secrets.py` first matches known shapes (AWS / GitHub / Slack tokens, private key blocks, credentialed connection strings, JWTs, high-entropy strings), and its results are attached to the request. The reviewer judges each hit and, separately, hunts for what the scanner cannot match — credentials buried in prose, internal endpoints with no fixed shape.
-- **Detected values never appear in the request.** Only position, kind, length, and a short prefix are passed, masked. The request goes to a separate process and a separate AI, and some backends persist it, so including real values would make detection itself a copying channel.
-- **Nothing is auto-fixed.** Even with `--auto`, the run completes as "findings left unaddressed". A committed secret survives deletion in history, so remediation means revoking and reissuing it — a human decision.
-
-If a test fixture legitimately needs a string that matches a pattern, end the line with `secrets-scan: ignore`. That classifies it — it does **not** drop it. Suppressed hits are always reported with their positions, and overusing the marker is itself reviewable.
 
 ### Emphasis (`--focus`)
 

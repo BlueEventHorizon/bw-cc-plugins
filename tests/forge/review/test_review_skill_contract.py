@@ -1,8 +1,8 @@
 """review 本体（SKILL.md）の契約テスト（DES-084 §7・DES-083 §7 の契約テスト対象）。
 
 本体の定義が、(1) `disposition` などの値にそのまま従わず内容を吟味してから修正・ドロップ・終端を決める
-指示を持つこと、(2) 位置引数（種別）を廃止してエラー終了する旨を持ち、引数解釈結果の定型出力に位置引数が
-無いこと、(3) 旧い script の呼び出しが（`--secrets` の節を除き）残っていないこと、(4) 新しい script の
+指示を持つこと、(2) 構文・引数解釈結果の定型出力に位置引数（種別）が無く、`--secrets` への言及も無いこと、
+(3) 旧い script の呼び出しが残っていないこと、(4) 新しい script の
 呼び方が実際の引数と一致すること、(5) 終端のすべての経路が 1 つの出口を通って `delete_review.py` を
 呼ぶことを確かめる。Claude Code の実 Agent 起動は unittest の検証対象にしない。
 
@@ -25,8 +25,7 @@ PLUGIN_ROOT = REPO_ROOT / "plugins" / "forge"
 SKILL_PATH = PLUGIN_ROOT / "skills" / "review" / "SKILL.md"
 SCRIPT_DIR = PLUGIN_ROOT / "scripts" / "review"
 
-# 削除済みの旧い受け渡しの script。本体の SKILL.md が名前を挙げていてはならない（`--secrets` の節を除く。
-# その節は Issue #62 の範囲として変更しない）
+# 削除済みの旧い受け渡しの script。本体の SKILL.md が名前を挙げていてはならない
 OLD_SCRIPTS = (
     "build_review_request.py",
     "parse_findings.py",
@@ -56,19 +55,10 @@ def _between(text, start, end=None):
     return text[begin : text.index(end, begin)]
 
 
-def _strip_secrets_sections(text):
-    """`--secrets` の節（独立起動の説明・Step 2.3・Step 6 の例外）を取り除く。"""
-    stripped = text.replace(_between(text, "**`--secrets`（独立起動）**", "引数解釈は AI が"), "")
-    stripped = stripped.replace(_between(stripped, "#### 2.3 ", "### Step 3:"), "")
-    stripped = stripped.replace(_between(stripped, "**`--secrets` の例外", "`--secrets` 以外では"), "")
-    return stripped
-
-
 class ReviewSkillContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.text = SKILL_PATH.read_text(encoding="utf-8")
-        cls.without_secrets = _strip_secrets_sections(cls.text)
         cls.step7 = _between(cls.text, "### Step 7: ", "### Step 7.5:")
         cls.step8 = _between(cls.text, "### Step 8: ", "## エラーフロー一覧")
 
@@ -101,21 +91,19 @@ class ReviewSkillContractTest(unittest.TestCase):
         self.assertIn("本体が単独で打ち切らない", bullet)
         self.assertIn("終えると決まれば Step 8", bullet)
 
-    # --- 位置引数の廃止（DES-084 §7・戦略書 決定事項 4） ---
+    # --- 位置引数（種別）と --secrets を持たない（DES-084 §7・戦略書 決定事項 4） ---
 
-    def test_positional_kind_is_abolished_with_an_error_exit(self):
-        self.assertIn("位置引数（種別）は廃止した", self.text)
-        self.assertIn("廃止を明示してエラー終了する", self.text)
-        self.assertIn("受け付けて無視しない", self.text)
-        # 受け付けて無視する互換を作らない（エラー終了だけ）
-        self.assertIn("依頼を公開せずエラー終了", _between(self.text, "## エラーフロー一覧"))
+    def test_does_not_mention_removed_features(self):
+        """持たなくなった機能への言及を残さない（廃止の案内も書かない）。"""
+        self.assertNotIn("位置引数", self.text)
+        self.assertNotIn("secrets", self.text)
 
     def test_no_positional_kind_in_syntax_hint_or_axis_table(self):
         head = self.text.split("---", 2)[1]
         hint = re.search(r"(?m)^argument-hint: (.*)$", head).group(1)
         for kind in POSITIONAL_KINDS:
             self.assertNotIn(kind, hint)
-        syntax = _between(self.text, "## コマンド構文", "**位置引数（種別）は廃止した**")
+        syntax = _between(self.text, "## コマンド構文", "**`--dirs`（ディレクトリ指定）**")
         self.assertNotIn("<種別>", syntax)
         self.assertNotRegex(syntax, r"\|\s*種別")
 
@@ -127,21 +115,21 @@ class ReviewSkillContractTest(unittest.TestCase):
         self.assertNotIn("パターン", block)
 
     def test_no_pattern_or_template_selection_remains(self):
-        self.assertNotIn("パターン", self.without_secrets)
-        self.assertNotIn("_review_request_template", self.without_secrets)
-        self.assertNotIn("templates/", self.without_secrets)
+        self.assertNotIn("パターン", self.text)
+        self.assertNotIn("_review_request_template", self.text)
+        self.assertNotIn("templates/", self.text)
 
     # --- 削除済みの旧 script への言及が残らないこと ---
 
-    def test_old_scripts_are_not_mentioned_except_in_secrets_sections(self):
+    def test_old_scripts_are_not_mentioned(self):
         for name in OLD_SCRIPTS:
-            self.assertNotIn(name, self.without_secrets)
+            self.assertNotIn(name, self.text)
         # 結合した配列を渡す前提（`index` で所見と評価を 1 対 1 に結合する形）も残らない
-        self.assertNotIn("`combined`", self.without_secrets)
+        self.assertNotIn("`combined`", self.text)
 
     def test_no_backend_round_delegation_remains(self):
         for phrase in ("バックエンドへラウンドの実行を委譲", "終了通知モード", "ラウンド実行"):
-            self.assertNotIn(phrase, self.without_secrets)
+            self.assertNotIn(phrase, self.text)
 
     # --- Agent の起動 ---
 
