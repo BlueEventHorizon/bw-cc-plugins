@@ -19,6 +19,35 @@ doc-advisor の toc_utils.py 互換ロジックで実装。
     python3 resolve_doc_structure.py --feature-of docs/specs/forge/requirements/REQ-001_x.md
     python3 resolve_doc_structure.py --decide-feature-for design --source-path docs/specs/forge/requirements/REQ-001_x.md
     python3 resolve_doc_structure.py --find-in requirement --name REQ-001
+    python3 resolve_doc_structure.py --match-path docs/specs/forge/design/DES-001.md
+    python3 resolve_doc_structure.py --match-path /abs/path/to/file.md --category rules
+
+`--feature-of` と `--match-path` の使い分け:
+
+    どちらも、パスを 1 つ受け取り、`doc_types_map` の宣言に照らして `doc_type` を返す。
+    照合は共通である（`_find_entry`。ディレクトリのセグメントをパターンだけで照合し、
+    深い階層から探す。ファイルシステムを見ないので、ディスクに無いパスにも答える）。
+    違いは、何を求めるかと、決まらないときの扱いである。
+
+    --feature-of
+        求めるもの: 置き場のエントリ（`doc_type`）と feature。
+        使う側: feature を決めたい SKILL（start-design 等。`--decide-feature-for` が
+                内部で `feature_of_path` を使う）。
+        決まらないとき: エラーにする。宣言に合わないパス・プロジェクトルート外のパス・
+                feature を求められないキー（`**` が複数・一部だけの glob）に当たった
+                パスである。feature を推測で決めない。決まらないまま進むと、文書が
+                誤った置き場に作られるため、利用者に確認させる。
+
+    --match-path
+        求めるもの: `doc_type` だけ。feature は求めない。
+        使う側: reviewer・evaluator（対象の種別を決め、読む観点文書を選ぶ）。
+        決まらないとき: エラーにせず、`doc_type` を `null` とする。feature を求められない
+                キーに当たったパスも、種別は宣言から決まる。種別が決まらないことは異常
+                ではなく、その対象は共通の観点文書だけで見る。エラーにすると、設定に
+                宣言の無い対象（ソースコード等）をレビューできなくなる。
+
+    照合を変えるときは、両方の挙動が変わる。両者の種別が一致することは、
+    tests/forge/doc_structure/test_resolve_doc_structure.py が確かめる。
 """
 
 import argparse
@@ -435,6 +464,33 @@ def match_path_to_doc_type(file_path, doc_types_map, project_root):
     return None
 
 
+def to_project_relative_path(path_str, project_root):
+    """パスをプロジェクトルートからの相対パス（`/` 区切り）にする。
+
+    絶対パスとプロジェクトルートからの相対パスのどちらも受け付ける。
+    プロジェクトルートの外を指すパスには None を返す。
+
+    Args:
+        path_str: 絶対パス、またはプロジェクトルートからの相対パス
+        project_root: プロジェクトルートの絶対パス
+
+    Returns:
+        str | None: 相対パス。プロジェクトルートの外なら None
+    """
+    root = os.path.abspath(project_root)
+    candidate = os.path.normpath(os.path.join(root, str(path_str)))
+    candidates = [(root, candidate)]
+    # シンボリックリンク（macOS の /tmp 等）で root と path の表記が食い違う場合の補正
+    candidates.append((os.path.realpath(root), os.path.realpath(candidate)))
+
+    for base, target in candidates:
+        rel = os.path.relpath(target, base)
+        if rel == os.pardir or rel.startswith(os.pardir + os.sep):
+            continue
+        return Path(rel).as_posix()
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Feature 検出
 # ---------------------------------------------------------------------------
@@ -848,6 +904,34 @@ def _segments_match(pattern_parts, dir_parts):
     )
 
 
+def _find_entry(config, category, dir_parts):
+    """ディレクトリのセグメント列に一致する doc_types_map のエントリを探す。
+
+    ディレクトリの深い階層から上位へ順に、キーに一致するものを探し、最初に
+    見つかったものを返す。パターンだけで照合し、ファイルシステムを見ない
+    （存在しないパス、たとえば削除されたファイルにも同じ規則で答える）。
+
+    `feature_of_path`（置き場と feature を求める）と `match_path`（種別だけを求める）が
+    共有する。設定の宣言を照合する箇所をここ 1 つに保つ。
+
+    Args:
+        config: parse_config() の戻り値
+        category: 'rules' または 'specs'
+        dir_parts: ファイルの親ディレクトリのセグメント列
+
+    Returns:
+        tuple | None: (key, doc_type, pattern_parts, candidate)。一致するものが無ければ None
+    """
+    doc_types_map = config.get(category, {}).get('doc_types_map', {})
+    for depth in range(len(dir_parts), 0, -1):
+        candidate = dir_parts[:depth]
+        for key, doc_type in doc_types_map.items():
+            pattern_parts = _key_parts(key)
+            if _segments_match(pattern_parts, candidate):
+                return key, doc_type, pattern_parts, candidate
+    return None
+
+
 def feature_of_path(config, category, path, project_root):
     """ファイルのパスから、置き場のエントリ（doc_type）と feature を求める。
 
@@ -858,6 +942,11 @@ def feature_of_path(config, category, path, project_root):
     次の場合は、feature を求められないため、「feature なし」にせずエラーにする。
     - 一致したキーに、ワイルドカード以外の glob 文字がある
     - 一致したキーに `**` が複数あり、いずれかが 1 セグメント以上を捕えている
+    宣言に合わないパス・プロジェクトルート外のパスも、エラーにする。feature を推測で決めない
+    ことが、本関数の意図である（`--decide-feature-for` が、決まらないとき利用者に確認させる）。
+
+    種別だけが要る場合（決まらないことを異常にしたくない場合）は、`match_path` を使う。
+    両者の照合は `_find_entry` が共通である。
 
     Args:
         config: parse_config() の戻り値
@@ -880,40 +969,70 @@ def feature_of_path(config, category, path, project_root):
     parts = [p for p in rel.split('/') if p and p != '.']
     dir_parts = parts if rel.endswith('/') else parts[:-1]
 
-    doc_types_map = config.get(category, {}).get('doc_types_map', {})
-    for depth in range(len(dir_parts), 0, -1):
-        candidate = dir_parts[:depth]
-        for key, doc_type in doc_types_map.items():
-            pattern_parts = _key_parts(key)
-            if not _segments_match(pattern_parts, candidate):
-                continue
-            problem = _key_problem(key, pattern_parts)
-            if problem:
-                return _error(problem)
-            doublestars = pattern_parts.count('**')
-            if doublestars > 1:
-                captured = len(candidate) - (len(pattern_parts) - doublestars)
-                if captured > 0:
-                    return _error(
-                        f"キー `{key}` に `**` が複数あり、feature を求められません（未対応）"
-                    )
-                feature = None
-            else:
-                feature = _extract_feature_from_match(
-                    '/'.join(pattern_parts), '/'.join(candidate)
-                )
-            return {
-                'status': 'ok',
-                'category': category,
-                'path': '/'.join(parts),
-                'doc_type': doc_type,
-                'feature': feature,
-                'key': key,
-            }
+    entry = _find_entry(config, category, dir_parts)
+    if entry is None:
+        return _error(
+            f"パス `{path}` は、{category} の doc_types_map のどのエントリにも一致しません"
+        )
 
-    return _error(
-        f"パス `{path}` は、{category} の doc_types_map のどのエントリにも一致しません"
-    )
+    key, doc_type, pattern_parts, candidate = entry
+    problem = _key_problem(key, pattern_parts)
+    if problem:
+        return _error(problem)
+    doublestars = pattern_parts.count('**')
+    if doublestars > 1:
+        captured = len(candidate) - (len(pattern_parts) - doublestars)
+        if captured > 0:
+            return _error(
+                f"キー `{key}` に `**` が複数あり、feature を求められません（未対応）"
+            )
+        feature = None
+    else:
+        feature = _extract_feature_from_match(
+            '/'.join(pattern_parts), '/'.join(candidate)
+        )
+    return {
+        'status': 'ok',
+        'category': category,
+        'path': '/'.join(parts),
+        'doc_type': doc_type,
+        'feature': feature,
+        'key': key,
+    }
+
+
+def match_path(config, category, path_str, project_root):
+    """パスを 1 つ受け取り、doc_types_map の宣言から種別だけを返す。
+
+    reviewer と evaluator が、対象の種別を決め、読む観点文書を選ぶために使う。
+    `feature_of_path` と同じ照合（`_find_entry`）で種別を決める。違いは、
+    決まらないときの扱いである。`feature_of_path` は feature を求められなければ
+    エラーにするが、本関数は種別だけを求めるので、宣言に合わないパス・
+    プロジェクトルートの外のパス・feature を求められないキーに当たったパスにも
+    エラーを返さず、種別を `None` とする。
+
+    宣言の値をそのまま返す（adr を design へ読み替えない）。
+    exclude は適用しない（exclude はファイル収集の範囲を決めるもので、
+    種別を決めるものではない）。
+
+    Args:
+        config: parse_config() の戻り値
+        category: 'rules' または 'specs'
+        path_str: 絶対パス、またはプロジェクトルートからの相対パス
+        project_root: プロジェクトルートの絶対パス
+
+    Returns:
+        tuple: (プロジェクトルートからの相対パス | 入力そのまま, doc_type | None)
+               プロジェクトルートの外のパスの doc_type は None
+    """
+    rel = to_project_relative_path(path_str, project_root)
+    if rel is None:
+        return normalize_path(path_str), None
+
+    parts = [p for p in rel.split('/') if p and p != '.']
+    dir_parts = parts if path_str.endswith(('/', os.sep)) else parts[:-1]
+    entry = _find_entry(config, category, dir_parts)
+    return rel, (entry[1] if entry else None)
 
 
 def _argument_conflicts_with_path(config, category, doc_type, project_root,
@@ -1120,6 +1239,14 @@ def parse_args():
         action='store_true',
         help='.doc_structure.yaml のバージョンを出力する',
     )
+    group.add_argument(
+        '--match-path',
+        metavar='PATH',
+        help=(
+            'パスを 1 つ受け取り、doc_types_map の宣言から種別を返す'
+            '（絶対パス、またはプロジェクトルートからの相対パス。exclude は適用しない）'
+        ),
+    )
     parser.add_argument(
         '--feature',
         default=None,
@@ -1149,7 +1276,7 @@ def parse_args():
         '--category',
         choices=['rules', 'specs'],
         default='specs',
-        help='--doc-type / --dir-of / --feature-of 使用時のカテゴリ（デフォルト: specs）',
+        help='--doc-type / --dir-of / --feature-of / --match-path 使用時のカテゴリ（デフォルト: specs）',
     )
 
     args = parser.parse_args()
@@ -1202,7 +1329,7 @@ def main():
             'major_version': get_major_version(raw_content),
         }
     else:
-        # --type / --features / --doc-type はバリデーション必須
+        # --type / --features / --doc-type / --match-path はバリデーション必須
         validation = validate_doc_structure(config, raw_content)
         if not validation.get('valid'):
             error_result = {
@@ -1236,6 +1363,16 @@ def main():
             result = find_doc(
                 config, args.category, args.find_in, args.name, project_root
             )
+        elif args.match_path is not None:
+            rel_path, doc_type = match_path(
+                config, args.category, args.match_path, project_root
+            )
+            result = {
+                'status': 'ok',
+                'category': args.category,
+                'path': rel_path,
+                'doc_type': doc_type,
+            }
         elif args.doc_type:
             files = resolve_files_by_doc_type(
                 config, args.category, args.doc_type, project_root

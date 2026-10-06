@@ -71,7 +71,7 @@ doc_type `plan`、feature `{feature}` で出力先ディレクトリを求める
 既存計画書がある場合、AskUserQuestion を使用して確認する:
 
 - 既存計画書を更新する → 既存計画書を Read して現状を把握し Phase 1 へ
-- レビューのみ行う → Skill ツールで `/forge:review plan --files {既存計画書パス}` を起動して終了
+- レビューのみ行う → Skill ツールで `/forge:review --files {既存計画書パス}` を起動して終了
 
 ### プラグイン文書の読み込み
 
@@ -297,13 +297,13 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 ## Phase 5: AIレビュー
 
-計画書作成・更新後に Skill ツールで `/forge:review plan` を `--auto` モードで実行する:
+計画書作成・更新後に Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
 <!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、start-plan のセッションとは干渉しない -->
 
 ```
 # Skill ツールで起動する
-/forge:review plan --files {作成した計画書のファイルパス} --auto
+/forge:review --files {作成した計画書のファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

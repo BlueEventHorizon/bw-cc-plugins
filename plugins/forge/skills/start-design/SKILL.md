@@ -78,7 +78,7 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。立ち止�
 既存設計書がある場合、AskUserQuestion を使用して確認する:
 
 - 新たな設計書ファイルを追加作成する → Phase 1 へ
-- レビューのみ行う → Skill ツールで `/forge:review design --files {既存設計書パス}` を起動して終了
+- レビューのみ行う → Skill ツールで `/forge:review --files {既存設計書パス}` を起動して終了
 
 ### プラグイン文書の読み込み
 
@@ -223,7 +223,7 @@ Phase 2 でできた上流の設計の観点から、既存の実装と設計パ
 
 ```
 # Skill ツールで起動する
-/forge:review design --files {作成ファイルパス} --auto
+/forge:review --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

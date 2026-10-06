@@ -125,7 +125,7 @@ class MaskingTest(unittest.TestCase):
         self.assertEqual(scan_secrets.mask("abc123"), "***[6文字]")
 
     def test_finding_records_carry_no_value_key(self):
-        """build_review_request 側の防波堤が前提とするキー構成を守ること。"""
+        """検出記録が値そのものを載せないキー構成を守ること。"""
         result = _scan_source(f"aws = {AWS_KEY}\n")
         for finding in result["findings"]:
             self.assertEqual(

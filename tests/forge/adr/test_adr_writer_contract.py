@@ -66,7 +66,9 @@ class WriteAdrSkillTest(unittest.TestCase):
 
     def test_has_defer_finish_and_completion_phase(self):
         self.assertIn("--defer-finish", self.text)
-        self.assertIn("/forge:review design", self.text)
+        # 位置引数（種別）を持たない起動形。対象軸（--files）と --auto は変えない
+        self.assertIn("/forge:review --files {ADR ファイル} --auto", self.text)
+        self.assertNotRegex(self.text, r"/forge:review\s+(?!--)\S")
 
 
 class AdrWriterAgentTest(unittest.TestCase):

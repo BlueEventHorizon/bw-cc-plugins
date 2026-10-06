@@ -18,7 +18,7 @@ argument-hint: "[feature-name] [--platform ios|macos]"
 
 デザイン方向性は Phase 2.0（Design Intent の取得）で要件本文・既存コードから読み取りまたは推定し、AskUserQuestion で確認する。プロジェクト全体に挙動モードを固定する設定ファイル（`.uxui-config.yaml` 等）は持たない。
 
-> **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。本スキルは不要。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
+> **Figma デザインの場合**: `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。本スキルは不要。Figma デザインの UX 品質を検証したい場合は `/forge:review --files {THEME/CMP 文書のパス}` を使用する。
 
 ## Goal
 

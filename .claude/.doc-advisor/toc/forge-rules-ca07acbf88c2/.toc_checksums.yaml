@@ -1,7 +1,7 @@
 # ToC checksums for key: forge-rules
 # Auto-generated - do not edit
-generated_at: 2026-10-06T06:10:06Z
-file_count: 42
+generated_at: 2026-10-06T08:00:22Z
+file_count: 43
 checksums:
   plugins/forge/docs/additive_development_spec.md: cfbafa46c43fd4519e36b741ef7b25ca484046bf06efcbf84cf600c315e00633
   plugins/forge/docs/adr_format.md: cf247dbcde20de52060d3d158dd8ac767da6e0a784a290061036eb5f8fbaf764
@@ -12,9 +12,10 @@ checksums:
   plugins/forge/docs/criteria/review_criteria_design.md: f24df8244ba187c457c31c34f13c3054aeeac966ee82751e86cb782caae9434e
   plugins/forge/docs/criteria/review_criteria_generic.md: 028ff3919b848210b29142a8797d959fd7f65b685e3b2ef475c39c91524af401
   plugins/forge/docs/criteria/review_criteria_plan.md: 3aba30588dc9e759ebd6459ea2e8d6d89e0912d91dfe5db4b0037b3873c7ae24
-  plugins/forge/docs/criteria/review_criteria_requirement.md: c90316b33bae9f9505e80b9a06f13854e123da2c27142f637345edaeec9bfc04
+  plugins/forge/docs/criteria/review_criteria_requirement.md: 988258feb0cc10a84da7d68f54c60456bd11e8faa93349f6f683ba286ae65c20
   plugins/forge/docs/criteria/review_criteria_secrets.md: 0f248f092c9ebbbdc44a6f8d3a267cf4d76a282b009c27950055f3ef76059365
   plugins/forge/docs/criteria/review_criteria_uxui.md: a236b55548f4558a0db4bdea1e180913fe97893c4380e9b343f4538da6b028de
+  plugins/forge/docs/criteria/review_target_types.md: 43db5d1d59c4044ccb1de24576c4c17964baef4636c702a55555b71673779078
   plugins/forge/docs/design_method.md: 52da8ae3d45b9084f25d25fb7c1173c7b6717fe74c586e1e02c8bf33b5c239b6
   plugins/forge/docs/design_principles_spec.md: 80a4513b1fe21988e81fd9d58fe125a9479af2fa2aa1aeeeab619da739a623e9
   plugins/forge/docs/deterministic_generation_spec.md: b0eacd7205bb92c652345f5a7f44997c813307d88c450a1e4c0a64823c16718e
@@ -35,13 +36,13 @@ checksums:
   plugins/forge/docs/version_migration_spec.md: 18c82ca28909a94cee955b1977ed5ad6fe12dcc23cd1f5364692158fbef5a910
   plugins/forge/skills/start-implement/docs/task_execution_spec.md: 24ab3502e1af870fcb9d745d3f86daee4f1175ae0602d61e5caebd4c7922b46d
   plugins/forge/skills/start-requirements/docs/app_overview_writing_standard.md: 6120b83f8bac7942c5cde5d52df2341fa978ee3f031fcb5c79651fa38ccfd746
-  plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md: 979976c25f5b7f6f9a97535cc9a948b758499a3a42f200a66513d6f111b09918
-  plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md: 546598590614cf8fc2ec43b88053fa414a59e5d0292e7c2151a59497848371e7
-  plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md: f0131b39d811831891d3f78350b30f36c54dfd9ba017bbdc461a5eb516724710
+  plugins/forge/skills/start-requirements/docs/requirements_from_figma_workflow.md: 39b6297c9cfbeab90f0afb96fc683376fe50529d724f53905da07cfad46910fa
+  plugins/forge/skills/start-requirements/docs/requirements_interactive_workflow.md: b04a416da28edf894e29333c6593c061eaba3a559c6d02d246a4153bbf253e1e
+  plugins/forge/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md: 5926eebe09a4e64f723063fe5b69229ace8860e2516d7bb7a3e28310473cb76a
   plugins/forge/skills/start-uxui-design/docs/apple_design_principles.md: 315ddb7393a2252caa355c78701534de12c14f6403865a4368009317f118679b
   plugins/forge/skills/start-uxui-design/docs/component_catalog_template.md: 282951216aaaea2f319602ae992d14deb7e9f1e30476c439dd620a1c708ec4cb
   plugins/forge/skills/start-uxui-design/docs/design_philosophy.md: b791ef2d1ad781c38a19c6edc7495e95221d202e376bb6d684912801b23a6129
   plugins/forge/skills/start-uxui-design/docs/design_token_template.md: 220b67cce2ff0c1d6bb14c749a40fae61bf350c9ffca4530858f67df6d563d37
   plugins/forge/skills/start-uxui-design/docs/ios_platform_guide.md: 6ec13d3237553eca047441203acdf2362a0ce6540368a8f5da3ec5f382d3bd23
   plugins/forge/skills/start-uxui-design/docs/macos_platform_guide.md: a3fdb8360ab5bfbcece2de768ae2d75dc0f3c9f11e5c9216baffd990ec5d993f
-  plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md: aae59084b1142f1bed0183437d35d878c66bad874a48bca6c96bf33a5a9c97e3
+  plugins/forge/skills/start-uxui-design/docs/uxui_analysis_workflow.md: 91d30896c9b071baf0e5a5ac061f7682190edf6cf9aeb9ef1cb4573fa78aea1d

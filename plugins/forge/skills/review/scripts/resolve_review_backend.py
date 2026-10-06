@@ -53,10 +53,15 @@ TODO: 往復の文脈を永続化するバックエンド（`retains_context: tr
 
 | exit code | `status`          | 意味                                      |
 | --------- | ----------------- | ----------------------------------------- |
-| 0         | `success`         | 解決した（`mode` / `order` / `source`）    |
-| 20        | `operation_error` | 設定不正（`reason_code=settings_invalid`） |
+| 0         | `success`         | 解決した（`mode` / `order` / `source` / `retains_context`） |
+| 20        | `operation_error` | 設定不正（`reason_code=settings_invalid`）、または候補に値の宣言が無い名前がある（`reason_code=backend_undeclared`） |
 
-不正時の `mode` / `order` / `source` は null であり、既定値を入れない（読めない
+`retains_context` は候補名から真偽値への対応で、`order` の各候補について返す。
+値は `RETAINS_CONTEXT` の表（本モジュール）が持ち、現在は `agent-review` だけが
+`false` である。表に宣言の無い名前が `order` に含まれるとき（明示指定の 1 件を
+含む）は `backend_undeclared` で拒み、値を補わない。
+
+失敗時の `mode` / `order` / `source` は null であり、既定値を入れない（読めない
 設定を黙って無視して既定で動くと、利用者が意図した実行主体と異なる側で静かに
 レビューが走る）。
 
@@ -98,6 +103,7 @@ STATUS_OPERATION_ERROR = "operation_error"
 OPERATION = "resolve_review_backend"
 
 REASON_SETTINGS_INVALID = "settings_invalid"
+REASON_BACKEND_UNDECLARED = "backend_undeclared"
 
 #: 解決の形。`explicit` は不可なら fail closed、`order` は次候補へ進む
 MODE_EXPLICIT = "explicit"
@@ -115,6 +121,13 @@ SOURCE_DEFAULT = "default"
 #: 候補が 1 つでも `order` の解決機構は残す（複数候補が戻ったときに
 #: 定義点と検査順が別物にならないようにするため）。
 DEFAULT_ORDER = ("agent-review",)
+
+#: 候補ごとの `retains_context`（往復の文脈を永続化するか）。値はバックエンドごとに
+#: 固定で、本モジュールが持つ。ここに宣言の無い名前は `backend_undeclared` で拒み、
+#: 値を補わない。`DEFAULT_ORDER` の各名前は必ずここに宣言する（テストで確かめる）。
+RETAINS_CONTEXT = {
+    "agent-review": False,
+}
 
 #: 設定のセクション名とスキーマ（スキーマの所有は DES-066 §2.2）
 #:
@@ -187,7 +200,7 @@ def run(project_root, *, backend_argument=None, settings=forge_settings):
             return EXIT_OPERATION_ERROR, _error_payload(
                 "--backend に空の値が指定されました"
             )
-        return EXIT_SUCCESS, _success_payload(MODE_EXPLICIT, [name], SOURCE_ARGUMENT)
+        return _resolved(MODE_EXPLICIT, [name], SOURCE_ARGUMENT)
 
     try:
         section = _read_section(project_root, settings)
@@ -198,10 +211,19 @@ def run(project_root, *, backend_argument=None, settings=forge_settings):
 
     if backend is not None:
         # 明示指定が候補順に勝つ（DES-066 §2.2）
-        return EXIT_SUCCESS, _success_payload(MODE_EXPLICIT, [backend], SOURCE_SETTING)
-    return EXIT_SUCCESS, _success_payload(
-        MODE_ORDER, list(DEFAULT_ORDER), SOURCE_DEFAULT
-    )
+        return _resolved(MODE_EXPLICIT, [backend], SOURCE_SETTING)
+    return _resolved(MODE_ORDER, list(DEFAULT_ORDER), SOURCE_DEFAULT)
+
+
+def _resolved(mode: str, order: list, source: str):
+    """候補に値の宣言が無い名前があれば拒み、無ければ成功の結果を返す。"""
+    if any(name not in RETAINS_CONTEXT for name in order):
+        # 指定された値そのものは message に載せない（情報保護）
+        return EXIT_OPERATION_ERROR, _error_payload(
+            "retains_context の宣言が無いバックエンドが候補に含まれています",
+            REASON_BACKEND_UNDECLARED,
+        )
+    return EXIT_SUCCESS, _success_payload(mode, order, source)
 
 
 def _success_payload(mode: str, order: list, source: str) -> dict:
@@ -212,14 +234,15 @@ def _success_payload(mode: str, order: list, source: str) -> dict:
         "mode": mode,
         "order": list(order),
         "source": source,
+        "retains_context": {name: RETAINS_CONTEXT[name] for name in order},
     }
 
 
-def _error_payload(message: str) -> dict:
+def _error_payload(message: str, reason_code: str = REASON_SETTINGS_INVALID) -> dict:
     return {
         "status": STATUS_OPERATION_ERROR,
         "operation": OPERATION,
-        "reason_code": REASON_SETTINGS_INVALID,
+        "reason_code": reason_code,
         "mode": None,
         "order": None,
         "source": None,

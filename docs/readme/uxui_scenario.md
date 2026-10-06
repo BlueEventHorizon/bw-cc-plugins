@@ -2,7 +2,7 @@
 
 要件定義書（ASCII アート付きの画面仕様）を入力に、**デザイントークン（THEME-xxx）** と **UI コンポーネント視覚仕様（CMP-xxx）** を創造するスキルの活用例。Apple HIG・Don Norman・Dieter Rams・Nielsen・Gestalt の知識ベースに基づき、理論的根拠のある「かっこいい」デザインを設計する。
 
-> **Figma デザインがある場合**: UX/UI デザインはデザイナーにより完了済みと見なす。`/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
+> **Figma デザインがある場合**: UX/UI デザインはデザイナーにより完了済みと見なす。`/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。Figma デザインの UX 品質を検証したい場合は `/forge:review --files {THEME/CMP 文書のパス}` を使用する。
 
 ---
 
@@ -39,7 +39,7 @@ Figma がない場合、要件定義書の ASCII アートで表現された画�
 3. Phase 3: 60-30-10 ルールに基づくカラーパレット、SF Pro タイポグラフィスケール、8pt グリッドのスペーシングを設計
 4. Phase 4: ASCII アートの `[カートに追加]` → 「50pt 高さ、角丸 12pt、accent カラー、Semibold 17pt」の具体的視覚仕様に変換
 5. Phase 5: Don Norman 3 層 + Rams 原則で自己評価
-6. Phase 6: `THEME-001` / `CMP-001` / `UXEVAL-001` を生成 → `/forge:review uxui` で検証
+6. Phase 6: `THEME-001` / `CMP-001` / `UXEVAL-001` を生成 → `/forge:review` で検証
 
 **価値**: デザイナー不在でも、学術的根拠に基づいた一貫性のあるデザインシステムを構築できる。ASCII アートから実装可能な具体的仕様（HEX 値、pt 値）に変換される。
 
@@ -54,7 +54,7 @@ Figma がない場合、要件定義書の ASCII アートで表現された画�
 - 既存のデザイン文書を修正後に再レビューしたい
 
 ```
-/forge:review uxui --files specs/cafe-order/requirements/THEME-001_cafe_order_design_tokens.md
+/forge:review --files specs/cafe-order/requirements/THEME-001_cafe_order_design_tokens.md
 ```
 
 3 つの perspectives で検証する:
@@ -67,7 +67,7 @@ Figma がない場合、要件定義書の ASCII アートで表現された画�
 
 `--auto` を付ければ指摘の自動修正まで行う。
 
-**Figma デザインのレビューにも使える**: `start-requirements --mode from-figma` で生成された THEME/CMP 文書に対して `/forge:review uxui` を実行すれば、Figma デザインの UX 品質を間接的に検証できる。
+**Figma デザインのレビューにも使える**: `start-requirements --mode from-figma` で生成された THEME/CMP 文書に対して `/forge:review --files` で対象を指定して実行すれば、Figma デザインの UX 品質を間接的に検証できる。
 
 ---
 
@@ -85,7 +85,7 @@ Figma がない場合、要件定義書の ASCII アートで表現された画�
 5. /forge:start-implement favorites             # タスク実行
 ```
 
-他の `start-xxx` スキルと同様、`start-uxui-design` のワークフロー内に `/forge:review uxui --auto` が含まれているため、手動でレビューを実行する必要はない。
+他の `start-xxx` スキルと同様、`start-uxui-design` のワークフロー内に `/forge:review --auto` が含まれているため、手動でレビューを実行する必要はない。
 
 **価値**: 要件の ASCII アートから一貫したデザインシステムが生まれ、それが設計書のデータモデルや定数定義に反映される。デザイナーなしでも品質の高いアプリが作れる。
 

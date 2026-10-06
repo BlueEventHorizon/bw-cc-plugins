@@ -75,8 +75,8 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "plan"))
 from plan_contract import normalize_group_key  # noqa: E402
 
-# `scope_text` が review 側の注入検証（`build_review_request.py` の構造行拒否）を通ることを
-# 生成側でも保証する。受け取る側は生成元の保証を検証できないため、両側で独立に検査する。
+# `scope_text` が単一行であり、見出し行・コードフェンス行に見えないことを生成側で保証する。
+# 受け取る側は生成元の保証を検証できないため、生成側でも独立に検査する。
 _STRUCTURE_LINE_RE = re.compile(r"^ {0,3}(?:#{1,6}(?:\s|$)|```|~~~)")
 # バックエンド固有のワイヤヘッダを持つ実行主体が現れたら、その接頭辞をここへ足す
 # （現在の唯一の実行主体 `agent-review` はワイヤヘッダを持たない）。
@@ -121,9 +121,8 @@ def validate_results(tasks, results):
 def _validate_scope_field(label, value):
     """スコープ用の文字列が単一行であり、構造行に見えないことを検証する。
 
-    レビュー依頼本文へ埋め込まれる値であり、改行や見出し行を含むと本文の節構造・返信形式
-    契約を偽装できてしまう（`build_review_request.py` が同種の検証を持つ）。生成側でも
-    独立に検証することで、拒否される本文を組み立ててから気付く事態を避ける。
+    レビュー依頼の `scope` へ渡す値であり、改行や見出し行を含むと、値を文書の節構造として
+    読ませる偽装ができてしまう。生成側で独立に検証し、不正な値を依頼に載せる前に止める。
     """
     if value is None:
         return None

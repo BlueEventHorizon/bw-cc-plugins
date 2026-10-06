@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """agenda 機構の統合テスト（DES-075 §9「統合テスト対象」）。
 
-結合 script（`combine_findings_and_evaluations.py`。無変更で import する）の出力を
+結合済みの所見の入力（`status` と `combined` を持つ JSON。固定の辞書で用意する）を
 `agenda_wrapper.py start` の標準入力へつなぎ、構造判断 → 項目ごとの値（背景・本質・
 決着の 3 値）→ 新規項目の追加 → `finish` までを通す。単体テストと異なりモックを
 使わず、実際の git リポジトリ・ファイル書き込み・読み込みを通す（統合テストの目的が
@@ -9,7 +9,7 @@
 
 固定すること:
 
-1. 結合 script を変更せずにその出力が `start` へ渡り、保存された記録から現行と同じ欄
+1. 結合済みの入力がそのまま `start` へ渡り、保存された記録から現行と同じ欄
    （問題・重大度バッジ）を持つ提示が生成されること（DES-075 §6・DES-077 §3.1a・DES-078 §2.2）
 2. 各 `record` 直後の `agenda.html` が記録から生成したものと一致すること
    （agenda:REQ-021 FNC-003）
@@ -40,15 +40,6 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _AGENDA_DIR = _REPO_ROOT / "plugins" / "forge" / "scripts" / "agenda"
-_COMBINE_PATH = (
-    _REPO_ROOT
-    / "plugins"
-    / "forge"
-    / "skills"
-    / "review"
-    / "scripts"
-    / "combine_findings_and_evaluations.py"
-)
 
 
 def _load_module(name, path):
@@ -62,20 +53,32 @@ def _load_module(name, path):
 agenda_store = _load_module("agenda_store", _AGENDA_DIR / "agenda_store.py")
 agenda_render = _load_module("agenda_render", _AGENDA_DIR / "agenda_render.py")
 agenda_wrapper = _load_module("agenda_wrapper", _AGENDA_DIR / "agenda_wrapper.py")
-# 結合 script は無変更のまま import する（DES-075 §6）。
-combine = _load_module("combine_findings_and_evaluations", _COMBINE_PATH)
-
-# reviewer 応答（parse_findings.py が生成する実体）と evaluator 判定
-# （parse_evaluation.py が検証済み）に相当する入力。所見本文は `text`、重大度は
-# `severity` という名前で来る（forge:DES-066 §3.10a）。
-_FINDINGS = [
-    {"text": "所見1の本文", "file": "a.py", "line": 10},
-    {"text": "所見2の本文", "file": "b.py", "line": 20},
-]
-_EVALUATIONS = [
-    {"index": 1, "disposition": "fix", "severity": "major", "confidence": "high"},
-    {"index": 2, "disposition": "fix", "severity": "critical", "confidence": "medium"},
-]
+# `agenda_wrapper.py start` が標準入力で受ける、結合済みの所見の形（`status` と
+# `combined` を持つ JSON）を固定の辞書で用意する。所見本文は `text`、重大度は
+# `severity` という名前で来る（DES-075 §6）。
+_COMBINED = {
+    "status": "ok",
+    "combined": [
+        {
+            "text": "所見1の本文",
+            "file": "a.py",
+            "line": 10,
+            "index": 1,
+            "disposition": "fix",
+            "severity": "major",
+            "confidence": "high",
+        },
+        {
+            "text": "所見2の本文",
+            "file": "b.py",
+            "line": 20,
+            "index": 2,
+            "disposition": "fix",
+            "severity": "critical",
+            "confidence": "medium",
+        },
+    ],
+}
 
 
 class AgendaIntegrationTestCase(unittest.TestCase):
@@ -100,19 +103,12 @@ class AgendaIntegrationTestCase(unittest.TestCase):
         args = agenda_wrapper.build_parser().parse_args(argv)
         return agenda_wrapper.run(args, io.StringIO(stdin_text))
 
-    def _combined_stdin(self, findings=None, evaluations=None) -> str:
-        """結合 script の標準出力に相当する JSON 文字列を作る（script は無変更）。"""
-        result = combine.combine_findings_and_evaluations(
-            findings if findings is not None else _FINDINGS,
-            evaluations if evaluations is not None else _EVALUATIONS,
-        )
-        self.assertEqual(result["status"], "ok")
-        return json.dumps(result, ensure_ascii=False)
+    def _start_stdin(self) -> str:
+        """結合済みの所見の入力（固定の辞書）を JSON 文字列にする。"""
+        return json.dumps(_COMBINED, ensure_ascii=False)
 
-    def _start(self, findings=None, evaluations=None):
-        return self._run(
-            ["--origin", "review", "start"], self._combined_stdin(findings, evaluations)
-        )
+    def _start(self):
+        return self._run(["--origin", "review", "start"], self._start_stdin())
 
     def _record_structural(self, note="同型の指摘は無い。個別の食い違いに留まる"):
         return self._run(["--origin", "review", "record", "--structural"], note)
@@ -168,7 +164,7 @@ class AgendaIntegrationTestCase(unittest.TestCase):
 
 
 class CombinedOutputToPresentationTest(AgendaIntegrationTestCase):
-    """結合 script の出力が start へ渡り、現行と同じ欄を持つ提示になること。"""
+    """結合済みの入力が start へ渡り、現行と同じ欄を持つ提示になること。"""
 
     def test_combined_output_is_saved_and_presented_with_current_fields(self):
         self.assertEqual(self._start()["status"], "ok")

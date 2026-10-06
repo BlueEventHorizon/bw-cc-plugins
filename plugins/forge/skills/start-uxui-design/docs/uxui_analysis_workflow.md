@@ -21,7 +21,7 @@ start-requirements → start-uxui-design → start-design → start-plan → sta
 
 > **Figma デザインがある場合**: UX/UI デザインはデザイナーにより完了済みと見なす。
 > `/forge:start-requirements {feature} --mode from-figma` で要件抽出に進む。
-> Figma デザインの UX 品質を検証したい場合は `/forge:review uxui` を使用する。
+> Figma デザインの UX 品質を検証したい場合は `/forge:review --files {THEME/CMP 文書のパス}` を使用する。
 
 ## コンテキスト管理
 
@@ -686,7 +686,7 @@ AskUserQuestion で確認: 「評価結果を踏まえて、デザインの調�
 Skill ツールで `/forge:review` を起動する:
 
 ```
-/forge:review uxui --files {作成ファイルパス} --auto
+/forge:review --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

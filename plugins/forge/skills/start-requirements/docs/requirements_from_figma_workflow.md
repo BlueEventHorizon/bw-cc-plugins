@@ -226,7 +226,7 @@ Figma から抽出した画像の扱い:
 Skill ツールで `/forge:review` を起動する:
 
 ```
-/forge:review requirement --files {作成ファイルパス} --auto
+/forge:review --files {作成ファイルパス} --auto
 ```
 
 対象はこのワークフローで作成・変更したファイル（差分）のみ。

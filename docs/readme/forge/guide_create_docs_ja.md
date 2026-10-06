@@ -25,7 +25,7 @@ start-requirements → start-design → start-plan → start-implement
 
 文書作成後は以下を順次実行する:
 
-1. `/forge:review {type} --auto` — AI レビュー + 自動修正
+1. `/forge:review --files {作成した文書} --auto` — AI レビュー + 自動修正
 2. `/forge:update-db-specs` — 検索インデックス更新（利用可能な場合）
 3. `/anvil:commit` — commit/push 確認
 

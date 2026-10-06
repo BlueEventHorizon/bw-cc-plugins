@@ -16,7 +16,7 @@ JSON の入れ物・ファイル名は、いずれも呼び出し側の事情で
   引用符・記号でシェルの構文が壊れる。値を書き込むのは agenda 側だけであり、
   呼び出し側が候補 JSON や一時ファイルを書く経路は持たない
 
-`start` は所見と評価を結合する script の標準出力（`combined` 配列）をそのまま
+`start` は所見と評価を結合した JSON（`status` と `combined` 配列を持つ）をそのまま
 標準入力から読み、各要素の `text` を `problem` にも置いてから `items` にする
 （DES-078 §2.2。「問題」欄は `problem` から出るが、review 起点の所見本文は `text` という
 名前で来る。起点の事情は本モジュールに閉じる）。
@@ -27,7 +27,7 @@ JSON の入れ物・ファイル名は、いずれも呼び出し側の事情で
 
 Usage:
     python3 agenda_wrapper.py --origin review pending
-    python3 agenda_wrapper.py --origin review start < <結合 script の出力>
+    python3 agenda_wrapper.py --origin review start < <所見と評価を結合した JSON>
     python3 agenda_wrapper.py --origin review record --structural < <構造判断の記述>
     python3 agenda_wrapper.py --origin review record --item-id 01 --field background < <本文>
     python3 agenda_wrapper.py --origin review record --new < <構造判断の記述>
@@ -99,7 +99,7 @@ def _handle_pending(path: str) -> dict:
 
 
 def _handle_start(path: str, stdin) -> dict:
-    """結合 script の出力（`combined` 配列）から入れ物を組み立てて `start` へ渡す。
+    """所見と評価を結合した JSON（`combined` 配列）から入れ物を組み立てて `start` へ渡す。
 
     中間ファイルは書かない（DES-075 §6・DES-078 §2.2）。
     """
@@ -112,7 +112,7 @@ def _handle_start(path: str, stdin) -> dict:
     if not isinstance(combined, list):
         return {
             "status": "error",
-            "message": "標準入力に結合 script の出力（combined 配列）がありません",
+            "message": "標準入力に所見と評価を結合した JSON（combined 配列）がありません",
         }
 
     items = []

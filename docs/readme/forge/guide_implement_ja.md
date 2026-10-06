@@ -37,7 +37,7 @@ flowchart TD
 
     P4["Phase 4: 実装<br/>executor agent にタスク委譲"] --> P5
 
-    P5["Phase 5: AI レビュー<br/>/forge:review code --auto"] --> DONE
+    P5["Phase 5: AI レビュー<br/>/forge:review --auto"] --> DONE
 
     DONE["完了処理<br/>計画書更新 → commit"]
 ```
@@ -98,7 +98,7 @@ executor の動作:
 
 ### Phase 5: AI レビュー
 
-実装差分に対して `/forge:review code --auto` を実行。修正起因の問題も自動検出・修正する。
+実装差分に対して `/forge:review --auto` を実行。修正起因の問題も自動検出・修正する。
 
 **今回の到達目標をレビュアーへ渡す**。計画書から「このタスクで到達すべき範囲」と「後続タスクが担当する範囲外の項目（担当タスク ID 付き）」を導出し、executor とレビュアーの両方へ渡す。段階分割したタスクを単体でレビューさせると、後続タスクで実装予定の項目が欠陥として報告され、スコープを説明する往復が毎回発生するためである。
 
