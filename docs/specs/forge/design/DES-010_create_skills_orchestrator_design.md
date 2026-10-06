@@ -187,87 +187,27 @@ Phase 5: AIレビュー [MANDATORY]（FNC-006 準拠: --auto モード）
 
 ### 4.3 start-requirements
 
-#### フェーズ構成
+フェーズ構成は [DES-017](DES-017_create_requirements_workflow_design.md) を正本とする。コンテキスト収集は次のとおり。
 
-```
-前提確認フェーズ [MANDATORY]
-├── Step 1: .doc_structure.yaml の確認
-├── Step 2: 出力先ディレクトリの解決
-└── Step 3: defaults 読み込み
+#### コンテキスト収集 agent の適用マトリクス
 
-モード選択（AskUserQuestion）
+| agent | interactive | reverse-engineering | from-figma | 収集内容                             |
+| ----- | ----------- | ------------------- | ---------- | ------------------------------------ |
+| rules | 使わない    | ○                   | 使わない   | 要件書フォーマット、ワークフロー指示 |
+| code  | 使わない    | ○                   | 使わない   | ソースコード探索（要件抽出の起点）   |
 
-Phase 0: 事前確認（全モード共通）
-├── 0.1: 新規/追加の確認
-└── 0.2: Feature 名の確定
+agent を使わないモードと、reverse-engineering の agent 以外の収集は、オーケストレータが `/forge:query-db-rules` / `/forge:query-db-specs` を Skill ツールで直接呼んで、文書を特定する。interactive は事前一括収集を行わず、対話で必要になってから呼ぶ。既存の要件定義書・設計書の確認は、完全新規でないときだけ行う。
 
-コンテキスト収集フェーズ（汎用 Agent、モード依存・return value 収集）
-├── rules agent → ルールリスト             （全モード）
-├── specs agent → 既存要件リスト           （--add 時のみ）
-└── code agent  → ソースコードリスト       （reverse-engineering 時のみ）
+> **設計判断**: start-requirements の interactive モードではコンテキスト収集 agent を使わない。
+> 要件定義は「何を実現するか」を定義する工程であり、既存実装への過度な依存は避ける（REQ-001 オーケストレータパターン要件の設計原則「What に集中」に準拠）。既存コードの確認は、関連する既存機能と影響範囲の特定に必要な範囲にとどめる。
 
-収集結果の統合・表示
-
-Mode: interactive
-├── Phase 1: ビジョン・価値の明確化
-├── Phase 2: 体験フロー・画面構成
-├── Phase 3: 詳細仕様（グロッサリー [MANDATORY]）
-└── Phase 4: 統合・品質確認
-
-Mode: reverse-engineering
-├── Phase 1: 収集済みの既存コードリストを起点にソースコード解析
-├── Phase 2: 要件抽出 [MANDATORY]
-├── Phase 3: 要件定義書作成
-└── Phase 4: 品質確認
-
-Mode: from-figma
-├── Phase 1: Figmaアクセス確認
-├── Phase 2: デザインシステム構築
-├── Phase 3: 要件定義書作成
-├── Phase 4: 静的アセット管理
-└── Phase 5: 品質確認
-
-Phase: AIレビュー（FNC-006 準拠）
-└── /forge:review requirement --files {差分ファイル} --auto
-
-完了処理
-├── /forge:update-db-specs（利用可能な場合）
-├── /anvil:commit
-└── 完了案内
-```
-
-#### コンテキスト収集の適用マトリクス
-
-| agent | 必須                         | 収集内容                             |
-| ----- | ---------------------------- | ------------------------------------ |
-| rules | ○                            | 要件書フォーマット、ワークフロー指示 |
-| specs | `--add` 時のみ               | 既存の要件定義書（追加作成の参考）   |
-| code  | `reverse-engineering` 時のみ | ソースコード探索（要件抽出の起点）   |
-
-> **設計判断**: start-requirements の interactive モードではコンテキスト収集は最小限（rules のみ）。
-> 要件定義は「何を実現するか」を定義する工程であり、既存実装への過度な依存は避ける（REQ-001 オーケストレータパターン要件の設計原則「What に集中」に準拠）。
-
-#### モード別コンテキスト収集シーケンス
+#### reverse-engineering のコンテキスト収集シーケンス
 
 ```mermaid
 sequenceDiagram
     participant O as オーケストレータ
     participant R as rules agent
-    participant S as specs agent
     participant C as code agent
-
-    Note over O: interactive モード（新規）
-    O->>R: rules 収集
-    R-->>O: return value（ルールリスト）
-
-    Note over O: interactive モード（--add）
-    par
-        O->>R: rules 収集
-        R-->>O: return value（ルールリスト）
-    and
-        O->>S: specs 収集（既存要件書）
-        S-->>O: return value（既存要件リスト）
-    end
 
     Note over O: reverse-engineering モード
     par
@@ -277,10 +217,6 @@ sequenceDiagram
         O->>C: code 探索（ソースコード）
         C-->>O: return value（ソースコードリスト）
     end
-
-    Note over O: from-figma モード
-    O->>R: rules 収集
-    R-->>O: return value（ルールリスト）
 ```
 
 ---

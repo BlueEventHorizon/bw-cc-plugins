@@ -36,15 +36,13 @@ start-requirements → start-design → start-plan → start-implement
 要件定義書を作成する。3 つのモードに対応し、入力源が異なる。
 
 ```
-/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
+/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma]
 ```
 
-| 引数      | 説明                             |
-| --------- | -------------------------------- |
-| `feature` | Feature 名（省略時は対話で確定） |
-| `--mode`  | モード指定（省略時は選択肢提示） |
-| `--new`   | 新規アプリ                       |
-| `--add`   | 既存アプリへの機能追加           |
+| 引数      | 説明                                                   |
+| --------- | ------------------------------------------------------ |
+| `feature` | Feature 名（省略時は、要件定義書を書く直前に確定する） |
+| `--mode`  | モード指定（省略時は選択肢提示）                       |
 
 ### モード選択ガイド
 
@@ -58,25 +56,25 @@ start-requirements → start-design → start-plan → start-implement
 
 ```bash
 # ゼロから対話で要件定義
-/forge:start-requirements user-auth --mode interactive --new
+/forge:start-requirements user-auth --mode interactive
 
 # 既存コードから要件を逆算
-/forge:start-requirements dashboard --mode reverse-engineering --add
+/forge:start-requirements dashboard --mode reverse-engineering
 
 # Figma デザインから要件抽出
-/forge:start-requirements product-catalog --mode from-figma --new
+/forge:start-requirements product-catalog --mode from-figma
 ```
 
 ### 実行フロー
 
-1. モード・Feature 名・新規/追加の確定
-2. コンテキスト収集（並列）
-3. モード別ワークフロー実行（対話 / ソース解析 / Figma 解析）
+1. モードの確定
+2. モード別ワークフロー実行（対話 / ソース解析 / Figma 解析）。`interactive` は、スキルの起動前に話した内容を聞き直さず確認し、要件定義書のドラフトを先に書いて、対話しながら仕上げる
+3. 要件定義書を書く直前に、Feature 名・出力先・ファイル名を決める。`interactive` は、差分開発かどうかを既存の要件定義書との関係から判定し、ユーザーの承認を得る
 4. 完了処理（レビュー → 検索インデックス更新 → commit）
 
 ### 出力
 
-`specs/{feature}/requirements/` に要件定義書（Markdown）を生成。ID 体系:
+`.doc_structure.yaml` で解決した置き場（例: `specs/{feature}/requirements/`。プロジェクトで最初の要件定義書には Feature の階層がない）に要件定義書（Markdown）を生成。ID 体系:
 
 | プレフィックス | 種別                 |
 | -------------- | -------------------- |

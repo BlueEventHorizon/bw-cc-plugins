@@ -5,7 +5,7 @@ description: |
   完了後にレビュー+自動修正→ToC更新→commit の完了フローを実行する。
   トリガー: "要件定義", "要件定義書作成", "ソースから要件抽出", "Figma から要件"
 user-invocable: true
-argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma] [--new|--add]"
+argument-hint: "[feature-name] [--mode interactive|reverse-engineering|from-figma]"
 ---
 
 # /forge:start-requirements
@@ -39,15 +39,15 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 ## コマンド構文
 
 ```
-/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
+/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma]
 ```
 
-| 引数    | 内容                             |
-| ------- | -------------------------------- |
-| feature | Feature 名（省略時は対話で確定） |
-| --mode  | モード指定（省略時は選択肢提示） |
-| --new   | 新規アプリ                       |
-| --add   | 既存アプリへの機能追加           |
+| 引数    | 内容                                                   |
+| ------- | ------------------------------------------------------ |
+| feature | Feature 名（省略時は、要件定義書を書く直前に確定する） |
+| --mode  | モード指定（省略時は選択肢提示）                       |
+
+新規か既存への追加か、差分開発かどうかは引数で指定しない。差分開発かどうかは、interactive のときだけ、既存の要件定義書との関係から判定する（下記「要件定義書を書く直前の決定」）。
 
 ---
 
@@ -68,37 +68,43 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 
 ## Phase 0: 事前確認（全モード共通）
 
-**フィーチャー概念の把握**: フラグ問わず以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
+**フィーチャー概念の把握**: 以下を Read し、フィーチャーとは何か・名前空間の原則を把握する。
 
 - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §0 — フィーチャーの概念定義
 
-1. **新規/追加の確認**:
-   - `--new` 指定 → 新規アプリとして処理
-   - `--add` 指定 → 既存アプリへの機能追加として処理
-   - 未指定 → AskUserQuestion を使用して確認する
+feature・出力先・ファイル名は、ここでは決めない。要件定義書のファイルを書く直前に、次の「要件定義書を書く直前の決定」で決める。ファイル名の `{name}` は、書く内容が固まってからでないと決められないためである。
 
-   **`--add`（追加開発）の場合**: 以下を Read し、判定基準・旧仕様の置き換え・merge 手順を把握したうえで後続 Phase に進む。
-   - `${CLAUDE_PLUGIN_ROOT}/docs/additive_development_spec.md` §1 適用条件・対象外
-   - `${CLAUDE_PLUGIN_ROOT}/docs/frontmatter_format.md` §1.1 — `feature_type: temporary-feature` 定義
+---
 
-2. **Feature 名の確定**:
+## 要件定義書を書く直前の決定（全モード共通）
 
-   `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「feature の決定」手順に従い、doc_type `requirement` で決める。
-   引数で feature が指定されていれば `--feature` に渡す（変更せずそのまま使用。AI による置き換え禁止）。
-   `decision` の扱いは同手順が定める（決められなければ AskUserQuestion でフィーチャー名を確認する）。
+各ワークフローは、要件定義書のファイルを書く直前（要件 ID の採番の直前）に、次の順で決める。決定を行う位置は、各ワークフローが指定する。
 
-3. **出力先ディレクトリの解決**:
+### 1. 完全新規かどうか
 
-   `${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、
-   doc_type `requirement`、feature `{feature}` で出力先ディレクトリを求める。
+`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、doc_type `requirement` で、feature を指定せずに、既存の要件定義書の有無を求める。既存の要件定義書が 1 件も無ければ完全新規である（`additive_development_spec.md` §0）。interactive は、既存資産の確認の要否を決めるために、この判定を Phase 0 で先に行い、結果を使う。
 
-   エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たない）。
+### 2. 差分開発かどうかの判定（interactive のみ）
 
-4. **ファイル名の決定**:
+完全新規でない場合、interactive は、純粋追加型か差分開発型かを判定し、ユーザーの承認を得る。手順は `requirements_interactive_workflow.md` が定める。reverse-engineering と from-figma は、既存のコード・Figma から要件を起こすため、判定しない。
 
-   ファイル名は `{要件ID}_{name}_spec.md`（例: `SCR-001_login_screen_spec.md`）とする。
+### 3. feature の決定
 
-   `{name}` は英語のスネークケースで、**その要件が扱う機能を表す名前**とする。一覧を見た人が中身を推測できること。`spec` / `detail` 等、内容を示さない名前を使わない。
+`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「feature の決定」手順に従い、doc_type `requirement` で決める。引数で feature が指定されていれば `--feature` に渡す（変更せずそのまま使用。AI による置き換え禁止）。`decision` の扱いは同手順が定める（決められなければ AskUserQuestion でフィーチャー名を確認する）。
+
+差分開発型のときは、旧仕様と分離して管理するため、差分 feature を使う（`additive_development_spec.md` §0）。決定した feature が既存の feature を指す場合は、AskUserQuestion で確認する。
+
+### 4. 出力先ディレクトリの解決
+
+`${CLAUDE_PLUGIN_ROOT}/skills/doc-structure/SKILL.md` の「出力先ディレクトリの解決」手順に従い、doc_type `requirement`、feature `{feature}` で出力先ディレクトリを求める。
+
+エントリが無い場合の扱いは同手順が定める（本スキルは既定パスを持たない）。
+
+### 5. ファイル名の決定
+
+ファイル名は `{要件ID}_{name}_spec.md`（例: `SCR-001_login_screen_spec.md`）とする。要件 ID は、各ワークフローの採番手順で取る。
+
+`{name}` は英語のスネークケースで、**その要件が扱う機能を表す名前**とする。一覧を見た人が中身を推測できること。`spec` / `detail` 等、内容を示さない名前を使わない。
 
 ---
 
@@ -112,4 +118,4 @@ Phase 完了後は立ち止まらず次の Phase に自動で進む。不明点�
 | reverse-engineering | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_reverse_engineering_workflow.md` |
 | from-figma          | `${CLAUDE_PLUGIN_ROOT}/skills/start-requirements/docs/requirements_from_figma_workflow.md`          |
 
-Read 後、ワークフローファイルの Phase 1 から開始する。各ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認）まで自己完結している。SKILL.md に戻る必要はない。
+Read 後、ワークフローファイルの最初の Phase から開始する。各ワークフローは完了処理（AI レビュー・ToC 更新・commit 確認）まで自己完結している。SKILL.md に戻る必要はない。

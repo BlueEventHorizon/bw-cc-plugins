@@ -91,7 +91,7 @@ flowchart LR
 /forge:setup-doc-structure
 
 # 2. 要件定義から実装まで
-/forge:start-requirements my-feature --mode interactive --new
+/forge:start-requirements my-feature --mode interactive
 /forge:start-design my-feature
 /forge:start-plan my-feature
 /forge:start-implement my-feature

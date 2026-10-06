@@ -36,15 +36,13 @@ After document creation, the following steps execute sequentially:
 Create requirements documents. Supports three modes with different input sources.
 
 ```
-/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma] [--new|--add]
+/forge:start-requirements [feature] [--mode interactive|reverse-engineering|from-figma]
 ```
 
-| Argument  | Description                         |
-| --------- | ----------------------------------- |
-| `feature` | Feature name (omit for interactive) |
-| `--mode`  | Mode selection (omit for menu)      |
-| `--new`   | New app                             |
-| `--add`   | Adding features to existing app     |
+| Argument  | Description                                                 |
+| --------- | ----------------------------------------------------------- |
+| `feature` | Feature name (omit to decide just before writing documents) |
+| `--mode`  | Mode selection (omit for menu)                              |
 
 ### Mode Selection Guide
 
@@ -58,25 +56,25 @@ Create requirements documents. Supports three modes with different input sources
 
 ```bash
 # Define requirements from scratch
-/forge:start-requirements user-auth --mode interactive --new
+/forge:start-requirements user-auth --mode interactive
 
 # Reverse-engineer from existing code
-/forge:start-requirements dashboard --mode reverse-engineering --add
+/forge:start-requirements dashboard --mode reverse-engineering
 
 # Extract from Figma design
-/forge:start-requirements product-catalog --mode from-figma --new
+/forge:start-requirements product-catalog --mode from-figma
 ```
 
 ### Execution Flow
 
-1. Confirm mode, Feature name, and new/add
-2. Context gathering (parallel)
-3. Mode-specific workflow (dialog / source analysis / Figma analysis)
+1. Confirm mode
+2. Mode-specific workflow (dialog / source analysis / Figma analysis). In `interactive`, what was already discussed before the skill started is confirmed, not asked again; a draft requirements document is written first and refined with you through dialogue
+3. Just before a requirements document is written, the Feature name, output location, and file name are decided. In `interactive`, whether the change is differential development is judged against the existing requirements documents and approved by you
 4. Completion flow (review → search-index update → commit)
 
 ### Output
 
-Generates requirements documents (Markdown) in `specs/{feature}/requirements/`. ID scheme:
+Generates requirements documents (Markdown) in the location resolved from `.doc_structure.yaml` (for example `specs/{feature}/requirements/`; there is no Feature directory for a project's first requirements). ID scheme:
 
 | Prefix  | Type                        |
 | ------- | --------------------------- |
