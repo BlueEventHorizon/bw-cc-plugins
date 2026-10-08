@@ -112,12 +112,13 @@ Create design documents from requirements. Builds the upstream design from the r
 
 1. **Identify the requirements document** (from the conversation context; ask when unclear; if there is none in its location, point to `/forge:start-requirements` and stop)
 2. Confirm Feature name (decided from the path of the identified requirements document; confirm when it conflicts with the argument)
-3. Collect project design rules (`/forge:query-db-rules`)
-4. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
-5. **Matching against existing implementations and design patterns**, and redesign
-6. **Detailed design** and consistency check (traceability table)
-7. **Review** (self-review → `/forge:review --auto` → user review)
-8. Completion flow (search-index update → commit)
+3. **Show the status table**: the type (entirely new / purely additive / differential), whether the output directory already has design documents, the feature, and the requirements document (with or without the temporary marker). An undecided type is shown as "undecided", and the table is updated once the type is fixed after the matching step. "No design documents in the output directory (new-creation mode)" describes the output directory only and does not mean entirely new
+4. Collect project design rules (`/forge:query-db-rules`)
+5. **Upstream design** (from the requirements alone): the user approves the scenario table and the upstream design
+6. **Matching against existing implementations and design patterns**, and redesign
+7. **Detailed design** and consistency check (traceability table)
+8. **Review** (self-review → `/forge:review --auto` → user review)
+9. Completion flow (search-index update → commit)
 
 ### Design Principles
 

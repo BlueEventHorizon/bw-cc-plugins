@@ -1,6 +1,6 @@
 # ToC checksums for key: specs
 # Auto-generated - do not edit
-generated_at: 2026-10-06T13:23:47Z
+generated_at: 2026-10-08T15:24:28Z
 file_count: 43
 checksums:
   docs/specs/adr-writer/design/DES-085_adr_writer_design.md: 7f5d5605685d2c96f8fdd2abbee3d3413bb0876ebac06e7ca34a37b147de8fd8
@@ -25,7 +25,7 @@ checksums:
   docs/specs/forge/design/DES-013_context_gathering_design.md: 1e517b6ae0dbb71794b2c19a5f546a44a930c92c698a32202f30ed72832cac66
   docs/specs/forge/design/DES-016_doc_structure_version_management_design.md: 055f0b03f1620129d8cee77a37732e285d2bb1272c235cf3f01999f5ff698f5e
   docs/specs/forge/design/DES-017_create_requirements_workflow_design.md: 4feac29d25a4dc288e3e39c986312dea4f347aa8d9f0d2432c3fe972c9365872
-  docs/specs/forge/design/DES-018_create_design_workflow_design.md: ed740b61089e01b47d4d80a37e8a25803fa205e9e3520e2f4afeb2e26561b35f
+  docs/specs/forge/design/DES-018_create_design_workflow_design.md: 5a634807f2034b08b218c5a32b93e69f9c462a8112b77537897f0da3e7b2df69
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md: ec5640e4aa625c1e17f47af6a6d07a374c28acdd935bb3579e38570841df3d4c
   docs/specs/forge/design/DES-022_parallel_agent_output_contract_design.md: 30c93b5f4cb52b1dcff8b7cdc77ab179a18d293b1d27a93f9f459e1062af6740
   docs/specs/forge/design/DES-023_version_management_workflow_design.md: c3923c69be2e906b9c8e77db7a49ca1005eb68770d97acf335643b42939fac07
@@ -33,11 +33,11 @@ checksums:
   docs/specs/forge/design/DES-030_changed_line_policy_toml_design.md: 8da0d547dd7a60d597eec22f6551017802c783fe25fc9bc925d3cf584c4eac78
   docs/specs/forge/design/DES-047_fix_safety_guardrails_design.md: 3a4ee1cb03f98982263ce6be12eaa9019e473b1fd11c622eb594c77f8df64d51
   docs/specs/forge/design/DES-061_forge_settings_file_design.md: a943a04970ffe3c9335d338aa004d5b77554b032ffe484ad1ab6c92d38b438b5
-  docs/specs/forge/design/DES-066_review_body_design.md: 0a3d7b3bf1eef03bf3dcf96a460e0b86ac7cf701daaccfa53e16909cb4fff430
+  docs/specs/forge/design/DES-066_review_body_design.md: 4e35ea1500138f1c2872ddcfca4a2d69f0006cef8bc5802617ccd891f4a4430d
   docs/specs/forge/design/DES-074_plan_format_design.md: 18be3bcb38c1deb5381fa1e7af4356d4fccdf24cba791c6061651b2b10f18484
   docs/specs/forge/requirements/REQ-001_orchestrator_pattern.md: 8dee0caa616463f9af4c1ae2dd591e8ee1f7f02298e183b7013c8829a34d2b49
   docs/specs/forge/requirements/REQ-003_skill_script_separation.md: 9b289e8d8178b8d39615379d75e69dd1eae0035ae7a42bd0f28727438afbe0a6
-  docs/specs/forge/requirements/REQ-013_review_policy.md: fdcff6a955c593c872da2f23b794c505087fb9e072ea89a3e623d9f854e2c558
+  docs/specs/forge/requirements/REQ-013_review_policy.md: 9984d5954d5477175a3aa759ccde7f4d7c2ad9e22981af7b76a74aa046c99291
   docs/specs/forge/requirements/REQ-024_implementation_plan_spec.md: a415f2b54328f23255ca89eb21c48b5de84c926114fbc33c137e28cfd75f373c
   docs/specs/forge/requirements/REQ-025_additive_development_spec.md: 41d3c40499f6d36e4a4cf95a24d382570dfaac59f6c2d3563fd53c2ea8c78910
   docs/specs/forge/requirements/REQ-028_document_system.md: c3a0945242a0bd29af30e07481a8e7d2b3937c487eb91f83138f3cbb66199ded

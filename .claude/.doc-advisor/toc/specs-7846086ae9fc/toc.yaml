@@ -5,7 +5,7 @@
 metadata:
   name: Document Search Index (specs)
   key: specs
-  generated_at: 2026-10-06T13:23:47Z
+  generated_at: 2026-10-08T15:24:28Z
   file_count: 43
 
 docs:
@@ -674,36 +674,36 @@ docs:
       - requirement ID
       - what-how boundary
   docs/specs/forge/design/DES-018_create_design_workflow_design.md:
-    title: forge Design Document Creation Workflow Design
-    purpose: Specifies the design creation workflow from requirements including upstream design, comparison with existing implementations and patterns, detailed design, consistency verification, and review process
+    title: DES-018 forge Design Document Creation Workflow Design
+    purpose: Defines the start-design orchestrator workflow that creates a design document from a requirements document through upstream design, pattern matching, detailed design, consistency checks, and review, with reuse of existing implementations as means only.
     content_details:
-      - "Six-phase workflow: prerequisites, input collection from rules, upstream design from requirements only, comparison with existing implementations and patterns with potential re-design loop, detailed design, consistency verification"
-      - Upstream design method follows design_method.md Steps 0-4 with user approval at Step 1 and Step 4 endpoints
-      - Existing implementation and design pattern matching phase with re-design loop if structural changes needed
-      - Comparison with existing requirement and design documents via query-db-specs with handling rules for overlaps and conflicts
-      - Detailed design phase using design_method.md Step 5 with reusable existing implementations as means (no modifications)
-      - Consistency verification using traceability table to ensure all requirements are covered
-      - Difference-development type detection and temporary marker application based on existing design scope overlap
-      - "Design principle: assemble design from requirements alone without existing implementation being departure point"
-      - "Mandatory design principles: requirements-first assembly, existing component reuse, complete requirement coverage, What/How boundary adherence"
-      - "Handling when design uncovers needs not in requirements: stop and report, user decides whether to backtrack or record in ADR"
+      - "Preparation steps: requirements document identification, feature name, output directory, temporary marker and mode judgment, status table, and reference document loading"
+      - Phase 1 input collection of project rules through the query-db-rules agent
+      - Phase 2 upstream design built from requirements and project rules only, with AskUserQuestion approvals at Step 1 and Step 4
+      - Phase 3 matching with existing implementations and design patterns, with a redesign loop and a query-db-specs check
+      - "Phase 3 outcome rules: differential development marker on the design document only, and return to requirements when requirement content must change"
+      - Phase 4 detailed design using reusable existing implementation paths, returning to Phase 3 for newly found candidates
+      - Phase 5 traceability table verifying that every requirement item is reflected in the design
+      - Phase 6 self-review, then /forge:review --files with --auto, then user approval
+      - "Design needs absent from requirements: stop the design, report the cause, and record approval in an ADR via write-adr with --defer-finish"
+      - "Completion steps: update-db-specs and commit/push confirmation via anvil commit or git guidance"
     applicable_tasks:
-      - Creating design documents from requirement specifications
-      - Comparing design with existing implementations and design patterns
-      - Performing upstream design following design methodology
-      - Implementing detailed design with existing component reuse
-      - Verifying design consistency and requirement coverage
-      - Handling design decisions that require updating requirements
+      - Creation of a design document from a requirements document using start-design
+      - Modification of the start-design workflow phases or step structure
+      - Review of the design document creation flow against design_method and related rules
+      - Verification of design traceability to requirements coverage
+      - Handling of design needs absent from requirements through ADR approval recording
     keywords:
-      - design workflow
-      - upstream design
-      - design pattern
-      - requirement coverage
+      - /forge:start-design
+      - start-design
+      - design document creation
+      - Phase 3 pattern matching
+      - design_method
+      - temporary-feature
       - traceability table
-      - difference-development
-      - design-requirement boundary
-      - implementation reuse
-      - consistency verification
+      - approval-record
+      - update-db-specs
+      - reuse of existing implementation
   docs/specs/forge/design/DES-019_create_plan_workflow_design.md:
     title: Plan Creation Workflow Design
     purpose: Specifies the workflow for creating plan documents from design documents by developing implementation strategy, extracting and dividing tasks through Agent orchestration with AI review and human approval
