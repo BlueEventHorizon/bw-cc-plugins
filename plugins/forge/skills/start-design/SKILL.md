@@ -18,7 +18,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, Agent, Skill, AskUserQuestion
 
 ## フロー継続
 
-Phase 完了後は立ち止まらず次の Phase に自動で進む。立ち止まるのは、設計手法が求める人の承認（Phase 2・Phase 3・Phase 6）と、不明点を AskUserQuestion で確認するときだけである。
+Phase 完了後は立ち止まらず次の Phase に自動で進む。立ち止まるのは、出力先に設計書があるときの追加作成かレビューのみかの確認（事前準備「状態の表」）、設計手法が求める人の承認（Phase 2・Phase 3・Phase 6）、不明点を AskUserQuestion で確認するときだけである。
 
 ---
 

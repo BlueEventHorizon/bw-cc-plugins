@@ -299,8 +299,6 @@ JSON 出力の `next_id` を起点に連番を使用する。`duplicates` が空
 
 計画書作成・更新後に Skill ツールで `/forge:review` を `--auto` モードで実行する:
 
-<!-- review は `review-XXXXXX` という別スキル名で独立したセッションを作成するため、start-plan のセッションとは干渉しない -->
-
 ```
 # Skill ツールで起動する
 /forge:review --files {作成した計画書のファイルパス} --auto
